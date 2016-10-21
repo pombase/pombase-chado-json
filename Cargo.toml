@@ -1,0 +1,7 @@
+[package]
+name = "pombase-chado-json"
+version = "0.1.0"
+authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
+
+[dependencies]
+postgres = "0.12"
