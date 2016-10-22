@@ -290,9 +290,14 @@ fn main() {
     let connection_string = matches.opt_str("c").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
 
-    fs::create_dir_all(&output_dir).unwrap_or_else(|why| {
-        println!("Creating output directory failed: {:?}", why.kind());
-    });
+    let subdirs = vec!["gene", "term"];
+
+    for subdir in &subdirs {
+        let dir = String::new() + &output_dir + "/" + subdir;
+        fs::create_dir_all(&dir).unwrap_or_else(|why| {
+            println!("Creating output directory failed: {:?}", why.kind());
+        });
+    }
 
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
 
@@ -300,15 +305,22 @@ fn main() {
 
     let (genes, terms) = get_web_data(&raw);
 
-    println!("{}", genes.len() + terms.len());
-    println!("{}", genes.get(0).unwrap().uniquename);
-
     for gene in &genes {
         let s = serde_json::to_string(&gene).unwrap();
-        let file_name = String::new() + &output_dir + "/" + &gene.uniquename + ".json";
+        let file_name = String::new() + &output_dir + "/gene/" + &gene.uniquename + ".json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
+    for term in &terms {
+        let s = serde_json::to_string(&term).unwrap();
+        let file_name = String::new() + &output_dir + "/term/" + &term.termid + ".json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+    }
+
+    println!("write {} genes", genes.len());
+    println!("write {} terms", terms.len());
 }
