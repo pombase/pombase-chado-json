@@ -254,6 +254,15 @@ mod pombase {
                 pub name: Option<GeneName>,
             }
 
+            pub type TranscriptUniquename = String;
+
+            #[derive(Serialize)]
+            pub struct TranscriptShort {
+                pub uniquename: TranscriptUniquename,
+//                pub exons: Vec<ExonShort>,
+//                pub utrs: Vec<UTRShort>,
+            }
+
             pub type TermName = String;
             pub type TermId = String;
             pub type TermDef = String;
@@ -282,11 +291,22 @@ mod pombase {
             pub struct GeneDetails {
                 pub uniquename: GeneUniquename,
                 pub name: Option<String>,
+                pub transcripts: Vec<TranscriptShort>,
                 pub annotations: TypeFeatureAnnotationMap,
             }
 
-            type UniquenameGeneMap =
-                HashMap<GeneUniquename, Vec<GeneDetails>>;
+            pub type UniquenameGeneMap =
+                HashMap<GeneUniquename, GeneDetails>;
+
+            #[derive(Serialize)]
+            pub struct TranscriptDetails {
+                pub uniquename: TranscriptUniquename,
+                pub name: Option<String>,
+                pub annotations: TypeFeatureAnnotationMap,
+            }
+
+            pub type UniquenameTranscriptMap =
+                HashMap<TranscriptUniquename, TranscriptDetails>;
 
             #[derive(Serialize)]
             pub struct TermAnnotation {
@@ -310,21 +330,34 @@ use pombase::Raw;
 use pombase::web::data::*;
 
 fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniquename, GeneDetails>, Vec<TermDetails>) {
-    let mut genes: HashMap<GeneUniquename, GeneDetails> = HashMap::new();
+    let mut genes: UniquenameGeneMap = HashMap::new();
+    let mut transcripts: UniquenameTranscriptMap = HashMap::new();
     let terms: Vec<TermDetails> = vec![];
 
     for feat in raw.features.iter().filter(|&f| {
         let feature_org_genus_species = String::new() +
             &f.organism.genus + "_" + &f.organism.species;
-        f.feat_type.name == "gene" &&
-            feature_org_genus_species == *organism_genus_species
+        feature_org_genus_species == *organism_genus_species
     } ) {
-        genes.insert(feat.uniquename.clone(),
-                     GeneDetails {
-                         uniquename: feat.uniquename.clone(),
-                         name: feat.name.clone(),
-                         annotations: TypeFeatureAnnotationMap::new(),
-                     });
+
+        if feat.feat_type.name == "gene" {
+            genes.insert(feat.uniquename.clone(),
+                         GeneDetails {
+                             uniquename: feat.uniquename.clone(),
+                             name: feat.name.clone(),
+                             annotations: TypeFeatureAnnotationMap::new(),
+                             transcripts: vec![],
+                         });
+        } else {
+            if feat.feat_type.name == "mRNA" {
+                transcripts.insert(feat.uniquename.clone(),
+                             TranscriptDetails {
+                                 uniquename: feat.uniquename.clone(),
+                                 name: feat.name.clone(),
+                                 annotations: TypeFeatureAnnotationMap::new(),
+                             });
+            }
+        }
     }
 
     (genes, terms)
