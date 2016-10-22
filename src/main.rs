@@ -16,6 +16,7 @@ use getopts::Options;
 use std::fs;
 use std::fs::File;
 use std::io::{Write, BufWriter};
+use std::collections::HashMap;
 
 mod pombase {
     use std::rc::Rc;
@@ -244,8 +245,8 @@ mod pombase {
         pub mod data {
             use std::collections::HashMap;
 
-            type GeneUniquename = String;
-            type GeneName = String;
+            pub type GeneUniquename = String;
+            pub type GeneName = String;
 
             #[derive(Serialize)]
             pub struct GeneShort {
@@ -253,9 +254,9 @@ mod pombase {
                 pub name: Option<GeneName>,
             }
 
-            type TermName = String;
-            type TermId = String;
-            type TermDef = String;
+            pub type TermName = String;
+            pub type TermId = String;
+            pub type TermDef = String;
 
             #[derive(Serialize)]
             pub struct TermShort {
@@ -308,8 +309,8 @@ mod pombase {
 use pombase::Raw;
 use pombase::web::data::*;
 
-fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (Vec<GeneDetails>, Vec<TermDetails>) {
-    let mut genes: Vec<GeneDetails> = vec![];
+fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniquename, GeneDetails>, Vec<TermDetails>) {
+    let mut genes: HashMap<GeneUniquename, GeneDetails> = HashMap::new();
     let terms: Vec<TermDetails> = vec![];
 
     for feat in raw.features.iter().filter(|&f| {
@@ -318,11 +319,12 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (Vec<GeneDetails>
         f.feat_type.name == "gene" &&
             feature_org_genus_species == *organism_genus_species
     } ) {
-        genes.push(GeneDetails {
-            uniquename: feat.uniquename.clone(),
-            name: feat.name.clone(),
-            annotations: TypeFeatureAnnotationMap::new(),
-        });
+        genes.insert(feat.uniquename.clone(),
+                     GeneDetails {
+                         uniquename: feat.uniquename.clone(),
+                         name: feat.name.clone(),
+                         annotations: TypeFeatureAnnotationMap::new(),
+                     });
     }
 
     (genes, terms)
@@ -364,9 +366,9 @@ fn main() {
 
     let (genes, terms) = get_web_data(&raw, &organism_genus_species);
 
-    for gene in &genes {
-        let s = serde_json::to_string(&gene).unwrap();
-        let file_name = String::new() + &output_dir + "/gene/" + &gene.uniquename + ".json";
+    for (gene_uniquename, gene_details) in &genes {
+        let s = serde_json::to_string(&gene_details).unwrap();
+        let file_name = String::new() + &output_dir + "/gene/" + &gene_uniquename + ".json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
