@@ -311,7 +311,7 @@ use pombase::web::data::*;
 fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (Vec<GeneDetails>, Vec<TermDetails>) {
     let mut genes: Vec<GeneDetails> = vec![];
     let terms: Vec<TermDetails> = vec![];
-    
+
     for feat in raw.features.iter().filter(|&f| {
         let feature_org_genus_species = String::new() +
             &f.organism.genus + "_" + &f.organism.species;
@@ -380,6 +380,6 @@ fn main() {
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
-    println!("write {} genes", genes.len());
-    println!("write {} terms", terms.len());
+    println!("wrote {} genes", genes.len());
+    println!("wrote {} terms", terms.len());
 }
