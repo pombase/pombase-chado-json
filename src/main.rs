@@ -1,4 +1,11 @@
+#![feature(proc_macro)]
+
 extern crate postgres;
+
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
 use postgres::{Connection, TlsMode};
 
@@ -160,6 +167,7 @@ mod pombase {
             type GeneUniquename = String;
             type GeneName = String;
 
+            #[derive(Serialize)]
             pub struct GeneShort {
                 pub uniquename: GeneUniquename,
                 pub name: Option<GeneName>,
@@ -169,6 +177,7 @@ mod pombase {
             type TermId = String;
             type TermDef = String;
 
+            #[derive(Serialize)]
             pub struct TermShort {
                 pub name: TermName,
                 pub termid: TermId,
@@ -178,6 +187,7 @@ mod pombase {
 
             type Evidence = String;
 
+            #[derive(Serialize)]
             pub struct FeatureAnnotation {
                 pub term: TermShort,
                 pub evidence: Evidence,
@@ -187,6 +197,7 @@ mod pombase {
             pub type TypeFeatureAnnotationMap =
                 HashMap<TypeName, Vec<FeatureAnnotation>>;
 
+            #[derive(Serialize)]
             pub struct GeneDetails {
                 pub uniquename: GeneUniquename,
                 pub name: Option<String>,
@@ -196,11 +207,13 @@ mod pombase {
             type UniquenameGeneMap =
                 HashMap<GeneUniquename, Vec<GeneDetails>>;
 
+            #[derive(Serialize)]
             pub struct TermAnnotation {
                 pub gene: GeneShort,
                 pub evidence: Evidence,
             }
 
+            #[derive(Serialize)]
             pub struct TermDetails {
                 pub name: TermName,
                 pub termid: TermId,
@@ -238,4 +251,9 @@ fn main() {
     let (genes, terms) = get_web_data(&raw);
 
     println!("{}", genes.len());
+    println!("{}", genes.get(0).unwrap().uniquename);
+
+    let s = serde_json::to_string(&genes.get(0).unwrap()).unwrap();
+
+    println!("{}", s);
 }

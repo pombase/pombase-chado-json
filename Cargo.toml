@@ -5,3 +5,6 @@ authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 
 [dependencies]
 postgres = "0.12"
+serde = "0.8"
+serde_json = "0.8"
+serde_derive = "0.8"
