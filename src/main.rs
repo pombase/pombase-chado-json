@@ -34,6 +34,8 @@ mod pombase {
         pub cvterm_relationships: Vec<Rc<CvtermRelationship>>,
         pub publications: Vec<Rc<Publication>>,
         pub features: Vec<Rc<Feature>>,
+        pub feature_cvterms: Vec<Rc<FeatureCvterm>>,
+        pub feature_relationships: Vec<Rc<FeatureRelationship>>,
     }
 
     impl Raw {
@@ -42,7 +44,8 @@ mod pombase {
                 organisms: vec![],
                 cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
                 cvtermpaths: vec![], cvterm_relationships: vec![],
-                publications: vec![], features: vec![],
+                publications: vec![], features: vec![], feature_cvterms: vec![],
+                feature_relationships: vec![],
             };
 
             let mut organism_map: HashMap<i32, Rc<Organism>> = HashMap::new();
@@ -51,6 +54,8 @@ mod pombase {
             let mut dbxref_map: HashMap<i32, Rc<Dbxref>> = HashMap::new();
             let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
             let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
+            let mut feature_cvterm_map: HashMap<i32, Rc<FeatureCvterm>> = HashMap::new();
+            let mut feature_relationship_map: HashMap<i32, Rc<FeatureRelationship>> = HashMap::new();
             let mut publication_map: HashMap<i32, Rc<Publication>> = HashMap::new();
 
             for row in &conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).unwrap() {
@@ -140,6 +145,38 @@ mod pombase {
                 feature_map.insert(feature_id, rc_feature);
             }
 
+            for row in &conn.query("SELECT feature_cvterm_id, feature_id, cvterm_id, pub_id, is_not FROM feature_cvterm", &[]).unwrap() {
+                let feature_cvterm_id = row.get(0);
+                let feature_id = row.get(1);
+                let cvterm_id: i32 = row.get(2);
+                let pub_id: i32 = row.get(3);
+                let is_not: bool = row.get(4);
+                let feature_cvterm = FeatureCvterm {
+                    feature: feature_map.get(&feature_id).unwrap().clone(),
+                    cvterm: cvterm_map.get(&cvterm_id).unwrap().clone(),
+                    publication: publication_map.get(&pub_id).unwrap().clone(),
+                    is_not: is_not,
+                };
+                let rc_feature_cvterm = Rc::new(feature_cvterm);
+                ret.feature_cvterms.push(rc_feature_cvterm.clone());
+                feature_cvterm_map.insert(feature_cvterm_id, rc_feature_cvterm);
+            }
+
+            for row in &conn.query("SELECT feature_relationship_id, object_id, subject_id, type_id FROM feature_relationship", &[]).unwrap() {
+                let feature_relationship_id = row.get(0);
+                let subject_id = row.get(1);
+                let object_id: i32 = row.get(2);
+                let type_id: i32 = row.get(3);
+                let feature_relationship = FeatureRelationship {
+                    subject: feature_map.get(&subject_id).unwrap().clone(),
+                    object: feature_map.get(&object_id).unwrap().clone(),
+                    rel_type: cvterm_map.get(&type_id).unwrap().clone(),
+                };
+                let rc_feature_relationship = Rc::new(feature_relationship);
+                ret.feature_relationships.push(rc_feature_relationship.clone());
+                feature_relationship_map.insert(feature_relationship_id, rc_feature_relationship);
+            }
+
             ret
         }
     }
@@ -189,6 +226,17 @@ mod pombase {
             pub name: Option<String>,
             pub feat_type: Rc<Cvterm>,
             pub organism: Rc<Organism>,
+        }
+        pub struct FeatureCvterm {
+            pub feature: Rc<Feature>,
+            pub cvterm: Rc<Cvterm>,
+            pub publication: Rc<Publication>,
+            pub is_not: bool,
+        }
+        pub struct FeatureRelationship {
+            pub subject: Rc<Feature>,
+            pub object: Rc<Feature>,
+            pub rel_type: Rc<Cvterm>,
         }
     }
 
