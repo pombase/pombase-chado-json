@@ -153,6 +153,7 @@ mod pombase {
                 let pub_id: i32 = row.get(3);
                 let is_not: bool = row.get(4);
                 let feature_cvterm = FeatureCvterm {
+                    feature_cvterm_id: feature_cvterm_id,
                     feature: feature_map.get(&feature_id).unwrap().clone(),
                     cvterm: cvterm_map.get(&cvterm_id).unwrap().clone(),
                     publication: publication_map.get(&pub_id).unwrap().clone(),
@@ -169,6 +170,7 @@ mod pombase {
                 let object_id: i32 = row.get(2);
                 let type_id: i32 = row.get(3);
                 let feature_relationship = FeatureRelationship {
+                    feature_relationship_id: feature_relationship_id,
                     subject: feature_map.get(&subject_id).unwrap().clone(),
                     object: feature_map.get(&object_id).unwrap().clone(),
                     rel_type: cvterm_map.get(&type_id).unwrap().clone(),
@@ -211,6 +213,11 @@ mod pombase {
             pub pub_type: Rc<Cvterm>,
             pub title: Option<String>,
         }
+        pub struct Publicationprop {
+            pub publication: Rc<Publication>,
+            pub prop_type: Rc<Cvterm>,
+            pub value: Option<String>,
+        }
         pub struct CvtermRelationship {
             pub subject: Rc<Cvterm>,
             pub object: Rc<Cvterm>,
@@ -228,16 +235,36 @@ mod pombase {
             pub feat_type: Rc<Cvterm>,
             pub organism: Rc<Organism>,
         }
+        pub struct Featureprop {
+            pub featuremprop_id: i32,
+            pub feature: Rc<Feature>,
+            pub prop_type: Rc<Cvterm>,
+            pub value: Option<String>,
+        }
         pub struct FeatureCvterm {
+            pub feature_cvterm_id: i32,
             pub feature: Rc<Feature>,
             pub cvterm: Rc<Cvterm>,
             pub publication: Rc<Publication>,
             pub is_not: bool,
         }
+        pub struct FeatureCvtermprop {
+            pub feature_cvtermprop_id: i32,
+            pub feature_cvterm: Rc<FeatureCvterm>,
+            pub prop_type: Rc<Cvterm>,
+            pub value: Option<String>,
+        }
         pub struct FeatureRelationship {
+            pub feature_relationship_id: i32,
             pub subject: Rc<Feature>,
             pub object: Rc<Feature>,
             pub rel_type: Rc<Cvterm>,
+        }
+        pub struct FeatureRelationshipprop {
+            pub feature_relationshipprop_id: i32,
+            pub feature_relationship: Rc<FeatureRelationship>,
+            pub prop_type: Rc<Cvterm>,
+            pub value: Option<String>,
         }
     }
 
