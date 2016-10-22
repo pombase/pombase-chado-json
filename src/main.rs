@@ -125,13 +125,15 @@ mod pombase {
                 publication_map.insert(pub_id, rc_publication);
             }
 
-            for row in &conn.query("SELECT feature_id, uniquename, name, type_id FROM feature", &[]).unwrap() {
+            for row in &conn.query("SELECT feature_id, uniquename, name, type_id, organism_id FROM feature", &[]).unwrap() {
                 let feature_id = row.get(0);
                 let type_id: i32 = row.get(3);
+                let organism_id: i32 = row.get(4);
                 let feature = Feature {
                     uniquename: row.get(1),
                     name: row.get(2),
                     feat_type: cvterm_map.get(&type_id).unwrap().clone(),
+                    organism: organism_map.get(&organism_id).unwrap().clone(),
                 };
                 let rc_feature = Rc::new(feature);
                 ret.features.push(rc_feature.clone());
@@ -186,6 +188,7 @@ mod pombase {
             pub uniquename: String,
             pub name: Option<String>,
             pub feat_type: Rc<Cvterm>,
+            pub organism: Rc<Organism>,
         }
     }
 
@@ -257,11 +260,16 @@ mod pombase {
 use pombase::Raw;
 use pombase::web::data::*;
 
-fn get_web_data(raw: &Raw) -> (Vec<GeneDetails>, Vec<TermDetails>) {
+fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (Vec<GeneDetails>, Vec<TermDetails>) {
     let mut genes: Vec<GeneDetails> = vec![];
     let terms: Vec<TermDetails> = vec![];
-
-    for feat in raw.features.iter().filter(|&f| f.feat_type.name == "gene") {
+    
+    for feat in raw.features.iter().filter(|&f| {
+        let feature_org_genus_species = String::new() +
+            &f.organism.genus + "_" + &f.organism.species;
+        f.feat_type.name == "gene" &&
+            feature_org_genus_species == *organism_genus_species
+    } ) {
         genes.push(GeneDetails {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
@@ -281,6 +289,8 @@ fn main() {
                 "CONN_STR");
     opts.reqopt("d", "output-directory",
                 "Destination directory for JSON output", "DIR");
+    opts.reqopt("O", "organism",
+                "Only output genes from this organism (eg. 'Schizosaccharomyces_pombe')", "GENUS_SPECIES");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -289,6 +299,7 @@ fn main() {
 
     let connection_string = matches.opt_str("c").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
+    let organism_genus_species = matches.opt_str("O").unwrap();
 
     let subdirs = vec!["gene", "term"];
 
@@ -303,7 +314,7 @@ fn main() {
 
     let raw = Raw::new(&conn);
 
-    let (genes, terms) = get_web_data(&raw);
+    let (genes, terms) = get_web_data(&raw, &organism_genus_species);
 
     for gene in &genes {
         let s = serde_json::to_string(&gene).unwrap();
