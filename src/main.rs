@@ -7,7 +7,15 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
+extern crate getopts;
+
 use postgres::{Connection, TlsMode};
+
+use std::env;
+use getopts::Options;
+use std::fs;
+use std::fs::File;
+use std::io::{Write, BufWriter};
 
 mod pombase {
     use std::rc::Rc;
@@ -230,7 +238,7 @@ use pombase::web::data::*;
 
 fn get_web_data(raw: &Raw) -> (Vec<GeneDetails>, Vec<TermDetails>) {
     let mut genes: Vec<GeneDetails> = vec![];
-    let mut terms: Vec<TermDetails> = vec![];
+    let terms: Vec<TermDetails> = vec![];
 
     for feat in raw.features.iter().filter(|&f| f.feat_type.name == "gene") {
         genes.push(GeneDetails {
@@ -244,16 +252,42 @@ fn get_web_data(raw: &Raw) -> (Vec<GeneDetails>, Vec<TermDetails>) {
 }
 
 fn main() {
-    let conn = Connection::connect("postgres://kmr44:kmr44@localhost/pombase-build-2016-09-20-v1", TlsMode::None).unwrap();
+    let args: Vec<String> = env::args().collect();
+    let mut opts = Options::new();
+
+    opts.reqopt("c", "connection-string",
+                "PostgresSQL connection string like: postgres://user:pass@host/db_name",
+                "CONN_STR");
+    opts.reqopt("d", "output-directory",
+                "Destination directory for JSON output", "DIR");
+
+    let matches = match opts.parse(&args[1..]) {
+        Ok(m) => m,
+        Err(f) => panic!("Invalid options\n{}", f)
+    };
+
+    let connection_string = matches.opt_str("c").unwrap();
+    let output_dir = matches.opt_str("d").unwrap();
+
+    fs::create_dir_all(&output_dir).unwrap_or_else(|why| {
+        println!("Creating output directory failed: {:?}", why.kind());
+    });
+
+    let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
 
     let raw = Raw::new(&conn);
 
     let (genes, terms) = get_web_data(&raw);
 
-    println!("{}", genes.len());
+    println!("{}", genes.len() + terms.len());
     println!("{}", genes.get(0).unwrap().uniquename);
 
-    let s = serde_json::to_string(&genes.get(0).unwrap()).unwrap();
+    for gene in &genes {
+        let s = serde_json::to_string(&gene).unwrap();
+        let file_name = String::new() + &output_dir + "/" + &gene.uniquename + ".json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+    }
 
-    println!("{}", s);
 }
