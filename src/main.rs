@@ -25,6 +25,7 @@ mod pombase {
     use pombase::db::*;
 
     pub struct Raw {
+        pub organisms: Vec<Rc<Organism>>,
         pub cvs: Vec<Rc<Cv>>,
         pub dbs: Vec<Rc<Db>>,
         pub dbxrefs: Vec<Rc<Dbxref>>,
@@ -38,17 +39,31 @@ mod pombase {
     impl Raw {
         pub fn new(conn: &Connection) -> Raw {
             let mut ret = Raw {
+                organisms: vec![],
                 cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
                 cvtermpaths: vec![], cvterm_relationships: vec![],
                 publications: vec![], features: vec![],
             };
 
+            let mut organism_map: HashMap<i32, Rc<Organism>> = HashMap::new();
             let mut cv_map: HashMap<i32, Rc<Cv>> = HashMap::new();
             let mut db_map: HashMap<i32, Rc<Db>> = HashMap::new();
             let mut dbxref_map: HashMap<i32, Rc<Dbxref>> = HashMap::new();
             let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
             let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
             let mut publication_map: HashMap<i32, Rc<Publication>> = HashMap::new();
+
+            for row in &conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).unwrap() {
+                let organism = Organism {
+                    genus: row.get(1),
+                    species: row.get(2),
+                    abbreviation: row.get(3),
+                    common_name: row.get(4),
+                };
+                let rc_organism = Rc::new(organism);
+                ret.organisms.push(rc_organism.clone());
+                organism_map.insert(row.get(0), rc_organism);
+            }
 
             for row in &conn.query("SELECT cv_id, name FROM cv", &[]).unwrap() {
                 let cv = Cv {
@@ -130,10 +145,11 @@ mod pombase {
     pub mod db {
         use std::rc::Rc;
 
-        pub struct Feature {
-            pub uniquename: String,
-            pub name: Option<String>,
-            pub feat_type: Rc<Cvterm>,
+        pub struct Organism {
+            pub genus: String,
+            pub species: String,
+            pub abbreviation: String,
+            pub common_name: String,
         }
         pub struct Cv {
             pub name: String,
@@ -165,6 +181,11 @@ mod pombase {
             pub object: Rc<Cvterm>,
             pub rel_type: Rc<Cvterm>,
             pub pathdistance: Option<i32>,
+        }
+        pub struct Feature {
+            pub uniquename: String,
+            pub name: Option<String>,
+            pub feat_type: Rc<Cvterm>,
         }
     }
 
