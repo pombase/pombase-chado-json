@@ -14,6 +14,9 @@ mod pombase {
         pub dbs: Vec<Rc<Db>>,
         pub dbxrefs: Vec<Rc<Dbxref>>,
         pub cvterms: Vec<Rc<Cvterm>>,
+        pub cvtermpaths: Vec<Rc<Cvtermpath>>,
+        pub cvterm_relationships: Vec<Rc<CvtermRelationship>>,
+        pub publications: Vec<Rc<Publication>>,
         pub features: Vec<Rc<Feature>>,
     }
 
@@ -21,7 +24,8 @@ mod pombase {
         pub fn new(conn: &Connection) -> Raw {
             let mut ret = Raw {
                 cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
-                features: vec![],
+                cvtermpaths: vec![], cvterm_relationships: vec![],
+                publications: vec![], features: vec![],
             };
 
             let mut cv_map: HashMap<i32, Rc<Cv>> = HashMap::new();
@@ -29,6 +33,7 @@ mod pombase {
             let mut dbxref_map: HashMap<i32, Rc<Dbxref>> = HashMap::new();
             let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
             let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
+            let mut publication_map: HashMap<i32, Rc<Publication>> = HashMap::new();
 
             for row in &conn.query("SELECT cv_id, name FROM cv", &[]).unwrap() {
                 let cv = Cv {
@@ -75,11 +80,28 @@ mod pombase {
                 cvterm_map.insert(cvterm_id, rc_cvterm);
             }
 
-            for row in &conn.query("SELECT feature_id, uniquename, name FROM feature", &[]).unwrap() {
+            for row in &conn.query("SELECT pub_id, uniquename, type_id, title FROM pub", &[]).unwrap() {
+                let pub_id: i32 = row.get(0);
+                let uniquename: String = row.get(1);
+                let type_id: i32 = row.get(2);
+                let title: Option<String> = row.get(3);
+                let publication = Publication {
+                    uniquename: uniquename,
+                    pub_type: cvterm_map.get(&type_id).unwrap().clone(),
+                    title: title
+                };
+                let rc_publication = Rc::new(publication);
+                ret.publications.push(rc_publication.clone());
+                publication_map.insert(pub_id, rc_publication);
+            }
+
+            for row in &conn.query("SELECT feature_id, uniquename, name, type_id FROM feature", &[]).unwrap() {
                 let feature_id = row.get(0);
+                let type_id: i32 = row.get(3);
                 let feature = Feature {
                     uniquename: row.get(1),
                     name: row.get(2),
+                    feat_type: cvterm_map.get(&type_id).unwrap().clone(),
                 };
                 let rc_feature = Rc::new(feature);
                 ret.features.push(rc_feature.clone());
@@ -95,17 +117,15 @@ mod pombase {
 
         pub struct Feature {
             pub uniquename: String,
-            pub name: Option<String>
+            pub name: Option<String>,
+            pub feat_type: Rc<Cvterm>,
         }
-
         pub struct Cv {
             pub name: String,
         }
-
         pub struct Db {
             pub name: String,
         }
-
         pub struct Dbxref {
             pub accession: String,
             pub db: Rc<Db>,
@@ -115,15 +135,107 @@ mod pombase {
             pub cv: Rc<Cv>,
             pub dbxref: Rc<Dbxref>,
         }
+        pub struct Publication {
+            pub uniquename: String,
+            pub pub_type: Rc<Cvterm>,
+            pub title: Option<String>,
+        }
+        pub struct CvtermRelationship {
+            pub subject: Rc<Cvterm>,
+            pub object: Rc<Cvterm>,
+            pub reltype: Rc<Cvterm>,
+        }
+        pub struct Cvtermpath {
+            pub subject: Rc<Cvterm>,
+            pub object: Rc<Cvterm>,
+            pub rel_type: Rc<Cvterm>,
+            pub pathdistance: Option<i32>,
+        }
+    }
+
+    pub mod web {
+        pub mod data {
+            use std::collections::HashMap;
+
+            type GeneUniquename = String;
+            type GeneName = String;
+
+            pub struct GeneShort {
+                pub uniquename: GeneUniquename,
+                pub name: Option<GeneName>,
+            }
+
+            type TermName = String;
+            type TermId = String;
+            type TermDef = String;
+
+            pub struct TermShort {
+                pub name: TermName,
+                pub termid: TermId,
+                pub definition: TermDef,
+                pub is_obsolete: bool,
+            }
+
+            type Evidence = String;
+
+            pub struct FeatureAnnotation {
+                pub term: TermShort,
+                pub evidence: Evidence,
+            }
+
+            type TypeName = String;
+            pub type TypeFeatureAnnotationMap =
+                HashMap<TypeName, Vec<FeatureAnnotation>>;
+
+            pub struct GeneDetails {
+                pub uniquename: GeneUniquename,
+                pub name: Option<String>,
+                pub annotations: TypeFeatureAnnotationMap,
+            }
+
+            type UniquenameGeneMap =
+                HashMap<GeneUniquename, Vec<GeneDetails>>;
+
+            pub struct TermAnnotation {
+                pub gene: GeneShort,
+                pub evidence: Evidence,
+            }
+
+            pub struct TermDetails {
+                pub name: TermName,
+                pub termid: TermId,
+                pub definition: TermDef,
+                pub is_obsolete: bool,
+                pub annotations: Vec<TermAnnotation>,
+            }
+        }
     }
 }
 
 use pombase::Raw;
+use pombase::web::data::*;
+
+fn get_web_data(raw: &Raw) -> (Vec<GeneDetails>, Vec<TermDetails>) {
+    let mut genes: Vec<GeneDetails> = vec![];
+    let mut terms: Vec<TermDetails> = vec![];
+
+    for feat in raw.features.iter().filter(|&f| f.feat_type.name == "gene") {
+        genes.push(GeneDetails {
+            uniquename: feat.uniquename.clone(),
+            name: feat.name.clone(),
+            annotations: TypeFeatureAnnotationMap::new(),
+        });
+    }
+
+    (genes, terms)
+}
 
 fn main() {
     let conn = Connection::connect("postgres://kmr44:kmr44@localhost/pombase-build-2016-09-20-v1", TlsMode::None).unwrap();
 
     let raw = Raw::new(&conn);
 
-    println!("{}", raw.features.len());
+    let (genes, terms) = get_web_data(&raw);
+
+    println!("{}", genes.len());
 }
