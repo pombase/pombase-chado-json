@@ -138,15 +138,21 @@ mod pombase {
                 cvterm_map.insert(cvterm_id, rc_cvterm);
             }
 
-            for row in &conn.query("SELECT pub_id, uniquename, type_id, title FROM pub", &[]).unwrap() {
+            for row in &conn.query("SELECT pub_id, uniquename, type_id, title, miniref FROM pub", &[]).unwrap() {
                 let pub_id: i32 = row.get(0);
                 let uniquename: String = row.get(1);
                 let type_id: i32 = row.get(2);
                 let title: Option<String> = row.get(3);
+                let miniref: Option<String> = row.get(4);
+                if let Some(m) = miniref.clone() {
+                    print!("{}\n", &m);
+                }
+
                 let publication = Publication {
                     uniquename: uniquename,
                     pub_type: get_cvterm(&mut cvterm_map, type_id),
-                    title: title
+                    title: title,
+                    miniref: miniref,
                 };
                 let rc_publication = Rc::new(publication);
                 ret.publications.push(rc_publication.clone());
@@ -278,6 +284,7 @@ mod pombase {
             pub uniquename: String,
             pub pub_type: Rc<Cvterm>,
             pub title: Option<String>,
+            pub miniref: Option<String>,
         }
         pub struct Publicationprop {
             pub publication: Rc<Publication>,
