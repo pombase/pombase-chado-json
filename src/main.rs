@@ -214,6 +214,38 @@ mod pombase {
                 feature_relationship_map.insert(feature_relationship_id, rc_feature_relationship);
             }
 
+            for row in &conn.query("SELECT object_id, subject_id, type_id FROM cvterm_relationship", &[]).unwrap() {
+                let subject_id = row.get(0);
+                let object_id: i32 = row.get(1);
+                let type_id: i32 = row.get(2);
+                let cvterm_relationship = CvtermRelationship {
+                    subject: cvterm_map.get(&subject_id).unwrap().clone(),
+                    object: cvterm_map.get(&object_id).unwrap().clone(),
+                    rel_type: get_cvterm(&mut cvterm_map, type_id),
+                };
+                let rc_cvterm_relationship = Rc::new(cvterm_relationship);
+                ret.cvterm_relationships.push(rc_cvterm_relationship.clone());
+            }
+
+            for row in &conn.query("SELECT object_id, subject_id, type_id, pathdistance FROM cvtermpath", &[]).unwrap() {
+                let subject_id = row.get(0);
+                let object_id: i32 = row.get(1);
+                let type_id: Option<i32> = row.get(2);
+                let rel_type: Option<Rc<Cvterm>> = match type_id {
+                    Some(cvterm_id) => Some(get_cvterm(&mut cvterm_map, cvterm_id)),
+                    None => None
+                };
+                let pathdistance: Option<i32> = row.get(3);
+                let cvtermpath = Cvtermpath {
+                    subject: cvterm_map.get(&subject_id).unwrap().clone(),
+                    object: cvterm_map.get(&object_id).unwrap().clone(),
+                    rel_type: rel_type,
+                    pathdistance: pathdistance,
+                };
+                let rc_cvtermpath = Rc::new(cvtermpath);
+                ret.cvtermpaths.push(rc_cvtermpath.clone());
+            }
+
             ret
         }
     }
@@ -255,12 +287,12 @@ mod pombase {
         pub struct CvtermRelationship {
             pub subject: Rc<Cvterm>,
             pub object: Rc<Cvterm>,
-            pub reltype: Rc<Cvterm>,
+            pub rel_type: Rc<Cvterm>,
         }
         pub struct Cvtermpath {
             pub subject: Rc<Cvterm>,
             pub object: Rc<Cvterm>,
-            pub rel_type: Rc<Cvterm>,
+            pub rel_type: Option<Rc<Cvterm>>,
             pub pathdistance: Option<i32>,
         }
         pub struct Feature {
@@ -294,7 +326,6 @@ mod pombase {
             pub rel_type: Rc<Cvterm>,
         }
         pub struct FeatureRelationshipprop {
-            pub feature_relationshipprop_id: i32,
             pub feature_relationship: Rc<FeatureRelationship>,
             pub prop_type: Rc<Cvterm>,
             pub value: Option<String>,
