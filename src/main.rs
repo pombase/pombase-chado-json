@@ -35,6 +35,7 @@ mod pombase {
         pub cvterm_relationships: Vec<Rc<CvtermRelationship>>,
         pub publications: Vec<Rc<Publication>>,
         pub features: Vec<Rc<Feature>>,
+        pub featureprops: Vec<Rc<Featureprop>>,
         pub feature_cvterms: Vec<Rc<FeatureCvterm>>,
         pub feature_relationships: Vec<Rc<FeatureRelationship>>,
     }
@@ -45,7 +46,8 @@ mod pombase {
                 organisms: vec![],
                 cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
                 cvtermpaths: vec![], cvterm_relationships: vec![],
-                publications: vec![], features: vec![], feature_cvterms: vec![],
+                publications: vec![], features: vec![], featureprops: vec![],
+                feature_cvterms: vec![],
                 feature_relationships: vec![],
             };
 
@@ -166,6 +168,18 @@ mod pombase {
                 feature_map.insert(feature_id, rc_feature);
             }
 
+            for row in &conn.query("SELECT feature_id, type_id, value FROM featureprop", &[]).unwrap() {
+                let feature_id: i32 = row.get(0);
+                let type_id: i32 = row.get(1);
+                let value: Option<String> = row.get(2);
+                let featureprop = Featureprop {
+                    feature: get_feature(&mut feature_map, feature_id),
+                    prop_type: get_cvterm(&mut cvterm_map, type_id),
+                    value: value,
+                };
+                ret.featureprops.push(Rc::new(featureprop));
+            }
+
             for row in &conn.query("SELECT feature_cvterm_id, feature_id, cvterm_id, pub_id, is_not FROM feature_cvterm", &[]).unwrap() {
                 let feature_cvterm_id = row.get(0);
                 let feature_id = row.get(1);
@@ -256,7 +270,6 @@ mod pombase {
             pub organism: Rc<Organism>,
         }
         pub struct Featureprop {
-            pub featuremprop_id: i32,
             pub feature: Rc<Feature>,
             pub prop_type: Rc<Cvterm>,
             pub value: Option<String>,
