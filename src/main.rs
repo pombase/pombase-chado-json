@@ -59,6 +59,26 @@ mod pombase {
             let mut feature_relationship_map: HashMap<i32, Rc<FeatureRelationship>> = HashMap::new();
             let mut publication_map: HashMap<i32, Rc<Publication>> = HashMap::new();
 
+            fn get_db(db_map: &mut HashMap<i32, Rc<Db>>, db_id: i32) -> Rc<Db> {
+                db_map.get(&db_id).unwrap().clone()
+            };
+
+            fn get_dbxref(dbxref_map: &mut HashMap<i32, Rc<Dbxref>>, dbxref_id: i32) -> Rc<Dbxref> {
+                dbxref_map.get(&dbxref_id).unwrap().clone()
+            };
+
+            fn get_cv(cv_map: &mut HashMap<i32, Rc<Cv>>, cv_id: i32) -> Rc<Cv> {
+                cv_map.get(&cv_id).unwrap().clone()
+            };
+
+            fn get_cvterm(cvterm_map: &mut HashMap<i32, Rc<Cvterm>>, cvterm_id: i32) -> Rc<Cvterm> {
+                cvterm_map.get(&cvterm_id).unwrap().clone()
+            };
+
+            fn get_feature(feature_map: &mut HashMap<i32, Rc<Feature>>, feature_id: i32) -> Rc<Feature> {
+                feature_map.get(&feature_id).unwrap().clone()
+            };
+
             for row in &conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).unwrap() {
                 let organism = Organism {
                     genus: row.get(1),
@@ -94,7 +114,7 @@ mod pombase {
                 let dbxref_id: i32 = row.get(0);
                 let db_id: i32 = row.get(1);
                 let dbxref = Dbxref {
-                    db: db_map.get(&db_id).unwrap().clone(),
+                    db: get_db(&mut db_map, db_id),
                     accession: row.get(2),
                 };
                 let rc_dbxref = Rc::new(dbxref);
@@ -107,8 +127,8 @@ mod pombase {
                 let cv_id: i32 = row.get(1);
                 let dbxref_id: i32 = row.get(2);
                 let cvterm = Cvterm {
-                    cv: cv_map.get(&cv_id).unwrap().clone(),
-                    dbxref: dbxref_map.get(&dbxref_id).unwrap().clone(),
+                    cv: get_cv(&mut cv_map, cv_id),
+                    dbxref: get_dbxref(&mut dbxref_map, dbxref_id),
                     name: row.get(3),
                 };
                 let rc_cvterm = Rc::new(cvterm);
@@ -123,7 +143,7 @@ mod pombase {
                 let title: Option<String> = row.get(3);
                 let publication = Publication {
                     uniquename: uniquename,
-                    pub_type: cvterm_map.get(&type_id).unwrap().clone(),
+                    pub_type: get_cvterm(&mut cvterm_map, type_id),
                     title: title
                 };
                 let rc_publication = Rc::new(publication);
@@ -138,7 +158,7 @@ mod pombase {
                 let feature = Feature {
                     uniquename: row.get(1),
                     name: row.get(2),
-                    feat_type: cvterm_map.get(&type_id).unwrap().clone(),
+                    feat_type: get_cvterm(&mut cvterm_map, type_id),
                     organism: organism_map.get(&organism_id).unwrap().clone(),
                 };
                 let rc_feature = Rc::new(feature);
@@ -173,7 +193,7 @@ mod pombase {
                     feature_relationship_id: feature_relationship_id,
                     subject: feature_map.get(&subject_id).unwrap().clone(),
                     object: feature_map.get(&object_id).unwrap().clone(),
-                    rel_type: cvterm_map.get(&type_id).unwrap().clone(),
+                    rel_type: get_cvterm(&mut cvterm_map, type_id),
                 };
                 let rc_feature_relationship = Rc::new(feature_relationship);
                 ret.feature_relationships.push(rc_feature_relationship.clone());
