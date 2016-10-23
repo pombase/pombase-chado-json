@@ -373,12 +373,20 @@ mod pombase {
                 pub is_obsolete: bool,
             }
 
+            #[derive(Serialize)]
+            pub struct PublicationShort {
+                pub uniquename: String,
+                pub title: Option<String>,
+                pub citation: Option<String>,
+            }
+
             type Evidence = String;
 
             #[derive(Serialize)]
             pub struct FeatureAnnotation {
                 pub term: TermShort,
                 pub evidence: Evidence,
+                pub publication: PublicationShort,
             }
 
             type TypeName = String;
