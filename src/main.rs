@@ -246,7 +246,7 @@ mod pombase {
             for row in &conn.query("SELECT object_id, subject_id, type_id FROM feature_relationship", &[]).unwrap() {
                 let subject_id = row.get(0);
                 let object_id: i32 = row.get(1);
-                let type_id: i32 = row.get(1);
+                let type_id: i32 = row.get(2);
                 let feature_relationship = FeatureRelationship {
                     subject: feature_map.get(&subject_id).unwrap().clone(),
                     object: feature_map.get(&object_id).unwrap().clone(),
