@@ -383,6 +383,15 @@ mod pombase {
             pub prop_type: Rc<RefCell<Cvterm>>,
             pub value: Option<String>,
         }
+        impl Prop for FeatureCvtermprop {
+            fn type_name(&self) -> String {
+                self.prop_type.borrow().name.clone()
+            }
+            fn value(&self) -> Option<String> {
+                self.value.clone()
+            }
+        }
+
         pub struct FeatureRelationship {
             pub subject: Rc<RefCell<Feature>>,
             pub object: Rc<RefCell<Feature>>,
@@ -490,6 +499,7 @@ mod pombase {
 
 use pombase::Raw;
 use pombase::web::data::*;
+use pombase::db::Prop;
 
 use std::cell::RefCell;
 use std::rc::Rc;
@@ -538,7 +548,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
                          GeneDetails {
                              uniquename: feat.borrow().uniquename.clone(),
                              name: feat.borrow().name.clone(),
-                             annotations: TypeFeatureAnnotationMap::new(),
+                             annotations: HashMap::new(),
                              transcripts: vec![],
                          });
         } else {
@@ -548,7 +558,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
                              TranscriptDetails {
                                  uniquename: feat.borrow().uniquename.clone(),
                                  name: feat.borrow().name.clone(),
-                                 annotations: TypeFeatureAnnotationMap::new(),
+                                 annotations: HashMap::new(),
                              });
             }
         }
@@ -558,10 +568,16 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
         let borrowed_feature_cvterm = feature_cvterm.borrow();
         let feature = &borrowed_feature_cvterm.feature;
         let cvterm = &borrowed_feature_cvterm.cvterm;
+        let mut evidence: Option<String> = None;
+        for prop in &borrowed_feature_cvterm.feature_cvtermprops {
+            if (*prop).type_name() == "evidence" {
+                evidence = prop.value.clone();
+            }
+        }
         let feature_annotation =
             FeatureAnnotation {
                 term: make_term_short(cvterm.clone()),
-                evidence: None,
+                evidence: evidence,
                 publication: make_publication_short(borrowed_feature_cvterm.publication.clone()),
             };
         let cv_name = cvterm.borrow().cv.name.clone();
