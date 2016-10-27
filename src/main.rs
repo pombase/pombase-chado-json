@@ -602,9 +602,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
             };
         let cv_name = cvterm.cv.name.clone();
         if let Some(gene_details) = genes.get_mut(&feature.uniquename) {
-            gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation)
-        }
-        if let Some(gene_details) = genes.get(&feature.uniquename) {
+            gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation);
             let term_annotation =
                 TermAnnotation {
                     gene: make_gene_short(&gene_details),
