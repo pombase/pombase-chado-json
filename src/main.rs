@@ -31,16 +31,16 @@ mod pombase {
         pub cvs: Vec<Rc<Cv>>,
         pub dbs: Vec<Rc<Db>>,
         pub dbxrefs: Vec<Rc<Dbxref>>,
-        pub cvterms: Vec<Rc<RefCell<Cvterm>>>,
+        pub cvterms: Vec<Rc<Cvterm>>,
         pub cvtermprops: Vec<Rc<Cvtermprop>>,
         pub cvtermpaths: Vec<Rc<Cvtermpath>>,
-        pub cvterm_relationships: Vec<Rc<RefCell<CvtermRelationship>>>,
-        pub publications: Vec<Rc<RefCell<Publication>>>,
-        pub features: Vec<Rc<RefCell<Feature>>>,
+        pub cvterm_relationships: Vec<Rc<CvtermRelationship>>,
+        pub publications: Vec<Rc<Publication>>,
+        pub features: Vec<Rc<Feature>>,
         pub featureprops: Vec<Rc<Featureprop>>,
-        pub feature_cvterms: Vec<Rc<RefCell<FeatureCvterm>>>,
+        pub feature_cvterms: Vec<Rc<FeatureCvterm>>,
         pub feature_cvtermprops: Vec<Rc<FeatureCvtermprop>>,
-        pub feature_relationships: Vec<Rc<RefCell<FeatureRelationship>>>,
+        pub feature_relationships: Vec<Rc<FeatureRelationship>>,
     }
 
     impl Raw {
@@ -60,10 +60,10 @@ mod pombase {
             let mut cv_map: HashMap<i32, Rc<Cv>> = HashMap::new();
             let mut db_map: HashMap<i32, Rc<Db>> = HashMap::new();
             let mut dbxref_map: HashMap<i32, Rc<Dbxref>> = HashMap::new();
-            let mut cvterm_map: HashMap<i32, Rc<RefCell<Cvterm>>> = HashMap::new();
-            let mut feature_map: HashMap<i32, Rc<RefCell<Feature>>> = HashMap::new();
-            let mut feature_cvterm_map: HashMap<i32, Rc<RefCell<FeatureCvterm>>> = HashMap::new();
-            let mut publication_map: HashMap<i32, Rc<RefCell<Publication>>> = HashMap::new();
+            let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
+            let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
+            let mut feature_cvterm_map: HashMap<i32, Rc<FeatureCvterm>> = HashMap::new();
+            let mut publication_map: HashMap<i32, Rc<Publication>> = HashMap::new();
 
             fn get_db(db_map: &mut HashMap<i32, Rc<Db>>, db_id: i32) -> Rc<Db> {
                 db_map.get(&db_id).unwrap().clone()
@@ -77,11 +77,11 @@ mod pombase {
                 cv_map.get(&cv_id).unwrap().clone()
             };
 
-            fn get_cvterm(cvterm_map: &mut HashMap<i32, Rc<RefCell<Cvterm>>>, cvterm_id: i32) -> Rc<RefCell<Cvterm>> {
+            fn get_cvterm(cvterm_map: &mut HashMap<i32, Rc<Cvterm>>, cvterm_id: i32) -> Rc<Cvterm> {
                 cvterm_map.get(&cvterm_id).unwrap().clone()
             };
 
-            fn get_feature(feature_map: &mut HashMap<i32, Rc<RefCell<Feature>>>, feature_id: i32) -> Rc<RefCell<Feature>> {
+            fn get_feature(feature_map: &mut HashMap<i32, Rc<Feature>>, feature_id: i32) -> Rc<Feature> {
                 feature_map.get(&feature_id).unwrap().clone()
             };
 
@@ -139,9 +139,9 @@ mod pombase {
                     dbxref: get_dbxref(&mut dbxref_map, dbxref_id),
                     name: name,
                     is_obsolete: is_obsolete == 1,
-                    cvtermprops: vec![],
+                    cvtermprops: RefCell::new(vec![]),
                 };
-                let rc_cvterm = Rc::new(RefCell::new(cvterm));
+                let rc_cvterm = Rc::new(cvterm);
                 ret.cvterms.push(rc_cvterm.clone());
                 cvterm_map.insert(cvterm_id, rc_cvterm);
             }
@@ -157,7 +157,7 @@ mod pombase {
                 };
                 let rc_cvtermprop = Rc::new(cvtermprop);
                 ret.cvtermprops.push(rc_cvtermprop.clone());
-                cvterm.borrow_mut().cvtermprops.push(rc_cvtermprop.clone());
+                cvterm.cvtermprops.borrow_mut().push(rc_cvtermprop.clone());
             }
 
             for row in &conn.query("SELECT pub_id, uniquename, type_id, title, miniref FROM pub", &[]).unwrap() {
@@ -171,9 +171,9 @@ mod pombase {
                     pub_type: get_cvterm(&mut cvterm_map, type_id),
                     title: title,
                     miniref: miniref,
-                    publicationprops: vec![],
+                    publicationprops: RefCell::new(vec![]),
                 };
-                let rc_publication = Rc::new(RefCell::new(publication));
+                let rc_publication = Rc::new(publication);
                 ret.publications.push(rc_publication.clone());
                 publication_map.insert(pub_id, rc_publication);
             }
@@ -187,9 +187,9 @@ mod pombase {
                     name: row.get(2),
                     feat_type: get_cvterm(&mut cvterm_map, type_id),
                     organism: organism_map.get(&organism_id).unwrap().clone(),
-                    featureprops: vec![],
+                    featureprops: RefCell::new(vec![]),
                 };
-                let rc_feature = Rc::new(RefCell::new(feature));
+                let rc_feature = Rc::new(feature);
                 ret.features.push(rc_feature.clone());
                 feature_map.insert(feature_id, rc_feature);
             }
@@ -206,7 +206,7 @@ mod pombase {
                 };
                 let rc_featureprop = Rc::new(featureprop);
                 ret.featureprops.push(rc_featureprop.clone());
-                feature.borrow_mut().featureprops.push(rc_featureprop.clone());
+                feature.featureprops.borrow_mut().push(rc_featureprop.clone());
             }
 
             for row in &conn.query("SELECT feature_cvterm_id, feature_id, cvterm_id, pub_id, is_not FROM feature_cvterm", &[]).unwrap() {
@@ -221,9 +221,9 @@ mod pombase {
                     cvterm: cvterm_map.get(&cvterm_id).unwrap().clone(),
                     publication: publication_map.get(&pub_id).unwrap().clone(),
                     is_not: is_not,
-                    feature_cvtermprops: vec![],
+                    feature_cvtermprops: RefCell::new(vec![]),
                 };
-                let rc_feature_cvterm = Rc::new(RefCell::new(feature_cvterm));
+                let rc_feature_cvterm = Rc::new(feature_cvterm);
                 ret.feature_cvterms.push(rc_feature_cvterm.clone());
                 feature_cvterm_map.insert(feature_cvterm_id, rc_feature_cvterm);
             }
@@ -240,7 +240,7 @@ mod pombase {
                 };
                 let rc_feature_cvtermprop = Rc::new(feature_cvtermprop);
                 ret.feature_cvtermprops.push(rc_feature_cvtermprop.clone());
-                feature_cvterm.borrow_mut().feature_cvtermprops.push(rc_feature_cvtermprop);
+                feature_cvterm.feature_cvtermprops.borrow_mut().push(rc_feature_cvtermprop);
             }
 
             for row in &conn.query("SELECT object_id, subject_id, type_id FROM feature_relationship", &[]).unwrap() {
@@ -251,9 +251,9 @@ mod pombase {
                     subject: feature_map.get(&subject_id).unwrap().clone(),
                     object: feature_map.get(&object_id).unwrap().clone(),
                     rel_type: get_cvterm(&mut cvterm_map, type_id),
-                    feature_relationshipprops: vec![],
+                    feature_relationshipprops: RefCell::new(vec![]),
                 };
-                let rc_feature_relationship = Rc::new(RefCell::new(feature_relationship));
+                let rc_feature_relationship = Rc::new(feature_relationship);
                 ret.feature_relationships.push(rc_feature_relationship.clone());
             }
 
@@ -266,7 +266,7 @@ mod pombase {
                     object: cvterm_map.get(&object_id).unwrap().clone(),
                     rel_type: get_cvterm(&mut cvterm_map, type_id),
                 };
-                let rc_cvterm_relationship = Rc::new(RefCell::new(cvterm_relationship));
+                let rc_cvterm_relationship = Rc::new(cvterm_relationship);
                 ret.cvterm_relationships.push(rc_cvterm_relationship.clone());
             }
 
@@ -274,7 +274,7 @@ mod pombase {
                 let subject_id = row.get(0);
                 let object_id: i32 = row.get(1);
                 let type_id: Option<i32> = row.get(2);
-                let rel_type: Option<Rc<RefCell<Cvterm>>> = match type_id {
+                let rel_type: Option<Rc<Cvterm>> = match type_id {
                     Some(cvterm_id) => Some(get_cvterm(&mut cvterm_map, cvterm_id)),
                     None => None
                 };
@@ -323,7 +323,7 @@ mod pombase {
             pub cv: Rc<Cv>,
             pub dbxref: Rc<Dbxref>,
             pub is_obsolete: bool,
-            pub cvtermprops: Vec<Rc<Cvtermprop>>
+            pub cvtermprops: RefCell<Vec<Rc<Cvtermprop>>>,
         }
         impl Cvterm {
             pub fn termid(&self) -> String {
@@ -331,61 +331,61 @@ mod pombase {
             }
         }
         pub struct Cvtermprop {
-            pub cvterm: Rc<RefCell<Cvterm>>,
-            pub prop_type: Rc<RefCell<Cvterm>>,
+            pub cvterm: Rc<Cvterm>,
+            pub prop_type: Rc<Cvterm>,
             pub value: String,
         }
         pub struct Publication {
             pub uniquename: String,
-            pub pub_type: Rc<RefCell<Cvterm>>,
+            pub pub_type: Rc<Cvterm>,
             pub title: Option<String>,
             pub miniref: Option<String>,
-            pub publicationprops: Vec<Rc<Publicationprop>>,
+            pub publicationprops: RefCell<Vec<Rc<Publicationprop>>>,
         }
         pub struct Publicationprop {
-            pub publication: Rc<RefCell<Publication>>,
-            pub prop_type: Rc<RefCell<Cvterm>>,
+            pub publication: Rc<Publication>,
+            pub prop_type: Rc<Cvterm>,
             pub value: Option<String>,
         }
         pub struct CvtermRelationship {
-            pub subject: Rc<RefCell<Cvterm>>,
-            pub object: Rc<RefCell<Cvterm>>,
-            pub rel_type: Rc<RefCell<Cvterm>>,
+            pub subject: Rc<Cvterm>,
+            pub object: Rc<Cvterm>,
+            pub rel_type: Rc<Cvterm>,
         }
         pub struct Cvtermpath {
-            pub subject: Rc<RefCell<Cvterm>>,
-            pub object: Rc<RefCell<Cvterm>>,
-            pub rel_type: Option<Rc<RefCell<Cvterm>>>,
+            pub subject: Rc<Cvterm>,
+            pub object: Rc<Cvterm>,
+            pub rel_type: Option<Rc<Cvterm>>,
             pub pathdistance: Option<i32>,
         }
         pub struct Feature {
             pub uniquename: String,
             pub name: Option<String>,
-            pub feat_type: Rc<RefCell<Cvterm>>,
+            pub feat_type: Rc<Cvterm>,
             pub organism: Rc<Organism>,
-            pub featureprops: Vec<Rc<Featureprop>>,
+            pub featureprops: RefCell<Vec<Rc<Featureprop>>>,
         }
         pub struct Featureprop {
-            pub feature: Rc<RefCell<Feature>>,
-            pub prop_type: Rc<RefCell<Cvterm>>,
+            pub feature: Rc<Feature>,
+            pub prop_type: Rc<Cvterm>,
             pub value: Option<String>,
         }
         pub struct FeatureCvterm {
             pub feature_cvterm_id: i32,
-            pub feature: Rc<RefCell<Feature>>,
-            pub cvterm: Rc<RefCell<Cvterm>>,
-            pub publication: Rc<RefCell<Publication>>,
+            pub feature: Rc<Feature>,
+            pub cvterm: Rc<Cvterm>,
+            pub publication: Rc<Publication>,
             pub is_not: bool,
-            pub feature_cvtermprops: Vec<Rc<FeatureCvtermprop>>,
+            pub feature_cvtermprops: RefCell<Vec<Rc<FeatureCvtermprop>>>,
         }
         pub struct FeatureCvtermprop {
-            pub feature_cvterm: Rc<RefCell<FeatureCvterm>>,
-            pub prop_type: Rc<RefCell<Cvterm>>,
+            pub feature_cvterm: Rc<FeatureCvterm>,
+            pub prop_type: Rc<Cvterm>,
             pub value: Option<String>,
         }
         impl Prop for FeatureCvtermprop {
             fn type_name(&self) -> String {
-                self.prop_type.borrow().name.clone()
+                self.prop_type.name.clone()
             }
             fn value(&self) -> Option<String> {
                 self.value.clone()
@@ -393,14 +393,14 @@ mod pombase {
         }
 
         pub struct FeatureRelationship {
-            pub subject: Rc<RefCell<Feature>>,
-            pub object: Rc<RefCell<Feature>>,
-            pub rel_type: Rc<RefCell<Cvterm>>,
-            pub feature_relationshipprops: Vec<Rc<FeatureRelationshipprop>>,
+            pub subject: Rc<Feature>,
+            pub object: Rc<Feature>,
+            pub rel_type: Rc<Cvterm>,
+            pub feature_relationshipprops: RefCell<Vec<Rc<FeatureRelationshipprop>>>,
         }
         pub struct FeatureRelationshipprop {
-            pub feature_relationship: Rc<RefCell<FeatureRelationship>>,
-            pub prop_type: Rc<RefCell<Cvterm>>,
+            pub feature_relationship: Rc<FeatureRelationship>,
+            pub prop_type: Rc<Cvterm>,
             pub value: Option<String>,
         }
     }
@@ -504,25 +504,22 @@ use pombase::db::Prop;
 use std::cell::RefCell;
 use std::rc::Rc;
 
-fn make_term_short(rc_cvterm: Rc<RefCell<pombase::db::Cvterm>>) -> TermShort {
-    let cvterm = rc_cvterm.borrow();
+fn make_term_short(rc_cvterm: Rc<pombase::db::Cvterm>) -> TermShort {
     TermShort {
-        name: cvterm.name.clone(),
-        termid: cvterm.termid(),
-        is_obsolete: cvterm.is_obsolete
+        name: rc_cvterm.name.clone(),
+        termid: rc_cvterm.termid(),
+        is_obsolete: rc_cvterm.is_obsolete
     }
 }
 
-fn make_publication_short(rc_publication: Rc<RefCell<pombase::db::Publication>>) -> Option<PublicationShort> {
-    let borrowed_publication = rc_publication.borrow();
-
-    if borrowed_publication.uniquename == "null" {
+fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Option<PublicationShort> {
+    if rc_publication.uniquename == "null" {
         None
     } else {
         Some(PublicationShort {
-            uniquename: borrowed_publication.uniquename.clone(),
-            title: borrowed_publication.title.clone(),
-            citation: borrowed_publication.miniref.clone(),
+            uniquename: rc_publication.uniquename.clone(),
+            title: rc_publication.title.clone(),
+            citation: rc_publication.miniref.clone(),
         })
     }
 }
@@ -538,26 +535,25 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
 
     for feat in raw.features.iter().filter(|&f| {
         let feature_org_genus_species = String::new() +
-            &f.borrow().organism.genus + "_" + &f.borrow().organism.species;
+            &f.organism.genus + "_" + &f.organism.species;
         feature_org_genus_species == *organism_genus_species
     } ) {
 
-        let borrowed_feat = feat.borrow();
-        if borrowed_feat.feat_type.borrow().name == "gene" {
-            genes.insert(feat.borrow().uniquename.clone(),
+        if feat.feat_type.name == "gene" {
+            genes.insert(feat.uniquename.clone(),
                          GeneDetails {
-                             uniquename: feat.borrow().uniquename.clone(),
-                             name: feat.borrow().name.clone(),
+                             uniquename: feat.uniquename.clone(),
+                             name: feat.name.clone(),
                              annotations: HashMap::new(),
                              transcripts: vec![],
                          });
         } else {
             // TODO: mRNA isn't the only transcript type
-            if borrowed_feat.feat_type.borrow().name == "mRNA" {
-                transcripts.insert(feat.borrow().uniquename.clone(),
+            if feat.feat_type.name == "mRNA" {
+                transcripts.insert(feat.uniquename.clone(),
                              TranscriptDetails {
-                                 uniquename: feat.borrow().uniquename.clone(),
-                                 name: feat.borrow().name.clone(),
+                                 uniquename: feat.uniquename.clone(),
+                                 name: feat.name.clone(),
                                  annotations: HashMap::new(),
                              });
             }
@@ -565,11 +561,10 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
     }
 
     for feature_cvterm in raw.feature_cvterms.iter() {
-        let borrowed_feature_cvterm = feature_cvterm.borrow();
-        let feature = &borrowed_feature_cvterm.feature;
-        let cvterm = &borrowed_feature_cvterm.cvterm;
+        let feature = &feature_cvterm.feature;
+        let cvterm = &feature_cvterm.cvterm;
         let mut evidence: Option<String> = None;
-        for prop in &borrowed_feature_cvterm.feature_cvtermprops {
+        for prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
             if (*prop).type_name() == "evidence" {
                 evidence = prop.value.clone();
             }
@@ -578,11 +573,10 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
             FeatureAnnotation {
                 term: make_term_short(cvterm.clone()),
                 evidence: evidence,
-                publication: make_publication_short(borrowed_feature_cvterm.publication.clone()),
+                publication: make_publication_short(feature_cvterm.publication.clone()),
             };
-        let cv_name = cvterm.borrow().cv.name.clone();
-        let borrowed_feat = feature.borrow();
-        if let Some(gene) = genes.get_mut(&borrowed_feat.uniquename) {
+        let cv_name = cvterm.cv.name.clone();
+        if let Some(gene) = genes.get_mut(&feature.uniquename) {
             gene.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation)
         }
         // let term_annotation =
@@ -593,6 +587,8 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
 
     // read the feature_relationships to move the annotations from
     // the transcripts to the genes
+    for feature_rel in raw.feature_relationships.iter() {
+    }
 
     (genes, terms)
 }
