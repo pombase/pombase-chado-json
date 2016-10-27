@@ -128,17 +128,19 @@ mod pombase {
                 dbxref_map.insert(dbxref_id, rc_dbxref);
             }
 
-            for row in &conn.query("SELECT cvterm_id, cv_id, dbxref_id, name, is_obsolete FROM cvterm", &[]).unwrap() {
+            for row in &conn.query("SELECT cvterm_id, cv_id, dbxref_id, name, definition, is_obsolete FROM cvterm", &[]).unwrap() {
                 let cvterm_id: i32 = row.get(0);
                 let cv_id: i32 = row.get(1);
                 let dbxref_id: i32 = row.get(2);
                 let name: String = row.get(3);
-                let is_obsolete: i32 = row.get(4);
+                let definition: Option<String> = row.get(4);
+                let is_obsolete: i32 = row.get(5);
                 let cvterm = Cvterm {
                     cv: get_cv(&mut cv_map, cv_id),
                     dbxref: get_dbxref(&mut dbxref_map, dbxref_id),
                     name: name,
                     is_obsolete: is_obsolete == 1,
+                    definition: definition,
                     cvtermprops: RefCell::new(vec![]),
                 };
                 let rc_cvterm = Rc::new(cvterm);
@@ -322,6 +324,7 @@ mod pombase {
             pub name: String,
             pub cv: Rc<Cv>,
             pub dbxref: Rc<Dbxref>,
+            pub definition: Option<String>,
             pub is_obsolete: bool,
             pub cvtermprops: RefCell<Vec<Rc<Cvtermprop>>>,
         }
@@ -439,7 +442,7 @@ mod pombase {
                 pub is_obsolete: bool,
             }
 
-            #[derive(Serialize)]
+            #[derive(Serialize, Clone)]
             pub struct PublicationShort {
                 pub uniquename: String,
                 pub title: Option<String>,
@@ -482,17 +485,21 @@ mod pombase {
             #[derive(Serialize)]
             pub struct TermAnnotation {
                 pub gene: GeneShort,
-                pub evidence: Evidence,
+                pub evidence: Option<Evidence>,
+                pub publication: Option<PublicationShort>,
             }
 
             #[derive(Serialize)]
             pub struct TermDetails {
                 pub name: TermName,
                 pub termid: TermId,
-                pub definition: TermDef,
+                pub definition: Option<TermDef>,
                 pub is_obsolete: bool,
                 pub annotations: Vec<TermAnnotation>,
             }
+
+            pub type IdTermMap =
+                HashMap<TermId, TermDetails>;
         }
     }
 }
@@ -501,7 +508,6 @@ use pombase::Raw;
 use pombase::web::data::*;
 use pombase::db::Prop;
 
-use std::cell::RefCell;
 use std::rc::Rc;
 
 fn make_term_short(rc_cvterm: Rc<pombase::db::Cvterm>) -> TermShort {
@@ -509,6 +515,13 @@ fn make_term_short(rc_cvterm: Rc<pombase::db::Cvterm>) -> TermShort {
         name: rc_cvterm.name.clone(),
         termid: rc_cvterm.termid(),
         is_obsolete: rc_cvterm.is_obsolete
+    }
+}
+
+fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
+    GeneShort {
+        uniquename: gene_details.uniquename.clone(),
+        name: gene_details.name.clone(),
     }
 }
 
@@ -524,10 +537,10 @@ fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Optio
     }
 }
 
-fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniquename, GeneDetails>, Vec<TermDetails>) {
+fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniquename, GeneDetails>, HashMap<TermId, TermDetails>) {
     let mut genes: UniquenameGeneMap = HashMap::new();
     let mut transcripts: UniquenameTranscriptMap = HashMap::new();
-    let terms: Vec<TermDetails> = vec![];
+    let mut terms: IdTermMap = HashMap::new();
 
 //    type IdAnnotationMap = HashMap<i32, (FeatureAnnotation, TermAnnotation)>;
 
@@ -560,6 +573,17 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
         }
     }
 
+    for cvterm in &raw.cvterms {
+        terms.insert(cvterm.termid(),
+                     TermDetails {
+                         name: cvterm.name.clone(),
+                         termid: cvterm.termid(),
+                         definition: cvterm.definition.clone(),
+                         is_obsolete: cvterm.is_obsolete,
+                         annotations: vec![],
+                     });
+    }
+
     for feature_cvterm in raw.feature_cvterms.iter() {
         let feature = &feature_cvterm.feature;
         let cvterm = &feature_cvterm.cvterm;
@@ -569,26 +593,34 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
                 evidence = prop.value.clone();
             }
         }
+        let publication = make_publication_short(feature_cvterm.publication.clone());
         let feature_annotation =
             FeatureAnnotation {
                 term: make_term_short(cvterm.clone()),
-                evidence: evidence,
-                publication: make_publication_short(feature_cvterm.publication.clone()),
+                evidence: evidence.clone(),
+                publication: publication.clone(),
             };
         let cv_name = cvterm.cv.name.clone();
-        if let Some(gene) = genes.get_mut(&feature.uniquename) {
-            gene.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation)
+        if let Some(gene_details) = genes.get_mut(&feature.uniquename) {
+            gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation)
         }
-        // let term_annotation =
-        //     TermAnnotation {
-                
-        //     };
+        if let Some(gene_details) = genes.get(&feature.uniquename) {
+            let term_annotation =
+                TermAnnotation {
+                    gene: make_gene_short(&gene_details),
+                    evidence: evidence,
+                    publication: publication,
+                };
+            let termid = cvterm.termid();
+            let term_details = terms.get_mut(&termid).unwrap();
+            term_details.annotations.push(term_annotation);
+        }
     }
 
     // read the feature_relationships to move the annotations from
     // the transcripts to the genes
-    for feature_rel in raw.feature_relationships.iter() {
-    }
+//    for feature_rel in raw.feature_relationships.iter() {
+//    }
 
     (genes, terms)
 }
@@ -637,9 +669,9 @@ fn main() {
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
-    for term in &terms {
-        let s = serde_json::to_string(&term).unwrap();
-        let file_name = String::new() + &output_dir + "/term/" + &term.termid + ".json";
+    for (termid, term_details) in &terms {
+        let s = serde_json::to_string(&term_details).unwrap();
+        let file_name = String::new() + &output_dir + "/term/" + &termid + ".json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
