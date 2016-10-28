@@ -584,6 +584,17 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
                      });
     }
 
+    let mut feature_parents: HashMap<String, String> = HashMap::new();
+
+    for feature_rel in raw.feature_relationships.iter() {
+        if feature_rel.subject.feat_type.name == "mRNA" &&
+            feature_rel.rel_type.name == "part_of" &&
+            feature_rel.object.feat_type.name == "gene" {
+                feature_parents.insert(feature_rel.subject.uniquename.clone(),
+                                       feature_rel.object.uniquename.clone());
+        }
+    }
+
     for feature_cvterm in raw.feature_cvterms.iter() {
         let feature = &feature_cvterm.feature;
         let cvterm = &feature_cvterm.cvterm;
@@ -601,7 +612,18 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
                 publication: publication.clone(),
             };
         let cv_name = cvterm.cv.name.clone();
-        if let Some(gene_details) = genes.get_mut(&feature.uniquename) {
+        let gene_details_opt =
+            if feature.feat_type.name == "mRNA" {
+                if let Some(gene_uniquename) = feature_parents.get(&feature.uniquename) {
+                    genes.get_mut(gene_uniquename)
+                } else {
+                    None
+                }
+            } else {
+                genes.get_mut(&feature.uniquename)
+            };
+
+        if let Some(gene_details) = gene_details_opt {
             gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation);
             let term_annotation =
                 TermAnnotation {
@@ -614,11 +636,6 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
             term_details.annotations.push(term_annotation);
         }
     }
-
-    // read the feature_relationships to move the annotations from
-    // the transcripts to the genes
-//    for feature_rel in raw.feature_relationships.iter() {
-//    }
 
     (genes, terms)
 }
