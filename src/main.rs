@@ -676,6 +676,12 @@ fn main() {
 
     let (genes, terms) = get_web_data(&raw, &organism_genus_species);
 
+    let s = serde_json::to_string(&genes).unwrap();
+    let file_name = String::new() + &output_dir + "/genes.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
+
     for (gene_uniquename, gene_details) in &genes {
         let s = serde_json::to_string(&gene_details).unwrap();
         let file_name = String::new() + &output_dir + "/gene/" + &gene_uniquename + ".json";
@@ -683,6 +689,12 @@ fn main() {
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
+
+    let s = serde_json::to_string(&terms).unwrap();
+    let file_name = String::new() + &output_dir + "/terms.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
 
     for (termid, term_details) in &terms {
         let s = serde_json::to_string(&term_details).unwrap();
