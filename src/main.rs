@@ -416,7 +416,7 @@ mod pombase {
             pub type GeneName = String;
             pub type TypeName = String;
 
-            #[derive(Serialize)]
+            #[derive(Serialize, Clone)]
             pub struct GeneShort {
                 pub uniquename: GeneUniquename,
                 pub name: Option<GeneName>,
@@ -482,7 +482,7 @@ mod pombase {
             pub type UniquenameTranscriptMap =
                 HashMap<TranscriptUniquename, TranscriptDetails>;
 
-            #[derive(Serialize)]
+            #[derive(Serialize, Clone)]
             pub struct TermAnnotation {
                 pub gene: GeneShort,
                 pub evidence: Option<Evidence>,
@@ -496,6 +496,18 @@ mod pombase {
                 pub definition: Option<TermDef>,
                 pub is_obsolete: bool,
                 pub annotations: Vec<TermAnnotation>,
+            }
+
+            impl Clone for TermDetails {
+                fn clone(&self) -> TermDetails {
+                    TermDetails {
+                        name: self.name.clone(),
+                        termid: self.termid.clone(),
+                        definition: self.definition.clone(),
+                        is_obsolete: self.is_obsolete,
+                        annotations: self.annotations.clone(),
+                    }
+                }
             }
 
             pub type IdTermMap =
@@ -537,7 +549,8 @@ fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Optio
     }
 }
 
-fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniquename, GeneDetails>, HashMap<TermId, TermDetails>) {
+fn get_web_data(raw: &Raw, organism_genus_species: &String) ->
+    (HashMap<GeneUniquename, GeneDetails>, HashMap<TermId, TermDetails>, HashMap<TermId, TermDetails>) {
     let mut genes: UniquenameGeneMap = HashMap::new();
     let mut transcripts: UniquenameTranscriptMap = HashMap::new();
     let mut terms: IdTermMap = HashMap::new();
@@ -637,7 +650,12 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> (HashMap<GeneUniq
         }
     }
 
-    (genes, terms)
+    // remove terms with no annotation
+    let used_terms = terms.clone().into_iter()
+        .filter(|&(_, ref t)| t.annotations.len() > 0)
+        .collect();
+
+    (genes, terms, used_terms)
 }
 
 fn main() {
@@ -674,7 +692,7 @@ fn main() {
 
     let raw = Raw::new(&conn);
 
-    let (genes, terms) = get_web_data(&raw, &organism_genus_species);
+    let (genes, terms, used_terms) = get_web_data(&raw, &organism_genus_species);
 
     let s = serde_json::to_string(&genes).unwrap();
     let file_name = String::new() + &output_dir + "/genes.json";
