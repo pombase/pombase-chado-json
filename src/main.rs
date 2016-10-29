@@ -744,6 +744,12 @@ fn main() {
 
     let web_data = get_web_data(&raw, &organism_genus_species);
 
+    let s = serde_json::to_string(&web_data).unwrap();
+    let file_name = String::new() + &output_dir + "/all.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
+
     let WebData {
         genes,
         terms,
