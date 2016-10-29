@@ -41,10 +41,11 @@ mod pombase {
         pub feature_cvterms: Vec<Rc<FeatureCvterm>>,
         pub feature_cvtermprops: Vec<Rc<FeatureCvtermprop>>,
         pub feature_relationships: Vec<Rc<FeatureRelationship>>,
+        pub chadoprops: Vec<Rc<Chadoprop>>,
     }
 
     impl Raw {
-  
+
         pub fn new(conn: &Connection) -> Raw {
             let mut ret = Raw {
                 organisms: vec![],
@@ -53,7 +54,7 @@ mod pombase {
                 cvtermpaths: vec![], cvterm_relationships: vec![],
                 publications: vec![], features: vec![], featureprops: vec![],
                 feature_cvterms: vec![], feature_cvtermprops: vec![],
-                feature_relationships: vec![],
+                feature_relationships: vec![], chadoprops: vec![],
             };
 
             let mut organism_map: HashMap<i32, Rc<Organism>> = HashMap::new();
@@ -291,6 +292,17 @@ mod pombase {
                 ret.cvtermpaths.push(rc_cvtermpath.clone());
             }
 
+            for row in &conn.query("SELECT type_id, value FROM chadoprop", &[]).unwrap() {
+                let type_id: i32 = row.get(0);
+                let value = row.get(1);
+                let chadoprop = Chadoprop {
+                    prop_type: cvterm_map.get(&type_id).unwrap().clone(),
+                    value: value,
+                };
+                let rc_chadoprop = Rc::new(chadoprop);
+                ret.chadoprops.push(rc_chadoprop.clone());
+            }
+
             ret
         }
     }
@@ -302,6 +314,11 @@ mod pombase {
         pub trait Prop {
             fn type_name(&self) -> String;
             fn value(&self) -> Option<String>;
+        }
+
+        pub struct Chadoprop {
+            pub prop_type: Rc<Cvterm>,
+            pub value: Option<String>,
         }
 
         pub struct Organism {
@@ -512,6 +529,13 @@ mod pombase {
 
             pub type IdTermMap =
                 HashMap<TermId, TermDetails>;
+
+            #[derive(Serialize)]
+            pub struct Metadata {
+                pub db_creation_datetime: String,
+                pub gene_count: usize,
+                pub term_count: usize,
+            }
         }
     }
 }
@@ -549,8 +573,15 @@ fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Optio
     }
 }
 
-fn get_web_data(raw: &Raw, organism_genus_species: &String) ->
-    (HashMap<GeneUniquename, GeneDetails>, HashMap<TermId, TermDetails>, HashMap<TermId, TermDetails>) {
+#[derive(Serialize)]
+struct WebData {
+    genes: HashMap<GeneUniquename, GeneDetails>,
+    terms: HashMap<TermId, TermDetails>,
+    used_terms: HashMap<TermId, TermDetails>,
+    metadata: Metadata,
+}
+
+fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
     let mut genes: UniquenameGeneMap = HashMap::new();
     let mut transcripts: UniquenameTranscriptMap = HashMap::new();
     let mut terms: IdTermMap = HashMap::new();
@@ -655,7 +686,26 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) ->
         .filter(|&(_, ref t)| t.annotations.len() > 0)
         .collect();
 
-    (genes, terms, used_terms)
+    let mut db_creation_datetime = None;
+
+    for chadoprop in &raw.chadoprops {
+        if chadoprop.prop_type.name == "db_creation_datetime" {
+            db_creation_datetime = chadoprop.value.clone();
+        }
+    }
+
+    let metadata = Metadata {
+        db_creation_datetime: db_creation_datetime.unwrap(),
+        gene_count: genes.len(),
+        term_count: terms.len(),
+    };
+
+    WebData {
+        genes: genes,
+        terms: terms,
+        used_terms: used_terms,
+        metadata: metadata,
+    }
 }
 
 fn main() {
@@ -692,7 +742,14 @@ fn main() {
 
     let raw = Raw::new(&conn);
 
-    let (genes, terms, used_terms) = get_web_data(&raw, &organism_genus_species);
+    let web_data = get_web_data(&raw, &organism_genus_species);
+
+    let WebData {
+        genes,
+        terms,
+        used_terms: _used_terms,
+        metadata
+    } = web_data;
 
     let s = serde_json::to_string(&genes).unwrap();
     let file_name = String::new() + &output_dir + "/genes.json";
@@ -721,6 +778,12 @@ fn main() {
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
+
+    let s = serde_json::to_string(&metadata).unwrap();
+    let file_name = String::new() + &output_dir + "/metadata.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
 
     println!("wrote {} genes", genes.len());
     println!("wrote {} terms", terms.len());
