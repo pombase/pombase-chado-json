@@ -527,8 +527,8 @@ mod pombase {
                 }
             }
 
-            pub type IdTermMap =
-                HashMap<TermId, TermDetails>;
+            pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
+            pub type IdTermMap = HashMap<TermId, TermDetails>;
 
             #[derive(Serialize)]
             pub struct Metadata {
@@ -575,9 +575,9 @@ fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Optio
 
 #[derive(Serialize)]
 struct WebData {
-    genes: HashMap<GeneUniquename, GeneDetails>,
-    terms: HashMap<TermId, TermDetails>,
-    used_terms: HashMap<TermId, TermDetails>,
+    genes: IdGeneMap,
+    terms: IdTermMap,
+    used_terms: IdTermMap,
     metadata: Metadata,
 }
 
@@ -708,6 +708,61 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
     }
 }
 
+fn write_genes(output_dir: &str, genes: &IdGeneMap) {
+    let s = serde_json::to_string(&genes).unwrap();
+    let file_name = String::new() + &output_dir + "/genes.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
+
+    for (gene_uniquename, gene_details) in genes {
+        let s = serde_json::to_string(&gene_details).unwrap();
+        let file_name = String::new() + &output_dir + "/gene/" + &gene_uniquename + ".json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+    }
+}
+
+fn write_terms(output_dir: &str, terms: &IdTermMap) {
+    let s = serde_json::to_string(&terms).unwrap();
+    let file_name = String::new() + &output_dir + "/terms.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
+
+    for (termid, term_details) in terms {
+        let s = serde_json::to_string(&term_details).unwrap();
+        let file_name = String::new() + &output_dir + "/term/" + &termid + ".json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+    }
+}
+
+fn write_metadata(output_dir: &str, metadata: &Metadata) {
+    let s = serde_json::to_string(&metadata).unwrap();
+    let file_name = String::new() + &output_dir + "/metadata.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
+}
+
+fn write_web_data(output_dir: &str, web_data: &WebData) {
+    let s = serde_json::to_string(&web_data).unwrap();
+    let file_name = String::new() + output_dir + "/all.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
+
+    write_genes(output_dir, &web_data.genes);
+    write_terms(output_dir, &web_data.terms);
+    write_metadata(output_dir, &web_data.metadata);
+
+    println!("wrote {} genes", web_data.genes.len());
+    println!("wrote {} terms", web_data.terms.len());
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
@@ -739,58 +794,8 @@ fn main() {
     }
 
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
-
     let raw = Raw::new(&conn);
-
     let web_data = get_web_data(&raw, &organism_genus_species);
 
-    let s = serde_json::to_string(&web_data).unwrap();
-    let file_name = String::new() + &output_dir + "/all.json";
-    let f = File::create(file_name).expect("Unable to open file");
-    let mut writer = BufWriter::new(&f);
-    writer.write_all(s.as_bytes()).expect("Unable to write!");
-
-    let WebData {
-        genes,
-        terms,
-        used_terms: _used_terms,
-        metadata
-    } = web_data;
-
-    let s = serde_json::to_string(&genes).unwrap();
-    let file_name = String::new() + &output_dir + "/genes.json";
-    let f = File::create(file_name).expect("Unable to open file");
-    let mut writer = BufWriter::new(&f);
-    writer.write_all(s.as_bytes()).expect("Unable to write!");
-
-    for (gene_uniquename, gene_details) in &genes {
-        let s = serde_json::to_string(&gene_details).unwrap();
-        let file_name = String::new() + &output_dir + "/gene/" + &gene_uniquename + ".json";
-        let f = File::create(file_name).expect("Unable to open file");
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
-    }
-
-    let s = serde_json::to_string(&terms).unwrap();
-    let file_name = String::new() + &output_dir + "/terms.json";
-    let f = File::create(file_name).expect("Unable to open file");
-    let mut writer = BufWriter::new(&f);
-    writer.write_all(s.as_bytes()).expect("Unable to write!");
-
-    for (termid, term_details) in &terms {
-        let s = serde_json::to_string(&term_details).unwrap();
-        let file_name = String::new() + &output_dir + "/term/" + &termid + ".json";
-        let f = File::create(file_name).expect("Unable to open file");
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
-    }
-
-    let s = serde_json::to_string(&metadata).unwrap();
-    let file_name = String::new() + &output_dir + "/metadata.json";
-    let f = File::create(file_name).expect("Unable to open file");
-    let mut writer = BufWriter::new(&f);
-    writer.write_all(s.as_bytes()).expect("Unable to write!");
-
-    println!("wrote {} genes", genes.len());
-    println!("wrote {} terms", terms.len());
+    write_web_data(&output_dir, &web_data);
 }
