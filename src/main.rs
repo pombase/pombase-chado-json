@@ -62,7 +62,39 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
     let mut genes: UniquenameGeneMap = HashMap::new();
     let mut transcripts: UniquenameTranscriptMap = HashMap::new();
     let mut genotypes: UniquenameGenotypeMap = HashMap::new();
+    let mut alleles: UniquenameAlleleShortMap = HashMap::new();
     let mut terms: IdTermMap = HashMap::new();
+
+
+    let mut genes_of_transcripts: HashMap<String, String> = HashMap::new();
+    let mut genes_of_alleles: HashMap<String, String> = HashMap::new();
+    let mut alleles_of_genotypes: HashMap<String, Vec<String>> = HashMap::new();
+
+    for feature_rel in raw.feature_relationships.iter() {
+        let subject_type_name = &feature_rel.subject.feat_type.name;
+        let rel_name = &feature_rel.rel_type.name;
+        let object_type_name = &feature_rel.object.feat_type.name;
+        let subject_uniquename = &feature_rel.subject.uniquename;
+        let object_uniquename = &feature_rel.object.uniquename;
+
+        if subject_type_name == "mRNA" &&
+            rel_name == "part_of" &&
+            object_type_name == "gene" {
+                genes_of_transcripts.insert(subject_uniquename.clone(),
+                                            object_uniquename.clone());
+        }
+        if subject_type_name == "allele" {
+            if feature_rel.rel_type.name == "instance_of" &&
+                object_type_name == "gene" {
+                    genes_of_alleles.insert(subject_uniquename.clone(), object_uniquename.clone());
+                }
+            if feature_rel.rel_type.name == "part_of" &&
+                object_type_name == "genotype" {
+                    let entry = alleles_of_genotypes.entry(object_uniquename.clone());
+                    entry.or_insert(Vec::new()).push(subject_uniquename.clone());
+                }
+        }
+    }
 
 //    type IdAnnotationMap = HashMap<i32, (FeatureAnnotation, TermAnnotation)>;
 
@@ -101,6 +133,16 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                      annotations: HashMap::new(),
                                  });
                 ()},
+            "allele" => {
+                let gene_uniquename =
+                    genes_of_alleles.get(&feat.uniquename).unwrap();
+                alleles.insert(feat.uniquename.clone(),
+                               AlleleShort {
+                                   uniquename: feat.uniquename.clone(),
+                                   name: feat.name.clone(),
+                                   gene_uniquename: gene_uniquename.clone(),
+                               });
+                ()},
             _ => (),
         }
     }
@@ -116,17 +158,6 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                      });
     }
 
-    let mut feature_parents: HashMap<String, String> = HashMap::new();
-
-    for feature_rel in raw.feature_relationships.iter() {
-        if feature_rel.subject.feat_type.name == "mRNA" &&
-            feature_rel.rel_type.name == "part_of" &&
-            feature_rel.object.feat_type.name == "gene" {
-                feature_parents.insert(feature_rel.subject.uniquename.clone(),
-                                       feature_rel.object.uniquename.clone());
-        }
-    }
-
     for feature_cvterm in raw.feature_cvterms.iter() {
         let feature = &feature_cvterm.feature;
         let cvterm = &feature_cvterm.cvterm;
@@ -137,31 +168,59 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
             }
         }
         let publication = make_publication_short(feature_cvterm.publication.clone());
-        let feature_annotation =
-            FeatureAnnotation {
-                term: make_term_short(cvterm.clone()),
-                evidence: evidence.clone(),
-                publication: publication.clone(),
-            };
-        let cv_name = cvterm.cv.name.clone();
-        let gene_details_opt =
+        let mut genotype_alleles = None;
+        let gene_uniquenames_vec: Vec<GeneUniquename> =
             if feature.feat_type.name == "mRNA" {
-                if let Some(gene_uniquename) = feature_parents.get(&feature.uniquename) {
-                    genes.get_mut(gene_uniquename)
+                if let Some(gene_uniquename) = genes_of_transcripts.get(&feature.uniquename) {
+                    vec![gene_uniquename.clone()]
                 } else {
-                    None
+                    vec![]
                 }
             } else {
-                genes.get_mut(&feature.uniquename)
+                if feature.feat_type.name == "genotype" {
+                    if let Some(allele_uniquenames_vec) =
+                        alleles_of_genotypes.get(&feature.uniquename) {
+                            let genotype_alleles_ret = GenotypeAndAlleles {
+                                alleles: allele_uniquenames_vec.iter()
+                                    .map(|allele_uniquename| alleles.get(allele_uniquename).unwrap().clone())
+                                    .collect::<Vec<_>>()
+                            };
+                            genotype_alleles = Some(genotype_alleles_ret);
+                            allele_uniquenames_vec.iter()
+                                .map(|allele_uniquename|
+                                     {
+                                         let gene_uniquename = genes_of_alleles.get(allele_uniquename).unwrap();
+                                         gene_uniquename.clone()
+                                     })
+                                .collect()
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    if feature.feat_type.name == "gene" {
+                        vec![feature.uniquename.clone()]
+                    } else {
+                        vec![]
+                    }
+                }
             };
 
-        if let Some(gene_details) = gene_details_opt {
+        for gene_uniquename in &gene_uniquenames_vec {
+            let feature_annotation =
+                FeatureAnnotation {
+                    term: make_term_short(cvterm.clone()),
+                    evidence: evidence.clone(),
+                    publication: publication.clone(),
+                    genotype: genotype_alleles.clone(),
+                };
+            let cv_name = cvterm.cv.name.clone();
+            let mut gene_details = genes.get_mut(gene_uniquename).unwrap();
             gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation);
             let term_annotation =
                 TermAnnotation {
                     gene: make_gene_short(&gene_details),
-                    evidence: evidence,
-                    publication: publication,
+                    evidence: evidence.clone(),
+                    publication: publication.clone(),
                 };
             let termid = cvterm.termid();
             let term_details = terms.get_mut(&termid).unwrap();

@@ -10,7 +10,7 @@ pub struct GeneShort {
     pub name: Option<GeneName>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct TranscriptShort {
     pub uniquename: TranscriptUniquename,
     //                pub exons: Vec<ExonShort>,
@@ -21,7 +21,7 @@ pub type TermName = String;
 pub type TermId = String;
 pub type TermDef = String;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct TermShort {
     pub name: TermName,
     pub termid: TermId,
@@ -37,17 +37,19 @@ pub struct PublicationShort {
 
 type Evidence = String;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct FeatureAnnotation {
     pub term: TermShort,
     pub evidence: Option<Evidence>,
     pub publication: Option<PublicationShort>,
+    // only for genotype/phenotype annotation:
+    pub genotype: Option<GenotypeAndAlleles>,
 }
 
 pub type TypeFeatureAnnotationMap =
     HashMap<TypeName, Vec<FeatureAnnotation>>;
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     pub name: Option<String>,
@@ -81,6 +83,23 @@ pub struct GenotypeDetails {
 
 pub type UniquenameGenotypeMap =
     HashMap<GenotypeUniquename, GenotypeDetails>;
+
+#[derive(Serialize, Clone)]
+pub struct GenotypeAndAlleles {
+    pub alleles: Vec<AlleleShort>,
+}
+
+pub type AlleleUniquename = String;
+
+#[derive(Serialize, Clone)]
+pub struct AlleleShort {
+    pub uniquename: String,
+    pub name: Option<String>,
+    pub gene_uniquename: String,
+}
+
+pub type UniquenameAlleleShortMap =
+    HashMap<AlleleUniquename, AlleleShort>;
 
 #[derive(Serialize, Clone)]
 pub struct TermAnnotation {
