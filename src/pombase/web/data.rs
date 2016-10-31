@@ -10,8 +10,6 @@ pub struct GeneShort {
     pub name: Option<GeneName>,
 }
 
-pub type TranscriptUniquename = String;
-
 #[derive(Serialize)]
 pub struct TranscriptShort {
     pub uniquename: TranscriptUniquename,
@@ -60,15 +58,29 @@ pub struct GeneDetails {
 pub type UniquenameGeneMap =
     HashMap<GeneUniquename, GeneDetails>;
 
+pub type TranscriptUniquename = String;
+
 #[derive(Serialize)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
     pub name: Option<String>,
-    pub annotations: TypeFeatureAnnotationMap,
+//    pub annotations: TypeFeatureAnnotationMap,
 }
 
 pub type UniquenameTranscriptMap =
     HashMap<TranscriptUniquename, TranscriptDetails>;
+
+pub type GenotypeUniquename = String;
+
+#[derive(Serialize)]
+pub struct GenotypeDetails {
+    pub uniquename: GenotypeUniquename,
+    pub name: Option<String>,
+    pub annotations: TypeFeatureAnnotationMap,
+}
+
+pub type UniquenameGenotypeMap =
+    HashMap<GenotypeUniquename, GenotypeDetails>;
 
 #[derive(Serialize, Clone)]
 pub struct TermAnnotation {

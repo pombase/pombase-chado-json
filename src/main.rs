@@ -61,6 +61,7 @@ struct WebData {
 fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
     let mut genes: UniquenameGeneMap = HashMap::new();
     let mut transcripts: UniquenameTranscriptMap = HashMap::new();
+    let mut genotypes: UniquenameGenotypeMap = HashMap::new();
     let mut terms: IdTermMap = HashMap::new();
 
 //    type IdAnnotationMap = HashMap<i32, (FeatureAnnotation, TermAnnotation)>;
@@ -73,24 +74,34 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
         feature_org_genus_species == *organism_genus_species
     } ) {
 
-        if feat.feat_type.name == "gene" {
-            genes.insert(feat.uniquename.clone(),
-                         GeneDetails {
-                             uniquename: feat.uniquename.clone(),
-                             name: feat.name.clone(),
-                             annotations: HashMap::new(),
-                             transcripts: vec![],
-                         });
-        } else {
-            // TODO: mRNA isn't the only transcript type
-            if feat.feat_type.name == "mRNA" {
-                transcripts.insert(feat.uniquename.clone(),
-                             TranscriptDetails {
+        match &feat.feat_type.name as &str {
+            "gene" => {
+                genes.insert(feat.uniquename.clone(),
+                             GeneDetails {
                                  uniquename: feat.uniquename.clone(),
                                  name: feat.name.clone(),
                                  annotations: HashMap::new(),
+                                 transcripts: vec![],
                              });
-            }
+                ()},
+            // TODO: mRNA isn't the only transcript type
+            "mRNA" => {
+                transcripts.insert(feat.uniquename.clone(),
+                                   TranscriptDetails {
+                                       uniquename: feat.uniquename.clone(),
+                                       name: feat.name.clone(),
+//                                       annotations: HashMap::new(),
+                                   });
+                ()},
+            "genotype" => {
+                genotypes.insert(feat.uniquename.clone(),
+                                 GenotypeDetails {
+                                     uniquename: feat.uniquename.clone(),
+                                     name: feat.name.clone(),
+                                     annotations: HashMap::new(),
+                                 });
+                ()},
+            _ => (),
         }
     }
 
