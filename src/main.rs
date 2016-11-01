@@ -115,7 +115,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                  annotations: HashMap::new(),
                                  transcripts: vec![],
                              });
-                ()},
+            },
             // TODO: mRNA isn't the only transcript type
             "mRNA" => {
                 transcripts.insert(feat.uniquename.clone(),
@@ -124,7 +124,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                        name: feat.name.clone(),
 //                                       annotations: HashMap::new(),
                                    });
-                ()},
+            },
             "genotype" => {
                 genotypes.insert(feat.uniquename.clone(),
                                  GenotypeDetails {
@@ -132,7 +132,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                      name: feat.name.clone(),
                                      annotations: HashMap::new(),
                                  });
-                ()},
+            },
             "allele" => {
                 let gene_uniquename =
                     genes_of_alleles.get(&feat.uniquename).unwrap();
@@ -142,7 +142,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                    name: feat.name.clone(),
                                    gene_uniquename: gene_uniquename.clone(),
                                });
-                ()},
+            },
             _ => (),
         }
     }
