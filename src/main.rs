@@ -67,13 +67,6 @@ fn make_term_short(id_cvterm_map: &IdTermMap,
     )
 }
 
-fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
-    GeneShort {
-        uniquename: gene_details.uniquename.clone(),
-        name: gene_details.name.clone(),
-    }
-}
-
 fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Option<PublicationShort> {
     if rc_publication.uniquename == "null" {
         None
@@ -333,7 +326,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
     }
 }
 
-fn write_genes(output_dir: &str, genes: &IdGeneMap) {
+fn write_gene_details(output_dir: &str, genes: &IdGeneMap) {
     let s = serde_json::to_string(&genes).unwrap();
     let file_name = String::new() + &output_dir + "/genes.json";
     let f = File::create(file_name).expect("Unable to open file");
@@ -347,6 +340,25 @@ fn write_genes(output_dir: &str, genes: &IdGeneMap) {
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
+}
+
+fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
+    GeneShort {
+        uniquename: gene_details.uniquename.clone(),
+        name: gene_details.name.clone(),
+    }
+}
+
+fn write_gene_summary(output_dir: &str, genes: &IdGeneMap) {
+    let gene_summaries =
+        genes.values()
+        .map(|gene_details| make_gene_short(&gene_details))
+        .collect::<Vec<GeneShort>>();
+    let s = serde_json::to_string(&gene_summaries).unwrap();
+    let file_name = String::new() + &output_dir + "/gene_summaries.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
 }
 
 fn write_terms(output_dir: &str, terms: &IdTermMap) {
@@ -380,7 +392,8 @@ fn write_web_data(output_dir: &str, web_data: &WebData) {
     let mut writer = BufWriter::new(&f);
     writer.write_all(s.as_bytes()).expect("Unable to write!");
 
-    write_genes(output_dir, &web_data.genes);
+    write_gene_details(output_dir, &web_data.genes);
+    write_gene_summary(output_dir, &web_data.genes);
     write_terms(output_dir, &web_data.terms);
     write_metadata(output_dir, &web_data.metadata);
 
