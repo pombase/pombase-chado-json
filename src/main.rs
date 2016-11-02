@@ -388,7 +388,12 @@ fn write_web_data(output_dir: &str, web_data: &WebData) {
     println!("wrote {} terms", web_data.terms.len());
 }
 
+const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
+const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
 fn main() {
+    print!("{} v{}\n", PKG_NAME, VERSION);
+
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
 
