@@ -1,5 +1,26 @@
 use std::collections::HashMap;
 
+use pombase::db::CvName;
+
+type ExtRange = String;
+
+#[derive(Serialize, Clone, Debug)]
+pub enum ExtRangeType {
+#[serde(rename = "gene")]
+    Gene,
+#[serde(rename = "term")]
+    Term,
+#[serde(rename = "misc")]
+    Misc,
+}
+
+#[derive(Serialize, Clone)]
+pub struct ExtPart {
+    pub rel_type_name: String,
+    pub range_type: ExtRangeType,
+    pub ext_range: ExtRange,
+}
+
 pub type GeneUniquename = String;
 pub type GeneName = String;
 pub type TypeName = String;
@@ -40,6 +61,7 @@ type Evidence = String;
 #[derive(Serialize, Clone)]
 pub struct FeatureAnnotation {
     pub term: TermShort,
+    pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
     pub publication: Option<PublicationShort>,
     // only for genotype/phenotype annotation:
@@ -104,6 +126,7 @@ pub type UniquenameAlleleShortMap =
 #[derive(Serialize, Clone)]
 pub struct TermAnnotation {
     pub gene: GeneShort,
+    pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
     pub publication: Option<PublicationShort>,
 }
@@ -111,6 +134,7 @@ pub struct TermAnnotation {
 #[derive(Serialize)]
 pub struct TermDetails {
     pub name: TermName,
+    pub cv_name: CvName,
     pub termid: TermId,
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
@@ -121,6 +145,7 @@ impl Clone for TermDetails {
     fn clone(&self) -> TermDetails {
         TermDetails {
             name: self.name.clone(),
+            cv_name: self.cv_name.clone(),
             termid: self.termid.clone(),
             definition: self.definition.clone(),
             is_obsolete: self.is_obsolete,

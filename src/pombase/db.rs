@@ -39,8 +39,9 @@ pub struct Organism {
     pub abbreviation: String,
     pub common_name: String,
 }
+pub type CvName = String;
 pub struct Cv {
-    pub name: String,
+    pub name: CvName,
 }
 pub struct Db {
     pub name: String,

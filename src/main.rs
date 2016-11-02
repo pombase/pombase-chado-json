@@ -23,12 +23,42 @@ mod pombase;
 use pombase::web::data::*;
 use pombase::db::*;
 
-fn make_term_short(rc_cvterm: Rc<pombase::db::Cvterm>) -> TermShort {
-    TermShort {
-        name: rc_cvterm.name.clone(),
-        termid: rc_cvterm.termid(),
-        is_obsolete: rc_cvterm.is_obsolete
-    }
+const POMBASE_ANN_EXT_TERM_CV_NAME: &'static str = "PomBase annotation extension terms";
+const ANNOTATION_EXT_REL_PREFIX: &'static str = "annotation_extension_relation-";
+
+fn make_term_short(id_cvterm_map: &IdTermMap,
+                   children_of_ext_terms: &HashMap<String, Vec<ExtPart>>,
+                   rc_cvterm: Rc<pombase::db::Cvterm>) -> (TermShort, CvName, Vec<ExtPart>) {
+    let mut extension: Vec<ExtPart> = vec![];
+
+    let term =
+        if rc_cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
+            let ext_parts = children_of_ext_terms.get(&rc_cvterm.termid()).unwrap();
+
+            let mut base_term_details_opt = None;
+
+            for ext_part in ext_parts {
+                if ext_part.rel_type_name == "is_a" {
+                    base_term_details_opt = id_cvterm_map.get(&ext_part.ext_range);
+                } else {
+                    extension.push(ext_part.clone());
+                }
+            }
+
+            base_term_details_opt.unwrap()
+        } else {
+            id_cvterm_map.get(&rc_cvterm.termid()).unwrap()
+        };
+
+    (
+        TermShort {
+            name: term.name.clone(),
+            termid: term.termid.clone(),
+            is_obsolete: term.is_obsolete
+        },
+        term.cv_name.clone(),
+        extension
+    )
 }
 
 fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
@@ -64,7 +94,6 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
     let mut genotypes: UniquenameGenotypeMap = HashMap::new();
     let mut alleles: UniquenameAlleleShortMap = HashMap::new();
     let mut terms: IdTermMap = HashMap::new();
-
 
     let mut genes_of_transcripts: HashMap<String, String> = HashMap::new();
     let mut genes_of_alleles: HashMap<String, String> = HashMap::new();
@@ -147,15 +176,56 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
         }
     }
 
+    // a map from IDs of terms from the "PomBase annotation extension terms" cv
+    // to a Vec of the details of each of the extension
+    let mut children_of_ext_terms: HashMap<String, Vec<ExtPart>> = HashMap::new();
+
     for cvterm in &raw.cvterms {
+        if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
+            for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
+                    let ext_rel_name: &str = &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
+                    let ext_range = (*cvtermprop).value.clone();
+                    let range_type = if ext_range.starts_with("SP") {
+                        ExtRangeType::Gene
+                    } else {
+                        ExtRangeType::Misc
+                    };
+
+                    children_of_ext_terms.entry(cvterm.termid())
+                        .or_insert(Vec::new()).push(ExtPart {
+                            rel_type_name: String::from(ext_rel_name),
+                            range_type: range_type,
+                            ext_range: ext_range,
+                        });
+                }
+            }
+        }
+
         terms.insert(cvterm.termid(),
                      TermDetails {
                          name: cvterm.name.clone(),
+                         cv_name: cvterm.cv.name.clone(),
                          termid: cvterm.termid(),
                          definition: cvterm.definition.clone(),
                          is_obsolete: cvterm.is_obsolete,
                          annotations: vec![],
                      });
+    }
+
+    for cvterm_rel in &raw.cvterm_relationships {
+        let subject_term = &cvterm_rel.subject;
+        let object_term = &cvterm_rel.object;
+        let rel_type = &cvterm_rel.rel_type;
+
+        if object_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
+            children_of_ext_terms.entry(object_term.termid())
+                .or_insert(Vec::new()).push(ExtPart {
+                    rel_type_name: rel_type.name.clone(),
+                    range_type: ExtRangeType::Term,
+                    ext_range: subject_term.termid(),
+                });
+        }
     }
 
     for feature_cvterm in raw.feature_cvterms.iter() {
@@ -206,14 +276,15 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
             };
 
         for gene_uniquename in &gene_uniquenames_vec {
+            let (term, cv_name, extension) = make_term_short(&terms, &children_of_ext_terms, cvterm.clone());
             let feature_annotation =
                 FeatureAnnotation {
-                    term: make_term_short(cvterm.clone()),
+                    term: term,
+                    extension: extension.clone(),
                     evidence: evidence.clone(),
                     publication: publication.clone(),
                     genotype: genotype_alleles.clone(),
                 };
-            let cv_name = cvterm.cv.name.clone();
             let mut gene_details = genes.get_mut(gene_uniquename).unwrap();
             gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation);
             let term_annotation =
@@ -221,6 +292,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                     gene: make_gene_short(&gene_details),
                     evidence: evidence.clone(),
                     publication: publication.clone(),
+                    extension: extension.clone(),
                 };
             let termid = cvterm.termid();
             let term_details = terms.get_mut(&termid).unwrap();
