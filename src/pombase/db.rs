@@ -353,8 +353,8 @@ impl Raw {
         }
 
         for row in &conn.query("SELECT object_id, subject_id, type_id FROM cvterm_relationship", &[]).unwrap() {
-            let subject_id = row.get(0);
-            let object_id: i32 = row.get(1);
+            let object_id = row.get(0);
+            let subject_id: i32 = row.get(1);
             let type_id: i32 = row.get(2);
             let cvterm_relationship = CvtermRelationship {
                 subject: cvterm_map.get(&subject_id).unwrap().clone(),

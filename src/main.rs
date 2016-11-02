@@ -27,25 +27,31 @@ const POMBASE_ANN_EXT_TERM_CV_NAME: &'static str = "PomBase annotation extension
 const ANNOTATION_EXT_REL_PREFIX: &'static str = "annotation_extension_relation-";
 
 fn make_term_short(id_cvterm_map: &IdTermMap,
-                   children_of_ext_terms: &HashMap<String, Vec<ExtPart>>,
+                   parts_of_extensions: &HashMap<String, Vec<ExtPart>>,
                    rc_cvterm: Rc<pombase::db::Cvterm>) -> (TermShort, CvName, Vec<ExtPart>) {
     let mut extension: Vec<ExtPart> = vec![];
 
     let term =
         if rc_cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
-            let ext_parts = children_of_ext_terms.get(&rc_cvterm.termid()).unwrap();
+            if let Some(ext_parts) = parts_of_extensions.get(&rc_cvterm.termid()) {
+                let mut base_term_details_opt = None;
 
-            let mut base_term_details_opt = None;
-
-            for ext_part in ext_parts {
-                if ext_part.rel_type_name == "is_a" {
-                    base_term_details_opt = id_cvterm_map.get(&ext_part.ext_range);
-                } else {
-                    extension.push(ext_part.clone());
+                for ext_part in ext_parts {
+                    if ext_part.rel_type_name == "is_a" {
+                        base_term_details_opt = id_cvterm_map.get(&ext_part.ext_range);
+                    } else {
+                        extension.push(ext_part.clone());
+                    }
                 }
-            }
 
-            base_term_details_opt.unwrap()
+                if let Some(term_details) = base_term_details_opt {
+                    term_details
+                } else {
+                    id_cvterm_map.get(&rc_cvterm.termid()).unwrap()
+                }
+            } else {
+                id_cvterm_map.get(&rc_cvterm.termid()).unwrap()
+            }
         } else {
             id_cvterm_map.get(&rc_cvterm.termid()).unwrap()
         };
@@ -178,7 +184,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
-    let mut children_of_ext_terms: HashMap<String, Vec<ExtPart>> = HashMap::new();
+    let mut parts_of_extensions: HashMap<String, Vec<ExtPart>> = HashMap::new();
 
     for cvterm in &raw.cvterms {
         if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
@@ -192,7 +198,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                         ExtRangeType::Misc
                     };
 
-                    children_of_ext_terms.entry(cvterm.termid())
+                    parts_of_extensions.entry(cvterm.termid())
                         .or_insert(Vec::new()).push(ExtPart {
                             rel_type_name: String::from(ext_rel_name),
                             range_type: range_type,
@@ -218,12 +224,12 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
         let object_term = &cvterm_rel.object;
         let rel_type = &cvterm_rel.rel_type;
 
-        if object_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
-            children_of_ext_terms.entry(object_term.termid())
+        if subject_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
+            parts_of_extensions.entry(subject_term.termid())
                 .or_insert(Vec::new()).push(ExtPart {
                     rel_type_name: rel_type.name.clone(),
                     range_type: ExtRangeType::Term,
-                    ext_range: subject_term.termid(),
+                    ext_range: object_term.termid(),
                 });
         }
     }
@@ -276,7 +282,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
             };
 
         for gene_uniquename in &gene_uniquenames_vec {
-            let (term, cv_name, extension) = make_term_short(&terms, &children_of_ext_terms, cvterm.clone());
+            let (term, cv_name, extension) = make_term_short(&terms, &parts_of_extensions, cvterm.clone());
             let feature_annotation =
                 FeatureAnnotation {
                     term: term,
