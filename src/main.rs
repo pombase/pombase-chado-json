@@ -110,16 +110,19 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
             object_type_name == "gene" {
                 genes_of_transcripts.insert(subject_uniquename.clone(),
                                             object_uniquename.clone());
+                continue;
         }
         if subject_type_name == "allele" {
             if feature_rel.rel_type.name == "instance_of" &&
                 object_type_name == "gene" {
                     genes_of_alleles.insert(subject_uniquename.clone(), object_uniquename.clone());
+                    continue;
                 }
             if feature_rel.rel_type.name == "part_of" &&
                 object_type_name == "genotype" {
                     let entry = alleles_of_genotypes.entry(object_uniquename.clone());
                     entry.or_insert(Vec::new()).push(subject_uniquename.clone());
+                    continue;
                 }
         }
     }
