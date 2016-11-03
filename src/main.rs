@@ -143,6 +143,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                              GeneDetails {
                                  uniquename: feat.uniquename.clone(),
                                  name: feat.name.clone(),
+                                 product: None,
                                  annotations: HashMap::new(),
                                  transcripts: vec![],
                              });
@@ -349,6 +350,7 @@ fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
     GeneShort {
         uniquename: gene_details.uniquename.clone(),
         name: gene_details.name.clone(),
+        product: gene_details.product.clone(),
     }
 }
 

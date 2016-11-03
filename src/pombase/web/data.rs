@@ -24,11 +24,13 @@ pub struct ExtPart {
 pub type GeneUniquename = String;
 pub type GeneName = String;
 pub type TypeName = String;
+pub type GeneProduct = String;
 
 #[derive(Serialize, Clone)]
 pub struct GeneShort {
     pub uniquename: GeneUniquename,
     pub name: Option<GeneName>,
+    pub product: Option<GeneProduct>,
 }
 
 #[derive(Serialize, Clone)]
@@ -75,6 +77,7 @@ pub type TypeFeatureAnnotationMap =
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     pub name: Option<String>,
+    pub product: Option<String>,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: TypeFeatureAnnotationMap,
 }
