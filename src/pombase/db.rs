@@ -156,6 +156,7 @@ impl Raw {
         let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
         let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
         let mut feature_cvterm_map: HashMap<i32, Rc<FeatureCvterm>> = HashMap::new();
+        let mut feature_relationship_map: HashMap<i32, Rc<FeatureRelationship>> = HashMap::new();
         let mut publication_map: HashMap<i32, Rc<Publication>> = HashMap::new();
 
         fn get_db(db_map: &mut HashMap<i32, Rc<Db>>, db_id: i32) -> Rc<Db> {
@@ -240,6 +241,7 @@ impl Raw {
             ret.cvterms.push(rc_cvterm.clone());
             cvterm_map.insert(cvterm_id, rc_cvterm);
         }
+
         for row in &conn.query("SELECT cvterm_id, type_id, value FROM cvtermprop", &[]).unwrap() {
             let cvterm_id: i32 = row.get(0);
             let cvterm = get_cvterm(&mut cvterm_map, cvterm_id);
@@ -338,10 +340,13 @@ impl Raw {
             feature_cvterm.feature_cvtermprops.borrow_mut().push(rc_feature_cvtermprop);
         }
 
-        for row in &conn.query("SELECT subject_id, object_id, type_id FROM feature_relationship", &[]).unwrap() {
-            let subject_id = row.get(0);
-            let object_id: i32 = row.get(1);
-            let type_id: i32 = row.get(2);
+        
+
+        for row in &conn.query("SELECT feature_relationship_id, subject_id, object_id, type_id FROM feature_relationship", &[]).unwrap() {
+            let feature_relationship_id = row.get(0);
+            let subject_id = row.get(1);
+            let object_id: i32 = row.get(2);
+            let type_id: i32 = row.get(3);
             let feature_relationship = FeatureRelationship {
                 subject: feature_map.get(&subject_id).unwrap().clone(),
                 object: feature_map.get(&object_id).unwrap().clone(),
@@ -350,6 +355,22 @@ impl Raw {
             };
             let rc_feature_relationship = Rc::new(feature_relationship);
             ret.feature_relationships.push(rc_feature_relationship.clone());
+            feature_relationship_map.insert(feature_relationship_id, rc_feature_relationship);
+        }
+
+        for row in &conn.query("SELECT feature_relationship_id, type_id, value FROM feature_relationshipprop", &[]).unwrap() {
+            let feature_relationship_id: i32 = row.get(0);
+            let feature_relationship =
+                feature_relationship_map.get(&feature_relationship_id).unwrap().clone();
+            let type_id: i32 = row.get(1);
+            let value: Option<String> = row.get(2);
+            let feature_relationshipprop = FeatureRelationshipprop {
+                feature_relationship: feature_relationship.clone(),
+                prop_type: get_cvterm(&mut cvterm_map, type_id),
+                value: value,
+            };
+            let rc_feature_relationshipprop = Rc::new(feature_relationshipprop);
+            feature_relationship.feature_relationshipprops.borrow_mut().push(rc_feature_relationshipprop.clone());
         }
 
         for row in &conn.query("SELECT object_id, subject_id, type_id FROM cvterm_relationship", &[]).unwrap() {

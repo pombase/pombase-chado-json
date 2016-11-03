@@ -25,6 +25,8 @@ use pombase::db::*;
 
 const POMBASE_ANN_EXT_TERM_CV_NAME: &'static str = "PomBase annotation extension terms";
 const ANNOTATION_EXT_REL_PREFIX: &'static str = "annotation_extension_relation-";
+const FEATURE_REL_ANNOTATIONS: [&'static str; 2] =
+    ["interacts_physically", "interacts_genetically"];
 
 fn make_term_short(id_cvterm_map: &IdTermMap,
                    parts_of_extensions: &HashMap<String, Vec<ExtPart>>,
@@ -107,14 +109,14 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
 
         if subject_type_name == "mRNA" &&
             rel_name == "part_of" &&
-            object_type_name == "gene" {
+            (object_type_name == "gene" || object_type_name == "pseudogene") {
                 genes_of_transcripts.insert(subject_uniquename.clone(),
                                             object_uniquename.clone());
                 continue;
         }
         if subject_type_name == "allele" {
             if feature_rel.rel_type.name == "instance_of" &&
-                object_type_name == "gene" {
+                (object_type_name == "gene" || object_type_name == "pseudogene") {
                     genes_of_alleles.insert(subject_uniquename.clone(), object_uniquename.clone());
                     continue;
                 }
@@ -138,13 +140,14 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
     } ) {
 
         match &feat.feat_type.name as &str {
-            "gene" => {
+            "gene" | "pseudogene" => {
                 genes.insert(feat.uniquename.clone(),
                              GeneDetails {
                                  uniquename: feat.uniquename.clone(),
                                  name: feat.name.clone(),
                                  product: None,
                                  annotations: HashMap::new(),
+                                 interaction_annotations: HashMap::new(),
                                  transcripts: vec![],
                              });
             },
@@ -176,6 +179,41 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                });
             },
             _ => (),
+        }
+    }
+
+    for feature_rel in raw.feature_relationships.iter() {
+        let rel_name = &feature_rel.rel_type.name;
+        let subject_uniquename = &feature_rel.subject.uniquename;
+        let object_uniquename = &feature_rel.object.uniquename;
+
+        for annotation_rel_type_name in FEATURE_REL_ANNOTATIONS.iter() {
+            if rel_name == annotation_rel_type_name {
+                let mut evidence: Option<Evidence> = None;
+
+                for prop in feature_rel.feature_relationshipprops.borrow().iter() {
+                    if prop.prop_type.name == "evidence" {
+                        evidence = prop.value.clone();
+                    }
+                }
+
+                let gene = {
+                    let gene_details = genes.get(subject_uniquename).unwrap();
+                    make_gene_short(gene_details)
+                };
+                let interactor = {
+                    let interactor_details = genes.get(object_uniquename).unwrap();
+                    make_gene_short(interactor_details)
+                };
+                let mut gene_details = genes.get_mut(subject_uniquename).unwrap();
+                gene_details.interaction_annotations.entry(rel_name.clone()).or_insert(Vec::new()).push(
+                    InteractionAnnotation {
+                        gene: gene,
+                        interactor: interactor,
+                        evidence: evidence,
+                        publication: None, // FIXME
+                    });
+            }
         }
     }
 
@@ -270,7 +308,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                         vec![]
                     }
                 } else {
-                    if feature.feat_type.name == "gene" {
+                    if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
                         vec![feature.uniquename.clone()]
                     } else {
                         vec![]

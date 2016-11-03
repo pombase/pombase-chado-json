@@ -58,7 +58,7 @@ pub struct PublicationShort {
     pub citation: Option<String>,
 }
 
-type Evidence = String;
+pub type Evidence = String;
 
 #[derive(Serialize, Clone)]
 pub struct FeatureAnnotation {
@@ -72,6 +72,8 @@ pub struct FeatureAnnotation {
 
 pub type TypeFeatureAnnotationMap =
     HashMap<TypeName, Vec<FeatureAnnotation>>;
+pub type TypeInteractionAnnotationMap =
+    HashMap<TypeName, Vec<InteractionAnnotation>>;
 
 #[derive(Serialize, Clone)]
 pub struct GeneDetails {
@@ -80,6 +82,7 @@ pub struct GeneDetails {
     pub product: Option<String>,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: TypeFeatureAnnotationMap,
+    pub interaction_annotations: TypeInteractionAnnotationMap,
 }
 
 pub type UniquenameGeneMap =
@@ -155,6 +158,14 @@ impl Clone for TermDetails {
             annotations: self.annotations.clone(),
         }
     }
+}
+
+#[derive(Serialize, Clone)]
+pub struct InteractionAnnotation {
+    pub gene: GeneShort,
+    pub interactor: GeneShort,
+    pub evidence: Option<Evidence>,
+    pub publication: Option<PublicationShort>,
 }
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
