@@ -188,7 +188,11 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
         let object_uniquename = &feature_rel.object.uniquename;
 
         for annotation_rel_type_name in FEATURE_REL_ANNOTATIONS.iter() {
-            if rel_name == annotation_rel_type_name {
+            if rel_name == annotation_rel_type_name &&
+                (feature_rel.subject.feat_type.name == "gene" ||
+                 feature_rel.subject.feat_type.name == "pseudogene") &&
+                (feature_rel.object.feat_type.name == "gene" ||
+                 feature_rel.object.feat_type.name == "pseudogene") {
                 let mut evidence: Option<Evidence> = None;
 
                 for prop in feature_rel.feature_relationshipprops.borrow().iter() {
