@@ -146,6 +146,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                  uniquename: feat.uniquename.clone(),
                                  name: feat.name.clone(),
                                  product: None,
+                                 feature_type: feat.feat_type.name.clone(),
                                  annotations: HashMap::new(),
                                  interaction_annotations: HashMap::new(),
                                  transcripts: vec![],

@@ -80,6 +80,7 @@ pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     pub name: Option<String>,
     pub product: Option<String>,
+    pub feature_type: String,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: TypeFeatureAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
