@@ -31,6 +31,7 @@ pub struct GeneShort {
     pub uniquename: GeneUniquename,
     pub name: Option<GeneName>,
     pub product: Option<GeneProduct>,
+    pub synonyms: Vec<SynonymDetails>,
 }
 
 #[derive(Serialize, Clone)]
@@ -76,10 +77,17 @@ pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
 
 #[derive(Serialize, Clone)]
+pub struct SynonymDetails {
+    pub name: String,
+    pub synonym_type: String
+}
+
+#[derive(Serialize, Clone)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     pub name: Option<String>,
     pub product: Option<String>,
+    pub synonyms: Vec<SynonymDetails>,
     pub feature_type: String,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: TypeFeatureAnnotationMap,

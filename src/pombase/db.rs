@@ -15,7 +15,9 @@ pub struct Raw {
     pub cvtermpaths: Vec<Rc<Cvtermpath>>,
     pub cvterm_relationships: Vec<Rc<CvtermRelationship>>,
     pub publications: Vec<Rc<Publication>>,
+    pub synonyms: Vec<Rc<Synonym>>,
     pub features: Vec<Rc<Feature>>,
+    pub feature_synonyms: Vec<Rc<FeatureSynonym>>,
     pub featureprops: Vec<Rc<Featureprop>>,
     pub feature_cvterms: Vec<Rc<FeatureCvterm>>,
     pub feature_cvtermprops: Vec<Rc<FeatureCvtermprop>>,
@@ -103,6 +105,16 @@ pub struct Featureprop {
     pub prop_type: Rc<Cvterm>,
     pub value: Option<String>,
 }
+pub struct Synonym {
+    pub name: String,
+    pub synonym_type: Rc<Cvterm>
+}
+pub struct FeatureSynonym {
+    pub feature: Rc<Feature>,
+    pub synonym: Rc<Synonym>,
+    pub publication: Rc<Publication>,
+    pub is_current: bool,
+}
 pub struct FeatureCvterm {
     pub feature_cvterm_id: i32,
     pub feature: Rc<Feature>,
@@ -142,9 +154,10 @@ impl Raw {
         let mut ret = Raw {
             organisms: vec![],
             cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
-            cvtermprops: vec![],
+            synonyms: vec![], cvtermprops: vec![],
             cvtermpaths: vec![], cvterm_relationships: vec![],
             publications: vec![], features: vec![], featureprops: vec![],
+            feature_synonyms: vec![],
             feature_cvterms: vec![], feature_cvtermprops: vec![],
             feature_relationships: vec![], chadoprops: vec![],
         };
@@ -154,6 +167,7 @@ impl Raw {
         let mut db_map: HashMap<i32, Rc<Db>> = HashMap::new();
         let mut dbxref_map: HashMap<i32, Rc<Dbxref>> = HashMap::new();
         let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
+        let mut synonym_map: HashMap<i32, Rc<Synonym>> = HashMap::new();
         let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
         let mut feature_cvterm_map: HashMap<i32, Rc<FeatureCvterm>> = HashMap::new();
         let mut feature_relationship_map: HashMap<i32, Rc<FeatureRelationship>> = HashMap::new();
@@ -177,6 +191,10 @@ impl Raw {
 
         fn get_feature(feature_map: &mut HashMap<i32, Rc<Feature>>, feature_id: i32) -> Rc<Feature> {
             feature_map.get(&feature_id).unwrap().clone()
+        };
+
+        fn get_synonym(synonym_map: &mut HashMap<i32, Rc<Synonym>>, synonym_id: i32) -> Rc<Synonym> {
+            synonym_map.get(&synonym_id).unwrap().clone()
         };
 
         for row in &conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).unwrap() {
@@ -275,6 +293,19 @@ impl Raw {
             publication_map.insert(pub_id, rc_publication);
         }
 
+        for row in &conn.query("SELECT synonym_id, name, type_id FROM synonym", &[]).unwrap() {
+            let synonym_id = row.get(0);
+            let name = row.get(1);
+            let type_id: i32 = row.get(2);
+            let synonym = Synonym {
+                name: name,
+                synonym_type: get_cvterm(&mut cvterm_map, type_id),
+            };
+            let rc_synonym = Rc::new(synonym);
+            ret.synonyms.push(rc_synonym.clone());
+            synonym_map.insert(synonym_id, rc_synonym);
+        }
+
         for row in &conn.query("SELECT feature_id, uniquename, name, type_id, organism_id FROM feature", &[]).unwrap() {
             let feature_id = row.get(0);
             let type_id: i32 = row.get(3);
@@ -304,6 +335,21 @@ impl Raw {
             let rc_featureprop = Rc::new(featureprop);
             ret.featureprops.push(rc_featureprop.clone());
             feature.featureprops.borrow_mut().push(rc_featureprop.clone());
+        }
+
+        for row in &conn.query("SELECT feature_id, synonym_id, pub_id, is_current FROM feature_synonym", &[]).unwrap() {
+            let feature_id: i32 = row.get(0);
+            let synonym_id: i32 = row.get(1);
+            let pub_id: i32 = row.get(2);
+            let is_current: bool = row.get(3);
+            let feature_synonym = FeatureSynonym {
+                feature: feature_map.get(&feature_id).unwrap().clone(),
+                synonym: get_synonym(&mut synonym_map, synonym_id),
+                publication: publication_map.get(&pub_id).unwrap().clone(),
+                is_current: is_current
+            };
+            let rc_feature_synonym = Rc::new(feature_synonym);
+            ret.feature_synonyms.push(rc_feature_synonym.clone());
         }
 
         for row in &conn.query("SELECT feature_cvterm_id, feature_id, cvterm_id, pub_id, is_not FROM feature_cvterm", &[]).unwrap() {

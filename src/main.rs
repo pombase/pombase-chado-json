@@ -146,6 +146,7 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
                                  uniquename: feat.uniquename.clone(),
                                  name: feat.name.clone(),
                                  product: None,
+                                 synonyms: vec![],
                                  feature_type: feat.feat_type.name.clone(),
                                  annotations: HashMap::new(),
                                  interaction_annotations: HashMap::new(),
@@ -274,6 +275,18 @@ fn get_web_data(raw: &Raw, organism_genus_species: &String) -> WebData {
         }
     }
 
+    for feature_synonym in raw.feature_synonyms.iter() {
+        let feature = &feature_synonym.feature;
+        let synonym = &feature_synonym.synonym;
+
+        if let Some(ref mut gene_details) = genes.get_mut(&feature.uniquename) {
+            gene_details.synonyms.push(SynonymDetails {
+                name: synonym.name.clone(),
+                synonym_type: synonym.synonym_type.name.clone()
+            });
+        }
+    }
+
     for feature_cvterm in raw.feature_cvterms.iter() {
         let feature = &feature_cvterm.feature;
         let cvterm = &feature_cvterm.cvterm;
@@ -394,6 +407,7 @@ fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
         uniquename: gene_details.uniquename.clone(),
         name: gene_details.name.clone(),
         product: gene_details.product.clone(),
+        synonyms: gene_details.synonyms.clone(),
     }
 }
 
