@@ -58,6 +58,7 @@ struct WebDataBuild {
     terms: IdTermMap,
 
     genes_of_transcripts: HashMap<String, String>,
+    transcripts_of_polypeptides: HashMap<String, String>,
     genes_of_alleles: HashMap<String, String>,
     alleles_of_genotypes: HashMap<String, Vec<String>>,
 
@@ -74,6 +75,7 @@ impl WebDataBuild {
             terms: HashMap::new(),
 
             genes_of_transcripts: HashMap::new(),
+            transcripts_of_polypeptides: HashMap::new(),
             genes_of_alleles: HashMap::new(),
             alleles_of_genotypes: HashMap::new(),
 
@@ -125,6 +127,11 @@ impl WebDataBuild {
         gene_details.characterisation_status = Some(cvterm_name.clone());
     }
 
+    fn add_gene_product(&mut self, gene_uniquename: &String, product: &String) {
+        let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+        gene_details.product = Some(product.clone());
+    }
+
     fn add_annotation_to_gene(&mut self, gene_uniquename: &String,
                               cvterm: &Cvterm, evidence: &Option<Evidence>,
                               publication: &Option<PublicationShort>,
@@ -166,6 +173,13 @@ impl WebDataBuild {
                 (object_type_name == "gene" || object_type_name == "pseudogene") {
                     self.genes_of_transcripts.insert(subject_uniquename.clone(),
                                                      object_uniquename.clone());
+                    continue;
+                }
+            if subject_type_name == "polypeptide" &&
+                rel_name == "derives_from" &&
+                object_type_name == "mRNA" {
+                    self.transcripts_of_polypeptides.insert(subject_uniquename.clone(),
+                                                            object_uniquename.clone());
                     continue;
                 }
             if subject_type_name == "allele" {
@@ -385,15 +399,29 @@ impl WebDataBuild {
             let publication = make_publication_short(feature_cvterm.publication.clone());
             let mut genotype_alleles = None;
             let gene_uniquenames_vec: Vec<GeneUniquename> =
-                if feature.feat_type.name == "mRNA" {
-                    if let Some(gene_uniquename) =
-                        self.genes_of_transcripts.get(&feature.uniquename) {
-                            vec![gene_uniquename.clone()]
-                        } else {
-                            vec![]
-                        }
-                } else {
-                    if feature.feat_type.name == "genotype" {
+                match &feature.feat_type.name as &str {
+                    "mRNA" => {
+                        if let Some(gene_uniquename) =
+                            self.genes_of_transcripts.get(&feature.uniquename) {
+                                vec![gene_uniquename.clone()]
+                            } else {
+                                vec![]
+                            }
+                    },
+                    "polypeptide" => {
+                        if let Some(transcript_uniquename) =
+                            self.transcripts_of_polypeptides.get(&feature.uniquename) {
+                                if let Some(gene_uniquename) =
+                                    self.genes_of_transcripts.get(transcript_uniquename) {
+                                        vec![gene_uniquename.clone()]
+                                    } else {
+                                        vec![]
+                                    }
+                            } else {
+                                vec![]
+                            }
+                    },
+                    "genotype" => {
                         if let Some(allele_uniquenames_vec) =
                             self.alleles_of_genotypes.get(&feature.uniquename) {
                                 let genotype_alleles_ret = GenotypeAndAlleles {
@@ -415,7 +443,8 @@ impl WebDataBuild {
                             } else {
                                 vec![]
                             }
-                    } else {
+                    },
+                    _ => {
                         if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
                             vec![feature.uniquename.clone()]
                         } else {
@@ -426,11 +455,11 @@ impl WebDataBuild {
 
 
             for gene_uniquename in &gene_uniquenames_vec {
-                if cvterm.cv.name == "PomBase gene characterisation status" {
-                    self.add_characterisation_status(&gene_uniquename, &cvterm.name);
-                } else {
-                    self.add_annotation_to_gene(&gene_uniquename, cvterm.borrow(),
-                                                &evidence, &publication, &genotype_alleles);
+                match &cvterm.cv.name as &str {
+                    "PomBase gene characterisation status" => self.add_characterisation_status(&gene_uniquename, &cvterm.name),
+                    "PomBase gene products" => self.add_gene_product(&gene_uniquename, &cvterm.name),
+                    _ => self.add_annotation_to_gene(&gene_uniquename, cvterm.borrow(),
+                                                     &evidence, &publication, &genotype_alleles)
                 }
             }
         }
