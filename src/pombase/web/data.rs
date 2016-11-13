@@ -83,6 +83,22 @@ pub struct SynonymDetails {
 }
 
 #[derive(Serialize, Clone)]
+pub enum Strand {
+    #[serde(rename="forward")]
+    Forward = 1,
+    #[serde(rename="reverse")]
+    Reverse = -1,
+}
+
+#[derive(Serialize, Clone)]
+pub struct ChromosomeLocation {
+    pub chromosome_name: String,
+    pub start_pos: u32,
+    pub end_pos: u32,
+    pub strand: Strand,
+}
+
+#[derive(Serialize, Clone)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     pub name: Option<String>,
@@ -90,6 +106,8 @@ pub struct GeneDetails {
     pub synonyms: Vec<SynonymDetails>,
     pub feature_type: String,
     pub characterisation_status: Option<String>,
+    pub location: Option<ChromosomeLocation>,
+    pub cds_location: Option<ChromosomeLocation>,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: TypeFeatureAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,

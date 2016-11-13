@@ -196,6 +196,35 @@ impl WebDataBuild {
 
             match &feat.feat_type.name as &str {
                 "gene" | "pseudogene" => {
+                    let feature_locs = feat.featurelocs.borrow();
+                    let location =
+                        match feature_locs.get(0) {
+                            Some(feature_loc) => {
+                                let start_pos =
+                                    if feature_loc.fmin + 1 >= 1 {
+                                        (feature_loc.fmin + 1) as u32
+                                    } else {
+                                        panic!("start_pos less than 1");
+                                    };
+                                let end_pos =
+                                    if feature_loc.fmax >= 1 {
+                                        feature_loc.fmax as u32
+                                    } else {
+                                        panic!("start_end less than 1");
+                                    };
+                                Some(ChromosomeLocation {
+                                    chromosome_name: feature_loc.srcfeature.uniquename.clone(),
+                                    start_pos: start_pos,
+                                    end_pos: end_pos,
+                                    strand: match feature_loc.strand {
+                                        1 => Strand::Forward,
+                                        -1 => Strand::Reverse,
+                                        _ => panic!(),
+                                    },
+                                })
+                            },
+                            None => None,
+                        };
                     self.genes.insert(feat.uniquename.clone(),
                                       GeneDetails {
                                           uniquename: feat.uniquename.clone(),
@@ -204,6 +233,8 @@ impl WebDataBuild {
                                           synonyms: vec![],
                                           feature_type: feat.feat_type.name.clone(),
                                           characterisation_status: None,
+                                          location: location,
+                                          cds_location: None,
                                           annotations: HashMap::new(),
                                           interaction_annotations: HashMap::new(),
                                           transcripts: vec![],

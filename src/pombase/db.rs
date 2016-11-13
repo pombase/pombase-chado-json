@@ -19,6 +19,7 @@ pub struct Raw {
     pub features: Vec<Rc<Feature>>,
     pub feature_synonyms: Vec<Rc<FeatureSynonym>>,
     pub featureprops: Vec<Rc<Featureprop>>,
+    pub featurelocs: Vec<Rc<Featureloc>>,
     pub feature_cvterms: Vec<Rc<FeatureCvterm>>,
     pub feature_cvtermprops: Vec<Rc<FeatureCvtermprop>>,
     pub feature_relationships: Vec<Rc<FeatureRelationship>>,
@@ -99,6 +100,15 @@ pub struct Feature {
     pub feat_type: Rc<Cvterm>,
     pub organism: Rc<Organism>,
     pub featureprops: RefCell<Vec<Rc<Featureprop>>>,
+    pub featurelocs: RefCell<Vec<Rc<Featureloc>>>,
+}
+pub struct Featureloc {
+    pub feature: Rc<Feature>,
+    pub srcfeature: Rc<Feature>,
+    pub fmin: i32,
+    pub fmax: i32,
+    pub strand: i16,
+//    pub phase: i32,
 }
 pub struct Featureprop {
     pub feature: Rc<Feature>,
@@ -157,7 +167,7 @@ impl Raw {
             synonyms: vec![], cvtermprops: vec![],
             cvtermpaths: vec![], cvterm_relationships: vec![],
             publications: vec![], features: vec![], featureprops: vec![],
-            feature_synonyms: vec![],
+            featurelocs: vec![], feature_synonyms: vec![],
             feature_cvterms: vec![], feature_cvtermprops: vec![],
             feature_relationships: vec![], chadoprops: vec![],
         };
@@ -316,6 +326,7 @@ impl Raw {
                 feat_type: get_cvterm(&mut cvterm_map, type_id),
                 organism: organism_map.get(&organism_id).unwrap().clone(),
                 featureprops: RefCell::new(vec![]),
+                featurelocs: RefCell::new(vec![]),
             };
             let rc_feature = Rc::new(feature);
             ret.features.push(rc_feature.clone());
@@ -335,6 +346,28 @@ impl Raw {
             let rc_featureprop = Rc::new(featureprop);
             ret.featureprops.push(rc_featureprop.clone());
             feature.featureprops.borrow_mut().push(rc_featureprop.clone());
+        }
+
+        for row in &conn.query("SELECT feature_id, srcfeature_id, fmin, fmax, strand FROM featureloc", &[]).unwrap() {
+            let feature_id: i32 = row.get(0);
+            let feature = get_feature(&mut feature_map, feature_id);
+            let srcfeature_id: i32 = row.get(1);
+            let srcfeature = get_feature(&mut feature_map, srcfeature_id);
+            let fmin: i32 = row.get(2);
+            let fmax: i32 = row.get(3);
+            let strand: i16 = row.get(4);
+//            let phase: i32 = row.get(5);
+            let featureloc = Featureloc {
+                feature: feature.clone(),
+                srcfeature: srcfeature.clone(),
+                fmin: fmin,
+                fmax: fmax,
+                strand: strand,
+//                phase: phase,
+            };
+            let rc_featureloc = Rc::new(featureloc);
+            ret.featurelocs.push(rc_featureloc.clone());
+            feature.featurelocs.borrow_mut().push(rc_featureloc.clone());
         }
 
         for row in &conn.query("SELECT feature_id, synonym_id, pub_id, is_current FROM feature_synonym", &[]).unwrap() {
