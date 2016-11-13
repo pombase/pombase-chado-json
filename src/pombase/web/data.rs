@@ -89,6 +89,7 @@ pub struct GeneDetails {
     pub product: Option<String>,
     pub synonyms: Vec<SynonymDetails>,
     pub feature_type: String,
+    pub characterisation_status: Option<String>,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: TypeFeatureAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
