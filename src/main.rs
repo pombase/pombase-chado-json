@@ -167,7 +167,7 @@ impl <'a> WebDataBuild<'a> {
         term_details.annotations.push(term_annotation);
     }
 
-    fn process_feature_rels(&mut self) {
+    fn make_feature_rel_maps(&mut self) {
         for feature_rel in self.raw.feature_relationships.iter() {
             let subject_type_name = &feature_rel.subject.feat_type.name;
             let rel_name = &feature_rel.rel_type.name;
@@ -296,8 +296,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn process_extension_feature_rels(&mut self) {
-
+    fn process_annotation_feature_rels(&mut self) {
         for feature_rel in self.raw.feature_relationships.iter() {
             let rel_name = &feature_rel.rel_type.name;
             let subject_uniquename = &feature_rel.subject.uniquename;
@@ -500,9 +499,9 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn get_web_data(&mut self) -> WebData {
-        self.process_feature_rels();
+        self.make_feature_rel_maps();
         self.process_features();
-        self.process_extension_feature_rels();
+        self.process_annotation_feature_rels();
         self.process_cvterms();
         self.process_cvterm_rels();
         self.process_feature_synonyms();
