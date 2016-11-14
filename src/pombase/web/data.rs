@@ -56,7 +56,11 @@ pub struct PublicationShort {
     pub uniquename: String,
     pub title: Option<String>,
     pub citation: Option<String>,
+    pub authors_abbrev: Option<String>,
+    pub publication_year: Option<String>,
 }
+
+pub type PublicationDetails = PublicationShort;
 
 pub type Evidence = String;
 
@@ -221,6 +225,7 @@ pub struct ParalogAnnotation {
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdTermMap = HashMap<TermId, TermDetails>;
+pub type IdPublicationMap = HashMap<TermId, PublicationDetails>;
 
 #[derive(Serialize)]
 pub struct Metadata {

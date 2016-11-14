@@ -1,6 +1,8 @@
 #![feature(plugin, proc_macro)]
 extern crate postgres;
 
+extern crate regex;
+
 #[macro_use]
 extern crate serde_derive;
 extern crate serde;
@@ -11,6 +13,7 @@ extern crate getopts;
 use postgres::{Connection, TlsMode};
 
 use std::env;
+use regex::Regex;
 use getopts::Options;
 use std::fs;
 use std::fs::File;
@@ -55,19 +58,6 @@ const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
         },
     ];
 
-
-fn make_publication_short(rc_publication: &Rc<pombase::db::Publication>) -> Option<PublicationShort> {
-    if rc_publication.uniquename == "null" {
-        None
-    } else {
-        Some(PublicationShort {
-            uniquename: rc_publication.uniquename.clone(),
-            title: rc_publication.title.clone(),
-            citation: rc_publication.miniref.clone(),
-        })
-    }
-}
-
 fn make_organism_short(rc_organism: &Rc<pombase::db::Organism>) -> OrganismShort {
     OrganismShort {
         genus: rc_organism.genus.clone(),
@@ -81,6 +71,7 @@ struct WebData {
     terms: IdTermMap,
     used_terms: IdTermMap,
     metadata: Metadata,
+    publications: IdPublicationMap,
 }
 
 struct WebDataBuild<'a> {
@@ -91,6 +82,7 @@ struct WebDataBuild<'a> {
     genotypes: UniquenameGenotypeMap,
     alleles: UniquenameAlleleShortMap,
     terms: IdTermMap,
+    publications: IdPublicationMap,
 
     genes_of_transcripts: HashMap<String, String>,
     transcripts_of_polypeptides: HashMap<String, String>,
@@ -112,6 +104,7 @@ impl <'a> WebDataBuild<'a> {
             genotypes: HashMap::new(),
             alleles: HashMap::new(),
             terms: HashMap::new(),
+            publications: HashMap::new(),
 
             genes_of_transcripts: HashMap::new(),
             transcripts_of_polypeptides: HashMap::new(),
@@ -119,6 +112,61 @@ impl <'a> WebDataBuild<'a> {
             alleles_of_genotypes: HashMap::new(),
 
             parts_of_extensions: HashMap::new(),
+        }
+    }
+
+    fn make_publication_short(&mut self, rc_publication: &Rc<pombase::db::Publication>) -> Option<PublicationShort> {
+        if rc_publication.uniquename == "null" {
+            None
+        } else {
+            {
+                let existing_publication_short = self.publications.get(&rc_publication.uniquename);
+                if let Some(publication_short) = existing_publication_short {
+                    return Some(publication_short.clone())
+                }
+            }
+            let mut pubmed_authors: Option<String> = None;
+            let mut pubmed_publication_date: Option<String> = None;
+
+            for prop in rc_publication.publicationprops.borrow().iter() {
+                match &prop.prop_type.name as &str {
+                    "pubmed_publication_date" => 
+                        pubmed_publication_date = Some(prop.value.clone()),
+                    "pubmed_authors" =>
+                        pubmed_authors = Some(prop.value.clone()),
+                    _ => ()
+                }
+            }
+
+            let mut authors_abbrev = None;
+            let mut publication_year = None;
+
+            if let Some(authors) = pubmed_authors {
+                if authors.contains(",") {
+                    let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
+                    authors_abbrev = Some(author_re.replace_all(&authors, "$f et al."));
+                } else {
+                    authors_abbrev = Some(authors.clone());
+                }
+            }
+
+            if let Some(publication_date) = pubmed_publication_date {
+                let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
+                publication_year = Some(date_re.replace_all(&publication_date, "$y"));
+            }
+
+            let publication_short =
+                PublicationShort {
+                    uniquename: rc_publication.uniquename.clone(),
+                    title: rc_publication.title.clone(),
+                    citation: rc_publication.miniref.clone(),
+                    publication_year: publication_year,
+                    authors_abbrev: authors_abbrev,
+                };
+
+            self.publications.insert(rc_publication.uniquename.clone(),
+                                     publication_short.clone());
+            Some(publication_short)
         }
     }
 
@@ -338,7 +386,7 @@ impl <'a> WebDataBuild<'a> {
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0).clone();
                         let publication_short = match maybe_publication {
-                            Some(publication) => make_publication_short(publication),
+                            Some(publication) => self.make_publication_short(publication),
                             None => None,
                         };
 
@@ -491,7 +539,7 @@ impl <'a> WebDataBuild<'a> {
                     evidence = prop.value.clone();
                 }
             }
-            let publication = make_publication_short(&feature_cvterm.publication);
+            let publication = self.make_publication_short(&feature_cvterm.publication);
             let mut genotype_alleles = None;
             let gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
@@ -597,6 +645,7 @@ impl <'a> WebDataBuild<'a> {
             terms: self.terms.clone(),
             used_terms: used_terms,
             metadata: metadata,
+            publications: self.publications.clone(),
         }
     }
 }
@@ -857,6 +906,7 @@ fn get_test_raw() -> Raw {
     let sequence_cv = make_test_cv(&mut cvs, "sequence");
     let chadoprop_types_cv = make_test_cv(&mut cvs, "PomBase chadoprop types");
     let pub_type_cv = make_test_cv(&mut cvs, "PomBase publication types");
+    let pubprop_type_cv = make_test_cv(&mut cvs, "pubprop_type");
 
     let pbo_db = make_test_db(&mut dbs, "PBO");
     let go_db = make_test_db(&mut dbs, "GO");
@@ -907,6 +957,12 @@ fn get_test_raw() -> Raw {
     let paper_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pub_type_cv, &pbo_db,
                                 "paper", "0000044");
+    let pubmed_publication_date_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pubprop_type_cv, &pbo_db,
+                                "pubmed_publication_date", "0034034");
+    let pubmed_authors_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pubprop_type_cv, &pbo_db,
+                                "pubmed_authors", "0034035");
 
     let publication = Rc::new(Publication {
         uniquename: String::from("PMID:11707284"),
@@ -915,6 +971,20 @@ fn get_test_raw() -> Raw {
         miniref: Some(String::from("FEBS Lett. 2001 Nov 9;508(1):136-42")),
         publicationprops: RefCell::new(vec![]),
     });
+
+    let publication_pub_date = Rc::new(Publicationprop {
+        publication: publication.clone(),
+        prop_type: pubmed_publication_date_cvterm,
+        value: String::from("9 Nov 2001"),
+    });
+    let publication_authors = Rc::new(Publicationprop {
+        publication: publication.clone(),
+        prop_type: pubmed_authors_cvterm,
+        value: String::from("Le Goff X, Buvelot S, Salimova E, Guerry F, Schmidt S, Cueille N, Cano E, Simanis V"),
+    });
+
+    publication.publicationprops.borrow_mut().push(publication_pub_date);
+    publication.publicationprops.borrow_mut().push(publication_authors);
 
     let go0031030_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &bp_cv, &go_db, "negative regulation of septation initiation signaling",
@@ -1036,4 +1106,17 @@ fn test_gene_details() {
     if par1_gene.annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
         panic!("extension cv shouldn't be in the annotations");
     }
+}
+
+#[test]
+fn test_make_publication_short() {
+    let web_data = get_test_web_data();
+
+    let pmid = "PMID:11707284";
+    let pub_short = web_data.publications.get(pmid).unwrap();
+
+    assert_eq!(pub_short.uniquename, pmid);
+
+    assert_eq!(pub_short.authors_abbrev.clone().unwrap(), "Le Goff X et al.");
+    assert_eq!(pub_short.publication_year.clone().unwrap(), "2001");
 }
