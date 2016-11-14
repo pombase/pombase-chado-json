@@ -98,7 +98,7 @@ pub struct ChromosomeLocation {
 }
 
 #[derive(Serialize, Clone)]
-pub struct OrganismDetails {
+pub struct OrganismShort {
     pub genus: String,
     pub species: String,
 }
@@ -107,7 +107,7 @@ pub struct OrganismDetails {
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     pub name: Option<String>,
-    pub organism: OrganismDetails,
+    pub organism: OrganismShort,
     pub product: Option<String>,
     pub synonyms: Vec<SynonymDetails>,
     pub feature_type: String,
@@ -206,6 +206,7 @@ pub struct InteractionAnnotation {
 
 #[derive(Serialize, Clone)]
 pub struct OrthologAnnotation {
+    pub ortholog_organism: OrganismShort,
     pub ortholog: GeneShort,
     pub evidence: Option<Evidence>,
     pub publication: Option<PublicationShort>,

@@ -68,6 +68,13 @@ fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Optio
     }
 }
 
+fn make_organism_short(rc_organism: &Rc<pombase::db::Organism>) -> OrganismShort {
+    OrganismShort {
+        genus: rc_organism.genus.clone(),
+        species: rc_organism.species.clone(),
+    }
+}
+
 #[derive(Serialize)]
 struct WebData {
     genes: IdGeneMap,
@@ -264,10 +271,7 @@ impl <'a> WebDataBuild<'a> {
                             },
                             None => None,
                         };
-                    let organism = OrganismDetails {
-                        genus: feat.organism.genus.clone(),
-                        species: feat.organism.species.clone(),
-                    };
+                    let organism = make_organism_short(&feat.organism);
                     self.genes.insert(feat.uniquename.clone(),
                                       GeneDetails {
                                           uniquename: feat.uniquename.clone(),
@@ -339,14 +343,16 @@ impl <'a> WebDataBuild<'a> {
 
                         let evidence_clone = evidence.clone();
 
-                        let gene = {
+                        let (gene, gene_organism_short) = {
                             let gene_details = self.genes.get(subject_uniquename).unwrap();
-                            make_gene_short(gene_details)
+                            (make_gene_short(gene_details),
+                             gene_details.organism.clone())
                         };
                         let gene_clone = gene.clone();
-                        let other_gene = {
+                        let (other_gene, other_gene_organism_short) = {
                             let other_gene_details = self.genes.get(object_uniquename).unwrap();
-                            make_gene_short(other_gene_details)
+                            (make_gene_short(other_gene_details),
+                             other_gene_details.organism.clone())
                         };
                         {
                             let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
@@ -363,6 +369,7 @@ impl <'a> WebDataBuild<'a> {
                                     gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
                                             ortholog: other_gene,
+                                            ortholog_organism: other_gene_organism_short,
                                             evidence: evidence,
                                             publication: None, // FIXME
                                         }),
@@ -383,6 +390,7 @@ impl <'a> WebDataBuild<'a> {
                                     other_gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
                                             ortholog: gene_clone,
+                                            ortholog_organism: gene_organism_short,
                                             evidence: evidence_clone,
                                             publication: None, // FIXME
                                         }),
