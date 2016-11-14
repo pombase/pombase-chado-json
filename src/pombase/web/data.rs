@@ -206,7 +206,6 @@ pub struct InteractionAnnotation {
 
 #[derive(Serialize, Clone)]
 pub struct OrthologAnnotation {
-    pub gene: GeneShort,
     pub ortholog: GeneShort,
     pub evidence: Option<Evidence>,
     pub publication: Option<PublicationShort>,
@@ -214,7 +213,6 @@ pub struct OrthologAnnotation {
 
 #[derive(Serialize, Clone)]
 pub struct ParalogAnnotation {
-    pub gene: GeneShort,
     pub paralog: GeneShort,
     pub evidence: Option<Evidence>,
     pub publication: Option<PublicationShort>,

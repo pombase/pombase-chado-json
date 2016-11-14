@@ -343,7 +343,6 @@ impl <'a> WebDataBuild<'a> {
                             let other_gene_details = self.genes.get(object_uniquename).unwrap();
                             make_gene_short(other_gene_details)
                         };
-                        let other_gene_clone = other_gene.clone();
                         {
                             let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                             match &rel_config.annotation_type as &str {
@@ -358,7 +357,6 @@ impl <'a> WebDataBuild<'a> {
                                 "ortholog" => 
                                     gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
-                                            gene: gene,
                                             ortholog: other_gene,
                                             evidence: evidence,
                                             publication: None, // FIXME
@@ -366,7 +364,6 @@ impl <'a> WebDataBuild<'a> {
                                 "parlog" => 
                                     gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
-                                            gene: gene,
                                             paralog: other_gene,
                                             evidence: evidence,
                                             publication: None, // FIXME
@@ -381,7 +378,6 @@ impl <'a> WebDataBuild<'a> {
                                 "ortholog" => 
                                     other_gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
-                                            gene: other_gene_clone,
                                             ortholog: gene_clone,
                                             evidence: evidence_clone,
                                             publication: None, // FIXME
@@ -389,7 +385,6 @@ impl <'a> WebDataBuild<'a> {
                                 "parlog" => 
                                     other_gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
-                                            gene: other_gene_clone,
                                             paralog: gene_clone,
                                             evidence: evidence_clone,
                                             publication: None, // FIXME
@@ -998,15 +993,22 @@ fn get_test_raw() -> Raw {
     }
 }
 
-#[test]
-fn test_build() {
+#[allow(dead_code)]
+fn get_test_web_data() -> WebData {
     let raw = get_test_raw();
 
     let mut web_data_build = WebDataBuild::new(&raw);
-    let web_data = web_data_build.get_web_data();
+    web_data_build.get_web_data()
+}
+
+#[test]
+fn test_gene_details() {
+    let web_data = get_test_web_data();
 
     assert_eq!(web_data.genes.len(), 3);
-    let par1_gene = web_data.genes.get("SPCC188.02").unwrap();
+    let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
+    assert_eq!(par1_gene.uniquename, "SPCC188.02");
+    assert_eq!(par1_gene.name.unwrap(), "par1");
     assert_eq!(par1_gene.annotations.len(), 2);
 
     if par1_gene.annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
