@@ -26,27 +26,32 @@ use pombase::db::*;
 
 const POMBASE_ANN_EXT_TERM_CV_NAME: &'static str = "PomBase annotation extension terms";
 const ANNOTATION_EXT_REL_PREFIX: &'static str = "annotation_extension_relation-";
+enum FeatureRelAnnotationType {
+    Interaction,
+    Ortholog,
+    Paralog,
+}
 struct FeatureRelConfig {
     rel_type_name: &'static str,
-    annotation_type: &'static str,
+    annotation_type: FeatureRelAnnotationType,
 }
 const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
     [
         FeatureRelConfig {
             rel_type_name: "interacts_physically",
-            annotation_type: "interaction",
+            annotation_type: FeatureRelAnnotationType::Interaction,
         },
         FeatureRelConfig {
             rel_type_name: "interacts_genetically",
-            annotation_type: "interaction",
+            annotation_type: FeatureRelAnnotationType::Interaction,
         },
         FeatureRelConfig {
             rel_type_name: "orthologous_to",
-            annotation_type: "ortholog",
+            annotation_type: FeatureRelAnnotationType::Ortholog,
         },
         FeatureRelConfig {
-            rel_type_name: "paralog_to",
-            annotation_type: "paralog",
+            rel_type_name: "paralogous_to",
+            annotation_type: FeatureRelAnnotationType::Paralog,
         },
     ];
 
@@ -345,8 +350,8 @@ impl <'a> WebDataBuild<'a> {
                         };
                         {
                             let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
-                            match &rel_config.annotation_type as &str {
-                                "interaction" => 
+                            match rel_config.annotation_type {
+                                FeatureRelAnnotationType::Interaction =>
                                     gene_details.interaction_annotations.entry(rel_name.clone()).or_insert(Vec::new()).push(
                                         InteractionAnnotation {
                                             gene: gene,
@@ -354,42 +359,40 @@ impl <'a> WebDataBuild<'a> {
                                             evidence: evidence,
                                             publication: None, // FIXME
                                         }),
-                                "ortholog" => 
+                                FeatureRelAnnotationType::Ortholog =>
                                     gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
                                             ortholog: other_gene,
                                             evidence: evidence,
                                             publication: None, // FIXME
                                         }),
-                                "parlog" => 
+                                FeatureRelAnnotationType::Paralog =>
                                     gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
                                             paralog: other_gene,
                                             evidence: evidence,
                                             publication: None, // FIXME
                                         }),
-                                _ => panic!("no such annotation type: {}", &rel_config.annotation_type)
                             }
                         }
                         {
                             let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
-                            match &rel_config.annotation_type as &str {
-                                "interaction" => {},
-                                "ortholog" => 
+                            match rel_config.annotation_type {
+                                FeatureRelAnnotationType::Interaction => {},
+                                FeatureRelAnnotationType::Ortholog =>
                                     other_gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
                                             ortholog: gene_clone,
                                             evidence: evidence_clone,
                                             publication: None, // FIXME
                                         }),
-                                "parlog" => 
+                                FeatureRelAnnotationType::Paralog =>
                                     other_gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
                                             paralog: gene_clone,
                                             evidence: evidence_clone,
                                             publication: None, // FIXME
                                         }),
-                                _ => panic!("no such annotation type: {}", &rel_config.annotation_type)
                             }
                         }
                     }
