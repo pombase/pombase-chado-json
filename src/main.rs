@@ -566,11 +566,11 @@ impl <'a> WebDataBuild<'a> {
     fn get_web_data(&mut self) -> WebData {
         self.make_feature_rel_maps();
         self.process_features();
-        self.process_annotation_feature_rels();
         self.process_cvterms();
         self.process_cvterm_rels();
         self.process_feature_synonyms();
         self.process_feature_cvterms();
+        self.process_annotation_feature_rels();
 
         // remove terms with no annotation
         let used_terms = self.terms.clone().into_iter()
