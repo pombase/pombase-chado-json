@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 
-use pombase::db::CvName;
-
 type ExtRange = String;
+type CvName = String;
 
 #[derive(Serialize, Clone, Debug)]
 pub enum ExtRangeType {
