@@ -152,6 +152,7 @@ pub struct FeatureRelationship {
     pub object: Rc<Feature>,
     pub rel_type: Rc<Cvterm>,
     pub feature_relationshipprops: RefCell<Vec<Rc<FeatureRelationshipprop>>>,
+    pub publications: RefCell<Vec<Rc<Publication>>>,
 }
 pub struct FeatureRelationshipprop {
     pub feature_relationship: Rc<FeatureRelationship>,
@@ -419,8 +420,6 @@ impl Raw {
             feature_cvterm.feature_cvtermprops.borrow_mut().push(rc_feature_cvtermprop);
         }
 
-        
-
         for row in &conn.query("SELECT feature_relationship_id, subject_id, object_id, type_id FROM feature_relationship", &[]).unwrap() {
             let feature_relationship_id = row.get(0);
             let subject_id = row.get(1);
@@ -431,6 +430,7 @@ impl Raw {
                 object: feature_map.get(&object_id).unwrap().clone(),
                 rel_type: get_cvterm(&mut cvterm_map, type_id),
                 feature_relationshipprops: RefCell::new(vec![]),
+                publications: RefCell::new(vec![]),
             };
             let rc_feature_relationship = Rc::new(feature_relationship);
             ret.feature_relationships.push(rc_feature_relationship.clone());
@@ -450,6 +450,15 @@ impl Raw {
             };
             let rc_feature_relationshipprop = Rc::new(feature_relationshipprop);
             feature_relationship.feature_relationshipprops.borrow_mut().push(rc_feature_relationshipprop.clone());
+        }
+
+        for row in &conn.query("SELECT feature_relationship_id, pub_id FROM feature_relationship_pub", &[]).unwrap() {
+            let feature_relationship_id: i32 = row.get(0);
+            let feature_relationship =
+                feature_relationship_map.get(&feature_relationship_id).unwrap().clone();
+            let pub_id: i32 = row.get(1);
+            let publication = publication_map.get(&pub_id).unwrap().clone();
+            feature_relationship.publications.borrow_mut().push(publication.clone());
         }
 
         for row in &conn.query("SELECT object_id, subject_id, type_id FROM cvterm_relationship", &[]).unwrap() {

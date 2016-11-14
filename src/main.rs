@@ -56,7 +56,7 @@ const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
     ];
 
 
-fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Option<PublicationShort> {
+fn make_publication_short(rc_publication: &Rc<pombase::db::Publication>) -> Option<PublicationShort> {
     if rc_publication.uniquename == "null" {
         None
     } else {
@@ -335,6 +335,13 @@ impl <'a> WebDataBuild<'a> {
                      feature_rel.object.feat_type.name == "pseudogene") {
                         let mut evidence: Option<Evidence> = None;
 
+                        let borrowed_publications = feature_rel.publications.borrow();
+                        let maybe_publication = borrowed_publications.get(0).clone();
+                        let publication_short = match maybe_publication {
+                            Some(publication) => make_publication_short(publication),
+                            None => None,
+                        };
+
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
                             if prop.prop_type.name == "evidence" {
                                 evidence = prop.value.clone();
@@ -363,7 +370,7 @@ impl <'a> WebDataBuild<'a> {
                                             gene: gene,
                                             interactor: other_gene,
                                             evidence: evidence,
-                                            publication: None, // FIXME
+                                            publication: publication_short.clone(),
                                         }),
                                 FeatureRelAnnotationType::Ortholog =>
                                     gene_details.ortholog_annotations.push(
@@ -371,14 +378,14 @@ impl <'a> WebDataBuild<'a> {
                                             ortholog: other_gene,
                                             ortholog_organism: other_gene_organism_short,
                                             evidence: evidence,
-                                            publication: None, // FIXME
+                                            publication: publication_short.clone(),
                                         }),
                                 FeatureRelAnnotationType::Paralog =>
                                     gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
                                             paralog: other_gene,
                                             evidence: evidence,
-                                            publication: None, // FIXME
+                                            publication: publication_short.clone(),
                                         }),
                             }
                         }
@@ -392,14 +399,14 @@ impl <'a> WebDataBuild<'a> {
                                             ortholog: gene_clone,
                                             ortholog_organism: gene_organism_short,
                                             evidence: evidence_clone,
-                                            publication: None, // FIXME
+                                            publication: publication_short,
                                         }),
                                 FeatureRelAnnotationType::Paralog =>
                                     other_gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
                                             paralog: gene_clone,
                                             evidence: evidence_clone,
-                                            publication: None, // FIXME
+                                            publication: publication_short,
                                         }),
                             }
                         }
@@ -484,7 +491,7 @@ impl <'a> WebDataBuild<'a> {
                     evidence = prop.value.clone();
                 }
             }
-            let publication = make_publication_short(feature_cvterm.publication.clone());
+            let publication = make_publication_short(&feature_cvterm.publication);
             let mut genotype_alleles = None;
             let gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
@@ -797,6 +804,7 @@ fn make_test_feature_cvterm(feature_cvterms: &mut Vec<Rc<FeatureCvterm>>,
 
 #[allow(dead_code)]
 fn make_test_feature_rel(feature_relationships: &mut Vec<Rc<FeatureRelationship>>,
+                         publication: &Rc<Publication>,
                          subject: &Rc<Feature>, rel: &Rc<Cvterm>, object: &Rc<Feature>) {
     use std::cell::RefCell;
     let rel = Rc::new(FeatureRelationship {
@@ -804,6 +812,7 @@ fn make_test_feature_rel(feature_relationships: &mut Vec<Rc<FeatureRelationship>
         rel_type: rel.clone(),
         object: object.clone(),
         feature_relationshipprops: RefCell::new(vec![]),
+        publications: RefCell::new(vec![publication.clone()]),
     });
     feature_relationships.push(rel);
 }
@@ -899,6 +908,14 @@ fn get_test_raw() -> Raw {
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pub_type_cv, &pbo_db,
                                 "paper", "0000044");
 
+    let publication = Rc::new(Publication {
+        uniquename: String::from("PMID:11707284"),
+        title: Some(String::from("The protein phosphatase 2A B'-regulatory subunit par1p is implicated in regulation of the S. pombe septation initiation network.")),
+        pub_type: paper_cvterm,
+        miniref: Some(String::from("FEBS Lett. 2001 Nov 9;508(1):136-42")),
+        publicationprops: RefCell::new(vec![]),
+    });
+
     let go0031030_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &bp_cv, &go_db, "negative regulation of septation initiation signaling",
                                 "0031030");
@@ -929,39 +946,32 @@ fn get_test_raw() -> Raw {
                                       "SPAC6F6.08c", Some(String::from("cdc16")));
     let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                           "SPAC6F6.08c-allele1", Some(String::from("cdc16-116")));
-    make_test_feature_rel(&mut feature_relationships,
+    make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_allele1, &instance_of_cvterm, &cdc16_gene);
 
     let par1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                       "SPCC188.02", Some(String::from("par1")));
     let par1_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
                                               "SPCC188.02-allele1", Some(String::from("par1delta")));
-    make_test_feature_rel(&mut feature_relationships,
+    make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_delta_allele, &instance_of_cvterm, &par1_gene);
 
     let genotype1 = make_test_feature(&mut features, &pombe_organism,
                                       &genotype_cvterm, "test-genotype1", None);
-    make_test_feature_rel(&mut feature_relationships,
+    make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_delta_allele, &part_of_cvterm, &genotype1);
-    make_test_feature_rel(&mut feature_relationships,
+    make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_allele1, &part_of_cvterm, &genotype1);
 
     let par1_mrna = make_test_feature(&mut features, &pombe_organism,
                                       &mrna_cvterm, "SPCC188.02.1", None);
-    make_test_feature_rel(&mut feature_relationships, &par1_mrna, &part_of_cvterm, &par1_gene);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &par1_mrna, &part_of_cvterm, &par1_gene);
 
     let par1_polypeptide = make_test_feature(&mut features, &pombe_organism, &polypeptide_cvterm,
                                              "SPCC188.02:pep", None);
-    make_test_feature_rel(&mut feature_relationships,
+    make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_polypeptide, &derives_from_cvterm, &par1_mrna);
-
-    let publication = Rc::new(Publication {
-        uniquename: String::from("PMID:11707284"),
-        title: Some(String::from("The protein phosphatase 2A B'-regulatory subunit par1p is implicated in regulation of the S. pombe septation initiation network.")),
-        pub_type: paper_cvterm,
-        miniref: Some(String::from("FEBS Lett. 2001 Nov 9;508(1):136-42")),
-        publicationprops: RefCell::new(vec![]),
-    });
 
     make_test_feature_cvterm(&mut feature_cvterms, &par1_mrna, &go0031030_cvterm, &publication);
     make_test_feature_cvterm(&mut feature_cvterms, &genotype1, &pbo0022440_cvterm, &publication);
