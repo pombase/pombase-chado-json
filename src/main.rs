@@ -26,8 +26,29 @@ use pombase::db::*;
 
 const POMBASE_ANN_EXT_TERM_CV_NAME: &'static str = "PomBase annotation extension terms";
 const ANNOTATION_EXT_REL_PREFIX: &'static str = "annotation_extension_relation-";
-const FEATURE_REL_ANNOTATIONS: [&'static str; 2] =
-    ["interacts_physically", "interacts_genetically"];
+struct FeatureRelConfig {
+    rel_type_name: &'static str,
+    annotation_type: &'static str,
+}
+const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
+    [
+        FeatureRelConfig {
+            rel_type_name: "interacts_physically",
+            annotation_type: "interaction",
+        },
+        FeatureRelConfig {
+            rel_type_name: "interacts_genetically",
+            annotation_type: "interaction",
+        },
+        FeatureRelConfig {
+            rel_type_name: "orthologous_to",
+            annotation_type: "ortholog",
+        },
+        FeatureRelConfig {
+            rel_type_name: "paralog_to",
+            annotation_type: "paralog",
+        },
+    ];
 
 
 fn make_publication_short(rc_publication: Rc<pombase::db::Publication>) -> Option<PublicationShort> {
@@ -52,7 +73,6 @@ struct WebData {
 
 struct WebDataBuild<'a> {
     raw: &'a Raw,
-    organism_genus_species: &'a str,
 
     genes: UniquenameGeneMap,
     transcripts: UniquenameTranscriptMap,
@@ -71,10 +91,9 @@ struct WebDataBuild<'a> {
 }
 
 impl <'a> WebDataBuild<'a> {
-    fn new(raw: &'a Raw, organism_genus_species: &'a str) -> WebDataBuild<'a> {
+    fn new(raw: &'a Raw) -> WebDataBuild<'a> {
         WebDataBuild {
             raw: raw,
-            organism_genus_species: organism_genus_species,
 
             genes: HashMap::new(),
             transcripts: HashMap::new(),
@@ -208,17 +227,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_features(&mut self) {
-        let mut org_filtered_features: Vec<Rc<Feature>> = vec![];
-
-        for feat in self.raw.features.iter().filter(|&f| {
-            let feature_org_genus_species = String::new() +
-                &f.organism.genus + "_" + &f.organism.species;
-            feature_org_genus_species == self.organism_genus_species
-        } ) {
-            org_filtered_features.push(feat.clone());
-        }
-
-        for feat in org_filtered_features {
+        for feat in &self.raw.features {
             match &feat.feat_type.name as &str {
                 "gene" | "pseudogene" => {
                     let feature_locs = feat.featurelocs.borrow();
@@ -250,10 +259,15 @@ impl <'a> WebDataBuild<'a> {
                             },
                             None => None,
                         };
+                    let organism = OrganismDetails {
+                        genus: feat.organism.genus.clone(),
+                        species: feat.organism.species.clone(),
+                    };
                     self.genes.insert(feat.uniquename.clone(),
                                       GeneDetails {
                                           uniquename: feat.uniquename.clone(),
                                           name: feat.name.clone(),
+                                          organism: organism,
                                           product: None,
                                           synonyms: vec![],
                                           feature_type: feat.feat_type.name.clone(),
@@ -262,6 +276,8 @@ impl <'a> WebDataBuild<'a> {
                                           cds_location: None,
                                           annotations: HashMap::new(),
                                           interaction_annotations: HashMap::new(),
+                                          ortholog_annotations: vec![],
+                                          paralog_annotations: vec![],
                                           transcripts: vec![],
                                       });
                 },
@@ -302,8 +318,8 @@ impl <'a> WebDataBuild<'a> {
             let subject_uniquename = &feature_rel.subject.uniquename;
             let object_uniquename = &feature_rel.object.uniquename;
 
-            for annotation_rel_type_name in FEATURE_REL_ANNOTATIONS.iter() {
-                if rel_name == annotation_rel_type_name &&
+            for rel_config in FEATURE_REL_CONFIGS.iter() {
+                if rel_name == rel_config.rel_type_name &&
                     (feature_rel.subject.feat_type.name == "gene" ||
                      feature_rel.subject.feat_type.name == "pseudogene") &&
                     (feature_rel.object.feat_type.name == "gene" ||
@@ -316,22 +332,71 @@ impl <'a> WebDataBuild<'a> {
                             }
                         }
 
+                        let evidence_clone = evidence.clone();
+
                         let gene = {
                             let gene_details = self.genes.get(subject_uniquename).unwrap();
                             make_gene_short(gene_details)
                         };
-                        let interactor = {
-                            let interactor_details = self.genes.get(object_uniquename).unwrap();
-                            make_gene_short(interactor_details)
+                        let gene_clone = gene.clone();
+                        let other_gene = {
+                            let other_gene_details = self.genes.get(object_uniquename).unwrap();
+                            make_gene_short(other_gene_details)
                         };
-                        let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
-                        gene_details.interaction_annotations.entry(rel_name.clone()).or_insert(Vec::new()).push(
-                            InteractionAnnotation {
-                                gene: gene,
-                                interactor: interactor,
-                                evidence: evidence,
-                                publication: None, // FIXME
-                            });
+                        let other_gene_clone = other_gene.clone();
+                        {
+                            let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
+                            match &rel_config.annotation_type as &str {
+                                "interaction" => 
+                                    gene_details.interaction_annotations.entry(rel_name.clone()).or_insert(Vec::new()).push(
+                                        InteractionAnnotation {
+                                            gene: gene,
+                                            interactor: other_gene,
+                                            evidence: evidence,
+                                            publication: None, // FIXME
+                                        }),
+                                "ortholog" => 
+                                    gene_details.ortholog_annotations.push(
+                                        OrthologAnnotation {
+                                            gene: gene,
+                                            ortholog: other_gene,
+                                            evidence: evidence,
+                                            publication: None, // FIXME
+                                        }),
+                                "parlog" => 
+                                    gene_details.paralog_annotations.push(
+                                        ParalogAnnotation {
+                                            gene: gene,
+                                            paralog: other_gene,
+                                            evidence: evidence,
+                                            publication: None, // FIXME
+                                        }),
+                                _ => panic!("no such annotation type: {}", &rel_config.annotation_type)
+                            }
+                        }
+                        {
+                            let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
+                            match &rel_config.annotation_type as &str {
+                                "interaction" => {},
+                                "ortholog" => 
+                                    other_gene_details.ortholog_annotations.push(
+                                        OrthologAnnotation {
+                                            gene: other_gene_clone,
+                                            ortholog: gene_clone,
+                                            evidence: evidence_clone,
+                                            publication: None, // FIXME
+                                        }),
+                                "parlog" => 
+                                    other_gene_details.paralog_annotations.push(
+                                        ParalogAnnotation {
+                                            gene: other_gene_clone,
+                                            paralog: gene_clone,
+                                            evidence: evidence_clone,
+                                            publication: None, // FIXME
+                                        }),
+                                _ => panic!("no such annotation type: {}", &rel_config.annotation_type)
+                            }
+                        }
                     }
             }
         }
@@ -548,9 +613,15 @@ fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
     }
 }
 
-fn write_gene_summary(output_dir: &str, genes: &IdGeneMap) {
+fn write_gene_summary(output_dir: &str, genes: &IdGeneMap, organism_genus_species: &str) {
+
     let gene_summaries =
         genes.values()
+        .filter(|gene_details| {
+            let feature_org_genus_species = String::new() +
+                &gene_details.organism.genus + "_" + &gene_details.organism.species;
+            feature_org_genus_species == organism_genus_species
+        })
         .map(|gene_details| make_gene_short(&gene_details))
         .collect::<Vec<GeneShort>>();
     let s = serde_json::to_string(&gene_summaries).unwrap();
@@ -584,7 +655,7 @@ fn write_metadata(output_dir: &str, metadata: &Metadata) {
     writer.write_all(s.as_bytes()).expect("Unable to write!");
 }
 
-fn write_web_data(output_dir: &str, web_data: &WebData) {
+fn write_web_data(output_dir: &str, web_data: &WebData, organism_genus_species: &str) {
     let s = serde_json::to_string(&web_data).unwrap();
     let file_name = String::new() + output_dir + "/all.json";
     let f = File::create(file_name).expect("Unable to open file");
@@ -592,7 +663,7 @@ fn write_web_data(output_dir: &str, web_data: &WebData) {
     writer.write_all(s.as_bytes()).expect("Unable to write!");
 
     write_gene_details(output_dir, &web_data.genes);
-    write_gene_summary(output_dir, &web_data.genes);
+    write_gene_summary(output_dir, &web_data.genes, organism_genus_species);
     write_terms(output_dir, &web_data.terms);
     write_metadata(output_dir, &web_data.metadata);
 
@@ -637,10 +708,10 @@ fn main() {
 
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
     let raw = Raw::new(&conn);
-    let mut web_data_build = WebDataBuild::new(&raw, &organism_genus_species);
+    let mut web_data_build = WebDataBuild::new(&raw);
     let web_data = web_data_build.get_web_data();
 
-    write_web_data(&output_dir, &web_data);
+    write_web_data(&output_dir, &web_data, &organism_genus_species);
 }
 
 #[allow(dead_code)]
@@ -931,7 +1002,7 @@ fn get_test_raw() -> Raw {
 fn test_build() {
     let raw = get_test_raw();
 
-    let mut web_data_build = WebDataBuild::new(&raw, "Schizosaccharomyces_pombe");
+    let mut web_data_build = WebDataBuild::new(&raw);
     let web_data = web_data_build.get_web_data();
 
     assert_eq!(web_data.genes.len(), 3);

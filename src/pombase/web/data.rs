@@ -98,9 +98,16 @@ pub struct ChromosomeLocation {
 }
 
 #[derive(Serialize, Clone)]
+pub struct OrganismDetails {
+    pub genus: String,
+    pub species: String,
+}
+
+#[derive(Serialize, Clone)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     pub name: Option<String>,
+    pub organism: OrganismDetails,
     pub product: Option<String>,
     pub synonyms: Vec<SynonymDetails>,
     pub feature_type: String,
@@ -110,6 +117,8 @@ pub struct GeneDetails {
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: TypeFeatureAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
+    pub ortholog_annotations: Vec<OrthologAnnotation>,
+    pub paralog_annotations: Vec<ParalogAnnotation>,
 }
 
 pub type UniquenameGeneMap =
@@ -191,6 +200,22 @@ impl Clone for TermDetails {
 pub struct InteractionAnnotation {
     pub gene: GeneShort,
     pub interactor: GeneShort,
+    pub evidence: Option<Evidence>,
+    pub publication: Option<PublicationShort>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct OrthologAnnotation {
+    pub gene: GeneShort,
+    pub ortholog: GeneShort,
+    pub evidence: Option<Evidence>,
+    pub publication: Option<PublicationShort>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct ParalogAnnotation {
+    pub gene: GeneShort,
+    pub paralog: GeneShort,
     pub evidence: Option<Evidence>,
     pub publication: Option<PublicationShort>,
 }
