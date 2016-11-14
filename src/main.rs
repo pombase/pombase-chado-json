@@ -1002,6 +1002,7 @@ fn get_test_raw() -> Raw {
         cvtermpaths: vec![],
         cvterm_relationships: cvterm_relationships,
         publications: vec![publication],
+        publicationprops: vec![],
         synonyms: vec![],
         features: features,
         feature_synonyms: vec![],

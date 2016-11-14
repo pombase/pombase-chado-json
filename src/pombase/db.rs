@@ -15,6 +15,7 @@ pub struct Raw {
     pub cvtermpaths: Vec<Rc<Cvtermpath>>,
     pub cvterm_relationships: Vec<Rc<CvtermRelationship>>,
     pub publications: Vec<Rc<Publication>>,
+    pub publicationprops: Vec<Rc<Publicationprop>>,
     pub synonyms: Vec<Rc<Synonym>>,
     pub features: Vec<Rc<Feature>>,
     pub feature_synonyms: Vec<Rc<FeatureSynonym>>,
@@ -81,7 +82,7 @@ pub struct Publication {
 pub struct Publicationprop {
     pub publication: Rc<Publication>,
     pub prop_type: Rc<Cvterm>,
-    pub value: Option<String>,
+    pub value: String,
 }
 pub struct CvtermRelationship {
     pub subject: Rc<Cvterm>,
@@ -167,7 +168,8 @@ impl Raw {
             cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
             synonyms: vec![], cvtermprops: vec![],
             cvtermpaths: vec![], cvterm_relationships: vec![],
-            publications: vec![], features: vec![], featureprops: vec![],
+            publications: vec![], publicationprops: vec![],
+            features: vec![], featureprops: vec![],
             featurelocs: vec![], feature_synonyms: vec![],
             feature_cvterms: vec![], feature_cvtermprops: vec![],
             feature_relationships: vec![], chadoprops: vec![],
@@ -302,6 +304,21 @@ impl Raw {
             let rc_publication = Rc::new(publication);
             ret.publications.push(rc_publication.clone());
             publication_map.insert(pub_id, rc_publication);
+        }
+
+        for row in &conn.query("SELECT pub_id, type_id, value FROM pubprop", &[]).unwrap() {
+            let pub_id: i32 = row.get(0);
+            let type_id: i32 = row.get(1);
+            let value: String = row.get(2);
+            let publication = publication_map.get(&pub_id).unwrap().clone();
+            let publicationprop = Publicationprop {
+                publication: publication.clone(),
+                prop_type: get_cvterm(&mut cvterm_map, type_id),
+                value: value,
+            };
+            let rc_publicationprop = Rc::new(publicationprop);
+            ret.publicationprops.push(rc_publicationprop.clone());
+            publication.publicationprops.borrow_mut().push(rc_publicationprop.clone());
         }
 
         for row in &conn.query("SELECT synonym_id, name, type_id FROM synonym", &[]).unwrap() {
