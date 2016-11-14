@@ -62,6 +62,8 @@ struct WebDataBuild {
     genes_of_alleles: HashMap<String, String>,
     alleles_of_genotypes: HashMap<String, Vec<String>>,
 
+    // a map from IDs of terms from the "PomBase annotation extension terms" cv
+    // to a Vec of the details of each of the extension
     parts_of_extensions: HashMap<String, Vec<ExtPart>>
 }
 
@@ -323,10 +325,6 @@ impl WebDataBuild {
             }
         }
 
-        // a map from IDs of terms from the "PomBase annotation extension terms" cv
-        // to a Vec of the details of each of the extension
-        let mut parts_of_extensions: HashMap<String, Vec<ExtPart>> = HashMap::new();
-
         for cvterm in &raw.cvterms {
             if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
@@ -339,7 +337,7 @@ impl WebDataBuild {
                             ExtRangeType::Misc
                         };
 
-                        parts_of_extensions.entry(cvterm.termid())
+                        self.parts_of_extensions.entry(cvterm.termid())
                             .or_insert(Vec::new()).push(ExtPart {
                                 rel_type_name: String::from(ext_rel_name),
                                 range_type: range_type,
@@ -366,7 +364,7 @@ impl WebDataBuild {
             let rel_type = &cvterm_rel.rel_type;
 
             if subject_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
-                parts_of_extensions.entry(subject_term.termid())
+                self.parts_of_extensions.entry(subject_term.termid())
                     .or_insert(Vec::new()).push(ExtPart {
                         rel_type_name: rel_type.name.clone(),
                         range_type: ExtRangeType::Term,
@@ -702,10 +700,10 @@ fn make_test_feature_rel(feature_relationships: &mut Vec<Rc<FeatureRelationship>
 
 #[allow(dead_code)]
 fn make_test_cvterm_rel(cvterm_relationships: &mut Vec<Rc<CvtermRelationship>>,
-                        subject: &Rc<Cvterm>, rel: &Rc<Cvterm>, object: &Rc<Cvterm>) {
+                        subject: &Rc<Cvterm>, rel_type: &Rc<Cvterm>, object: &Rc<Cvterm>) {
     let rel = Rc::new(CvtermRelationship {
         subject: subject.clone(),
-        rel_type: rel.clone(),
+        rel_type: rel_type.clone(),
         object: object.clone(),
     });
     cvterm_relationships.push(rel);
@@ -735,6 +733,8 @@ fn get_test_raw() -> Raw {
     let fypo_cv = make_test_cv(&mut cvs, "fission_yeast_phenotype");
     let extension_cv = make_test_cv(&mut cvs, POMBASE_ANN_EXT_TERM_CV_NAME);
     let relations_cv = make_test_cv(&mut cvs, "relations");
+    let pombase_relations_cv = make_test_cv(&mut cvs, "pombase_relations");
+    let fypo_ext_relations_cv = make_test_cv(&mut cvs, "fypo_extension_relations");
     let sequence_cv = make_test_cv(&mut cvs, "sequence");
     let chadoprop_types_cv = make_test_cv(&mut cvs, "PomBase chadoprop types");
     let pub_type_cv = make_test_cv(&mut cvs, "PomBase publication types");
@@ -742,6 +742,7 @@ fn get_test_raw() -> Raw {
     let pbo_db = make_test_db(&mut dbs, "PBO");
     let go_db = make_test_db(&mut dbs, "GO");
     let fypo_db = make_test_db(&mut dbs, "FYPO");
+    let fypo_ext_db = make_test_db(&mut dbs, "FYPO_EXT");
     let obo_rel_db = make_test_db(&mut dbs, "OBO_REL");
     let so_db = make_test_db(&mut dbs, "SO");
 
@@ -754,9 +755,18 @@ fn get_test_raw() -> Raw {
     let part_of_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &relations_cv, &obo_rel_db,
                                 "part_of", "0000050");
+    let instance_of_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pombase_relations_cv, &pbo_db,
+                                "instance_of", "999990000");
     let derives_from_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &relations_cv, &obo_rel_db,
                                 "derives_from", "0001000");
+    let has_expressivity_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pombase_relations_cv, &pbo_db,
+                                "has_expressivity", "999990001");
+    let medium_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &fypo_ext_relations_cv, &fypo_ext_db,
+                                "medium", "0000002");
     let gene_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
                                 "gene", "0000704");
@@ -786,6 +796,9 @@ fn get_test_raw() -> Raw {
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &extension_cv, &pbo_db,
                                 "decreased cell population growth at high temperature [has_expressivity] medium",
                                 "0000082");
+    make_test_cvterm_rel(&mut cvterm_relationships,
+                         &pbo0022440_cvterm, &has_expressivity_cvterm, &medium_cvterm);
+
     let fypo0000082_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &fypo_cv, &fypo_db,
                                 "decreased cell population growth at high temperature",
@@ -797,11 +810,31 @@ fn get_test_raw() -> Raw {
         value: Some(String::from("2016-10-17 03:41:56")),
     })];
 
+    let chr_1 = make_test_feature(&mut features, &pombe_organism,
+                                  &chromosome_cvterm, "chromosome_1", None);
     let chr_3 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_3", None);
 
+    let cdc16_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
+                                      "SPAC6F6.08c", Some(String::from("cdc16")));
+    let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
+                                          "SPAC6F6.08c-allele1", Some(String::from("cdc16-116")));
+    make_test_feature_rel(&mut feature_relationships,
+                          &cdc16_allele1, &instance_of_cvterm, &cdc16_gene);
+
     let par1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                       "SPCC188.02", Some(String::from("par1")));
+    let par1_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
+                                              "SPCC188.02-allele1", Some(String::from("par1delta")));
+    make_test_feature_rel(&mut feature_relationships,
+                          &par1_delta_allele, &instance_of_cvterm, &par1_gene);
+
+    let genotype1 = make_test_feature(&mut features, &pombe_organism,
+                                      &genotype_cvterm, "test-genotype1", None);
+    make_test_feature_rel(&mut feature_relationships,
+                          &par1_delta_allele, &part_of_cvterm, &genotype1);
+    make_test_feature_rel(&mut feature_relationships,
+                          &cdc16_allele1, &part_of_cvterm, &genotype1);
 
     let par1_mrna = make_test_feature(&mut features, &pombe_organism,
                                       &mrna_cvterm, "SPCC188.02.1", None);
@@ -821,13 +854,22 @@ fn get_test_raw() -> Raw {
     });
 
     make_test_feature_cvterm(&mut feature_cvterms, &par1_mrna, &go0031030_cvterm, &publication);
+    make_test_feature_cvterm(&mut feature_cvterms, &genotype1, &pbo0022440_cvterm, &publication);
 
     par1_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
         feature: par1_gene.clone(),
-        fmin: 1200,
-        fmax: 1400,
-        strand: -1,
+        fmin: 1475493,
+        fmax: 1478103,
+        strand: 1,
         srcfeature: chr_3.clone(),
+    }));
+
+    cdc16_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
+        feature: par1_gene.clone(),
+        fmin: 2746666,
+        fmax: 2748180,
+        strand: -1,
+        srcfeature: chr_1.clone(),
     }));
 
     Raw {
@@ -838,8 +880,8 @@ fn get_test_raw() -> Raw {
         cvterms: cvterms,
         cvtermprops: vec![],
         cvtermpaths: vec![],
-        cvterm_relationships: vec![],
-        publications: vec![],
+        cvterm_relationships: cvterm_relationships,
+        publications: vec![publication],
         synonyms: vec![],
         features: features,
         feature_synonyms: vec![],
@@ -859,6 +901,11 @@ fn test_build() {
     let mut web_data_build = WebDataBuild::new();
     let web_data = web_data_build.get_web_data(&raw, "Schizosaccharomyces_pombe");
 
-    assert_eq!(web_data.genes.len(), 1);
-    assert_eq!(web_data.genes.get("SPCC188.02").unwrap().annotations.len(), 1);
+    assert_eq!(web_data.genes.len(), 3);
+    let par1_gene = web_data.genes.get("SPCC188.02").unwrap();
+    assert_eq!(par1_gene.annotations.len(), 2);
+
+    if par1_gene.annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
+        panic!("extension cv shouldn't be in the annotations");
+    }
 }
