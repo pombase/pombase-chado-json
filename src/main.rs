@@ -50,7 +50,10 @@ struct WebData {
     metadata: Metadata,
 }
 
-struct WebDataBuild {
+struct WebDataBuild<'a> {
+    raw: &'a Raw,
+    organism_genus_species: &'a str,
+
     genes: UniquenameGeneMap,
     transcripts: UniquenameTranscriptMap,
     genotypes: UniquenameGenotypeMap,
@@ -67,9 +70,12 @@ struct WebDataBuild {
     parts_of_extensions: HashMap<String, Vec<ExtPart>>
 }
 
-impl WebDataBuild {
-    fn new() -> WebDataBuild {
+impl <'a> WebDataBuild<'a> {
+    fn new(raw: &'a Raw, organism_genus_species: &'a str) -> WebDataBuild<'a> {
         WebDataBuild {
+            raw: raw,
+            organism_genus_species: organism_genus_species,
+
             genes: HashMap::new(),
             transcripts: HashMap::new(),
             genotypes: HashMap::new(),
@@ -161,9 +167,8 @@ impl WebDataBuild {
         term_details.annotations.push(term_annotation);
     }
 
-    fn get_web_data(&mut self, raw: &Raw, organism_genus_species: &str) -> WebData {
-
-        for feature_rel in raw.feature_relationships.iter() {
+    fn process_feature_rels(&mut self) {
+        for feature_rel in self.raw.feature_relationships.iter() {
             let subject_type_name = &feature_rel.subject.feat_type.name;
             let rel_name = &feature_rel.rel_type.name;
             let object_type_name = &feature_rel.object.feat_type.name;
@@ -200,16 +205,20 @@ impl WebDataBuild {
             }
         }
 
-        //    type IdAnnotationMap = HashMap<i32, (FeatureAnnotation, TermAnnotation)>;
+    }
 
-        //    let annotation_map: IdAnnotationMap = HashMap::new();
+    fn process_features(&mut self) {
+        let mut org_filtered_features: Vec<Rc<Feature>> = vec![];
 
-        for feat in raw.features.iter().filter(|&f| {
+        for feat in self.raw.features.iter().filter(|&f| {
             let feature_org_genus_species = String::new() +
                 &f.organism.genus + "_" + &f.organism.species;
-            feature_org_genus_species == *organism_genus_species
+            feature_org_genus_species == self.organism_genus_species
         } ) {
+            org_filtered_features.push(feat.clone());
+        }
 
+        for feat in org_filtered_features {
             match &feat.feat_type.name as &str {
                 "gene" | "pseudogene" => {
                     let feature_locs = feat.featurelocs.borrow();
@@ -285,8 +294,11 @@ impl WebDataBuild {
                 _ => (),
             }
         }
+    }
 
-        for feature_rel in raw.feature_relationships.iter() {
+    fn process_extension_feature_rels(&mut self) {
+
+        for feature_rel in self.raw.feature_relationships.iter() {
             let rel_name = &feature_rel.rel_type.name;
             let subject_uniquename = &feature_rel.subject.uniquename;
             let object_uniquename = &feature_rel.object.uniquename;
@@ -324,8 +336,10 @@ impl WebDataBuild {
                     }
             }
         }
+    }
 
-        for cvterm in &raw.cvterms {
+    fn process_cvterms(&mut self) {
+        for cvterm in &self.raw.cvterms {
             if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
                     if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
@@ -357,8 +371,10 @@ impl WebDataBuild {
                                   annotations: vec![],
                               });
         }
+    }
 
-        for cvterm_rel in &raw.cvterm_relationships {
+    fn process_cvterm_rels(&mut self) {
+        for cvterm_rel in &self.raw.cvterm_relationships {
             let subject_term = &cvterm_rel.subject;
             let object_term = &cvterm_rel.object;
             let rel_type = &cvterm_rel.rel_type;
@@ -372,8 +388,10 @@ impl WebDataBuild {
                     });
             }
         }
+    }
 
-        for feature_synonym in raw.feature_synonyms.iter() {
+    fn process_feature_synonyms(&mut self) {
+        for feature_synonym in self.raw.feature_synonyms.iter() {
             let feature = &feature_synonym.feature;
             let synonym = &feature_synonym.synonym;
 
@@ -384,8 +402,10 @@ impl WebDataBuild {
                 });
             }
         }
+    }
 
-        for feature_cvterm in raw.feature_cvterms.iter() {
+    fn process_feature_cvterms(&mut self) {
+        for feature_cvterm in self.raw.feature_cvterms.iter() {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
             let mut evidence: Option<String> = None;
@@ -461,25 +481,39 @@ impl WebDataBuild {
                 }
             }
         }
+    }
+
+    fn make_metadata(&mut self) -> Metadata {
+        let mut db_creation_datetime = None;
+
+        for chadoprop in &self.raw.chadoprops {
+            if chadoprop.prop_type.name == "db_creation_datetime" {
+                db_creation_datetime = chadoprop.value.clone();
+            }
+        }
+
+        Metadata {
+            db_creation_datetime: db_creation_datetime.unwrap(),
+            gene_count: self.genes.len(),
+            term_count: self.terms.len(),
+        }
+    }
+
+    fn get_web_data(&mut self) -> WebData {
+        self.process_feature_rels();
+        self.process_features();
+        self.process_extension_feature_rels();
+        self.process_cvterms();
+        self.process_cvterm_rels();
+        self.process_feature_synonyms();
+        self.process_feature_cvterms();
 
         // remove terms with no annotation
         let used_terms = self.terms.clone().into_iter()
             .filter(|&(_, ref t)| t.annotations.len() > 0)
             .collect();
 
-        let mut db_creation_datetime = None;
-
-        for chadoprop in &raw.chadoprops {
-            if chadoprop.prop_type.name == "db_creation_datetime" {
-                db_creation_datetime = chadoprop.value.clone();
-            }
-        }
-
-        let metadata = Metadata {
-            db_creation_datetime: db_creation_datetime.unwrap(),
-            gene_count: self.genes.len(),
-            term_count: self.terms.len(),
-        };
+        let metadata = self.make_metadata();
 
         WebData {
             genes: self.genes.clone(),
@@ -604,8 +638,8 @@ fn main() {
 
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
     let raw = Raw::new(&conn);
-    let mut web_data_build = WebDataBuild::new();
-    let web_data = web_data_build.get_web_data(&raw, &organism_genus_species);
+    let mut web_data_build = WebDataBuild::new(&raw, &organism_genus_species);
+    let web_data = web_data_build.get_web_data();
 
     write_web_data(&output_dir, &web_data);
 }
@@ -898,8 +932,8 @@ fn get_test_raw() -> Raw {
 fn test_build() {
     let raw = get_test_raw();
 
-    let mut web_data_build = WebDataBuild::new();
-    let web_data = web_data_build.get_web_data(&raw, "Schizosaccharomyces_pombe");
+    let mut web_data_build = WebDataBuild::new(&raw, "Schizosaccharomyces_pombe");
+    let web_data = web_data_build.get_web_data();
 
     assert_eq!(web_data.genes.len(), 3);
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap();
