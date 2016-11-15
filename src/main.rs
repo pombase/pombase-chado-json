@@ -662,6 +662,22 @@ impl <'a> WebDataBuild<'a> {
     }
 }
 
+fn write_reference_details(output_dir: &str, references: &IdReferenceMap) {
+    let s = serde_json::to_string(&references).unwrap();
+    let file_name = String::new() + &output_dir + "/references.json";
+    let f = File::create(file_name).expect("Unable to open file");
+    let mut writer = BufWriter::new(&f);
+    writer.write_all(s.as_bytes()).expect("Unable to write!");
+
+    for (reference_uniquename, reference_details) in references {
+        let s = serde_json::to_string(&reference_details).unwrap();
+        let file_name = String::new() + &output_dir + "/reference/" + &reference_uniquename + ".json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+    }
+}
+
 fn write_gene_details(output_dir: &str, genes: &IdGeneMap) {
     let s = serde_json::to_string(&genes).unwrap();
     let file_name = String::new() + &output_dir + "/genes.json";
@@ -736,6 +752,7 @@ fn write_web_data(output_dir: &str, web_data: &WebData, organism_genus_species: 
     let mut writer = BufWriter::new(&f);
     writer.write_all(s.as_bytes()).expect("Unable to write!");
 
+    write_reference_details(output_dir, &web_data.references);
     write_gene_details(output_dir, &web_data.genes);
     write_gene_summary(output_dir, &web_data.genes, organism_genus_species);
     write_terms(output_dir, &web_data.terms);
@@ -747,6 +764,17 @@ fn write_web_data(output_dir: &str, web_data: &WebData, organism_genus_species: 
 
 const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+fn make_subdirs(output_dir: &str) {
+    let subdirs = vec!["gene", "term", "reference"];
+
+    for subdir in &subdirs {
+        let dir = String::new() + output_dir + "/" + subdir;
+        fs::create_dir_all(&dir).unwrap_or_else(|why| {
+            println!("Creating output directory failed: {:?}", why.kind());
+        });
+    }
+}
 
 fn main() {
     print!("{} v{}\n", PKG_NAME, VERSION);
@@ -771,14 +799,7 @@ fn main() {
     let output_dir = matches.opt_str("d").unwrap();
     let organism_genus_species = matches.opt_str("O").unwrap();
 
-    let subdirs = vec!["gene", "term"];
-
-    for subdir in &subdirs {
-        let dir = String::new() + &output_dir + "/" + subdir;
-        fs::create_dir_all(&dir).unwrap_or_else(|why| {
-            println!("Creating output directory failed: {:?}", why.kind());
-        });
-    }
+    make_subdirs(&output_dir);
 
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
     let raw = Raw::new(&conn);
