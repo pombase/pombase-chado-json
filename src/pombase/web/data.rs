@@ -65,7 +65,9 @@ pub struct ReferenceDetails {
     pub uniquename: String,
     pub title: Option<String>,
     pub citation: Option<String>,
+    pub authors: Option<String>,
     pub authors_abbrev: Option<String>,
+    pub pubmed_publication_date: Option<String>,
     pub publication_year: Option<String>,
 }
 

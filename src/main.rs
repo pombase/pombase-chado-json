@@ -231,7 +231,7 @@ impl <'a> WebDataBuild<'a> {
             let mut authors_abbrev = None;
             let mut publication_year = None;
 
-            if let Some(authors) = pubmed_authors {
+            if let Some(authors) = pubmed_authors.clone() {
                 if authors.contains(",") {
                     let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
                     authors_abbrev = Some(author_re.replace_all(&authors, "$f et al."));
@@ -240,7 +240,7 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            if let Some(publication_date) = pubmed_publication_date {
+            if let Some(publication_date) = pubmed_publication_date.clone() {
                 let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
                 publication_year = Some(date_re.replace_all(&publication_date, "$y"));
             }
@@ -250,7 +250,9 @@ impl <'a> WebDataBuild<'a> {
                                          uniquename: reference_uniquename.clone(),
                                          title: rc_publication.title.clone(),
                                          citation: rc_publication.miniref.clone(),
+                                         authors: pubmed_authors.clone(),
                                          authors_abbrev: authors_abbrev,
+                                         pubmed_publication_date: pubmed_publication_date.clone(),
                                          publication_year: publication_year,
                                      });
         }
