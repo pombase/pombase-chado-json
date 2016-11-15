@@ -69,6 +69,17 @@ pub struct ReferenceDetails {
     pub authors_abbrev: Option<String>,
     pub pubmed_publication_date: Option<String>,
     pub publication_year: Option<String>,
+    pub annotations: ReferenceAnnotationMap,
+}
+
+#[derive(Serialize, Clone)]
+pub struct ReferenceAnnotation {
+    pub gene: GeneShort,
+    pub term: TermShort,
+    pub evidence: Option<Evidence>,
+    pub extension: Vec<ExtPart>,
+    // only for genotype/phenotype annotation:
+    pub genotype: Option<GenotypeAndAlleles>,
 }
 
 pub type Evidence = String;
@@ -87,6 +98,8 @@ pub type TypeFeatureAnnotationMap =
     HashMap<TypeName, Vec<FeatureAnnotation>>;
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
+pub type ReferenceAnnotationMap =
+    HashMap<TypeName, Vec<ReferenceAnnotation>>;
 
 #[derive(Serialize, Clone)]
 pub struct SynonymDetails {

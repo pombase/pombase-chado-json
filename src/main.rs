@@ -184,31 +184,47 @@ impl <'a> WebDataBuild<'a> {
         gene_details.product = Some(product.clone());
     }
 
-    fn add_annotation_to_gene(&mut self, gene_uniquename: &String,
-                              cvterm: &Cvterm, evidence: &Option<Evidence>,
-                              reference: &Option<ReferenceShort>,
-                              genotype_and_alleles: &Option<GenotypeAndAlleles>) {
+    fn add_annotation(&mut self, gene_uniquename: &String,
+                      cvterm: &Cvterm, evidence: &Option<Evidence>,
+                      reference_opt: &Option<ReferenceShort>,
+                      genotype_and_alleles: &Option<GenotypeAndAlleles>) {
         let (term, cv_name, extension) = self.make_term_short(&cvterm);
-        let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+
         let feature_annotation =
             FeatureAnnotation {
-                term: term,
+                term: term.clone(),
                 extension: extension.clone(),
                 evidence: evidence.clone(),
-                reference: reference.clone(),
+                reference: reference_opt.clone(),
                 genotype: genotype_and_alleles.clone(),
             };
-        gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation);
+        let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+        gene_details.annotations.entry(cv_name.clone())
+            .or_insert(Vec::new()).push(feature_annotation);
+
         let term_annotation =
             TermAnnotation {
                 gene: make_gene_short(&gene_details),
                 evidence: evidence.clone(),
-                reference: reference.clone(),
+                reference: reference_opt.clone(),
                 extension: extension.clone(),
             };
         let termid = cvterm.termid();
         let term_details = self.terms.get_mut(&termid).unwrap();
         term_details.annotations.push(term_annotation);
+
+        if let Some(reference) = reference_opt.clone() {
+            let ref_annotation =
+                ReferenceAnnotation {
+                    gene: make_gene_short(&gene_details),
+                    term: term,
+                    evidence: evidence.clone(),
+                    extension: extension,
+                    genotype: genotype_and_alleles.clone(),
+                };
+            let mut ref_details = self.references.get_mut(&reference.uniquename).unwrap();
+            ref_details.annotations.entry(cv_name).or_insert(Vec::new()).push(ref_annotation);
+        }
     }
 
     fn process_references(&mut self) {
@@ -246,15 +262,16 @@ impl <'a> WebDataBuild<'a> {
             }
 
             self.references.insert(reference_uniquename.clone(),
-                                     ReferenceDetails {
-                                         uniquename: reference_uniquename.clone(),
-                                         title: rc_publication.title.clone(),
-                                         citation: rc_publication.miniref.clone(),
-                                         authors: pubmed_authors.clone(),
-                                         authors_abbrev: authors_abbrev,
-                                         pubmed_publication_date: pubmed_publication_date.clone(),
-                                         publication_year: publication_year,
-                                     });
+                                   ReferenceDetails {
+                                       uniquename: reference_uniquename.clone(),
+                                       title: rc_publication.title.clone(),
+                                       citation: rc_publication.miniref.clone(),
+                                       authors: pubmed_authors.clone(),
+                                       authors_abbrev: authors_abbrev,
+                                       pubmed_publication_date: pubmed_publication_date.clone(),
+                                       publication_year: publication_year,
+                                       annotations: HashMap::new(),
+                                   });
         }
     }
 
@@ -614,8 +631,8 @@ impl <'a> WebDataBuild<'a> {
                 match &cvterm.cv.name as &str {
                     "PomBase gene characterisation status" => self.add_characterisation_status(&gene_uniquename, &cvterm.name),
                     "PomBase gene products" => self.add_gene_product(&gene_uniquename, &cvterm.name),
-                    _ => self.add_annotation_to_gene(&gene_uniquename, cvterm.borrow(),
-                                                     &evidence, &reference_short, &genotype_alleles)
+                    _ => self.add_annotation(&gene_uniquename, cvterm.borrow(),
+                                             &evidence, &reference_short, &genotype_alleles)
                 }
             }
         }
