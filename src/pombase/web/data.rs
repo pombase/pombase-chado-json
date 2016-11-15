@@ -52,7 +52,7 @@ pub struct TermShort {
 }
 
 #[derive(Serialize, Clone)]
-pub struct PublicationShort {
+pub struct ReferenceShort {
     pub uniquename: String,
     pub title: Option<String>,
     pub citation: Option<String>,
@@ -61,7 +61,7 @@ pub struct PublicationShort {
 }
 
 #[derive(Serialize, Clone)]
-pub struct PublicationDetails {
+pub struct ReferenceDetails {
     pub uniquename: String,
     pub title: Option<String>,
     pub citation: Option<String>,
@@ -76,7 +76,7 @@ pub struct FeatureAnnotation {
     pub term: TermShort,
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
-    pub publication: Option<PublicationShort>,
+    pub reference: Option<ReferenceShort>,
     // only for genotype/phenotype annotation:
     pub genotype: Option<GenotypeAndAlleles>,
 }
@@ -181,7 +181,7 @@ pub struct TermAnnotation {
     pub gene: GeneShort,
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
-    pub publication: Option<PublicationShort>,
+    pub reference: Option<ReferenceShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -199,7 +199,7 @@ pub struct InteractionAnnotation {
     pub gene: GeneShort,
     pub interactor: GeneShort,
     pub evidence: Option<Evidence>,
-    pub publication: Option<PublicationShort>,
+    pub reference: Option<ReferenceShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -207,19 +207,19 @@ pub struct OrthologAnnotation {
     pub ortholog_organism: OrganismShort,
     pub ortholog: GeneShort,
     pub evidence: Option<Evidence>,
-    pub publication: Option<PublicationShort>,
+    pub reference: Option<ReferenceShort>,
 }
 
 #[derive(Serialize, Clone)]
 pub struct ParalogAnnotation {
     pub paralog: GeneShort,
     pub evidence: Option<Evidence>,
-    pub publication: Option<PublicationShort>,
+    pub reference: Option<ReferenceShort>,
 }
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdTermMap = HashMap<TermId, TermDetails>;
-pub type IdPublicationMap = HashMap<TermId, PublicationDetails>;
+pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
 #[derive(Serialize)]
 pub struct Metadata {

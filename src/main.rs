@@ -71,7 +71,7 @@ struct WebData {
     terms: IdTermMap,
     used_terms: IdTermMap,
     metadata: Metadata,
-    publications: IdPublicationMap,
+    references: IdReferenceMap,
 }
 
 struct WebDataBuild<'a> {
@@ -82,7 +82,7 @@ struct WebDataBuild<'a> {
     genotypes: UniquenameGenotypeMap,
     alleles: UniquenameAlleleShortMap,
     terms: IdTermMap,
-    publications: IdPublicationMap,
+    references: IdReferenceMap,
 
     genes_of_transcripts: HashMap<String, String>,
     transcripts_of_polypeptides: HashMap<String, String>,
@@ -104,7 +104,7 @@ impl <'a> WebDataBuild<'a> {
             genotypes: HashMap::new(),
             alleles: HashMap::new(),
             terms: HashMap::new(),
-            publications: HashMap::new(),
+            references: HashMap::new(),
 
             genes_of_transcripts: HashMap::new(),
             transcripts_of_polypeptides: HashMap::new(),
@@ -115,23 +115,23 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_publication_short(&mut self, rc_publication: &Rc<pombase::db::Publication>) -> Option<PublicationShort> {
-        if rc_publication.uniquename == "null" {
+    fn make_reference_short(&mut self, reference_uniquename: &str) -> Option<ReferenceShort> {
+        if reference_uniquename == "null" {
             None
         } else {
-            let publication_details =
-                self.publications.get_mut(&rc_publication.uniquename).unwrap();
+            let reference_details =
+                self.references.get_mut(reference_uniquename).unwrap();
 
-            let publication_short =
-                PublicationShort {
-                    uniquename: publication_details.uniquename.clone(),
-                    title: publication_details.title.clone(),
-                    citation: publication_details.citation.clone(),
-                    publication_year: publication_details.publication_year.clone(),
-                    authors_abbrev: publication_details.authors_abbrev.clone(),
+            let reference_short =
+                ReferenceShort {
+                    uniquename: String::from(reference_uniquename),
+                    title: reference_details.title.clone(),
+                    citation: reference_details.citation.clone(),
+                    publication_year: reference_details.publication_year.clone(),
+                    authors_abbrev: reference_details.authors_abbrev.clone(),
                 };
 
-            Some(publication_short)
+            Some(reference_short)
         }
     }
 
@@ -186,7 +186,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_annotation_to_gene(&mut self, gene_uniquename: &String,
                               cvterm: &Cvterm, evidence: &Option<Evidence>,
-                              publication: &Option<PublicationShort>,
+                              reference: &Option<ReferenceShort>,
                               genotype_and_alleles: &Option<GenotypeAndAlleles>) {
         let (term, cv_name, extension) = self.make_term_short(&cvterm);
         let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
@@ -195,7 +195,7 @@ impl <'a> WebDataBuild<'a> {
                 term: term,
                 extension: extension.clone(),
                 evidence: evidence.clone(),
-                publication: publication.clone(),
+                reference: reference.clone(),
                 genotype: genotype_and_alleles.clone(),
             };
         gene_details.annotations.entry(cv_name).or_insert(Vec::new()).push(feature_annotation);
@@ -203,7 +203,7 @@ impl <'a> WebDataBuild<'a> {
             TermAnnotation {
                 gene: make_gene_short(&gene_details),
                 evidence: evidence.clone(),
-                publication: publication.clone(),
+                reference: reference.clone(),
                 extension: extension.clone(),
             };
         let termid = cvterm.termid();
@@ -211,9 +211,9 @@ impl <'a> WebDataBuild<'a> {
         term_details.annotations.push(term_annotation);
     }
 
-    fn process_publications(&mut self) {
+    fn process_references(&mut self) {
         for rc_publication in &self.raw.publications {
-            let publication_uniquename = &rc_publication.uniquename;
+            let reference_uniquename = &rc_publication.uniquename;
 
             let mut pubmed_authors: Option<String> = None;
             let mut pubmed_publication_date: Option<String> = None;
@@ -245,9 +245,9 @@ impl <'a> WebDataBuild<'a> {
                 publication_year = Some(date_re.replace_all(&publication_date, "$y"));
             }
 
-            self.publications.insert(publication_uniquename.clone(),
-                                     PublicationDetails {
-                                         uniquename: publication_uniquename.clone(),
+            self.references.insert(reference_uniquename.clone(),
+                                     ReferenceDetails {
+                                         uniquename: reference_uniquename.clone(),
                                          title: rc_publication.title.clone(),
                                          citation: rc_publication.miniref.clone(),
                                          authors_abbrev: authors_abbrev,
@@ -395,8 +395,8 @@ impl <'a> WebDataBuild<'a> {
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0).clone();
-                        let publication_short = match maybe_publication {
-                            Some(publication) => self.make_publication_short(publication),
+                        let reference_short = match maybe_publication {
+                            Some(publication) => self.make_reference_short(&publication.uniquename),
                             None => None,
                         };
 
@@ -428,7 +428,7 @@ impl <'a> WebDataBuild<'a> {
                                             gene: gene,
                                             interactor: other_gene,
                                             evidence: evidence,
-                                            publication: publication_short.clone(),
+                                            reference: reference_short.clone(),
                                         }),
                                 FeatureRelAnnotationType::Ortholog =>
                                     gene_details.ortholog_annotations.push(
@@ -436,14 +436,14 @@ impl <'a> WebDataBuild<'a> {
                                             ortholog: other_gene,
                                             ortholog_organism: other_gene_organism_short,
                                             evidence: evidence,
-                                            publication: publication_short.clone(),
+                                            reference: reference_short.clone(),
                                         }),
                                 FeatureRelAnnotationType::Paralog =>
                                     gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
                                             paralog: other_gene,
                                             evidence: evidence,
-                                            publication: publication_short.clone(),
+                                            reference: reference_short.clone(),
                                         }),
                             }
                         }
@@ -457,14 +457,14 @@ impl <'a> WebDataBuild<'a> {
                                             ortholog: gene_clone,
                                             ortholog_organism: gene_organism_short,
                                             evidence: evidence_clone,
-                                            publication: publication_short,
+                                            reference: reference_short,
                                         }),
                                 FeatureRelAnnotationType::Paralog =>
                                     other_gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
                                             paralog: gene_clone,
                                             evidence: evidence_clone,
-                                            publication: publication_short,
+                                            reference: reference_short,
                                         }),
                             }
                         }
@@ -549,7 +549,8 @@ impl <'a> WebDataBuild<'a> {
                     evidence = prop.value.clone();
                 }
             }
-            let publication = self.make_publication_short(&feature_cvterm.publication);
+            let reference_short =
+                self.make_reference_short(&feature_cvterm.publication.uniquename);
             let mut genotype_alleles = None;
             let gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
@@ -612,7 +613,7 @@ impl <'a> WebDataBuild<'a> {
                     "PomBase gene characterisation status" => self.add_characterisation_status(&gene_uniquename, &cvterm.name),
                     "PomBase gene products" => self.add_gene_product(&gene_uniquename, &cvterm.name),
                     _ => self.add_annotation_to_gene(&gene_uniquename, cvterm.borrow(),
-                                                     &evidence, &publication, &genotype_alleles)
+                                                     &evidence, &reference_short, &genotype_alleles)
                 }
             }
         }
@@ -635,7 +636,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn get_web_data(&mut self) -> WebData {
-        self.process_publications();
+        self.process_references();
         self.make_feature_rel_maps();
         self.process_features();
         self.process_cvterms();
@@ -656,7 +657,7 @@ impl <'a> WebDataBuild<'a> {
             terms: self.terms.clone(),
             used_terms: used_terms,
             metadata: metadata,
-            publications: self.publications.clone(),
+            references: self.references.clone(),
         }
     }
 }
@@ -1124,10 +1125,10 @@ fn test_make_publication_short() {
     let web_data = get_test_web_data();
 
     let pmid = "PMID:11707284";
-    let pub_short = web_data.publications.get(pmid).unwrap();
+    let ref_short = web_data.references.get(pmid).unwrap();
 
-    assert_eq!(pub_short.uniquename, pmid);
+    assert_eq!(ref_short.uniquename, pmid);
 
-    assert_eq!(pub_short.authors_abbrev.clone().unwrap(), "Le Goff X et al.");
-    assert_eq!(pub_short.publication_year.clone().unwrap(), "2001");
+    assert_eq!(ref_short.authors_abbrev.clone().unwrap(), "Le Goff X et al.");
+    assert_eq!(ref_short.publication_year.clone().unwrap(), "2001");
 }
