@@ -60,7 +60,14 @@ pub struct PublicationShort {
     pub publication_year: Option<String>,
 }
 
-pub type PublicationDetails = PublicationShort;
+#[derive(Serialize, Clone)]
+pub struct PublicationDetails {
+    pub uniquename: String,
+    pub title: Option<String>,
+    pub citation: Option<String>,
+    pub authors_abbrev: Option<String>,
+    pub publication_year: Option<String>,
+}
 
 pub type Evidence = String;
 
@@ -177,7 +184,7 @@ pub struct TermAnnotation {
     pub publication: Option<PublicationShort>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
@@ -185,19 +192,6 @@ pub struct TermDetails {
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
     pub annotations: Vec<TermAnnotation>,
-}
-
-impl Clone for TermDetails {
-    fn clone(&self) -> TermDetails {
-        TermDetails {
-            name: self.name.clone(),
-            cv_name: self.cv_name.clone(),
-            termid: self.termid.clone(),
-            definition: self.definition.clone(),
-            is_obsolete: self.is_obsolete,
-            annotations: self.annotations.clone(),
-        }
-    }
 }
 
 #[derive(Serialize, Clone)]

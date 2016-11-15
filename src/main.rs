@@ -119,53 +119,18 @@ impl <'a> WebDataBuild<'a> {
         if rc_publication.uniquename == "null" {
             None
         } else {
-            {
-                let existing_publication_short = self.publications.get(&rc_publication.uniquename);
-                if let Some(publication_short) = existing_publication_short {
-                    return Some(publication_short.clone())
-                }
-            }
-            let mut pubmed_authors: Option<String> = None;
-            let mut pubmed_publication_date: Option<String> = None;
-
-            for prop in rc_publication.publicationprops.borrow().iter() {
-                match &prop.prop_type.name as &str {
-                    "pubmed_publication_date" => 
-                        pubmed_publication_date = Some(prop.value.clone()),
-                    "pubmed_authors" =>
-                        pubmed_authors = Some(prop.value.clone()),
-                    _ => ()
-                }
-            }
-
-            let mut authors_abbrev = None;
-            let mut publication_year = None;
-
-            if let Some(authors) = pubmed_authors {
-                if authors.contains(",") {
-                    let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
-                    authors_abbrev = Some(author_re.replace_all(&authors, "$f et al."));
-                } else {
-                    authors_abbrev = Some(authors.clone());
-                }
-            }
-
-            if let Some(publication_date) = pubmed_publication_date {
-                let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
-                publication_year = Some(date_re.replace_all(&publication_date, "$y"));
-            }
+            let publication_details =
+                self.publications.get_mut(&rc_publication.uniquename).unwrap();
 
             let publication_short =
                 PublicationShort {
-                    uniquename: rc_publication.uniquename.clone(),
-                    title: rc_publication.title.clone(),
-                    citation: rc_publication.miniref.clone(),
-                    publication_year: publication_year,
-                    authors_abbrev: authors_abbrev,
+                    uniquename: publication_details.uniquename.clone(),
+                    title: publication_details.title.clone(),
+                    citation: publication_details.citation.clone(),
+                    publication_year: publication_details.publication_year.clone(),
+                    authors_abbrev: publication_details.authors_abbrev.clone(),
                 };
 
-            self.publications.insert(rc_publication.uniquename.clone(),
-                                     publication_short.clone());
             Some(publication_short)
         }
     }
@@ -244,6 +209,51 @@ impl <'a> WebDataBuild<'a> {
         let termid = cvterm.termid();
         let term_details = self.terms.get_mut(&termid).unwrap();
         term_details.annotations.push(term_annotation);
+    }
+
+    fn process_publications(&mut self) {
+        for rc_publication in &self.raw.publications {
+            let publication_uniquename = &rc_publication.uniquename;
+
+            let mut pubmed_authors: Option<String> = None;
+            let mut pubmed_publication_date: Option<String> = None;
+
+            for prop in rc_publication.publicationprops.borrow().iter() {
+                match &prop.prop_type.name as &str {
+                    "pubmed_publication_date" => 
+                        pubmed_publication_date = Some(prop.value.clone()),
+                    "pubmed_authors" =>
+                        pubmed_authors = Some(prop.value.clone()),
+                    _ => ()
+                }
+            }
+
+            let mut authors_abbrev = None;
+            let mut publication_year = None;
+
+            if let Some(authors) = pubmed_authors {
+                if authors.contains(",") {
+                    let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
+                    authors_abbrev = Some(author_re.replace_all(&authors, "$f et al."));
+                } else {
+                    authors_abbrev = Some(authors.clone());
+                }
+            }
+
+            if let Some(publication_date) = pubmed_publication_date {
+                let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
+                publication_year = Some(date_re.replace_all(&publication_date, "$y"));
+            }
+
+            self.publications.insert(publication_uniquename.clone(),
+                                     PublicationDetails {
+                                         uniquename: publication_uniquename.clone(),
+                                         title: rc_publication.title.clone(),
+                                         citation: rc_publication.miniref.clone(),
+                                         authors_abbrev: authors_abbrev,
+                                         publication_year: publication_year,
+                                     });
+        }
     }
 
     fn make_feature_rel_maps(&mut self) {
@@ -625,6 +635,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn get_web_data(&mut self) -> WebData {
+        self.process_publications();
         self.make_feature_rel_maps();
         self.process_features();
         self.process_cvterms();
