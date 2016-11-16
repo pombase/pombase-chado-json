@@ -236,7 +236,7 @@ impl <'a> WebDataBuild<'a> {
 
             for prop in rc_publication.publicationprops.borrow().iter() {
                 match &prop.prop_type.name as &str {
-                    "pubmed_publication_date" => 
+                    "pubmed_publication_date" =>
                         pubmed_publication_date = Some(prop.value.clone()),
                     "pubmed_authors" =>
                         pubmed_authors = Some(prop.value.clone()),
