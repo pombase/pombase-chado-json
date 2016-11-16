@@ -167,7 +167,8 @@ impl <'a> WebDataBuild<'a> {
             TermShort {
                 name: term.name.clone(),
                 termid: term.termid.clone(),
-                is_obsolete: term.is_obsolete
+                is_obsolete: term.is_obsolete,
+                use_count: term.annotations.len(),
             },
             term.cv_name.clone(),
             extension
@@ -665,7 +666,6 @@ impl <'a> WebDataBuild<'a> {
                     }
                 };
 
-
             for gene_uniquename in &gene_uniquenames_vec {
                 match &cvterm.cv.name as &str {
                     "PomBase gene characterisation status" => self.add_characterisation_status(&gene_uniquename, &cvterm.name),
@@ -693,6 +693,26 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn set_term_short_use_counts(&mut self) {
+        for (_, gene_details) in &mut self.genes {
+            for (_, feat_annotations) in &mut gene_details.annotations {
+                for feat_annotation in feat_annotations {
+                    let term_details = self.terms.get_mut(&feat_annotation.term.termid).unwrap();
+                    feat_annotation.term.use_count = term_details.annotations.len();
+                }
+            }
+        }
+
+        for (_, ref_details) in &mut self.references {
+            for (_, ref_annotations) in &mut ref_details.annotations {
+                for ref_annotation in ref_annotations {
+                    let term_details = self.terms.get_mut(&ref_annotation.term.termid).unwrap();
+                    ref_annotation.term.use_count = term_details.annotations.len();
+                }
+            }
+        }
+    }
+
     fn get_web_data(&mut self) -> WebData {
         self.process_references();
         self.make_feature_rel_maps();
@@ -702,6 +722,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_feature_synonyms();
         self.process_feature_cvterms();
         self.process_annotation_feature_rels();
+        self.set_term_short_use_counts();
 
         // remove terms with no annotation
         let used_terms = self.terms.clone().into_iter()

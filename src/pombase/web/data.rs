@@ -49,6 +49,7 @@ pub struct TermShort {
     pub name: TermName,
     pub termid: TermId,
     pub is_obsolete: bool,
+    pub use_count: usize,
 }
 
 #[derive(Serialize, Clone)]
