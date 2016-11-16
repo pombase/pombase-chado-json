@@ -69,7 +69,10 @@ pub struct ReferenceDetails {
     pub authors_abbrev: Option<String>,
     pub pubmed_publication_date: Option<String>,
     pub publication_year: Option<String>,
-    pub annotations: ReferenceAnnotationMap,
+    pub annotations: TypeReferenceAnnotationMap,
+    pub interaction_annotations: TypeInteractionAnnotationMap,
+    pub ortholog_annotations: Vec<OrthologAnnotation>,
+    pub paralog_annotations: Vec<ParalogAnnotation>,
 }
 
 #[derive(Serialize, Clone)]
@@ -96,10 +99,10 @@ pub struct FeatureAnnotation {
 
 pub type TypeFeatureAnnotationMap =
     HashMap<TypeName, Vec<FeatureAnnotation>>;
+pub type TypeReferenceAnnotationMap =
+    HashMap<TypeName, Vec<ReferenceAnnotation>>;
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
-pub type ReferenceAnnotationMap =
-    HashMap<TypeName, Vec<ReferenceAnnotation>>;
 
 #[derive(Serialize, Clone)]
 pub struct SynonymDetails {
@@ -219,6 +222,7 @@ pub struct InteractionAnnotation {
 
 #[derive(Serialize, Clone)]
 pub struct OrthologAnnotation {
+    pub gene: GeneShort,
     pub ortholog_organism: OrganismShort,
     pub ortholog: GeneShort,
     pub evidence: Option<Evidence>,
@@ -227,6 +231,7 @@ pub struct OrthologAnnotation {
 
 #[derive(Serialize, Clone)]
 pub struct ParalogAnnotation {
+    pub gene: GeneShort,
     pub paralog: GeneShort,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceShort>,

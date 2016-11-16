@@ -271,6 +271,9 @@ impl <'a> WebDataBuild<'a> {
                                        pubmed_publication_date: pubmed_publication_date.clone(),
                                        publication_year: publication_year,
                                        annotations: HashMap::new(),
+                                       interaction_annotations: HashMap::new(),
+                                       ortholog_annotations: vec![],
+                                       paralog_annotations: vec![],
                                    });
         }
     }
@@ -414,10 +417,17 @@ impl <'a> WebDataBuild<'a> {
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0).clone();
-                        let reference_short = match maybe_publication {
+                        let maybe_reference_short = match maybe_publication {
                             Some(publication) => self.make_reference_short(&publication.uniquename),
                             None => None,
                         };
+
+                        let maybe_ref_details =
+                            if let Some(ref reference_short) = maybe_reference_short {
+                                self.references.get_mut(&reference_short.uniquename)
+                            } else {
+                                None
+                            };
 
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
                             if prop.prop_type.name == "evidence" {
@@ -441,29 +451,48 @@ impl <'a> WebDataBuild<'a> {
                         {
                             let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                             match rel_config.annotation_type {
-                                FeatureRelAnnotationType::Interaction =>
-                                    gene_details.interaction_annotations.entry(rel_name.clone()).or_insert(Vec::new()).push(
+                                FeatureRelAnnotationType::Interaction => {
+                                    let interaction_annotation =
                                         InteractionAnnotation {
-                                            gene: gene,
-                                            interactor: other_gene,
+                                            gene: gene.clone(),
+                                            interactor: other_gene.clone(),
                                             evidence: evidence,
-                                            reference: reference_short.clone(),
-                                        }),
-                                FeatureRelAnnotationType::Ortholog =>
-                                    gene_details.ortholog_annotations.push(
+                                            reference: maybe_reference_short.clone(),
+                                        };
+                                    gene_details.interaction_annotations
+                                        .entry(rel_name.clone()).or_insert(Vec::new()).push(interaction_annotation.clone());
+                                    if let Some(ref_details) = maybe_ref_details {
+                                        ref_details.interaction_annotations
+                                            .entry(rel_name.clone()).or_insert(Vec::new()).push(interaction_annotation);
+                                    }
+                                },
+                                FeatureRelAnnotationType::Ortholog => {
+                                    let ortholog_annotation =
                                         OrthologAnnotation {
-                                            ortholog: other_gene,
+                                            gene: gene.clone(),
+                                            ortholog: other_gene.clone(),
                                             ortholog_organism: other_gene_organism_short,
                                             evidence: evidence,
-                                            reference: reference_short.clone(),
-                                        }),
-                                FeatureRelAnnotationType::Paralog =>
-                                    gene_details.paralog_annotations.push(
+                                            reference: maybe_reference_short.clone(),
+                                        };
+                                    gene_details.ortholog_annotations.push(ortholog_annotation.clone());
+                                    if let Some(ref_details) = maybe_ref_details {
+                                        ref_details.ortholog_annotations.push(ortholog_annotation);
+                                    }
+                                },
+                                FeatureRelAnnotationType::Paralog => {
+                                    let paralog_annotation =
                                         ParalogAnnotation {
-                                            paralog: other_gene,
+                                            gene: gene.clone(),
+                                            paralog: other_gene.clone(),
                                             evidence: evidence,
-                                            reference: reference_short.clone(),
-                                        }),
+                                            reference: maybe_reference_short.clone(),
+                                        };
+                                    gene_details.paralog_annotations.push(paralog_annotation.clone());
+                                    if let Some(ref_details) = maybe_ref_details {
+                                        ref_details.paralog_annotations.push(paralog_annotation);
+                                    }
+                                }
                             }
                         }
                         {
@@ -473,17 +502,19 @@ impl <'a> WebDataBuild<'a> {
                                 FeatureRelAnnotationType::Ortholog =>
                                     other_gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
+                                            gene: other_gene,
                                             ortholog: gene_clone,
                                             ortholog_organism: gene_organism_short,
                                             evidence: evidence_clone,
-                                            reference: reference_short,
+                                            reference: maybe_reference_short.clone(),
                                         }),
                                 FeatureRelAnnotationType::Paralog =>
                                     other_gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
+                                            gene: other_gene,
                                             paralog: gene_clone,
                                             evidence: evidence_clone,
-                                            reference: reference_short,
+                                            reference: maybe_reference_short,
                                         }),
                             }
                         }
@@ -722,10 +753,9 @@ fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
     }
 }
 
-fn write_gene_summary(output_dir: &str, genes: &IdGeneMap, organism_genus_species: &str) {
-
+fn write_gene_summary(output_dir: &str, web_data: &WebData, organism_genus_species: &str) {
     let gene_summaries =
-        genes.values()
+        web_data.genes.values()
         .filter(|gene_details| {
             let feature_org_genus_species = String::new() +
                 &gene_details.organism.genus + "_" + &gene_details.organism.species;
@@ -773,7 +803,7 @@ fn write_web_data(output_dir: &str, web_data: &WebData, organism_genus_species: 
 
     write_reference_details(output_dir, &web_data.references);
     write_gene_details(output_dir, &web_data.genes);
-    write_gene_summary(output_dir, &web_data.genes, organism_genus_species);
+    write_gene_summary(output_dir, &web_data, organism_genus_species);
     write_terms(output_dir, &web_data.terms);
     write_metadata(output_dir, &web_data.metadata);
 
