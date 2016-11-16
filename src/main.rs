@@ -318,87 +318,95 @@ impl <'a> WebDataBuild<'a> {
 
     }
 
-    fn process_features(&mut self) {
-        for feat in &self.raw.features {
-            match &feat.feat_type.name as &str {
-                "gene" | "pseudogene" => {
-                    let feature_locs = feat.featurelocs.borrow();
-                    let location =
-                        match feature_locs.get(0) {
-                            Some(feature_loc) => {
-                                let start_pos =
-                                    if feature_loc.fmin + 1 >= 1 {
-                                        (feature_loc.fmin + 1) as u32
-                                    } else {
-                                        panic!("start_pos less than 1");
-                                    };
-                                let end_pos =
-                                    if feature_loc.fmax >= 1 {
-                                        feature_loc.fmax as u32
-                                    } else {
-                                        panic!("start_end less than 1");
-                                    };
-                                Some(ChromosomeLocation {
-                                    chromosome_name: feature_loc.srcfeature.uniquename.clone(),
-                                    start_pos: start_pos,
-                                    end_pos: end_pos,
-                                    strand: match feature_loc.strand {
-                                        1 => Strand::Forward,
-                                        -1 => Strand::Reverse,
-                                        _ => panic!(),
-                                    },
-                                })
-                            },
-                            None => None,
-                        };
-                    let organism = make_organism_short(&feat.organism);
-                    self.genes.insert(feat.uniquename.clone(),
-                                      GeneDetails {
-                                          uniquename: feat.uniquename.clone(),
-                                          name: feat.name.clone(),
-                                          organism: organism,
-                                          product: None,
-                                          synonyms: vec![],
-                                          feature_type: feat.feat_type.name.clone(),
-                                          characterisation_status: None,
-                                          location: location,
-                                          cds_location: None,
-                                          annotations: HashMap::new(),
-                                          interaction_annotations: HashMap::new(),
-                                          ortholog_annotations: vec![],
-                                          paralog_annotations: vec![],
-                                          transcripts: vec![],
-                                      });
-                },
-                // TODO: mRNA isn't the only transcript type
-                "mRNA" => {
-                    self.transcripts.insert(feat.uniquename.clone(),
-                                            TranscriptDetails {
-                                                uniquename: feat.uniquename.clone(),
-                                                name: feat.name.clone(),
-                                            });
-                },
-                "genotype" => {
-                    self.genotypes.insert(feat.uniquename.clone(),
-                                          GenotypeDetails {
-                                              uniquename: feat.uniquename.clone(),
-                                              name: feat.name.clone(),
-                                              annotations: HashMap::new(),
-                                          });
-                },
-                "allele" => {
-                    let gene_uniquename =
-                        self.genes_of_alleles.get(&feat.uniquename).unwrap();
-                    self.alleles.insert(feat.uniquename.clone(),
-                                        AlleleShort {
+    fn make_location(&mut self, feat: &Feature) -> Option<ChromosomeLocation> {
+        let feature_locs = feat.featurelocs.borrow();
+        match feature_locs.get(0) {
+            Some(feature_loc) => {
+                let start_pos =
+                    if feature_loc.fmin + 1 >= 1 {
+                        (feature_loc.fmin + 1) as u32
+                    } else {
+                        panic!("start_pos less than 1");
+                    };
+                let end_pos =
+                    if feature_loc.fmax >= 1 {
+                        feature_loc.fmax as u32
+                    } else {
+                        panic!("start_end less than 1");
+                    };
+                Some(ChromosomeLocation {
+                    chromosome_name: feature_loc.srcfeature.uniquename.clone(),
+                    start_pos: start_pos,
+                    end_pos: end_pos,
+                    strand: match feature_loc.strand {
+                        1 => Strand::Forward,
+                        -1 => Strand::Reverse,
+                        _ => panic!(),
+                    },
+                })
+            },
+            None => None,
+        }
+    }
+
+    fn process_feature(&mut self, feat: &Feature) {
+        match &feat.feat_type.name as &str {
+            "gene" | "pseudogene" => {
+                let location = self.make_location(&feat);
+
+                let organism = make_organism_short(&feat.organism);
+                self.genes.insert(feat.uniquename.clone(),
+                                  GeneDetails {
+                                      uniquename: feat.uniquename.clone(),
+                                      name: feat.name.clone(),
+                                      organism: organism,
+                                      product: None,
+                                      synonyms: vec![],
+                                      feature_type: feat.feat_type.name.clone(),
+                                      characterisation_status: None,
+                                      location: location,
+                                      cds_location: None,
+                                      annotations: HashMap::new(),
+                                      interaction_annotations: HashMap::new(),
+                                      ortholog_annotations: vec![],
+                                      paralog_annotations: vec![],
+                                      transcripts: vec![],
+                                  });
+            },
+            // TODO: mRNA isn't the only transcript type
+            "mRNA" => {
+                self.transcripts.insert(feat.uniquename.clone(),
+                                        TranscriptDetails {
                                             uniquename: feat.uniquename.clone(),
                                             name: feat.name.clone(),
-                                            gene_uniquename: gene_uniquename.clone(),
                                         });
-                },
-                _ => (),
-            }
+            },
+            "genotype" => {
+                self.genotypes.insert(feat.uniquename.clone(),
+                                      GenotypeDetails {
+                                          uniquename: feat.uniquename.clone(),
+                                          name: feat.name.clone(),
+                                          annotations: HashMap::new(),
+                                      });
+            },
+            "allele" => {
+                let gene_uniquename =
+                    self.genes_of_alleles.get(&feat.uniquename).unwrap();
+                self.alleles.insert(feat.uniquename.clone(),
+                                    AlleleShort {
+                                        uniquename: feat.uniquename.clone(),
+                                        name: feat.name.clone(),
+                                        gene_uniquename: gene_uniquename.clone(),
+                                    });
+            },
+            _ => (),
         }
+    }
+
+    fn process_features(&mut self) {
+        for feat in &self.raw.features {
+            self.process_feature(&feat);
+       }
     }
 
     fn process_annotation_feature_rels(&mut self) {
