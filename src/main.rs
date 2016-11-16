@@ -1231,3 +1231,14 @@ fn test_make_publication_short() {
     assert_eq!(ref_short.authors_abbrev.clone().unwrap(), "Le Goff X et al.");
     assert_eq!(ref_short.publication_year.clone().unwrap(), "2001");
 }
+
+#[test]
+fn test_term_use_count() {
+    let web_data = get_test_web_data();
+    let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
+    let annotations = par1_gene.annotations;
+    let biological_process_annotations = annotations.get("biological_process").unwrap();
+    assert_eq!(biological_process_annotations.len(), 1);
+    let first_annotation = biological_process_annotations.get(0).unwrap();
+    assert_eq!(first_annotation.term.use_count, 1);
+}
