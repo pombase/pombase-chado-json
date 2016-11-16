@@ -154,10 +154,10 @@ impl <'a> WebDataBuild<'a> {
                     if let Some(term_details) = base_term_details_opt {
                         term_details
                     } else {
-                        self.terms.get(&cvterm.termid()).unwrap()
+                        panic!("no base term found for for {} {}", &cvterm.termid(), &cvterm.name)
                     }
                 } else {
-                    self.terms.get(&cvterm.termid()).unwrap()
+                    panic!("no extension parts for {} {}", &cvterm.termid(), &cvterm.name)
                 }
             } else {
                 self.terms.get(&cvterm.termid()).unwrap()
@@ -210,8 +210,7 @@ impl <'a> WebDataBuild<'a> {
                 reference: reference_opt.clone(),
                 extension: extension.clone(),
             };
-        let termid = cvterm.termid();
-        let term_details = self.terms.get_mut(&termid).unwrap();
+        let term_details = self.terms.get_mut(&term.termid).unwrap();
         term_details.annotations.push(term_annotation);
 
         if let Some(reference) = reference_opt.clone() {
@@ -555,15 +554,17 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            self.terms.insert(cvterm.termid(),
-                              TermDetails {
-                                  name: cvterm.name.clone(),
-                                  cv_name: cvterm.cv.name.clone(),
-                                  termid: cvterm.termid(),
-                                  definition: cvterm.definition.clone(),
-                                  is_obsolete: cvterm.is_obsolete,
-                                  annotations: vec![],
-                              });
+            if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
+                self.terms.insert(cvterm.termid(),
+                                  TermDetails {
+                                      name: cvterm.name.clone(),
+                                      cv_name: cvterm.cv.name.clone(),
+                                      termid: cvterm.termid(),
+                                      definition: cvterm.definition.clone(),
+                                      is_obsolete: cvterm.is_obsolete,
+                                      annotations: vec![],
+                                  });
+            }
         }
     }
 
