@@ -4,99 +4,16 @@ type CvName = String;
 
 pub type MiscExtRange = String;
 
-#[derive(Serialize, Clone)]
-pub enum ExtRange {
-#[serde(rename = "gene")]
-    Gene(GeneShort),
-#[serde(rename = "term")]
-    Term(TermShort),
-#[serde(rename = "misc")]
-    Misc(String),
-}
-
-#[derive(Serialize, Clone)]
-pub struct ExtPart {
-    pub rel_type_name: String,
-    pub ext_range: ExtRange,
-}
-
 pub type GeneUniquename = String;
 pub type GeneName = String;
 pub type TypeName = String;
 pub type GeneProduct = String;
 
-#[derive(Serialize, Clone)]
-pub struct GeneShort {
-    pub uniquename: GeneUniquename,
-    pub name: Option<GeneName>,
-    pub product: Option<GeneProduct>,
-    pub synonyms: Vec<SynonymDetails>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct TranscriptShort {
-    pub uniquename: TranscriptUniquename,
-    //                pub exons: Vec<ExonShort>,
-    //                pub utrs: Vec<UTRShort>,
-}
-
 pub type TermName = String;
 pub type TermId = String;
 pub type TermDef = String;
 
-#[derive(Serialize, Clone)]
-pub struct TermShort {
-    pub name: TermName,
-    pub termid: TermId,
-    pub is_obsolete: bool,
-    pub use_count: usize,
-}
-
-#[derive(Serialize, Clone)]
-pub struct ReferenceShort {
-    pub uniquename: String,
-    pub title: Option<String>,
-    pub citation: Option<String>,
-    pub authors_abbrev: Option<String>,
-    pub publication_year: Option<String>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct ReferenceDetails {
-    pub uniquename: String,
-    pub title: Option<String>,
-    pub citation: Option<String>,
-    pub authors: Option<String>,
-    pub authors_abbrev: Option<String>,
-    pub pubmed_publication_date: Option<String>,
-    pub publication_year: Option<String>,
-    pub annotations: TypeReferenceAnnotationMap,
-    pub interaction_annotations: TypeInteractionAnnotationMap,
-    pub ortholog_annotations: Vec<OrthologAnnotation>,
-    pub paralog_annotations: Vec<ParalogAnnotation>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct ReferenceAnnotation {
-    pub gene: GeneShort,
-    pub term: TermShort,
-    pub evidence: Option<Evidence>,
-    pub extension: Vec<ExtPart>,
-    // only for genotype/phenotype annotation:
-    pub genotype: Option<GenotypeAndAlleles>,
-}
-
 pub type Evidence = String;
-
-#[derive(Serialize, Clone)]
-pub struct FeatureAnnotation {
-    pub term: TermShort,
-    pub extension: Vec<ExtPart>,
-    pub evidence: Option<Evidence>,
-    pub reference: Option<ReferenceShort>,
-    // only for genotype/phenotype annotation:
-    pub genotype: Option<GenotypeAndAlleles>,
-}
 
 pub type TypeFeatureAnnotationMap =
     HashMap<TypeName, Vec<FeatureAnnotation>>;
@@ -105,147 +22,46 @@ pub type TypeReferenceAnnotationMap =
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
 
-#[derive(Serialize, Clone)]
-pub struct SynonymDetails {
-    pub name: String,
-    pub synonym_type: String
-}
-
-#[derive(Serialize, Clone)]
-pub enum Strand {
-    #[serde(rename="forward")]
-    Forward = 1,
-    #[serde(rename="reverse")]
-    Reverse = -1,
-}
-
-#[derive(Serialize, Clone)]
-pub struct ChromosomeLocation {
-    pub chromosome_name: String,
-    pub start_pos: u32,
-    pub end_pos: u32,
-    pub strand: Strand,
-}
-
-#[derive(Serialize, Clone)]
-pub struct OrganismShort {
-    pub genus: String,
-    pub species: String,
-}
-
-#[derive(Serialize, Clone)]
-pub struct GeneDetails {
-    pub uniquename: GeneUniquename,
-    pub name: Option<String>,
-    pub organism: OrganismShort,
-    pub product: Option<String>,
-    pub synonyms: Vec<SynonymDetails>,
-    pub feature_type: String,
-    pub characterisation_status: Option<String>,
-    pub location: Option<ChromosomeLocation>,
-    pub cds_location: Option<ChromosomeLocation>,
-    pub transcripts: Vec<TranscriptShort>,
-    pub annotations: TypeFeatureAnnotationMap,
-    pub interaction_annotations: TypeInteractionAnnotationMap,
-    pub ortholog_annotations: Vec<OrthologAnnotation>,
-    pub paralog_annotations: Vec<ParalogAnnotation>,
-}
-
 pub type UniquenameGeneMap =
     HashMap<GeneUniquename, GeneDetails>;
 
 pub type TranscriptUniquename = String;
-
-#[derive(Serialize)]
-pub struct TranscriptDetails {
-    pub uniquename: TranscriptUniquename,
-    pub name: Option<String>,
-//    pub annotations: TypeFeatureAnnotationMap,
-}
 
 pub type UniquenameTranscriptMap =
     HashMap<TranscriptUniquename, TranscriptDetails>;
 
 pub type GenotypeUniquename = String;
 
-#[derive(Serialize)]
-pub struct GenotypeDetails {
-    pub uniquename: GenotypeUniquename,
-    pub name: Option<String>,
-    pub annotations: TypeFeatureAnnotationMap,
-}
-
 pub type UniquenameGenotypeMap =
     HashMap<GenotypeUniquename, GenotypeDetails>;
 
-#[derive(Serialize, Clone)]
-pub struct GenotypeAndAlleles {
-    pub alleles: Vec<AlleleShort>,
-}
-
 pub type AlleleUniquename = String;
-
-#[derive(Serialize, Clone)]
-pub struct AlleleShort {
-    pub uniquename: String,
-    pub name: Option<String>,
-    pub gene_uniquename: String,
-}
 
 pub type UniquenameAlleleShortMap =
     HashMap<AlleleUniquename, AlleleShort>;
-
-#[derive(Serialize, Clone)]
-pub struct TermAnnotation {
-    pub gene: GeneShort,
-    pub extension: Vec<ExtPart>,
-    pub evidence: Option<Evidence>,
-    pub reference: Option<ReferenceShort>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct TermDetails {
-    pub name: TermName,
-    pub cv_name: CvName,
-    pub termid: TermId,
-    pub definition: Option<TermDef>,
-    pub is_obsolete: bool,
-    pub annotations: Vec<TermAnnotation>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct InteractionAnnotation {
-    pub gene: GeneShort,
-    pub interactor: GeneShort,
-    pub evidence: Option<Evidence>,
-    pub reference: Option<ReferenceShort>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct OrthologAnnotation {
-    pub gene: GeneShort,
-    pub ortholog_organism: OrganismShort,
-    pub ortholog: GeneShort,
-    pub evidence: Option<Evidence>,
-    pub reference: Option<ReferenceShort>,
-}
-
-#[derive(Serialize, Clone)]
-pub struct ParalogAnnotation {
-    pub gene: GeneShort,
-    pub paralog: GeneShort,
-    pub evidence: Option<Evidence>,
-    pub reference: Option<ReferenceShort>,
-}
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
 pub type IdTermMap = HashMap<TermId, TermDetails>;
 pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
-#[derive(Serialize)]
-pub struct Metadata {
-    pub db_creation_datetime: String,
-    pub gene_count: usize,
-    pub term_count: usize,
+include!(concat!(env!("OUT_DIR"), "/data_serde.rs"));
+
+impl WebData {
+    pub fn get_gene_summaries(&self) -> &IdGeneShortMap {
+        &self.gene_summaries
+    }
+    pub fn get_genes(&self) -> &IdGeneMap {
+        &self.genes
+    }
+    pub fn get_terms(&self) -> &IdTermMap {
+        &self.terms
+    }
+    pub fn get_metadata(&self) -> &Metadata {
+        &self.metadata
+    }
+    pub fn get_references(&self) -> &IdReferenceMap {
+        &self.references
+    }
+
 }

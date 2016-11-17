@@ -1,10 +1,8 @@
-#![feature(plugin, proc_macro)]
 extern crate postgres;
 
 extern crate regex;
 
 #[macro_use]
-extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
@@ -63,16 +61,6 @@ fn make_organism_short(rc_organism: &Rc<pombase::db::Organism>) -> OrganismShort
         genus: rc_organism.genus.clone(),
         species: rc_organism.species.clone(),
     }
-}
-
-#[derive(Serialize)]
-struct WebData {
-    genes: IdGeneMap,
-    gene_summaries: IdGeneShortMap,
-    terms: IdTermMap,
-    used_terms: IdTermMap,
-    metadata: Metadata,
-    references: IdReferenceMap,
 }
 
 type Termid = String;
@@ -820,10 +808,10 @@ fn write_gene_details(output_dir: &str, genes: &IdGeneMap) {
 
 fn write_gene_summary(output_dir: &str, web_data: &WebData, organism_genus_species: &str) {
     let gene_summaries =
-        web_data.gene_summaries.values()
+        web_data.get_gene_summaries().values()
         .filter(|gene_short| {
             let gene_uniquename = &gene_short.uniquename;
-            let gene_details = web_data.genes.get(gene_uniquename).unwrap();
+            let gene_details = web_data.get_genes().get(gene_uniquename).unwrap();
             let feature_org_genus_species = String::new() +
                 &gene_details.organism.genus + "_" + &gene_details.organism.species;
             feature_org_genus_species == organism_genus_species
@@ -868,14 +856,14 @@ fn write_web_data(output_dir: &str, web_data: &WebData, organism_genus_species: 
     let mut writer = BufWriter::new(&f);
     writer.write_all(s.as_bytes()).expect("Unable to write!");
 
-    write_reference_details(output_dir, &web_data.references);
-    write_gene_details(output_dir, &web_data.genes);
+    write_reference_details(output_dir, &web_data.get_references());
+    write_gene_details(output_dir, &web_data.get_genes());
     write_gene_summary(output_dir, &web_data, organism_genus_species);
-    write_terms(output_dir, &web_data.terms);
-    write_metadata(output_dir, &web_data.metadata);
+    write_terms(output_dir, &web_data.get_terms());
+    write_metadata(output_dir, &web_data.get_metadata());
 
-    println!("wrote {} genes", web_data.genes.len());
-    println!("wrote {} terms", web_data.terms.len());
+    println!("wrote {} genes", web_data.get_genes().len());
+    println!("wrote {} terms", web_data.get_terms().len());
 }
 
 const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");

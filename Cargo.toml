@@ -2,11 +2,14 @@
 name = "pombase-chado-json"
 version = "1.9.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
+build = "build.rs"
 
 [dependencies]
 postgres = "0.12"
 serde = "0.8"
 serde_json = "0.8"
-serde_derive = "0.8"
 getopts = "*"
 regex = "0.1"
+
+[build-dependencies]
+serde_codegen = "0.8"
