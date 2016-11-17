@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 
-type ExtRange = String;
 type CvName = String;
 
-#[derive(Serialize, Clone, Debug)]
-pub enum ExtRangeType {
+pub type MiscExtRange = String;
+
+#[derive(Serialize, Clone)]
+pub enum ExtRange {
 #[serde(rename = "gene")]
-    Gene,
+    Gene(GeneShort),
 #[serde(rename = "term")]
-    Term,
+    Term(TermShort),
 #[serde(rename = "misc")]
-    Misc,
+    Misc(String),
 }
 
 #[derive(Serialize, Clone)]
 pub struct ExtPart {
     pub rel_type_name: String,
-    pub range_type: ExtRangeType,
     pub ext_range: ExtRange,
 }
 
@@ -239,6 +239,7 @@ pub struct ParalogAnnotation {
 }
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
+pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
 pub type IdTermMap = HashMap<TermId, TermDetails>;
 pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 

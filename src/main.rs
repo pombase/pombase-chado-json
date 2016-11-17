@@ -68,10 +68,18 @@ fn make_organism_short(rc_organism: &Rc<pombase::db::Organism>) -> OrganismShort
 #[derive(Serialize)]
 struct WebData {
     genes: IdGeneMap,
+    gene_summaries: IdGeneShortMap,
     terms: IdTermMap,
     used_terms: IdTermMap,
     metadata: Metadata,
     references: IdReferenceMap,
+}
+
+type Termid = String;
+
+struct TermidCvname {
+    termid: Termid,
+    cv_name: CvName,
 }
 
 struct WebDataBuild<'a> {
@@ -91,7 +99,9 @@ struct WebDataBuild<'a> {
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
-    parts_of_extensions: HashMap<String, Vec<ExtPart>>
+    parts_of_extensions: HashMap<String, Vec<ExtPart>>,
+
+    base_term_of_extensions: HashMap<String, TermidCvname>,
 }
 
 impl <'a> WebDataBuild<'a> {
@@ -112,15 +122,29 @@ impl <'a> WebDataBuild<'a> {
             alleles_of_genotypes: HashMap::new(),
 
             parts_of_extensions: HashMap::new(),
+
+            base_term_of_extensions: HashMap::new(),
         }
     }
 
-    fn make_reference_short(&mut self, reference_uniquename: &str) -> Option<ReferenceShort> {
+    fn make_gene_short(&self, gene_uniquename: &str) -> GeneShort {
+        if let Some(gene_details) = self.genes.get(gene_uniquename) {
+            GeneShort {
+                uniquename: gene_details.uniquename.clone(),
+                name: gene_details.name.clone(),
+                product: gene_details.product.clone(),
+                synonyms: gene_details.synonyms.clone(),
+            }
+        } else {
+            panic!("can't find GeneShort for gene uniquename {}", gene_uniquename);
+        }
+    }
+
+    fn make_reference_short(&self, reference_uniquename: &str) -> Option<ReferenceShort> {
         if reference_uniquename == "null" {
             None
         } else {
-            let reference_details =
-                self.references.get_mut(reference_uniquename).unwrap();
+            let reference_details = self.references.get(reference_uniquename).unwrap();
 
             let reference_short =
                 ReferenceShort {
@@ -135,44 +159,17 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_term_short(&self, cvterm: &Cvterm) -> (TermShort, CvName, Vec<ExtPart>) {
-        let mut extension: Vec<ExtPart> = vec![];
-
-        let term =
-            if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
-                if let Some(ext_parts) = self.parts_of_extensions.get(&cvterm.termid()) {
-                    let mut base_term_details_opt = None;
-
-                    for ext_part in ext_parts {
-                        if ext_part.rel_type_name == "is_a" {
-                            base_term_details_opt = self.terms.get(&ext_part.ext_range);
-                        } else {
-                            extension.push(ext_part.clone());
-                        }
-                    }
-
-                    if let Some(term_details) = base_term_details_opt {
-                        term_details
-                    } else {
-                        panic!("no base term found for for {} {}", &cvterm.termid(), &cvterm.name)
-                    }
-                } else {
-                    panic!("no extension parts for {} {}", &cvterm.termid(), &cvterm.name)
-                }
-            } else {
-                self.terms.get(&cvterm.termid()).unwrap()
-            };
-
-        (
+    fn make_term_short(&self, termid: &str) -> TermShort {
+        if let Some(term_details) = self.terms.get(termid) {
             TermShort {
-                name: term.name.clone(),
-                termid: term.termid.clone(),
-                is_obsolete: term.is_obsolete,
-                use_count: term.annotations.len(),
-            },
-            term.cv_name.clone(),
-            extension
-        )
+                name: term_details.name.clone(),
+                termid: term_details.termid.clone(),
+                is_obsolete: term_details.is_obsolete,
+                use_count: term_details.annotations.len(),
+            }
+        } else {
+            panic!("can't find TermShort for termid {}", termid);
+        }
     }
 
     fn add_characterisation_status(&mut self, gene_uniquename: &String, cvterm_name: &String) {
@@ -189,12 +186,26 @@ impl <'a> WebDataBuild<'a> {
                       cvterm: &Cvterm, evidence: &Option<Evidence>,
                       reference_opt: &Option<ReferenceShort>,
                       genotype_and_alleles: &Option<GenotypeAndAlleles>) {
-        let (term, cv_name, extension) = self.make_term_short(&cvterm);
+        let (termid, cv_name) =
+            match self.base_term_of_extensions.get(&cvterm.termid()) {
+                Some(termid_cv_name) => (termid_cv_name.termid.clone(),
+                                         termid_cv_name.cv_name.clone()),
+                None => (cvterm.termid(), cvterm.cv.name.clone()),
+            };
+
+        let extension_parts =
+            match self.parts_of_extensions.get(&cvterm.termid()) {
+                Some(parts) => parts.clone(),
+                None => vec![],
+            };
+
+        let term_short = self.make_term_short(&termid).clone();
+        let gene_short = self.make_gene_short(&gene_uniquename).clone();
 
         let feature_annotation =
             FeatureAnnotation {
-                term: term.clone(),
-                extension: extension.clone(),
+                term: term_short.clone(),
+                extension: extension_parts.clone(),
                 evidence: evidence.clone(),
                 reference: reference_opt.clone(),
                 genotype: genotype_and_alleles.clone(),
@@ -205,21 +216,21 @@ impl <'a> WebDataBuild<'a> {
 
         let term_annotation =
             TermAnnotation {
-                gene: make_gene_short(&gene_details),
+                gene: gene_short.clone(),
                 evidence: evidence.clone(),
                 reference: reference_opt.clone(),
-                extension: extension.clone(),
+                extension: extension_parts.clone(),
             };
-        let term_details = self.terms.get_mut(&term.termid).unwrap();
+        let term_details = self.terms.get_mut(&termid).unwrap();
         term_details.annotations.push(term_annotation);
 
         if let Some(reference) = reference_opt.clone() {
             let ref_annotation =
                 ReferenceAnnotation {
-                    gene: make_gene_short(&gene_details),
-                    term: term,
+                    gene: gene_short,
+                    term: term_short,
                     evidence: evidence.clone(),
-                    extension: extension,
+                    extension: extension_parts.clone(),
                     genotype: genotype_and_alleles.clone(),
                 };
             let mut ref_details = self.references.get_mut(&reference.uniquename).unwrap();
@@ -318,7 +329,7 @@ impl <'a> WebDataBuild<'a> {
 
     }
 
-    fn make_location(&mut self, feat: &Feature) -> Option<ChromosomeLocation> {
+    fn make_location(&self, feat: &Feature) -> Option<ChromosomeLocation> {
         let feature_locs = feat.featurelocs.borrow();
         match feature_locs.get(0) {
             Some(feature_loc) => {
@@ -372,6 +383,7 @@ impl <'a> WebDataBuild<'a> {
                                       paralog_annotations: vec![],
                                       transcripts: vec![],
                                   });
+
             },
             // TODO: mRNA isn't the only transcript type
             "mRNA" => {
@@ -430,13 +442,6 @@ impl <'a> WebDataBuild<'a> {
                             None => None,
                         };
 
-                        let maybe_ref_details =
-                            if let Some(ref reference_short) = maybe_reference_short {
-                                self.references.get_mut(&reference_short.uniquename)
-                            } else {
-                                None
-                            };
-
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
                             if prop.prop_type.name == "evidence" {
                                 evidence = prop.value.clone();
@@ -447,13 +452,13 @@ impl <'a> WebDataBuild<'a> {
 
                         let (gene, gene_organism_short) = {
                             let gene_details = self.genes.get(subject_uniquename).unwrap();
-                            (make_gene_short(gene_details),
+                            (self.make_gene_short(&subject_uniquename).clone(),
                              gene_details.organism.clone())
                         };
                         let gene_clone = gene.clone();
                         let (other_gene, other_gene_organism_short) = {
                             let other_gene_details = self.genes.get(object_uniquename).unwrap();
-                            (make_gene_short(other_gene_details),
+                            (self.make_gene_short(&object_uniquename).clone(),
                              other_gene_details.organism.clone())
                         };
                         {
@@ -469,7 +474,13 @@ impl <'a> WebDataBuild<'a> {
                                         };
                                     gene_details.interaction_annotations
                                         .entry(rel_name.clone()).or_insert(Vec::new()).push(interaction_annotation.clone());
-                                    if let Some(ref_details) = maybe_ref_details {
+                                    if let Some(ref_details) =
+                                        if let Some(ref reference_short) = maybe_reference_short {
+                                            self.references.get_mut(&reference_short.uniquename)
+                                        } else {
+                                            None
+                                        }
+                                    {
                                         ref_details.interaction_annotations
                                             .entry(rel_name.clone()).or_insert(Vec::new()).push(interaction_annotation);
                                     }
@@ -484,7 +495,13 @@ impl <'a> WebDataBuild<'a> {
                                             reference: maybe_reference_short.clone(),
                                         };
                                     gene_details.ortholog_annotations.push(ortholog_annotation.clone());
-                                    if let Some(ref_details) = maybe_ref_details {
+                                    if let Some(ref_details) =
+                                        if let Some(ref reference_short) = maybe_reference_short {
+                                            self.references.get_mut(&reference_short.uniquename)
+                                        } else {
+                                            None
+                                        }
+                                    {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
                                 },
@@ -497,7 +514,13 @@ impl <'a> WebDataBuild<'a> {
                                             reference: maybe_reference_short.clone(),
                                         };
                                     gene_details.paralog_annotations.push(paralog_annotation.clone());
-                                    if let Some(ref_details) = maybe_ref_details {
+                                    if let Some(ref_details) =
+                                        if let Some(ref reference_short) = maybe_reference_short {
+                                            self.references.get_mut(&reference_short.uniquename)
+                                        } else {
+                                            None
+                                        }
+                                    {
                                         ref_details.paralog_annotations.push(paralog_annotation);
                                     }
                                 }
@@ -533,27 +556,6 @@ impl <'a> WebDataBuild<'a> {
 
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
-            if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
-                for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                    if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
-                        let ext_rel_name: &str = &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
-                        let ext_range = (*cvtermprop).value.clone();
-                        let range_type = if ext_range.starts_with("SP") {
-                            ExtRangeType::Gene
-                        } else {
-                            ExtRangeType::Misc
-                        };
-
-                        self.parts_of_extensions.entry(cvterm.termid())
-                            .or_insert(Vec::new()).push(ExtPart {
-                                rel_type_name: String::from(ext_rel_name),
-                                range_type: range_type,
-                                ext_range: ext_range,
-                            });
-                    }
-                }
-            }
-
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
                 self.terms.insert(cvterm.termid(),
                                   TermDetails {
@@ -568,6 +570,30 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn process_extension_cvterms(&mut self) {
+        for cvterm in &self.raw.cvterms {
+            if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
+                for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                    if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
+                        let ext_rel_name: &str = &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
+                        let ext_range = (*cvtermprop).value.clone();
+                        let range: ExtRange = if ext_range.starts_with("SP") {
+                            ExtRange::Gene(self.make_gene_short(&ext_range))
+                        } else {
+                            ExtRange::Misc(ext_range)
+                        };
+
+                        self.parts_of_extensions.entry(cvterm.termid())
+                            .or_insert(Vec::new()).push(ExtPart {
+                                rel_type_name: String::from(ext_rel_name),
+                                ext_range: range,
+                            });
+                    }
+                }
+            }
+        }
+    }
+
     fn process_cvterm_rels(&mut self) {
         for cvterm_rel in &self.raw.cvterm_relationships {
             let subject_term = &cvterm_rel.subject;
@@ -575,12 +601,22 @@ impl <'a> WebDataBuild<'a> {
             let rel_type = &cvterm_rel.rel_type;
 
             if subject_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
-                self.parts_of_extensions.entry(subject_term.termid())
-                    .or_insert(Vec::new()).push(ExtPart {
-                        rel_type_name: rel_type.name.clone(),
-                        range_type: ExtRangeType::Term,
-                        ext_range: object_term.termid(),
-                    });
+                let subject_termid = subject_term.termid();
+                if rel_type.name == "is_a" {
+                    let base = TermidCvname {
+                        termid: object_term.termid().clone(),
+                        cv_name: object_term.cv.name.clone()
+                    };
+                    self.base_term_of_extensions.insert(subject_termid.clone(), base);
+                } else {
+                    let object_term_short = self.make_term_short(&object_term.termid());
+
+                    self.parts_of_extensions.entry(subject_termid)
+                        .or_insert(Vec::new()).push(ExtPart {
+                            rel_type_name: rel_type.name.clone(),
+                            ext_range: ExtRange::Term(object_term_short),
+                        });
+                }
             }
         }
     }
@@ -719,6 +755,7 @@ impl <'a> WebDataBuild<'a> {
         self.make_feature_rel_maps();
         self.process_features();
         self.process_cvterms();
+        self.process_extension_cvterms();
         self.process_cvterm_rels();
         self.process_feature_synonyms();
         self.process_feature_cvterms();
@@ -732,8 +769,15 @@ impl <'a> WebDataBuild<'a> {
 
         let metadata = self.make_metadata();
 
+        let mut gene_summaries: IdGeneShortMap = HashMap::new();
+
+        for (gene_uniquename, _) in &self.genes {
+            gene_summaries.insert(gene_uniquename.clone(), self.make_gene_short(gene_uniquename));
+        }
+
         WebData {
             genes: self.genes.clone(),
+            gene_summaries: gene_summaries,
             terms: self.terms.clone(),
             used_terms: used_terms,
             metadata: metadata,
@@ -774,24 +818,17 @@ fn write_gene_details(output_dir: &str, genes: &IdGeneMap) {
     }
 }
 
-fn make_gene_short(gene_details: &GeneDetails) -> GeneShort {
-    GeneShort {
-        uniquename: gene_details.uniquename.clone(),
-        name: gene_details.name.clone(),
-        product: gene_details.product.clone(),
-        synonyms: gene_details.synonyms.clone(),
-    }
-}
-
 fn write_gene_summary(output_dir: &str, web_data: &WebData, organism_genus_species: &str) {
     let gene_summaries =
-        web_data.genes.values()
-        .filter(|gene_details| {
+        web_data.gene_summaries.values()
+        .filter(|gene_short| {
+            let gene_uniquename = &gene_short.uniquename;
+            let gene_details = web_data.genes.get(gene_uniquename).unwrap();
             let feature_org_genus_species = String::new() +
                 &gene_details.organism.genus + "_" + &gene_details.organism.species;
             feature_org_genus_species == organism_genus_species
         })
-        .map(|gene_details| make_gene_short(&gene_details))
+        .map(|gene_short| gene_short.clone())
         .collect::<Vec<GeneShort>>();
     let s = serde_json::to_string(&gene_summaries).unwrap();
     let file_name = String::new() + &output_dir + "/gene_summaries.json";
