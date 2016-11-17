@@ -4,6 +4,18 @@ version = "1.10.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 build = "build.rs"
 
+[lib]
+name = "pombase"
+path = "src/pombase/lib.rs"
+
+[[bin]]
+name = "pombase-chado-json"
+path = "src/main.rs"
+
+[[test]]
+name = "test"
+path = "tests/test.rs"
+
 [dependencies]
 postgres = "0.12"
 serde = "0.8"
