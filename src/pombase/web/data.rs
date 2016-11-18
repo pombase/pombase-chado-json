@@ -136,12 +136,6 @@ impl WebData {
     }
 
     pub fn write(&self, output_dir: &str, organism_genus_species: &str) {
-        let s = serde_json::to_string(self).unwrap();
-        let file_name = String::new() + output_dir + "/all.json";
-        let f = File::create(file_name).expect("Unable to open file");
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
-
         self.write_reference_details(output_dir);
         self.write_gene_details(output_dir);
         self.write_gene_summary(output_dir, organism_genus_species);
