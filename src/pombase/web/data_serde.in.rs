@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 #[derive(Serialize, Clone)]
 pub enum ExtRange {
 #[serde(rename = "gene")]
@@ -34,7 +36,7 @@ pub struct TermShort {
     pub name: TermName,
     pub termid: TermId,
     pub is_obsolete: bool,
-    pub use_count: usize,
+    pub use_count: Option<usize>,
 }
 
 #[derive(Serialize, Clone)]
@@ -159,9 +161,11 @@ pub struct TermAnnotation {
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceShort>,
-    pub descendent_relation: Option<TermShort>,
-    pub descendent_distance: usize,
 }
+
+pub type TermAnnotationKey = String;
+
+pub type TermAnnotationMap = HashMap<TermAnnotationKey, Vec<Rc<TermAnnotation>>>;
 
 #[derive(Serialize, Clone)]
 pub struct TermDetails {
@@ -170,7 +174,7 @@ pub struct TermDetails {
     pub termid: TermId,
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
-    pub annotations: Vec<TermAnnotation>,
+    pub annotations: TermAnnotationMap,
 }
 
 #[derive(Serialize, Clone)]
@@ -209,8 +213,8 @@ pub struct Metadata {
 pub struct WebData {
     pub genes: IdGeneMap,
     pub gene_summaries: IdGeneShortMap,
-    pub terms: IdTermMap,
-    pub used_terms: IdTermMap,
+    pub terms: IdTermDetailsMap,
+    pub used_terms: IdTermDetailsMap,
     pub metadata: Metadata,
     pub references: IdReferenceMap,
 }

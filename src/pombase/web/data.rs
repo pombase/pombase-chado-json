@@ -47,7 +47,7 @@ pub type UniquenameAlleleShortMap =
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
-pub type IdTermMap = HashMap<TermId, TermDetails>;
+pub type IdTermDetailsMap = HashMap<TermId, TermDetails>;
 pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
 include!(concat!(env!("OUT_DIR"), "/data_serde.rs"));
@@ -56,7 +56,7 @@ impl WebData {
     fn get_genes(&self) -> &IdGeneMap {
         &self.genes
     }
-    fn get_terms(&self) -> &IdTermMap {
+    fn get_terms(&self) -> &IdTermDetailsMap {
         &self.terms
     }
 
