@@ -161,6 +161,8 @@ impl <'a> WebDataBuild<'a> {
                 evidence: evidence.clone(),
                 reference: reference_opt.clone(),
                 extension: extension_parts.clone(),
+                descendent_relation: None,
+                descendent_distance: 0,
             };
         let term_details = self.terms.get_mut(&termid).unwrap();
         term_details.annotations.push(term_annotation);
@@ -362,6 +364,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // add interaction, ortholog and paralog annotations
     fn process_annotation_feature_rels(&mut self) {
         for feature_rel in self.raw.feature_relationships.iter() {
             let rel_name = &feature_rel.rel_type.name;
@@ -655,6 +658,44 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn process_cvtermpath(&mut self) {
+        for cvtermpath in &self.raw.cvtermpaths {
+            let subject_term = &cvtermpath.subject;
+            let subject_termid = subject_term.termid();
+            let object_term = &cvtermpath.object;
+            let object_termid = object_term.termid();
+
+            if let Some(ref rel_type) = cvtermpath.rel_type {
+                let rel_termid = rel_type.termid();
+                let maybe_distance = cvtermpath.pathdistance;
+
+                print!("DIST: {} {} {}\n", subject_termid, rel_termid.clone(), object_termid);
+
+                if let Some(distance) = maybe_distance {
+                    if distance >= 0 {
+                        print!("ADDING: {} {} {} {}\n", subject_termid, rel_termid.clone(), object_termid, distance);
+                        let subject_annotations = self.terms.get(&subject_termid).unwrap().annotations.clone();
+                        for annotation in subject_annotations {
+                            print!(" SUBJ DIST: {}\n", annotation.descendent_distance);
+                            if annotation.descendent_distance == 0 {
+                                print!(" TO: {}\n", object_termid);
+                                // == 0 means we haven't inferred/copied this annotation yet
+                                let relation_term_short = self.make_term_short(&rel_termid);
+                                let new_annotation = TermAnnotation {
+                                    descendent_relation: Some(relation_term_short),
+                                    descendent_distance: distance as usize,
+                                    .. annotation
+                                };
+                                let mut object_term_details = self.terms.get_mut(&object_termid).unwrap();
+                                object_term_details.annotations.push(new_annotation);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     fn make_metadata(&mut self) -> Metadata {
         let mut db_creation_datetime = None;
 
@@ -700,6 +741,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_cvterm_rels();
         self.process_feature_synonyms();
         self.process_feature_cvterms();
+        self.process_cvtermpath();
         self.process_annotation_feature_rels();
         self.set_term_short_use_counts();
 

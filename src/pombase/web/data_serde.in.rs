@@ -159,6 +159,8 @@ pub struct TermAnnotation {
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceShort>,
+    pub descendent_relation: Option<TermShort>,
+    pub descendent_distance: usize,
 }
 
 #[derive(Serialize, Clone)]
