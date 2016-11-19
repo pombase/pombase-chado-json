@@ -491,8 +491,8 @@ impl Raw {
             ret.cvterm_relationships.push(rc_cvterm_relationship.clone());
         }
 
-        for row in &conn.query("SELECT object_id, subject_id, type_id, pathdistance FROM cvtermpath", &[]).unwrap() {
-            let subject_id = row.get(0);
+        for row in &conn.query("SELECT subject_id, object_id, type_id, pathdistance FROM cvtermpath", &[]).unwrap() {
+            let subject_id: i32 = row.get(0);
             let object_id: i32 = row.get(1);
             let type_id: Option<i32> = row.get(2);
             let rel_type: Option<Rc<Cvterm>> = match type_id {
