@@ -1,6 +1,6 @@
 [root]
 name = "pombase-chado-json"
-version = "1.15.0"
+version = "1.15.1"
 dependencies = [
  "getopts 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres 0.12.0 (registry+https://github.com/rust-lang/crates.io-index)",
