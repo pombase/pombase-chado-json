@@ -163,7 +163,7 @@ impl <'a> WebDataBuild<'a> {
                 extension: extension_parts.clone(),
             };
         let term_details = self.terms.get_mut(&termid).unwrap();
-        term_details.annotations.entry(String::from("none")).or_insert(Vec::new()).push(Rc::new(term_annotation));
+        term_details.annotations.entry(String::from("direct")).or_insert(Vec::new()).push(Rc::new(term_annotation));
 
         if let Some(reference) = reference_opt.clone() {
             let ref_annotation =
@@ -711,11 +711,21 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_term_short_use_counts(&mut self) {
+        let mut counts: HashMap<Termid, usize> = HashMap::new();
+
+        for (termid, term_details) in &self.terms {
+            let mut count = 0;
+            for (_, ref annotation_vec) in &term_details.annotations {
+                count = count + annotation_vec.len();
+            }
+            counts.insert(termid.clone(), count);
+        }
+
         for (_, gene_details) in &mut self.genes {
             for (_, feat_annotations) in &mut gene_details.annotations {
                 for mut feat_annotation in feat_annotations.iter_mut() {
-                    let term_details = self.terms.get_mut(&feat_annotation.term.termid).unwrap();
-                    feat_annotation.term.use_count = Some(term_details.annotations.len())
+                    feat_annotation.term.use_count =
+                        Some(*counts.get(&feat_annotation.term.termid).unwrap());
                 }
             }
         }
@@ -723,8 +733,8 @@ impl <'a> WebDataBuild<'a> {
         for (_, ref_details) in &mut self.references {
             for (_, ref_annotations) in &mut ref_details.annotations {
                 for ref_annotation in ref_annotations {
-                    let term_details = self.terms.get_mut(&ref_annotation.term.termid).unwrap();
-                    ref_annotation.term.use_count = Some(term_details.annotations.len());
+                    ref_annotation.term.use_count =
+                        Some(*counts.get(&ref_annotation.term.termid).unwrap());
                 }
             }
         }
