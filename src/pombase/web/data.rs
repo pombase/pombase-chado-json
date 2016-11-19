@@ -47,7 +47,7 @@ pub type UniquenameAlleleShortMap =
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
-pub type IdTermDetailsMap = HashMap<TermId, TermDetails>;
+pub type IdTermDetailsMap = HashMap<TermId, Rc<TermDetails>>;
 pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
 include!(concat!(env!("OUT_DIR"), "/data_serde.rs"));
