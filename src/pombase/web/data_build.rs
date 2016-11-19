@@ -107,7 +107,7 @@ impl <'a> WebDataBuild<'a> {
                 name: term_details.name.clone(),
                 termid: term_details.termid.clone(),
                 is_obsolete: term_details.is_obsolete,
-                use_count: None,
+                gene_count: None,
             }
         } else {
             panic!("can't find TermDetails for termid: {}", termid)
@@ -745,17 +745,19 @@ impl <'a> WebDataBuild<'a> {
         let mut counts: HashMap<Termid, usize> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
-            let mut count = 0;
-            for (_, ref annotation_vec) in &term_details.annotations {
-                count = count + annotation_vec.len();
+            let mut seen_genes: HashSet<String> = HashSet::new();
+            for (_, annotation_vec) in &term_details.annotations {
+                for annotation in annotation_vec {
+                    seen_genes.insert(annotation.gene.uniquename.clone());
+                }
             }
-            counts.insert(termid.clone(), count);
+            counts.insert(termid.clone(), seen_genes.len());
         }
 
         for (_, gene_details) in &mut self.genes {
             for (_, feat_annotations) in &mut gene_details.annotations {
                 for mut feat_annotation in feat_annotations.iter_mut() {
-                    feat_annotation.term.use_count =
+                    feat_annotation.term.gene_count =
                         Some(*counts.get(&feat_annotation.term.termid).unwrap());
                 }
             }
@@ -764,7 +766,7 @@ impl <'a> WebDataBuild<'a> {
         for (_, ref_details) in &mut self.references {
             for (_, ref_annotations) in &mut ref_details.annotations {
                 for ref_annotation in ref_annotations {
-                    ref_annotation.term.use_count =
+                    ref_annotation.term.gene_count =
                         Some(*counts.get(&ref_annotation.term.termid).unwrap());
                 }
             }
