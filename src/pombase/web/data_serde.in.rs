@@ -206,6 +206,8 @@ pub struct ParalogAnnotation {
 #[derive(Serialize)]
 pub struct Metadata {
     pub db_creation_datetime: String,
+    pub export_prog_name: String,
+    pub export_prog_version: String,
     pub gene_count: usize,
     pub term_count: usize,
 }

@@ -704,7 +704,12 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
+        const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
+        const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
         Metadata {
+            export_prog_name: String::from(PKG_NAME),
+            export_prog_version: String::from(VERSION),
             db_creation_datetime: db_creation_datetime.unwrap(),
             gene_count: self.genes.len(),
             term_count: self.terms.len(),
