@@ -157,6 +157,7 @@ impl <'a> WebDataBuild<'a> {
 
         let term_annotation =
             TermAnnotation {
+                term: term_short.clone(),
                 gene: gene_short.clone(),
                 evidence: evidence.clone(),
                 reference: reference_opt.clone(),

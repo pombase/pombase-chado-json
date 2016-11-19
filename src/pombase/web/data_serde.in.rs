@@ -157,6 +157,7 @@ pub struct AlleleShort {
 
 #[derive(Serialize, Clone)]
 pub struct TermAnnotation {
+    pub term: TermShort,
     pub gene: GeneShort,
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
