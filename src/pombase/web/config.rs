@@ -29,3 +29,7 @@ pub const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
             annotation_type: FeatureRelAnnotationType::Paralog,
         },
     ];
+
+// relations to use when copy annotation to parents (ie. adding the
+// annotation of child terms to parents)
+pub const DESCENDANT_REL_NAMES: [&'static str; 2] = ["is_a", "part_of"];

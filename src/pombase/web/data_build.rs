@@ -1,5 +1,6 @@
 use std::rc::Rc;
 use std::collections::hash_map::HashMap;
+use std::collections::HashSet;
 use std::borrow::Borrow;
 
 use regex::Regex;
@@ -659,61 +660,62 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_cvtermpath(&mut self) {
+        let mut new_annotations: HashMap<Termid, TermAnnotationMap> = HashMap::new();
+
         for cvtermpath in &self.raw.cvtermpaths {
             let subject_term = &cvtermpath.subject;
             let subject_termid = subject_term.termid();
             let object_term = &cvtermpath.object;
             let object_termid = object_term.termid();
 
-            print!("cvtermpath {} - {} <-> {} - {}\n",
-                   &subject_termid, &subject_term.name,
-                   &object_termid, &object_term.name);
-            let maybe_distance = cvtermpath.pathdistance;
+            // cope with multiple paths between terms
+            let mut seen_pairs: HashSet<(Termid, Termid)> = HashSet::new();
 
-            if let Some(distance) = maybe_distance {
-                print!(" Some(distance)  = {}\n", distance);
-                if distance > 0 {
-                    let mut new_annotations: HashMap<Termid, TermAnnotationMap> = HashMap::new();
-                    print!("  distance > 0\n");
-                    if let Some(term_details) = self.terms.get(&subject_termid) {
-                        print!("   found subject term for {}\n", &subject_termid);
-                        let subject_annotations = &term_details.annotations;
-                        for (dummy, annotations) in subject_annotations {
-                            print!("looping annotations for: {}\n", dummy);
-                            for annotation in annotations {
-                                let new_annotation = annotation.clone();
-                                let rel_termid =
-                                    match cvtermpath.rel_type {
-                                        Some(ref rel_type) => {
-                                            rel_type.termid()
-                                        },
-                                        None => panic!("no relation type for {} <-> {}\n",
-                                                       &subject_term.name, &object_term.name)
-                                    };
-                                let rel_term_name =
-                                    self.make_term_short(&rel_termid).name;
-                                print!("    = inner loop rel termid: {} - {}\n", rel_termid,
-                                       rel_term_name);
-                                let key = &format!("{}::{}", rel_term_name, distance);
-                                new_annotations.entry(object_termid.clone())
-                                    .or_insert(HashMap::new())
-                                    .entry(key.clone())
-                                    .or_insert(Vec::new()).push(new_annotation);
-                                }
-                        }
-                    } else {
-                        panic!("TermDetails not found for {}", &subject_termid);
-                    }
-                    for (termid, mut annotations) in new_annotations.drain() {
-                        let mut term_details = self.terms.get_mut(&termid).unwrap();
-                        for (key, annotation_vec) in annotations.drain() {
-                            print!("Adding {} annotations to: {}\n", annotation_vec.len(), &termid);
-                            let mut vec_clone = annotation_vec.clone();
-                            term_details.annotations.entry(key)
-                                .or_insert(annotation_vec).append(&mut vec_clone);
-                        }
+            let key = (subject_termid.clone(), object_termid.clone());
+            if let Some(_) = seen_pairs.get(&key) {
+                continue;
+            }
+
+            let distance = cvtermpath.pathdistance.unwrap();
+
+            let rel_termid =
+                match cvtermpath.rel_type {
+                    Some(ref rel_type) => {
+                        rel_type.termid()
+                    },
+                    None => panic!("no relation type for {} <-> {}\n",
+                                   &subject_term.name, &object_term.name)
+                };
+            let rel_term_name =
+                self.make_term_short(&rel_termid).name;
+
+            if !DESCENDANT_REL_NAMES.contains(&&rel_term_name[0..]) {
+                continue;
+            }
+
+            seen_pairs.insert((subject_termid.clone(), object_termid.clone()));
+            if let Some(term_details) = self.terms.get(&subject_termid) {
+                let subject_annotations = &term_details.annotations;
+                for (_, annotations) in subject_annotations {
+                    for annotation in annotations {
+                        let new_annotation = annotation.clone();
+                        let key = &format!("{}::{}", rel_term_name, distance);
+                        new_annotations.entry(object_termid.clone())
+                            .or_insert(HashMap::new())
+                            .entry(key.clone())
+                            .or_insert(Vec::new()).push(new_annotation);
                     }
                 }
+            } else {
+                panic!("TermDetails not found for {}", &subject_termid);
+            }
+        }
+        for (termid, mut annotations) in new_annotations.drain() {
+            let mut term_details = self.terms.get_mut(&termid).unwrap();
+            for (key, annotation_vec) in annotations.drain() {
+                let mut vec_clone = annotation_vec.clone();
+                term_details.annotations.entry(key)
+                    .or_insert(annotation_vec).append(&mut vec_clone);
             }
         }
     }
