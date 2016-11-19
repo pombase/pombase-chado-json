@@ -674,11 +674,11 @@ impl <'a> WebDataBuild<'a> {
                             for (_, annotations) in subject_annotations {
                                 for annotation in annotations {
                                     let new_annotation = annotation.clone();
-                                    let mut key = String::from(self.make_term_short(&rel_termid).name);
-                                    key.push_str(&format!(":{}", distance));
+                                    let rel_term_name = self.make_term_short(&rel_termid).name;
+                                    let key = &format!("{}::{}", rel_term_name, distance);
                                     new_annotations.entry(object_termid.clone())
                                         .or_insert(HashMap::new())
-                                        .entry(key)
+                                        .entry(key.clone())
                                         .or_insert(Vec::new()).push(new_annotation);
                                 }
                             }
