@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
 use std::borrow::Borrow;
+use std::cmp::Ordering;
 
 use regex::Regex;
 
@@ -21,6 +22,22 @@ type Termid = String;
 struct TermidCvname {
     termid: Termid,
     cv_name: CvName,
+}
+
+fn gene_name_cmp(a: &GeneShort, b: &GeneShort) -> Ordering {
+    if a.name.is_some() {
+        if b.name.is_some() {
+            a.name.cmp(&b.name)
+        } else {
+            Ordering::Less
+        }
+    } else {
+        if b.name.is_some() {
+            Ordering::Greater
+        } else {
+            a.uniquename.cmp(&b.uniquename)
+        }
+    }
 }
 
 pub struct WebDataBuild<'a> {
@@ -786,6 +803,7 @@ impl <'a> WebDataBuild<'a> {
         for (ref termid, ref mut gene_short_vec) in gene_short_map.drain() {
             let mut term_details = self.terms.get_mut(termid).unwrap();
             term_details.genes.append(gene_short_vec);
+            term_details.genes.sort_by(gene_name_cmp)
         }
     }
 
