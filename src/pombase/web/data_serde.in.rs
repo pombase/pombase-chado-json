@@ -142,11 +142,20 @@ pub struct TranscriptDetails {
 pub struct GenotypeDetails {
     pub uniquename: GenotypeUniquename,
     pub name: Option<String>,
+    pub background: Option<String>,
     pub annotations: TypeFeatureAnnotationMap,
 }
 
 #[derive(Serialize, Clone)]
+pub struct GenotypeShort {
+    pub uniquename: GenotypeUniquename,
+    pub name: Option<String>,
+    pub background: Option<String>,
+}
+
+#[derive(Serialize, Clone)]
 pub struct GenotypeAndAlleles {
+    pub genotype: GenotypeShort,
     pub alleles: Vec<AlleleShort>,
 }
 

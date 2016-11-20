@@ -327,31 +327,54 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn store_gene_details(&mut self, feat: &Feature) {
+        let location = self.make_location(&feat);
+
+        let organism = make_organism_short(&feat.organism);
+
+        let gene_feature = GeneDetails {
+            uniquename: feat.uniquename.clone(),
+            name: feat.name.clone(),
+            organism: organism,
+            product: None,
+            synonyms: vec![],
+            feature_type: feat.feat_type.name.clone(),
+            characterisation_status: None,
+            location: location,
+            cds_location: None,
+            annotations: HashMap::new(),
+            interaction_annotations: HashMap::new(),
+            ortholog_annotations: vec![],
+            paralog_annotations: vec![],
+            transcripts: vec![],
+        };
+
+        self.genes.insert(feat.uniquename.clone(), gene_feature);
+    }
+
+    fn store_genotype_details(&mut self, feat: &Feature) {
+        let mut background = None;
+
+        for prop in feat.featureprops.borrow().iter() {
+            if prop.prop_type.name == "genotype_background" {
+                background = prop.value.clone()
+            }
+        }
+
+        self.genotypes.insert(feat.uniquename.clone(),
+                              GenotypeDetails {
+                                  uniquename: feat.uniquename.clone(),
+                                  name: feat.name.clone(),
+                                  background: background,
+                                  annotations: HashMap::new(),
+                              });
+    }
+
     fn process_feature(&mut self, feat: &Feature) {
         match &feat.feat_type.name as &str {
-            "gene" | "pseudogene" => {
-                let location = self.make_location(&feat);
+            "gene" | "pseudogene" =>
+                self.store_gene_details(feat),
 
-                let organism = make_organism_short(&feat.organism);
-                self.genes.insert(feat.uniquename.clone(),
-                                  GeneDetails {
-                                      uniquename: feat.uniquename.clone(),
-                                      name: feat.name.clone(),
-                                      organism: organism,
-                                      product: None,
-                                      synonyms: vec![],
-                                      feature_type: feat.feat_type.name.clone(),
-                                      characterisation_status: None,
-                                      location: location,
-                                      cds_location: None,
-                                      annotations: HashMap::new(),
-                                      interaction_annotations: HashMap::new(),
-                                      ortholog_annotations: vec![],
-                                      paralog_annotations: vec![],
-                                      transcripts: vec![],
-                                  });
-
-            },
             // TODO: mRNA isn't the only transcript type
             "mRNA" => {
                 self.transcripts.insert(feat.uniquename.clone(),
@@ -360,14 +383,10 @@ impl <'a> WebDataBuild<'a> {
                                             name: feat.name.clone(),
                                         });
             },
-            "genotype" => {
-                self.genotypes.insert(feat.uniquename.clone(),
-                                      GenotypeDetails {
-                                          uniquename: feat.uniquename.clone(),
-                                          name: feat.name.clone(),
-                                          annotations: HashMap::new(),
-                                      });
-            },
+
+            "genotype" =>
+                self.store_genotype_details(feat),
+
             "allele" => {
                 let gene_uniquename =
                     self.genes_of_alleles.get(&feat.uniquename).unwrap();
@@ -602,6 +621,16 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_genotype_short(&self, genotype_uniquename: &str) -> GenotypeShort {
+        let genotype_details = self.genotypes.get(genotype_uniquename).unwrap();
+
+        GenotypeShort {
+            uniquename: genotype_details.uniquename.clone(),
+            name: genotype_details.name.clone(),
+            background: genotype_details.background.clone(),
+        }
+    }
+
     fn process_feature_cvterms(&mut self) {
         for feature_cvterm in self.raw.feature_cvterms.iter() {
             let feature = &feature_cvterm.feature;
@@ -642,6 +671,7 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(allele_uniquenames_vec) =
                             self.alleles_of_genotypes.get(&feature.uniquename) {
                                 let genotype_alleles_ret = GenotypeAndAlleles {
+                                    genotype: self.make_genotype_short(&feature.uniquename),
                                     alleles: allele_uniquenames_vec.iter()
                                         .map(|allele_uniquename| {
                                             self.alleles.get(allele_uniquename).unwrap().clone()
