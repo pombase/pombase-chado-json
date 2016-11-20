@@ -175,6 +175,7 @@ pub struct TermDetails {
     pub termid: TermId,
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
+    pub genes: Vec<GeneShort>,
     pub annotations: TermAnnotationMap,
 }
 

@@ -509,6 +509,7 @@ impl <'a> WebDataBuild<'a> {
                                       termid: cvterm.termid(),
                                       definition: cvterm.definition.clone(),
                                       is_obsolete: cvterm.is_obsolete,
+                                      genes: vec![],
                                       annotations: HashMap::new(),
                                   });
             }
@@ -742,23 +743,23 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_term_short_use_counts(&mut self) {
-        let mut counts: HashMap<Termid, usize> = HashMap::new();
+        let mut seen_genes: HashMap<Termid, HashSet<String>> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
-            let mut seen_genes: HashSet<String> = HashSet::new();
+            let mut term_seen_genes: HashSet<String> = HashSet::new();
             for (_, annotation_vec) in &term_details.annotations {
                 for annotation in annotation_vec {
-                    seen_genes.insert(annotation.gene.uniquename.clone());
+                    term_seen_genes.insert(annotation.gene.uniquename.clone());
                 }
             }
-            counts.insert(termid.clone(), seen_genes.len());
+            seen_genes.insert(termid.clone(), term_seen_genes);
         }
 
         for (_, gene_details) in &mut self.genes {
             for (_, feat_annotations) in &mut gene_details.annotations {
                 for mut feat_annotation in feat_annotations.iter_mut() {
                     feat_annotation.term.gene_count =
-                        Some(*counts.get(&feat_annotation.term.termid).unwrap());
+                        Some(seen_genes.get(&feat_annotation.term.termid).unwrap().len());
                 }
             }
         }
@@ -767,9 +768,24 @@ impl <'a> WebDataBuild<'a> {
             for (_, ref_annotations) in &mut ref_details.annotations {
                 for ref_annotation in ref_annotations {
                     ref_annotation.term.gene_count =
-                        Some(*counts.get(&ref_annotation.term.termid).unwrap());
+                        Some(seen_genes.get(&ref_annotation.term.termid).unwrap().len());
                 }
             }
+        }
+
+        let mut gene_short_map: HashMap<Termid, Vec<GeneShort>> = HashMap::new();
+
+        for (termid, term_seen_genes) in seen_genes {
+            for gene_uniquename in term_seen_genes {
+                let gene_short = self.make_gene_short(&gene_uniquename);
+                gene_short_map.entry(termid.clone())
+                    .or_insert(Vec::new()).push(gene_short);
+            }
+        }
+
+        for (ref termid, ref mut gene_short_vec) in gene_short_map.drain() {
+            let mut term_details = self.terms.get_mut(termid).unwrap();
+            term_details.genes.append(gene_short_vec);
         }
     }
 
