@@ -61,12 +61,6 @@ impl WebData {
     }
 
     fn write_reference_details(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.references).unwrap();
-        let file_name = String::new() + &output_dir + "/references.json";
-        let f = File::create(file_name).expect("Unable to open file");
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
-
         for (reference_uniquename, reference_details) in &self.references {
             let s = serde_json::to_string(&reference_details).unwrap();
             let file_name = String::new() + &output_dir + "/reference/" + &reference_uniquename + ".json";
@@ -77,12 +71,6 @@ impl WebData {
     }
 
     fn write_gene_details(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.genes).unwrap();
-        let file_name = String::new() + &output_dir + "/genes.json";
-        let f = File::create(file_name).expect("Unable to open file");
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
-
         for (gene_uniquename, gene_details) in &self.genes {
             let s = serde_json::to_string(&gene_details).unwrap();
             let file_name = String::new() + &output_dir + "/gene/" + &gene_uniquename + ".json";
@@ -112,12 +100,6 @@ impl WebData {
     }
 
     fn write_terms(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.terms).unwrap();
-        let file_name = String::new() + &output_dir + "/terms.json";
-        let f = File::create(file_name).expect("Unable to open file");
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
-
         for (termid, term_details) in &self.terms {
             let s = serde_json::to_string(&term_details).unwrap();
             let file_name = String::new() + &output_dir + "/term/" + &termid + ".json";
