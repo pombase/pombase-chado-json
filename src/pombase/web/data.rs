@@ -36,14 +36,10 @@ pub type UniquenameTranscriptMap =
     HashMap<TranscriptUniquename, TranscriptDetails>;
 
 pub type GenotypeUniquename = String;
-
-pub type UniquenameGenotypeMap =
-    HashMap<GenotypeUniquename, GenotypeDetails>;
-
 pub type AlleleUniquename = String;
 
-pub type UniquenameAlleleMap =
-    HashMap<AlleleUniquename, AlleleDetails>;
+pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
+pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeShort>;
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;

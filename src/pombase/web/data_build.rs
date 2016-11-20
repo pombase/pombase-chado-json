@@ -362,7 +362,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         self.genotypes.insert(feat.uniquename.clone(),
-                              GenotypeDetails {
+                              GenotypeShort {
                                   uniquename: feat.uniquename.clone(),
                                   name: feat.name.clone(),
                                   background: background,
@@ -390,7 +390,7 @@ impl <'a> WebDataBuild<'a> {
 
         let gene_uniquename =
             self.genes_of_alleles.get(&feat.uniquename).unwrap();
-        let allele_details = AlleleDetails {
+        let allele_details = AlleleShort {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
             gene_uniquename: gene_uniquename.clone(),

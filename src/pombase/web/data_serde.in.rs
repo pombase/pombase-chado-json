@@ -147,18 +147,14 @@ pub struct GenotypeShort {
 //    pub annotations: TypeFeatureAnnotationMap,
 }
 
-pub type GenotypeDetails = GenotypeShort;
-
 #[derive(Serialize, Clone)]
-pub struct AlleleDetails {
+pub struct AlleleShort {
     pub uniquename: String,
     pub name: Option<String>,
     pub gene_uniquename: String,
     pub allele_type: String,
     pub description: Option<String>,
 }
-
-pub type AlleleShort = AlleleDetails;
 
 #[derive(Serialize, Clone)]
 pub struct TermAnnotation {
