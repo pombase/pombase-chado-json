@@ -46,7 +46,7 @@ pub struct WebDataBuild<'a> {
     genes: UniquenameGeneMap,
     transcripts: UniquenameTranscriptMap,
     genotypes: UniquenameGenotypeMap,
-    alleles: UniquenameAlleleShortMap,
+    alleles: UniquenameAlleleMap,
     terms: HashMap<TermId, TermDetails>,
     references: IdReferenceMap,
 
@@ -370,6 +370,36 @@ impl <'a> WebDataBuild<'a> {
                               });
     }
 
+    fn store_allele_details(&mut self, feat: &Feature) {
+        let mut allele_type = None;
+        let mut description = None;
+
+        for prop in feat.featureprops.borrow().iter() {
+            match &prop.prop_type.name as &str {
+                "allele_type" =>
+                    allele_type = prop.value.clone(),
+                "description" =>
+                    description = prop.value.clone(),
+                _ => ()
+            }
+        }
+
+        if allele_type.is_none() {
+            panic!("no allele_type cvtermprop for {}", &feat.uniquename);
+        }
+
+        let gene_uniquename =
+            self.genes_of_alleles.get(&feat.uniquename).unwrap();
+        self.alleles.insert(feat.uniquename.clone(),
+                            AlleleDetails {
+                                uniquename: feat.uniquename.clone(),
+                                name: feat.name.clone(),
+                                gene_uniquename: gene_uniquename.clone(),
+                                allele_type: allele_type.unwrap(),
+                                description: description,
+                            });
+    }
+
     fn process_feature(&mut self, feat: &Feature) {
         match &feat.feat_type.name as &str {
             "gene" | "pseudogene" =>
@@ -387,16 +417,9 @@ impl <'a> WebDataBuild<'a> {
             "genotype" =>
                 self.store_genotype_details(feat),
 
-            "allele" => {
-                let gene_uniquename =
-                    self.genes_of_alleles.get(&feat.uniquename).unwrap();
-                self.alleles.insert(feat.uniquename.clone(),
-                                    AlleleShort {
-                                        uniquename: feat.uniquename.clone(),
-                                        name: feat.name.clone(),
-                                        gene_uniquename: gene_uniquename.clone(),
-                                    });
-            },
+            "allele" =>
+                self.store_allele_details(feat),
+
             _ => (),
         }
     }

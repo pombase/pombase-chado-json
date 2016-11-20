@@ -160,11 +160,15 @@ pub struct GenotypeAndAlleles {
 }
 
 #[derive(Serialize, Clone)]
-pub struct AlleleShort {
+pub struct AlleleDetails {
     pub uniquename: String,
     pub name: Option<String>,
     pub gene_uniquename: String,
+    pub allele_type: String,
+    pub description: Option<String>,
 }
+
+pub type AlleleShort = AlleleDetails;
 
 #[derive(Serialize, Clone)]
 pub struct TermAnnotation {

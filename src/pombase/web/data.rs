@@ -42,8 +42,8 @@ pub type UniquenameGenotypeMap =
 
 pub type AlleleUniquename = String;
 
-pub type UniquenameAlleleShortMap =
-    HashMap<AlleleUniquename, AlleleShort>;
+pub type UniquenameAlleleMap =
+    HashMap<AlleleUniquename, AlleleDetails>;
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
