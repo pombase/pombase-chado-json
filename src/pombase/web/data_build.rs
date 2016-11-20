@@ -145,7 +145,7 @@ impl <'a> WebDataBuild<'a> {
                       cvterm: &Cvterm, evidence: &Option<Evidence>,
                       reference_opt: &Option<ReferenceShort>,
                       is_not: bool,
-                      genotype_and_alleles: &Option<GenotypeAndAlleles>) {
+                      genotype_short: &Option<GenotypeShort>) {
         let (termid, cv_name) =
             match self.base_term_of_extensions.get(&cvterm.termid()) {
                 Some(termid_cv_name) => (termid_cv_name.termid.clone(),
@@ -168,7 +168,7 @@ impl <'a> WebDataBuild<'a> {
                 extension: extension_parts.clone(),
                 evidence: evidence.clone(),
                 reference: reference_opt.clone(),
-                genotype: genotype_and_alleles.clone(),
+                genotype: genotype_short.clone(),
                 is_not: is_not,
             };
         let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
@@ -197,7 +197,7 @@ impl <'a> WebDataBuild<'a> {
                     term: term_short.clone(),
                     evidence: evidence.clone(),
                     extension: extension_parts.clone(),
-                    genotype: genotype_and_alleles.clone(),
+                    genotype: genotype_short.clone(),
                     is_not: is_not,
                 };
             let mut ref_details = self.references.get_mut(&reference.uniquename).unwrap();
@@ -366,7 +366,7 @@ impl <'a> WebDataBuild<'a> {
                                   uniquename: feat.uniquename.clone(),
                                   name: feat.name.clone(),
                                   background: background,
-                                  annotations: HashMap::new(),
+                                  alleles: vec![],
                               });
     }
 
@@ -390,14 +390,14 @@ impl <'a> WebDataBuild<'a> {
 
         let gene_uniquename =
             self.genes_of_alleles.get(&feat.uniquename).unwrap();
-        self.alleles.insert(feat.uniquename.clone(),
-                            AlleleDetails {
-                                uniquename: feat.uniquename.clone(),
-                                name: feat.name.clone(),
-                                gene_uniquename: gene_uniquename.clone(),
-                                allele_type: allele_type.unwrap(),
-                                description: description,
-                            });
+        let allele_details = AlleleDetails {
+            uniquename: feat.uniquename.clone(),
+            name: feat.name.clone(),
+            gene_uniquename: gene_uniquename.clone(),
+            allele_type: allele_type.unwrap(),
+            description: description,
+        };
+        self.alleles.insert(feat.uniquename.clone(), allele_details);
     }
 
     fn process_feature(&mut self, feat: &Feature) {
@@ -427,6 +427,25 @@ impl <'a> WebDataBuild<'a> {
     fn process_features(&mut self) {
         for feat in &self.raw.features {
             self.process_feature(&feat);
+        }
+    }
+
+    fn add_alleles_to_genotypes(&mut self) {
+        let mut alleles_to_add: HashMap<String, Vec<AlleleShort>> = HashMap::new();
+
+        for genotype_uniquename in self.genotypes.keys() {
+            let allele_uniquenames: Vec<String> =
+                self.alleles_of_genotypes.get(genotype_uniquename).unwrap().clone();
+            let allele_short_vec: Vec<AlleleShort> =
+                allele_uniquenames.iter()
+                .map(|ref allele_uniquename| self.make_allele_short(&allele_uniquename))
+                .collect();
+
+            alleles_to_add.insert(genotype_uniquename.clone(), allele_short_vec);
+        }
+
+        for (genotype_uniquename, genotype_details) in &mut self.genotypes {
+            genotype_details.alleles = alleles_to_add.remove(genotype_uniquename).unwrap();
         }
     }
 
@@ -645,13 +664,11 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_genotype_short(&self, genotype_uniquename: &str) -> GenotypeShort {
-        let genotype_details = self.genotypes.get(genotype_uniquename).unwrap();
+        self.genotypes.get(genotype_uniquename).unwrap().clone()
+    }
 
-        GenotypeShort {
-            uniquename: genotype_details.uniquename.clone(),
-            name: genotype_details.name.clone(),
-            background: genotype_details.background.clone(),
-        }
+    fn make_allele_short(&self, allele_uniquename: &str) -> AlleleShort {
+        self.alleles.get(allele_uniquename).unwrap().clone()
     }
 
     fn process_feature_cvterms(&mut self) {
@@ -666,7 +683,7 @@ impl <'a> WebDataBuild<'a> {
             }
             let reference_short =
                 self.make_reference_short(&feature_cvterm.publication.uniquename);
-            let mut genotype_alleles = None;
+            let mut maybe_genotype_short = None;
             let gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
                     "mRNA" => {
@@ -691,28 +708,11 @@ impl <'a> WebDataBuild<'a> {
                             }
                     },
                     "genotype" => {
-                        if let Some(allele_uniquenames_vec) =
-                            self.alleles_of_genotypes.get(&feature.uniquename) {
-                                let genotype_alleles_ret = GenotypeAndAlleles {
-                                    genotype: self.make_genotype_short(&feature.uniquename),
-                                    alleles: allele_uniquenames_vec.iter()
-                                        .map(|allele_uniquename| {
-                                            self.alleles.get(allele_uniquename).unwrap().clone()
-                                        })
-                                        .collect::<Vec<_>>()
-                                };
-                                genotype_alleles = Some(genotype_alleles_ret);
-                                allele_uniquenames_vec.iter()
-                                    .map(|allele_uniquename|
-                                         {
-                                             let gene_uniquename =
-                                                 self.genes_of_alleles.get(allele_uniquename).unwrap();
-                                             gene_uniquename.clone()
-                                         })
-                                    .collect()
-                            } else {
-                                vec![]
-                            }
+                        let genotype_short = self.make_genotype_short(&feature.uniquename);
+                        maybe_genotype_short = Some(genotype_short.clone());
+                        genotype_short.alleles.iter()
+                            .map(|allele_short| allele_short.gene_uniquename.clone())
+                            .collect()
                     },
                     _ => {
                         if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
@@ -729,7 +729,7 @@ impl <'a> WebDataBuild<'a> {
                     "PomBase gene products" => self.add_gene_product(&gene_uniquename, &cvterm.name),
                     _ => self.add_annotation(&gene_uniquename, cvterm.borrow(),
                                              &evidence, &reference_short,
-                                             feature_cvterm.is_not, &genotype_alleles)
+                                             feature_cvterm.is_not, &maybe_genotype_short)
                 }
             }
         }
@@ -875,6 +875,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_references();
         self.make_feature_rel_maps();
         self.process_features();
+        self.add_alleles_to_genotypes();
         self.process_cvterms();
         self.process_extension_cvterms();
         self.process_cvterm_rels();

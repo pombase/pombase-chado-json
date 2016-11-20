@@ -70,7 +70,7 @@ pub struct ReferenceAnnotation {
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
     // only for genotype/phenotype annotation:
-    pub genotype: Option<GenotypeAndAlleles>,
+    pub genotype: Option<GenotypeShort>,
     pub is_not: bool,
 }
 
@@ -81,7 +81,7 @@ pub struct FeatureAnnotation {
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceShort>,
     // only for genotype/phenotype annotation:
-    pub genotype: Option<GenotypeAndAlleles>,
+    pub genotype: Option<GenotypeShort>,
     pub is_not: bool,
 }
 
@@ -131,19 +131,11 @@ pub struct GeneDetails {
     pub paralog_annotations: Vec<ParalogAnnotation>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
     pub name: Option<String>,
 //    pub annotations: TypeFeatureAnnotationMap,
-}
-
-#[derive(Serialize)]
-pub struct GenotypeDetails {
-    pub uniquename: GenotypeUniquename,
-    pub name: Option<String>,
-    pub background: Option<String>,
-    pub annotations: TypeFeatureAnnotationMap,
 }
 
 #[derive(Serialize, Clone)]
@@ -151,13 +143,11 @@ pub struct GenotypeShort {
     pub uniquename: GenotypeUniquename,
     pub name: Option<String>,
     pub background: Option<String>,
+    pub alleles: Vec<AlleleShort>,
+//    pub annotations: TypeFeatureAnnotationMap,
 }
 
-#[derive(Serialize, Clone)]
-pub struct GenotypeAndAlleles {
-    pub genotype: GenotypeShort,
-    pub alleles: Vec<AlleleShort>,
-}
+pub type GenotypeDetails = GenotypeShort;
 
 #[derive(Serialize, Clone)]
 pub struct AlleleDetails {
@@ -220,7 +210,7 @@ pub struct ParalogAnnotation {
     pub reference: Option<ReferenceShort>,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct Metadata {
     pub db_creation_datetime: String,
     pub export_prog_name: String,
@@ -229,7 +219,7 @@ pub struct Metadata {
     pub term_count: usize,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct WebData {
     pub genes: IdGeneMap,
     pub gene_summaries: IdGeneShortMap,
