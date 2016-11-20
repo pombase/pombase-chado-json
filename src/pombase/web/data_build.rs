@@ -144,6 +144,7 @@ impl <'a> WebDataBuild<'a> {
     fn add_annotation(&mut self, gene_uniquename: &String,
                       cvterm: &Cvterm, evidence: &Option<Evidence>,
                       reference_opt: &Option<ReferenceShort>,
+                      is_not: bool,
                       genotype_and_alleles: &Option<GenotypeAndAlleles>) {
         let (termid, cv_name) =
             match self.base_term_of_extensions.get(&cvterm.termid()) {
@@ -168,6 +169,7 @@ impl <'a> WebDataBuild<'a> {
                 evidence: evidence.clone(),
                 reference: reference_opt.clone(),
                 genotype: genotype_and_alleles.clone(),
+                is_not: is_not,
             };
         let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
         gene_details.annotations.entry(cv_name.clone())
@@ -180,6 +182,7 @@ impl <'a> WebDataBuild<'a> {
                 evidence: evidence.clone(),
                 reference: reference_opt.clone(),
                 extension: extension_parts.clone(),
+                is_not: is_not,
             };
         if let Some(ref mut term_details) = self.terms.get_mut(&termid) {
             term_details.annotations.entry(String::from("direct")).or_insert(Vec::new()).push(Rc::new(term_annotation));
@@ -195,6 +198,7 @@ impl <'a> WebDataBuild<'a> {
                     evidence: evidence.clone(),
                     extension: extension_parts.clone(),
                     genotype: genotype_and_alleles.clone(),
+                    is_not: is_not,
                 };
             let mut ref_details = self.references.get_mut(&reference.uniquename).unwrap();
             ref_details.annotations.entry(cv_name).or_insert(Vec::new()).push(ref_annotation);
@@ -671,7 +675,8 @@ impl <'a> WebDataBuild<'a> {
                     "PomBase gene characterisation status" => self.add_characterisation_status(&gene_uniquename, &cvterm.name),
                     "PomBase gene products" => self.add_gene_product(&gene_uniquename, &cvterm.name),
                     _ => self.add_annotation(&gene_uniquename, cvterm.borrow(),
-                                             &evidence, &reference_short, &genotype_alleles)
+                                             &evidence, &reference_short,
+                                             feature_cvterm.is_not, &genotype_alleles)
                 }
             }
         }
@@ -766,7 +771,9 @@ impl <'a> WebDataBuild<'a> {
             let mut term_seen_genes: HashSet<String> = HashSet::new();
             for (_, annotation_vec) in &term_details.annotations {
                 for annotation in annotation_vec {
-                    term_seen_genes.insert(annotation.gene.uniquename.clone());
+                    if !annotation.is_not {
+                        term_seen_genes.insert(annotation.gene.uniquename.clone());
+                    }
                 }
             }
             seen_genes.insert(termid.clone(), term_seen_genes);
@@ -775,8 +782,10 @@ impl <'a> WebDataBuild<'a> {
         for (_, gene_details) in &mut self.genes {
             for (_, feat_annotations) in &mut gene_details.annotations {
                 for mut feat_annotation in feat_annotations.iter_mut() {
-                    feat_annotation.term.gene_count =
-                        Some(seen_genes.get(&feat_annotation.term.termid).unwrap().len());
+                    if !feat_annotation.is_not {
+                        feat_annotation.term.gene_count =
+                            Some(seen_genes.get(&feat_annotation.term.termid).unwrap().len());
+                    }
                 }
             }
         }
@@ -784,8 +793,10 @@ impl <'a> WebDataBuild<'a> {
         for (_, ref_details) in &mut self.references {
             for (_, ref_annotations) in &mut ref_details.annotations {
                 for ref_annotation in ref_annotations {
-                    ref_annotation.term.gene_count =
-                        Some(seen_genes.get(&ref_annotation.term.termid).unwrap().len());
+                    if !ref_annotation.is_not {
+                        ref_annotation.term.gene_count =
+                            Some(seen_genes.get(&ref_annotation.term.termid).unwrap().len());
+                    }
                 }
             }
         }

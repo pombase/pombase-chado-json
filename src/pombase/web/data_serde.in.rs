@@ -71,6 +71,7 @@ pub struct ReferenceAnnotation {
     pub extension: Vec<ExtPart>,
     // only for genotype/phenotype annotation:
     pub genotype: Option<GenotypeAndAlleles>,
+    pub is_not: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -81,6 +82,7 @@ pub struct FeatureAnnotation {
     pub reference: Option<ReferenceShort>,
     // only for genotype/phenotype annotation:
     pub genotype: Option<GenotypeAndAlleles>,
+    pub is_not: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -162,6 +164,7 @@ pub struct TermAnnotation {
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceShort>,
+    pub is_not: bool,
 }
 
 pub type TermAnnotationKey = String;
