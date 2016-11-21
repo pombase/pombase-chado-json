@@ -68,6 +68,7 @@ pub struct ReferenceAnnotation {
     pub gene: GeneShort,
     pub term: TermShort,
     pub evidence: Option<Evidence>,
+    pub with: Option<With>,
     pub conditions: Vec<TermShort>,
     pub extension: Vec<ExtPart>,
     // only for genotype/phenotype annotation:
@@ -80,6 +81,7 @@ pub struct FeatureAnnotation {
     pub term: TermShort,
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
+    pub with: Option<With>,
     pub conditions: Vec<TermShort>,
     pub reference: Option<ReferenceShort>,
     // only for genotype/phenotype annotation:
@@ -170,6 +172,7 @@ pub struct TermAnnotation {
     pub gene: GeneShort,
     pub extension: Vec<ExtPart>,
     pub evidence: Option<Evidence>,
+    pub with: Option<With>,
     pub conditions: Vec<TermShort>,
     pub reference: Option<ReferenceShort>,
     pub is_not: bool,
