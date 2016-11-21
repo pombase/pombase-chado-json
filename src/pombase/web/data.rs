@@ -19,6 +19,7 @@ pub type TermId = String;
 pub type TermDef = String;
 
 pub type Evidence = String;
+pub type Condition = String;
 
 pub type TypeFeatureAnnotationMap =
     HashMap<TypeName, Vec<FeatureAnnotation>>;
