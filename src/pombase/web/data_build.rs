@@ -156,7 +156,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_annotation(&mut self, gene_uniquename: &String,
                       cvterm: &Cvterm, evidence: &Option<Evidence>,
-                      maybe_condition: &Option<Condition>,
+                      condition_termids: &Vec<String>,
                       reference_opt: &Option<ReferenceShort>,
                       is_not: bool,
                       genotype_short: &Option<GenotypeShort>) {
@@ -176,22 +176,16 @@ impl <'a> WebDataBuild<'a> {
         let term_short = self.make_term_short(&termid).clone();
         let gene_short = self.make_gene_short(&gene_uniquename).clone();
 
-        let maybe_condition_term_short = match maybe_condition.clone() {
-            Some(condition) =>
-                if condition.starts_with("PECO:") {
-                    Some(self.make_term_short(&condition))
-                } else {
-                    None
-                },
-            _ => None
-        };
+        let condition_term_short_vec = condition_termids.iter()
+            .map(|condition_termid| self.make_term_short(&condition_termid))
+            .collect::<Vec<TermShort>>();
 
         let feature_annotation =
             FeatureAnnotation {
                 term: term_short.clone(),
                 extension: extension_parts.clone(),
                 evidence: evidence.clone(),
-                condition: maybe_condition_term_short.clone(),
+                conditions: condition_term_short_vec.clone(),
                 reference: reference_opt.clone(),
                 genotype: genotype_short.clone(),
                 is_not: is_not,
@@ -205,7 +199,7 @@ impl <'a> WebDataBuild<'a> {
                 term: term_short.clone(),
                 gene: gene_short.clone(),
                 evidence: evidence.clone(),
-                condition: maybe_condition_term_short.clone(),
+                conditions: condition_term_short_vec.clone(),
                 reference: reference_opt.clone(),
                 extension: extension_parts.clone(),
                 is_not: is_not,
@@ -217,13 +211,11 @@ impl <'a> WebDataBuild<'a> {
             panic!("missing termid: {}\n", &termid);
         }
 
-        if let Some(condition_term_details) = maybe_condition_term_short.clone() {
+        for condition_term_short in &condition_term_short_vec {
             if let Some(ref mut condition_term_details) =
-                self.terms.get_mut(&condition_term_details.termid) {
+                self.terms.get_mut(&condition_term_short.termid) {
                     condition_term_details.annotations.entry(String::from("direct"))
                         .or_insert(Vec::new()).push(rc_term_annotation.clone());
-                } else {
-                    panic!("missing termid: {}\n", &termid);
                 }
         }
 
@@ -233,7 +225,7 @@ impl <'a> WebDataBuild<'a> {
                     gene: gene_short.clone(),
                     term: term_short.clone(),
                     evidence: evidence.clone(),
-                    condition: maybe_condition_term_short,
+                    conditions: condition_term_short_vec,
                     extension: extension_parts.clone(),
                     genotype: genotype_short.clone(),
                     is_not: is_not,
@@ -759,13 +751,15 @@ impl <'a> WebDataBuild<'a> {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
             let mut evidence: Option<String> = None;
-            let mut condition: Option<String> = None;
+            let mut conditions: Vec<String> = vec![];
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 if prop.type_name() == "evidence" {
                     evidence = prop.value.clone();
                 } else {
                     if prop.type_name() == "condition" {
-                        condition = prop.value.clone();
+                        if let Some(value) = prop.value.clone() {
+                            conditions.push(value);
+                        }
                     }
                 }
             }
@@ -815,7 +809,7 @@ impl <'a> WebDataBuild<'a> {
                 if cvterm.cv.name != "PomBase gene characterisation status" &&
                     cvterm.cv.name != "PomBase gene products" {
                         self.add_annotation(&gene_uniquename, cvterm.borrow(),
-                                            &evidence, &condition, &reference_short,
+                                            &evidence, &conditions, &reference_short,
                                             feature_cvterm.is_not, &maybe_genotype_short)
                     }
             }
