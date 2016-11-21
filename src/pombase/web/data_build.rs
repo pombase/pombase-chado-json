@@ -40,6 +40,12 @@ fn gene_name_cmp(a: &GeneShort, b: &GeneShort) -> Ordering {
     }
 }
 
+#[derive(Clone)]
+pub struct AlleleAndExpression {
+    allele_uniquename: String,
+    expression: Option<String>,
+}
+
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
 
@@ -53,7 +59,7 @@ pub struct WebDataBuild<'a> {
     genes_of_transcripts: HashMap<String, String>,
     transcripts_of_polypeptides: HashMap<String, String>,
     genes_of_alleles: HashMap<String, String>,
-    alleles_of_genotypes: HashMap<String, Vec<String>>,
+    alleles_of_genotypes: HashMap<String, Vec<AlleleAndExpression>>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -62,6 +68,15 @@ pub struct WebDataBuild<'a> {
     base_term_of_extensions: HashMap<String, TermidCvname>,
 }
 
+fn get_feat_rel_expression(feature_relationship: &FeatureRelationship) -> Option<String> {
+    for prop in feature_relationship.feature_relationshipprops.borrow().iter() {
+        if prop.prop_type.name == "expression" {
+            return prop.value.clone();
+        }
+    }
+
+    None
+}
 
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw) -> WebDataBuild<'a> {
@@ -317,8 +332,13 @@ impl <'a> WebDataBuild<'a> {
                     }
                 if feature_rel.rel_type.name == "part_of" &&
                     object_type_name == "genotype" {
+                        let allele_and_expression =
+                            AlleleAndExpression {
+                                allele_uniquename: subject_uniquename.clone(),
+                                expression: get_feat_rel_expression(feature_rel),
+                            };
                         let entry = self.alleles_of_genotypes.entry(object_uniquename.clone());
-                        entry.or_insert(Vec::new()).push(subject_uniquename.clone());
+                        entry.or_insert(Vec::new()).push(allele_and_expression);
                         continue;
                     }
             }
@@ -396,7 +416,7 @@ impl <'a> WebDataBuild<'a> {
                                   uniquename: feat.uniquename.clone(),
                                   name: feat.name.clone(),
                                   background: background,
-                                  alleles: vec![],
+                                  expressed_alleles: vec![],
                               });
     }
 
@@ -472,21 +492,27 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_alleles_to_genotypes(&mut self) {
-        let mut alleles_to_add: HashMap<String, Vec<AlleleShort>> = HashMap::new();
+        let mut alleles_to_add: HashMap<String, Vec<ExpressedAllele>> = HashMap::new();
 
         for genotype_uniquename in self.genotypes.keys() {
-            let allele_uniquenames: Vec<String> =
+            let allele_uniquenames: Vec<AlleleAndExpression> =
                 self.alleles_of_genotypes.get(genotype_uniquename).unwrap().clone();
-            let allele_short_vec: Vec<AlleleShort> =
+            let expressed_allele_vec: Vec<ExpressedAllele> =
                 allele_uniquenames.iter()
-                .map(|ref allele_uniquename| self.make_allele_short(&allele_uniquename))
+                .map(|ref allele_and_expression| {
+                    ExpressedAllele {
+                        allele: self.make_allele_short(&allele_and_expression.allele_uniquename),
+                        expression: allele_and_expression.expression.clone(),
+                    }
+                })
                 .collect();
 
-            alleles_to_add.insert(genotype_uniquename.clone(), allele_short_vec);
+            alleles_to_add.insert(genotype_uniquename.clone(), expressed_allele_vec);
         }
 
         for (genotype_uniquename, genotype_details) in &mut self.genotypes {
-            genotype_details.alleles = alleles_to_add.remove(genotype_uniquename).unwrap();
+            genotype_details.expressed_alleles =
+                alleles_to_add.remove(genotype_uniquename).unwrap();
         }
     }
 
@@ -792,8 +818,10 @@ impl <'a> WebDataBuild<'a> {
                     "genotype" => {
                         let genotype_short = self.make_genotype_short(&feature.uniquename);
                         maybe_genotype_short = Some(genotype_short.clone());
-                        genotype_short.alleles.iter()
-                            .map(|allele_short| allele_short.gene.uniquename.clone())
+                        genotype_short.expressed_alleles.iter()
+                            .map(|expressed_allele| {
+                                expressed_allele.allele.gene.uniquename.clone()
+                            })
                             .collect()
                     },
                     _ => {

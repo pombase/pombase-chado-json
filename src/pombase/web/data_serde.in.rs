@@ -145,8 +145,14 @@ pub struct GenotypeShort {
     pub uniquename: GenotypeUniquename,
     pub name: Option<String>,
     pub background: Option<String>,
-    pub alleles: Vec<AlleleShort>,
+    pub expressed_alleles: Vec<ExpressedAllele>,
 //    pub annotations: TypeFeatureAnnotationMap,
+}
+
+#[derive(Serialize, Clone)]
+pub struct ExpressedAllele {
+    pub expression: Option<String>,
+    pub allele: AlleleShort,
 }
 
 #[derive(Serialize, Clone)]
