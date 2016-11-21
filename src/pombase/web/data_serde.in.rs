@@ -151,9 +151,9 @@ pub struct GenotypeShort {
 pub struct AlleleShort {
     pub uniquename: String,
     pub name: Option<String>,
-    pub gene_uniquename: String,
     pub allele_type: String,
     pub description: Option<String>,
+    pub gene: GeneShort,
 }
 
 #[derive(Serialize, Clone)]

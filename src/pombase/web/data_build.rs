@@ -86,16 +86,29 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_gene_short(&self, gene_uniquename: &str) -> GeneShort {
+    fn get_gene<'b>(&'b self, gene_uniquename: &'b str) -> &'b GeneDetails {
         if let Some(gene_details) = self.genes.get(gene_uniquename) {
-            GeneShort {
-                uniquename: gene_details.uniquename.clone(),
-                name: gene_details.name.clone(),
-                product: gene_details.product.clone(),
-                synonyms: gene_details.synonyms.clone(),
-            }
+            gene_details
         } else {
-            panic!("can't find GeneShort for gene uniquename {}", gene_uniquename);
+            panic!("can't find GeneDetails for gene uniquename {}", gene_uniquename)
+        }
+    }
+
+    fn get_gene_mut<'b>(&'b mut self, gene_uniquename: &'b str) -> &'b mut GeneDetails {
+        if let Some(gene_details) = self.genes.get_mut(gene_uniquename) {
+            gene_details
+        } else {
+            panic!("can't find GeneDetails for gene uniquename {}", gene_uniquename)
+        }
+    }
+
+    fn make_gene_short(&self, gene_uniquename: &str) -> GeneShort {
+        let gene_details = self.get_gene(&gene_uniquename);
+        GeneShort {
+            uniquename: gene_details.uniquename.clone(),
+            name: gene_details.name.clone(),
+            product: gene_details.product.clone(),
+            synonyms: gene_details.synonyms.clone(),
         }
     }
 
@@ -137,7 +150,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_gene_product(&mut self, gene_uniquename: &String, product: &String) {
-        let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+        let mut gene_details = self.get_gene_mut(gene_uniquename);
         gene_details.product = Some(product.clone());
     }
 
@@ -393,7 +406,7 @@ impl <'a> WebDataBuild<'a> {
         let allele_details = AlleleShort {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
-            gene_uniquename: gene_uniquename.clone(),
+            gene: self.make_gene_short(&gene_uniquename),
             allele_type: allele_type.unwrap(),
             description: description,
         };
@@ -413,20 +426,31 @@ impl <'a> WebDataBuild<'a> {
                                             name: feat.name.clone(),
                                         });
             },
-
-            "genotype" =>
-                self.store_genotype_details(feat),
-
-            "allele" =>
-                self.store_allele_details(feat),
-
             _ => (),
         }
     }
 
     fn process_features(&mut self) {
         for feat in &self.raw.features {
-            self.process_feature(&feat);
+            if feat.feat_type.name != "genotype" && feat.feat_type.name != "allele" {
+                self.process_feature(&feat);
+            }
+        }
+    }
+
+    fn process_allele_features(&mut self) {
+        for feat in &self.raw.features {
+            if feat.feat_type.name == "allele" {
+                self.store_allele_details(&feat);
+            }
+        }
+    }
+
+    fn process_genotype_features(&mut self) {
+        for feat in &self.raw.features {
+            if feat.feat_type.name == "genotype" {
+                self.store_genotype_details(&feat);
+            }
         }
     }
 
@@ -671,6 +695,40 @@ impl <'a> WebDataBuild<'a> {
         self.alleles.get(allele_uniquename).unwrap().clone()
     }
 
+    // process feature properties stored as cvterms,
+    // eg. characterisation_status and product
+    fn process_props_from_feature_cvterms(&mut self) {
+        for feature_cvterm in self.raw.feature_cvterms.iter() {
+            let feature = &feature_cvterm.feature;
+            let cvterm = &feature_cvterm.cvterm;
+
+            let gene_uniquenames_vec: Vec<GeneUniquename> =
+                if feature.feat_type.name == "polypeptide" && cvterm.cv.name == "PomBase gene products" {
+                    if let Some(transcript_uniquename) =
+                        self.transcripts_of_polypeptides.get(&feature.uniquename) {
+                            if let Some(gene_uniquename) =
+                                self.genes_of_transcripts.get(transcript_uniquename) {
+                                    vec![gene_uniquename.clone()]
+                                } else {
+                                    vec![]
+                                }
+                        } else {
+                            vec![]
+                        }
+                } else {
+                    vec![]
+                };
+            for gene_uniquename in &gene_uniquenames_vec {
+                self.add_gene_product(&gene_uniquename, &cvterm.name);
+            }
+            if(feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene")
+                && cvterm.cv.name == "PomBase gene characterisation status" {
+                    self.add_characterisation_status(&feature.uniquename, &cvterm.name);
+                }
+        }
+    }
+
+    // process annotation
     fn process_feature_cvterms(&mut self) {
         for feature_cvterm in self.raw.feature_cvterms.iter() {
             let feature = &feature_cvterm.feature;
@@ -711,7 +769,7 @@ impl <'a> WebDataBuild<'a> {
                         let genotype_short = self.make_genotype_short(&feature.uniquename);
                         maybe_genotype_short = Some(genotype_short.clone());
                         genotype_short.alleles.iter()
-                            .map(|allele_short| allele_short.gene_uniquename.clone())
+                            .map(|allele_short| allele_short.gene.uniquename.clone())
                             .collect()
                     },
                     _ => {
@@ -724,13 +782,12 @@ impl <'a> WebDataBuild<'a> {
                 };
 
             for gene_uniquename in &gene_uniquenames_vec {
-                match &cvterm.cv.name as &str {
-                    "PomBase gene characterisation status" => self.add_characterisation_status(&gene_uniquename, &cvterm.name),
-                    "PomBase gene products" => self.add_gene_product(&gene_uniquename, &cvterm.name),
-                    _ => self.add_annotation(&gene_uniquename, cvterm.borrow(),
-                                             &evidence, &reference_short,
-                                             feature_cvterm.is_not, &maybe_genotype_short)
-                }
+                if cvterm.cv.name != "PomBase gene characterisation status" &&
+                    cvterm.cv.name != "PomBase gene products" {
+                        self.add_annotation(&gene_uniquename, cvterm.borrow(),
+                                            &evidence, &reference_short,
+                                            feature_cvterm.is_not, &maybe_genotype_short)
+                    }
             }
         }
     }
@@ -875,6 +932,9 @@ impl <'a> WebDataBuild<'a> {
         self.process_references();
         self.make_feature_rel_maps();
         self.process_features();
+        self.process_props_from_feature_cvterms();
+        self.process_allele_features();
+        self.process_genotype_features();
         self.add_alleles_to_genotypes();
         self.process_cvterms();
         self.process_extension_cvterms();
