@@ -1,4 +1,7 @@
 use std::rc::Rc;
+use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
+
 
 #[derive(Serialize, Clone)]
 pub enum ExtRange {
@@ -24,6 +27,36 @@ pub struct GeneShort {
     pub synonyms: Vec<SynonymDetails>,
 }
 
+impl PartialEq for GeneShort {
+    fn eq(&self, other: &GeneShort) -> bool {
+        self.uniquename == other.uniquename
+    }
+}
+impl Eq for GeneShort { }
+impl Ord for GeneShort {
+    fn cmp(&self, other: &GeneShort) -> Ordering {
+        if self.name.is_some() {
+            if other.name.is_some() {
+                self.name.cmp(&other.name)
+            } else { Ordering::Less }
+        } else {
+            if other.name.is_some() {
+                Ordering::Greater
+            } else { self.uniquename.cmp(&other.uniquename) }
+        }
+    }
+}
+impl PartialOrd for GeneShort {
+    fn partial_cmp(&self, other: &GeneShort) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Hash for GeneShort {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.uniquename.hash(state);
+    }
+}
+
 #[derive(Serialize, Clone)]
 pub struct TranscriptShort {
     pub uniquename: TranscriptUniquename,
@@ -34,6 +67,7 @@ pub struct TranscriptShort {
 #[derive(Serialize, Clone)]
 pub struct TermShort {
     pub name: TermName,
+    pub cv_name: String,
     pub termid: TermId,
     pub is_obsolete: bool,
     pub gene_count: Option<usize>,
@@ -57,35 +91,23 @@ pub struct ReferenceDetails {
     pub authors_abbrev: Option<String>,
     pub pubmed_publication_date: Option<String>,
     pub publication_year: Option<String>,
-    pub annotations: TypeReferenceAnnotationMap,
+    pub annotations: OntAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
 }
 
 #[derive(Serialize, Clone)]
-pub struct ReferenceAnnotation {
-    pub gene: GeneShort,
-    pub term: TermShort,
-    pub evidence: Option<Evidence>,
-    pub with: Option<With>,
-    pub conditions: Vec<TermShort>,
-    pub extension: Vec<ExtPart>,
-    // only for genotype/phenotype annotation:
-    pub genotype: Option<GenotypeShort>,
-    pub is_not: bool,
-}
-
-#[derive(Serialize, Clone)]
-pub struct FeatureAnnotation {
-    pub term: TermShort,
-    pub extension: Vec<ExtPart>,
-    pub evidence: Option<Evidence>,
-    pub with: Option<With>,
-    pub conditions: Vec<TermShort>,
+pub struct OntAnnotation {
+    pub term: Option<TermShort>,
+    pub gene: Option<GeneShort>,
     pub reference: Option<ReferenceShort>,
+    pub evidence: Option<Evidence>,
+    pub extension: Vec<ExtPart>,
+    pub with: Option<With>,
     // only for genotype/phenotype annotation:
     pub genotype: Option<GenotypeShort>,
+    pub conditions: Vec<TermShort>,
     pub is_not: bool,
 }
 
@@ -129,7 +151,7 @@ pub struct GeneDetails {
     pub location: Option<ChromosomeLocation>,
     pub cds_location: Option<ChromosomeLocation>,
     pub transcripts: Vec<TranscriptShort>,
-    pub annotations: TypeFeatureAnnotationMap,
+    pub annotations: OntAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
@@ -166,21 +188,8 @@ pub struct AlleleShort {
     pub gene: GeneShort,
 }
 
-#[derive(Serialize, Clone)]
-pub struct TermAnnotation {
-    pub term: TermShort,
-    pub gene: GeneShort,
-    pub extension: Vec<ExtPart>,
-    pub evidence: Option<Evidence>,
-    pub with: Option<With>,
-    pub conditions: Vec<TermShort>,
-    pub reference: Option<ReferenceShort>,
-    pub is_not: bool,
-}
-
-pub type TermAnnotationKey = String;
-
-pub type TermAnnotationMap = HashMap<TermAnnotationKey, Vec<Rc<TermAnnotation>>>;
+pub type OntAnnotationKey = String;
+pub type OntAnnotationMap = HashMap<OntAnnotationKey, Vec<Rc<OntAnnotation>>>;
 
 #[derive(Serialize, Clone)]
 pub struct TermDetails {
@@ -190,7 +199,7 @@ pub struct TermDetails {
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
     pub genes: Vec<GeneShort>,
-    pub annotations: TermAnnotationMap,
+    pub annotations: OntAnnotationMap,
 }
 
 #[derive(Serialize, Clone)]

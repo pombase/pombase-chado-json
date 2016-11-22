@@ -1,6 +1,8 @@
 pub const POMBASE_ANN_EXT_TERM_CV_NAME: &'static str = "PomBase annotation extension terms";
 pub const ANNOTATION_EXT_REL_PREFIX: &'static str = "annotation_extension_relation-";
 
+pub const DB_NAME: &'static str = "PomBase";
+
 pub enum FeatureRelAnnotationType {
     Interaction,
     Ortholog,

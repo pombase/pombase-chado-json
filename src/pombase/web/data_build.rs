@@ -2,7 +2,6 @@ use std::rc::Rc;
 use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
 use std::borrow::Borrow;
-use std::cmp::Ordering;
 
 use regex::Regex;
 
@@ -19,27 +18,6 @@ fn make_organism_short(rc_organism: &Rc<Organism>) -> OrganismShort {
 
 type Termid = String;
 
-struct TermidCvname {
-    termid: Termid,
-    cv_name: CvName,
-}
-
-fn gene_name_cmp(a: &GeneShort, b: &GeneShort) -> Ordering {
-    if a.name.is_some() {
-        if b.name.is_some() {
-            a.name.cmp(&b.name)
-        } else {
-            Ordering::Less
-        }
-    } else {
-        if b.name.is_some() {
-            Ordering::Greater
-        } else {
-            a.uniquename.cmp(&b.uniquename)
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct AlleleAndExpression {
     allele_uniquename: String,
@@ -55,6 +33,7 @@ pub struct WebDataBuild<'a> {
     alleles: UniquenameAlleleMap,
     terms: HashMap<TermId, TermDetails>,
     references: IdReferenceMap,
+    all_ont_annotations: Vec<OntAnnotation>,
 
     genes_of_transcripts: HashMap<String, String>,
     transcripts_of_polypeptides: HashMap<String, String>,
@@ -65,7 +44,7 @@ pub struct WebDataBuild<'a> {
     // to a Vec of the details of each of the extension
     parts_of_extensions: HashMap<String, Vec<ExtPart>>,
 
-    base_term_of_extensions: HashMap<String, TermidCvname>,
+    base_term_of_extensions: HashMap<Termid, Termid>,
 }
 
 fn get_feat_rel_expression(feature_relationship: &FeatureRelationship) -> Option<String> {
@@ -89,6 +68,7 @@ impl <'a> WebDataBuild<'a> {
             alleles: HashMap::new(),
             terms: HashMap::new(),
             references: HashMap::new(),
+            all_ont_annotations: vec![],
 
             genes_of_transcripts: HashMap::new(),
             transcripts_of_polypeptides: HashMap::new(),
@@ -150,6 +130,7 @@ impl <'a> WebDataBuild<'a> {
         if let Some(term_details) = self.terms.get(termid) {
             TermShort {
                 name: term_details.name.clone(),
+                cv_name: term_details.cv_name.clone(),
                 termid: term_details.termid.clone(),
                 is_obsolete: term_details.is_obsolete,
                 gene_count: None,
@@ -169,18 +150,12 @@ impl <'a> WebDataBuild<'a> {
         gene_details.product = Some(product.clone());
     }
 
-    fn add_annotation(&mut self, gene_uniquename: &String,
-                      cvterm: &Cvterm, evidence: &Option<Evidence>,
-                      with: &Option<With>,
-                      condition_termids: &Vec<String>,
-                      reference_opt: &Option<ReferenceShort>,
-                      is_not: bool,
-                      genotype_short: &Option<GenotypeShort>) {
-        let (termid, cv_name) =
+    fn add_annotation(&mut self, cvterm: &Cvterm,
+                      annotation_template: OntAnnotation) {
+        let termid =
             match self.base_term_of_extensions.get(&cvterm.termid()) {
-                Some(termid_cv_name) => (termid_cv_name.termid.clone(),
-                                         termid_cv_name.cv_name.clone()),
-                None => (cvterm.termid(), cvterm.cv.name.clone()),
+                Some(base_termid) => base_termid.clone(),
+                None => cvterm.termid(),
             };
 
         let extension_parts =
@@ -190,69 +165,15 @@ impl <'a> WebDataBuild<'a> {
             };
 
         let term_short = self.make_term_short(&termid).clone();
-        let gene_short = self.make_gene_short(&gene_uniquename).clone();
-
-        let condition_term_short_vec = condition_termids.iter()
-            .map(|condition_termid| self.make_term_short(&condition_termid))
-            .collect::<Vec<TermShort>>();
-
-        let feature_annotation =
-            FeatureAnnotation {
-                term: term_short.clone(),
-                extension: extension_parts.clone(),
-                evidence: evidence.clone(),
-                with: with.clone(),
-                conditions: condition_term_short_vec.clone(),
-                reference: reference_opt.clone(),
-                genotype: genotype_short.clone(),
-                is_not: is_not,
+        let ont_annotation =
+            OntAnnotation {
+                term: Some(term_short),
+                extension: extension_parts,
+                .. annotation_template
             };
-        let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
-        gene_details.annotations.entry(cv_name.clone())
-            .or_insert(Vec::new()).push(feature_annotation);
 
-        let rc_term_annotation =
-            Rc::new(TermAnnotation {
-                term: term_short.clone(),
-                gene: gene_short.clone(),
-                evidence: evidence.clone(),
-                with: with.clone(),
-                conditions: condition_term_short_vec.clone(),
-                reference: reference_opt.clone(),
-                extension: extension_parts.clone(),
-                is_not: is_not,
-            });
-        if let Some(ref mut term_details) = self.terms.get_mut(&termid) {
-            term_details.annotations.entry(String::from("direct"))
-                .or_insert(Vec::new()).push(rc_term_annotation.clone());
-        } else {
-            panic!("missing termid: {}\n", &termid);
-        }
-
-        for condition_term_short in &condition_term_short_vec {
-            if let Some(ref mut condition_term_details) =
-                self.terms.get_mut(&condition_term_short.termid) {
-                    condition_term_details.annotations.entry(String::from("direct"))
-                        .or_insert(Vec::new()).push(rc_term_annotation.clone());
-                }
-        }
-
-        if let Some(reference) = reference_opt.clone() {
-            let ref_annotation =
-                ReferenceAnnotation {
-                    gene: gene_short.clone(),
-                    term: term_short.clone(),
-                    evidence: evidence.clone(),
-                    with: with.clone(),
-                    conditions: condition_term_short_vec,
-                    extension: extension_parts.clone(),
-                    genotype: genotype_short.clone(),
-                    is_not: is_not,
-                };
-            let mut ref_details = self.references.get_mut(&reference.uniquename).unwrap();
-            ref_details.annotations.entry(cv_name).or_insert(Vec::new()).push(ref_annotation);
-        }
-    }
+        self.all_ont_annotations.push(ont_annotation);
+   }
 
     fn process_references(&mut self) {
         for rc_publication in &self.raw.publications {
@@ -702,11 +623,8 @@ impl <'a> WebDataBuild<'a> {
             if subject_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
                 let subject_termid = subject_term.termid();
                 if rel_type.name == "is_a" {
-                    let base = TermidCvname {
-                        termid: object_term.termid().clone(),
-                        cv_name: object_term.cv.name.clone()
-                    };
-                    self.base_term_of_extensions.insert(subject_termid.clone(), base);
+                    self.base_term_of_extensions.insert(subject_termid.clone(),
+                                                        object_term.termid().clone());
                 } else {
                     let object_term_short = self.make_term_short(&object_term.termid());
 
@@ -777,25 +695,35 @@ impl <'a> WebDataBuild<'a> {
 
     // process annotation
     fn process_feature_cvterms(&mut self) {
+        let db_prefix_patt = String::from("^") + DB_NAME + ":";
         for feature_cvterm in self.raw.feature_cvterms.iter() {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
-            let mut evidence: Option<String> = None;
-            let mut with: Option<String> = None;
-            let mut conditions: Vec<String> = vec![];
+            let publication = &feature_cvterm.publication;
+            let mut extra_props: HashMap<String, String> = HashMap::new();
+            let mut conditions: Vec<TermShort> = vec![];
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
-                    "evidence" => evidence = prop.value.clone(),
+                    "evidence" | "quant_gene_ex_copies_per_cell" |
+                    "quant_gene_ex_avg_copies_per_cell" => {
+                        if let Some(value) = prop.value.clone() {
+                            extra_props.insert(prop.type_name().clone(), value);
+                        }
+                    },
                     "condition" =>
                         if let Some(value) = prop.value.clone() {
-                            conditions.push(value);
+                            conditions.push(self.make_term_short(&value));
                         },
-                    "with" => with = prop.value.clone(),
+                    "with" | "from" => {
+                        if let Some(value) = prop.value.clone() {
+                        let re = Regex::new(&db_prefix_patt).unwrap();
+                            extra_props.insert(prop.type_name().clone(),
+                                               re.replace_all(&value, ""));
+                        }
+                    },
                     _ => ()
                 }
             }
-            let reference_short =
-                self.make_reference_short(&feature_cvterm.publication.uniquename);
             let mut maybe_genotype_short = None;
             let gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
@@ -838,20 +766,94 @@ impl <'a> WebDataBuild<'a> {
                     }
                 };
 
+            let reference_short = self.make_reference_short(&publication.uniquename);
+
             for gene_uniquename in &gene_uniquenames_vec {
+                let annotation_template = OntAnnotation {
+                    gene: Some(self.make_gene_short(&gene_uniquename)),
+                    term: None,
+                    reference: reference_short.clone(),
+                    genotype: maybe_genotype_short.clone(),
+                    with: extra_props.remove("with"),
+//                    from: extra_props.remove("from"),
+                    evidence: extra_props.remove("evidence"),
+                    conditions: conditions.clone(),
+                    extension: vec![],
+                    is_not: feature_cvterm.is_not,
+                };
+
                 if cvterm.cv.name != "PomBase gene characterisation status" &&
                     cvterm.cv.name != "PomBase gene products" {
-                        self.add_annotation(&gene_uniquename, cvterm.borrow(),
-                                            &evidence, &with,
-                                            &conditions, &reference_short,
-                                            feature_cvterm.is_not, &maybe_genotype_short)
+                        self.add_annotation(cvterm.borrow(), annotation_template)
                     }
             }
         }
     }
 
+    fn store_ont_annotations(&mut self) {
+        let mut term_gene_sets: HashMap<Termid, HashSet<GeneShort>> =
+            HashMap::new();
+
+        for ont_annotation in &self.all_ont_annotations {
+            let term_short = ont_annotation.term.clone().unwrap();
+            let gene_short = ont_annotation.gene.clone().unwrap();
+
+            term_gene_sets.entry(term_short.termid.clone())
+                .or_insert(HashSet::new())
+                .insert(gene_short);
+        }
+
+        for ont_annotation in &mut self.all_ont_annotations {
+            let mut new_term_short = ont_annotation.term.clone().unwrap();
+            let term_gene_uniquenames = term_gene_sets.get(&new_term_short.termid).unwrap();
+            new_term_short.gene_count = Some(term_gene_uniquenames.len());
+            ont_annotation.term = Some(new_term_short);
+        }
+
+        for ont_annotation in &self.all_ont_annotations {
+            let gene_uniquename = ont_annotation.gene.clone().unwrap().uniquename;
+            let term = ont_annotation.term.clone().unwrap();
+            let termid = term.termid;
+            let cv_name = term.cv_name.clone();
+
+            let rc_annotation = Rc::new(ont_annotation.clone());
+
+            let mut gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
+            gene_details.annotations.entry(cv_name.clone())
+                .or_insert(Vec::new()).push(rc_annotation.clone());
+
+            if let Some(ref mut term_details) = self.terms.get_mut(&termid) {
+                term_details.annotations.entry(String::from("direct"))
+                    .or_insert(Vec::new()).push(rc_annotation.clone());
+
+                if let Some(mut gene_short_vec) = term_gene_sets.remove(&termid) {
+                    term_details.genes.append(&mut gene_short_vec.drain().collect());
+                    term_details.genes.sort();
+                }
+            } else {
+                panic!("missing termid: {}\n", &termid);
+            }
+
+            for condition_term_short in &rc_annotation.conditions {
+                if let Some(ref mut condition_term_details) =
+                    self.terms.get_mut(&condition_term_short.termid) {
+                        condition_term_details.annotations.entry(String::from("direct"))
+                            .or_insert(Vec::new()).push(rc_annotation.clone());
+                    }
+            }
+
+            if let Some(reference) = ont_annotation.reference.clone() {
+                let reference_uniquename = reference.uniquename.clone();
+                let mut ref_details =
+                    self.references.get_mut(&reference_uniquename).unwrap();
+                ref_details.annotations.entry(cv_name).or_insert(Vec::new())
+                    .push(rc_annotation.clone());
+            }
+        }
+    }
+
     fn process_cvtermpath(&mut self) {
-        let mut new_annotations: HashMap<Termid, TermAnnotationMap> = HashMap::new();
+        let mut new_annotations: HashMap<Termid, OntAnnotationMap> = HashMap::new();
 
         for cvtermpath in &self.raw.cvtermpaths {
             let subject_term = &cvtermpath.subject;
@@ -932,60 +934,6 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn set_term_short_use_counts(&mut self) {
-        let mut seen_genes: HashMap<Termid, HashSet<String>> = HashMap::new();
-
-        for (termid, term_details) in &self.terms {
-            let mut term_seen_genes: HashSet<String> = HashSet::new();
-            for (_, annotation_vec) in &term_details.annotations {
-                for annotation in annotation_vec {
-                    if !annotation.is_not {
-                        term_seen_genes.insert(annotation.gene.uniquename.clone());
-                    }
-                }
-            }
-            seen_genes.insert(termid.clone(), term_seen_genes);
-        }
-
-        for (_, gene_details) in &mut self.genes {
-            for (_, feat_annotations) in &mut gene_details.annotations {
-                for mut feat_annotation in feat_annotations.iter_mut() {
-                    if !feat_annotation.is_not {
-                        feat_annotation.term.gene_count =
-                            Some(seen_genes.get(&feat_annotation.term.termid).unwrap().len());
-                    }
-                }
-            }
-        }
-
-        for (_, ref_details) in &mut self.references {
-            for (_, ref_annotations) in &mut ref_details.annotations {
-                for ref_annotation in ref_annotations {
-                    if !ref_annotation.is_not {
-                        ref_annotation.term.gene_count =
-                            Some(seen_genes.get(&ref_annotation.term.termid).unwrap().len());
-                    }
-                }
-            }
-        }
-
-        let mut gene_short_map: HashMap<Termid, Vec<GeneShort>> = HashMap::new();
-
-        for (termid, term_seen_genes) in seen_genes {
-            for gene_uniquename in term_seen_genes {
-                let gene_short = self.make_gene_short(&gene_uniquename);
-                gene_short_map.entry(termid.clone())
-                    .or_insert(Vec::new()).push(gene_short);
-            }
-        }
-
-        for (ref termid, ref mut gene_short_vec) in gene_short_map.drain() {
-            let mut term_details = self.terms.get_mut(termid).unwrap();
-            term_details.genes.append(gene_short_vec);
-            term_details.genes.sort_by(gene_name_cmp)
-        }
-    }
-
     pub fn get_web_data(&mut self) -> WebData {
         self.process_references();
         self.make_feature_rel_maps();
@@ -999,9 +947,10 @@ impl <'a> WebDataBuild<'a> {
         self.process_cvterm_rels();
         self.process_feature_synonyms();
         self.process_feature_cvterms();
+        self.store_ont_annotations();
         self.process_cvtermpath();
         self.process_annotation_feature_rels();
-        self.set_term_short_use_counts();
+//        self.set_term_short_use_counts();
 
         let mut web_data_terms: IdTermDetailsMap = HashMap::new();
 

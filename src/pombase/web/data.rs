@@ -10,6 +10,7 @@ type CvName = String;
 pub type MiscExtRange = String;
 
 pub type GeneUniquename = String;
+pub type TermUniquename = String;
 pub type GeneName = String;
 pub type TypeName = String;
 pub type GeneProduct = String;
@@ -22,10 +23,6 @@ pub type Evidence = String;
 pub type With = String;
 pub type Condition = String;
 
-pub type TypeFeatureAnnotationMap =
-    HashMap<TypeName, Vec<FeatureAnnotation>>;
-pub type TypeReferenceAnnotationMap =
-    HashMap<TypeName, Vec<ReferenceAnnotation>>;
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
 
