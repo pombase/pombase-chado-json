@@ -98,6 +98,7 @@ fn main() {
     if matches.opt_present("store-json") {
         conn.execute("DROP SCHEMA IF EXISTS web_json CASCADE", &[]).unwrap();
         conn.execute("CREATE SCHEMA web_json", &[]).unwrap();
+        conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;", &[]).unwrap();
         conn.execute("CREATE TABLE web_json.gene (uniquename TEXT, data JSONB)", &[]).unwrap();
         conn.execute("CREATE TABLE web_json.term (termid TEXT, data JSONB)", &[]).unwrap();
         conn.execute("CREATE TABLE web_json.reference (uniquename TEXT, data JSONB)", &[]).unwrap();
