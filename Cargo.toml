@@ -17,7 +17,6 @@ name = "test"
 path = "tests/test.rs"
 
 [dependencies]
-postgres = "0.12"
 serde = "0.8"
 serde_json = "0.8"
 getopts = "*"
@@ -25,3 +24,7 @@ regex = "0.1"
 
 [build-dependencies]
 serde_codegen = "0.8"
+
+[dependencies.postgres]
+version = "0.12"
+features = ["with-serde_json"]

@@ -3,12 +3,14 @@ extern crate regex;
 extern crate getopts;
 #[macro_use]
 extern crate serde;
+extern crate serde_json;
 
 use postgres::{Connection, TlsMode};
 
 use std::env;
 use getopts::Options;
 use std::fs;
+use std::process;
 
 extern crate pombase;
 
@@ -29,24 +31,55 @@ fn make_subdirs(output_dir: &str) {
     }
 }
 
+fn print_usage(program: &str, opts: Options) {
+    let brief = format!("Usage: {} [options]", program);
+    print!("{}", opts.usage(&brief));
+}
+
 fn main() {
     print!("{} v{}\n", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
 
-    opts.reqopt("c", "connection-string",
+    opts.optflag("h", "help", "print this help message");
+    opts.optopt("c", "connection-string",
                 "PostgresSQL connection string like: postgres://user:pass@host/db_name",
                 "CONN_STR");
-    opts.reqopt("d", "output-directory",
+    opts.optopt("d", "output-directory",
                 "Destination directory for JSON output", "DIR");
-    opts.reqopt("O", "organism",
+    opts.optopt("O", "organism",
                 "Only output genes from this organism (eg. 'Schizosaccharomyces_pombe')", "GENUS_SPECIES");
+    opts.optflag("j", "store-json",
+                 "optionally create a 'web_json' schema to store the generated JSON in the database");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
         Err(f) => panic!("Invalid options\n{}", f)
     };
+
+    let program = args[0].clone();
+
+    if matches.opt_present("help") {
+        print_usage(&program, opts);
+        process::exit(0);
+    }
+
+    if !matches.opt_present("connection-string") {
+        print!("no -c|--connection-string option\n");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
+    if !matches.opt_present("output-directory") {
+        print!("no -d|--output-directory option\n");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
+    if !matches.opt_present("organism") {
+        print!("no -O|--organism option\n");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
 
     let connection_string = matches.opt_str("c").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
@@ -54,10 +87,23 @@ fn main() {
 
     make_subdirs(&output_dir);
 
-    let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
+    let conn = Connection::connect(&connection_string, TlsMode::None).unwrap();
+
     let raw = Raw::new(&conn);
     let mut web_data_build = WebDataBuild::new(&raw);
     let web_data = web_data_build.get_web_data();
 
     web_data.write(&output_dir, &organism_genus_species);
+
+    if matches.opt_present("store-json") {
+        conn.execute("DROP SCHEMA IF EXISTS web_json CASCADE", &[]).unwrap();
+        conn.execute("CREATE SCHEMA web_json", &[]).unwrap();
+        conn.execute("CREATE TABLE web_json.gene (uniquename TEXT, data JSONB)", &[]).unwrap();
+        conn.execute("CREATE TABLE web_json.term (termid TEXT, data JSONB)", &[]).unwrap();
+        conn.execute("CREATE TABLE web_json.reference (uniquename TEXT, data JSONB)", &[]).unwrap();
+
+        web_data.store_jsonb(&conn);
+
+        print!("stored results as JSONB using {}\n", &connection_string);
+    }
 }
