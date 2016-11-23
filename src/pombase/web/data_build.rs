@@ -770,6 +770,7 @@ impl <'a> WebDataBuild<'a> {
 
             for gene_uniquename in &gene_uniquenames_vec {
                 let annotation_template = OntAnnotation {
+                    id: feature_cvterm.feature_cvterm_id,
                     gene: Some(self.make_gene_short(&gene_uniquename)),
                     term: None,
                     reference: reference_short.clone(),

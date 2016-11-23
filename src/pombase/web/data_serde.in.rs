@@ -99,6 +99,7 @@ pub struct ReferenceDetails {
 
 #[derive(Serialize, Clone)]
 pub struct OntAnnotation {
+    pub id: i32,
     pub term: Option<TermShort>,
     pub gene: Option<GeneShort>,
     pub reference: Option<ReferenceShort>,
