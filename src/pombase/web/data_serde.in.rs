@@ -106,6 +106,8 @@ pub struct OntAnnotation {
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
     pub with: Option<With>,
+    pub residue: Option<Residue>,
+    pub qualifiers: Vec<Qualifier>,
     // only for genotype/phenotype annotation:
     pub genotype: Option<GenotypeShort>,
     pub conditions: Vec<TermShort>,

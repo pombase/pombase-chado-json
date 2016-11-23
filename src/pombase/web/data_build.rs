@@ -702,9 +702,11 @@ impl <'a> WebDataBuild<'a> {
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
             let mut conditions: Vec<TermShort> = vec![];
+            let mut qualifiers: Vec<Qualifier> = vec![];
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
-                    "evidence" | "quant_gene_ex_copies_per_cell" |
+                    "evidence" | "residue" |
+                    "quant_gene_ex_copies_per_cell" |
                     "quant_gene_ex_avg_copies_per_cell" => {
                         if let Some(value) = prop.value.clone() {
                             extra_props.insert(prop.type_name().clone(), value);
@@ -713,6 +715,10 @@ impl <'a> WebDataBuild<'a> {
                     "condition" =>
                         if let Some(value) = prop.value.clone() {
                             conditions.push(self.make_term_short(&value));
+                        },
+                    "qualifier" =>
+                        if let Some(value) = prop.value.clone() {
+                            qualifiers.push(value);
                         },
                     "with" | "from" => {
                         if let Some(value) = prop.value.clone() {
@@ -776,7 +782,8 @@ impl <'a> WebDataBuild<'a> {
                     reference: reference_short.clone(),
                     genotype: maybe_genotype_short.clone(),
                     with: extra_props.remove("with"),
-//                    from: extra_props.remove("from"),
+                    residue: extra_props.remove("residue"),
+                    qualifiers: qualifiers.clone(),
                     evidence: extra_props.remove("evidence"),
                     conditions: conditions.clone(),
                     extension: vec![],

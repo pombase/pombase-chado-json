@@ -21,7 +21,9 @@ pub type TermDef = String;
 
 pub type Evidence = String;
 pub type With = String;
+pub type Residue = String;
 pub type Condition = String;
+pub type Qualifier = String;
 
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
