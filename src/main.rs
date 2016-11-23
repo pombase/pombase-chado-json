@@ -87,7 +87,7 @@ fn main() {
 
     make_subdirs(&output_dir);
 
-    let conn = Connection::connect(&connection_string, TlsMode::None).unwrap();
+    let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
 
     let raw = Raw::new(&conn);
     let mut web_data_build = WebDataBuild::new(&raw);
