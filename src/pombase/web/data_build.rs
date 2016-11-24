@@ -16,8 +16,6 @@ fn make_organism_short(rc_organism: &Rc<Organism>) -> OrganismShort {
     }
 }
 
-type Termid = String;
-
 #[derive(Clone)]
 pub struct AlleleAndExpression {
     allele_uniquename: String,
@@ -44,7 +42,7 @@ pub struct WebDataBuild<'a> {
     // to a Vec of the details of each of the extension
     parts_of_extensions: HashMap<String, Vec<ExtPart>>,
 
-    base_term_of_extensions: HashMap<Termid, Termid>,
+    base_term_of_extensions: HashMap<TermId, TermId>,
 }
 
 fn get_feat_rel_expression(feature_relationship: &FeatureRelationship) -> Option<String> {
@@ -584,7 +582,7 @@ impl <'a> WebDataBuild<'a> {
                                       definition: cvterm.definition.clone(),
                                       is_obsolete: cvterm.is_obsolete,
                                       genes: vec![],
-                                      annotations: HashMap::new(),
+                                      annotations: vec![],
                                   });
             }
         }
@@ -799,7 +797,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn store_ont_annotations(&mut self) {
-        let mut term_gene_sets: HashMap<Termid, HashSet<GeneShort>> =
+        let mut term_gene_sets: HashMap<TermId, HashSet<GeneShort>> =
             HashMap::new();
 
         for ont_annotation in &self.all_ont_annotations {
@@ -831,8 +829,10 @@ impl <'a> WebDataBuild<'a> {
                 .or_insert(Vec::new()).push(rc_annotation.clone());
 
             if let Some(ref mut term_details) = self.terms.get_mut(&termid) {
-                term_details.annotations.entry(String::from("direct"))
-                    .or_insert(Vec::new()).push(rc_annotation.clone());
+                term_details.annotations.push(RelOntAnnotation {
+                    rel_names: HashSet::new(),
+                    annotation: rc_annotation.clone(),
+                });
 
                 if let Some(mut gene_short_vec) = term_gene_sets.remove(&termid) {
                     term_details.genes.append(&mut gene_short_vec.drain().collect());
@@ -845,8 +845,11 @@ impl <'a> WebDataBuild<'a> {
             for condition_term_short in &rc_annotation.conditions {
                 if let Some(ref mut condition_term_details) =
                     self.terms.get_mut(&condition_term_short.termid) {
-                        condition_term_details.annotations.entry(String::from("direct"))
-                            .or_insert(Vec::new()).push(rc_annotation.clone());
+                        condition_term_details.annotations.
+                            push(RelOntAnnotation {
+                                rel_names: HashSet::new(),
+                                annotation: rc_annotation.clone(),
+                            });
                     }
             }
 
@@ -861,7 +864,9 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_cvtermpath(&mut self) {
-        let mut new_annotations: HashMap<Termid, OntAnnotationMap> = HashMap::new();
+        let mut annotation_by_id: HashMap<i32, Rc<OntAnnotation>> = HashMap::new();
+        let mut new_annotations: HashMap<TermId, HashMap<i32, HashSet<RelName>>> =
+            HashMap::new();
 
         for cvtermpath in &self.raw.cvtermpaths {
             let subject_term = &cvtermpath.subject;
@@ -869,17 +874,7 @@ impl <'a> WebDataBuild<'a> {
             let object_term = &cvtermpath.object;
             let object_termid = object_term.termid();
 
-            // cope with multiple paths between terms
-            let mut seen_pairs: HashSet<(Termid, Termid)> = HashSet::new();
-
-            let key = (subject_termid.clone(), object_termid.clone());
-            if let Some(_) = seen_pairs.get(&key) {
-                continue;
-            }
-
-            let distance = cvtermpath.pathdistance.unwrap();
-
-            let rel_termid =
+             let rel_termid =
                 match cvtermpath.rel_type {
                     Some(ref rel_type) => {
                         rel_type.termid()
@@ -894,29 +889,36 @@ impl <'a> WebDataBuild<'a> {
                 continue;
             }
 
-            seen_pairs.insert((subject_termid.clone(), object_termid.clone()));
             if let Some(term_details) = self.terms.get(&subject_termid) {
                 let subject_annotations = &term_details.annotations;
-                for (_, annotations) in subject_annotations {
-                    for annotation in annotations {
-                        let new_annotation = annotation.clone();
-                        let key = &format!("{}::{}", rel_term_name, distance);
-                        new_annotations.entry(object_termid.clone())
-                            .or_insert(HashMap::new())
-                            .entry(key.clone())
-                            .or_insert(Vec::new()).push(new_annotation);
+                for rel_annotation in subject_annotations {
+                    let RelOntAnnotation {
+                        rel_names: _,
+                        annotation: existing_annotation
+                    } = rel_annotation.clone();
+
+                    if !annotation_by_id.contains_key(&existing_annotation.id) {
+                        annotation_by_id.insert(existing_annotation.id,
+                                                existing_annotation.clone());
                     }
+                    new_annotations.entry(object_termid.clone())
+                        .or_insert(HashMap::new())
+                        .entry(existing_annotation.id)
+                        .or_insert(HashSet::new())
+                        .insert(rel_term_name.clone());
                 }
             } else {
                 panic!("TermDetails not found for {}", &subject_termid);
             }
         }
-        for (termid, mut annotations) in new_annotations.drain() {
+        for (termid, annotations_map) in new_annotations.drain() {
             let mut term_details = self.terms.get_mut(&termid).unwrap();
-            for (key, annotation_vec) in annotations.drain() {
-                let mut vec_clone = annotation_vec.clone();
-                term_details.annotations.entry(key)
-                    .or_insert(annotation_vec).append(&mut vec_clone);
+            for (id, rel_names) in annotations_map {
+                let annotation = annotation_by_id.get(&id).unwrap().clone();
+                term_details.annotations.push(RelOntAnnotation {
+                    rel_names: rel_names,
+                    annotation: annotation
+                });
             }
         }
     }

@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
+use std::collections::HashSet;
 
 
 #[derive(Serialize, Clone)]
@@ -25,6 +26,34 @@ pub struct GeneShort {
     pub name: Option<GeneName>,
     pub product: Option<GeneProduct>,
     pub synonyms: Vec<SynonymDetails>,
+}
+
+pub struct TermIdPair {
+    pub firstid: TermId,
+    pub secondid: TermId,
+}
+
+impl TermIdPair {
+    pub fn new(firstid: &TermId, secondid: &TermId) -> TermIdPair {
+        TermIdPair {
+            firstid: firstid.clone(),
+            secondid: secondid.clone(),
+        }
+    }
+}
+
+impl PartialEq for TermIdPair {
+    fn eq(&self, other: &TermIdPair) -> bool { 
+        self.firstid == other.firstid &&
+            self.secondid == other.secondid
+    }
+}
+impl Eq for TermIdPair { }
+impl Hash for TermIdPair {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.firstid.hash(state);
+        self.secondid.hash(state);
+    }
 }
 
 impl PartialEq for GeneShort {
@@ -191,8 +220,16 @@ pub struct AlleleShort {
     pub gene: GeneShort,
 }
 
-pub type OntAnnotationKey = String;
-pub type OntAnnotationMap = HashMap<OntAnnotationKey, Vec<Rc<OntAnnotation>>>;
+pub type RelName = String;
+
+pub type OntName = String;
+pub type OntAnnotationMap = HashMap<OntName, Vec<Rc<OntAnnotation>>>;
+
+#[derive(Serialize, Clone)]
+pub struct RelOntAnnotation {
+    pub rel_names: HashSet<RelName>,
+    pub annotation: Rc<OntAnnotation>,
+}
 
 #[derive(Serialize, Clone)]
 pub struct TermDetails {
@@ -202,7 +239,7 @@ pub struct TermDetails {
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
     pub genes: Vec<GeneShort>,
-    pub annotations: OntAnnotationMap,
+    pub annotations: Vec<RelOntAnnotation>,
 }
 
 #[derive(Serialize, Clone)]
