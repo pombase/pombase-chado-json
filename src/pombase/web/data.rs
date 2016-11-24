@@ -1,4 +1,3 @@
-
 extern crate serde_json;
 extern crate postgres;
 
@@ -6,7 +5,6 @@ use std::fs::File;
 use std::io::{Write, BufWriter};
 use std::collections::HashMap;
 
-use self::serde_json::Value;
 use self::postgres::Connection;
 
 type CvName = String;
@@ -133,26 +131,17 @@ impl WebData {
         let trans = conn.transaction().unwrap();
 
         for (uniquename, gene_details) in &self.genes {
-            // FIXME - how do we get a Valie from gene_details? - this is dumb:
-            let gene_details_json = serde_json::to_string(&gene_details).unwrap();
-            let serde_value: Value = serde_json::from_str(&gene_details_json).unwrap();
-
+            let serde_value = serde_json::value::to_value(&gene_details);
             trans.execute("INSERT INTO web_json.gene (uniquename, data) values ($1, $2)",
                           &[&uniquename, &serde_value]).unwrap();
         }
         for (uniquename, ref_details) in &self.references {
-            // FIXME - this is dumb:
-            let reference_details_json = serde_json::to_string(&ref_details).unwrap();
-            let serde_value: Value = serde_json::from_str(&reference_details_json).unwrap();
-
+            let serde_value = serde_json::value::to_value(&ref_details);
             trans.execute("INSERT INTO web_json.reference (uniquename, data) values ($1, $2)",
                           &[&uniquename, &serde_value]).unwrap();
         }
         for (termid, term_details) in &self.terms {
-            // FIXME - this is dumb:
-            let term_details_json = serde_json::to_string(&term_details).unwrap();
-            let serde_value: Value = serde_json::from_str(&term_details_json).unwrap();
-
+            let serde_value = serde_json::value::to_value(&term_details);
             trans.execute("INSERT INTO web_json.term (termid, data) values ($1, $2)",
                          &[&termid, &serde_value]).unwrap();
         }
