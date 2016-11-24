@@ -137,6 +137,7 @@ pub struct OntAnnotation {
     pub with: Option<With>,
     pub residue: Option<Residue>,
     pub qualifiers: Vec<Qualifier>,
+    pub gene_ex_props: Option<GeneExProps>,
     // only for genotype/phenotype annotation:
     pub genotype: Option<GenotypeShort>,
     pub conditions: Vec<TermShort>,
@@ -221,6 +222,14 @@ pub struct AlleleShort {
 }
 
 pub type RelName = String;
+
+#[derive(Serialize, Clone)]
+pub struct GeneExProps {
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub copies_per_cell: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub avg_copies_per_cell: Option<String>,
+}
 
 pub type OntName = String;
 pub type OntAnnotationMap = HashMap<OntName, Vec<Rc<OntAnnotation>>>;

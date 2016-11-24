@@ -773,16 +773,29 @@ impl <'a> WebDataBuild<'a> {
             let reference_short = self.make_reference_short(&publication.uniquename);
 
             for gene_uniquename in &gene_uniquenames_vec {
+                let mut extra_props_clone = extra_props.clone();
+                let copies_per_cell = extra_props_clone.remove("quant_gene_ex_copies_per_cell");
+                let avg_copies_per_cell = extra_props_clone.remove("quant_gene_ex_avg_copies_per_cell");
+                let gene_ex_props =
+                    if copies_per_cell.is_some() || avg_copies_per_cell.is_some() {
+                        Some(GeneExProps {
+                            copies_per_cell: copies_per_cell,
+                            avg_copies_per_cell: avg_copies_per_cell,
+                        })
+                    } else {
+                        None
+                    };
                 let annotation_template = OntAnnotation {
                     id: feature_cvterm.feature_cvterm_id,
                     gene: Some(self.make_gene_short(&gene_uniquename)),
                     term: None,
                     reference: reference_short.clone(),
                     genotype: maybe_genotype_short.clone(),
-                    with: extra_props.remove("with"),
-                    residue: extra_props.remove("residue"),
+                    with: extra_props_clone.remove("with"),
+                    residue: extra_props_clone.remove("residue"),
+                    gene_ex_props: gene_ex_props,
                     qualifiers: qualifiers.clone(),
-                    evidence: extra_props.remove("evidence"),
+                    evidence: extra_props_clone.remove("evidence"),
                     conditions: conditions.clone(),
                     extension: vec![],
                     is_not: feature_cvterm.is_not,
