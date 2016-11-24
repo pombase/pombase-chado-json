@@ -261,6 +261,8 @@ pub struct GeneExProps {
     pub copies_per_cell: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub avg_copies_per_cell: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub scale: Option<String>,
 }
 
 pub type OntName = String;

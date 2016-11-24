@@ -703,7 +703,7 @@ impl <'a> WebDataBuild<'a> {
             let mut qualifiers: Vec<Qualifier> = vec![];
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
-                    "evidence" | "residue" |
+                    "evidence" | "residue" | "scale" |
                     "quant_gene_ex_copies_per_cell" |
                     "quant_gene_ex_avg_copies_per_cell" => {
                         if let Some(value) = prop.value.clone() {
@@ -776,11 +776,13 @@ impl <'a> WebDataBuild<'a> {
                 let mut extra_props_clone = extra_props.clone();
                 let copies_per_cell = extra_props_clone.remove("quant_gene_ex_copies_per_cell");
                 let avg_copies_per_cell = extra_props_clone.remove("quant_gene_ex_avg_copies_per_cell");
+                let scale = extra_props_clone.remove("scale");
                 let gene_ex_props =
                     if copies_per_cell.is_some() || avg_copies_per_cell.is_some() {
                         Some(GeneExProps {
                             copies_per_cell: copies_per_cell,
                             avg_copies_per_cell: avg_copies_per_cell,
+                            scale: scale,
                         })
                     } else {
                         None
