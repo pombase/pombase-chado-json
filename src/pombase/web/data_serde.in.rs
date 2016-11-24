@@ -23,7 +23,9 @@ pub struct ExtPart {
 #[derive(Serialize, Clone)]
 pub struct GeneShort {
     pub uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<GeneName>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
     pub synonyms: Vec<SynonymDetails>,
 }
@@ -99,26 +101,37 @@ pub struct TermShort {
     pub cv_name: String,
     pub termid: TermId,
     pub is_obsolete: bool,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub gene_count: Option<usize>,
 }
 
 #[derive(Serialize, Clone)]
 pub struct ReferenceShort {
     pub uniquename: String,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub title: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub citation: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub authors_abbrev: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
 pub struct ReferenceDetails {
     pub uniquename: String,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub title: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub citation: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub authors: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub authors_abbrev: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub pubmed_publication_date: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
     pub annotations: OntAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
@@ -129,16 +142,24 @@ pub struct ReferenceDetails {
 #[derive(Serialize, Clone)]
 pub struct OntAnnotation {
     pub id: i32,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub term: Option<TermShort>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub gene: Option<GeneShort>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub with: Option<With>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub residue: Option<Residue>,
     pub qualifiers: Vec<Qualifier>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub gene_ex_props: Option<GeneExProps>,
     // only for genotype/phenotype annotation:
+    #[serde(skip_serializing_if="Option::is_none")]
     pub genotype: Option<GenotypeShort>,
     pub conditions: Vec<TermShort>,
     pub is_not: bool,
@@ -175,13 +196,18 @@ pub struct OrganismShort {
 #[derive(Serialize, Clone)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
     pub organism: OrganismShort,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<String>,
     pub synonyms: Vec<SynonymDetails>,
     pub feature_type: String,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub characterisation_status: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: OntAnnotationMap,
@@ -193,6 +219,7 @@ pub struct GeneDetails {
 #[derive(Serialize, Clone)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
 //    pub annotations: TypeFeatureAnnotationMap,
 }
@@ -200,7 +227,9 @@ pub struct TranscriptDetails {
 #[derive(Serialize, Clone)]
 pub struct GenotypeShort {
     pub uniquename: GenotypeUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub background: Option<String>,
     pub expressed_alleles: Vec<ExpressedAllele>,
 //    pub annotations: TypeFeatureAnnotationMap,
@@ -208,6 +237,7 @@ pub struct GenotypeShort {
 
 #[derive(Serialize, Clone)]
 pub struct ExpressedAllele {
+    #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<String>,
     pub allele: AlleleShort,
 }
@@ -215,8 +245,10 @@ pub struct ExpressedAllele {
 #[derive(Serialize, Clone)]
 pub struct AlleleShort {
     pub uniquename: String,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
     pub allele_type: String,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub description: Option<String>,
     pub gene: GeneShort,
 }
@@ -245,6 +277,7 @@ pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
     pub termid: TermId,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
     pub genes: Vec<GeneShort>,
@@ -255,7 +288,9 @@ pub struct TermDetails {
 pub struct InteractionAnnotation {
     pub gene: GeneShort,
     pub interactor: GeneShort,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
 }
 
@@ -264,7 +299,9 @@ pub struct OrthologAnnotation {
     pub gene: GeneShort,
     pub ortholog_organism: OrganismShort,
     pub ortholog: GeneShort,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
 }
 
@@ -272,7 +309,9 @@ pub struct OrthologAnnotation {
 pub struct ParalogAnnotation {
     pub gene: GeneShort,
     pub paralog: GeneShort,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
 }
 
