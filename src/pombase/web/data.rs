@@ -46,6 +46,7 @@ pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeShort>;
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
+pub type IdTermShortMap = HashMap<TermId, Rc<TermShort>>;
 pub type IdTermDetailsMap = HashMap<TermId, Rc<TermDetails>>;
 pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
@@ -80,8 +81,8 @@ impl WebData {
     }
 
     fn write_gene_summary(&self, output_dir: &str, organism_genus_species: &str) {
-        let gene_summaries =
-            self.search_api_maps.gene_summaries.values()
+        let filtered_gene_summaries =
+            self.search_api_maps.gene_summaries.iter()
             .filter(|gene_short| {
                 let gene_uniquename = &gene_short.uniquename;
                 let gene_details = self.get_genes().get(gene_uniquename).unwrap();
@@ -91,7 +92,7 @@ impl WebData {
             })
             .map(|gene_short| gene_short.clone())
             .collect::<Vec<GeneShort>>();
-        let s = serde_json::to_string(&gene_summaries).unwrap();
+        let s = serde_json::to_string(&filtered_gene_summaries).unwrap();
         let file_name = String::new() + &output_dir + "/gene_summaries.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);

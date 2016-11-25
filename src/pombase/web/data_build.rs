@@ -962,19 +962,22 @@ impl <'a> WebDataBuild<'a> {
     }
 
     pub fn make_search_api_maps(&self) -> SearchAPIMaps {
-        let mut gene_summaries: IdGeneShortMap = HashMap::new();
+        let mut gene_summaries: HashSet<GeneShort> = HashSet::new();
 
         let gene_uniquenames: Vec<String> =
             self.genes.keys().map(|uniquename| uniquename.clone()).collect();
 
         for gene_uniquename in gene_uniquenames {
-            gene_summaries.insert(gene_uniquename.clone(), self.make_gene_short(&gene_uniquename));
+            gene_summaries.insert(self.make_gene_short(&gene_uniquename));
         }
+
+        let mut term_summaries: HashSet<TermShort> = HashSet::new();
 
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
         let mut term_name_genes: HashMap<TermName, HashSet<GeneUniquename>> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
+            term_summaries.insert(self.make_term_short(&termid));
             for gene_short in &term_details.genes {
                 termid_genes.entry(termid.clone())
                     .or_insert(HashSet::new())
@@ -989,6 +992,7 @@ impl <'a> WebDataBuild<'a> {
             gene_summaries: gene_summaries,
             termid_genes: termid_genes,
             term_name_genes: term_name_genes,
+            term_summaries: term_summaries,
         }
     }
 

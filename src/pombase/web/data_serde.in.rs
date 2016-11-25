@@ -105,6 +105,34 @@ pub struct TermShort {
     pub gene_count: Option<usize>,
 }
 
+impl PartialEq for TermShort {
+    fn eq(&self, other: &TermShort) -> bool {
+        self.termid == other.termid
+    }
+}
+impl Eq for TermShort { }
+impl Ord for TermShort {
+    fn cmp(&self, other: &TermShort) -> Ordering {
+        let order = self.name.cmp(&other.name);
+        if order == Ordering::Equal {
+            self.termid.cmp(&other.termid)
+        } else {
+            order
+        }
+    }
+}
+impl PartialOrd for TermShort {
+    fn partial_cmp(&self, other: &TermShort) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Hash for TermShort {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.termid.hash(state);
+    }
+}
+
+
 #[derive(Serialize, Clone)]
 pub struct ReferenceShort {
     pub uniquename: String,
@@ -371,7 +399,8 @@ pub struct Metadata {
 pub struct SearchAPIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub term_name_genes: HashMap<TermName, HashSet<GeneUniquename>>,
-    pub gene_summaries: IdGeneShortMap,
+    pub gene_summaries: HashSet<GeneShort>,
+    pub term_summaries: HashSet<TermShort>,
 }
 
 #[derive(Serialize, Clone)]
