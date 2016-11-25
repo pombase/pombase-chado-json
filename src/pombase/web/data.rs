@@ -66,7 +66,7 @@ impl WebData {
             let file_name = String::new() + &output_dir + "/reference/" + &reference_uniquename + ".json";
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write!");
+            writer.write_all(s.as_bytes()).expect("Unable to write reference JSON");
         }
     }
 
@@ -76,7 +76,7 @@ impl WebData {
             let file_name = String::new() + &output_dir + "/gene/" + &gene_uniquename + ".json";
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write!");
+            writer.write_all(s.as_bytes()).expect("Unable to write gene JSON");
         }
     }
 
@@ -96,7 +96,7 @@ impl WebData {
         let file_name = String::new() + &output_dir + "/gene_summaries.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
+        writer.write_all(s.as_bytes()).expect("Unable to write gene_summaries.json");
     }
 
     fn write_terms(&self, output_dir: &str) {
@@ -105,7 +105,7 @@ impl WebData {
             let file_name = String::new() + &output_dir + "/term/" + &termid + ".json";
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write!");
+            writer.write_all(s.as_bytes()).expect("Unable to write term JSON");
         }
     }
 
@@ -114,7 +114,7 @@ impl WebData {
         let file_name = String::new() + &output_dir + "/metadata.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
+        writer.write_all(s.as_bytes()).expect("Unable to write metadata.json");
     }
 
     fn write_search_api_maps(&self, output_dir: &str) {
