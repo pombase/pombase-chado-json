@@ -208,6 +208,7 @@ impl Hash for OntAnnotation {
 #[derive(Serialize, Clone)]
 pub struct SynonymDetails {
     pub name: String,
+    #[serde(rename = "type")]
     pub synonym_type: String
 }
 
