@@ -165,6 +165,46 @@ pub struct OntAnnotation {
     pub is_not: bool,
 }
 
+impl PartialEq for OntAnnotation {
+    fn eq(&self, other: &OntAnnotation) -> bool {
+        self.id == other.id
+    }
+}
+impl Eq for OntAnnotation { }
+impl Ord for OntAnnotation {
+    fn cmp(&self, other: &OntAnnotation) -> Ordering {
+        if let Some(ref term) = self.term {
+            if let Some (ref other_term) = other.term {
+                let order = term.name.cmp(&other_term.name);
+                if order == Ordering::Equal {
+                    if let Some(ref gene) = self.gene {
+                        if let Some (ref other_gene) = other.gene {
+                            let gene_order = gene.cmp(&other_gene);
+                            if gene_order != Ordering::Equal {
+                                return gene_order;
+                            }
+                        }
+                    }
+                } else {
+                    return order;
+                }
+            }
+        }
+
+        self.id.cmp(&other.id)
+    }
+}
+impl PartialOrd for OntAnnotation {
+    fn partial_cmp(&self, other: &OntAnnotation) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Hash for OntAnnotation {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id.hash(state);
+    }
+}
+
 #[derive(Serialize, Clone)]
 pub struct SynonymDetails {
     pub name: String,

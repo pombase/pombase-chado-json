@@ -831,6 +831,8 @@ impl <'a> WebDataBuild<'a> {
             ont_annotation.term = Some(new_term_short);
         }
 
+        self.all_ont_annotations.sort();
+
         for ont_annotation in &self.all_ont_annotations {
             let gene_uniquename = ont_annotation.gene.clone().unwrap().uniquename;
             let term = ont_annotation.term.clone().unwrap();
