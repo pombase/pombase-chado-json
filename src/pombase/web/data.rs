@@ -81,7 +81,7 @@ impl WebData {
 
     fn write_gene_summary(&self, output_dir: &str, organism_genus_species: &str) {
         let gene_summaries =
-            self.gene_summaries.values()
+            self.search_api_maps.gene_summaries.values()
             .filter(|gene_short| {
                 let gene_uniquename = &gene_short.uniquename;
                 let gene_details = self.get_genes().get(gene_uniquename).unwrap();
@@ -116,12 +116,21 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
+    fn write_search_api_maps(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.search_api_maps).unwrap();
+        let file_name = String::new() + &output_dir + "/search_api_maps.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+    }
+
     pub fn write(&self, output_dir: &str, organism_genus_species: &str) {
         self.write_reference_details(output_dir);
         self.write_gene_details(output_dir);
         self.write_gene_summary(output_dir, organism_genus_species);
         self.write_terms(output_dir);
         self.write_metadata(output_dir);
+        self.write_search_api_maps(output_dir);
 
         println!("wrote {} genes", self.get_genes().len());
         println!("wrote {} terms", self.get_terms().len());

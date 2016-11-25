@@ -368,11 +368,19 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Clone)]
+pub struct SearchAPIMaps {
+    pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
+    pub term_name_genes: HashMap<TermName, HashSet<GeneUniquename>>,
+    pub gene_summaries: IdGeneShortMap,
+}
+
+#[derive(Serialize, Clone)]
 pub struct WebData {
     pub genes: IdGeneMap,
-    pub gene_summaries: IdGeneShortMap,
     pub terms: IdTermDetailsMap,
     pub used_terms: IdTermDetailsMap,
     pub metadata: Metadata,
     pub references: IdReferenceMap,
+
+    pub search_api_maps: SearchAPIMaps,
 }

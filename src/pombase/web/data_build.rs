@@ -961,6 +961,37 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    pub fn make_search_api_maps(&self) -> SearchAPIMaps {
+        let mut gene_summaries: IdGeneShortMap = HashMap::new();
+
+        let gene_uniquenames: Vec<String> =
+            self.genes.keys().map(|uniquename| uniquename.clone()).collect();
+
+        for gene_uniquename in gene_uniquenames {
+            gene_summaries.insert(gene_uniquename.clone(), self.make_gene_short(&gene_uniquename));
+        }
+
+        let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
+        let mut term_name_genes: HashMap<TermName, HashSet<GeneUniquename>> = HashMap::new();
+
+        for (termid, term_details) in &self.terms {
+            for gene_short in &term_details.genes {
+                termid_genes.entry(termid.clone())
+                    .or_insert(HashSet::new())
+                    .insert(gene_short.uniquename.clone());
+                term_name_genes.entry(term_details.name.clone())
+                    .or_insert(HashSet::new())
+                    .insert(gene_short.uniquename.clone());
+            }
+        }
+
+        SearchAPIMaps {
+            gene_summaries: gene_summaries,
+            termid_genes: termid_genes,
+            term_name_genes: term_name_genes,
+        }
+    }
+
     pub fn get_web_data(&mut self) -> WebData {
         self.process_references();
         self.make_feature_rel_maps();
@@ -981,6 +1012,8 @@ impl <'a> WebDataBuild<'a> {
 
         let mut web_data_terms: IdTermDetailsMap = HashMap::new();
 
+        let search_api_maps = self.make_search_api_maps();
+
         for (termid, term_details) in self.terms.drain() {
             web_data_terms.insert(termid.clone(), Rc::new(term_details));
         }
@@ -998,22 +1031,14 @@ impl <'a> WebDataBuild<'a> {
 
         let metadata = self.make_metadata();
 
-        let mut gene_summaries: IdGeneShortMap = HashMap::new();
-
-        let gene_uniquenames: Vec<String> =
-            self.genes.keys().map(|uniquename| uniquename.clone()).collect();
-
-        for gene_uniquename in gene_uniquenames {
-            gene_summaries.insert(gene_uniquename.clone(), self.make_gene_short(&gene_uniquename));
-        }
-
         WebData {
             genes: self.genes.clone(),
-            gene_summaries: gene_summaries,
             terms: web_data_terms,
             used_terms: used_terms,
             metadata: metadata,
             references: self.references.clone(),
+
+            search_api_maps: search_api_maps,
         }
     }
 }
