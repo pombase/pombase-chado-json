@@ -30,6 +30,20 @@ pub struct GeneShort {
     pub synonyms: Vec<SynonymDetails>,
 }
 
+#[derive(Serialize, Clone)]
+pub struct GeneSummary {
+    pub uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<GeneName>,
+    pub organism: OrganismShort,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub product: Option<GeneProduct>,
+    pub synonyms: Vec<SynonymDetails>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub location: Option<ChromosomeLocation>,
+    pub feature_type: String,
+}
+
 pub struct TermIdPair {
     pub firstid: TermId,
     pub secondid: TermId,
@@ -399,7 +413,7 @@ pub struct Metadata {
 pub struct SearchAPIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub term_name_genes: HashMap<TermName, HashSet<GeneUniquename>>,
-    pub gene_summaries: HashSet<GeneShort>,
+    pub gene_summaries: Vec<GeneSummary>,
     pub term_summaries: HashSet<TermShort>,
 }
 

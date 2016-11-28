@@ -105,6 +105,19 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_gene_summary(&self, gene_uniquename: &str) -> GeneSummary {
+        let gene_details = self.get_gene(&gene_uniquename);
+        GeneSummary {
+            uniquename: gene_details.uniquename.clone(),
+            name: gene_details.name.clone(),
+            product: gene_details.product.clone(),
+            synonyms: gene_details.synonyms.clone(),
+            feature_type: gene_details.feature_type.clone(),
+            organism: gene_details.organism.clone(),
+            location: gene_details.location.clone(),
+        }
+    }
+
     fn make_reference_short(&self, reference_uniquename: &str) -> Option<ReferenceShort> {
         if reference_uniquename == "null" {
             None
@@ -962,13 +975,13 @@ impl <'a> WebDataBuild<'a> {
     }
 
     pub fn make_search_api_maps(&self) -> SearchAPIMaps {
-        let mut gene_summaries: HashSet<GeneShort> = HashSet::new();
+        let mut gene_summaries: Vec<GeneSummary> = vec![];
 
         let gene_uniquenames: Vec<String> =
             self.genes.keys().map(|uniquename| uniquename.clone()).collect();
 
         for gene_uniquename in gene_uniquenames {
-            gene_summaries.insert(self.make_gene_short(&gene_uniquename));
+            gene_summaries.push(self.make_gene_summary(&gene_uniquename));
         }
 
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
