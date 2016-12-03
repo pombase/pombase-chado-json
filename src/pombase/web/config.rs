@@ -35,3 +35,7 @@ pub const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
 // relations to use when copy annotation to parents (ie. adding the
 // annotation of child terms to parents)
 pub const DESCENDANT_REL_NAMES: [&'static str; 3] = ["is_a", "part_of", "regulates"];
+
+// number of genes before (and after) to add to the gene_neighbourhood field
+pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
+

@@ -292,6 +292,7 @@ pub struct GeneDetails {
     pub location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
+    pub gene_neighbourhood: Vec<GeneShort>,
     pub transcripts: Vec<TranscriptShort>,
     pub annotations: OntAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,

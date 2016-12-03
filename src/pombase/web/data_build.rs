@@ -2,6 +2,7 @@ use std::rc::Rc;
 use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
 use std::borrow::Borrow;
+use std::cmp::Ordering;
 
 use regex::Regex;
 
@@ -327,6 +328,7 @@ impl <'a> WebDataBuild<'a> {
             feature_type: feat.feat_type.name.clone(),
             characterisation_status: None,
             location: location,
+            gene_neighbourhood: vec![],
             cds_location: None,
             annotations: HashMap::new(),
             interaction_annotations: HashMap::new(),
@@ -424,6 +426,87 @@ impl <'a> WebDataBuild<'a> {
             if feat.feat_type.name == "genotype" {
                 self.store_genotype_details(&feat);
             }
+        }
+    }
+
+    fn add_gene_neighbourhoods(&mut self) {
+        struct GeneAndLoc {
+            gene_uniquename: String,
+            loc: ChromosomeLocation,
+        };
+
+        let mut genes_and_locs: Vec<GeneAndLoc> = vec![];
+
+        for gene_details in self.genes.values() {
+            if let Some(ref location) = gene_details.location {
+                genes_and_locs.push(GeneAndLoc {
+                    gene_uniquename: gene_details.uniquename.clone(),
+                    loc: location.clone(),
+                });
+            }
+        }
+
+        let cmp = |a: &GeneAndLoc, b: &GeneAndLoc| {
+            let order = a.loc.chromosome_name.cmp(&b.loc.chromosome_name);
+            if order == Ordering::Equal {
+                a.loc.start_pos.cmp(&b.loc.start_pos)
+            } else {
+                order
+            }
+        };
+
+        genes_and_locs.sort_by(cmp);
+
+        for (i, this_gene_and_loc) in genes_and_locs.iter().enumerate() {
+            let mut nearby_genes: Vec<GeneShort> = vec![];
+            if i > 0 {
+                let start_index =
+                    if i > GENE_NEIGHBOURHOOD_DISTANCE {
+                        i - GENE_NEIGHBOURHOOD_DISTANCE
+                    } else {
+                        0
+                    };
+
+                for back_index in start_index..i {
+                    let back_gene_and_loc = &genes_and_locs[back_index];
+
+                    if back_gene_and_loc.loc.chromosome_name !=
+                        this_gene_and_loc.loc.chromosome_name {
+                            break;
+                        }
+                    let back_gene_short = self.make_gene_short(&back_gene_and_loc.gene_uniquename);
+                    nearby_genes.push(back_gene_short);
+                }
+            }
+
+            let gene_short = self.make_gene_short(&this_gene_and_loc.gene_uniquename);
+            nearby_genes.push(gene_short);
+
+            if i < genes_and_locs.len() - 1 {
+                let end_index =
+                    if i + GENE_NEIGHBOURHOOD_DISTANCE >= genes_and_locs.len() {
+                        genes_and_locs.len()
+                    } else {
+                        i + GENE_NEIGHBOURHOOD_DISTANCE + 1
+                    };
+
+                for forward_index in i+1..end_index {
+                    let forward_gene_and_loc = &genes_and_locs[forward_index];
+
+                    if forward_gene_and_loc.loc.chromosome_name !=
+                        this_gene_and_loc.loc.chromosome_name {
+                            break;
+                        }
+
+                    let forward_gene_short = self.make_gene_short(&forward_gene_and_loc.gene_uniquename);
+                    nearby_genes.push(forward_gene_short);
+                }
+            }
+
+            let mut this_gene_details =
+                self.genes.get_mut(&this_gene_and_loc.gene_uniquename).unwrap();
+
+            this_gene_details.gene_neighbourhood.append(&mut nearby_genes);
         }
     }
 
@@ -1013,6 +1096,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_references();
         self.make_feature_rel_maps();
         self.process_features();
+        self.add_gene_neighbourhoods();
         self.process_props_from_feature_cvterms();
         self.process_allele_features();
         self.process_genotype_features();
