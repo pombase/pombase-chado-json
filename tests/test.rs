@@ -59,6 +59,18 @@ fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
     feature
 }
 
+fn make_test_featureprop(featureprops: &mut Vec<Rc<Featureprop>>, feature: &Rc<Feature>,
+                         type_cvterm: &Rc<Cvterm>, value: Option<String>) -> Rc<Featureprop> {
+    let featureprop = Rc::new(Featureprop {
+        feature: feature.clone(),
+        prop_type: type_cvterm.clone(),
+        value: value,
+    });
+    feature.featureprops.borrow_mut().push(featureprop.clone());
+    featureprops.push(featureprop.clone());
+    featureprop
+}
+
 fn make_test_feature_cvterm(feature_cvterms: &mut Vec<Rc<FeatureCvterm>>,
                             feature: &Rc<Feature>, cvterm: &Rc<Cvterm>,
                             publication: &Rc<Publication>)
@@ -119,6 +131,7 @@ fn get_test_raw() -> Raw {
     let mut cvterms: Vec<Rc<Cvterm>> = vec![];
     let mut dbxrefs: Vec<Rc<Dbxref>> = vec![];
     let mut features: Vec<Rc<Feature>> = vec![];
+    let mut featureprops: Vec<Rc<Featureprop>> = vec![];
     let mut feature_cvterms: Vec<Rc<FeatureCvterm>> = vec![];
 
     let pombe_organism =
@@ -137,6 +150,7 @@ fn get_test_raw() -> Raw {
     let fypo_ext_relations_cv = make_test_cv(&mut cvs, "fypo_extension_relations");
     let sequence_cv = make_test_cv(&mut cvs, "sequence");
     let chadoprop_types_cv = make_test_cv(&mut cvs, "PomBase chadoprop types");
+    let featureprop_types_cv = make_test_cv(&mut cvs, "PomBase feature property types");
     let pub_type_cv = make_test_cv(&mut cvs, "PomBase publication types");
     let pubprop_type_cv = make_test_cv(&mut cvs, "pubprop_type");
 
@@ -180,6 +194,12 @@ fn get_test_raw() -> Raw {
     let allele_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
                                 "allele", "0001023");
+    let allele_type_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "allele_type", "0011954");
+    let description_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "description", "0011059");
     let polypeptide_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
                                 "polypeptide", "0000104");
@@ -256,7 +276,9 @@ fn get_test_raw() -> Raw {
     let cdc16_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                       "SPAC6F6.08c", Some(String::from("cdc16")));
     let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
-                                          "SPAC6F6.08c-allele1", Some(String::from("cdc16-116")));
+                                          "SPAC6F6.08c-allele1", Some(String::from("cdc16::ura4+")));
+    make_test_featureprop(&mut featureprops, &cdc16_allele1, &allele_type_cvterm,
+                          Some(String::from("disruption")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_allele1, &instance_of_cvterm, &cdc16_gene);
 
@@ -264,7 +286,10 @@ fn get_test_raw() -> Raw {
                                       "SPCC188.02", Some(String::from("par1")));
     let par1_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
                                               "SPCC188.02-allele1", Some(String::from("par1delta")));
-    
+    make_test_featureprop(&mut featureprops, &par1_delta_allele, &allele_type_cvterm,
+                          Some(String::from("deletion")));
+    make_test_featureprop(&mut featureprops, &par1_delta_allele, &description_cvterm,
+                          Some(String::from("deletion")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_delta_allele, &instance_of_cvterm, &par1_gene);
 
@@ -318,7 +343,7 @@ fn get_test_raw() -> Raw {
         synonyms: vec![],
         features: features,
         feature_synonyms: vec![],
-        featureprops: vec![],
+        featureprops: featureprops,
         featurelocs: vec![],
         feature_cvterms: feature_cvterms,
         feature_cvtermprops: vec![],
@@ -378,11 +403,12 @@ fn test_term_gene_count() {
 fn test_terms() {
     let web_data = get_test_web_data();
 
-    let go0031030_cvterm = web_data.terms.get("negative regulation of septation initiation signaling").unwrap();
-
+    let go0031030_cvterm = web_data.terms.get("GO:0031030").unwrap();
+    assert_eq!("negative regulation of septation initiation signaling",
+               go0031030_cvterm.name);
     assert_eq!(go0031030_cvterm.annotations.len(), 1);
 
-//    let bp_cvterm = web_data.terms.get("biological_process").unwrap();
-
-//    assert_eq!(go0031030_cvterm.annotations.len(), 1);
+    let bp_cvterm = web_data.terms.get("GO:0008150").unwrap();
+    assert_eq!("biological_process", bp_cvterm.name);
+    assert_eq!(go0031030_cvterm.annotations.len(), 1);
 }
