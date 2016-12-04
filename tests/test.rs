@@ -1,4 +1,5 @@
 use std::rc::Rc;
+use std::cell::RefCell;
 
 extern crate pombase;
 
@@ -7,11 +8,9 @@ use pombase::web::config::*;
 use pombase::web::data::*;
 use pombase::web::data_build::*;
 
-#[allow(dead_code)]
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
                            cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str, accession: &str)
                            -> Rc<Cvterm> {
-    use std::cell::RefCell;
     let dbxref = Rc::new(Dbxref {
         accession: String::from(accession),
         db: db.clone(),
@@ -29,7 +28,6 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
     cvterm
 }
 
-#[allow(dead_code)]
 fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
     let cv = Rc::new(Cv {
         name: String::from(cv_name),
@@ -38,7 +36,6 @@ fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
     cv
 }
 
-#[allow(dead_code)]
 fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
     let db = Rc::new(Db {
         name: String::from(db_name),
@@ -47,11 +44,9 @@ fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
     db
 }
 
-#[allow(dead_code)]
 fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
                      type_cvterm: &Rc<Cvterm>, uniquename: &str, name: Option<String>)
                      -> Rc<Feature> {
-    use std::cell::RefCell;
     let feature = Rc::new(Feature {
         organism: organism.clone(),
         uniquename: String::from(uniquename),
@@ -64,12 +59,10 @@ fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
     feature
 }
 
-#[allow(dead_code)]
 fn make_test_feature_cvterm(feature_cvterms: &mut Vec<Rc<FeatureCvterm>>,
                             feature: &Rc<Feature>, cvterm: &Rc<Cvterm>,
                             publication: &Rc<Publication>)
                      -> Rc<FeatureCvterm> {
-    use std::cell::RefCell;
     let feature_cvterm = Rc::new(FeatureCvterm {
         feature_cvterm_id: 0,
         feature: feature.clone(),
@@ -82,11 +75,9 @@ fn make_test_feature_cvterm(feature_cvterms: &mut Vec<Rc<FeatureCvterm>>,
     feature_cvterm
 }
 
-#[allow(dead_code)]
 fn make_test_feature_rel(feature_relationships: &mut Vec<Rc<FeatureRelationship>>,
                          publication: &Rc<Publication>,
                          subject: &Rc<Feature>, rel: &Rc<Cvterm>, object: &Rc<Feature>) {
-    use std::cell::RefCell;
     let rel = Rc::new(FeatureRelationship {
         subject: subject.clone(),
         rel_type: rel.clone(),
@@ -97,7 +88,6 @@ fn make_test_feature_rel(feature_relationships: &mut Vec<Rc<FeatureRelationship>
     feature_relationships.push(rel);
 }
 
-#[allow(dead_code)]
 fn make_test_cvterm_rel(cvterm_relationships: &mut Vec<Rc<CvtermRelationship>>,
                         subject: &Rc<Cvterm>, rel_type: &Rc<Cvterm>, object: &Rc<Cvterm>) {
     let rel = Rc::new(CvtermRelationship {
@@ -120,9 +110,7 @@ fn make_test_cvtermpath(cvtermpaths: &mut Vec<Rc<Cvtermpath>>,
     cvtermpaths.push(rel);
 }
 
-#[allow(dead_code)]
 fn get_test_raw() -> Raw {
-    use std::cell::RefCell;
     let mut feature_relationships: Vec<Rc<FeatureRelationship>> = vec![];
     let mut cvterm_relationships: Vec<Rc<CvtermRelationship>> = vec![];
     let mut cvtermpaths: Vec<Rc<Cvtermpath>> = vec![];
@@ -276,6 +264,7 @@ fn get_test_raw() -> Raw {
                                       "SPCC188.02", Some(String::from("par1")));
     let par1_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
                                               "SPCC188.02-allele1", Some(String::from("par1delta")));
+    
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_delta_allele, &instance_of_cvterm, &par1_gene);
 
@@ -338,7 +327,6 @@ fn get_test_raw() -> Raw {
     }
 }
 
-#[allow(dead_code)]
 fn get_test_web_data() -> WebData {
     let raw = get_test_raw();
 
@@ -375,14 +363,15 @@ fn test_make_publication_short() {
 }
 
 #[test]
-fn test_term_use_count() {
+fn test_term_gene_count() {
     let web_data = get_test_web_data();
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
     let annotations = par1_gene.annotations;
     let biological_process_annotations = annotations.get("biological_process").unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
-    let first_annotation = biological_process_annotations.get(0).unwrap();
-    assert_eq!(first_annotation.term.gene_count, Some(1));
+    let first_annotation = &biological_process_annotations[0];
+    let actual_count = first_annotation.term.clone().unwrap().gene_count;
+    assert_eq!(actual_count, Some(1));
 }
 
 #[test]
