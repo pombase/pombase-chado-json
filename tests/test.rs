@@ -325,7 +325,7 @@ fn get_test_raw() -> Raw {
     }));
 
     cdc16_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
-        feature: par1_gene.clone(),
+        feature: cdc16_gene.clone(),
         fmin: 2746666,
         fmax: 2748180,
         strand: -1,
@@ -333,7 +333,7 @@ fn get_test_raw() -> Raw {
     }));
 
     pom1_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
-        feature: par1_gene.clone(),
+        feature: pom1_gene.clone(),
         fmin: 534119,
         fmax: 537869,
         strand: -1,
@@ -439,5 +439,17 @@ fn test_locations() {
     assert_eq!(pom1_gene.gene_neighbourhood.len(), 2);
     assert_eq!(&pom1_gene.gene_neighbourhood[0].uniquename, "SPAC2F7.03c");
     assert_eq!(&pom1_gene.gene_neighbourhood[1].uniquename, "SPAC6F6.08c");
+
+    let cdc16_gene = web_data.genes.get("SPAC6F6.08c").unwrap().clone();
+    let cdc16_loc = cdc16_gene.location.unwrap().clone();
+
+    assert_eq!(&cdc16_loc.chromosome_name, "chromosome_1");
+    assert_eq!(cdc16_loc.start_pos, 2746667);
+    assert_eq!(cdc16_loc.end_pos, 2748180);
+    assert_eq!(cdc16_loc.strand, Strand::Reverse);
+
+    assert_eq!(cdc16_gene.gene_neighbourhood.len(), 2);
+    assert_eq!(&cdc16_gene.gene_neighbourhood[0].uniquename, "SPAC2F7.03c");
+    assert_eq!(&cdc16_gene.gene_neighbourhood[1].uniquename, "SPAC6F6.08c");
 }
 
