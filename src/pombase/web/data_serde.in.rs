@@ -254,7 +254,7 @@ pub struct SynonymDetails {
     pub synonym_type: String
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug, PartialEq)]
 pub enum Strand {
     #[serde(rename="forward")]
     Forward = 1,

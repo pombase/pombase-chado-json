@@ -273,6 +273,9 @@ fn get_test_raw() -> Raw {
     let chr_3 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_3", None);
 
+    let pom1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
+                                      "SPAC2F7.03c", Some(String::from("pom1")));
+
     let cdc16_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                       "SPAC6F6.08c", Some(String::from("cdc16")));
     let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
@@ -329,6 +332,14 @@ fn get_test_raw() -> Raw {
         srcfeature: chr_1.clone(),
     }));
 
+    pom1_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
+        feature: par1_gene.clone(),
+        fmin: 534119,
+        fmax: 537869,
+        strand: -1,
+        srcfeature: chr_1.clone(),
+    }));
+
     Raw {
         organisms: vec![pombe_organism],
         cvs: cvs,
@@ -363,7 +374,7 @@ fn get_test_web_data() -> WebData {
 fn test_gene_details() {
     let web_data = get_test_web_data();
 
-    assert_eq!(web_data.genes.len(), 3);
+    assert_eq!(web_data.genes.len(), 4);
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
     assert_eq!(par1_gene.uniquename, "SPCC188.02");
     assert_eq!(par1_gene.name.unwrap(), "par1");
@@ -412,3 +423,21 @@ fn test_terms() {
     assert_eq!("biological_process", bp_cvterm.name);
     assert_eq!(go0031030_cvterm.annotations.len(), 1);
 }
+
+#[test]
+fn test_locations() {
+    let web_data = get_test_web_data();
+
+    let pom1_gene = web_data.genes.get("SPAC2F7.03c").unwrap().clone();
+    let pom1_loc = pom1_gene.location.unwrap().clone();
+
+    assert_eq!(&pom1_loc.chromosome_name, "chromosome_1");
+    assert_eq!(pom1_loc.start_pos, 534120);
+    assert_eq!(pom1_loc.end_pos, 537869);
+    assert_eq!(pom1_loc.strand, Strand::Reverse);
+
+    assert_eq!(pom1_gene.gene_neighbourhood.len(), 2);
+    assert_eq!(&pom1_gene.gene_neighbourhood[0].uniquename, "SPAC2F7.03c");
+    assert_eq!(&pom1_gene.gene_neighbourhood[1].uniquename, "SPAC6F6.08c");
+}
+
