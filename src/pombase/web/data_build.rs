@@ -185,7 +185,7 @@ impl <'a> WebDataBuild<'a> {
             };
 
         self.all_ont_annotations.push(ont_annotation);
-   }
+    }
 
     fn process_references(&mut self) {
         for rc_publication in &self.raw.publications {
@@ -1109,7 +1109,6 @@ impl <'a> WebDataBuild<'a> {
         self.store_ont_annotations();
         self.process_cvtermpath();
         self.process_annotation_feature_rels();
-//        self.set_term_short_use_counts();
 
         let mut web_data_terms: IdTermDetailsMap = HashMap::new();
 
