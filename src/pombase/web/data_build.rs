@@ -56,6 +56,10 @@ fn get_feat_rel_expression(feature_relationship: &FeatureRelationship) -> Option
     None
 }
 
+fn is_gene_type(feature_type_name: &str) -> bool {
+    feature_type_name == "gene" || feature_type_name == "pseudogene"
+}
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw) -> WebDataBuild<'a> {
         WebDataBuild {
@@ -544,10 +548,8 @@ impl <'a> WebDataBuild<'a> {
 
             for rel_config in FEATURE_REL_CONFIGS.iter() {
                 if rel_name == rel_config.rel_type_name &&
-                    (feature_rel.subject.feat_type.name == "gene" ||
-                     feature_rel.subject.feat_type.name == "pseudogene") &&
-                    (feature_rel.object.feat_type.name == "gene" ||
-                     feature_rel.object.feat_type.name == "pseudogene") {
+                    is_gene_type(&feature_rel.subject.feat_type.name) &&
+                    is_gene_type(&feature_rel.object.feat_type.name) {
                         let mut evidence: Option<Evidence> = None;
 
                         let borrowed_publications = feature_rel.publications.borrow();
