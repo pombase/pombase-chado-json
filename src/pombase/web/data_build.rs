@@ -467,7 +467,7 @@ impl <'a> WebDataBuild<'a> {
                         0
                     };
 
-                for back_index in start_index..i {
+                for back_index in (start_index..i).rev() {
                     let back_gene_and_loc = &genes_and_locs[back_index];
 
                     if back_gene_and_loc.loc.chromosome_name !=
@@ -475,7 +475,7 @@ impl <'a> WebDataBuild<'a> {
                             break;
                         }
                     let back_gene_short = self.make_gene_short(&back_gene_and_loc.gene_uniquename);
-                    nearby_genes.push(back_gene_short);
+                    nearby_genes.insert(0, back_gene_short);
                 }
             }
 
