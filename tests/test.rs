@@ -278,12 +278,19 @@ fn get_test_raw() -> Raw {
 
     let cdc16_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                       "SPAC6F6.08c", Some(String::from("cdc16")));
-    let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
+    let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
                                           "SPAC6F6.08c-allele1", Some(String::from("cdc16::ura4+")));
     make_test_featureprop(&mut featureprops, &cdc16_allele1, &allele_type_cvterm,
                           Some(String::from("disruption")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_allele1, &instance_of_cvterm, &cdc16_gene);
+
+    let cdc16_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
+                                               "SPAC6F6.08c-allele2", Some(String::from("cdc16delta")));
+    make_test_featureprop(&mut featureprops, &cdc16_delta_allele, &allele_type_cvterm,
+                          Some(String::from("deletion")));
+    make_test_feature_rel(&mut feature_relationships, &publication,
+                          &cdc16_delta_allele, &instance_of_cvterm, &cdc16_gene);
 
     let par1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                       "SPCC188.02", Some(String::from("par1")));
@@ -302,6 +309,8 @@ fn get_test_raw() -> Raw {
                           &par1_delta_allele, &part_of_cvterm, &genotype1);
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_allele1, &part_of_cvterm, &genotype1);
+    make_test_feature_rel(&mut feature_relationships, &publication,
+                          &cdc16_delta_allele, &part_of_cvterm, &genotype1);
 
     let par1_mrna = make_test_feature(&mut features, &pombe_organism,
                                       &mrna_cvterm, "SPCC188.02.1", None);
@@ -374,7 +383,11 @@ fn get_test_web_data() -> WebData {
 fn test_gene_details() {
     let web_data = get_test_web_data();
 
-    assert_eq!(web_data.genes.len(), 4);
+    for gene_uniquename in web_data.genes.keys() {
+        print!("{}\n", gene_uniquename);
+    }
+
+    assert_eq!(web_data.genes.len(), 3);
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
     assert_eq!(par1_gene.uniquename, "SPCC188.02");
     assert_eq!(par1_gene.name.unwrap(), "par1");
