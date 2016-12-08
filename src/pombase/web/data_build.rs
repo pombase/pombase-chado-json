@@ -284,7 +284,6 @@ impl <'a> WebDataBuild<'a> {
                     }
             }
         }
-
     }
 
     fn make_location(&self, feat: &Feature) -> Option<ChromosomeLocation> {
@@ -827,7 +826,7 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
             let mut maybe_genotype_short = None;
-            let gene_uniquenames_vec: Vec<GeneUniquename> =
+            let mut gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
                     "mRNA" => {
                         if let Some(gene_uniquename) =
@@ -867,6 +866,8 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                 };
+
+            gene_uniquenames_vec.dedup();
 
             let reference_short = self.make_reference_short(&publication.uniquename);
 

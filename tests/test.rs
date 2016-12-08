@@ -424,6 +424,17 @@ fn test_term_gene_count() {
 }
 
 #[test]
+fn test_genotype_annotation() {
+    // make sure that if a genotype has two allele from the same gene,
+    // we get only one annotation
+    let web_data = get_test_web_data();
+    let cdc16_gene = web_data.genes.get("SPAC6F6.08c").unwrap().clone();
+    let fypo_annotations = cdc16_gene.annotations.get("fission_yeast_phenotype").unwrap();
+
+    assert_eq!(fypo_annotations.len(), 1);
+}
+
+#[test]
 fn test_terms() {
     let web_data = get_test_web_data();
 
