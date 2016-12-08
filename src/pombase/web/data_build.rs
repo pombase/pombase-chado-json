@@ -794,6 +794,12 @@ impl <'a> WebDataBuild<'a> {
         for feature_cvterm in self.raw.feature_cvterms.iter() {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
+
+            if cvterm.cv.name == "PomBase gene characterisation status" ||
+                cvterm.cv.name == "PomBase gene products" {
+                    break;
+                }
+
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
             let mut conditions: Vec<TermShort> = vec![];
@@ -902,10 +908,7 @@ impl <'a> WebDataBuild<'a> {
                     is_not: feature_cvterm.is_not,
                 };
 
-                if cvterm.cv.name != "PomBase gene characterisation status" &&
-                    cvterm.cv.name != "PomBase gene products" {
-                        self.add_annotation(cvterm.borrow(), annotation_template)
-                    }
+                self.add_annotation(cvterm.borrow(), annotation_template)
             }
         }
     }
