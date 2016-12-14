@@ -803,6 +803,7 @@ impl <'a> WebDataBuild<'a> {
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
             let mut conditions: Vec<TermShort> = vec![];
+            let mut with_from: Option<GeneShort> = None;
             let mut qualifiers: Vec<Qualifier> = vec![];
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
@@ -823,9 +824,12 @@ impl <'a> WebDataBuild<'a> {
                         },
                     "with" | "from" => {
                         if let Some(value) = prop.value.clone() {
-                        let re = Regex::new(&db_prefix_patt).unwrap();
-                            extra_props.insert(prop.type_name().clone(),
-                                               re.replace_all(&value, ""));
+                            let re = Regex::new(&db_prefix_patt).unwrap();
+                            let gene_uniquename = re.replace_all(&value, "");
+                            if self.genes.contains_key(&gene_uniquename) {
+                                let gene_short = self.make_gene_short(&gene_uniquename);
+                                with_from = Some(gene_short);
+                            }
                         }
                     },
                     _ => ()
@@ -898,7 +902,7 @@ impl <'a> WebDataBuild<'a> {
                     term: None,
                     reference: reference_short.clone(),
                     genotype: maybe_genotype_short.clone(),
-                    with: extra_props_clone.remove("with"),
+                    with: with_from.clone(),
                     residue: extra_props_clone.remove("residue"),
                     gene_ex_props: gene_ex_props,
                     qualifiers: qualifiers.clone(),

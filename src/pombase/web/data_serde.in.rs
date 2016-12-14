@@ -194,7 +194,7 @@ pub struct OntAnnotation {
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub with: Option<With>,
+    pub with: Option<GeneShort>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub residue: Option<Residue>,
     pub qualifiers: Vec<Qualifier>,

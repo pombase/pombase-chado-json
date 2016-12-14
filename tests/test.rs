@@ -452,8 +452,8 @@ fn test_gene_with() {
     let biological_process_annotations = annotations.get("biological_process").unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0];
-    assert_eq!(&first_annotation.with.clone().unwrap(), "SPAC6F6.08c");
-//    assert_eq!(&first_annotation.with.unwrap().name, "cdc16");
+    assert_eq!(&first_annotation.with.clone().unwrap().uniquename, "SPAC6F6.08c");
+    assert_eq!(&first_annotation.with.clone().unwrap().name.unwrap(), "cdc16");
 }
 
 #[test]
