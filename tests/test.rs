@@ -87,6 +87,19 @@ fn make_test_feature_cvterm(feature_cvterms: &mut Vec<Rc<FeatureCvterm>>,
     feature_cvterm
 }
 
+fn make_test_feature_cvtermprop(feature_cvtermprops: &mut Vec<Rc<FeatureCvtermprop>>,
+                                feature_cvterm: &Rc<FeatureCvterm>, prop_type: &Rc<Cvterm>,
+                                value: &str) -> Rc<FeatureCvtermprop> {
+    let feature_cvtermprop = Rc::new(FeatureCvtermprop {
+        feature_cvterm: feature_cvterm.clone(),
+        prop_type: prop_type.clone(),
+        value: Some(value.into()),
+    });
+    feature_cvtermprops.push(feature_cvtermprop.clone());
+    feature_cvterm.feature_cvtermprops.borrow_mut().push(feature_cvtermprop.clone());
+    feature_cvtermprop
+}
+
 fn make_test_feature_rel(feature_relationships: &mut Vec<Rc<FeatureRelationship>>,
                          publication: &Rc<Publication>,
                          subject: &Rc<Feature>, rel: &Rc<Cvterm>, object: &Rc<Feature>) {
@@ -133,6 +146,7 @@ fn get_test_raw() -> Raw {
     let mut features: Vec<Rc<Feature>> = vec![];
     let mut featureprops: Vec<Rc<Featureprop>> = vec![];
     let mut feature_cvterms: Vec<Rc<FeatureCvterm>> = vec![];
+    let mut feature_cvtermprops: Vec<Rc<FeatureCvtermprop>> = vec![];
 
     let pombe_organism =
         Rc::new(Organism{
@@ -153,6 +167,7 @@ fn get_test_raw() -> Raw {
     let featureprop_types_cv = make_test_cv(&mut cvs, "PomBase feature property types");
     let pub_type_cv = make_test_cv(&mut cvs, "PomBase publication types");
     let pubprop_type_cv = make_test_cv(&mut cvs, "pubprop_type");
+    let feature_cvtermprop_type_cv = make_test_cv(&mut cvs, "feature_cvtermprop_type");
 
     let pbo_db = make_test_db(&mut dbs, "PBO");
     let go_db = make_test_db(&mut dbs, "GO");
@@ -215,6 +230,9 @@ fn get_test_raw() -> Raw {
     let pubmed_authors_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pubprop_type_cv, &pbo_db,
                                 "pubmed_authors", "0034035");
+    let with_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &feature_cvtermprop_type_cv, &pbo_db,
+                                "with", "0000098");
 
     let publication = Rc::new(Publication {
         uniquename: String::from("PMID:11707284"),
@@ -322,7 +340,10 @@ fn get_test_raw() -> Raw {
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_polypeptide, &derives_from_cvterm, &par1_mrna);
 
-    make_test_feature_cvterm(&mut feature_cvterms, &par1_mrna, &go0031030_cvterm, &publication);
+    let par1_go0031030_fc =
+        make_test_feature_cvterm(&mut feature_cvterms, &par1_mrna, &go0031030_cvterm, &publication);
+    make_test_feature_cvtermprop(&mut feature_cvtermprops, &par1_go0031030_fc, &with_cvterm, "SPAC6F6.08c");
+
     make_test_feature_cvterm(&mut feature_cvterms, &genotype1, &pbo0022440_cvterm, &publication);
 
     par1_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
@@ -421,6 +442,18 @@ fn test_term_gene_count() {
     let first_annotation = &biological_process_annotations[0];
     let actual_count = first_annotation.term.clone().unwrap().gene_count;
     assert_eq!(actual_count, Some(1));
+}
+
+#[test]
+fn test_gene_with() {
+    let web_data = get_test_web_data();
+    let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
+    let annotations = par1_gene.annotations;
+    let biological_process_annotations = annotations.get("biological_process").unwrap();
+    assert_eq!(biological_process_annotations.len(), 1);
+    let first_annotation = &biological_process_annotations[0];
+    assert_eq!(&first_annotation.with.clone().unwrap(), "SPAC6F6.08c");
+//    assert_eq!(&first_annotation.with.unwrap().name, "cdc16");
 }
 
 #[test]
