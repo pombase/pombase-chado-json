@@ -797,7 +797,7 @@ impl <'a> WebDataBuild<'a> {
 
             if cvterm.cv.name == "PomBase gene characterisation status" ||
                 cvterm.cv.name == "PomBase gene products" {
-                    break;
+                    continue;
                 }
 
             let publication = &feature_cvterm.publication;
