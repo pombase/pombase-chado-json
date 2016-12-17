@@ -412,9 +412,9 @@ fn test_gene_details() {
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
     assert_eq!(par1_gene.uniquename, "SPCC188.02");
     assert_eq!(par1_gene.name.unwrap(), "par1");
-    assert_eq!(par1_gene.annotations.len(), 2);
+    assert_eq!(par1_gene.cv_annotations.len(), 2);
 
-    if par1_gene.annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
+    if par1_gene.cv_annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
         panic!("extension cv shouldn't be in the annotations");
     }
 }
@@ -436,8 +436,8 @@ fn test_make_publication_short() {
 fn test_term_gene_count() {
     let web_data = get_test_web_data();
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
-    let annotations = par1_gene.annotations;
-    let biological_process_annotations = annotations.get("biological_process").unwrap();
+    let cv_annotations = par1_gene.cv_annotations;
+    let biological_process_annotations = cv_annotations.get("biological_process").unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0];
     let actual_count = first_annotation.term.clone().gene_count;
@@ -448,10 +448,10 @@ fn test_term_gene_count() {
 fn test_gene_with() {
     let web_data = get_test_web_data();
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
-    let annotations = par1_gene.annotations;
-    let biological_process_annotations = annotations.get("biological_process").unwrap();
+    let cv_annotations = par1_gene.cv_annotations;
+    let biological_process_annotations = cv_annotations.get("biological_process").unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
-    let first_annotation = &biological_process_annotations[0].ont_annotation_details[0];
+    let first_annotation = &biological_process_annotations[0].annotations[0];
     assert_eq!(&first_annotation.with.clone().unwrap().uniquename, "SPAC6F6.08c");
     assert_eq!(&first_annotation.with.clone().unwrap().name.unwrap(), "cdc16");
 }
@@ -462,7 +462,7 @@ fn test_genotype_annotation() {
     // we get only one annotation
     let web_data = get_test_web_data();
     let cdc16_gene = web_data.genes.get("SPAC6F6.08c").unwrap().clone();
-    let fypo_annotations = cdc16_gene.annotations.get("fission_yeast_phenotype").unwrap();
+    let fypo_annotations = cdc16_gene.cv_annotations.get("fission_yeast_phenotype").unwrap();
 
     assert_eq!(fypo_annotations.len(), 1);
 }

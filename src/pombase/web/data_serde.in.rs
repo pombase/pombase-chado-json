@@ -182,9 +182,9 @@ pub struct ReferenceDetails {
 }
 
 #[derive(Serialize, Clone)]
-pub struct OntAnnotationByTerm {
+pub struct OntTermAnnotations {
     pub term: TermShort,
-    pub ont_annotation_details: Vec<Rc<OntAnnotationDetail>>,
+    pub annotations: Vec<Rc<OntAnnotationDetail>>,
 }
 
 #[derive(Serialize, Clone)]
@@ -210,23 +210,23 @@ pub struct OntAnnotationDetail {
     pub is_not: bool,
 }
 
-impl PartialEq for OntAnnotationByTerm {
-    fn eq(&self, other: &OntAnnotationByTerm) -> bool {
+impl PartialEq for OntTermAnnotations {
+    fn eq(&self, other: &OntTermAnnotations) -> bool {
         self.term.termid == other.term.termid
     }
 }
-impl Eq for OntAnnotationByTerm { }
-impl Ord for OntAnnotationByTerm {
-    fn cmp(&self, other: &OntAnnotationByTerm) -> Ordering {
+impl Eq for OntTermAnnotations { }
+impl Ord for OntTermAnnotations {
+    fn cmp(&self, other: &OntTermAnnotations) -> Ordering {
         return self.term.name.cmp(&other.term.name);
     }
 }
-impl PartialOrd for OntAnnotationByTerm {
-    fn partial_cmp(&self, other: &OntAnnotationByTerm) -> Option<Ordering> {
+impl PartialOrd for OntTermAnnotations {
+    fn partial_cmp(&self, other: &OntTermAnnotations) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl Hash for OntAnnotationByTerm {
+impl Hash for OntTermAnnotations {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.term.termid.hash(state);
     }
@@ -279,7 +279,7 @@ pub struct GeneDetails {
     pub cds_location: Option<ChromosomeLocation>,
     pub gene_neighbourhood: Vec<GeneShort>,
     pub transcripts: Vec<TranscriptShort>,
-    pub annotations: OntAnnotationMap,
+    pub cv_annotations: OntAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
@@ -335,13 +335,13 @@ pub struct GeneExProps {
 }
 
 pub type OntName = String;
-pub type OntAnnotationMap = HashMap<OntName, Vec<OntAnnotationByTerm>>;
+pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 
 #[derive(Serialize, Clone)]
 pub struct RelOntAnnotation {
     pub rel_names: HashSet<RelName>,
     pub term: TermShort,
-    pub ont_annotation_details: Vec<Rc<OntAnnotationDetail>>,
+    pub annotations: Vec<Rc<OntAnnotationDetail>>,
 }
 
 #[derive(Serialize, Clone)]

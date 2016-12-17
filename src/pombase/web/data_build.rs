@@ -334,7 +334,7 @@ impl <'a> WebDataBuild<'a> {
             location: location,
             gene_neighbourhood: vec![],
             cds_location: None,
-            annotations: HashMap::new(),
+            cv_annotations: HashMap::new(),
             interaction_annotations: HashMap::new(),
             ortholog_annotations: vec![],
             paralog_annotations: vec![],
@@ -897,7 +897,7 @@ impl <'a> WebDataBuild<'a> {
                     } else {
                         None
                     };
-                let ont_annotation_details = OntAnnotationDetail {
+                let annotation = OntAnnotationDetail {
                     id: feature_cvterm.feature_cvterm_id,
                     gene: self.make_gene_short(&gene_uniquename),
                     reference: reference_short.clone(),
@@ -912,19 +912,19 @@ impl <'a> WebDataBuild<'a> {
                     is_not: feature_cvterm.is_not,
                 };
 
-                self.add_annotation(cvterm.borrow(), ont_annotation_details);
+                self.add_annotation(cvterm.borrow(), annotation);
             }
         }
     }
 
-    // add the OntAnnotationByTerm objects in the TermDetails,
+    // add the OntTermAnnotations objects in the TermDetails,
     // GeneDetails and ReferenceDetails objects
     fn store_ont_annotations(&mut self) {
         let mut term_gene_sets: HashMap<TermId, HashSet<GeneShort>> =
             HashMap::new();
 
-        for (termid, ont_annotation_details) in &self.all_ont_annotations {
-            for annotation in ont_annotation_details.iter() {
+        for (termid, annotations) in &self.all_ont_annotations {
+            for annotation in annotations.iter() {
                 term_gene_sets.entry(termid.clone())
                     .or_insert(HashSet::new())
                     .insert(annotation.gene.clone());
@@ -949,20 +949,20 @@ impl <'a> WebDataBuild<'a> {
         let mut ref_annotation_by_term: HashMap<String, HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>> =
             HashMap::new();
 
-        for (termid, ont_annotation_details) in &self.all_ont_annotations {
+        for (termid, annotations) in &self.all_ont_annotations {
             let term_short = self.make_term_short(termid);
 
             if let Some(ref mut term_details) = self.terms.get_mut(termid) {
                 term_details.annotations.push(RelOntAnnotation {
                     rel_names: HashSet::new(),
                     term: term_short.clone(),
-                    ont_annotation_details: ont_annotation_details.clone(),
+                    annotations: annotations.clone(),
                 });
             } else {
                 panic!("missing termid: {}\n", termid);
             }
 
-            for detail in ont_annotation_details {
+            for detail in annotations {
                 gene_annotation_by_term.entry(detail.gene.uniquename.clone())
                     .or_insert(HashMap::new())
                     .entry(termid.clone())
@@ -984,7 +984,7 @@ impl <'a> WebDataBuild<'a> {
                                 push(RelOntAnnotation {
                                     rel_names: HashSet::new(),
                                     term: condition_term_short.clone(),
-                                    ont_annotation_details: vec![detail.clone()],
+                                    annotations: vec![detail.clone()],
                                 });
                         }
                 }
@@ -1003,18 +1003,18 @@ impl <'a> WebDataBuild<'a> {
                 let term_short = term_short_map.get(termid).unwrap();
                 let cv_name = term_short.cv_name.clone();
 
-                let new_annotation = OntAnnotationByTerm {
+                let new_annotation = OntTermAnnotations {
                     term: term_short.clone(),
-                    ont_annotation_details: details.clone(),
+                    annotations: details.clone(),
                 };
 
-                gene_details.annotations.entry(cv_name.clone())
+                gene_details.cv_annotations.entry(cv_name.clone())
                     .or_insert(Vec::new())
                     .push(new_annotation);
             }
 
-            for (_, mut term_annotations) in &mut gene_details.annotations {
-                term_annotations.sort()
+            for (_, mut cv_annotations) in &mut gene_details.cv_annotations {
+                cv_annotations.sort()
             }
         }
 
@@ -1024,9 +1024,9 @@ impl <'a> WebDataBuild<'a> {
                 let term_short = term_short_map.get(termid).unwrap();
                 let cv_name = term_short.cv_name.clone();
 
-                let new_annotation = OntAnnotationByTerm {
+                let new_annotation = OntTermAnnotations {
                     term: term_short.clone(),
-                    ont_annotation_details: details.clone(),
+                    annotations: details.clone(),
                 };
 
                 ref_details.annotations.entry(cv_name).or_insert(Vec::new())
@@ -1071,7 +1071,7 @@ impl <'a> WebDataBuild<'a> {
                     let RelOntAnnotation {
                         rel_names: _,
                         term: _,
-                        ont_annotation_details: existing_details
+                        annotations: existing_details
                     } = rel_annotation.clone();
 
                     for detail in &existing_details {
@@ -1105,7 +1105,7 @@ impl <'a> WebDataBuild<'a> {
             term_details.annotations.push(RelOntAnnotation {
                 rel_names: all_rel_names,
                 term: term_short.clone(),
-                ont_annotation_details: new_details,
+                annotations: new_details,
             });
         }
     }
