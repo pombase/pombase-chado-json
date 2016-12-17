@@ -182,12 +182,15 @@ pub struct ReferenceDetails {
 }
 
 #[derive(Serialize, Clone)]
-pub struct OntAnnotation {
+pub struct OntAnnotationByTerm {
+    pub term: TermShort,
+    pub ont_annotation_details: Vec<Rc<OntAnnotationDetail>>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct OntAnnotationDetail {
     pub id: i32,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub term: Option<TermShort>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub gene: Option<GeneShort>,
+    pub gene: GeneShort,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -207,43 +210,25 @@ pub struct OntAnnotation {
     pub is_not: bool,
 }
 
-impl PartialEq for OntAnnotation {
-    fn eq(&self, other: &OntAnnotation) -> bool {
-        self.id == other.id
+impl PartialEq for OntAnnotationByTerm {
+    fn eq(&self, other: &OntAnnotationByTerm) -> bool {
+        self.term.termid == other.term.termid
     }
 }
-impl Eq for OntAnnotation { }
-impl Ord for OntAnnotation {
-    fn cmp(&self, other: &OntAnnotation) -> Ordering {
-        if let Some(ref term) = self.term {
-            if let Some (ref other_term) = other.term {
-                let order = term.name.cmp(&other_term.name);
-                if order == Ordering::Equal {
-                    if let Some(ref gene) = self.gene {
-                        if let Some (ref other_gene) = other.gene {
-                            let gene_order = gene.cmp(&other_gene);
-                            if gene_order != Ordering::Equal {
-                                return gene_order;
-                            }
-                        }
-                    }
-                } else {
-                    return order;
-                }
-            }
-        }
-
-        self.id.cmp(&other.id)
+impl Eq for OntAnnotationByTerm { }
+impl Ord for OntAnnotationByTerm {
+    fn cmp(&self, other: &OntAnnotationByTerm) -> Ordering {
+        return self.term.name.cmp(&other.term.name);
     }
 }
-impl PartialOrd for OntAnnotation {
-    fn partial_cmp(&self, other: &OntAnnotation) -> Option<Ordering> {
+impl PartialOrd for OntAnnotationByTerm {
+    fn partial_cmp(&self, other: &OntAnnotationByTerm) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
-impl Hash for OntAnnotation {
+impl Hash for OntAnnotationByTerm {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
+        self.term.termid.hash(state);
     }
 }
 
@@ -350,12 +335,13 @@ pub struct GeneExProps {
 }
 
 pub type OntName = String;
-pub type OntAnnotationMap = HashMap<OntName, Vec<Rc<OntAnnotation>>>;
+pub type OntAnnotationMap = HashMap<OntName, Vec<OntAnnotationByTerm>>;
 
 #[derive(Serialize, Clone)]
 pub struct RelOntAnnotation {
     pub rel_names: HashSet<RelName>,
-    pub annotation: Rc<OntAnnotation>,
+    pub term: TermShort,
+    pub ont_annotation_details: Vec<Rc<OntAnnotationDetail>>,
 }
 
 #[derive(Serialize, Clone)]

@@ -440,7 +440,7 @@ fn test_term_gene_count() {
     let biological_process_annotations = annotations.get("biological_process").unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0];
-    let actual_count = first_annotation.term.clone().unwrap().gene_count;
+    let actual_count = first_annotation.term.clone().gene_count;
     assert_eq!(actual_count, Some(1));
 }
 
@@ -451,7 +451,7 @@ fn test_gene_with() {
     let annotations = par1_gene.annotations;
     let biological_process_annotations = annotations.get("biological_process").unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
-    let first_annotation = &biological_process_annotations[0];
+    let first_annotation = &biological_process_annotations[0].ont_annotation_details[0];
     assert_eq!(&first_annotation.with.clone().unwrap().uniquename, "SPAC6F6.08c");
     assert_eq!(&first_annotation.with.clone().unwrap().name.unwrap(), "cdc16");
 }
