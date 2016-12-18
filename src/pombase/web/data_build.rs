@@ -680,7 +680,7 @@ impl <'a> WebDataBuild<'a> {
                                       definition: cvterm.definition.clone(),
                                       is_obsolete: cvterm.is_obsolete,
                                       genes: vec![],
-                                      annotations: vec![],
+                                      rel_annotations: vec![],
                                   });
             }
         }
@@ -953,7 +953,7 @@ impl <'a> WebDataBuild<'a> {
             let term_short = self.make_term_short(termid);
 
             if let Some(ref mut term_details) = self.terms.get_mut(termid) {
-                term_details.annotations.push(RelOntAnnotation {
+                term_details.rel_annotations.push(RelOntAnnotation {
                     rel_names: HashSet::new(),
                     term: term_short.clone(),
                     annotations: annotations.clone(),
@@ -980,7 +980,7 @@ impl <'a> WebDataBuild<'a> {
                 for condition_term_short in &detail.conditions {
                     if let Some(ref mut condition_term_details) =
                         self.terms.get_mut(&condition_term_short.termid) {
-                            condition_term_details.annotations.
+                            condition_term_details.rel_annotations.
                                 push(RelOntAnnotation {
                                     rel_names: HashSet::new(),
                                     term: condition_term_short.clone(),
@@ -1066,7 +1066,7 @@ impl <'a> WebDataBuild<'a> {
             }
 
             if let Some(term_details) = self.terms.get(&subject_termid) {
-                let subject_annotations = &term_details.annotations;
+                let subject_annotations = &term_details.rel_annotations;
                 for rel_annotation in subject_annotations {
                     let RelOntAnnotation {
                         rel_names: _,
@@ -1102,7 +1102,7 @@ impl <'a> WebDataBuild<'a> {
                     all_rel_names.insert(rel_name);
                 }
             }
-            term_details.annotations.push(RelOntAnnotation {
+            term_details.rel_annotations.push(RelOntAnnotation {
                 rel_names: all_rel_names,
                 term: term_short.clone(),
                 annotations: new_details,
@@ -1198,7 +1198,7 @@ impl <'a> WebDataBuild<'a> {
 
         // remove terms with no annotation
         for (termid, term_details) in &web_data_terms {
-            if term_details.annotations.len() > 0 {
+            if term_details.rel_annotations.len() > 0 {
                 used_terms.insert(termid.clone(), term_details.clone());
             }
         }

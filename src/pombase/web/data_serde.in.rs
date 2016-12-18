@@ -339,8 +339,8 @@ pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 
 #[derive(Serialize, Clone)]
 pub struct RelOntAnnotation {
-    pub rel_names: HashSet<RelName>,
     pub term: TermShort,
+    pub rel_names: HashSet<RelName>,
     pub annotations: Vec<Rc<OntAnnotationDetail>>,
 }
 
@@ -353,7 +353,7 @@ pub struct TermDetails {
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
     pub genes: Vec<GeneShort>,
-    pub annotations: Vec<RelOntAnnotation>,
+    pub rel_annotations: Vec<RelOntAnnotation>,
 }
 
 #[derive(Serialize, Clone)]
