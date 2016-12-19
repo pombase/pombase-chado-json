@@ -1041,7 +1041,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn process_cvtermpath(&mut self) {
         let mut annotation_by_id: HashMap<i32, Rc<OntAnnotationDetail>> = HashMap::new();
-        let mut new_annotations: HashMap<TermId, HashMap<i32, HashSet<RelName>>> =
+        let mut new_annotations: HashMap<TermId, HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
             HashMap::new();
 
         for cvtermpath in &self.raw.cvtermpaths {
@@ -1081,6 +1081,8 @@ impl <'a> WebDataBuild<'a> {
                         }
                         new_annotations.entry(object_termid.clone())
                             .or_insert(HashMap::new())
+                            .entry(subject_termid.clone())
+                            .or_insert(HashMap::new())
                             .entry(detail.id)
                             .or_insert(HashSet::new())
                             .insert(rel_term_name.clone());
@@ -1090,23 +1092,27 @@ impl <'a> WebDataBuild<'a> {
                 panic!("TermDetails not found for {}", &subject_termid);
             }
         }
-        for (termid, annotations_map) in new_annotations.drain() {
-            let term_short = self.make_term_short(&termid);
-            let mut term_details = self.terms.get_mut(&termid).unwrap();
-            let mut new_details: Vec<Rc<OntAnnotationDetail>> = vec![];
-            let mut all_rel_names: HashSet<String> = HashSet::new();
-            for (id, rel_names) in annotations_map {
-                let detail = annotation_by_id.get(&id).unwrap().clone();
-                new_details.push(detail);
-                for rel_name in rel_names {
-                    all_rel_names.insert(rel_name);
+        for (object_termid, object_annotations_map) in new_annotations.drain() {
+            for (subject_termid, subject_annotations_map) in object_annotations_map {
+                let mut new_details: Vec<Rc<OntAnnotationDetail>> = vec![];
+                let mut all_rel_names: HashSet<String> = HashSet::new();
+                for (id, rel_names) in subject_annotations_map {
+                    let detail = annotation_by_id.get(&id).unwrap().clone();
+                    new_details.push(detail);
+                    for rel_name in rel_names {
+                        all_rel_names.insert(rel_name);
+                    }
                 }
+                let subject_term_short = self.make_term_short(&subject_termid);
+                let mut object_term_details = {
+                    self.terms.get_mut(&object_termid).unwrap()
+                };
+                object_term_details.rel_annotations.push(RelOntAnnotation {
+                    rel_names: all_rel_names,
+                    term: subject_term_short.clone(),
+                    annotations: new_details,
+                });
             }
-            term_details.rel_annotations.push(RelOntAnnotation {
-                rel_names: all_rel_names,
-                term: term_short.clone(),
-                annotations: new_details,
-            });
         }
     }
 
