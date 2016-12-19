@@ -269,6 +269,7 @@ pub struct GeneDetails {
     pub organism: OrganismShort,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<String>,
+    pub name_descriptions: Vec<String>,
     pub synonyms: Vec<SynonymDetails>,
     pub feature_type: String,
     #[serde(skip_serializing_if="Option::is_none")]

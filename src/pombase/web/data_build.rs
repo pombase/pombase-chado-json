@@ -166,6 +166,11 @@ impl <'a> WebDataBuild<'a> {
         gene_details.product = Some(product.clone());
     }
 
+    fn add_name_description(&mut self, gene_uniquename: &str, name_description: &str) {
+        let mut gene_details = self.get_gene_mut(gene_uniquename);
+        gene_details.name_descriptions.push(name_description.into());
+    }
+
     fn add_annotation(&mut self, cvterm: &Cvterm,
                       annotation_template: OntAnnotationDetail) {
         let termid =
@@ -328,6 +333,7 @@ impl <'a> WebDataBuild<'a> {
             name: feat.name.clone(),
             organism: organism,
             product: None,
+            name_descriptions: vec![],
             synonyms: vec![],
             feature_type: feat.feat_type.name.clone(),
             characterisation_status: None,
@@ -782,10 +788,15 @@ impl <'a> WebDataBuild<'a> {
             for gene_uniquename in &gene_uniquenames_vec {
                 self.add_gene_product(&gene_uniquename, &cvterm.name);
             }
-            if(feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene")
-                && cvterm.cv.name == "PomBase gene characterisation status" {
+            if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
+                if cvterm.cv.name == "PomBase gene characterisation status" {
                     self.add_characterisation_status(&feature.uniquename, &cvterm.name);
+                } else {
+                    if cvterm.cv.name == "name_description" {
+                        self.add_name_description(&feature.uniquename, &cvterm.name);
+                    }
                 }
+            }
         }
     }
 
@@ -797,7 +808,8 @@ impl <'a> WebDataBuild<'a> {
             let cvterm = &feature_cvterm.cvterm;
 
             if cvterm.cv.name == "PomBase gene characterisation status" ||
-                cvterm.cv.name == "PomBase gene products" {
+                cvterm.cv.name == "PomBase gene products" ||
+                cvterm.cv.name == "name_description" {
                     continue;
                 }
 
