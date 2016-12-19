@@ -240,7 +240,7 @@ impl <'a> WebDataBuild<'a> {
                                        authors_abbrev: authors_abbrev,
                                        pubmed_publication_date: pubmed_publication_date.clone(),
                                        publication_year: publication_year,
-                                       annotations: HashMap::new(),
+                                       cv_annotations: HashMap::new(),
                                        interaction_annotations: HashMap::new(),
                                        ortholog_annotations: vec![],
                                        paralog_annotations: vec![],
@@ -1041,11 +1041,11 @@ impl <'a> WebDataBuild<'a> {
                     annotations: details.clone(),
                 };
 
-                ref_details.annotations.entry(cv_name).or_insert(Vec::new())
+                ref_details.cv_annotations.entry(cv_name).or_insert(Vec::new())
                     .push(new_annotation.clone());
             }
 
-            for (_, mut term_annotations) in &mut ref_details.annotations {
+            for (_, mut term_annotations) in &mut ref_details.cv_annotations {
                 term_annotations.sort()
             }
         }

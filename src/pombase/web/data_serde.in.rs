@@ -175,7 +175,7 @@ pub struct ReferenceDetails {
     pub pubmed_publication_date: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
-    pub annotations: OntAnnotationMap,
+    pub cv_annotations: OntAnnotationMap,
     pub interaction_annotations: TypeInteractionAnnotationMap,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
