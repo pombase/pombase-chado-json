@@ -39,3 +39,23 @@ pub const DESCENDANT_REL_NAMES: [&'static str; 3] = ["is_a", "part_of", "regulat
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
 
+// "interesting parents" are those stored in the JSON in the TermShort structs
+#[derive(Clone)]
+pub struct InterestingParent {
+    pub termid: &'static str,
+    pub rel_name: &'static str,
+}
+
+// when creating a TermShort struct, for each of these termids if the term has
+// an "interesting parent" using the given rel_name, we store it in the
+// interesting_parents field of the TermShort
+pub const INTERESTING_PARENTS: [InterestingParent; 2] = [
+    InterestingParent {
+        termid: "FYPO:0000002",
+        rel_name: "is_a",
+    },
+    InterestingParent {
+        termid: "FYPO:0000003",
+        rel_name: "is_a",
+    }
+];

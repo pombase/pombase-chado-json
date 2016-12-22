@@ -113,6 +113,8 @@ pub struct TranscriptShort {
 pub struct TermShort {
     pub name: TermName,
     pub cv_name: String,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub interesting_parents: HashSet<String>,
     pub termid: TermId,
     pub is_obsolete: bool,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -349,6 +351,7 @@ pub struct RelOntAnnotation {
 pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
+    pub interesting_parents: HashSet<String>,
     pub termid: TermId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,

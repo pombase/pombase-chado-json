@@ -147,6 +147,7 @@ impl <'a> WebDataBuild<'a> {
             TermShort {
                 name: term_details.name.clone(),
                 cv_name: term_details.cv_name.clone(),
+                interesting_parents: term_details.interesting_parents.clone(),
                 termid: term_details.termid.clone(),
                 is_obsolete: term_details.is_obsolete,
                 gene_count: Some(term_details.genes.len()),
@@ -423,6 +424,42 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn add_interesting_parents(&mut self) {
+        let mut interesting_parents_by_termid: HashMap<String, HashSet<String>> =
+            HashMap::new();
+
+        for cvtermpath in &self.raw.cvtermpaths {
+            let subject_term = &cvtermpath.subject;
+            let subject_termid = subject_term.termid();
+            let object_term = &cvtermpath.object;
+            let object_termid = object_term.termid();
+
+            let rel_termid =
+                match cvtermpath.rel_type {
+                    Some(ref rel_type) => {
+                        rel_type.termid()
+                    },
+                    None => panic!("no relation type for {} <-> {}\n",
+                                   &subject_term.name, &object_term.name)
+                };
+            let rel_term_name =
+                self.make_term_short(&rel_termid).name;
+
+            if let Some(interesting_parent) =
+                self.is_interesting_parent(&object_termid, &rel_term_name) {
+                    interesting_parents_by_termid
+                        .entry(subject_termid.clone())
+                        .or_insert(HashSet::new())
+                        .insert(interesting_parent.termid.into());
+                };
+        }
+
+        for (termid, interesting_parents) in interesting_parents_by_termid {
+            let mut term_details = self.terms.get_mut(&termid).unwrap();
+            term_details.interesting_parents = interesting_parents;
+        }
+    }
+
     fn process_allele_features(&mut self) {
         for feat in &self.raw.features {
             if feat.feat_type.name == "allele" {
@@ -682,6 +719,7 @@ impl <'a> WebDataBuild<'a> {
                                   TermDetails {
                                       name: cvterm.name.clone(),
                                       cv_name: cvterm.cv.name.clone(),
+                                      interesting_parents: HashSet::new(),
                                       termid: cvterm.termid(),
                                       definition: cvterm.definition.clone(),
                                       is_obsolete: cvterm.is_obsolete,
@@ -1051,6 +1089,19 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn is_interesting_parent(&self, termid: &str, rel_name: &str)
+                             -> Option<InterestingParent>
+    {
+        for parent_conf in INTERESTING_PARENTS.iter() {
+            if parent_conf.termid == termid &&
+                parent_conf.rel_name == rel_name {
+                    return Some((*parent_conf).clone());
+                }
+        }
+
+        None
+    }
+
     fn process_cvtermpath(&mut self) {
         let mut annotation_by_id: HashMap<i32, Rc<OntAnnotationDetail>> = HashMap::new();
         let mut new_annotations: HashMap<TermId, HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
@@ -1104,6 +1155,7 @@ impl <'a> WebDataBuild<'a> {
                 panic!("TermDetails not found for {}", &subject_termid);
             }
         }
+
         for (object_termid, object_annotations_map) in new_annotations.drain() {
             for (subject_termid, subject_annotations_map) in object_annotations_map {
                 let mut new_details: Vec<Rc<OntAnnotationDetail>> = vec![];
@@ -1194,6 +1246,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_genotype_features();
         self.add_alleles_to_genotypes();
         self.process_cvterms();
+        self.add_interesting_parents();
         self.process_extension_cvterms();
         self.process_cvterm_rels();
         self.process_feature_synonyms();
