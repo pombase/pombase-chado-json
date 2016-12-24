@@ -27,7 +27,6 @@ pub struct GeneShort {
     pub name: Option<GeneName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
-    pub synonyms: Vec<SynonymDetails>,
 }
 
 #[derive(Serialize, Clone)]
@@ -369,6 +368,35 @@ pub struct InteractionAnnotation {
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
 }
+impl PartialEq for InteractionAnnotation {
+    fn eq(&self, other: &Self) -> bool {
+        if let Some(ref evidence) = self.evidence {
+            if let Some(ref other_evidence) = other.evidence {
+                return evidence == other_evidence;
+            }
+        }
+        (&self.gene, &self.interactor) == (&other.gene, &other.interactor)
+    }
+}
+impl Eq for InteractionAnnotation { }
+impl Ord for InteractionAnnotation {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if let Some(ref evidence) = self.evidence {
+            if let Some(ref other_evidence) = other.evidence {
+                let order = evidence.cmp(&other_evidence);
+                if order != Ordering::Equal {
+                    return order;
+                }
+            }
+        }
+        (&self.gene, &self.interactor).cmp(&(&other.gene, &other.interactor))
+    }
+}
+impl PartialOrd for InteractionAnnotation {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 #[derive(Serialize, Clone)]
 pub struct OrthologAnnotation {
@@ -380,6 +408,22 @@ pub struct OrthologAnnotation {
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
 }
+impl PartialEq for OrthologAnnotation {
+    fn eq(&self, other: &Self) -> bool {
+        (&self.gene, &self.ortholog) == (&other.gene, &other.ortholog)
+    }
+}
+impl Eq for OrthologAnnotation { }
+impl Ord for OrthologAnnotation {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (&self.gene, &self.ortholog).cmp(&(&other.gene, &other.ortholog))
+    }
+}
+impl PartialOrd for OrthologAnnotation {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
 
 #[derive(Serialize, Clone)]
 pub struct ParalogAnnotation {
@@ -389,6 +433,22 @@ pub struct ParalogAnnotation {
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceShort>,
+}
+impl PartialEq for ParalogAnnotation {
+    fn eq(&self, other: &Self) -> bool {
+        (&self.gene, &self.paralog) == (&other.gene, &other.paralog)
+    }
+}
+impl Eq for ParalogAnnotation { }
+impl Ord for ParalogAnnotation {
+    fn cmp(&self, other: &Self) -> Ordering {
+        (&self.gene, &self.paralog).cmp(&(&other.gene, &other.paralog))
+    }
+}
+impl PartialOrd for ParalogAnnotation {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Serialize, Clone)]
