@@ -180,6 +180,8 @@ pub struct ReferenceDetails {
     pub interaction_annotations: TypeInteractionAnnotationMap,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
+    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+//    pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -191,9 +193,8 @@ pub struct OntTermAnnotations {
 #[derive(Serialize, Clone)]
 pub struct OntAnnotationDetail {
     pub id: i32,
-    pub gene: GeneShort,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub reference: Option<ReferenceShort>,
+    pub gene_uniquename: GeneUniquename,
+    pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
@@ -285,6 +286,8 @@ pub struct GeneDetails {
     pub interaction_annotations: TypeInteractionAnnotationMap,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
+//    pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -355,8 +358,9 @@ pub struct TermDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
-    pub genes: Vec<GeneShort>,
     pub rel_annotations: Vec<RelOntAnnotation>,
+    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
 }
 
 #[derive(Serialize, Clone)]

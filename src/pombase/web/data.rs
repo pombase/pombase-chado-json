@@ -13,6 +13,7 @@ pub type MiscExtRange = String;
 
 pub type GeneUniquename = String;
 pub type TermUniquename = String;
+pub type ReferenceUniquename = String;
 pub type GeneName = String;
 pub type TypeName = String;
 pub type GeneProduct = String;
