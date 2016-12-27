@@ -149,7 +149,7 @@ impl <'a> WebDataBuild<'a> {
                 interesting_parents: term_details.interesting_parents.clone(),
                 termid: term_details.termid.clone(),
                 is_obsolete: term_details.is_obsolete,
-                gene_count: None,
+                gene_count: term_details.genes_by_uniquename.keys().len(),
             }
         } else {
             panic!("can't find TermDetails for termid: {}", termid)
@@ -1258,6 +1258,24 @@ impl <'a> WebDataBuild<'a> {
             }
             term_seen_genes.insert(termid.clone(), seen_genes);
             term_seen_references.insert(termid.clone(), seen_references);
+        }
+
+        for (_, gene_details) in &mut self.genes {
+            for (_, feat_annotations) in &mut gene_details.cv_annotations {
+                for mut feat_annotation in feat_annotations.iter_mut() {
+                    feat_annotation.term.gene_count =
+                        term_seen_genes.get(&feat_annotation.term.termid).unwrap().len()
+                }
+            }
+        }
+
+        for (_, ref_details) in &mut self.references {
+            for (_, ref_annotations) in &mut ref_details.cv_annotations {
+                for ref_annotation in ref_annotations {
+                    ref_annotation.term.gene_count =
+                        term_seen_genes.get(&ref_annotation.term.termid).unwrap().len();
+                }
+            }
         }
 
         let mut term_gene_short_map: HashMap<TermId, Vec<GeneShort>> = HashMap::new();

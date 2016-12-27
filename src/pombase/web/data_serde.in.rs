@@ -116,8 +116,7 @@ pub struct TermShort {
     pub interesting_parents: HashSet<String>,
     pub termid: TermId,
     pub is_obsolete: bool,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub gene_count: Option<usize>,
+    pub gene_count: usize,
 }
 
 impl PartialEq for TermShort {
