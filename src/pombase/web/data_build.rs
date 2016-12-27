@@ -1238,84 +1238,105 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn set_genes_terms_refs(&mut self) {
-        let mut term_seen_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
-        let mut term_seen_references: HashMap<TermId, HashSet<ReferenceUniquename>> =
-            HashMap::new();
-
+    fn set_term_references(&mut self) {
+        type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
+        let mut seen_references: HashMap<TermId, ReferenceShortMap> = HashMap::new();
         for (termid, term_details) in &self.terms {
-            let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
-            let mut seen_references: HashSet<ReferenceUniquename> = HashSet::new();
             for rel_annotation in &term_details.rel_annotations {
-                for annotation in &rel_annotation.annotations {
-                    if !annotation.is_not {
-                        seen_genes.insert(annotation.gene_uniquename.clone());
+                for detail in &rel_annotation.annotations {
+                    if let Some(ref reference_uniquename) = detail.reference_uniquename {
+                        if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
+                            seen_references
+                                .entry(termid.clone())
+                                .or_insert(HashMap::new())
+                                .insert(reference_uniquename.clone(),
+                                        reference_short);
+                        }
                     }
-                    if let Some(reference_uniquename) = annotation.reference_uniquename.clone() {
-                        seen_references.insert(reference_uniquename);
-                    }
-                }
-            }
-            term_seen_genes.insert(termid.clone(), seen_genes);
-            term_seen_references.insert(termid.clone(), seen_references);
-        }
-
-        for (_, gene_details) in &mut self.genes {
-            for (_, feat_annotations) in &mut gene_details.cv_annotations {
-                for mut feat_annotation in feat_annotations.iter_mut() {
-                    feat_annotation.term.gene_count =
-                        term_seen_genes.get(&feat_annotation.term.termid).unwrap().len()
                 }
             }
         }
 
-        for (_, ref_details) in &mut self.references {
-            for (_, ref_annotations) in &mut ref_details.cv_annotations {
-                for ref_annotation in ref_annotations {
-                    ref_annotation.term.gene_count =
-                        term_seen_genes.get(&ref_annotation.term.termid).unwrap().len();
-                }
+        for (termid, term_details) in &mut self.terms {
+            if let Some(references) = seen_references.remove(termid) {
+                term_details.references_by_uniquename = references;
             }
         }
+    }
 
-        let mut term_gene_short_map: HashMap<TermId, Vec<GeneShort>> = HashMap::new();
-
-        for (termid, seen_genes) in term_seen_genes {
-            for gene_uniquename in seen_genes {
-                if !term_gene_short_map.contains_key(&termid) {
+    fn set_term_genes(&mut self) {
+        type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
+        let mut seen_genes: HashMap<TermId, GeneShortMap> = HashMap::new();
+        for (termid, term_details) in &self.terms {
+            for rel_annotation in &term_details.rel_annotations {
+                for detail in &rel_annotation.annotations {
+                    let gene_uniquename = detail.gene_uniquename.clone();
                     let gene_short = self.make_gene_short(&gene_uniquename);
-                    term_gene_short_map.entry(termid.clone())
-                        .or_insert(Vec::new()).push(gene_short);
+                    seen_genes
+                        .entry(termid.clone())
+                        .or_insert(HashMap::new())
+                        .insert(gene_uniquename.clone(), gene_short);
                 }
             }
         }
 
-        let mut term_reference_short_map: HashMap<TermId, Vec<ReferenceShort>> = HashMap::new();
+        for (termid, term_details) in &mut self.terms {
+            if let Some(genes) = seen_genes.remove(termid) {
+                term_details.genes_by_uniquename = genes;
+            }
+        }
+    }
 
-        for (termid, seen_references) in term_seen_references {
-            for reference_uniquename in seen_references {
-                if !term_reference_short_map.contains_key(&reference_uniquename) {
-                    if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
-                        term_reference_short_map.entry(termid.clone())
-                            .or_insert(Vec::new()).push(reference_short);
+    fn set_gene_references(&mut self) {
+        type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
+        let mut seen_references: HashMap<GeneUniquename, ReferenceShortMap> =
+            HashMap::new();
+        for (gene_uniquename, gene_details) in &self.genes {
+            for (_, feat_annotations) in &gene_details.cv_annotations {
+                for feat_annotation in feat_annotations.iter() {
+                    for detail in &feat_annotation.annotations {
+                        if let Some(ref reference_uniquename) = detail.reference_uniquename {
+                            if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
+                                seen_references
+                                    .entry(gene_uniquename.clone())
+                                    .or_insert(HashMap::new())
+                                    .insert(reference_uniquename.clone(),
+                                            reference_short);
+                            }
+                        }
                     }
                 }
             }
         }
 
-        for (ref termid, ref mut gene_short_vec) in term_gene_short_map.drain() {
-            let mut term_details = self.terms.get_mut(termid).unwrap();
-            for gene_short in gene_short_vec {
-                term_details.genes_by_uniquename
-                    .insert(gene_short.uniquename.clone(), gene_short.clone());
+        for (gene_uniquename, gene_details) in &mut self.genes {
+            if let Some(references) = seen_references.remove(gene_uniquename) {
+                gene_details.references_by_uniquename = references;
+            }
+        }
+    }
+
+    fn set_reference_genes(&mut self) {
+        type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
+        let mut seen_genes: HashMap<ReferenceUniquename, GeneShortMap> = HashMap::new();
+        for (referenceid, reference_details) in &self.references {
+            for (_, feat_annotations) in &reference_details.cv_annotations {
+                for feat_annotation in feat_annotations.iter() {
+                    for detail in &feat_annotation.annotations {
+                        let gene_uniquename = detail.gene_uniquename.clone();
+                        let gene_short = self.make_gene_short(&gene_uniquename);
+                        seen_genes
+                            .entry(referenceid.clone())
+                            .or_insert(HashMap::new())
+                            .insert(gene_uniquename.clone(), gene_short);
+                    }
+                }
             }
         }
 
-        for (ref termid, ref mut reference_short_vec) in term_reference_short_map.drain() {
-            let mut term_details = self.terms.get_mut(termid).unwrap();
-            for reference_short in reference_short_vec {
-                term_details.references_by_uniquename
-                    .insert(reference_short.uniquename.clone(), reference_short.clone());
+        for (referenceid, reference_details) in &mut self.references {
+            if let Some(genes) = seen_genes.remove(referenceid) {
+                reference_details.genes_by_uniquename = genes;
             }
         }
     }
@@ -1338,7 +1359,10 @@ impl <'a> WebDataBuild<'a> {
         self.store_ont_annotations();
         self.process_cvtermpath();
         self.process_annotation_feature_rels();
-        self.set_genes_terms_refs();
+        self.set_term_references();
+        self.set_gene_references();
+        self.set_term_genes();
+        self.set_reference_genes();
 
         let mut web_data_terms: IdTermDetailsMap = HashMap::new();
 
