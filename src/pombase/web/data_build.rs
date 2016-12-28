@@ -1417,6 +1417,47 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    pub fn set_gene_counts(&mut self) {
+        let mut term_seen_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
+
+        for (termid, term_details) in &self.terms {
+            let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
+            for rel_annotation in &term_details.rel_annotations {
+                for annotation in &rel_annotation.annotations {
+                    if !annotation.is_not {
+                        seen_genes.insert(annotation.gene_uniquename.clone());
+                    }
+                }
+            }
+            term_seen_genes.insert(termid.clone(), seen_genes);
+        }
+
+        for (_, gene_details) in &mut self.genes {
+            for (_, feat_annotations) in &mut gene_details.cv_annotations {
+                for mut feat_annotation in feat_annotations.iter_mut() {
+                    feat_annotation.term.gene_count =
+                        term_seen_genes.get(&feat_annotation.term.termid).unwrap().len()
+                }
+            }
+        }
+
+        for (_, ref_details) in &mut self.references {
+            for (_, ref_annotations) in &mut ref_details.cv_annotations {
+                for ref_annotation in ref_annotations {
+                    ref_annotation.term.gene_count =
+                        term_seen_genes.get(&ref_annotation.term.termid).unwrap().len();
+                }
+            }
+        }
+
+        for (_, term_details) in &mut self.terms {
+            for rel_annotation in &mut term_details.rel_annotations {
+                rel_annotation.term.gene_count =
+                    term_seen_genes.get(&rel_annotation.term.termid).unwrap().len();
+            }
+        }
+    }
+
     pub fn get_web_data(&mut self) -> WebData {
         self.process_references();
         self.make_feature_rel_maps();
@@ -1438,6 +1479,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_reference_details_maps();
+        self.set_gene_counts();
 
         let mut web_data_terms: IdTermDetailsMap = HashMap::new();
 

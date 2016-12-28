@@ -441,7 +441,7 @@ fn test_term_gene_count() {
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0];
     let actual_count = first_annotation.term.clone().gene_count;
-    assert_eq!(actual_count, Some(1));
+    assert_eq!(actual_count, 1);
 }
 
 #[test]
