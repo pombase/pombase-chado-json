@@ -241,7 +241,8 @@ impl <'a> WebDataBuild<'a> {
                                        pubmed_publication_date: pubmed_publication_date.clone(),
                                        publication_year: publication_year,
                                        cv_annotations: HashMap::new(),
-                                       interaction_annotations: HashMap::new(),
+                                       physical_interactions: vec![],
+                                       genetic_interactions: vec![],
                                        ortholog_annotations: vec![],
                                        paralog_annotations: vec![],
                                        genes_by_uniquename: HashMap::new(),
@@ -342,10 +343,12 @@ impl <'a> WebDataBuild<'a> {
             gene_neighbourhood: vec![],
             cds_location: None,
             cv_annotations: HashMap::new(),
-            interaction_annotations: HashMap::new(),
+            physical_interactions: vec![],
+            genetic_interactions: vec![],
             ortholog_annotations: vec![],
             paralog_annotations: vec![],
             transcripts: vec![],
+            genes_by_uniquename: HashMap::new(),
             references_by_uniquename: HashMap::new(),
         };
 
@@ -598,10 +601,12 @@ impl <'a> WebDataBuild<'a> {
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0).clone();
-                        let maybe_reference_short = match maybe_publication {
-                            Some(publication) => self.make_reference_short(&publication.uniquename),
-                            None => None,
-                        };
+                        let maybe_reference_uniquename =
+                            match maybe_publication {
+                                Some(publication) => Some(publication.uniquename.clone()),
+                                None => None,
+                            };
+
 
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
                             if prop.prop_type.name == "evidence" {
@@ -611,14 +616,13 @@ impl <'a> WebDataBuild<'a> {
 
                         let evidence_clone = evidence.clone();
 
-                        let (gene, gene_organism_short) = {
-                            (self.make_gene_short(&subject_uniquename).clone(),
-                             self.genes.get(subject_uniquename).unwrap().organism.clone())
+                        let gene_uniquename = subject_uniquename;
+                        let gene_organism_short = {
+                            self.genes.get(subject_uniquename).unwrap().organism.clone()
                         };
-                        let gene_clone = gene.clone();
-                        let (other_gene, other_gene_organism_short) = {
-                            (self.make_gene_short(&object_uniquename).clone(),
-                             self.genes.get(object_uniquename).unwrap().organism.clone())
+                        let other_gene_uniquename = object_uniquename;
+                        let other_gene_organism_short = {
+                             self.genes.get(object_uniquename).unwrap().organism.clone()
                         };
                         {
                             let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
@@ -626,37 +630,52 @@ impl <'a> WebDataBuild<'a> {
                                 FeatureRelAnnotationType::Interaction => {
                                     let interaction_annotation =
                                         InteractionAnnotation {
-                                            gene: gene.clone(),
-                                            interactor: other_gene.clone(),
+                                            gene_uniquename: gene_uniquename.clone(),
+                                            interactor_uniquename: other_gene_uniquename.clone(),
                                             evidence: evidence,
-                                            reference: maybe_reference_short.clone(),
+                                            reference_uniquename: maybe_reference_uniquename.clone(),
                                         };
-                                    gene_details.interaction_annotations
-                                        .entry(rel_name.clone()).or_insert(Vec::new()).push(interaction_annotation.clone());
+                                    if rel_name == "interacts_physically" {
+                                        gene_details.physical_interactions.push(interaction_annotation.clone());
+                                    } else {
+                                        if rel_name == "interacts_genetically" {
+                                            gene_details.physical_interactions.push(interaction_annotation.clone());
+                                        } else {
+                                            panic!("unknown interaction type: {}", rel_name);
+                                        }
+                                    };
+
                                     if let Some(ref_details) =
-                                        if let Some(ref reference_short) = maybe_reference_short {
-                                            self.references.get_mut(&reference_short.uniquename)
+                                        if let Some(ref reference_uniquename) = maybe_reference_uniquename {
+                                            self.references.get_mut(reference_uniquename)
                                         } else {
                                             None
                                         }
                                     {
-                                        ref_details.interaction_annotations
-                                            .entry(rel_name.clone()).or_insert(Vec::new()).push(interaction_annotation);
+                                        if rel_name == "interacts_physically" {
+                                            ref_details.physical_interactions.push(interaction_annotation.clone());
+                                        } else {
+                                            if rel_name == "interacts_genetically" {
+                                                ref_details.physical_interactions.push(interaction_annotation.clone());
+                                            } else {
+                                                panic!("unknown interaction type: {}", rel_name);
+                                            }
+                                        };
                                     }
                                 },
                                 FeatureRelAnnotationType::Ortholog => {
                                     let ortholog_annotation =
                                         OrthologAnnotation {
-                                            gene: gene.clone(),
-                                            ortholog: other_gene.clone(),
+                                            gene_uniquename: gene_uniquename.clone(),
+                                            ortholog_uniquename: other_gene_uniquename.clone(),
                                             ortholog_organism: other_gene_organism_short,
                                             evidence: evidence,
-                                            reference: maybe_reference_short.clone(),
+                                            reference_uniquename: maybe_reference_uniquename.clone(),
                                         };
                                     gene_details.ortholog_annotations.push(ortholog_annotation.clone());
                                     if let Some(ref_details) =
-                                        if let Some(ref reference_short) = maybe_reference_short {
-                                            self.references.get_mut(&reference_short.uniquename)
+                                        if let Some(ref reference_uniquename) = maybe_reference_uniquename {
+                                            self.references.get_mut(reference_uniquename)
                                         } else {
                                             None
                                         }
@@ -667,15 +686,15 @@ impl <'a> WebDataBuild<'a> {
                                 FeatureRelAnnotationType::Paralog => {
                                     let paralog_annotation =
                                         ParalogAnnotation {
-                                            gene: gene.clone(),
-                                            paralog: other_gene.clone(),
+                                            gene_uniquename: gene_uniquename.clone(),
+                                            paralog_uniquename: other_gene_uniquename.clone(),
                                             evidence: evidence,
-                                            reference: maybe_reference_short.clone(),
+                                            reference_uniquename: maybe_reference_uniquename.clone(),
                                         };
                                     gene_details.paralog_annotations.push(paralog_annotation.clone());
                                     if let Some(ref_details) =
-                                        if let Some(ref reference_short) = maybe_reference_short {
-                                            self.references.get_mut(&reference_short.uniquename)
+                                        if let Some(ref reference_uniquename) = maybe_reference_uniquename {
+                                            self.references.get_mut(reference_uniquename)
                                         } else {
                                             None
                                         }
@@ -686,25 +705,26 @@ impl <'a> WebDataBuild<'a> {
                             }
                         }
                         {
+                            // for orthologs and paralogs, store the reverses annotation too
                             let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
                             match rel_config.annotation_type {
                                 FeatureRelAnnotationType::Interaction => {},
                                 FeatureRelAnnotationType::Ortholog =>
                                     other_gene_details.ortholog_annotations.push(
                                         OrthologAnnotation {
-                                            gene: other_gene,
-                                            ortholog: gene_clone,
+                                            gene_uniquename: other_gene_uniquename.clone(),
+                                            ortholog_uniquename: gene_uniquename.clone(),
                                             ortholog_organism: gene_organism_short,
                                             evidence: evidence_clone,
-                                            reference: maybe_reference_short.clone(),
+                                            reference_uniquename: maybe_reference_uniquename.clone(),
                                         }),
                                 FeatureRelAnnotationType::Paralog =>
                                     other_gene_details.paralog_annotations.push(
                                         ParalogAnnotation {
-                                            gene: other_gene,
-                                            paralog: gene_clone,
+                                            gene_uniquename: other_gene_uniquename.clone(),
+                                            paralog_uniquename: gene_uniquename.clone(),
                                             evidence: evidence_clone,
-                                            reference: maybe_reference_short,
+                                            reference_uniquename: maybe_reference_uniquename
                                         }),
                             }
                         }
@@ -713,17 +733,15 @@ impl <'a> WebDataBuild<'a> {
         }
 
         for (_, ref_details) in &mut self.references {
-            for (_, annotations) in &mut ref_details.interaction_annotations {
-                annotations.sort();
-            }
+            ref_details.physical_interactions.sort();
+            ref_details.genetic_interactions.sort();
             ref_details.ortholog_annotations.sort();
             ref_details.paralog_annotations.sort();
         }
 
         for (_, gene_details) in &mut self.genes {
-            for (_, annotations) in &mut gene_details.interaction_annotations {
-                annotations.sort();
-            }
+            gene_details.physical_interactions.sort();
+            gene_details.genetic_interactions.sort();
             gene_details.ortholog_annotations.sort();
             gene_details.paralog_annotations.sort();
         }
@@ -1238,12 +1256,23 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn set_term_references(&mut self) {
+    fn set_term_details_maps(&mut self) {
         type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
-        let mut seen_references: HashMap<TermId, ReferenceShortMap> = HashMap::new();
+        let mut seen_references: HashMap<TermId, ReferenceShortMap> =
+            HashMap::new();
+
+        type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
+        let mut seen_genes: HashMap<TermId, GeneShortMap> = HashMap::new();
+
         for (termid, term_details) in &self.terms {
             for rel_annotation in &term_details.rel_annotations {
                 for detail in &rel_annotation.annotations {
+                    let gene_uniquename = detail.gene_uniquename.clone();
+                    let gene_short = self.make_gene_short(&gene_uniquename);
+                    seen_genes
+                        .entry(termid.clone())
+                        .or_insert(HashMap::new())
+                        .insert(gene_uniquename.clone(), gene_short);
                     if let Some(ref reference_uniquename) = detail.reference_uniquename {
                         if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
                             seen_references
@@ -1258,53 +1287,72 @@ impl <'a> WebDataBuild<'a> {
         }
 
         for (termid, term_details) in &mut self.terms {
+            if let Some(genes) = seen_genes.remove(termid) {
+                term_details.genes_by_uniquename = genes;
+            }
             if let Some(references) = seen_references.remove(termid) {
                 term_details.references_by_uniquename = references;
             }
         }
     }
 
-    fn set_term_genes(&mut self) {
-        type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
-        let mut seen_genes: HashMap<TermId, GeneShortMap> = HashMap::new();
-        for (termid, term_details) in &self.terms {
-            for rel_annotation in &term_details.rel_annotations {
-                for detail in &rel_annotation.annotations {
-                    let gene_uniquename = detail.gene_uniquename.clone();
-                    let gene_short = self.make_gene_short(&gene_uniquename);
-                    seen_genes
-                        .entry(termid.clone())
-                        .or_insert(HashMap::new())
-                        .insert(gene_uniquename.clone(), gene_short);
-                }
-            }
-        }
-
-        for (termid, term_details) in &mut self.terms {
-            if let Some(genes) = seen_genes.remove(termid) {
-                term_details.genes_by_uniquename = genes;
-            }
-        }
-    }
-
-    fn set_gene_references(&mut self) {
+    fn set_gene_details_maps(&mut self) {
         type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
         let mut seen_references: HashMap<GeneUniquename, ReferenceShortMap> =
             HashMap::new();
-        for (gene_uniquename, gene_details) in &self.genes {
-            for (_, feat_annotations) in &gene_details.cv_annotations {
-                for feat_annotation in feat_annotations.iter() {
-                    for detail in &feat_annotation.annotations {
-                        if let Some(ref reference_uniquename) = detail.reference_uniquename {
-                            if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
-                                seen_references
-                                    .entry(gene_uniquename.clone())
-                                    .or_insert(HashMap::new())
-                                    .insert(reference_uniquename.clone(),
-                                            reference_short);
-                            }
+
+        type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
+        let mut seen_genes: HashMap<GeneUniquename, GeneShortMap> = HashMap::new();
+
+        {
+            let mut add_ref_to_hash =
+                |gene_uniquename: GeneUniquename, maybe_reference_uniquename: Option<ReferenceUniquename>| {
+                    if let Some(reference_uniquename) = maybe_reference_uniquename {
+                        if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
+                            seen_references
+                                .entry(gene_uniquename.clone())
+                                .or_insert(HashMap::new())
+                                .insert(reference_uniquename.clone(),
+                                        reference_short);
                         }
                     }
+                };
+
+            let mut add_gene_to_hash =
+                |gene_uniquename: GeneUniquename, other_gene_uniquename: GeneUniquename| {
+                    seen_genes
+                        .entry(gene_uniquename.clone())
+                        .or_insert(HashMap::new())
+                        .insert(other_gene_uniquename.clone(),
+                                self.make_gene_short(&other_gene_uniquename));
+                };
+
+            for (gene_uniquename, gene_details) in &self.genes {
+                for (_, feat_annotations) in &gene_details.cv_annotations {
+                    for feat_annotation in feat_annotations.iter() {
+                        for detail in &feat_annotation.annotations {
+                            add_ref_to_hash(gene_uniquename.clone(), detail.reference_uniquename.clone());
+                        }
+                    }
+                }
+
+                let interaction_iter =
+                    gene_details.physical_interactions.iter().chain(&gene_details.genetic_interactions);
+                for interaction in interaction_iter {
+                    add_ref_to_hash(gene_uniquename.clone(), interaction.reference_uniquename.clone());
+                    add_gene_to_hash(gene_uniquename.clone(), interaction.gene_uniquename.clone());
+                    add_gene_to_hash(gene_uniquename.clone(), interaction.interactor_uniquename.clone());
+                }
+
+                for ortholog_annotation in &gene_details.ortholog_annotations {
+                    add_ref_to_hash(gene_uniquename.clone(), ortholog_annotation.reference_uniquename.clone());
+                    add_gene_to_hash(gene_uniquename.clone(), ortholog_annotation.gene_uniquename.clone());
+                    add_gene_to_hash(gene_uniquename.clone(), ortholog_annotation.ortholog_uniquename.clone());
+                }
+                for paralog_annotation in &gene_details.paralog_annotations {
+                    add_ref_to_hash(gene_uniquename.clone(), paralog_annotation.reference_uniquename.clone());
+                    add_gene_to_hash(gene_uniquename.clone(), paralog_annotation.gene_uniquename.clone());
+                    add_gene_to_hash(gene_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
                 }
             }
         }
@@ -1313,29 +1361,57 @@ impl <'a> WebDataBuild<'a> {
             if let Some(references) = seen_references.remove(gene_uniquename) {
                 gene_details.references_by_uniquename = references;
             }
+            if let Some(genes) = seen_genes.remove(gene_uniquename) {
+                gene_details.genes_by_uniquename = genes;
+            }
         }
     }
 
-    fn set_reference_genes(&mut self) {
+    fn set_reference_details_maps(&mut self) {
         type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
         let mut seen_genes: HashMap<ReferenceUniquename, GeneShortMap> = HashMap::new();
-        for (referenceid, reference_details) in &self.references {
-            for (_, feat_annotations) in &reference_details.cv_annotations {
-                for feat_annotation in feat_annotations.iter() {
-                    for detail in &feat_annotation.annotations {
-                        let gene_uniquename = detail.gene_uniquename.clone();
-                        let gene_short = self.make_gene_short(&gene_uniquename);
-                        seen_genes
-                            .entry(referenceid.clone())
-                            .or_insert(HashMap::new())
-                            .insert(gene_uniquename.clone(), gene_short);
-                    }
+
+        {
+            let mut add_to_hash =
+                |reference_uniquename: ReferenceUniquename, gene_uniquename: GeneUniquename| {
+                    seen_genes
+                        .entry(reference_uniquename.clone())
+                        .or_insert(HashMap::new())
+                        .insert(gene_uniquename.clone(),
+                                self.make_gene_short(&gene_uniquename));
+                };
+
+            for (reference_uniquename, reference_details) in &self.references {
+                for (_, feat_annotations) in &reference_details.cv_annotations {
+                    for feat_annotation in feat_annotations.iter() {
+                        for detail in &feat_annotation.annotations {
+                            add_to_hash(reference_uniquename.clone(),
+                                        detail.gene_uniquename.clone());
+                        }
+                   }
                 }
+
+                let interaction_iter =
+                    reference_details.physical_interactions.iter().chain(&reference_details.genetic_interactions);
+                for interaction in interaction_iter {
+                    add_to_hash(reference_uniquename.clone(), interaction.gene_uniquename.clone());
+                    add_to_hash(reference_uniquename.clone(), interaction.interactor_uniquename.clone());
+                }
+
+                for ortholog_annotation in &reference_details.ortholog_annotations {
+                    add_to_hash(reference_uniquename.clone(), ortholog_annotation.gene_uniquename.clone());
+                    add_to_hash(reference_uniquename.clone(), ortholog_annotation.ortholog_uniquename.clone());
+                }
+                for paralog_annotation in &reference_details.paralog_annotations {
+                    add_to_hash(reference_uniquename.clone(), paralog_annotation.gene_uniquename.clone());
+                    add_to_hash(reference_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
+                }
+
             }
         }
 
-        for (referenceid, reference_details) in &mut self.references {
-            if let Some(genes) = seen_genes.remove(referenceid) {
+        for (reference_uniquename, reference_details) in &mut self.references {
+            if let Some(genes) = seen_genes.remove(reference_uniquename) {
                 reference_details.genes_by_uniquename = genes;
             }
         }
@@ -1359,10 +1435,9 @@ impl <'a> WebDataBuild<'a> {
         self.store_ont_annotations();
         self.process_cvtermpath();
         self.process_annotation_feature_rels();
-        self.set_term_references();
-        self.set_gene_references();
-        self.set_term_genes();
-        self.set_reference_genes();
+        self.set_term_details_maps();
+        self.set_gene_details_maps();
+        self.set_reference_details_maps();
 
         let mut web_data_terms: IdTermDetailsMap = HashMap::new();
 

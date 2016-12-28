@@ -176,7 +176,8 @@ pub struct ReferenceDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
     pub cv_annotations: OntAnnotationMap,
-    pub interaction_annotations: TypeInteractionAnnotationMap,
+    pub physical_interactions: Vec<InteractionAnnotation>,
+    pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
@@ -282,11 +283,14 @@ pub struct GeneDetails {
     pub gene_neighbourhood: Vec<GeneShort>,
     pub transcripts: Vec<TranscriptShort>,
     pub cv_annotations: OntAnnotationMap,
-    pub interaction_annotations: TypeInteractionAnnotationMap,
+    pub physical_interactions: Vec<InteractionAnnotation>,
+    pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
 //    pub terms_by_termid: HashMap<TermId, TermShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
+    // genes mentioned in orthologs, paralogs and interactions
+    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -364,12 +368,12 @@ pub struct TermDetails {
 
 #[derive(Serialize, Clone)]
 pub struct InteractionAnnotation {
-    pub gene: GeneShort,
-    pub interactor: GeneShort,
+    pub gene_uniquename: GeneUniquename,
+    pub interactor_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub reference: Option<ReferenceShort>,
+    pub reference_uniquename: Option<ReferenceUniquename>,
 }
 impl PartialEq for InteractionAnnotation {
     fn eq(&self, other: &Self) -> bool {
@@ -378,7 +382,8 @@ impl PartialEq for InteractionAnnotation {
                 return evidence == other_evidence;
             }
         }
-        (&self.gene, &self.interactor) == (&other.gene, &other.interactor)
+        (&self.gene_uniquename, &self.interactor_uniquename) ==
+            (&other.gene_uniquename, &other.interactor_uniquename)
     }
 }
 impl Eq for InteractionAnnotation { }
@@ -392,7 +397,8 @@ impl Ord for InteractionAnnotation {
                 }
             }
         }
-        (&self.gene, &self.interactor).cmp(&(&other.gene, &other.interactor))
+        (&self.gene_uniquename, &self.interactor_uniquename)
+            .cmp(&(&other.gene_uniquename, &other.interactor_uniquename))
     }
 }
 impl PartialOrd for InteractionAnnotation {
@@ -403,23 +409,25 @@ impl PartialOrd for InteractionAnnotation {
 
 #[derive(Serialize, Clone)]
 pub struct OrthologAnnotation {
-    pub gene: GeneShort,
+    pub gene_uniquename: GeneUniquename,
     pub ortholog_organism: OrganismShort,
-    pub ortholog: GeneShort,
+    pub ortholog_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub reference: Option<ReferenceShort>,
+    pub reference_uniquename: Option<ReferenceUniquename>,
 }
 impl PartialEq for OrthologAnnotation {
     fn eq(&self, other: &Self) -> bool {
-        (&self.gene, &self.ortholog) == (&other.gene, &other.ortholog)
+        (&self.gene_uniquename, &self.ortholog_uniquename) ==
+            (&other.gene_uniquename, &other.ortholog_uniquename)
     }
 }
 impl Eq for OrthologAnnotation { }
 impl Ord for OrthologAnnotation {
     fn cmp(&self, other: &Self) -> Ordering {
-        (&self.gene, &self.ortholog).cmp(&(&other.gene, &other.ortholog))
+        (&self.gene_uniquename, &self.ortholog_uniquename)
+            .cmp(&(&other.gene_uniquename, &other.ortholog_uniquename))
     }
 }
 impl PartialOrd for OrthologAnnotation {
@@ -430,22 +438,24 @@ impl PartialOrd for OrthologAnnotation {
 
 #[derive(Serialize, Clone)]
 pub struct ParalogAnnotation {
-    pub gene: GeneShort,
-    pub paralog: GeneShort,
+    pub gene_uniquename: GeneUniquename,
+    pub paralog_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub reference: Option<ReferenceShort>,
+    pub reference_uniquename: Option<ReferenceUniquename>,
 }
 impl PartialEq for ParalogAnnotation {
     fn eq(&self, other: &Self) -> bool {
-        (&self.gene, &self.paralog) == (&other.gene, &other.paralog)
+        (&self.gene_uniquename, &self.paralog_uniquename) ==
+            (&other.gene_uniquename, &other.paralog_uniquename)
     }
 }
 impl Eq for ParalogAnnotation { }
 impl Ord for ParalogAnnotation {
     fn cmp(&self, other: &Self) -> Ordering {
-        (&self.gene, &self.paralog).cmp(&(&other.gene, &other.paralog))
+        (&self.gene_uniquename, &self.paralog_uniquename)
+            .cmp(&(&other.gene_uniquename, &other.paralog_uniquename))
     }
 }
 impl PartialOrd for ParalogAnnotation {
