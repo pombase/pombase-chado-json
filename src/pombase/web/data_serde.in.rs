@@ -167,6 +167,8 @@ pub struct ReferenceDetails {
     pub title: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub citation: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none", rename = "abstract")]
+    pub pubmed_abstract: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub authors: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]

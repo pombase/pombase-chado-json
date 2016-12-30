@@ -203,6 +203,7 @@ impl <'a> WebDataBuild<'a> {
 
             let mut pubmed_authors: Option<String> = None;
             let mut pubmed_publication_date: Option<String> = None;
+            let mut pubmed_abstract: Option<String> = None;
 
             for prop in rc_publication.publicationprops.borrow().iter() {
                 match &prop.prop_type.name as &str {
@@ -210,6 +211,8 @@ impl <'a> WebDataBuild<'a> {
                         pubmed_publication_date = Some(prop.value.clone()),
                     "pubmed_authors" =>
                         pubmed_authors = Some(prop.value.clone()),
+                    "pubmed_abstract" =>
+                        pubmed_abstract = Some(prop.value.clone()),
                     _ => ()
                 }
             }
@@ -236,6 +239,7 @@ impl <'a> WebDataBuild<'a> {
                                        uniquename: reference_uniquename.clone(),
                                        title: rc_publication.title.clone(),
                                        citation: rc_publication.miniref.clone(),
+                                       pubmed_abstract: pubmed_abstract.clone(),
                                        authors: pubmed_authors.clone(),
                                        authors_abbrev: authors_abbrev,
                                        pubmed_publication_date: pubmed_publication_date.clone(),
