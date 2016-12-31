@@ -250,6 +250,7 @@ impl <'a> WebDataBuild<'a> {
                                        ortholog_annotations: vec![],
                                        paralog_annotations: vec![],
                                        genes_by_uniquename: HashMap::new(),
+                                       terms_by_termid: HashMap::new(),
                                    });
         }
     }
@@ -354,6 +355,7 @@ impl <'a> WebDataBuild<'a> {
             transcripts: vec![],
             genes_by_uniquename: HashMap::new(),
             references_by_uniquename: HashMap::new(),
+            terms_by_termid: HashMap::new(),
         };
 
         self.genes.insert(feat.uniquename.clone(), gene_feature);
@@ -765,6 +767,7 @@ impl <'a> WebDataBuild<'a> {
                                       rel_annotations: vec![],
                                       genes_by_uniquename: HashMap::new(),
                                       references_by_uniquename: HashMap::new(),
+                                      terms_by_termid: HashMap::new(),
                                   });
             }
         }
@@ -778,7 +781,7 @@ impl <'a> WebDataBuild<'a> {
                         let ext_rel_name: &str = &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with("SP") {
-                            ExtRange::Gene(self.make_gene_short(&ext_range))
+                            ExtRange::Gene(ext_range)
                         } else {
                             ExtRange::Misc(ext_range)
                         };
@@ -806,12 +809,10 @@ impl <'a> WebDataBuild<'a> {
                     self.base_term_of_extensions.insert(subject_termid.clone(),
                                                         object_term.termid().clone());
                 } else {
-                    let object_term_short = self.make_term_short(&object_term.termid());
-
                     self.parts_of_extensions.entry(subject_termid)
                         .or_insert(Vec::new()).push(ExtPart {
                             rel_type_name: rel_type.name.clone(),
-                            ext_range: ExtRange::Term(object_term_short.clone()),
+                            ext_range: ExtRange::Term(object_term.termid().clone()),
                         });
                 }
             }
@@ -893,7 +894,7 @@ impl <'a> WebDataBuild<'a> {
 
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
-            let mut conditions: Vec<TermShort> = vec![];
+            let mut conditions: Vec<TermId> = vec![];
             let mut with_from: Option<GeneShort> = None;
             let mut qualifiers: Vec<Qualifier> = vec![];
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
@@ -907,7 +908,7 @@ impl <'a> WebDataBuild<'a> {
                     },
                     "condition" =>
                         if let Some(value) = prop.value.clone() {
-                            conditions.push(self.make_term_short(&value));
+                            conditions.push(value.clone());
                         },
                     "qualifier" =>
                         if let Some(value) = prop.value.clone() {
@@ -1051,16 +1052,25 @@ impl <'a> WebDataBuild<'a> {
                         .push(detail.clone());
                 }
 
-                for condition_term_short in &detail.conditions {
+                for condition_termid in &detail.conditions {
+                    let condition_term_short = {
+                        self.make_term_short(&condition_termid)
+                    };
                     if let Some(ref mut condition_term_details) =
-                        self.terms.get_mut(&condition_term_short.termid) {
-                            condition_term_details.rel_annotations.
-                                push(RelOntAnnotation {
+                        self.terms.get_mut(&condition_termid.clone())
+                    {
+                        if condition_term_details.rel_annotations.len() == 0 {
+                            condition_term_details.rel_annotations.push(
+                                RelOntAnnotation {
+                                    term: condition_term_short,
                                     rel_names: HashSet::new(),
-                                    term: condition_term_short.clone(),
-                                    annotations: vec![detail.clone()],
+                                    annotations: vec![],
                                 });
                         }
+                        if let Some(rel_annotation) = condition_term_details.rel_annotations.get_mut(0) {
+                            rel_annotation.annotations.push(detail.clone())
+                        }
+                    }
                 }
             }
         }
@@ -1268,28 +1278,65 @@ impl <'a> WebDataBuild<'a> {
         type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
         let mut seen_genes: HashMap<TermId, GeneShortMap> = HashMap::new();
 
+        // terms seen in annotations (conditions, extensions etc.)
+        type TermShortMap = HashMap<TermId, TermShort>;
+        let mut seen_terms: HashMap<TermId, TermShortMap> = HashMap::new();
+
+        {
+        let mut add_ref_to_hash =
+            |termid: TermId, maybe_reference_uniquename: Option<ReferenceUniquename>| {
+                if let Some(reference_uniquename) = maybe_reference_uniquename {
+                    if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
+                        seen_references
+                            .entry(termid.clone())
+                            .or_insert(HashMap::new())
+                            .insert(reference_uniquename.clone(),
+                                    reference_short);
+                    }
+                }
+            };
+
+        let mut add_gene_to_hash =
+            |termid: TermId, gene_uniquename: GeneUniquename| {
+                seen_genes
+                    .entry(termid.clone())
+                    .or_insert(HashMap::new())
+                    .insert(gene_uniquename.clone(),
+                            self.make_gene_short(&gene_uniquename));
+            };
+
+        let mut add_term_to_hash =
+            |termid: TermId, other_termid: TermId| {
+                seen_terms
+                    .entry(termid.clone())
+                    .or_insert(HashMap::new())
+                    .insert(other_termid.clone(),
+                            self.make_term_short(&other_termid));
+            };
+
         for (termid, term_details) in &self.terms {
             for rel_annotation in &term_details.rel_annotations {
                 for detail in &rel_annotation.annotations {
                     let gene_uniquename = detail.gene_uniquename.clone();
-                    let gene_short = self.make_gene_short(&gene_uniquename);
-                    seen_genes
-                        .entry(termid.clone())
-                        .or_insert(HashMap::new())
-                        .insert(gene_uniquename.clone(), gene_short);
-                    if let Some(ref reference_uniquename) = detail.reference_uniquename {
-                        if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
-                            seen_references
-                                .entry(termid.clone())
-                                .or_insert(HashMap::new())
-                                .insert(reference_uniquename.clone(),
-                                        reference_short);
+                    add_gene_to_hash(termid.clone(), gene_uniquename.clone());
+                    add_ref_to_hash(termid.clone(), detail.reference_uniquename.clone());
+                    for condition_termid in &detail.conditions {
+                        add_term_to_hash(termid.clone(), condition_termid.clone());
+                    }
+                    for ext_part in &detail.extension {
+                        match ext_part.ext_range {
+                            ExtRange::Term(ref range_termid) =>
+                                add_term_to_hash(termid.clone(), range_termid.clone()),
+                            ExtRange::Gene(ref gene_uniquename) =>
+                                add_gene_to_hash(termid.clone(), gene_uniquename.clone()),
+                            _ => {},
                         }
                     }
+
                 }
             }
         }
-
+}
         for (termid, term_details) in &mut self.terms {
             if let Some(genes) = seen_genes.remove(termid) {
                 term_details.genes_by_uniquename = genes;
@@ -1297,7 +1344,10 @@ impl <'a> WebDataBuild<'a> {
             if let Some(references) = seen_references.remove(termid) {
                 term_details.references_by_uniquename = references;
             }
-        }
+             if let Some(terms) = seen_terms.remove(termid) {
+                term_details.terms_by_termid = terms;
+            }
+       }
     }
 
     fn set_gene_details_maps(&mut self) {
@@ -1307,6 +1357,9 @@ impl <'a> WebDataBuild<'a> {
 
         type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
         let mut seen_genes: HashMap<GeneUniquename, GeneShortMap> = HashMap::new();
+
+        type TermShortMap = HashMap<TermId, TermShort>;
+        let mut seen_terms: HashMap<GeneUniquename, TermShortMap> = HashMap::new();
 
         {
             let mut add_ref_to_hash =
@@ -1331,11 +1384,32 @@ impl <'a> WebDataBuild<'a> {
                                 self.make_gene_short(&other_gene_uniquename));
                 };
 
+            let mut add_term_to_hash =
+                |gene_uniquename: GeneUniquename, other_termid: TermId| {
+                    seen_terms
+                        .entry(gene_uniquename.clone())
+                        .or_insert(HashMap::new())
+                        .insert(other_termid.clone(),
+                                self.make_term_short(&other_termid));
+                };
+
             for (gene_uniquename, gene_details) in &self.genes {
                 for (_, feat_annotations) in &gene_details.cv_annotations {
                     for feat_annotation in feat_annotations.iter() {
                         for detail in &feat_annotation.annotations {
                             add_ref_to_hash(gene_uniquename.clone(), detail.reference_uniquename.clone());
+                            for condition_termid in &detail.conditions {
+                                add_term_to_hash(gene_uniquename.clone(), condition_termid.clone());
+                            }
+                            for ext_part in &detail.extension {
+                                match ext_part.ext_range {
+                                    ExtRange::Term(ref range_termid) =>
+                                        add_term_to_hash(gene_uniquename.clone(), range_termid.clone()),
+                                    ExtRange::Gene(ref gene_uniquename) =>
+                                        add_gene_to_hash(gene_uniquename.clone(), gene_uniquename.clone()),
+                                    _ => {},
+                                }
+                            }
                         }
                     }
                 }
@@ -1368,6 +1442,9 @@ impl <'a> WebDataBuild<'a> {
             if let Some(genes) = seen_genes.remove(gene_uniquename) {
                 gene_details.genes_by_uniquename = genes;
             }
+            if let Some(terms) = seen_terms.remove(gene_uniquename) {
+                gene_details.terms_by_termid = terms;
+            }
         }
     }
 
@@ -1375,8 +1452,11 @@ impl <'a> WebDataBuild<'a> {
         type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
         let mut seen_genes: HashMap<ReferenceUniquename, GeneShortMap> = HashMap::new();
 
+        type TermShortMap = HashMap<TermId, TermShort>;
+        let mut seen_terms: HashMap<GeneUniquename, TermShortMap> = HashMap::new();
+
         {
-            let mut add_to_hash =
+            let mut add_gene_to_hash =
                 |reference_uniquename: ReferenceUniquename, gene_uniquename: GeneUniquename| {
                     seen_genes
                         .entry(reference_uniquename.clone())
@@ -1385,12 +1465,33 @@ impl <'a> WebDataBuild<'a> {
                                 self.make_gene_short(&gene_uniquename));
                 };
 
+            let mut add_term_to_hash =
+                |reference_uniquename: ReferenceUniquename, other_termid: TermId| {
+                    seen_terms
+                        .entry(reference_uniquename.clone())
+                        .or_insert(HashMap::new())
+                        .insert(other_termid.clone(),
+                                self.make_term_short(&other_termid));
+                };
+
             for (reference_uniquename, reference_details) in &self.references {
                 for (_, feat_annotations) in &reference_details.cv_annotations {
                     for feat_annotation in feat_annotations.iter() {
                         for detail in &feat_annotation.annotations {
-                            add_to_hash(reference_uniquename.clone(),
-                                        detail.gene_uniquename.clone());
+                            add_gene_to_hash(reference_uniquename.clone(),
+                                             detail.gene_uniquename.clone());
+                            for condition_termid in &detail.conditions {
+                                add_term_to_hash(reference_uniquename.clone(), condition_termid.clone());
+                            }
+                            for ext_part in &detail.extension {
+                                match ext_part.ext_range {
+                                    ExtRange::Term(ref range_termid) =>
+                                        add_term_to_hash(reference_uniquename.clone(), range_termid.clone()),
+                                    ExtRange::Gene(ref gene_uniquename) =>
+                                        add_gene_to_hash(reference_uniquename.clone(), gene_uniquename.clone()),
+                                    _ => {},
+                                }
+                            }
                         }
                    }
                 }
@@ -1398,17 +1499,17 @@ impl <'a> WebDataBuild<'a> {
                 let interaction_iter =
                     reference_details.physical_interactions.iter().chain(&reference_details.genetic_interactions);
                 for interaction in interaction_iter {
-                    add_to_hash(reference_uniquename.clone(), interaction.gene_uniquename.clone());
-                    add_to_hash(reference_uniquename.clone(), interaction.interactor_uniquename.clone());
+                    add_gene_to_hash(reference_uniquename.clone(), interaction.gene_uniquename.clone());
+                    add_gene_to_hash(reference_uniquename.clone(), interaction.interactor_uniquename.clone());
                 }
 
                 for ortholog_annotation in &reference_details.ortholog_annotations {
-                    add_to_hash(reference_uniquename.clone(), ortholog_annotation.gene_uniquename.clone());
-                    add_to_hash(reference_uniquename.clone(), ortholog_annotation.ortholog_uniquename.clone());
+                    add_gene_to_hash(reference_uniquename.clone(), ortholog_annotation.gene_uniquename.clone());
+                    add_gene_to_hash(reference_uniquename.clone(), ortholog_annotation.ortholog_uniquename.clone());
                 }
                 for paralog_annotation in &reference_details.paralog_annotations {
-                    add_to_hash(reference_uniquename.clone(), paralog_annotation.gene_uniquename.clone());
-                    add_to_hash(reference_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
+                    add_gene_to_hash(reference_uniquename.clone(), paralog_annotation.gene_uniquename.clone());
+                    add_gene_to_hash(reference_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
                 }
 
             }
@@ -1417,6 +1518,9 @@ impl <'a> WebDataBuild<'a> {
         for (reference_uniquename, reference_details) in &mut self.references {
             if let Some(genes) = seen_genes.remove(reference_uniquename) {
                 reference_details.genes_by_uniquename = genes;
+            }
+            if let Some(terms) = seen_terms.remove(reference_uniquename) {
+                reference_details.terms_by_termid = terms;
             }
         }
     }

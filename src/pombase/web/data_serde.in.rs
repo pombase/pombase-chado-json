@@ -6,10 +6,10 @@ use std::collections::HashSet;
 
 #[derive(Serialize, Clone)]
 pub enum ExtRange {
-#[serde(rename = "gene")]
-    Gene(GeneShort),
-#[serde(rename = "term")]
-    Term(TermShort),
+#[serde(rename = "gene_uniquename")]
+    Gene(GeneUniquename),
+#[serde(rename = "termid")]
+    Term(TermId),
 #[serde(rename = "misc")]
     Misc(String),
 }
@@ -183,7 +183,7 @@ pub struct ReferenceDetails {
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
-//    pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -210,7 +210,8 @@ pub struct OntAnnotationDetail {
     // only for genotype/phenotype annotation:
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype: Option<GenotypeShort>,
-    pub conditions: Vec<TermShort>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub conditions: Vec<TermId>,
     pub is_not: bool,
 }
 
@@ -289,10 +290,10 @@ pub struct GeneDetails {
     pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
-//    pub terms_by_termid: HashMap<TermId, TermShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     // genes mentioned in orthologs, paralogs and interactions
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -366,6 +367,7 @@ pub struct TermDetails {
     pub rel_annotations: Vec<RelOntAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
+    pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
 #[derive(Serialize, Clone)]
