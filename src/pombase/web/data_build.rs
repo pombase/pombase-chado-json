@@ -402,7 +402,7 @@ impl <'a> WebDataBuild<'a> {
         let allele_details = AlleleShort {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
-            gene: self.make_gene_short(&gene_uniquename),
+            gene_uniquename: gene_uniquename.clone(),
             allele_type: allele_type.unwrap(),
             description: description,
         };
@@ -956,7 +956,7 @@ impl <'a> WebDataBuild<'a> {
                         maybe_genotype_short = Some(genotype_short.clone());
                         genotype_short.expressed_alleles.iter()
                             .map(|expressed_allele| {
-                                expressed_allele.allele.gene.uniquename.clone()
+                                expressed_allele.allele.gene_uniquename.clone()
                             })
                             .collect()
                     },
@@ -1327,12 +1327,19 @@ impl <'a> WebDataBuild<'a> {
                         match ext_part.ext_range {
                             ExtRange::Term(ref range_termid) =>
                                 add_term_to_hash(termid.clone(), range_termid.clone()),
-                            ExtRange::Gene(ref gene_uniquename) =>
-                                add_gene_to_hash(termid.clone(), gene_uniquename.clone()),
+                            ExtRange::Gene(ref allele_gene_uniquename) =>
+                                add_gene_to_hash(termid.clone(),
+                                                 allele_gene_uniquename.clone()),
                             _ => {},
                         }
                     }
-
+                    if let Some(ref genotype) = detail.genotype {
+                        for expressed_allele in &genotype.expressed_alleles {
+                            let allele_gene_uniquename =
+                                expressed_allele.allele.gene_uniquename.clone();
+                            add_gene_to_hash(termid.clone(), allele_gene_uniquename);
+                        }
+                    }
                 }
             }
         }
@@ -1405,9 +1412,17 @@ impl <'a> WebDataBuild<'a> {
                                 match ext_part.ext_range {
                                     ExtRange::Term(ref range_termid) =>
                                         add_term_to_hash(gene_uniquename.clone(), range_termid.clone()),
-                                    ExtRange::Gene(ref gene_uniquename) =>
-                                        add_gene_to_hash(gene_uniquename.clone(), gene_uniquename.clone()),
+                                    ExtRange::Gene(ref allele_gene_uniquename) =>
+                                        add_gene_to_hash(gene_uniquename.clone(),
+                                                         allele_gene_uniquename.clone()),
                                     _ => {},
+                                }
+                            }
+                            if let Some(ref genotype) = detail.genotype {
+                                for expressed_allele in &genotype.expressed_alleles {
+                                    let allele_gene_uniquename =
+                                        expressed_allele.allele.gene_uniquename.clone();
+                                    add_gene_to_hash(gene_uniquename.clone(), allele_gene_uniquename);
                                 }
                             }
                         }
@@ -1487,9 +1502,17 @@ impl <'a> WebDataBuild<'a> {
                                 match ext_part.ext_range {
                                     ExtRange::Term(ref range_termid) =>
                                         add_term_to_hash(reference_uniquename.clone(), range_termid.clone()),
-                                    ExtRange::Gene(ref gene_uniquename) =>
-                                        add_gene_to_hash(reference_uniquename.clone(), gene_uniquename.clone()),
+                                    ExtRange::Gene(ref allele_gene_uniquename) =>
+                                        add_gene_to_hash(reference_uniquename.clone(),
+                                                         allele_gene_uniquename.clone()),
                                     _ => {},
+                                }
+                            }
+                            if let Some(ref genotype) = detail.genotype {
+                                for expressed_allele in &genotype.expressed_alleles {
+                                    let allele_gene_uniquename =
+                                        expressed_allele.allele.gene_uniquename.clone();
+                                    add_gene_to_hash(reference_uniquename.clone(), allele_gene_uniquename);
                                 }
                             }
                         }
