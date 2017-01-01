@@ -250,6 +250,7 @@ impl <'a> WebDataBuild<'a> {
                                        ortholog_annotations: vec![],
                                        paralog_annotations: vec![],
                                        genes_by_uniquename: HashMap::new(),
+                                       alleles_by_uniquename: HashMap::new(),
                                        terms_by_termid: HashMap::new(),
                                    });
         }
@@ -354,6 +355,7 @@ impl <'a> WebDataBuild<'a> {
             paralog_annotations: vec![],
             transcripts: vec![],
             genes_by_uniquename: HashMap::new(),
+            alleles_by_uniquename: HashMap::new(),
             references_by_uniquename: HashMap::new(),
             terms_by_termid: HashMap::new(),
         };
@@ -577,7 +579,7 @@ impl <'a> WebDataBuild<'a> {
                 allele_uniquenames.iter()
                 .map(|ref allele_and_expression| {
                     ExpressedAllele {
-                        allele: self.make_allele_short(&allele_and_expression.allele_uniquename),
+                        allele_uniquename: allele_and_expression.allele_uniquename.clone(),
                         expression: allele_and_expression.expression.clone(),
                     }
                 })
@@ -766,6 +768,7 @@ impl <'a> WebDataBuild<'a> {
                                       is_obsolete: cvterm.is_obsolete,
                                       rel_annotations: vec![],
                                       genes_by_uniquename: HashMap::new(),
+                                      alleles_by_uniquename: HashMap::new(),
                                       references_by_uniquename: HashMap::new(),
                                       terms_by_termid: HashMap::new(),
                                   });
@@ -956,7 +959,9 @@ impl <'a> WebDataBuild<'a> {
                         maybe_genotype_short = Some(genotype_short.clone());
                         genotype_short.expressed_alleles.iter()
                             .map(|expressed_allele| {
-                                expressed_allele.allele.gene_uniquename.clone()
+                                let allele_short =
+                                    self.make_allele_short(&expressed_allele.allele_uniquename);
+                                allele_short.gene_uniquename.clone()
                             })
                             .collect()
                     },
@@ -1278,6 +1283,9 @@ impl <'a> WebDataBuild<'a> {
         type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
         let mut seen_genes: HashMap<TermId, GeneShortMap> = HashMap::new();
 
+        type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
+        let mut seen_alleles: HashMap<TermId, AlleleShortMap> = HashMap::new();
+
         // terms seen in annotations (conditions, extensions etc.)
         type TermShortMap = HashMap<TermId, TermShort>;
         let mut seen_terms: HashMap<TermId, TermShortMap> = HashMap::new();
@@ -1303,6 +1311,16 @@ impl <'a> WebDataBuild<'a> {
                     .or_insert(HashMap::new())
                     .insert(gene_uniquename.clone(),
                             self.make_gene_short(&gene_uniquename));
+            };
+
+        let mut add_allele_to_hash =
+            |termid: TermId, allele_uniquename: AlleleUniquename| {
+                let allele_short = self.make_allele_short(&allele_uniquename);
+                seen_alleles
+                    .entry(termid.clone())
+                    .or_insert(HashMap::new())
+                    .insert(allele_uniquename.clone(), allele_short.clone());
+                allele_short
             };
 
         let mut add_term_to_hash =
@@ -1335,8 +1353,11 @@ impl <'a> WebDataBuild<'a> {
                     }
                     if let Some(ref genotype) = detail.genotype {
                         for expressed_allele in &genotype.expressed_alleles {
+                            let allele_short =
+                                add_allele_to_hash(termid.clone(),
+                                                   expressed_allele.allele_uniquename.clone());
                             let allele_gene_uniquename =
-                                expressed_allele.allele.gene_uniquename.clone();
+                                allele_short.gene_uniquename.clone();
                             add_gene_to_hash(termid.clone(), allele_gene_uniquename);
                         }
                     }
@@ -1347,6 +1368,9 @@ impl <'a> WebDataBuild<'a> {
         for (termid, term_details) in &mut self.terms {
             if let Some(genes) = seen_genes.remove(termid) {
                 term_details.genes_by_uniquename = genes;
+            }
+            if let Some(alleles) = seen_alleles.remove(termid) {
+                term_details.alleles_by_uniquename = alleles;
             }
             if let Some(references) = seen_references.remove(termid) {
                 term_details.references_by_uniquename = references;
@@ -1364,6 +1388,9 @@ impl <'a> WebDataBuild<'a> {
 
         type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
         let mut seen_genes: HashMap<GeneUniquename, GeneShortMap> = HashMap::new();
+
+        type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
+        let mut seen_alleles: HashMap<TermId, AlleleShortMap> = HashMap::new();
 
         type TermShortMap = HashMap<TermId, TermShort>;
         let mut seen_terms: HashMap<GeneUniquename, TermShortMap> = HashMap::new();
@@ -1389,6 +1416,16 @@ impl <'a> WebDataBuild<'a> {
                         .or_insert(HashMap::new())
                         .insert(other_gene_uniquename.clone(),
                                 self.make_gene_short(&other_gene_uniquename));
+                };
+
+            let mut add_allele_to_hash =
+                |gene_uniquename: GeneUniquename, allele_uniquename: AlleleUniquename| {
+                    let allele_short = self.make_allele_short(&allele_uniquename);
+                    seen_alleles
+                        .entry(gene_uniquename.clone())
+                        .or_insert(HashMap::new())
+                        .insert(allele_uniquename.clone(), allele_short.clone());
+                    allele_short
                 };
 
             let mut add_term_to_hash =
@@ -1420,8 +1457,11 @@ impl <'a> WebDataBuild<'a> {
                             }
                             if let Some(ref genotype) = detail.genotype {
                                 for expressed_allele in &genotype.expressed_alleles {
+                                    let allele_short =
+                                        add_allele_to_hash(gene_uniquename.clone(),
+                                                           expressed_allele.allele_uniquename.clone());
                                     let allele_gene_uniquename =
-                                        expressed_allele.allele.gene_uniquename.clone();
+                                        allele_short.gene_uniquename.clone();
                                     add_gene_to_hash(gene_uniquename.clone(), allele_gene_uniquename);
                                 }
                             }
@@ -1454,6 +1494,9 @@ impl <'a> WebDataBuild<'a> {
             if let Some(references) = seen_references.remove(gene_uniquename) {
                 gene_details.references_by_uniquename = references;
             }
+            if let Some(alleles) = seen_alleles.remove(gene_uniquename) {
+                gene_details.alleles_by_uniquename = alleles;
+            }
             if let Some(genes) = seen_genes.remove(gene_uniquename) {
                 gene_details.genes_by_uniquename = genes;
             }
@@ -1467,6 +1510,9 @@ impl <'a> WebDataBuild<'a> {
         type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
         let mut seen_genes: HashMap<ReferenceUniquename, GeneShortMap> = HashMap::new();
 
+        type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
+        let mut seen_alleles: HashMap<TermId, AlleleShortMap> = HashMap::new();
+
         type TermShortMap = HashMap<TermId, TermShort>;
         let mut seen_terms: HashMap<GeneUniquename, TermShortMap> = HashMap::new();
 
@@ -1478,6 +1524,16 @@ impl <'a> WebDataBuild<'a> {
                         .or_insert(HashMap::new())
                         .insert(gene_uniquename.clone(),
                                 self.make_gene_short(&gene_uniquename));
+                };
+
+            let mut add_allele_to_hash =
+                |reference_uniquename: ReferenceUniquename, allele_uniquename: AlleleUniquename| {
+                    let allele_short = self.make_allele_short(&allele_uniquename);
+                    seen_alleles
+                        .entry(reference_uniquename.clone())
+                        .or_insert(HashMap::new())
+                        .insert(allele_uniquename.clone(), allele_short.clone());
+                    allele_short
                 };
 
             let mut add_term_to_hash =
@@ -1510,8 +1566,11 @@ impl <'a> WebDataBuild<'a> {
                             }
                             if let Some(ref genotype) = detail.genotype {
                                 for expressed_allele in &genotype.expressed_alleles {
+                                    let allele_short =
+                                        add_allele_to_hash(reference_uniquename.clone(),
+                                                           expressed_allele.allele_uniquename.clone());
                                     let allele_gene_uniquename =
-                                        expressed_allele.allele.gene_uniquename.clone();
+                                        allele_short.gene_uniquename.clone();
                                     add_gene_to_hash(reference_uniquename.clone(), allele_gene_uniquename);
                                 }
                             }
@@ -1541,6 +1600,9 @@ impl <'a> WebDataBuild<'a> {
         for (reference_uniquename, reference_details) in &mut self.references {
             if let Some(genes) = seen_genes.remove(reference_uniquename) {
                 reference_details.genes_by_uniquename = genes;
+            }
+            if let Some(alleles) = seen_alleles.remove(reference_uniquename) {
+                reference_details.alleles_by_uniquename = alleles;
             }
             if let Some(terms) = seen_terms.remove(reference_uniquename) {
                 reference_details.terms_by_termid = terms;

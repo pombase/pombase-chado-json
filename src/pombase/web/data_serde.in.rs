@@ -183,6 +183,7 @@ pub struct ReferenceDetails {
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
@@ -293,6 +294,7 @@ pub struct GeneDetails {
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     // genes mentioned in orthologs, paralogs and interactions
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
@@ -319,7 +321,7 @@ pub struct GenotypeShort {
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<String>,
-    pub allele: AlleleShort,
+    pub allele_uniquename: AlleleUniquename,
 }
 
 #[derive(Serialize, Clone)]
@@ -366,6 +368,7 @@ pub struct TermDetails {
     pub is_obsolete: bool,
     pub rel_annotations: Vec<RelOntAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
