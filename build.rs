@@ -10,4 +10,9 @@ fn main() {
     let dst = Path::new(&out_dir).join("data_serde.rs");
 
     serde_codegen::expand(&src, &dst).unwrap();
+
+    let src = Path::new("src/pombase/config_serde.in.rs");
+    let dst = Path::new(&out_dir).join("config_serde.rs");
+
+    serde_codegen::expand(&src, &dst).unwrap();
 }

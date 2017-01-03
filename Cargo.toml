@@ -19,6 +19,7 @@ path = "tests/test.rs"
 [dependencies]
 serde = "0.8"
 serde_json = "0.8"
+serde_yaml = "0.5"
 getopts = "*"
 regex = "0.1"
 

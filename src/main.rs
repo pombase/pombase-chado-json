@@ -4,13 +4,16 @@ extern crate getopts;
 #[macro_use]
 extern crate serde;
 extern crate serde_json;
+extern crate serde_yaml;
 
 use postgres::{Connection, TlsMode};
 
 use std::env;
 use getopts::Options;
-use std::fs;
 use std::process;
+use std::fs;
+use std::fs::File;
+use std::io::BufReader;
 
 extern crate pombase;
 
@@ -19,6 +22,8 @@ use pombase::web::data_build::*;
 
 const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+
+include!(concat!(env!("OUT_DIR"), "/config_serde.rs"));
 
 fn make_subdirs(output_dir: &str) {
     let subdirs = vec!["gene", "term", "reference"];
@@ -36,6 +41,25 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
+fn read_config(config_file_name: &str) -> Config {
+    let file = match File::open(config_file_name) {
+        Ok(file) => file,
+        Err(err) => {
+            print!("Failed to read {}: {}\n", config_file_name, err);
+            process::exit(1);
+        }
+    };
+    let reader = BufReader::new(file);
+
+    match serde_yaml::from_reader(reader) {
+        Ok(config) => config,
+        Err(err) => {
+            print!("failed to parse {}: {}", config_file_name, err);
+            process::exit(1);
+        },
+    }
+}
+
 fn main() {
     print!("{} v{}\n", PKG_NAME, VERSION);
 
@@ -43,7 +67,8 @@ fn main() {
     let mut opts = Options::new();
 
     opts.optflag("h", "help", "print this help message");
-    opts.optopt("c", "connection-string",
+    opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
+    opts.optopt("p", "postgresql-connection-string",
                 "PostgresSQL connection string like: postgres://user:pass@host/db_name",
                 "CONN_STR");
     opts.optopt("d", "output-directory",
@@ -65,8 +90,13 @@ fn main() {
         process::exit(0);
     }
 
-    if !matches.opt_present("connection-string") {
-        print!("no -c|--connection-string option\n");
+    if !matches.opt_present("config-file") {
+        print!("no -c|--config-file option\n");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
+    if !matches.opt_present("postgresql-connection-string") {
+        print!("no -p|--postgresql-connection-string option\n");
         print_usage(&program, opts);
         process::exit(1);
     }
@@ -81,7 +111,8 @@ fn main() {
         process::exit(1);
     }
 
-    let connection_string = matches.opt_str("c").unwrap();
+    let config = read_config(&matches.opt_str("c").unwrap());
+    let connection_string = matches.opt_str("p").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
     let organism_genus_species = matches.opt_str("O").unwrap();
 
