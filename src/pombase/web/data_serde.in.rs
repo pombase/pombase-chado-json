@@ -238,7 +238,7 @@ impl Hash for OntTermAnnotations {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, PartialEq, Eq, Hash)]
 pub struct TargetOfAnnotation {
     pub ontology_name: String,
     pub ext_rel_display_name: String,

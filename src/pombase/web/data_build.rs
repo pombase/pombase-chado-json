@@ -809,7 +809,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_target_of_annotations(&mut self) {
-        let mut target_of_annotations: HashMap<GeneUniquename, Vec<TargetOfAnnotation>> =
+        let mut target_of_annotations: HashMap<GeneUniquename, HashSet<TargetOfAnnotation>> =
             HashMap::new();
 
         for (gene_uniquename, gene_details) in &self.genes {
@@ -823,17 +823,17 @@ impl <'a> WebDataBuild<'a> {
                         for (target_gene_uniquename, new_annotation) in new_annotations {
                             target_of_annotations
                                 .entry(target_gene_uniquename.clone())
-                                .or_insert(vec![])
-                                .push(new_annotation);
+                                .or_insert(HashSet::new())
+                                .insert(new_annotation);
                         }
                     }
                 }
             }
         }
 
-        for (gene_uniquename, target_of_annotations) in target_of_annotations {
+        for (gene_uniquename, mut target_of_annotations) in target_of_annotations {
             let mut gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
-            gene_details.target_of = target_of_annotations;
+            gene_details.target_of = target_of_annotations.drain().collect();
         }
     }
 
