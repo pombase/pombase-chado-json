@@ -395,8 +395,10 @@ fn get_test_raw() -> Raw {
 
 fn get_test_web_data() -> WebData {
     let raw = get_test_raw();
-
-    let mut web_data_build = WebDataBuild::new(&raw);
+    let config = Config {
+        extensions: vec![],
+    };
+    let mut web_data_build = WebDataBuild::new(&raw, &config);
     web_data_build.get_web_data()
 }
 

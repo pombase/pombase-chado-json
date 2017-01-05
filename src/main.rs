@@ -23,8 +23,6 @@ use pombase::web::data_build::*;
 const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
-include!(concat!(env!("OUT_DIR"), "/config_serde.rs"));
-
 fn make_subdirs(output_dir: &str) {
     let subdirs = vec!["gene", "term", "reference"];
 
@@ -121,7 +119,7 @@ fn main() {
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
 
     let raw = Raw::new(&conn);
-    let mut web_data_build = WebDataBuild::new(&raw);
+    let mut web_data_build = WebDataBuild::new(&raw, &config);
     let web_data = web_data_build.get_web_data();
 
     web_data.write(&output_dir, &organism_genus_species);

@@ -10,6 +10,8 @@ use db::*;
 use web::data::*;
 use web::config::*;
 
+include!(concat!(env!("OUT_DIR"), "/config_serde.rs"));
+
 fn make_organism_short(rc_organism: &Rc<Organism>) -> OrganismShort {
     OrganismShort {
         genus: rc_organism.genus.clone(),
@@ -25,6 +27,7 @@ pub struct AlleleAndExpression {
 
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
+    config: &'a Config,
 
     genes: UniquenameGeneMap,
     transcripts: UniquenameTranscriptMap,
@@ -61,9 +64,10 @@ fn is_gene_type(feature_type_name: &str) -> bool {
 }
 
 impl <'a> WebDataBuild<'a> {
-    pub fn new(raw: &'a Raw) -> WebDataBuild<'a> {
+    pub fn new(raw: &'a Raw, config: &'a Config) -> WebDataBuild<'a> {
         WebDataBuild {
             raw: raw,
+            config: config,
 
             genes: HashMap::new(),
             transcripts: HashMap::new(),
@@ -457,13 +461,12 @@ impl <'a> WebDataBuild<'a> {
             let rel_term_name =
                 self.make_term_short(&rel_termid).name;
 
-            if let Some(interesting_parent) =
-                self.is_interesting_parent(&object_termid, &rel_term_name) {
-                    interesting_parents_by_termid
-                        .entry(subject_termid.clone())
-                        .or_insert(HashSet::new())
-                        .insert(interesting_parent.termid.into());
-                };
+            if self.is_interesting_parent(&object_termid, &rel_term_name) {
+                interesting_parents_by_termid
+                    .entry(subject_termid.clone())
+                    .or_insert(HashSet::new())
+                    .insert(object_termid.into());
+            };
         }
 
         for (termid, interesting_parents) in interesting_parents_by_termid {
@@ -1128,17 +1131,23 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn is_interesting_parent(&self, termid: &str, rel_name: &str)
-                             -> Option<InterestingParent>
-    {
+    fn is_interesting_parent(&self, termid: &str, rel_name: &str) -> bool {
         for parent_conf in INTERESTING_PARENTS.iter() {
             if parent_conf.termid == termid &&
                 parent_conf.rel_name == rel_name {
-                    return Some((*parent_conf).clone());
+                    return true;
                 }
         }
 
-        None
+        for ext_conf in &self.config.extensions {
+            if let Some(ref conf_termid) = ext_conf.if_descendent_of {
+                if conf_termid == termid && rel_name == "is_a" {
+                    return true;
+                }
+            }
+        }
+
+        false
     }
 
     fn process_cvtermpath(&mut self) {
