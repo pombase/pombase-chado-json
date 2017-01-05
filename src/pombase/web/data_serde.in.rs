@@ -239,6 +239,14 @@ impl Hash for OntTermAnnotations {
 }
 
 #[derive(Serialize, Clone)]
+pub struct TargetOfAnnotation {
+    pub ontology_name: String,
+    pub ext_rel_display_name: String,
+    pub gene_uniquename: GeneUniquename,
+    pub reference_uniquename: Option<ReferenceUniquename>,
+}
+
+#[derive(Serialize, Clone)]
 pub struct SynonymDetails {
     pub name: String,
     #[serde(rename = "type")]
@@ -291,6 +299,7 @@ pub struct GeneDetails {
     pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
+    pub target_of: Vec<TargetOfAnnotation>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     // genes mentioned in orthologs, paralogs and interactions
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,

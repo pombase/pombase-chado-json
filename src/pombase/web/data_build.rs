@@ -357,6 +357,7 @@ impl <'a> WebDataBuild<'a> {
             genetic_interactions: vec![],
             ortholog_annotations: vec![],
             paralog_annotations: vec![],
+            target_of: vec![],
             transcripts: vec![],
             genes_by_uniquename: HashMap::new(),
             alleles_by_uniquename: HashMap::new(),
@@ -755,6 +756,83 @@ impl <'a> WebDataBuild<'a> {
             gene_details.genetic_interactions.sort();
             gene_details.ortholog_annotations.sort();
             gene_details.paralog_annotations.sort();
+        }
+    }
+
+    fn matching_ext_config(&self, annotation_termid: &str,
+                           rel_type_name: &str) -> Option<ExtensionConfig> {
+        let ext_configs = &self.config.extensions;
+
+        let annotation_term_details = self.terms.get(annotation_termid).unwrap();
+
+        for ext_config in ext_configs {
+            if ext_config.rel_name == rel_type_name {
+                if let Some(if_descendent_of) = ext_config.if_descendent_of.clone() {
+                    if annotation_term_details.interesting_parents.contains(&if_descendent_of) {
+                        return Some((*ext_config).clone());
+                    }
+                }
+            }
+        }
+
+        None
+    }
+
+    // create and returns any TargetOfAnnotations implied by the extension
+    fn make_target_of_for_ext(&self, cv_name: &String,
+                              gene_uniquename: &String,
+                              reference_uniquename: &Option<String>,
+                              annotation_termid: &String,
+                              extension: &Vec<ExtPart>) -> Vec<(GeneUniquename, TargetOfAnnotation)> {
+        let mut ret_vec = vec![];
+
+        for ext_part in extension {
+            let maybe_ext_config =
+                self.matching_ext_config(annotation_termid, &ext_part.rel_type_name);
+            if let ExtRange::Gene(ref target_gene_uniquename) = ext_part.ext_range {
+                if let Some(ext_config) = maybe_ext_config {
+                    ret_vec.push(((*target_gene_uniquename).clone(),
+                                  TargetOfAnnotation {
+                                      ontology_name: cv_name.clone(),
+                                      ext_rel_display_name: ext_config.display_name,
+                                      gene_uniquename: gene_uniquename.clone(),
+                                      reference_uniquename: reference_uniquename.clone(),
+                                  }));
+                }
+            }
+        }
+
+        print!("ret: {}\n", ret_vec.len());
+
+        ret_vec
+    }
+
+    fn add_target_of_annotations(&mut self) {
+        let mut target_of_annotations: HashMap<GeneUniquename, Vec<TargetOfAnnotation>> =
+            HashMap::new();
+
+        for (gene_uniquename, gene_details) in &self.genes {
+            for (cv_name, feat_annotations) in &gene_details.cv_annotations {
+                for feat_annotation in feat_annotations.iter() {
+                    for detail in &feat_annotation.annotations {
+                        let new_annotations =
+                            self.make_target_of_for_ext(&cv_name, &gene_uniquename,
+                                                        &detail.reference_uniquename,
+                                                        &feat_annotation.term.termid, &detail.extension);
+                        for (target_gene_uniquename, new_annotation) in new_annotations {
+                            target_of_annotations
+                                .entry(target_gene_uniquename.clone())
+                                .or_insert(vec![])
+                                .push(new_annotation);
+                        }
+                    }
+                }
+            }
+        }
+
+        for (gene_uniquename, target_of_annotations) in target_of_annotations {
+            let mut gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
+            gene_details.target_of = target_of_annotations;
         }
     }
 
@@ -1678,6 +1756,7 @@ impl <'a> WebDataBuild<'a> {
         self.store_ont_annotations();
         self.process_cvtermpath();
         self.process_annotation_feature_rels();
+        self.add_target_of_annotations();
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_reference_details_maps();
