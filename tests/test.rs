@@ -21,6 +21,7 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
         cv: cv.clone(),
         dbxref: dbxref.clone(),
         is_obsolete: false,
+        is_relationshiptype: false,
         cvtermprops: RefCell::new(vec![]),
     });
     cvterms.push(cvterm.clone());

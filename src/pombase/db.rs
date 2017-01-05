@@ -60,6 +60,7 @@ pub struct Cvterm {
     pub dbxref: Rc<Dbxref>,
     pub definition: Option<String>,
     pub is_obsolete: bool,
+    pub is_relationshiptype: bool,
     pub cvtermprops: RefCell<Vec<Rc<Cvtermprop>>>,
 }
 impl Cvterm {
@@ -253,18 +254,20 @@ impl Raw {
             dbxref_map.insert(dbxref_id, rc_dbxref);
         }
 
-        for row in &conn.query("SELECT cvterm_id, cv_id, dbxref_id, name, definition, is_obsolete FROM cvterm", &[]).unwrap() {
+        for row in &conn.query("SELECT cvterm_id, cv_id, dbxref_id, name, definition, is_obsolete, is_relationshiptype FROM cvterm", &[]).unwrap() {
             let cvterm_id: i32 = row.get(0);
             let cv_id: i32 = row.get(1);
             let dbxref_id: i32 = row.get(2);
             let name: String = row.get(3);
             let definition: Option<String> = row.get(4);
             let is_obsolete: i32 = row.get(5);
+            let is_relationshiptype: i32 = row.get(6);
             let cvterm = Cvterm {
                 cv: get_cv(&mut cv_map, cv_id),
                 dbxref: get_dbxref(&mut dbxref_map, dbxref_id),
                 name: name,
-                is_obsolete: is_obsolete == 1,
+                is_obsolete: is_obsolete != 0,
+                is_relationshiptype: is_relationshiptype != 0,
                 definition: definition,
                 cvtermprops: RefCell::new(vec![]),
             };
