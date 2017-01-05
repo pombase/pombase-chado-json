@@ -56,6 +56,9 @@ impl WebData {
     fn get_genes(&self) -> &IdGeneMap {
         &self.genes
     }
+    fn get_references(&self) -> &IdReferenceMap {
+        &self.references
+    }
     fn get_terms(&self) -> &IdTermDetailsMap {
         &self.terms
     }
@@ -125,14 +128,17 @@ impl WebData {
 
     pub fn write(&self, output_dir: &str, organism_genus_species: &str) {
         self.write_reference_details(output_dir);
+        println!("wrote {} references", self.get_references().len());
         self.write_gene_details(output_dir);
-        self.write_gene_summaries(output_dir, organism_genus_species);
-        self.write_terms(output_dir);
-        self.write_metadata(output_dir);
-        self.write_search_api_maps(output_dir);
-
         println!("wrote {} genes", self.get_genes().len());
+        self.write_gene_summaries(output_dir, organism_genus_species);
+        println!("wrote gene summaries");
+        self.write_terms(output_dir);
         println!("wrote {} terms", self.get_terms().len());
+        self.write_metadata(output_dir);
+        println!("wrote metadata");
+        self.write_search_api_maps(output_dir);
+        println!("wrote search data");
     }
 
     pub fn store_jsonb(&self, conn: &Connection) {
