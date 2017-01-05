@@ -17,6 +17,7 @@ pub enum ExtRange {
 #[derive(Serialize, Clone)]
 pub struct ExtPart {
     pub rel_type_name: String,
+    pub rel_type_display_name: String,
     pub ext_range: ExtRange,
 }
 

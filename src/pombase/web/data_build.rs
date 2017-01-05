@@ -763,16 +763,18 @@ impl <'a> WebDataBuild<'a> {
                            rel_type_name: &str) -> Option<ExtensionConfig> {
         let ext_configs = &self.config.extensions;
 
-        let annotation_term_details = self.terms.get(annotation_termid).unwrap();
-
-        for ext_config in ext_configs {
-            if ext_config.rel_name == rel_type_name {
-                if let Some(if_descendent_of) = ext_config.if_descendent_of.clone() {
-                    if annotation_term_details.interesting_parents.contains(&if_descendent_of) {
-                        return Some((*ext_config).clone());
+        if let Some(annotation_term_details) = self.terms.get(annotation_termid) {
+            for ext_config in ext_configs {
+                if ext_config.rel_name == rel_type_name {
+                    if let Some(if_descendent_of) = ext_config.if_descendent_of.clone() {
+                        if annotation_term_details.interesting_parents.contains(&if_descendent_of) {
+                            return Some((*ext_config).clone());
+                        }
                     }
                 }
             }
+        } else {
+            panic!("can't find details for term: {}\n", annotation_termid);
         }
 
         None
@@ -840,6 +842,7 @@ impl <'a> WebDataBuild<'a> {
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
+                print!("term: {}\n", cvterm.termid());
                 self.terms.insert(cvterm.termid(),
                                   TermDetails {
                                       name: cvterm.name.clone(),
@@ -858,12 +861,24 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn get_ext_rel_display_name(&self, annotation_termid: &String,
+                                ext_rel_name: &String) -> String {
+        if let Some(ext_conf) = self.matching_ext_config(annotation_termid, ext_rel_name) {
+            ext_conf.display_name.clone()
+        } else {
+            let re = Regex::new("_").unwrap();
+            re.replace_all(&ext_rel_name, " ")
+        }
+    }
+
     fn process_extension_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
                     if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
-                        let ext_rel_name: &str = &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
+                        let ext_rel_name_str =
+                            &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
+                        let ext_rel_name = String::from(ext_rel_name_str);
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with("SP") {
                             ExtRange::Gene(ext_range)
@@ -871,11 +886,20 @@ impl <'a> WebDataBuild<'a> {
                             ExtRange::Misc(ext_range)
                         };
 
-                        self.parts_of_extensions.entry(cvterm.termid())
-                            .or_insert(Vec::new()).push(ExtPart {
-                                rel_type_name: String::from(ext_rel_name),
-                                ext_range: range,
-                            });
+                        if let Some(base_termid) =
+                            self.base_term_of_extensions.get(&cvterm.termid()) {
+                                let rel_type_display_name =
+                                    self.get_ext_rel_display_name(&base_termid, &ext_rel_name);
+
+                                self.parts_of_extensions.entry(cvterm.termid())
+                                    .or_insert(Vec::new()).push(ExtPart {
+                                        rel_type_name: String::from(ext_rel_name),
+                                        rel_type_display_name: rel_type_display_name,
+                                        ext_range: range,
+                                    });
+                            } else {
+                                panic!("can't find details for term: {}\n", cvterm.termid());
+                            }
                     }
                 }
             }
@@ -893,12 +917,32 @@ impl <'a> WebDataBuild<'a> {
                 if rel_type.name == "is_a" {
                     self.base_term_of_extensions.insert(subject_termid.clone(),
                                                         object_term.termid().clone());
-                } else {
-                    self.parts_of_extensions.entry(subject_termid)
-                        .or_insert(Vec::new()).push(ExtPart {
-                            rel_type_name: rel_type.name.clone(),
-                            ext_range: ExtRange::Term(object_term.termid().clone()),
-                        });
+                }
+            }
+        }
+
+        for cvterm_rel in &self.raw.cvterm_relationships {
+            let subject_term = &cvterm_rel.subject;
+            let object_term = &cvterm_rel.object;
+            let rel_type = &cvterm_rel.rel_type;
+
+            if subject_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
+                let subject_termid = subject_term.termid();
+                if rel_type.name != "is_a" {
+                    if let Some(base_termid) =
+                        self.base_term_of_extensions.get(&subject_term.termid()) {
+                            let rel_type_display_name =
+                                self.get_ext_rel_display_name(base_termid, &rel_type.name);
+
+                            self.parts_of_extensions.entry(subject_termid)
+                                .or_insert(Vec::new()).push(ExtPart {
+                                    rel_type_name: rel_type.name.clone(),
+                                    rel_type_display_name: rel_type_display_name,
+                                    ext_range: ExtRange::Term(object_term.termid().clone()),
+                                });
+                        } else {
+                            panic!("can't find details for {}\n", object_term.termid());
+                        }
                 }
             }
         }
@@ -1756,8 +1800,8 @@ impl <'a> WebDataBuild<'a> {
         self.add_alleles_to_genotypes();
         self.process_cvterms();
         self.add_interesting_parents();
-        self.process_extension_cvterms();
         self.process_cvterm_rels();
+        self.process_extension_cvterms();
         self.process_feature_synonyms();
         self.process_feature_cvterms();
         self.store_ont_annotations();
