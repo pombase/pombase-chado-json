@@ -1575,6 +1575,12 @@ impl <'a> WebDataBuild<'a> {
                     add_gene_to_hash(gene_uniquename.clone(), paralog_annotation.gene_uniquename.clone());
                     add_gene_to_hash(gene_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
                 }
+                for target_of_annotation in &gene_details.target_of_annotations {
+                    add_gene_to_hash(gene_uniquename.clone(),
+                                     target_of_annotation.gene_uniquename.clone());
+                    add_ref_to_hash(gene_uniquename.clone(),
+                                    target_of_annotation.reference_uniquename.clone());
+                }
             }
         }
 
