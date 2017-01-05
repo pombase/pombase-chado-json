@@ -357,7 +357,7 @@ impl <'a> WebDataBuild<'a> {
             genetic_interactions: vec![],
             ortholog_annotations: vec![],
             paralog_annotations: vec![],
-            target_of: vec![],
+            target_of_annotations: vec![],
             transcripts: vec![],
             genes_by_uniquename: HashMap::new(),
             alleles_by_uniquename: HashMap::new(),
@@ -833,7 +833,7 @@ impl <'a> WebDataBuild<'a> {
 
         for (gene_uniquename, mut target_of_annotations) in target_of_annotations {
             let mut gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
-            gene_details.target_of = target_of_annotations.drain().collect();
+            gene_details.target_of_annotations = target_of_annotations.drain().collect();
         }
     }
 

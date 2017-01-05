@@ -299,7 +299,7 @@ pub struct GeneDetails {
     pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
-    pub target_of: Vec<TargetOfAnnotation>,
+    pub target_of_annotations: Vec<TargetOfAnnotation>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     // genes mentioned in orthologs, paralogs and interactions
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
