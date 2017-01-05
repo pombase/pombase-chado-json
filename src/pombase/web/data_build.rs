@@ -791,18 +791,19 @@ impl <'a> WebDataBuild<'a> {
                 self.matching_ext_config(annotation_termid, &ext_part.rel_type_name);
             if let ExtRange::Gene(ref target_gene_uniquename) = ext_part.ext_range {
                 if let Some(ext_config) = maybe_ext_config {
-                    ret_vec.push(((*target_gene_uniquename).clone(),
-                                  TargetOfAnnotation {
-                                      ontology_name: cv_name.clone(),
-                                      ext_rel_display_name: ext_config.display_name,
-                                      gene_uniquename: gene_uniquename.clone(),
-                                      reference_uniquename: reference_uniquename.clone(),
-                                  }));
+                    if let Some(reciprocal_display_name) =
+                        ext_config.reciprocal_display {
+                            ret_vec.push(((*target_gene_uniquename).clone(),
+                                          TargetOfAnnotation {
+                                              ontology_name: cv_name.clone(),
+                                              ext_rel_display_name: reciprocal_display_name,
+                                              gene_uniquename: gene_uniquename.clone(),
+                                              reference_uniquename: reference_uniquename.clone(),
+                                          }));
+                        }
                 }
             }
         }
-
-        print!("ret: {}\n", ret_vec.len());
 
         ret_vec
     }
