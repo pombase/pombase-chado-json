@@ -161,6 +161,7 @@ pub struct ReferenceShort {
     pub authors_abbrev: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
+    pub gene_count: usize,
 }
 
 #[derive(Serialize, Clone)]

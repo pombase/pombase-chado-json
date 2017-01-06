@@ -140,6 +140,7 @@ impl <'a> WebDataBuild<'a> {
                     publication_year: reference_details.publication_year.clone(),
                     authors: reference_details.authors.clone(),
                     authors_abbrev: reference_details.authors_abbrev.clone(),
+                    gene_count: reference_details.genes_by_uniquename.keys().len(),
                 };
 
             Some(reference_short)
@@ -1750,6 +1751,7 @@ impl <'a> WebDataBuild<'a> {
 
     pub fn set_gene_counts(&mut self) {
         let mut term_seen_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
+        let mut ref_seen_genes: HashMap<ReferenceUniquename, HashSet<GeneUniquename>> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
             let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
@@ -1763,6 +1765,26 @@ impl <'a> WebDataBuild<'a> {
             term_seen_genes.insert(termid.clone(), seen_genes);
         }
 
+        for (reference_uniquename, reference_details) in &self.references {
+            let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
+            for (_, rel_annotations) in &reference_details.cv_annotations {
+                for rel_annotation in rel_annotations {
+                    for annotation in &rel_annotation.annotations {
+                        if !annotation.is_not {
+                            seen_genes.insert(annotation.gene_uniquename.clone());
+                        }
+                    }
+                }
+            }
+            let interaction_iter =
+                reference_details.physical_interactions.iter().chain(&reference_details.genetic_interactions);
+            for interaction in interaction_iter {
+                seen_genes.insert(interaction.gene_uniquename.clone());
+                seen_genes.insert(interaction.interactor_uniquename.clone());
+            }
+            ref_seen_genes.insert(reference_uniquename.clone(), seen_genes);
+        }
+
         for (_, gene_details) in &mut self.genes {
             for (_, feat_annotations) in &mut gene_details.cv_annotations {
                 for mut feat_annotation in feat_annotations.iter_mut() {
@@ -1770,6 +1792,12 @@ impl <'a> WebDataBuild<'a> {
                         term_seen_genes.get(&feat_annotation.term.termid).unwrap().len()
                 }
             }
+
+            for (reference_uniquename, reference_short) in
+                &mut gene_details.references_by_uniquename {
+                    reference_short.gene_count =
+                        ref_seen_genes.get(reference_uniquename).unwrap().len();
+                }
         }
 
         for (_, ref_details) in &mut self.references {
@@ -1786,6 +1814,12 @@ impl <'a> WebDataBuild<'a> {
                 rel_annotation.term.gene_count =
                     term_seen_genes.get(&rel_annotation.term.termid).unwrap().len();
             }
+
+            for (reference_uniquename, reference_short) in
+                &mut term_details.references_by_uniquename {
+                    reference_short.gene_count =
+                        ref_seen_genes.get(reference_uniquename).unwrap().len();
+                }
         }
     }
 
