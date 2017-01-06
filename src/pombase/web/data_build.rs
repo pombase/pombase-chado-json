@@ -842,7 +842,6 @@ impl <'a> WebDataBuild<'a> {
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
-                print!("term: {}\n", cvterm.termid());
                 self.terms.insert(cvterm.termid(),
                                   TermDetails {
                                       name: cvterm.name.clone(),
