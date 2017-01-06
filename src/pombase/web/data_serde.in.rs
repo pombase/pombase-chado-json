@@ -156,6 +156,8 @@ pub struct ReferenceShort {
     #[serde(skip_serializing_if="Option::is_none")]
     pub citation: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub authors: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub authors_abbrev: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,

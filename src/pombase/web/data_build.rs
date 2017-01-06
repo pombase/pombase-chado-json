@@ -138,6 +138,7 @@ impl <'a> WebDataBuild<'a> {
                     title: reference_details.title.clone(),
                     citation: reference_details.citation.clone(),
                     publication_year: reference_details.publication_year.clone(),
+                    authors: reference_details.authors.clone(),
                     authors_abbrev: reference_details.authors_abbrev.clone(),
                 };
 
