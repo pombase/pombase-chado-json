@@ -772,6 +772,8 @@ impl <'a> WebDataBuild<'a> {
                         if annotation_term_details.interesting_parents.contains(&if_descendent_of) {
                             return Some((*ext_config).clone());
                         }
+                    } else {
+                        return Some((*ext_config).clone());
                     }
                 }
             }
