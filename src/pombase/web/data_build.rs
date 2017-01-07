@@ -1782,6 +1782,9 @@ impl <'a> WebDataBuild<'a> {
                 seen_genes.insert(interaction.gene_uniquename.clone());
                 seen_genes.insert(interaction.interactor_uniquename.clone());
             }
+            for ortholog_annotation in &reference_details.ortholog_annotations {
+                seen_genes.insert(ortholog_annotation.gene_uniquename.clone());
+            }
             ref_seen_genes.insert(reference_uniquename.clone(), seen_genes);
         }
 
