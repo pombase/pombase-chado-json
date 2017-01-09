@@ -49,7 +49,7 @@ pub struct InterestingParent {
 // when creating a TermShort struct, for each of these termids if the term has
 // an "interesting parent" using the given rel_name, we store it in the
 // interesting_parents field of the TermShort
-pub const INTERESTING_PARENTS: [InterestingParent; 2] = [
+pub const INTERESTING_PARENTS: [InterestingParent; 3] = [
     InterestingParent {
         termid: "FYPO:0000002",
         rel_name: "is_a",
@@ -57,5 +57,14 @@ pub const INTERESTING_PARENTS: [InterestingParent; 2] = [
     InterestingParent {
         termid: "FYPO:0000003",
         rel_name: "is_a",
-    }
+    },
+
+    // a with property on a protein binding (GO:0005515) is displayed
+    // as a binds extension - configure this to allow easy checking for that in
+    // process_feature_cvterms()
+    // see: https://github.com/pombase/website/issues/108
+    InterestingParent {
+        termid: "GO:0005515",
+        rel_name: "is_a",
+    },
 ];

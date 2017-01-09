@@ -44,7 +44,7 @@ pub struct WebDataBuild<'a> {
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
-    parts_of_extensions: HashMap<String, Vec<ExtPart>>,
+    parts_of_extensions: HashMap<TermId, Vec<ExtPart>>,
 
     base_term_of_extensions: HashMap<TermId, TermId>,
 }
@@ -191,9 +191,13 @@ impl <'a> WebDataBuild<'a> {
                 None => vec![],
             };
 
+        let mut new_extension = extension_parts.clone();
+        let mut existing_extensions = annotation_template.extension.clone();
+        new_extension.append(&mut existing_extensions);
+
         let ont_annotation_detail =
             OntAnnotationDetail {
-                extension: extension_parts,
+                extension: new_extension,
                 .. annotation_template
             };
 
@@ -1018,6 +1022,8 @@ impl <'a> WebDataBuild<'a> {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
 
+            let mut extension = vec![];
+
             if cvterm.cv.name == "PomBase gene characterisation status" ||
                 cvterm.cv.name == "PomBase gene products" ||
                 cvterm.cv.name == "name_description" {
@@ -1048,12 +1054,41 @@ impl <'a> WebDataBuild<'a> {
                         },
                     "with" | "from" => {
                         if let Some(value) = prop.value.clone() {
-                            let re = Regex::new(&db_prefix_patt).unwrap();
-                            let gene_uniquename = re.replace_all(&value, "");
-                            if self.genes.contains_key(&gene_uniquename) {
-                                let gene_short = self.make_gene_short(&gene_uniquename);
-                                with_from = Some(gene_short);
-                            }
+                            let maybe_term_details = self.terms.get(&cvterm.termid());
+
+                            if maybe_term_details.is_some() &&
+                                (maybe_term_details.unwrap().interesting_parents
+                                 .contains("GO:0005515") ||
+                                 maybe_term_details.unwrap().termid == "GO:0005515") {
+                                    let ext_range =
+                                        if value.starts_with("SP%") {
+                                            ExtRange::Gene(value.clone())
+                                        } else {
+                                            if value.starts_with("PomBase:SP") {
+                                                let gene_uniquename =
+                                                    String::from(&value[8..]);
+                                                ExtRange::Gene(gene_uniquename)
+                                            } else {
+                                                ExtRange::Misc(value.clone())
+                                            }
+                                        };
+
+                                    // a with property on a protein binding (GO:0005515) is
+                                    // displayed as a binds extension
+                                    // https://github.com/pombase/website/issues/108
+                                    extension.push(ExtPart {
+                                        rel_type_name: "binds".into(),
+                                        rel_type_display_name: "binds".into(),
+                                        ext_range: ext_range,
+                                    });
+                                } else {
+                                    let re = Regex::new(&db_prefix_patt).unwrap();
+                                    let gene_uniquename = re.replace_all(&value, "");
+                                    if self.genes.contains_key(&gene_uniquename) {
+                                        let gene_short = self.make_gene_short(&gene_uniquename);
+                                        with_from = Some(gene_short);
+                                    }
+                                }
                         }
                     },
                     _ => ()
@@ -1138,7 +1173,7 @@ impl <'a> WebDataBuild<'a> {
                     qualifiers: qualifiers.clone(),
                     evidence: extra_props_clone.remove("evidence"),
                     conditions: conditions.clone(),
-                    extension: vec![],
+                    extension: extension.clone(),
                     is_not: feature_cvterm.is_not,
                 };
 
