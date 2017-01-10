@@ -1015,6 +1015,21 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn get_gene_prod_extension(&self, prod_value: &String) -> ExtPart {
+        let ext_range =
+            if prod_value.starts_with("PR:%") {
+                ExtRange::GeneProduct(prod_value.clone())
+            } else {
+                ExtRange::Misc(prod_value.clone())
+            };
+
+        ExtPart {
+            rel_type_name: "active_form".into(),
+            rel_type_display_name: "active form".into(),
+            ext_range: ext_range,
+        }
+    }
+
     // return a fake extension for "with" properties on protein binding annotations
     fn get_with_extension(&self, with_value: &String) -> ExtPart {
         let ext_range =
@@ -1094,6 +1109,11 @@ impl <'a> WebDataBuild<'a> {
                                         with_from = Some(gene_short);
                                     }
                                 }
+                        }
+                    },
+                    "gene_product_form_id" => {
+                        if let Some(value) = prop.value.clone() {
+                            extension.push(self.get_gene_prod_extension(&value));
                         }
                     },
                     _ => ()
