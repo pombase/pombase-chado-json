@@ -1017,7 +1017,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn get_gene_prod_extension(&self, prod_value: &String) -> ExtPart {
         let ext_range =
-            if prod_value.starts_with("PR:%") {
+            if prod_value.starts_with("PR:") {
                 ExtRange::GeneProduct(prod_value.clone())
             } else {
                 ExtRange::Misc(prod_value.clone())
