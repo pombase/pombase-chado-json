@@ -12,6 +12,8 @@ pub enum ExtRange {
     Term(TermId),
 #[serde(rename = "misc")]
     Misc(String),
+#[serde(rename = "domain")]
+    Domain(String),
 #[serde(rename = "gene_product")]
     GeneProduct(String),
 }

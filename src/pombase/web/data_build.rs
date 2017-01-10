@@ -1041,7 +1041,11 @@ impl <'a> WebDataBuild<'a> {
                         String::from(&with_value[8..]);
                     ExtRange::Gene(gene_uniquename)
                 } else {
-                    ExtRange::Misc(with_value.clone())
+                    if with_value.to_lowercase().starts_with("pfam:") {
+                        ExtRange::Domain(with_value.clone())
+                    } else {
+                        ExtRange::Misc(with_value.clone())
+                    }
                 }
             };
 
