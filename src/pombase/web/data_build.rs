@@ -1015,6 +1015,31 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // return a fake extension for "with" properties on protein binding annotations
+    fn get_with_extension(&self, with_value: &String) -> ExtPart {
+        let ext_range =
+            if with_value.starts_with("SP%") {
+                ExtRange::Gene(with_value.clone())
+            } else {
+                if with_value.starts_with("PomBase:SP") {
+                    let gene_uniquename =
+                        String::from(&with_value[8..]);
+                    ExtRange::Gene(gene_uniquename)
+                } else {
+                    ExtRange::Misc(with_value.clone())
+                }
+            };
+
+        // a with property on a protein binding (GO:0005515) is
+        // displayed as a binds extension
+        // https://github.com/pombase/website/issues/108
+        ExtPart {
+            rel_type_name: "binds".into(),
+            rel_type_display_name: "binds".into(),
+            ext_range: ext_range,
+        }
+    }
+
     // process annotation
     fn process_feature_cvterms(&mut self) {
         let db_prefix_patt = String::from("^") + DB_NAME + ":";
@@ -1060,27 +1085,7 @@ impl <'a> WebDataBuild<'a> {
                                 (maybe_term_details.unwrap().interesting_parents
                                  .contains("GO:0005515") ||
                                  maybe_term_details.unwrap().termid == "GO:0005515") {
-                                    let ext_range =
-                                        if value.starts_with("SP%") {
-                                            ExtRange::Gene(value.clone())
-                                        } else {
-                                            if value.starts_with("PomBase:SP") {
-                                                let gene_uniquename =
-                                                    String::from(&value[8..]);
-                                                ExtRange::Gene(gene_uniquename)
-                                            } else {
-                                                ExtRange::Misc(value.clone())
-                                            }
-                                        };
-
-                                    // a with property on a protein binding (GO:0005515) is
-                                    // displayed as a binds extension
-                                    // https://github.com/pombase/website/issues/108
-                                    extension.push(ExtPart {
-                                        rel_type_name: "binds".into(),
-                                        rel_type_display_name: "binds".into(),
-                                        ext_range: ext_range,
-                                    });
+                                    extension.push(self.get_with_extension(&value));
                                 } else {
                                     let re = Regex::new(&db_prefix_patt).unwrap();
                                     let gene_uniquename = re.replace_all(&value, "");
