@@ -1226,12 +1226,22 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_term_annotations(&self, termid: &str, details: &Vec<Rc<OntAnnotationDetail>>)
+                       -> (String, OntTermAnnotations) {
+        let term_short = self.make_term_short(termid);
+
+        let cv_name = term_short.cv_name.clone();
+
+        (cv_name,
+         OntTermAnnotations {
+            term: term_short.clone(),
+            annotations: details.clone(),
+        })
+    }
+
     // add the OntTermAnnotations objects in the TermDetails,
     // GeneDetails and ReferenceDetails objects
     fn store_ont_annotations(&mut self) {
-        let termids: Vec<String> = self.all_ont_annotations.keys()
-            .map(|key| key.clone()).collect::<Vec<_>>();
-
         let mut gene_annotation_by_term: HashMap<GeneUniquename, HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>> =
             HashMap::new();
         let mut ref_annotation_by_term: HashMap<String, HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>> =
@@ -1288,48 +1298,34 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let mut term_short_map: HashMap<TermId, TermShort> = HashMap::new();
-
-        for termid in &termids {
-            term_short_map.insert((*termid).clone(), self.make_term_short(termid));
-        }
-
         for (gene_uniquename, term_annotation_map) in &gene_annotation_by_term {
-            let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
             for (termid, details) in term_annotation_map {
-                let term_short = term_short_map.get(termid).unwrap();
-                let cv_name = term_short.cv_name.clone();
+                let (cv_name, new_annotation) =
+                    self.make_term_annotations(&termid, &details);
 
-                let new_annotation = OntTermAnnotations {
-                    term: term_short.clone(),
-                    annotations: details.clone(),
-                };
-
+                let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
                 gene_details.cv_annotations.entry(cv_name.clone())
                     .or_insert(Vec::new())
                     .push(new_annotation);
             }
 
+            let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
             for (_, mut cv_annotations) in &mut gene_details.cv_annotations {
                 cv_annotations.sort()
             }
         }
 
         for (reference_uniquename, ref_annotation_map) in &ref_annotation_by_term {
-            let mut ref_details = self.references.get_mut(reference_uniquename).unwrap();
             for (termid, details) in ref_annotation_map {
-                let term_short = term_short_map.get(termid).unwrap();
-                let cv_name = term_short.cv_name.clone();
+                let (cv_name, new_annotation) =
+                    self.make_term_annotations(&termid, &details);
 
-                let new_annotation = OntTermAnnotations {
-                    term: term_short.clone(),
-                    annotations: details.clone(),
-                };
-
+                let mut ref_details = self.references.get_mut(reference_uniquename).unwrap();
                 ref_details.cv_annotations.entry(cv_name).or_insert(Vec::new())
                     .push(new_annotation.clone());
             }
 
+            let mut ref_details = self.references.get_mut(reference_uniquename).unwrap();
             for (_, mut term_annotations) in &mut ref_details.cv_annotations {
                 term_annotations.sort()
             }
