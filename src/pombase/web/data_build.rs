@@ -628,7 +628,13 @@ impl <'a> WebDataBuild<'a> {
 
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
                             if prop.prop_type.name == "evidence" {
-                                evidence = prop.value.clone();
+                                if let Some(evidence_long) = prop.value.clone() {
+                                    if let Some(code) = self.config.evidence_types.get(&evidence_long) {
+                                        evidence = Some(code.clone());
+                                    } else {
+                                        evidence = Some(evidence_long);
+                                    }
+                                }
                             }
                         }
 
@@ -1079,15 +1085,24 @@ impl <'a> WebDataBuild<'a> {
             let mut conditions: Vec<TermId> = vec![];
             let mut with_from: Option<GeneShort> = None;
             let mut qualifiers: Vec<Qualifier> = vec![];
+            let mut evidence: Option<String> = None;
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
-                    "evidence" | "residue" | "scale" |
+                    "residue" | "scale" |
                     "quant_gene_ex_copies_per_cell" |
                     "quant_gene_ex_avg_copies_per_cell" => {
                         if let Some(value) = prop.value.clone() {
                             extra_props.insert(prop.type_name().clone(), value);
                         }
                     },
+                    "evidence" =>
+                        if let Some(evidence_long) = prop.value.clone() {
+                            if let Some(code) = self.config.evidence_types.get(&evidence_long) {
+                                evidence = Some(code.clone());
+                            } else {
+                                evidence = Some(evidence_long);
+                            }
+                        },
                     "condition" =>
                         if let Some(value) = prop.value.clone() {
                             conditions.push(value.clone());
@@ -1200,7 +1215,7 @@ impl <'a> WebDataBuild<'a> {
                     residue: extra_props_clone.remove("residue"),
                     gene_ex_props: gene_ex_props,
                     qualifiers: qualifiers.clone(),
-                    evidence: extra_props_clone.remove("evidence"),
+                    evidence: evidence.clone(),
                     conditions: conditions.clone(),
                     extension: extension.clone(),
                     is_not: feature_cvterm.is_not,

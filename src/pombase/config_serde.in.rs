@@ -7,7 +7,11 @@ pub struct ExtensionConfig {
     pub reciprocal_display: Option<String>, // None if reciprocal shouldn't be displayed
 }
 
+pub type ShortEvidenceCode = String;
+pub type LongEvidenceCode = String;
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub extensions: Vec<ExtensionConfig>,
+    pub evidence_types: HashMap<ShortEvidenceCode, LongEvidenceCode>,
 }
