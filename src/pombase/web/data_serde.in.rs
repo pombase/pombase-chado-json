@@ -198,6 +198,7 @@ pub struct ReferenceDetails {
 #[derive(Serialize, Clone)]
 pub struct OntTermAnnotations {
     pub term: TermShort,
+    pub is_not: bool,
     pub annotations: Vec<Rc<OntAnnotationDetail>>,
 }
 
@@ -221,7 +222,6 @@ pub struct OntAnnotationDetail {
     pub genotype: Option<GenotypeShort>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub conditions: Vec<TermId>,
-    pub is_not: bool,
 }
 
 impl PartialEq for OntTermAnnotations {
@@ -384,6 +384,7 @@ pub struct TermDetails {
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
     pub rel_annotations: Vec<RelOntAnnotation>,
+    pub not_rel_annotations: Vec<RelOntAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
