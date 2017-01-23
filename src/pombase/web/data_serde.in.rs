@@ -232,7 +232,13 @@ impl PartialEq for OntTermAnnotations {
 impl Eq for OntTermAnnotations { }
 impl Ord for OntTermAnnotations {
     fn cmp(&self, other: &OntTermAnnotations) -> Ordering {
-        return self.term.name.cmp(&other.term.name);
+        if !self.is_not && other.is_not {
+            return Ordering::Less;
+        }
+        if self.is_not && !other.is_not {
+            return Ordering::Greater;
+        }
+        self.term.name.cmp(&other.term.name)
     }
 }
 impl PartialOrd for OntTermAnnotations {
@@ -243,6 +249,7 @@ impl PartialOrd for OntTermAnnotations {
 impl Hash for OntTermAnnotations {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.term.termid.hash(state);
+        self.is_not.hash(state);
     }
 }
 
