@@ -238,7 +238,7 @@ impl Ord for OntTermAnnotations {
         if self.is_not && !other.is_not {
             return Ordering::Greater;
         }
-        self.term.name.cmp(&other.term.name)
+        self.term.name.to_lowercase().cmp(&other.term.name.to_lowercase())
     }
 }
 impl PartialOrd for OntTermAnnotations {
