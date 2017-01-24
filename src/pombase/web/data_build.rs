@@ -1074,9 +1074,37 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // add the with value as a fake extension if the cvterm is_a protein binding,
+    // otherwise return the value
+    fn make_with_extension(&self, termid: &String, extension: &mut Vec<ExtPart>,
+                           with_value: String) -> Option<GeneShort> {
+        let base_termid =
+            match self.base_term_of_extensions.get(termid) {
+                Some(base_termid) => base_termid.clone(),
+                None => termid.clone(),
+            };
+
+        let base_term_short = self.make_term_short(&base_termid);
+
+        if base_term_short.termid == "GO:0005515" ||
+            base_term_short.interesting_parents
+            .contains("GO:0005515") {
+                print!("pushing {}\n", &with_value);
+                extension.push(self.get_with_extension(&with_value));
+            } else {
+                let db_prefix_patt = String::from("^") + DB_NAME + ":";
+                let re = Regex::new(&db_prefix_patt).unwrap();
+                let gene_uniquename = re.replace_all(&with_value, "");
+                if self.genes.contains_key(&gene_uniquename) {
+                    let gene_short = self.make_gene_short(&gene_uniquename);
+                    return Some(gene_short);
+                }
+            }
+        None
+    }
+
     // process annotation
     fn process_feature_cvterms(&mut self) {
-        let db_prefix_patt = String::from("^") + DB_NAME + ":";
         for feature_cvterm in self.raw.feature_cvterms.iter() {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
@@ -1122,21 +1150,12 @@ impl <'a> WebDataBuild<'a> {
                         },
                     "with" | "from" => {
                         if let Some(value) = prop.value.clone() {
-                            let maybe_term_details = self.terms.get(&cvterm.termid());
-
-                            if maybe_term_details.is_some() &&
-                                (maybe_term_details.unwrap().interesting_parents
-                                 .contains("GO:0005515") ||
-                                 maybe_term_details.unwrap().termid == "GO:0005515") {
-                                    extension.push(self.get_with_extension(&value));
-                                } else {
-                                    let re = Regex::new(&db_prefix_patt).unwrap();
-                                    let gene_uniquename = re.replace_all(&value, "");
-                                    if self.genes.contains_key(&gene_uniquename) {
-                                        let gene_short = self.make_gene_short(&gene_uniquename);
-                                        with_from = Some(gene_short);
-                                    }
-                                }
+                            let with_gene_short =
+                                self.make_with_extension(&cvterm.termid(),
+                                                         &mut extension, value);
+                            if with_gene_short.is_some() {
+                                with_from = with_gene_short;
+                            }
                         }
                     },
                     "gene_product_form_id" => {
