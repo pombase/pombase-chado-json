@@ -1237,17 +1237,56 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_term_annotations(&self, termid: &str, details: &Vec<Rc<OntAnnotationDetail>>,
                              is_not: bool)
-                       -> (String, OntTermAnnotations) {
+                       -> Vec<(CvName, OntTermAnnotations)> {
         let term_short = self.make_term_short(termid);
 
         let cv_name = term_short.cv_name.clone();
 
-        (cv_name,
-         OntTermAnnotations {
-            term: term_short.clone(),
-            is_not: is_not,
-            annotations: details.clone(),
-        })
+        if cv_name == "gene_ex" {
+            if is_not {
+                panic!("gene_ex annotations can't be NOT annotations");
+            }
+            let mut qual_annotations =
+                OntTermAnnotations {
+                    term: term_short.clone(),
+                    is_not: false,
+                    annotations: vec![],
+                };
+            let mut quant_annotations =
+                OntTermAnnotations {
+                    term: term_short.clone(),
+                    is_not: false,
+                    annotations: vec![],
+                };
+            for detail in details {
+                if detail.gene_ex_props.is_some() {
+                    quant_annotations.annotations.push(detail.clone())
+                } else {
+                    qual_annotations.annotations.push(detail.clone())
+                }
+            }
+
+            let mut return_vec = vec![];
+
+            if qual_annotations.annotations.len() > 0 {
+                return_vec.push((String::from("qualitative_gene_expression"),
+                                qual_annotations));
+            }
+
+            if quant_annotations.annotations.len() > 0 {
+                return_vec.push((String::from("quantitative_gene_expression"),
+                                quant_annotations));
+            }
+
+            return_vec
+        } else {
+            vec![(cv_name,
+                  OntTermAnnotations {
+                      term: term_short.clone(),
+                      is_not: is_not,
+                      annotations: details.clone(),
+                  })]
+        }
     }
 
     // add the OntTermAnnotations objects in the TermDetails,
@@ -1322,13 +1361,16 @@ impl <'a> WebDataBuild<'a> {
 
         for (gene_uniquename, term_annotation_map) in &gene_annotation_by_term {
             for (termid, details) in term_annotation_map {
-                let (cv_name, new_annotation) =
+                let new_annotations =
                     self.make_term_annotations(&termid, &details, is_not);
 
                 let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
-                gene_details.cv_annotations.entry(cv_name.clone())
-                    .or_insert(Vec::new())
-                    .push(new_annotation);
+
+                for (cv_name, new_annotation) in new_annotations {
+                    gene_details.cv_annotations.entry(cv_name.clone())
+                        .or_insert(Vec::new())
+                        .push(new_annotation);
+                }
             }
 
             let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
@@ -1339,12 +1381,15 @@ impl <'a> WebDataBuild<'a> {
 
         for (reference_uniquename, ref_annotation_map) in &ref_annotation_by_term {
             for (termid, details) in ref_annotation_map {
-                let (cv_name, new_annotation) =
+                let new_annotations =
                     self.make_term_annotations(&termid, &details, is_not);
 
                 let mut ref_details = self.references.get_mut(reference_uniquename).unwrap();
-                ref_details.cv_annotations.entry(cv_name).or_insert(Vec::new())
-                    .push(new_annotation.clone());
+
+                for (cv_name, new_annotation) in new_annotations {
+                    ref_details.cv_annotations.entry(cv_name).or_insert(Vec::new())
+                        .push(new_annotation.clone());
+                }
             }
 
             let mut ref_details = self.references.get_mut(reference_uniquename).unwrap();
