@@ -1077,7 +1077,7 @@ impl <'a> WebDataBuild<'a> {
     // add the with value as a fake extension if the cvterm is_a protein binding,
     // otherwise return the value
     fn make_with_extension(&self, termid: &String, extension: &mut Vec<ExtPart>,
-                           with_value: String) -> Option<GeneShort> {
+                           with_value: String) -> WithValue {
         let base_termid =
             match self.base_term_of_extensions.get(termid) {
                 Some(base_termid) => base_termid.clone(),
@@ -1097,10 +1097,12 @@ impl <'a> WebDataBuild<'a> {
                 let gene_uniquename = re.replace_all(&with_value, "");
                 if self.genes.contains_key(&gene_uniquename) {
                     let gene_short = self.make_gene_short(&gene_uniquename);
-                    return Some(gene_short);
+                    return WithValue::Gene(gene_short);
+                } else {
+                    return WithValue::Identifier(with_value);
                 }
             }
-        None
+        WithValue::None
     }
 
     // process annotation
@@ -1120,7 +1122,7 @@ impl <'a> WebDataBuild<'a> {
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
             let mut conditions: Vec<TermId> = vec![];
-            let mut with_from: Option<GeneShort> = None;
+            let mut with_from: WithValue = WithValue::None;
             let mut qualifiers: Vec<Qualifier> = vec![];
             let mut evidence: Option<String> = None;
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
