@@ -457,8 +457,15 @@ fn test_gene_with() {
     let biological_process_annotations = cv_annotations.get("biological_process").unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0].annotations[0];
-    assert_eq!(&first_annotation.with.clone().unwrap().uniquename, "SPAC6F6.08c");
-    assert_eq!(&first_annotation.with.clone().unwrap().name.unwrap(), "cdc16");
+    match first_annotation.with {
+        WithValue::Gene(ref gene_short) => {
+            assert_eq!(gene_short.clone().uniquename, "SPAC6F6.08c");
+            assert_eq!(gene_short.clone().name.unwrap(), "cdc16");
+        },
+        _ => {
+            panic!();
+        }
+    }
 }
 
 #[test]
