@@ -1089,7 +1089,6 @@ impl <'a> WebDataBuild<'a> {
         if base_term_short.termid == "GO:0005515" ||
             base_term_short.interesting_parents
             .contains("GO:0005515") {
-                print!("pushing {}\n", &with_value);
                 extension.push(self.get_with_extension(&with_value));
             } else {
                 let db_prefix_patt = String::from("^") + DB_NAME + ":";
