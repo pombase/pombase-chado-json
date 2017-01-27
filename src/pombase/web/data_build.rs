@@ -1449,24 +1449,30 @@ impl <'a> WebDataBuild<'a> {
             let object_term = &cvtermpath.object;
             let object_termid = object_term.termid();
 
-             let rel_termid =
-                match cvtermpath.rel_type {
-                    Some(ref rel_type) => {
-                        rel_type.termid()
-                    },
-                    None => panic!("no relation type for {} <-> {}\n",
-                                   &subject_term.name, &object_term.name)
-                };
-            let rel_term_name =
-                self.make_term_short(&rel_termid).name;
+            if let Some(subject_term_details) = self.terms.get(&subject_termid) {
+                let rel_termid =
+                    match cvtermpath.rel_type {
+                        Some(ref rel_type) => {
+                            rel_type.termid()
+                        },
+                        None => panic!("no relation type for {} <-> {}\n",
+                                       &subject_term.name, &object_term.name)
+                    };
 
-            if !DESCENDANT_REL_NAMES.contains(&&rel_term_name[0..]) {
-                continue;
-            }
+                let rel_term_name =
+                    self.make_term_short(&rel_termid).name;
 
-            if let Some(term_details) = self.terms.get(&subject_termid) {
-                let subject_annotations = &term_details.rel_annotations;
-                for rel_annotation in subject_annotations {
+                let is_inverse =
+                    INVERSE_REL_CV_NAMES.contains(&subject_term_details.cv_name.as_str()) &&
+                    INVERSE_REL_NAMES.contains(&rel_term_name.as_str());
+
+                if !DESCENDANT_REL_NAMES.contains(&rel_term_name.as_str()) &&
+                    !is_inverse {
+                    continue;
+                }
+
+                let annotations = &subject_term_details.rel_annotations;
+                for rel_annotation in annotations {
                     let RelOntAnnotation {
                         rel_names: _,
                         term: _,
@@ -1474,13 +1480,18 @@ impl <'a> WebDataBuild<'a> {
                     } = rel_annotation.clone();
 
                     for detail in &existing_details {
-
                         if !annotation_by_id.contains_key(&detail.id) {
                             annotation_by_id.insert(detail.id, detail.clone());
                         }
-                        new_annotations.entry(object_termid.clone())
+                        let (dest_termid, source_termid) =
+                            if is_inverse {
+                                (subject_termid.clone(), object_termid.clone())
+                            } else {
+                                (object_termid.clone(), subject_termid.clone())
+                            };
+                        new_annotations.entry(dest_termid)
                             .or_insert(HashMap::new())
-                            .entry(subject_termid.clone())
+                            .entry(source_termid)
                             .or_insert(HashMap::new())
                             .entry(detail.id)
                             .or_insert(HashSet::new())
@@ -1492,24 +1503,24 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        for (object_termid, object_annotations_map) in new_annotations.drain() {
-            for (subject_termid, subject_annotations_map) in object_annotations_map {
+        for (dest_termid, dest_annotations_map) in new_annotations.drain() {
+            for (source_termid, source_annotations_map) in dest_annotations_map {
                 let mut new_details: Vec<Rc<OntAnnotationDetail>> = vec![];
                 let mut all_rel_names: HashSet<String> = HashSet::new();
-                for (id, rel_names) in subject_annotations_map {
+                for (id, rel_names) in source_annotations_map {
                     let detail = annotation_by_id.get(&id).unwrap().clone();
                     new_details.push(detail);
                     for rel_name in rel_names {
                         all_rel_names.insert(rel_name);
                     }
                 }
-                let subject_term_short = self.make_term_short(&subject_termid);
-                let mut object_term_details = {
-                    self.terms.get_mut(&object_termid).unwrap()
+                let source_term_short = self.make_term_short(&source_termid);
+                let mut dest_term_details = {
+                    self.terms.get_mut(&dest_termid).unwrap()
                 };
-                object_term_details.rel_annotations.push(RelOntAnnotation {
+                dest_term_details.rel_annotations.push(RelOntAnnotation {
                     rel_names: all_rel_names,
-                    term: subject_term_short.clone(),
+                    term: source_term_short.clone(),
                     annotations: new_details,
                 });
             }
