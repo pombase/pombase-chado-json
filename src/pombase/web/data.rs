@@ -42,19 +42,28 @@ pub type GenotypeUniquename = String;
 pub type AlleleUniquename = String;
 
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
-pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeShort>;
+pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
+pub type IdGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
 pub type IdTermShortMap = HashMap<TermId, Rc<TermShort>>;
 pub type IdTermDetailsMap = HashMap<TermId, Rc<TermDetails>>;
 pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
+
+pub type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
+pub type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
+pub type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
+pub type TermShortMap = HashMap<TermId, TermShort>;
 
 include!(concat!(env!("OUT_DIR"), "/data_serde.rs"));
 
 impl WebData {
     fn get_genes(&self) -> &IdGeneMap {
         &self.genes
+    }
+    fn get_genotypes(&self) -> &IdGenotypeMap {
+        &self.genotypes
     }
     fn get_references(&self) -> &IdReferenceMap {
         &self.references
@@ -80,6 +89,16 @@ impl WebData {
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write gene JSON");
+        }
+    }
+
+    fn write_genotype_details(&self, output_dir: &str) {
+        for (genotype_uniquename, genotype_details) in &self.genotypes {
+            let s = serde_json::to_string(&genotype_details).unwrap();
+            let file_name = String::new() + &output_dir + "/genotype/" + &genotype_uniquename + ".json";
+            let f = File::create(file_name).expect("Unable to open file");
+            let mut writer = BufWriter::new(&f);
+            writer.write_all(s.as_bytes()).expect("Unable to write genotype JSON");
         }
     }
 
@@ -131,6 +150,8 @@ impl WebData {
         println!("wrote {} references", self.get_references().len());
         self.write_gene_details(output_dir);
         println!("wrote {} genes", self.get_genes().len());
+        self.write_genotype_details(output_dir);
+        println!("wrote {} genotypes", self.get_genotypes().len());
         self.write_gene_summaries(output_dir, organism_genus_species);
         println!("wrote gene summaries");
         self.write_terms(output_dir);
