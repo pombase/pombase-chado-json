@@ -203,20 +203,21 @@ pub struct OntTermAnnotations {
 }
 
 #[derive(Serialize, Clone)]
-pub enum WithValue {
+pub enum WithFromValue {
 #[serde(rename = "gene")]
     Gene(GeneShort),
+#[serde(rename = "term")]
+    Term(TermShort),
 #[serde(rename = "identifier")]
     Identifier(String),
     None
 }
 
-impl WithValue {
+impl WithFromValue {
     pub fn is_some(&self) -> bool {
         match *self {
-            WithValue::Gene(_) => true,
-            WithValue::Identifier(_) => true,
-            WithValue::None => false,
+            WithFromValue::None => false,
+            _ => true,
         }
     }
 
@@ -233,8 +234,10 @@ pub struct OntAnnotationDetail {
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
-    #[serde(skip_serializing_if="WithValue::is_none")]
-    pub with: WithValue,
+    #[serde(skip_serializing_if="WithFromValue::is_none")]
+    pub with: WithFromValue,
+    #[serde(skip_serializing_if="WithFromValue::is_none")]
+    pub from: WithFromValue,
     #[serde(skip_serializing_if="Option::is_none")]
     pub residue: Option<Residue>,
     pub qualifiers: Vec<Qualifier>,

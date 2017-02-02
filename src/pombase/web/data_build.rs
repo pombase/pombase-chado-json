@@ -1074,10 +1074,26 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_with_or_from_value(&self, with_or_from_value: String) -> WithFromValue {
+        let db_prefix_patt = String::from("^") + DB_NAME + ":";
+        let re = Regex::new(&db_prefix_patt).unwrap();
+        let gene_uniquename = re.replace_all(&with_or_from_value, "");
+        if self.genes.contains_key(&gene_uniquename) {
+            let gene_short = self.make_gene_short(&gene_uniquename);
+            WithFromValue::Gene(gene_short)
+        } else {
+            if self.terms.get(&with_or_from_value).is_some() {
+                WithFromValue::Term(self.make_term_short(&with_or_from_value))
+            } else {
+                WithFromValue::Identifier(with_or_from_value)
+            }
+        }
+    }
+
     // add the with value as a fake extension if the cvterm is_a protein binding,
     // otherwise return the value
     fn make_with_extension(&self, termid: &String, extension: &mut Vec<ExtPart>,
-                           with_value: String) -> WithValue {
+                           with_value: String) -> WithFromValue {
         let base_termid =
             match self.base_term_of_extensions.get(termid) {
                 Some(base_termid) => base_termid.clone(),
@@ -1091,17 +1107,9 @@ impl <'a> WebDataBuild<'a> {
             .contains("GO:0005515") {
                 extension.push(self.get_with_extension(&with_value));
             } else {
-                let db_prefix_patt = String::from("^") + DB_NAME + ":";
-                let re = Regex::new(&db_prefix_patt).unwrap();
-                let gene_uniquename = re.replace_all(&with_value, "");
-                if self.genes.contains_key(&gene_uniquename) {
-                    let gene_short = self.make_gene_short(&gene_uniquename);
-                    return WithValue::Gene(gene_short);
-                } else {
-                    return WithValue::Identifier(with_value);
-                }
+                return self.make_with_or_from_value(with_value);
             }
-        WithValue::None
+        WithFromValue::None
     }
 
     // process annotation
@@ -1121,7 +1129,8 @@ impl <'a> WebDataBuild<'a> {
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
             let mut conditions: Vec<TermId> = vec![];
-            let mut with_from: WithValue = WithValue::None;
+            let mut with: WithFromValue = WithFromValue::None;
+            let mut from: WithFromValue = WithFromValue::None;
             let mut qualifiers: Vec<Qualifier> = vec![];
             let mut evidence: Option<String> = None;
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
@@ -1149,14 +1158,19 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(value) = prop.value.clone() {
                             qualifiers.push(value);
                         },
-                    "with" | "from" => {
+                    "with" => {
                         if let Some(value) = prop.value.clone() {
                             let with_gene_short =
                                 self.make_with_extension(&cvterm.termid(),
                                                          &mut extension, value);
                             if with_gene_short.is_some() {
-                                with_from = with_gene_short;
+                                with = with_gene_short;
                             }
+                        }
+                    },
+                    "from" => {
+                        if let Some(value) = prop.value.clone() {
+                            from = self.make_with_or_from_value(value);
                         }
                     },
                     "gene_product_form_id" => {
@@ -1240,7 +1254,8 @@ impl <'a> WebDataBuild<'a> {
                     gene_uniquename: gene_uniquename.clone(),
                     reference_uniquename: reference_uniquename.clone(),
                     genotype: maybe_genotype_short.clone(),
-                    with: with_from.clone(),
+                    with: with.clone(),
+                    from: from.clone(),
                     residue: extra_props_clone.remove("residue"),
                     gene_ex_props: gene_ex_props,
                     qualifiers: qualifiers.clone(),

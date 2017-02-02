@@ -458,7 +458,7 @@ fn test_gene_with() {
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0].annotations[0];
     match first_annotation.with {
-        WithValue::Gene(ref gene_short) => {
+        WithFromValue::Gene(ref gene_short) => {
             assert_eq!(gene_short.clone().uniquename, "SPAC6F6.08c");
             assert_eq!(gene_short.clone().name.unwrap(), "cdc16");
         },
