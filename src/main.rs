@@ -24,7 +24,7 @@ const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
 const VERSION: &'static str = env!("CARGO_PKG_VERSION");
 
 fn make_subdirs(output_dir: &str) {
-    let subdirs = vec!["gene", "term", "reference"];
+    let subdirs = vec!["gene", "genotype", "term", "reference"];
 
     for subdir in &subdirs {
         let dir = String::new() + output_dir + "/" + subdir;

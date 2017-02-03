@@ -334,6 +334,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
     pub gene_neighbourhood: Vec<GeneShort>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptShort>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
@@ -342,7 +343,6 @@ pub struct GeneDetails {
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub target_of_annotations: Vec<TargetOfAnnotation>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
-    // genes mentioned in orthologs, paralogs and interactions
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
@@ -365,6 +365,21 @@ pub struct GenotypeShort {
     pub background: Option<String>,
     pub expressed_alleles: Vec<ExpressedAllele>,
 //    pub annotations: TypeFeatureAnnotationMap,
+}
+
+#[derive(Serialize, Clone)]
+pub struct GenotypeDetails {
+    pub uniquename: GenotypeUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub background: Option<String>,
+    pub expressed_alleles: Vec<ExpressedAllele>,
+    pub cv_annotations: OntAnnotationMap,
+    pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
+    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
 #[derive(Serialize, Clone)]
@@ -542,6 +557,7 @@ pub struct SearchAPIMaps {
 #[derive(Serialize, Clone)]
 pub struct WebData {
     pub genes: IdGeneMap,
+    pub genotypes: IdGenotypeMap,
     pub terms: IdTermDetailsMap,
     pub used_terms: IdTermDetailsMap,
     pub metadata: Metadata,
