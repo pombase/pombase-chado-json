@@ -243,6 +243,13 @@ pub struct OntAnnotationDetail {
     pub conditions: Vec<TermId>,
 }
 
+impl PartialEq for OntAnnotationDetail {
+    fn eq(&self, other: &OntAnnotationDetail) -> bool {
+        self.id == other.id
+    }
+}
+impl Eq for OntAnnotationDetail { }
+
 #[derive(Serialize, Clone)]
 pub struct OntTermAnnotations {
     pub term: TermShort,
