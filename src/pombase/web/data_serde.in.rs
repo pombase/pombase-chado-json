@@ -196,13 +196,6 @@ pub struct ReferenceDetails {
 }
 
 #[derive(Serialize, Clone)]
-pub struct OntTermAnnotations {
-    pub term: TermShort,
-    pub is_not: bool,
-    pub annotations: Vec<Rc<OntAnnotationDetail>>,
-}
-
-#[derive(Serialize, Clone)]
 pub enum WithFromValue {
 #[serde(rename = "gene")]
     Gene(GeneShort),
@@ -248,6 +241,13 @@ pub struct OntAnnotationDetail {
     pub genotype: Option<GenotypeShort>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub conditions: Vec<TermId>,
+}
+
+#[derive(Serialize, Clone)]
+pub struct OntTermAnnotations {
+    pub term: TermShort,
+    pub is_not: bool,
+    pub annotations: Vec<Rc<OntAnnotationDetail>>,
 }
 
 impl PartialEq for OntTermAnnotations {
