@@ -1436,11 +1436,14 @@ impl <'a> WebDataBuild<'a> {
                     .push(detail.clone());
 
                 if let Some(ref genotype) = detail.genotype {
-                    genotype_annotation_by_term.entry(genotype.uniquename.clone())
+                    let mut existing =
+                        genotype_annotation_by_term.entry(genotype.uniquename.clone())
                         .or_insert(HashMap::new())
                         .entry(termid.clone())
-                        .or_insert(vec![])
-                        .push(detail.clone());
+                        .or_insert(vec![]);
+                    if !existing.contains(detail) {
+                        existing.push(detail.clone());
+                    }
                 }
 
                 if let Some(reference_uniquename) = detail.reference_uniquename.clone() {
