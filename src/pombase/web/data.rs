@@ -53,6 +53,7 @@ pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
 pub type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
 pub type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
+pub type GenotypeShortMap = HashMap<GeneUniquename, GenotypeShort>;
 pub type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type TermShortMap = HashMap<TermId, TermShort>;
 

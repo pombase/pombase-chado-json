@@ -122,6 +122,7 @@ pub struct TermShort {
     pub termid: TermId,
     pub is_obsolete: bool,
     pub gene_count: usize,
+    pub genotype_count: usize,
 }
 
 impl PartialEq for TermShort {
@@ -166,6 +167,7 @@ pub struct ReferenceShort {
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
     pub gene_count: usize,
+    pub genotype_count: usize,
 }
 
 #[derive(Serialize, Clone)]
@@ -191,6 +193,7 @@ pub struct ReferenceDetails {
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
@@ -238,7 +241,7 @@ pub struct OntAnnotationDetail {
     pub gene_ex_props: Option<GeneExProps>,
     // only for genotype/phenotype annotation:
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype: Option<GenotypeShort>,
+    pub genotype_uniquename: Option<GenotypeUniquename>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub conditions: Vec<TermId>,
 }
@@ -351,6 +354,7 @@ pub struct GeneDetails {
     pub target_of_annotations: Vec<TargetOfAnnotation>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
@@ -371,7 +375,6 @@ pub struct GenotypeShort {
     #[serde(skip_serializing_if="Option::is_none")]
     pub background: Option<String>,
     pub expressed_alleles: Vec<ExpressedAllele>,
-//    pub annotations: TypeFeatureAnnotationMap,
 }
 
 #[derive(Serialize, Clone)]
@@ -441,6 +444,7 @@ pub struct TermDetails {
     pub rel_annotations: Vec<RelOntAnnotation>,
     pub not_rel_annotations: Vec<RelOntAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
