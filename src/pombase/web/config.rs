@@ -43,15 +43,15 @@ pub const INVERSE_REL_CV_NAMES: [&'static str; 1] = ["fission_yeast_phenotype"];
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
 
+pub const TRANSCRIPT_FEATURE_TYPES: [&'static str; 6] =
+    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA"];
+
 // "interesting parents" are those stored in the JSON in the TermShort structs
 #[derive(Clone)]
 pub struct InterestingParent {
     pub termid: &'static str,
     pub rel_name: &'static str,
 }
-
-pub const TRANSCRIPT_FEATURE_TYPES: [&'static str; 6] =
-    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA"];
 
 // when creating a TermShort struct, for each of these termids if the term has
 // an "interesting parent" using the given rel_name, we store it in the
