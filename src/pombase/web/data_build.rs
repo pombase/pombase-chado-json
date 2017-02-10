@@ -355,7 +355,7 @@ impl <'a> WebDataBuild<'a> {
             let subject_uniquename = &feature_rel.subject.uniquename;
             let object_uniquename = &feature_rel.object.uniquename;
 
-            if subject_type_name == "mRNA" &&
+            if TRANSCRIPT_FEATURE_TYPES.contains(&subject_type_name.as_str()) &&
                 rel_name == "part_of" &&
                 (object_type_name == "gene" || object_type_name == "pseudogene") {
                     self.genes_of_transcripts.insert(subject_uniquename.clone(),
@@ -514,15 +514,15 @@ impl <'a> WebDataBuild<'a> {
             "gene" | "pseudogene" =>
                 self.store_gene_details(feat),
 
-            // TODO: mRNA isn't the only transcript type
-            "mRNA" => {
-                self.transcripts.insert(feat.uniquename.clone(),
-                                        TranscriptDetails {
-                                            uniquename: feat.uniquename.clone(),
-                                            name: feat.name.clone(),
-                                        });
-            },
-            _ => (),
+            _ => {
+                if TRANSCRIPT_FEATURE_TYPES.contains(&feat.feat_type.name.as_str()) {
+                    self.transcripts.insert(feat.uniquename.clone(),
+                                            TranscriptDetails {
+                                                uniquename: feat.uniquename.clone(),
+                                                name: feat.name.clone(),
+                                            });
+                }
+            }
         }
     }
 
@@ -1271,14 +1271,6 @@ impl <'a> WebDataBuild<'a> {
             let mut maybe_genotype_uniquename = None;
             let mut gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
-                    "mRNA" => {
-                        if let Some(gene_uniquename) =
-                            self.genes_of_transcripts.get(&feature.uniquename) {
-                                vec![gene_uniquename.clone()]
-                            } else {
-                                vec![]
-                            }
-                    },
                     "polypeptide" => {
                         if let Some(transcript_uniquename) =
                             self.transcripts_of_polypeptides.get(&feature.uniquename) {
@@ -1307,7 +1299,16 @@ impl <'a> WebDataBuild<'a> {
                         if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
                             vec![feature.uniquename.clone()]
                         } else {
-                            vec![]
+                            if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
+                                if let Some(gene_uniquename) =
+                                    self.genes_of_transcripts.get(&feature.uniquename) {
+                                        vec![gene_uniquename.clone()]
+                                    } else {
+                                        vec![]
+                                    }
+                            } else {
+                                vec![]
+                            }
                         }
                     }
                 };

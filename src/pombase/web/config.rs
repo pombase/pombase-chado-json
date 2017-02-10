@@ -50,6 +50,9 @@ pub struct InterestingParent {
     pub rel_name: &'static str,
 }
 
+pub const TRANSCRIPT_FEATURE_TYPES: [&'static str; 6] =
+    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA"];
+
 // when creating a TermShort struct, for each of these termids if the term has
 // an "interesting parent" using the given rel_name, we store it in the
 // interesting_parents field of the TermShort
