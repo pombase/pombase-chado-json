@@ -1984,7 +1984,9 @@ impl <'a> WebDataBuild<'a> {
                                         allele_short.gene_uniquename.clone();
                                     add_gene_to_hash(reference_uniquename.clone(), allele_gene_uniquename);
                                 }
-                            }
+                                self.add_genotype_to_hash(&mut seen_genotypes, reference_uniquename.clone(),
+                                                          &genotype.uniquename);
+                           }
                         }
                    }
                 }
