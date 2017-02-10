@@ -56,13 +56,17 @@ pub struct InterestingParent {
 // when creating a TermShort struct, for each of these termids if the term has
 // an "interesting parent" using the given rel_name, we store it in the
 // interesting_parents field of the TermShort
-pub const INTERESTING_PARENTS: [InterestingParent; 3] = [
+pub const INTERESTING_PARENTS: [InterestingParent; 4] = [
     InterestingParent {
         termid: "FYPO:0000002",
         rel_name: "is_a",
     },
     InterestingParent {
         termid: "FYPO:0000003",
+        rel_name: "is_a",
+    },
+    InterestingParent {
+        termid: "FYPO:0000652",
         rel_name: "is_a",
     },
 
