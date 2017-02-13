@@ -1392,50 +1392,94 @@ impl <'a> WebDataBuild<'a> {
 
         let cv_name = term_short.cv_name.clone();
 
-        if cv_name == "gene_ex" {
-            if is_not {
-                panic!("gene_ex annotations can't be NOT annotations");
-            }
-            let mut qual_annotations =
-                OntTermAnnotations {
-                    term: term_short.clone(),
-                    is_not: false,
-                    annotations: vec![],
-                };
-            let mut quant_annotations =
-                OntTermAnnotations {
-                    term: term_short.clone(),
-                    is_not: false,
-                    annotations: vec![],
-                };
-            for detail in details {
-                if detail.gene_ex_props.is_some() {
-                    quant_annotations.annotations.push(detail.clone())
-                } else {
-                    qual_annotations.annotations.push(detail.clone())
+        match cv_name.as_ref() {
+            "gene_ex" => {
+                if is_not {
+                    panic!("gene_ex annotations can't be NOT annotations");
                 }
+                let mut qual_annotations =
+                    OntTermAnnotations {
+                        term: term_short.clone(),
+                        is_not: false,
+                        annotations: vec![],
+                    };
+                let mut quant_annotations =
+                    OntTermAnnotations {
+                        term: term_short.clone(),
+                        is_not: false,
+                        annotations: vec![],
+                    };
+                for detail in details {
+                    if detail.gene_ex_props.is_some() {
+                        quant_annotations.annotations.push(detail.clone())
+                    } else {
+                        qual_annotations.annotations.push(detail.clone())
+                    }
+                }
+
+                let mut return_vec = vec![];
+
+                if qual_annotations.annotations.len() > 0 {
+                    return_vec.push((String::from("qualitative_gene_expression"),
+                                     qual_annotations));
+                }
+
+                if quant_annotations.annotations.len() > 0 {
+                    return_vec.push((String::from("quantitative_gene_expression"),
+                                     quant_annotations));
+                }
+
+                return_vec
+            },
+            "fission_yeast_phenotype" => {
+                let mut single_allele =
+                    OntTermAnnotations {
+                        term: term_short.clone(),
+                        is_not: is_not,
+                        annotations: vec![],
+                    };
+                let mut multi_allele =
+                    OntTermAnnotations {
+                        term: term_short.clone(),
+                        is_not: is_not,
+                        annotations: vec![],
+                    };
+
+                for detail in details {
+                    let genotype_uniquename = detail.genotype_uniquename.clone().unwrap();
+                    if let Some(genotype_details) = self.genotypes.get(&genotype_uniquename) {
+                        if genotype_details.expressed_alleles.len() == 1 {
+                            single_allele.annotations.push(detail.clone())
+                        } else {
+                            multi_allele.annotations.push(detail.clone())
+                        }
+                    } else {
+                        panic!("can't find genotype details for {}\n", genotype_uniquename);
+                    }
+                }
+
+                let mut return_vec = vec![];
+
+                if single_allele.annotations.len() > 0 {
+                    return_vec.push((String::from("single_allele_phenotype"),
+                                     single_allele));
+                }
+
+                if multi_allele.annotations.len() > 0 {
+                    return_vec.push((String::from("multi_allele_phenotype"),
+                                     multi_allele));
+                }
+
+                return_vec
+            },
+            _ => {
+                vec![(cv_name,
+                      OntTermAnnotations {
+                          term: term_short.clone(),
+                          is_not: is_not,
+                          annotations: details.clone(),
+                      })]
             }
-
-            let mut return_vec = vec![];
-
-            if qual_annotations.annotations.len() > 0 {
-                return_vec.push((String::from("qualitative_gene_expression"),
-                                qual_annotations));
-            }
-
-            if quant_annotations.annotations.len() > 0 {
-                return_vec.push((String::from("quantitative_gene_expression"),
-                                quant_annotations));
-            }
-
-            return_vec
-        } else {
-            vec![(cv_name,
-                  OntTermAnnotations {
-                      term: term_short.clone(),
-                      is_not: is_not,
-                      annotations: details.clone(),
-                  })]
         }
     }
 
