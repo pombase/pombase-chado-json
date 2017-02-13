@@ -42,6 +42,8 @@ pub struct WebDataBuild<'a> {
     transcripts_of_polypeptides: HashMap<String, String>,
     genes_of_alleles: HashMap<String, String>,
     alleles_of_genotypes: HashMap<String, Vec<AlleleAndExpression>>,
+    // gene_uniquename vs transcript_type_name:
+    transcript_type_of_genes: HashMap<String, String>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -93,6 +95,7 @@ impl <'a> WebDataBuild<'a> {
             transcripts_of_polypeptides: HashMap::new(),
             genes_of_alleles: HashMap::new(),
             alleles_of_genotypes: HashMap::new(),
+            transcript_type_of_genes: HashMap::new(),
 
             parts_of_extensions: HashMap::new(),
 
@@ -360,6 +363,8 @@ impl <'a> WebDataBuild<'a> {
                 (object_type_name == "gene" || object_type_name == "pseudogene") {
                     self.genes_of_transcripts.insert(subject_uniquename.clone(),
                                                      object_uniquename.clone());
+                    self.transcript_type_of_genes.insert(object_uniquename.clone(),
+                                                         subject_type_name.clone());
                     continue;
                 }
             if subject_type_name == "polypeptide" &&
@@ -427,6 +432,15 @@ impl <'a> WebDataBuild<'a> {
 
         let organism = make_organism_short(&feat.organism);
 
+
+        let feature_type =
+            if let Some(transcript_type) =
+                self.transcript_type_of_genes.get(&feat.uniquename) {
+                    transcript_type.clone() + " " + &feat.feat_type.name
+                } else {
+                    feat.feat_type.name.clone()
+                };
+
         let gene_feature = GeneDetails {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
@@ -434,7 +448,7 @@ impl <'a> WebDataBuild<'a> {
             product: None,
             name_descriptions: vec![],
             synonyms: vec![],
-            feature_type: feat.feat_type.name.clone(),
+            feature_type: feature_type,
             characterisation_status: None,
             location: location,
             gene_neighbourhood: vec![],
