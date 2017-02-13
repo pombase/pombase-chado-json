@@ -1101,11 +1101,23 @@ impl <'a> WebDataBuild<'a> {
             let cvterm = &feature_cvterm.cvterm;
 
             let gene_uniquenames_vec: Vec<GeneUniquename> =
-                if feature.feat_type.name == "polypeptide" && cvterm.cv.name == "PomBase gene products" {
-                    if let Some(transcript_uniquename) =
-                        self.transcripts_of_polypeptides.get(&feature.uniquename) {
+                if cvterm.cv.name == "PomBase gene products" {
+                    if feature.feat_type.name == "polypeptide" {
+                        if let Some(transcript_uniquename) =
+                            self.transcripts_of_polypeptides.get(&feature.uniquename) {
+                                if let Some(gene_uniquename) =
+                                    self.genes_of_transcripts.get(transcript_uniquename) {
+                                        vec![gene_uniquename.clone()]
+                                    } else {
+                                        vec![]
+                                    }
+                            } else {
+                                vec![]
+                            }
+                    } else {
+                        if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
                             if let Some(gene_uniquename) =
-                                self.genes_of_transcripts.get(transcript_uniquename) {
+                                self.genes_of_transcripts.get(&feature.uniquename) {
                                     vec![gene_uniquename.clone()]
                                 } else {
                                     vec![]
@@ -1113,6 +1125,7 @@ impl <'a> WebDataBuild<'a> {
                         } else {
                             vec![]
                         }
+                    }
                 } else {
                     vec![]
                 };
