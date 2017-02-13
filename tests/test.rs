@@ -474,7 +474,7 @@ fn test_genotype_annotation() {
     // we get only one annotation
     let web_data = get_test_web_data();
     let cdc16_gene = web_data.genes.get("SPAC6F6.08c").unwrap().clone();
-    let fypo_annotations = cdc16_gene.cv_annotations.get("fission_yeast_phenotype").unwrap();
+    let fypo_annotations = cdc16_gene.cv_annotations.get("multi_allele_phenotype").unwrap();
 
     assert_eq!(fypo_annotations.len(), 1);
 }
