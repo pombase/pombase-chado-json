@@ -1206,7 +1206,8 @@ impl <'a> WebDataBuild<'a> {
 
     // add the with value as a fake extension if the cvterm is_a protein binding,
     // otherwise return the value
-    fn make_with_extension(&self, termid: &String, extension: &mut Vec<ExtPart>,
+    fn make_with_extension(&self, termid: &String, evidence_code: Option<String>,
+                           extension: &mut Vec<ExtPart>,
                            with_value: String) -> WithFromValue {
         let base_termid =
             match self.base_term_of_extensions.get(termid) {
@@ -1216,10 +1217,13 @@ impl <'a> WebDataBuild<'a> {
 
         let base_term_short = self.make_term_short(&base_termid);
 
-        if base_term_short.termid == "GO:0005515" ||
+        if evidence_code.is_some() &&
+            evidence_code.unwrap() == "Inferred from Physical Interaction" &&
+            (base_term_short.termid == "GO:0005515" ||
             base_term_short.interesting_parents
-            .contains("GO:0005515") {
+            .contains("GO:0005515")) {
                 extension.push(self.get_with_extension(&with_value));
+                print!("It worked!\n");
             } else {
                 return self.make_with_or_from_value(with_value);
             }
@@ -1247,6 +1251,7 @@ impl <'a> WebDataBuild<'a> {
             let mut from: WithFromValue = WithFromValue::None;
             let mut qualifiers: Vec<Qualifier> = vec![];
             let mut evidence: Option<String> = None;
+            let mut raw_with_value: Option<String> = None;
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
                     "residue" | "scale" |
@@ -1273,14 +1278,7 @@ impl <'a> WebDataBuild<'a> {
                             qualifiers.push(value);
                         },
                     "with" => {
-                        if let Some(value) = prop.value.clone() {
-                            let with_gene_short =
-                                self.make_with_extension(&cvterm.termid(),
-                                                         &mut extension, value);
-                            if with_gene_short.is_some() {
-                                with = with_gene_short;
-                            }
-                        }
+                        raw_with_value = prop.value.clone();
                     },
                     "from" => {
                         if let Some(value) = prop.value.clone() {
@@ -1295,6 +1293,18 @@ impl <'a> WebDataBuild<'a> {
                     _ => ()
                 }
             }
+
+            if let Some(value) = raw_with_value {
+                print!("got raw value\n");
+                let with_gene_short =
+                    self.make_with_extension(&cvterm.termid(), evidence.clone(),
+                                             &mut extension, value);
+                if with_gene_short.is_some() {
+                    print!("got some from make_with_extension()\n");
+                    with = with_gene_short;
+                }
+            }
+
             let mut maybe_genotype_uniquename = None;
             let mut gene_uniquenames_vec: Vec<GeneUniquename> =
                 match &feature.feat_type.name as &str {
