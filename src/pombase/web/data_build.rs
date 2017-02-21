@@ -1218,12 +1218,11 @@ impl <'a> WebDataBuild<'a> {
         let base_term_short = self.make_term_short(&base_termid);
 
         if evidence_code.is_some() &&
-            evidence_code.unwrap() == "Inferred from Physical Interaction" &&
+            evidence_code.unwrap() == "IPI" &&
             (base_term_short.termid == "GO:0005515" ||
             base_term_short.interesting_parents
             .contains("GO:0005515")) {
                 extension.push(self.get_with_extension(&with_value));
-                print!("It worked!\n");
             } else {
                 return self.make_with_or_from_value(with_value);
             }
@@ -1295,12 +1294,10 @@ impl <'a> WebDataBuild<'a> {
             }
 
             if let Some(value) = raw_with_value {
-                print!("got raw value\n");
                 let with_gene_short =
                     self.make_with_extension(&cvterm.termid(), evidence.clone(),
                                              &mut extension, value);
                 if with_gene_short.is_some() {
-                    print!("got some from make_with_extension()\n");
                     with = with_gene_short;
                 }
             }
