@@ -764,7 +764,7 @@ impl <'a> WebDataBuild<'a> {
                                         gene_details.physical_interactions.push(interaction_annotation.clone());
                                     } else {
                                         if rel_name == "interacts_genetically" {
-                                            gene_details.physical_interactions.push(interaction_annotation.clone());
+                                            gene_details.genetic_interactions.push(interaction_annotation.clone());
                                         } else {
                                             panic!("unknown interaction type: {}", rel_name);
                                         }
@@ -781,7 +781,7 @@ impl <'a> WebDataBuild<'a> {
                                             ref_details.physical_interactions.push(interaction_annotation.clone());
                                         } else {
                                             if rel_name == "interacts_genetically" {
-                                                ref_details.physical_interactions.push(interaction_annotation.clone());
+                                                ref_details.genetic_interactions.push(interaction_annotation.clone());
                                             } else {
                                                 panic!("unknown interaction type: {}", rel_name);
                                             }
