@@ -957,10 +957,15 @@ impl <'a> WebDataBuild<'a> {
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
+                let cv_config =
+                    self.config.cv_config_by_name(&cvterm.cv.name);
+                let annotation_feature_type =
+                    cv_config.feature_type.clone();
                 self.terms.insert(cvterm.termid(),
                                   TermDetails {
                                       name: cvterm.name.clone(),
                                       cv_name: cvterm.cv.name.clone(),
+                                      annotation_feature_type: annotation_feature_type,
                                       interesting_parents: HashSet::new(),
                                       termid: cvterm.termid(),
                                       definition: cvterm.definition.clone(),

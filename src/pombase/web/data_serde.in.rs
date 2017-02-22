@@ -436,6 +436,7 @@ pub struct RelOntAnnotation {
 pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
+    pub annotation_feature_type: String,
     pub interesting_parents: HashSet<String>,
     pub termid: TermId,
     #[serde(skip_serializing_if="Option::is_none")]

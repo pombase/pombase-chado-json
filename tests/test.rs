@@ -400,6 +400,7 @@ fn get_test_web_data() -> WebData {
     let config = Config {
         extensions: vec![],
         evidence_types: HashMap::new(),
+        cv_config: HashMap::new(),
     };
     let mut web_data_build = WebDataBuild::new(&raw, &config);
     web_data_build.get_web_data()
