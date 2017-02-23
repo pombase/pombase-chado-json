@@ -1682,12 +1682,12 @@ impl <'a> WebDataBuild<'a> {
                 let rel_term_name =
                     self.make_term_short(&rel_termid).name;
 
-                let is_inverse =
-                    INVERSE_REL_CV_NAMES.contains(&subject_term_details.cv_name.as_str()) &&
-                    INVERSE_REL_NAMES.contains(&rel_term_name.as_str());
+                if rel_term_name == "has_part" &&
+                    !HAS_PART_CV_NAMES.contains(&subject_term_details.cv_name.as_str()) {
+                    continue;
+                }
 
-                if !DESCENDANT_REL_NAMES.contains(&rel_term_name.as_str()) &&
-                    !is_inverse {
+                if !DESCENDANT_REL_NAMES.contains(&rel_term_name.as_str()) {
                     continue;
                 }
 
@@ -1704,11 +1704,7 @@ impl <'a> WebDataBuild<'a> {
                             annotation_by_id.insert(detail.id, detail.clone());
                         }
                         let (dest_termid, source_termid) =
-                            if is_inverse {
-                                (subject_termid.clone(), object_termid.clone())
-                            } else {
-                                (object_termid.clone(), subject_termid.clone())
-                            };
+                            (object_termid.clone(), subject_termid.clone());
                         new_annotations.entry(dest_termid)
                             .or_insert(HashMap::new())
                             .entry(source_termid)

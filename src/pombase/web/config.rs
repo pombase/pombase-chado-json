@@ -34,11 +34,10 @@ pub const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
 
 // relations to use when copy annotation to parents (ie. adding the
 // annotation of child terms to parents)
-pub const DESCENDANT_REL_NAMES: [&'static str; 3] = ["is_a", "part_of", "regulates"];
-// relationships where the more specific term is the object, used when reading cvtermpath
-pub const INVERSE_REL_NAMES: [&'static str; 1] = ["has_part"];
-// only consider inverse relations for these ontologies:
-pub const INVERSE_REL_CV_NAMES: [&'static str; 1] = ["fission_yeast_phenotype"];
+pub const DESCENDANT_REL_NAMES: [&'static str; 5] =
+    ["is_a", "part_of", "regulates", "has_part", "output_of"];
+// only consider has_part relations for these ontologies:
+pub const HAS_PART_CV_NAMES: [&'static str; 1] = ["fission_yeast_phenotype"];
 
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
