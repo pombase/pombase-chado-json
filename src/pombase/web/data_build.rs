@@ -970,6 +970,7 @@ impl <'a> WebDataBuild<'a> {
                                       termid: cvterm.termid(),
                                       definition: cvterm.definition.clone(),
                                       is_obsolete: cvterm.is_obsolete,
+                                      single_allele_genotype_uniquenames: HashSet::new(),
                                       rel_annotations: vec![],
                                       not_rel_annotations: vec![],
                                       genes_by_uniquename: HashMap::new(),
@@ -2112,21 +2113,28 @@ impl <'a> WebDataBuild<'a> {
     pub fn set_counts(&mut self) {
         let mut term_seen_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
         let mut term_seen_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
+        let mut term_seen_single_allele_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
         let mut ref_seen_genes: HashMap<ReferenceUniquename, HashSet<GeneUniquename>> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
             let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
             let mut seen_genotypes: HashSet<GenotypeUniquename> = HashSet::new();
+            let mut seen_single_allele_genotypes: HashSet<GenotypeUniquename> = HashSet::new();
             for rel_annotation in &term_details.rel_annotations {
                 for annotation in &rel_annotation.annotations {
                     seen_genes.insert(annotation.gene_uniquename.clone());
                     if let Some(ref genotype_uniquename) = annotation.genotype_uniquename {
                         seen_genotypes.insert(genotype_uniquename.clone());
+                        let genotype = self.genotypes.get(genotype_uniquename).unwrap();
+                        if genotype.expressed_alleles.len() == 1 {
+                            seen_single_allele_genotypes.insert(genotype_uniquename.clone());
+                        }
                     }
                 }
             }
             term_seen_genes.insert(termid.clone(), seen_genes);
             term_seen_genotypes.insert(termid.clone(), seen_genotypes);
+            term_seen_single_allele_genotypes.insert(termid.clone(), seen_single_allele_genotypes);
         }
 
         for (reference_uniquename, reference_details) in &self.references {
@@ -2202,6 +2210,9 @@ impl <'a> WebDataBuild<'a> {
                     reference_short.gene_count =
                         ref_seen_genes.get(reference_uniquename).unwrap().len();
                 }
+
+            term_details.single_allele_genotype_uniquenames =
+                term_seen_single_allele_genotypes.remove(&term_details.termid).unwrap();
         }
     }
 

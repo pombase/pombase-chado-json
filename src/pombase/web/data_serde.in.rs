@@ -442,6 +442,7 @@ pub struct TermDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
     pub is_obsolete: bool,
+    pub single_allele_genotype_uniquenames: HashSet<String>,
     pub rel_annotations: Vec<RelOntAnnotation>,
     pub not_rel_annotations: Vec<RelOntAnnotation>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
