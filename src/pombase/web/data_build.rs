@@ -969,6 +969,7 @@ impl <'a> WebDataBuild<'a> {
                                       interesting_parents: HashSet::new(),
                                       termid: cvterm.termid(),
                                       definition: cvterm.definition.clone(),
+                                      direct_ancestors: vec![],
                                       is_obsolete: cvterm.is_obsolete,
                                       single_allele_genotype_uniquenames: HashSet::new(),
                                       rel_annotations: vec![],
@@ -1039,6 +1040,16 @@ impl <'a> WebDataBuild<'a> {
                 if rel_type.name == "is_a" {
                     self.base_term_of_extensions.insert(subject_termid.clone(),
                                                         object_term.termid().clone());
+                }
+            } else {
+                let object_term_short =
+                    self.make_term_short(&object_term.termid());
+                if let Some(ref mut subject_term_details) = self.terms.get_mut(&subject_term.termid()) {
+                    subject_term_details.direct_ancestors.push(TermAndRelation {
+                        termid: object_term_short.termid.clone(),
+                        term_name: object_term_short.name.clone(),
+                        relation_name: rel_type.name.clone(),
+                    });
                 }
             }
         }

@@ -433,6 +433,13 @@ pub struct RelOntAnnotation {
 }
 
 #[derive(Serialize, Clone)]
+pub struct TermAndRelation {
+    pub termid: TermId,
+    pub term_name: TermName,
+    pub relation_name: RelName,
+}
+
+#[derive(Serialize, Clone)]
 pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
@@ -441,6 +448,7 @@ pub struct TermDetails {
     pub termid: TermId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
+    pub direct_ancestors: Vec<TermAndRelation>,
     pub is_obsolete: bool,
     pub single_allele_genotype_uniquenames: HashSet<String>,
     pub rel_annotations: Vec<RelOntAnnotation>,
