@@ -131,8 +131,16 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_genotype_to_hash(&self,
                             seen_genotypes: &mut HashMap<String, GenotypeShortMap>,
+                            seen_alleles: &mut HashMap<String, AlleleShortMap>,
+                            seen_genes: &mut HashMap<String, GeneShortMap>,
                             identifier: String,
                             genotype_uniquename: &GenotypeUniquename) {
+        let genotype = self.make_genotype_short(genotype_uniquename);
+        for expressed_allele in &genotype.expressed_alleles {
+            self.add_allele_to_hash(seen_alleles, seen_genes, identifier.clone(),
+                                    expressed_allele.allele_uniquename.clone());
+        }
+
         seen_genotypes
             .entry(identifier)
             .or_insert(HashMap::new())
@@ -142,9 +150,13 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_allele_to_hash(&self,
                           seen_alleles: &mut HashMap<String, AlleleShortMap>,
+                          seen_genes: &mut HashMap<String, GeneShortMap>,
                           identifier: String,
                           allele_uniquename: AlleleUniquename) -> AlleleShort {
         let allele_short = self.make_allele_short(&allele_uniquename);
+        let allele_gene_uniquename =
+            allele_short.gene_uniquename.clone();
+        self.add_gene_to_hash(seen_genes, identifier.clone(), allele_gene_uniquename);
         seen_alleles
             .entry(identifier)
             .or_insert(HashMap::new())
@@ -1846,17 +1858,9 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                     if let Some(ref genotype_uniquename) = detail.genotype_uniquename {
-                        let genotype = self.make_genotype_short(genotype_uniquename);
-                        for expressed_allele in &genotype.expressed_alleles {
-                            let allele_short =
-                                self.add_allele_to_hash(seen_alleles, identifier.clone(),
-                                                        expressed_allele.allele_uniquename.clone());
-                            let allele_gene_uniquename =
-                                allele_short.gene_uniquename.clone();
-                            self.add_gene_to_hash(seen_genes, identifier.clone(), allele_gene_uniquename);
-                        }
-                        self.add_genotype_to_hash(seen_genotypes, identifier.clone(),
-                                                  &genotype.uniquename);
+                        self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  identifier.clone(),
+                                                  &genotype_uniquename);
                     }
                 }
             }
@@ -1887,17 +1891,9 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                     if let Some(ref genotype_uniquename) = detail.genotype_uniquename {
-                        let genotype = self.make_genotype_short(genotype_uniquename);
-                        for expressed_allele in &genotype.expressed_alleles {
-                            let allele_short =
-                                self.add_allele_to_hash(&mut seen_alleles, termid.clone(),
-                                                        expressed_allele.allele_uniquename.clone());
-                            let allele_gene_uniquename =
-                                allele_short.gene_uniquename.clone();
-                            self.add_gene_to_hash(&mut seen_genes, termid.clone(), allele_gene_uniquename);
-                        }
-                        self.add_genotype_to_hash(&mut seen_genotypes, termid.clone(),
-                                                  &genotype.uniquename);
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes, termid.clone(),
+                                                  &genotype_uniquename);
                     }
                 }
             }
@@ -1960,8 +1956,9 @@ impl <'a> WebDataBuild<'a> {
                                               annotation_gene_uniquename.clone());
                     }
                     if let Some(ref annotation_genotype_uniquename) = target_of_annotation.genotype_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, gene_uniquename.clone(),
-                                                     &annotation_genotype_uniquename.clone())
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  gene_uniquename.clone(),
+                                                  &annotation_genotype_uniquename.clone())
                     }
                     self.add_ref_to_hash(&mut seen_references, gene_uniquename.clone(),
                                     target_of_annotation.reference_uniquename.clone());
@@ -2032,64 +2029,29 @@ impl <'a> WebDataBuild<'a> {
         let mut seen_terms: HashMap<GeneUniquename, TermShortMap> = HashMap::new();
 
         {
-            let mut add_gene_to_hash =
-                |reference_uniquename: ReferenceUniquename, gene_uniquename: GeneUniquename| {
-                    seen_genes
-                        .entry(reference_uniquename.clone())
-                        .or_insert(HashMap::new())
-                        .insert(gene_uniquename.clone(),
-                                self.make_gene_short(&gene_uniquename));
-                };
-
-            let mut add_allele_to_hash =
-                |reference_uniquename: ReferenceUniquename, allele_uniquename: AlleleUniquename| {
-                    let allele_short = self.make_allele_short(&allele_uniquename);
-                    seen_alleles
-                        .entry(reference_uniquename.clone())
-                        .or_insert(HashMap::new())
-                        .insert(allele_uniquename.clone(), allele_short.clone());
-                    allele_short
-                };
-
-            let mut add_term_to_hash =
-                |reference_uniquename: ReferenceUniquename, other_termid: TermId| {
-                    seen_terms
-                        .entry(reference_uniquename.clone())
-                        .or_insert(HashMap::new())
-                        .insert(other_termid.clone(),
-                                self.make_term_short(&other_termid));
-                };
-
             for (reference_uniquename, reference_details) in &self.references {
                 for (_, feat_annotations) in &reference_details.cv_annotations {
                     for feat_annotation in feat_annotations.iter() {
                         for detail in &feat_annotation.annotations {
-                            add_gene_to_hash(reference_uniquename.clone(),
-                                             detail.gene_uniquename.clone());
+                            self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(),
+                                                  detail.gene_uniquename.clone());
                             for condition_termid in &detail.conditions {
-                                add_term_to_hash(reference_uniquename.clone(), condition_termid.clone());
+                                self.add_term_to_hash(&mut seen_terms, reference_uniquename.clone(), condition_termid.clone());
                             }
                             for ext_part in &detail.extension {
                                 match ext_part.ext_range {
                                     ExtRange::Term(ref range_termid) =>
-                                        add_term_to_hash(reference_uniquename.clone(), range_termid.clone()),
+                                        self.add_term_to_hash(&mut seen_terms, reference_uniquename.clone(), range_termid.clone()),
                                     ExtRange::Gene(ref allele_gene_uniquename) =>
-                                        add_gene_to_hash(reference_uniquename.clone(),
+                                        self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(),
                                                          allele_gene_uniquename.clone()),
                                     _ => {},
                                 }
                             }
                             if let Some(ref genotype_uniquename) = detail.genotype_uniquename {
                                 let genotype = self.make_genotype_short(genotype_uniquename);
-                                for expressed_allele in &genotype.expressed_alleles {
-                                    let allele_short =
-                                        add_allele_to_hash(reference_uniquename.clone(),
-                                                           expressed_allele.allele_uniquename.clone());
-                                    let allele_gene_uniquename =
-                                        allele_short.gene_uniquename.clone();
-                                    add_gene_to_hash(reference_uniquename.clone(), allele_gene_uniquename);
-                                }
-                                self.add_genotype_to_hash(&mut seen_genotypes, reference_uniquename.clone(),
+                                self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                          reference_uniquename.clone(),
                                                           &genotype.uniquename);
                            }
                         }
@@ -2099,17 +2061,17 @@ impl <'a> WebDataBuild<'a> {
                 let interaction_iter =
                     reference_details.physical_interactions.iter().chain(&reference_details.genetic_interactions);
                 for interaction in interaction_iter {
-                    add_gene_to_hash(reference_uniquename.clone(), interaction.gene_uniquename.clone());
-                    add_gene_to_hash(reference_uniquename.clone(), interaction.interactor_uniquename.clone());
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(), interaction.gene_uniquename.clone());
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(), interaction.interactor_uniquename.clone());
                 }
 
                 for ortholog_annotation in &reference_details.ortholog_annotations {
-                    add_gene_to_hash(reference_uniquename.clone(), ortholog_annotation.gene_uniquename.clone());
-                    add_gene_to_hash(reference_uniquename.clone(), ortholog_annotation.ortholog_uniquename.clone());
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(), ortholog_annotation.gene_uniquename.clone());
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(), ortholog_annotation.ortholog_uniquename.clone());
                 }
                 for paralog_annotation in &reference_details.paralog_annotations {
-                    add_gene_to_hash(reference_uniquename.clone(), paralog_annotation.gene_uniquename.clone());
-                    add_gene_to_hash(reference_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(), paralog_annotation.gene_uniquename.clone());
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
                 }
 
             }
