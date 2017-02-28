@@ -293,7 +293,10 @@ impl Hash for OntTermAnnotations {
 pub struct TargetOfAnnotation {
     pub ontology_name: String,
     pub ext_rel_display_name: String,
-    pub gene_uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub gene_uniquename: Option<GeneUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_uniquename: Option<GenotypeUniquename>,
     pub reference_uniquename: Option<ReferenceUniquename>,
 }
 

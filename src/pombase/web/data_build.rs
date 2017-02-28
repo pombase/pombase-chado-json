@@ -898,6 +898,7 @@ impl <'a> WebDataBuild<'a> {
     // create and returns any TargetOfAnnotations implied by the extension
     fn make_target_of_for_ext(&self, cv_name: &String,
                               gene_uniquename: &String,
+                              maybe_genotype_uniquename: &Option<String>,
                               reference_uniquename: &Option<String>,
                               annotation_termid: &String,
                               extension: &Vec<ExtPart>) -> Vec<(GeneUniquename, TargetOfAnnotation)> {
@@ -910,11 +911,18 @@ impl <'a> WebDataBuild<'a> {
                 if let Some(ext_config) = maybe_ext_config {
                     if let Some(reciprocal_display_name) =
                         ext_config.reciprocal_display {
+                            let (annotation_gene_uniquename, annotation_genotype_uniquename) =
+                                if maybe_genotype_uniquename.is_some() {
+                                    (None, maybe_genotype_uniquename.clone())
+                                } else {
+                                    (Some(gene_uniquename.clone()), None)
+                                };
                             ret_vec.push(((*target_gene_uniquename).clone(),
                                           TargetOfAnnotation {
                                               ontology_name: cv_name.clone(),
                                               ext_rel_display_name: reciprocal_display_name,
-                                              gene_uniquename: gene_uniquename.clone(),
+                                              gene_uniquename: annotation_gene_uniquename,
+                                              genotype_uniquename: annotation_genotype_uniquename,
                                               reference_uniquename: reference_uniquename.clone(),
                                           }));
                         }
@@ -929,20 +937,20 @@ impl <'a> WebDataBuild<'a> {
         let mut target_of_annotations: HashMap<GeneUniquename, HashSet<TargetOfAnnotation>> =
             HashMap::new();
 
-        for (gene_uniquename, gene_details) in &self.genes {
-            for (cv_name, feat_annotations) in &gene_details.cv_annotations {
-                for feat_annotation in feat_annotations.iter() {
-                    for detail in &feat_annotation.annotations {
-                        let new_annotations =
-                            self.make_target_of_for_ext(&cv_name, &gene_uniquename,
-                                                        &detail.reference_uniquename,
-                                                        &feat_annotation.term.termid, &detail.extension);
+        for (_, term_details) in &self.terms {
+            for rel_annotation in &term_details.rel_annotations {
+                for annotation in rel_annotation.annotations.iter() {
+                    let new_annotations =
+                        self.make_target_of_for_ext(&term_details.cv_name,
+                                                    &annotation.gene_uniquename,
+                                                    &annotation.genotype_uniquename,
+                                                    &annotation.reference_uniquename,
+                                                    &term_details.termid, &annotation.extension);
                         for (target_gene_uniquename, new_annotation) in new_annotations {
                             target_of_annotations
                                 .entry(target_gene_uniquename.clone())
                                 .or_insert(HashSet::new())
                                 .insert(new_annotation);
-                        }
                     }
                 }
             }
@@ -1947,8 +1955,14 @@ impl <'a> WebDataBuild<'a> {
                     self.add_gene_to_hash(&mut seen_genes, gene_uniquename.clone(), paralog_annotation.paralog_uniquename.clone());
                 }
                 for target_of_annotation in &gene_details.target_of_annotations {
-                    self.add_gene_to_hash(&mut seen_genes, gene_uniquename.clone(),
-                                     target_of_annotation.gene_uniquename.clone());
+                    if let Some(ref annotation_gene_uniquename) = target_of_annotation.gene_uniquename {
+                        self.add_gene_to_hash(&mut seen_genes, gene_uniquename.clone(),
+                                              annotation_gene_uniquename.clone());
+                    }
+                    if let Some(ref annotation_genotype_uniquename) = target_of_annotation.genotype_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, gene_uniquename.clone(),
+                                                     &annotation_genotype_uniquename.clone())
+                    }
                     self.add_ref_to_hash(&mut seen_references, gene_uniquename.clone(),
                                     target_of_annotation.reference_uniquename.clone());
                 }
