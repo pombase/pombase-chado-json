@@ -1445,12 +1445,14 @@ impl <'a> WebDataBuild<'a> {
                     OntTermAnnotations {
                         term: term_short.clone(),
                         is_not: false,
+                        rel_names: HashSet::new(),
                         annotations: vec![],
                     };
                 let mut quant_annotations =
                     OntTermAnnotations {
                         term: term_short.clone(),
                         is_not: false,
+                        rel_names: HashSet::new(),
                         annotations: vec![],
                     };
                 for detail in details {
@@ -1480,12 +1482,14 @@ impl <'a> WebDataBuild<'a> {
                     OntTermAnnotations {
                         term: term_short.clone(),
                         is_not: is_not,
+                        rel_names: HashSet::new(),
                         annotations: vec![],
                     };
                 let mut multi_allele =
                     OntTermAnnotations {
                         term: term_short.clone(),
                         is_not: is_not,
+                        rel_names: HashSet::new(),
                         annotations: vec![],
                     };
 
@@ -1521,6 +1525,7 @@ impl <'a> WebDataBuild<'a> {
                       OntTermAnnotations {
                           term: term_short.clone(),
                           is_not: is_not,
+                          rel_names: HashSet::new(),
                           annotations: details.clone(),
                       })]
             }
@@ -1547,8 +1552,9 @@ impl <'a> WebDataBuild<'a> {
             let term_short = self.make_term_short(termid);
 
             if let Some(ref mut term_details) = self.terms.get_mut(termid) {
-                let new_rel_ont_annotation = RelOntAnnotation {
+                let new_rel_ont_annotation = OntTermAnnotations {
                     rel_names: HashSet::new(),
+                    is_not: is_not,
                     term: term_short.clone(),
                     annotations: annotations.clone(),
                 };
@@ -1596,8 +1602,9 @@ impl <'a> WebDataBuild<'a> {
                     {
                         if condition_term_details.rel_annotations.len() == 0 {
                             condition_term_details.rel_annotations.push(
-                                RelOntAnnotation {
+                                OntTermAnnotations {
                                     term: condition_term_short,
+                                    is_not: is_not,
                                     rel_names: HashSet::new(),
                                     annotations: vec![],
                                 });
@@ -1724,8 +1731,9 @@ impl <'a> WebDataBuild<'a> {
 
                 let annotations = &subject_term_details.rel_annotations;
                 for rel_annotation in annotations {
-                    let RelOntAnnotation {
+                    let OntTermAnnotations {
                         rel_names: _,
+                        is_not: _,
                         term: _,
                         annotations: existing_details
                     } = rel_annotation.clone();
@@ -1765,8 +1773,9 @@ impl <'a> WebDataBuild<'a> {
                 let mut dest_term_details = {
                     self.terms.get_mut(&dest_termid).unwrap()
                 };
-                dest_term_details.rel_annotations.push(RelOntAnnotation {
+                dest_term_details.rel_annotations.push(OntTermAnnotations {
                     rel_names: all_rel_names,
+                    is_not: false,
                     term: source_term_short.clone(),
                     annotations: new_details,
                 });

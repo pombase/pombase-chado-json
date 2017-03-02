@@ -257,6 +257,8 @@ impl Eq for OntAnnotationDetail { }
 pub struct OntTermAnnotations {
     pub term: TermShort,
     pub is_not: bool,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub rel_names: HashSet<RelName>,
     pub annotations: Vec<Rc<OntAnnotationDetail>>,
 }
 
@@ -429,13 +431,6 @@ pub type OntName = String;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 
 #[derive(Serialize, Clone)]
-pub struct RelOntAnnotation {
-    pub term: TermShort,
-    pub rel_names: HashSet<RelName>,
-    pub annotations: Vec<Rc<OntAnnotationDetail>>,
-}
-
-#[derive(Serialize, Clone)]
 pub struct TermAndRelation {
     pub termid: TermId,
     pub term_name: TermName,
@@ -454,8 +449,8 @@ pub struct TermDetails {
     pub direct_ancestors: Vec<TermAndRelation>,
     pub is_obsolete: bool,
     pub single_allele_genotype_uniquenames: HashSet<String>,
-    pub rel_annotations: Vec<RelOntAnnotation>,
-    pub not_rel_annotations: Vec<RelOntAnnotation>,
+    pub rel_annotations: Vec<OntTermAnnotations>,
+    pub not_rel_annotations: Vec<OntTermAnnotations>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
