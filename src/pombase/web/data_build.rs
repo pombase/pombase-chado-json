@@ -76,6 +76,37 @@ fn is_gene_type(feature_type_name: &str) -> bool {
     feature_type_name == "gene" || feature_type_name == "pseudogene"
 }
 
+fn make_cv_summaries(raw: &Raw, term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
+    let mut result = vec![];
+
+    for ref term_and_annotations in term_and_annotations_vec {
+        let mut rows = vec![];
+
+        for annotation in &term_and_annotations.annotations {
+            let summary_extension = annotation.extension.clone();
+
+            let row = TermSummaryRow {
+                gene_uniquename: Some(annotation.gene_uniquename.clone()),
+                genotype_uniquename: annotation.genotype_uniquename.clone(),
+                extension: summary_extension,
+            };
+
+            rows.push(row);
+        }
+
+        let summary = OntTermSummary {
+            term: term_and_annotations.term.clone(),
+            is_not: term_and_annotations.is_not,
+            summary_rows: rows
+        };
+
+        result.push(summary);
+    }
+
+    result
+}
+
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw, config: &'a Config) -> WebDataBuild<'a> {
         WebDataBuild {
@@ -350,6 +381,7 @@ impl <'a> WebDataBuild<'a> {
                                        pubmed_publication_date: pubmed_publication_date.clone(),
                                        publication_year: publication_year,
                                        cv_annotations: HashMap::new(),
+                                       cv_summaries: HashMap::new(),
                                        physical_interactions: vec![],
                                        genetic_interactions: vec![],
                                        ortholog_annotations: vec![],
@@ -466,6 +498,7 @@ impl <'a> WebDataBuild<'a> {
             gene_neighbourhood: vec![],
             cds_location: None,
             cv_annotations: HashMap::new(),
+            cv_summaries: HashMap::new(),
             physical_interactions: vec![],
             genetic_interactions: vec![],
             ortholog_annotations: vec![],
@@ -498,6 +531,7 @@ impl <'a> WebDataBuild<'a> {
                                   background: background,
                                   expressed_alleles: vec![],
                                   cv_annotations: HashMap::new(),
+                                  cv_summaries: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
                                   references_by_uniquename: HashMap::new(),
@@ -974,6 +1008,37 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_all_cv_summaries(&mut self) {
+        for (_, term_details) in &mut self.terms {
+            term_details.rel_summaries =
+                make_cv_summaries(&self.raw, &term_details.rel_annotations);
+        }
+
+        for (_, gene_details) in &mut self.genes {
+            for (cv_name, term_annotations) in &mut gene_details.cv_annotations {
+                let summaries =
+                    make_cv_summaries(&self.raw, &term_annotations);
+                gene_details.cv_summaries.insert(cv_name.clone(), summaries);
+            }
+        }
+
+        for (_, genotype_details) in &mut self.genotypes {
+            for (cv_name, term_annotations) in &mut genotype_details.cv_annotations {
+                let summaries =
+                    make_cv_summaries(&self.raw, &term_annotations);
+                genotype_details.cv_summaries.insert(cv_name.clone(), summaries);
+            }
+        }
+
+        for (_, reference_details) in &mut self.references {
+            for (cv_name, term_annotations) in &mut reference_details.cv_annotations {
+                let summaries =
+                    make_cv_summaries(&self.raw, &term_annotations);
+                reference_details.cv_summaries.insert(cv_name.clone(), summaries);
+            }
+        }
+    }
+
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
@@ -993,6 +1058,7 @@ impl <'a> WebDataBuild<'a> {
                                       is_obsolete: cvterm.is_obsolete,
                                       single_allele_genotype_uniquenames: HashSet::new(),
                                       rel_annotations: vec![],
+                                      rel_summaries: vec![],
                                       not_rel_annotations: vec![],
                                       genes_by_uniquename: HashMap::new(),
                                       genotypes_by_uniquename: HashMap::new(),
@@ -2228,6 +2294,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_cvtermpath();
         self.process_annotation_feature_rels();
         self.add_target_of_annotations();
+        self.make_all_cv_summaries();
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_genotype_details_maps();
