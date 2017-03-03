@@ -306,7 +306,9 @@ pub struct TermSummaryRow {
 pub struct OntTermSummary {
     pub term: TermShort,
     pub is_not: bool,
-    pub summary_rows: Vec<TermSummaryRow>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub rel_names: HashSet<RelName>,
+    pub rows: Vec<TermSummaryRow>,
 }
 
 #[derive(Serialize, Clone, PartialEq, Eq, Hash)]

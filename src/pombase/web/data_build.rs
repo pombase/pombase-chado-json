@@ -97,7 +97,8 @@ fn make_cv_summaries(raw: &Raw, term_and_annotations_vec: &Vec<OntTermAnnotation
         let summary = OntTermSummary {
             term: term_and_annotations.term.clone(),
             is_not: term_and_annotations.is_not,
-            summary_rows: rows
+            rel_names: term_and_annotations.rel_names.clone(),
+            rows: rows
         };
 
         result.push(summary);
