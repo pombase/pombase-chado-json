@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 use std::collections::HashSet;
 
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
@@ -18,7 +18,7 @@ pub enum ExtRange {
     GeneProduct(String),
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ExtPart {
     pub rel_type_name: String,
     pub rel_type_display_name: String,
@@ -113,7 +113,7 @@ pub struct TranscriptShort {
     //                pub utrs: Vec<UTRShort>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TermShort {
     pub name: TermName,
     pub cv_name: String,
@@ -292,7 +292,7 @@ impl Hash for OntTermAnnotations {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TermSummaryRow {
     #[serde(skip_serializing_if="Option::is_none")]
     pub gene_uniquename: Option<GeneUniquename>, // for term pages
@@ -302,7 +302,7 @@ pub struct TermSummaryRow {
     pub extension: Vec<ExtPart>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct OntTermSummary {
     pub term: TermShort,
     pub is_not: bool,
