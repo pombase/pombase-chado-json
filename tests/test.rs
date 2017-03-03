@@ -410,10 +410,6 @@ fn get_test_web_data() -> WebData {
 fn test_gene_details() {
     let web_data = get_test_web_data();
 
-    for gene_uniquename in web_data.genes.keys() {
-        print!("{}\n", gene_uniquename);
-    }
-
     assert_eq!(web_data.genes.len(), 3);
     let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
     assert_eq!(par1_gene.uniquename, "SPCC188.02");
