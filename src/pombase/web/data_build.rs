@@ -76,7 +76,8 @@ fn is_gene_type(feature_type_name: &str) -> bool {
     feature_type_name == "gene" || feature_type_name == "pseudogene"
 }
 
-fn make_cv_summaries(config: &Config, raw: &Raw, term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
+fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
+                     term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
     let mut result = vec![];
 
     for ref term_and_annotations in term_and_annotations_vec {
@@ -1029,13 +1030,15 @@ impl <'a> WebDataBuild<'a> {
     fn make_all_cv_summaries(&mut self) {
         for (_, term_details) in &mut self.terms {
             term_details.rel_summaries =
-                make_cv_summaries(&self.config, &self.raw, &term_details.rel_annotations);
+                make_cv_summaries(&self.config, &self.raw.cvtermpaths,
+                                  &term_details.rel_annotations);
         }
 
         for (_, gene_details) in &mut self.genes {
             for (cv_name, term_annotations) in &mut gene_details.cv_annotations {
                 let summaries =
-                    make_cv_summaries(&self.config, &self.raw, &term_annotations);
+                    make_cv_summaries(&self.config, &self.raw.cvtermpaths,
+                                      &term_annotations);
                 gene_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
         }
@@ -1043,7 +1046,8 @@ impl <'a> WebDataBuild<'a> {
         for (_, genotype_details) in &mut self.genotypes {
             for (cv_name, term_annotations) in &mut genotype_details.cv_annotations {
                 let summaries =
-                    make_cv_summaries(&self.config, &self.raw, &term_annotations);
+                    make_cv_summaries(&self.config, &self.raw.cvtermpaths,
+                                      &term_annotations);
                 genotype_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
         }
@@ -1051,7 +1055,8 @@ impl <'a> WebDataBuild<'a> {
         for (_, reference_details) in &mut self.references {
             for (cv_name, term_annotations) in &mut reference_details.cv_annotations {
                 let summaries =
-                    make_cv_summaries(&self.config, &self.raw, &term_annotations);
+                    make_cv_summaries(&self.config, &self.raw.cvtermpaths,
+                                      &term_annotations);
                 reference_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
         }
