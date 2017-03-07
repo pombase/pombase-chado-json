@@ -419,6 +419,8 @@ fn test_gene_details() {
     if par1_gene.cv_annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
         panic!("extension cv shouldn't be in the annotations");
     }
+
+    assert_eq!(par1_gene.cv_summaries.len(), 2);
 }
 
 #[test]
