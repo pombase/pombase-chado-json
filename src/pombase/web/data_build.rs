@@ -85,9 +85,18 @@ fn make_cv_summaries(raw: &Raw, term_and_annotations_vec: &Vec<OntTermAnnotation
         for annotation in &term_and_annotations.annotations {
             let summary_extension = annotation.extension.clone();
 
+            let maybe_genotype_uniquename = annotation.genotype_uniquename.clone();
+
+            let maybe_gene_uniquename =
+                if maybe_genotype_uniquename.is_none() {
+                    Some(annotation.gene_uniquename.clone())
+                } else {
+                    None
+                };
+
             let row = TermSummaryRow {
-                gene_uniquename: Some(annotation.gene_uniquename.clone()),
-                genotype_uniquename: annotation.genotype_uniquename.clone(),
+                gene_uniquename: maybe_gene_uniquename,
+                genotype_uniquename: maybe_genotype_uniquename,
                 extension: summary_extension,
             };
 
