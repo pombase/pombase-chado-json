@@ -90,7 +90,7 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
 
             let summary_extension = annotation.extension.iter().cloned()
                 .filter(|ext_part|
-                        !cv_config.summary_extensions_to_hide
+                        !cv_config.summary_relations_to_hide
                         .contains(&ext_part.rel_type_name))
                 .collect();
 

@@ -10,7 +10,7 @@ pub struct ExtensionConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: String,
-    pub summary_extensions_to_hide: Vec<String>,
+    pub summary_relations_to_hide: Vec<String>,
 }
 
 pub type ShortEvidenceCode = String;
@@ -30,7 +30,7 @@ impl Config {
         } else {
             CvConfig {
                 feature_type: "gene".into(),
-                summary_extensions_to_hide: vec![],
+                summary_relations_to_hide: vec![],
             }
         }
     }
