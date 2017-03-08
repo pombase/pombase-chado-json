@@ -88,11 +88,13 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
         for annotation in &term_and_annotations.annotations {
             let cv_config = config.cv_config_by_name(&term.cv_name);
 
-            let summary_extension = annotation.extension.iter().cloned()
+
+            let mut summary_extension = annotation.extension.iter().cloned()
                 .filter(|ext_part|
-                        !cv_config.summary_relations_to_hide
-                        .contains(&ext_part.rel_type_name))
-                .collect();
+                        !cv_config.summary_relations_to_hide.contains(&ext_part.rel_type_name))
+                .collect::<Vec<ExtPart>>();
+
+            summary_extension.sort();
 
             let maybe_genotype_uniquename = annotation.genotype_uniquename.clone();
 
@@ -111,6 +113,9 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
 
             rows.push(row);
         }
+
+        rows.sort();
+        rows.dedup();
 
         let summary = OntTermSummary {
             term: term_and_annotations.term.clone(),
