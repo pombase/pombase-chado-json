@@ -4,10 +4,19 @@ use std::hash::{Hash, Hasher};
 use std::collections::HashSet;
 
 
-#[derive(Serialize, Clone, Debug)]
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct SummaryGenes {
+    // the length will be > 1 for cases like "binds abc1 and def2"
+    pub genes: Vec<GeneUniquename>,
+}
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
+#[serde(rename = "sumary_gene_uniquenames")]
+    SummaryGenes(Vec<SummaryGenes>),
 #[serde(rename = "termid")]
     Term(TermId),
 #[serde(rename = "misc")]
@@ -18,7 +27,7 @@ pub enum ExtRange {
     GeneProduct(String),
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ExtPart {
     pub rel_type_name: String,
     pub rel_type_display_name: String,
@@ -300,6 +309,61 @@ pub struct TermSummaryRow {
     pub genotype_uniquename: Option<GenotypeUniquename>, // for term pages
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub extension: Vec<ExtPart>,
+}
+
+fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>) -> Ordering {
+    ext1.cmp(&ext2)
+}
+
+impl PartialEq for TermSummaryRow {
+    fn eq(&self, other: &Self) -> bool {
+        self.cmp(other) == Ordering::Equal
+    }
+}
+impl Eq for TermSummaryRow { }
+impl Ord for TermSummaryRow {
+    fn cmp(&self, other: &Self) -> Ordering {
+        if let Some(ref gene_uniquename) = self.gene_uniquename {
+            if let Some(ref other_gene_uniquename) = other.gene_uniquename {
+                let ord = gene_uniquename.cmp(other_gene_uniquename);
+                if ord == Ordering::Equal {
+                    return cmp_extension(&self.extension, &other.extension);
+                } else {
+                    return ord;
+                }
+            } else {
+                return Ordering::Less;
+            }
+        } else {
+            if other.gene_uniquename.is_some() {
+                return Ordering::Greater;
+            }
+        }
+
+        if let Some(ref genotype_uniquename) = self.genotype_uniquename {
+            if let Some(ref other_genotype_uniquename) = other.genotype_uniquename {
+                let ord = genotype_uniquename.cmp(other_genotype_uniquename);
+                if ord == Ordering::Equal {
+                    return cmp_extension(&self.extension, &other.extension);
+                } else {
+                    return ord;
+                }
+            } else {
+                return Ordering::Less;
+            }
+        } else {
+            if other.genotype_uniquename.is_some() {
+                return Ordering::Greater;
+            }
+        }
+
+        cmp_extension(&self.extension, &other.extension)
+    }
+}
+impl PartialOrd for TermSummaryRow {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 #[derive(Serialize, Clone, Debug)]
