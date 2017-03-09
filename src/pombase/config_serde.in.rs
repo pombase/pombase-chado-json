@@ -10,7 +10,12 @@ pub struct ExtensionConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: String,
+    // relations to not show in the summary
     pub summary_relations_to_hide: Vec<String>,
+    // relations where the range is a gene ID to display like:
+    //   has substrate pom1, cdc1 involved in negative regulation of ...
+    // rather than as two lines
+    pub summary_gene_relations_to_collect: Vec<String>,
 }
 
 pub type ShortEvidenceCode = String;
@@ -31,6 +36,7 @@ impl Config {
             CvConfig {
                 feature_type: "gene".into(),
                 summary_relations_to_hide: vec![],
+                summary_gene_relations_to_collect: vec![],
             }
         }
     }

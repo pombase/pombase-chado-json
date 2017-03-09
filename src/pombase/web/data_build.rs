@@ -76,22 +76,113 @@ fn is_gene_type(feature_type_name: &str) -> bool {
     feature_type_name == "gene" || feature_type_name == "pseudogene"
 }
 
+pub fn remove_first<T, P>(vec: &mut Vec<T>, predicate: P) -> Option<T>
+   where P: FnMut(&T) -> bool {
+    if let Some(pos) = vec.iter().position(predicate) {
+        return Some(vec.remove(pos));
+    }
+
+    None
+}
+
+pub fn merge_gene_ext_parts(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart {
+    if ext_part1.rel_type_name == ext_part2.rel_type_name {
+        if let ExtRange::SummaryGenes(ref part1_summ_genes) = ext_part1.ext_range {
+            if let ExtRange::SummaryGenes(ref part2_summ_genes) = ext_part2.ext_range {
+                let mut ret_ext_part = ext_part1.clone();
+                let mut new_genes = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
+                new_genes.sort();
+                new_genes.dedup();
+                ret_ext_part.ext_range = ExtRange::SummaryGenes(new_genes);
+                return ret_ext_part
+            }
+        }
+        panic!("passed ExtPart objects that have non-gene ranges to merge_gene_ext_parts():
+  {:?} {:?}", ext_part1, ext_part2);
+    } else {
+        panic!("passed ExtPart objects with mismatched relations to merge_gene_ext_parts():
+  {} {}\n", ext_part1.rel_type_name, ext_part2.rel_type_name);
+    }
+}
+
+pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>)
+                             -> Vec<TermSummaryRow> {
+    let conf_gene_rels = &cv_config.summary_gene_relations_to_collect;
+    let gene_range_rel_p =
+        |ext_part: &ExtPart| {
+            if let ExtRange::SummaryGenes(_) = ext_part.ext_range {
+                conf_gene_rels.contains(&ext_part.rel_type_name)
+            } else {
+                false
+            }
+        };
+    let mut ret_rows = vec![];
+    let mut row_iter = rows.iter().cloned();
+
+    if let Some(mut prev_row) = row_iter.next() {
+        for current_row in row_iter {
+            if prev_row.gene_uniquename != current_row.gene_uniquename ||
+                prev_row.genotype_uniquename != current_row.genotype_uniquename {
+                    ret_rows.push(prev_row);
+                    prev_row = current_row;
+                    continue;
+                }
+
+            let mut prev_row_extension = prev_row.extension.clone();
+            let prev_matching_gene_ext_part =
+                remove_first(&mut prev_row_extension, &gene_range_rel_p);
+            let mut current_row_extension = current_row.extension.clone();
+            let current_matching_gene_ext_part =
+                remove_first(&mut current_row_extension, &gene_range_rel_p);
+
+            if let (Some(prev_gene_ext_part), Some(current_gene_ext_part)) =
+                (prev_matching_gene_ext_part, current_matching_gene_ext_part) {
+                    if current_row_extension == prev_row_extension &&
+                        prev_gene_ext_part.rel_type_name == current_gene_ext_part.rel_type_name {
+                            let merged_gene_ext_parts =
+                                merge_gene_ext_parts(&prev_gene_ext_part,
+                                                     &current_gene_ext_part);
+                            let mut new_ext = vec![merged_gene_ext_parts];
+                            new_ext.extend_from_slice(&prev_row_extension);
+                            prev_row.extension = new_ext;
+                        } else {
+                            ret_rows.push(prev_row);
+                            prev_row = current_row;
+                        }
+                } else {
+                    ret_rows.push(prev_row);
+                    prev_row = current_row
+                }
+        }
+
+        ret_rows.push(prev_row);
+    }
+
+    ret_rows
+}
+
 fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                      term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
     let mut result = vec![];
 
     for ref term_and_annotations in term_and_annotations_vec {
         let term = &term_and_annotations.term;
+        let cv_config = config.cv_config_by_name(&term.cv_name);
 
         let mut rows = vec![];
 
         for annotation in &term_and_annotations.annotations {
-            let cv_config = config.cv_config_by_name(&term.cv_name);
-
-
             let mut summary_extension = annotation.extension.iter().cloned()
                 .filter(|ext_part|
                         !cv_config.summary_relations_to_hide.contains(&ext_part.rel_type_name))
+                .map(move |mut ext_part| {
+                    if let ExtRange::Gene(gene_uniquename) = ext_part.ext_range.clone() {
+                        let summ_genes = SummaryGenes {
+                            genes: vec![gene_uniquename],
+                        };
+                        ext_part.ext_range = ExtRange::SummaryGenes(vec![summ_genes]);
+                    }
+                    ext_part })
                 .collect::<Vec<ExtPart>>();
 
             summary_extension.sort();
@@ -121,7 +212,7 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
             term: term_and_annotations.term.clone(),
             is_not: term_and_annotations.is_not,
             rel_names: term_and_annotations.rel_names.clone(),
-            rows: rows
+            rows: collect_ext_summary_genes(&cv_config, rows),
         };
 
         result.push(summary);

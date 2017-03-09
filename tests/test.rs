@@ -395,13 +395,26 @@ fn get_test_raw() -> Raw {
     }
 }
 
-fn get_test_web_data() -> WebData {
-    let raw = get_test_raw();
-    let config = Config {
+fn get_test_config() -> Config {
+    let mut config = Config {
         extensions: vec![],
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
     };
+
+    config.cv_config.insert(String::from("molecular_function"),
+                            CvConfig {
+                                feature_type: String::from("Gene"),
+                                summary_relations_to_hide: vec![],
+                                summary_gene_relations_to_collect: vec![String::from("has_substrate")],
+                            });
+
+    config
+}
+
+fn get_test_web_data() -> WebData {
+    let raw = get_test_raw();
+    let config = get_test_config();
     let mut web_data_build = WebDataBuild::new(&raw, &config);
     web_data_build.get_web_data()
 }
@@ -476,6 +489,155 @@ fn test_genotype_annotation() {
     let fypo_annotations = cdc16_gene.cv_annotations.get("multi_allele_phenotype").unwrap();
 
     assert_eq!(fypo_annotations.len(), 1);
+}
+
+#[test]
+fn test_remove_first_u32() {
+    let mut arr: Vec<u32> =  vec![1,2,3,4];
+
+    let maybe_removed = pombase::web::data_build::remove_first(&mut arr, |x| x % 2 == 0);
+
+    if let Some(removed) = maybe_removed {
+        assert_eq!(removed, 2);
+    } else {
+        panic!();
+    }
+}
+
+#[test]
+fn test_remove_first_string() {
+    let mut arr =  vec!["foo", "bar", "ZZZ"];
+
+    assert!(remove_first(&mut arr, |x| x.starts_with("_DUMMY_")).is_none());
+    assert_eq!(arr.len(), 3);
+    assert_eq!(remove_first(&mut arr, |x| x.to_lowercase() == "zzz").unwrap(), "ZZZ");
+    assert_eq!(arr.len(), 2);
+    assert_eq!(remove_first(&mut arr, |x| x.starts_with("foo")).unwrap(), "foo");
+    assert_eq!(arr.len(), 1);
+    assert_eq!(remove_first(&mut arr, |x| x.starts_with("b")).unwrap(), "bar");
+    assert_eq!(arr.len(), 0);
+}
+
+#[test]
+fn test_merge_gene_ext_parts() {
+    let ext_part1 = ExtPart {
+        rel_type_name: "has_substrate".into(),
+        rel_type_display_name: "has substrate".into(),
+        ext_range: ExtRange::SummaryGenes(vec![SummaryGenes {
+            genes: vec!["SPAC977.09c".into()],
+        }])
+    };
+    let ext_part2 = ExtPart {
+        rel_type_name: "has_substrate".into(),
+        rel_type_display_name: "has substrate".into(),
+        ext_range: ExtRange::SummaryGenes(vec![SummaryGenes {
+            genes: vec!["SPAC24C9.02c".into()],
+        }])
+    };
+
+    let res = merge_gene_ext_parts(&ext_part1, &ext_part2);
+
+    assert_eq!(res.ext_range,
+               ExtRange::SummaryGenes(vec![
+                   SummaryGenes {
+                       genes: vec!["SPAC24C9.02c".into()],
+                   },
+                   SummaryGenes {
+                       genes: vec!["SPAC977.09c".into()],
+                   }]));
+}
+
+#[test]
+fn test_collect_ext_summary_genes() {
+    let config = get_test_config();
+
+    let mut rows = vec![];
+
+    rows.push(TermSummaryRow {
+        gene_uniquename: Some(String::from("SPAC25B8.03")),
+        genotype_uniquename: None,
+        extension: vec![
+            ExtPart {
+                rel_type_name: String::from("has_substrate"),
+                rel_type_display_name: String::from("has substrate"),
+                ext_range: ExtRange::SummaryGenes(
+                    vec![SummaryGenes {
+                        genes: vec![String::from("SPAC3G9.09c")],
+                    }]),
+            },
+            ExtPart {
+                rel_type_name: String::from("during"),
+                rel_type_display_name: String::from("during"),
+                ext_range: ExtRange::Term(String::from("GO:0070301")),
+            }],
+    });
+    rows.push(TermSummaryRow {
+        gene_uniquename: Some(String::from("SPAC1786.03")), // change annotated gene
+        genotype_uniquename: None,
+        extension: vec![
+            ExtPart {
+                rel_type_name: String::from("has_substrate"),
+                rel_type_display_name: String::from("has substrate"),
+                ext_range: ExtRange::SummaryGenes(
+                    vec![SummaryGenes {
+                        genes: vec![String::from("SPAC3G9.09c")],
+                    }]),
+            },
+            ExtPart {
+                rel_type_name: String::from("during"),
+                rel_type_display_name: String::from("during"),
+                ext_range: ExtRange::Term(String::from("GO:0070301")),
+            }],
+    });
+    rows.push(TermSummaryRow {
+        gene_uniquename: Some(String::from("SPAC1786.03")),
+        genotype_uniquename: None,
+        extension: vec![
+            ExtPart {
+                rel_type_name: String::from("has_substrate"),
+                rel_type_display_name: String::from("has substrate"),
+                ext_range: ExtRange::SummaryGenes(
+                    vec![SummaryGenes {
+                        genes: vec![String::from("SPAC16.01")],  // change substrate
+                    }]),
+            },
+            ExtPart {
+                rel_type_name: String::from("during"),
+                rel_type_display_name: String::from("during"),
+                ext_range: ExtRange::Term(String::from("GO:0070301")),
+            }],
+    });
+    rows.push(TermSummaryRow {
+        gene_uniquename: Some(String::from("SPAC1786.03")),
+        genotype_uniquename: None,
+        extension: vec![
+            ExtPart {
+                rel_type_name: String::from("has_substrate"),
+                rel_type_display_name: String::from("has substrate"),
+                ext_range: ExtRange::SummaryGenes(
+                    vec![SummaryGenes {
+                        genes: vec![String::from("SPAC16.01")],
+                    }]),
+            },
+            ExtPart {
+                rel_type_name: String::from("during"),
+                rel_type_display_name: String::from("during"),
+                ext_range: ExtRange::Term(String::from("GO:0071472")), // change during term
+            }],
+    });
+
+    assert_eq!(rows.len(), 4);
+
+    let res = collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), rows);
+
+    assert_eq!(res.len(), 3);
+
+    let res_row_2 = res.get(1).unwrap();
+    let res_row_2_ext_part_1 = res_row_2.extension.get(0).unwrap();
+    let summary_genes_vec = vec![SummaryGenes{genes: vec![String::from("SPAC16.01")]},
+                                 SummaryGenes{genes: vec![String::from("SPAC3G9.09c")]}];
+    assert_eq!(res_row_2_ext_part_1.ext_range,
+               ExtRange::SummaryGenes(summary_genes_vec));
 }
 
 #[test]
