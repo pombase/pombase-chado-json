@@ -523,28 +523,19 @@ fn test_merge_gene_ext_parts() {
     let ext_part1 = ExtPart {
         rel_type_name: "has_substrate".into(),
         rel_type_display_name: "has substrate".into(),
-        ext_range: ExtRange::SummaryGenes(vec![SummaryGenes {
-            genes: vec!["SPAC977.09c".into()],
-        }])
+        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC977.09c".into()]]),
     };
     let ext_part2 = ExtPart {
         rel_type_name: "has_substrate".into(),
         rel_type_display_name: "has substrate".into(),
-        ext_range: ExtRange::SummaryGenes(vec![SummaryGenes {
-            genes: vec!["SPAC24C9.02c".into()],
-        }])
+        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()]]),
     };
 
     let res = merge_gene_ext_parts(&ext_part1, &ext_part2);
 
     assert_eq!(res.ext_range,
-               ExtRange::SummaryGenes(vec![
-                   SummaryGenes {
-                       genes: vec!["SPAC24C9.02c".into()],
-                   },
-                   SummaryGenes {
-                       genes: vec!["SPAC977.09c".into()],
-                   }]));
+               ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()],
+                                           vec!["SPAC977.09c".into()]]));
 }
 
 #[test]
@@ -561,9 +552,7 @@ fn test_collect_ext_summary_genes() {
                 rel_type_name: String::from("has_substrate"),
                 rel_type_display_name: String::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![SummaryGenes {
-                        genes: vec![String::from("SPAC3G9.09c")],
-                    }]),
+                    vec![vec![String::from("SPAC3G9.09c")]]),
             },
             ExtPart {
                 rel_type_name: String::from("during"),
@@ -579,9 +568,7 @@ fn test_collect_ext_summary_genes() {
                 rel_type_name: String::from("has_substrate"),
                 rel_type_display_name: String::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![SummaryGenes {
-                        genes: vec![String::from("SPAC3G9.09c")],
-                    }]),
+                    vec![vec![String::from("SPAC3G9.09c")]]),
             },
             ExtPart {
                 rel_type_name: String::from("during"),
@@ -597,9 +584,7 @@ fn test_collect_ext_summary_genes() {
                 rel_type_name: String::from("has_substrate"),
                 rel_type_display_name: String::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![SummaryGenes {
-                        genes: vec![String::from("SPAC16.01")],  // change substrate
-                    }]),
+                    vec![vec![String::from("SPAC16.01")]]),   // change substrate
             },
             ExtPart {
                 rel_type_name: String::from("during"),
@@ -615,9 +600,7 @@ fn test_collect_ext_summary_genes() {
                 rel_type_name: String::from("has_substrate"),
                 rel_type_display_name: String::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![SummaryGenes {
-                        genes: vec![String::from("SPAC16.01")],
-                    }]),
+                    vec![vec![String::from("SPAC16.01")]]),
             },
             ExtPart {
                 rel_type_name: String::from("during"),
@@ -634,8 +617,8 @@ fn test_collect_ext_summary_genes() {
 
     let res_row_2 = res.get(1).unwrap();
     let res_row_2_ext_part_1 = res_row_2.extension.get(0).unwrap();
-    let summary_genes_vec = vec![SummaryGenes{genes: vec![String::from("SPAC16.01")]},
-                                 SummaryGenes{genes: vec![String::from("SPAC3G9.09c")]}];
+    let summary_genes_vec = vec![vec![String::from("SPAC16.01")],
+                                 vec![String::from("SPAC3G9.09c")]];
     assert_eq!(res_row_2_ext_part_1.ext_range,
                ExtRange::SummaryGenes(summary_genes_vec));
 }
