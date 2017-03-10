@@ -177,9 +177,7 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                         !cv_config.summary_relations_to_hide.contains(&ext_part.rel_type_name))
                 .map(move |mut ext_part| {
                     if let ExtRange::Gene(gene_uniquename) = ext_part.ext_range.clone() {
-                        let summ_genes = SummaryGenes {
-                            genes: vec![gene_uniquename],
-                        };
+                        let summ_genes = vec![gene_uniquename];
                         ext_part.ext_range = ExtRange::SummaryGenes(vec![summ_genes]);
                     }
                     ext_part })

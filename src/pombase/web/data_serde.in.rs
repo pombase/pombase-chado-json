@@ -6,17 +6,12 @@ use std::collections::HashSet;
 
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct SummaryGenes {
-    // the length will be > 1 for cases like "binds abc1 and def2"
-    pub genes: Vec<GeneUniquename>,
-}
-
-#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
 #[serde(rename = "sumary_gene_uniquenames")]
-    SummaryGenes(Vec<SummaryGenes>),
+    // the inner Vec length will be > 1 for cases like "binds abc1 and def2, cdc2"
+    SummaryGenes(Vec<Vec<String>>),
 #[serde(rename = "termid")]
     Term(TermId),
 #[serde(rename = "misc")]
