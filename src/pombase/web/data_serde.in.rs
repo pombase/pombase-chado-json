@@ -306,8 +306,14 @@ pub struct TermSummaryRow {
     pub extension: Vec<ExtPart>,
 }
 
+// order shorter ExtPart vectors first
 fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>) -> Ordering {
-    ext1.cmp(&ext2)
+    let len_cmp = ext1.len().cmp(&ext2.len());
+    if len_cmp == Ordering::Equal {
+        ext1.cmp(&ext2)
+    } else {
+        len_cmp
+    }
 }
 
 impl PartialEq for TermSummaryRow {
