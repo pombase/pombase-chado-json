@@ -29,7 +29,7 @@ pub struct ExtPart {
     pub ext_range: ExtRange,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct GeneShort {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -38,7 +38,7 @@ pub struct GeneShort {
     pub product: Option<GeneProduct>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct GeneSummary {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -110,7 +110,7 @@ impl Hash for GeneShort {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TranscriptShort {
     pub uniquename: TranscriptUniquename,
     //                pub exons: Vec<ExonShort>,
@@ -157,7 +157,7 @@ impl Hash for TermShort {
 }
 
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ReferenceShort {
     pub uniquename: String,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -174,7 +174,7 @@ pub struct ReferenceShort {
     pub genotype_count: usize,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ReferenceDetails {
     pub uniquename: String,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -203,7 +203,7 @@ pub struct ReferenceDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub enum WithFromValue {
 #[serde(rename = "gene")]
     Gene(GeneShort),
@@ -227,7 +227,7 @@ impl WithFromValue {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
     pub gene_uniquename: GeneUniquename,
@@ -258,7 +258,7 @@ impl PartialEq for OntAnnotationDetail {
 }
 impl Eq for OntAnnotationDetail { }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct OntTermAnnotations {
     pub term: TermShort,
     pub is_not: bool,
@@ -376,7 +376,7 @@ pub struct OntTermSummary {
     pub rows: Vec<TermSummaryRow>,
 }
 
-#[derive(Serialize, Clone, PartialEq, Eq, Hash)]
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TargetOfAnnotation {
     pub ontology_name: String,
     pub ext_rel_display_name: String,
@@ -387,7 +387,7 @@ pub struct TargetOfAnnotation {
     pub reference_uniquename: Option<ReferenceUniquename>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct SynonymDetails {
     pub name: String,
     #[serde(rename = "type")]
@@ -402,7 +402,7 @@ pub enum Strand {
     Reverse = -1,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ChromosomeLocation {
     pub chromosome_name: String,
     pub start_pos: u32,
@@ -410,13 +410,13 @@ pub struct ChromosomeLocation {
     pub strand: Strand,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct OrganismShort {
     pub genus: String,
     pub species: String,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -450,7 +450,7 @@ pub struct GeneDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -458,7 +458,7 @@ pub struct TranscriptDetails {
 //    pub annotations: TypeFeatureAnnotationMap,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct GenotypeShort {
     pub uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -468,7 +468,7 @@ pub struct GenotypeShort {
     pub expressed_alleles: Vec<ExpressedAllele>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct GenotypeDetails {
     pub uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -484,14 +484,14 @@ pub struct GenotypeDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<String>,
     pub allele_uniquename: AlleleUniquename,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct AlleleShort {
     pub uniquename: String,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -504,7 +504,7 @@ pub struct AlleleShort {
 
 pub type RelName = String;
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct GeneExProps {
     #[serde(skip_serializing_if="Option::is_none")]
     pub copies_per_cell: Option<String>,
@@ -518,14 +518,14 @@ pub type OntName = String;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 pub type OntSummaryMap = HashMap<OntName, Vec<OntTermSummary>>;
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TermAndRelation {
     pub termid: TermId,
     pub term_name: TermName,
     pub relation_name: RelName,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
@@ -547,7 +547,7 @@ pub struct TermDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct InteractionAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub interactor_uniquename: GeneUniquename,
@@ -588,7 +588,7 @@ impl PartialOrd for InteractionAnnotation {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct OrthologAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub ortholog_organism: OrganismShort,
@@ -617,7 +617,7 @@ impl PartialOrd for OrthologAnnotation {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct ParalogAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub paralog_uniquename: GeneUniquename,
@@ -645,7 +645,7 @@ impl PartialOrd for ParalogAnnotation {
     }
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct Metadata {
     pub db_creation_datetime: String,
     pub export_prog_name: String,
@@ -654,7 +654,7 @@ pub struct Metadata {
     pub term_count: usize,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct SearchAPIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub term_name_genes: HashMap<TermName, HashSet<GeneUniquename>>,
@@ -662,7 +662,7 @@ pub struct SearchAPIMaps {
     pub term_summaries: HashSet<TermShort>,
 }
 
-#[derive(Serialize, Clone)]
+#[derive(Serialize, Clone, Debug)]
 pub struct WebData {
     pub genes: IdGeneMap,
     pub genotypes: IdGenotypeMap,
