@@ -624,6 +624,52 @@ fn test_collect_ext_summary_genes() {
 }
 
 #[test]
+fn test_collect_duplicated_relations() {
+    let mut ext = vec![
+        ExtPart {
+            rel_type_name: String::from("some_rel"),
+            rel_type_display_name: String::from("some rel"),
+            ext_range: ExtRange::Term(String::from("GO:12345")),
+        },
+        ExtPart {
+            rel_type_name: String::from("has_input"),
+            rel_type_display_name: String::from("binds"),
+            ext_range: ExtRange::SummaryGenes(
+                vec![vec![String::from("SPAC3G9.09c")]]),
+        },
+        ExtPart {
+            rel_type_name: String::from("has_input"),
+            rel_type_display_name: String::from("binds"),
+            ext_range: ExtRange::SummaryGenes(
+                vec![vec![String::from("SPAC16.01")]]),
+        },
+        ExtPart {
+            rel_type_name: String::from("during"),
+            rel_type_display_name: String::from("during"),
+            ext_range: ExtRange::Term(String::from("GO:0070301")),
+        }];
+
+    collect_duplicated_relations(&mut ext);
+
+    print!("{}\n", ext.get(0).unwrap().rel_type_name);
+    print!("{}\n", ext.get(1).unwrap().rel_type_name);
+    print!("{}\n", ext.get(2).unwrap().rel_type_name);
+
+    assert_eq!(ext.len(), 3);
+    assert_eq!(ext.get(0).unwrap().rel_type_name, "some_rel");
+    let ext_part_1 = ext.get(1).unwrap();
+    assert_eq!(ext_part_1.rel_type_name, "has_input");
+    if let ExtRange::SummaryGenes(summary_genes) = ext_part_1.ext_range.clone() {
+        assert_eq!(summary_genes.get(0).unwrap(),
+                   &vec![String::from("SPAC3G9.09c"),
+                         String::from("SPAC16.01")]);
+    } else {
+        panic!();
+    }
+    assert_eq!(ext.get(2).unwrap().rel_type_name, "during");
+}
+
+#[test]
 fn test_terms() {
     let web_data = get_test_web_data();
 

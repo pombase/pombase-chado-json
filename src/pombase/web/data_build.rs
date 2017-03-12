@@ -186,6 +186,8 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
 
             summary_extension.sort();
 
+            collect_duplicated_relations(&mut summary_extension);
+
             let maybe_gene_uniquename =
                 if include_gene && cv_config.feature_type == "gene" {
                     annotation.gene_uniquename.clone()
@@ -225,6 +227,42 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
     result
 }
 
+// turns binds([[gene1]]),binds([[gene2]]),other_rel(...) into:
+// binds([[gene1, gene2]]),other_rel(...)
+pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
+    let mut result: Vec<ExtPart> = vec![];
+
+    {
+        let mut iter = ext.iter().cloned();
+
+        if let Some(mut prev) = iter.next() {
+            for current in iter {
+                if prev.rel_type_name != current.rel_type_name {
+                    result.push(prev);
+                    prev = current;
+                    continue;
+                }
+
+                if let ExtRange::SummaryGenes(ref current_summ_genes) = current.ext_range {
+                    if let ExtRange::SummaryGenes(ref mut prev_summ_genes) = prev.ext_range {
+                        let mut current_genes = current_summ_genes.get(0).unwrap().clone();
+                        prev_summ_genes.get_mut(0).unwrap().append(& mut current_genes);
+
+                        continue;
+                    }
+                }
+
+                result.push(prev);
+                prev = current;
+            }
+
+            result.push(prev);
+        }
+    }
+
+    ext.clear();
+    ext.append(&mut result);
+}
 
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw, config: &'a Config) -> WebDataBuild<'a> {
