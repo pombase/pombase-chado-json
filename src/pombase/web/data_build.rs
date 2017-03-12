@@ -162,6 +162,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>
 }
 
 fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
+                     include_gene: bool, include_genotype: bool,
                      term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
     let mut result = vec![];
 
@@ -185,11 +186,16 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
 
             summary_extension.sort();
 
-            let maybe_genotype_uniquename = annotation.genotype_uniquename.clone();
-
             let maybe_gene_uniquename =
-                if maybe_genotype_uniquename.is_none() {
-                    Some(annotation.gene_uniquename.clone())
+                if include_gene && cv_config.feature_type == "gene" {
+                    annotation.gene_uniquename.clone()
+                } else {
+                    None
+                };
+
+            let maybe_genotype_uniquename =
+                if include_genotype && cv_config.feature_type == "genotype" {
+                    annotation.genotype_uniquename.clone()
                 } else {
                     None
                 };
@@ -1056,7 +1062,7 @@ impl <'a> WebDataBuild<'a> {
 
     // create and returns any TargetOfAnnotations implied by the extension
     fn make_target_of_for_ext(&self, cv_name: &String,
-                              gene_uniquename: &String,
+                              maybe_gene_uniquename: &Option<String>,
                               maybe_genotype_uniquename: &Option<String>,
                               reference_uniquename: &Option<String>,
                               annotation_termid: &String,
@@ -1074,7 +1080,7 @@ impl <'a> WebDataBuild<'a> {
                                 if maybe_genotype_uniquename.is_some() {
                                     (None, maybe_genotype_uniquename.clone())
                                 } else {
-                                    (Some(gene_uniquename.clone()), None)
+                                    (maybe_gene_uniquename.clone(), None)
                                 };
                             ret_vec.push(((*target_gene_uniquename).clone(),
                                           TargetOfAnnotation {
@@ -1125,14 +1131,14 @@ impl <'a> WebDataBuild<'a> {
         for (_, term_details) in &mut self.terms {
             term_details.rel_summaries =
                 make_cv_summaries(&self.config, &self.raw.cvtermpaths,
-                                  &term_details.rel_annotations);
+                                  true, true, &term_details.rel_annotations);
         }
 
         for (_, gene_details) in &mut self.genes {
             for (cv_name, term_annotations) in &mut gene_details.cv_annotations {
                 let summaries =
                     make_cv_summaries(&self.config, &self.raw.cvtermpaths,
-                                      &term_annotations);
+                                      false, true, &term_annotations);
                 gene_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
         }
@@ -1141,7 +1147,7 @@ impl <'a> WebDataBuild<'a> {
             for (cv_name, term_annotations) in &mut genotype_details.cv_annotations {
                 let summaries =
                     make_cv_summaries(&self.config, &self.raw.cvtermpaths,
-                                      &term_annotations);
+                                      false, false, &term_annotations);
                 genotype_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
         }
@@ -1150,7 +1156,7 @@ impl <'a> WebDataBuild<'a> {
             for (cv_name, term_annotations) in &mut reference_details.cv_annotations {
                 let summaries =
                     make_cv_summaries(&self.config, &self.raw.cvtermpaths,
-                                      &term_annotations);
+                                      true, true, &term_annotations);
                 reference_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
         }
@@ -1591,9 +1597,10 @@ impl <'a> WebDataBuild<'a> {
                     } else {
                         None
                     };
+                let maybe_gene_uniquename = Some(gene_uniquename.clone());
                 let annotation = OntAnnotationDetail {
                     id: feature_cvterm.feature_cvterm_id,
-                    gene_uniquename: gene_uniquename.clone(),
+                    gene_uniquename: maybe_gene_uniquename,
                     reference_uniquename: reference_uniquename.clone(),
                     genotype_uniquename: maybe_genotype_uniquename.clone(),
                     with: with.clone(),
@@ -1751,7 +1758,7 @@ impl <'a> WebDataBuild<'a> {
             }
 
             for detail in annotations {
-                gene_annotation_by_term.entry(detail.gene_uniquename.clone())
+                gene_annotation_by_term.entry(detail.gene_uniquename.clone().unwrap())
                     .or_insert(HashMap::new())
                     .entry(termid.clone())
                     .or_insert(vec![])
@@ -2067,7 +2074,7 @@ impl <'a> WebDataBuild<'a> {
             for rel_annotation in &term_details.rel_annotations {
                 for detail in &rel_annotation.annotations {
                     let gene_uniquename = detail.gene_uniquename.clone();
-                    self.add_gene_to_hash(&mut seen_genes, termid.clone(), gene_uniquename.clone());
+                    self.add_gene_to_hash(&mut seen_genes, termid.clone(), gene_uniquename.unwrap().clone());
                     self.add_ref_to_hash(&mut seen_references, termid.clone(), detail.reference_uniquename.clone());
                     for condition_termid in &detail.conditions {
                         self.add_term_to_hash(&mut seen_terms, termid.clone(), condition_termid.clone());
@@ -2226,7 +2233,7 @@ impl <'a> WebDataBuild<'a> {
                     for feat_annotation in feat_annotations.iter() {
                         for detail in &feat_annotation.annotations {
                             self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(),
-                                                  detail.gene_uniquename.clone());
+                                                  detail.gene_uniquename.clone().unwrap());
                             for condition_termid in &detail.conditions {
                                 self.add_term_to_hash(&mut seen_terms, reference_uniquename.clone(), condition_termid.clone());
                             }
@@ -2297,7 +2304,7 @@ impl <'a> WebDataBuild<'a> {
             let mut seen_single_allele_genotypes: HashSet<GenotypeUniquename> = HashSet::new();
             for rel_annotation in &term_details.rel_annotations {
                 for annotation in &rel_annotation.annotations {
-                    seen_genes.insert(annotation.gene_uniquename.clone());
+                    seen_genes.insert(annotation.gene_uniquename.clone().unwrap());
                     if let Some(ref genotype_uniquename) = annotation.genotype_uniquename {
                         seen_genotypes.insert(genotype_uniquename.clone());
                         let genotype = self.genotypes.get(genotype_uniquename).unwrap();
@@ -2318,7 +2325,7 @@ impl <'a> WebDataBuild<'a> {
                 for rel_annotation in rel_annotations {
                     for annotation in &rel_annotation.annotations {
                         if !rel_annotation.is_not {
-                            seen_genes.insert(annotation.gene_uniquename.clone());
+                            seen_genes.insert(annotation.gene_uniquename.clone().unwrap());
                         }
                     }
                 }

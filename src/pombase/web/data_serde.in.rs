@@ -230,7 +230,7 @@ impl WithFromValue {
 #[derive(Serialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
-    pub gene_uniquename: GeneUniquename,
+    pub gene_uniquename: Option<GeneUniquename>,
     pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
