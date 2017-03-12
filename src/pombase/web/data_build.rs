@@ -173,6 +173,12 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
         let mut rows = vec![];
 
         for annotation in &term_and_annotations.annotations {
+            if annotation.gene_uniquename.is_none() &&
+                annotation.genotype_uniquename.is_none() &&
+                annotation.extension.len() == 0 {
+                    continue;
+                }
+
             let mut summary_extension = annotation.extension.iter().cloned()
                 .filter(|ext_part|
                         !cv_config.summary_relations_to_hide.contains(&ext_part.rel_type_name))
