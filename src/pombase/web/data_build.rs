@@ -121,7 +121,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>
 
     if let Some(mut prev_row) = row_iter.next() {
         for current_row in row_iter {
-            if prev_row.gene_uniquename != current_row.gene_uniquename ||
+            if prev_row.gene_uniquenames != current_row.gene_uniquenames ||
                 prev_row.genotype_uniquename != current_row.genotype_uniquename {
                     ret_rows.push(prev_row);
                     prev_row = current_row;
@@ -194,11 +194,15 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
 
             collect_duplicated_relations(&mut summary_extension);
 
-            let maybe_gene_uniquename =
+            let gene_uniquenames =
                 if include_gene && cv_config.feature_type == "gene" {
-                    annotation.gene_uniquename.clone()
+                    if let Some(ref gene_uniquename) = annotation.gene_uniquename {
+                        vec![gene_uniquename.clone()]
+                    } else {
+                        vec![]
+                    }
                 } else {
-                    None
+                    vec![]
                 };
 
             let maybe_genotype_uniquename =
@@ -209,7 +213,7 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                 };
 
             let row = TermSummaryRow {
-                gene_uniquename: maybe_gene_uniquename,
+                gene_uniquenames: gene_uniquenames,
                 genotype_uniquename: maybe_genotype_uniquename,
                 extension: summary_extension,
             };

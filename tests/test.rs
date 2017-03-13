@@ -545,7 +545,7 @@ fn test_collect_ext_summary_genes() {
     let mut rows = vec![];
 
     rows.push(TermSummaryRow {
-        gene_uniquename: Some(String::from("SPAC25B8.03")),
+        gene_uniquenames: vec![String::from("SPAC25B8.03")],
         genotype_uniquename: None,
         extension: vec![
             ExtPart {
@@ -561,7 +561,7 @@ fn test_collect_ext_summary_genes() {
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquename: Some(String::from("SPAC1786.03")), // change annotated gene
+        gene_uniquenames: vec![String::from("SPAC1786.03")], // change annotated gene
         genotype_uniquename: None,
         extension: vec![
             ExtPart {
@@ -577,7 +577,7 @@ fn test_collect_ext_summary_genes() {
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquename: Some(String::from("SPAC1786.03")),
+        gene_uniquenames: vec![String::from("SPAC1786.03")],
         genotype_uniquename: None,
         extension: vec![
             ExtPart {
@@ -593,7 +593,7 @@ fn test_collect_ext_summary_genes() {
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquename: Some(String::from("SPAC1786.03")),
+        gene_uniquenames: vec![String::from("SPAC1786.03")],
         genotype_uniquename: None,
         extension: vec![
             ExtPart {

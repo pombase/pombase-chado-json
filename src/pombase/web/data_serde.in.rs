@@ -298,8 +298,8 @@ impl Hash for OntTermAnnotations {
 
 #[derive(Serialize, Clone, Debug)]
 pub struct TermSummaryRow {
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub gene_uniquename: Option<GeneUniquename>, // for term pages
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub gene_uniquenames: Vec<GeneUniquename>, // for term and ref pages
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype_uniquename: Option<GenotypeUniquename>, // for term pages
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -324,20 +324,12 @@ impl PartialEq for TermSummaryRow {
 impl Eq for TermSummaryRow { }
 impl Ord for TermSummaryRow {
     fn cmp(&self, other: &Self) -> Ordering {
-        if let Some(ref gene_uniquename) = self.gene_uniquename {
-            if let Some(ref other_gene_uniquename) = other.gene_uniquename {
-                let ord = gene_uniquename.cmp(other_gene_uniquename);
-                if ord == Ordering::Equal {
-                    return cmp_extension(&self.extension, &other.extension);
-                } else {
-                    return ord;
-                }
+        if self.gene_uniquenames.len() > 0 && other.gene_uniquenames.len() > 0 {
+            let ord = self.gene_uniquenames.cmp(&other.gene_uniquenames);
+            if ord == Ordering::Equal {
+                return cmp_extension(&self.extension, &other.extension);
             } else {
-                return Ordering::Less;
-            }
-        } else {
-            if other.gene_uniquename.is_some() {
-                return Ordering::Greater;
+                return ord;
             }
         }
 
