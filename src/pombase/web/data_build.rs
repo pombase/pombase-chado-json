@@ -161,6 +161,38 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>
     ret_rows
 }
 
+// combine rows that have a gene and no extension into one row
+pub fn collect_summary_rows(rows: &mut Vec<TermSummaryRow>) {
+    let mut no_ext_rows = vec![];
+    let mut other_rows = vec![];
+
+    for row in rows.drain(0..) {
+        if row.gene_uniquenames.len() > 0 && row.extension.len() == 0 {
+            if row.gene_uniquenames.len() > 1 {
+                panic!("row has more than one gene\n");
+            }
+            no_ext_rows.push(row);
+        } else {
+            other_rows.push(row);
+        }
+    }
+
+    let gene_uniquenames: Vec<String> =
+        no_ext_rows.iter().map(|row| row.gene_uniquenames.get(0).unwrap().clone())
+        .collect();
+
+    let genes_row = TermSummaryRow {
+        gene_uniquenames: gene_uniquenames,
+        genotype_uniquename: None,
+        extension: vec![],
+    };
+
+    rows.clear();
+
+    rows.push(genes_row);
+    rows.append(&mut other_rows);
+}
+
 fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                      include_gene: bool, include_genotype: bool,
                      term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
@@ -223,6 +255,8 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
 
         rows.sort();
         rows.dedup();
+
+        collect_summary_rows(&mut rows);
 
         let summary = OntTermSummary {
             term: term_and_annotations.term.clone(),
