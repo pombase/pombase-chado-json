@@ -665,7 +665,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
 fn test_collect_ext_summary_genes() {
     let config = get_test_config();
 
-    let mut rows = get_test_summary_rows();
+    let rows = get_test_summary_rows();
     assert_eq!(rows.len(), 10);
 
     let res = collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), rows);
@@ -677,6 +677,15 @@ fn test_collect_ext_summary_genes() {
                                  vec![String::from("SPAC3G9.09c")]];
     assert_eq!(collected_ext_ext_part_1.ext_range,
                ExtRange::SummaryGenes(summary_genes_vec));
+}
+
+#[test]
+fn test_remove_redundant_summary_rows() {
+    let mut rows = get_test_summary_rows();
+    assert_eq!(rows.len(), 10);
+
+    remove_redundant_summary_rows(&mut rows);
+    assert_eq!(rows.len(), 4);
 }
 
 #[test]
@@ -706,10 +715,6 @@ fn test_collect_duplicated_relations() {
         }];
 
     collect_duplicated_relations(&mut ext);
-
-    print!("{}\n", ext.get(0).unwrap().rel_type_name);
-    print!("{}\n", ext.get(1).unwrap().rel_type_name);
-    print!("{}\n", ext.get(2).unwrap().rel_type_name);
 
     assert_eq!(ext.len(), 3);
     assert_eq!(ext.get(0).unwrap().rel_type_name, "some_rel");

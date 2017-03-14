@@ -9,6 +9,7 @@ use regex::Regex;
 use db::*;
 use web::data::*;
 use web::config::*;
+use web::vec_set::*;
 
 include!(concat!(env!("OUT_DIR"), "/config_serde.rs"));
 
@@ -193,6 +194,44 @@ pub fn collect_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     rows.append(&mut other_rows);
 }
 
+// Remove annotations from the summary where there is another more
+// specific annotation.  ie. the same annotation but with extra part(s) in the
+// extension.
+// See: https://github.com/pombase/website/issues/185
+pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
+    let mut results = vec![];
+
+    rows.sort();
+    rows.reverse();
+
+    let mut vec_set = VecSet::new();
+    let mut prev = rows.remove(0);
+    results.push(prev.clone());
+    if prev.gene_uniquenames.len() > 1 {
+        panic!("remove_redundant_summary_rows() failed: num genes > 1\n");
+    }
+    vec_set.insert(&prev.extension);
+
+    for current in rows.drain(0..) {
+        if current.gene_uniquenames.len() > 1 {
+            panic!("remove_redundant_summary_rows() failed: num genes > 1\n");
+        }
+
+        if prev.gene_uniquenames.len() == 0 &&
+            current.gene_uniquenames.len() == 0 ||
+            prev.gene_uniquenames.get(1) == current.gene_uniquenames.get(1) &&
+            !vec_set.contains_superset(&current.extension) {
+                results.push(current.clone());
+                vec_set.insert(&current.extension);
+            }
+        prev = current;
+    }
+
+    results.sort();
+
+    *rows = results;
+}
+
 fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                      include_gene: bool, include_genotype: bool,
                      term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
@@ -253,8 +292,7 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
             rows.push(row);
         }
 
-        rows.sort();
-        rows.dedup();
+        remove_redundant_summary_rows(&mut rows);
 
         collect_summary_rows(&mut rows);
 

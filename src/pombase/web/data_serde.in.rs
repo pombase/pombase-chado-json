@@ -5,7 +5,7 @@ use std::collections::HashSet;
 
 
 
-#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
@@ -27,6 +27,12 @@ pub struct ExtPart {
     pub rel_type_name: String,
     pub rel_type_display_name: String,
     pub ext_range: ExtRange,
+}
+impl Hash for ExtPart {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.rel_type_name.hash(state);
+        self.ext_range.hash(state);
+    }
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -356,6 +362,15 @@ impl Ord for TermSummaryRow {
 impl PartialOrd for TermSummaryRow {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
+    }
+}
+impl Hash for TermSummaryRow {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.gene_uniquenames.hash(state);
+        self.genotype_uniquename.hash(state);
+        for ext_part in &self.extension {
+            ext_part.hash(state);
+        }
     }
 }
 
