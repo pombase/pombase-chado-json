@@ -202,6 +202,11 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     let mut results = vec![];
 
     rows.sort();
+
+    if rows.len() <= 1 {
+        return;
+    }
+
     rows.reverse();
 
     let mut vec_set = VecSet::new();
@@ -244,8 +249,26 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
         let mut rows = vec![];
 
         for annotation in &term_and_annotations.annotations {
-            if annotation.gene_uniquename.is_none() &&
-                annotation.genotype_uniquename.is_none() &&
+            let gene_uniquenames =
+                if include_gene && cv_config.feature_type == "gene" {
+                    if let Some(ref gene_uniquename) = annotation.gene_uniquename {
+                        vec![gene_uniquename.clone()]
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                };
+
+            let maybe_genotype_uniquename =
+                if include_genotype && cv_config.feature_type == "genotype" {
+                    annotation.genotype_uniquename.clone()
+                } else {
+                    None
+                };
+
+            if gene_uniquenames.len() == 0 &&
+                maybe_genotype_uniquename.is_none() &&
                 annotation.extension.len() == 0 {
                     continue;
                 }
@@ -264,24 +287,6 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
             summary_extension.sort();
 
             collect_duplicated_relations(&mut summary_extension);
-
-            let gene_uniquenames =
-                if include_gene && cv_config.feature_type == "gene" {
-                    if let Some(ref gene_uniquename) = annotation.gene_uniquename {
-                        vec![gene_uniquename.clone()]
-                    } else {
-                        vec![]
-                    }
-                } else {
-                    vec![]
-                };
-
-            let maybe_genotype_uniquename =
-                if include_genotype && cv_config.feature_type == "genotype" {
-                    annotation.genotype_uniquename.clone()
-                } else {
-                    None
-                };
 
             let row = TermSummaryRow {
                 gene_uniquenames: gene_uniquenames,
