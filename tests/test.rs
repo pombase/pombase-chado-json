@@ -685,7 +685,7 @@ fn test_remove_redundant_summary_rows() {
     assert_eq!(rows.len(), 10);
 
     remove_redundant_summary_rows(&mut rows);
-    assert_eq!(rows.len(), 4);
+    assert_eq!(rows.len(), 6);
 }
 
 #[test]
