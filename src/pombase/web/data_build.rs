@@ -222,13 +222,20 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
             panic!("remove_redundant_summary_rows() failed: num genes > 1\n");
         }
 
-        if prev.gene_uniquenames.len() == 0 &&
-            current.gene_uniquenames.len() == 0 ||
-            prev.gene_uniquenames.get(1) == current.gene_uniquenames.get(1) &&
-            !vec_set.contains_superset(&current.extension) {
-                results.push(current.clone());
+        if prev.gene_uniquenames.len() == 0 && current.gene_uniquenames.len() == 0 &&
+            (prev.genotype_uniquename.is_none() && current.genotype_uniquename.is_none() ||
+             prev.genotype_uniquename.unwrap() == current.genotype_uniquename.clone().unwrap()) ||
+            prev.gene_uniquenames == current.gene_uniquenames {
+                if !vec_set.contains_superset(&current.extension) {
+                    results.push(current.clone());
+                    vec_set.insert(&current.extension);
+                }
+            } else {
+                vec_set = VecSet::new();
                 vec_set.insert(&current.extension);
+                results.push(current.clone());
             }
+
         prev = current;
     }
 
