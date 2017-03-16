@@ -272,12 +272,6 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                     None
                 };
 
-            if gene_uniquenames.len() == 0 &&
-                maybe_genotype_uniquename.is_none() &&
-                annotation.extension.len() == 0 {
-                    continue;
-                }
-
             let mut summary_extension = annotation.extension.iter().cloned()
                 .filter(|ext_part|
                         !cv_config.summary_relations_to_hide.contains(&ext_part.rel_type_name))
@@ -288,6 +282,12 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                     }
                     ext_part })
                 .collect::<Vec<ExtPart>>();
+
+            if gene_uniquenames.len() == 0 &&
+                maybe_genotype_uniquename.is_none() &&
+                summary_extension.len() == 0 {
+                    continue;
+                }
 
             summary_extension.sort();
 
