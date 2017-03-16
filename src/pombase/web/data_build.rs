@@ -182,15 +182,17 @@ pub fn collect_summary_rows(rows: &mut Vec<TermSummaryRow>) {
         no_ext_rows.iter().map(|row| row.gene_uniquenames.get(0).unwrap().clone())
         .collect();
 
-    let genes_row = TermSummaryRow {
-        gene_uniquenames: gene_uniquenames,
-        genotype_uniquename: None,
-        extension: vec![],
-    };
-
     rows.clear();
 
-    rows.push(genes_row);
+    if gene_uniquenames.len() > 0 {
+        let genes_row = TermSummaryRow {
+            gene_uniquenames: gene_uniquenames,
+            genotype_uniquename: None,
+            extension: vec![],
+        };
+
+        rows.push(genes_row);
+    }
     rows.append(&mut other_rows);
 }
 
