@@ -1871,12 +1871,26 @@ impl <'a> WebDataBuild<'a> {
         for (termid, annotations) in ont_annotations {
             let term_short = self.make_term_short(termid);
 
+            // genotype annotations are stored in all_ont_annotations
+            // once for each gene mentioned in the genotype
+            let mut seen_annotations_for_term = HashSet::new();
+
+            let annotations_for_term: Vec<Rc<OntAnnotationDetail>> = 
+                annotations.iter().cloned()
+                .filter(|annotation|
+                        if seen_annotations_for_term.contains(&annotation.id) {
+                            false
+                        } else {
+                            seen_annotations_for_term.insert(annotation.id);
+                            true
+                        }).collect();
+
             if let Some(ref mut term_details) = self.terms.get_mut(termid) {
                 let new_rel_ont_annotation = OntTermAnnotations {
                     rel_names: HashSet::new(),
                     is_not: is_not,
                     term: term_short.clone(),
-                    annotations: annotations.clone(),
+                    annotations: annotations_for_term.clone(),
                 };
                 if is_not {
                     term_details.not_rel_annotations.push(new_rel_ont_annotation);
@@ -1886,6 +1900,10 @@ impl <'a> WebDataBuild<'a> {
             } else {
                 panic!("missing termid: {}\n", termid);
             }
+
+            // genotype annotations are stored in all_ont_annotations
+            // once for each gene mentioned in the genotype
+            let mut seen_annotations_for_ref = HashSet::new();
 
             for detail in annotations {
                 gene_annotation_by_term.entry(detail.gene_uniquename.clone().unwrap())
@@ -1906,11 +1924,14 @@ impl <'a> WebDataBuild<'a> {
                 }
 
                 if let Some(reference_uniquename) = detail.reference_uniquename.clone() {
-                    ref_annotation_by_term.entry(reference_uniquename)
-                        .or_insert(HashMap::new())
-                        .entry(termid.clone())
-                        .or_insert(vec![])
-                        .push(detail.clone());
+                    if !seen_annotations_for_ref.contains(&detail.id) {
+                        ref_annotation_by_term.entry(reference_uniquename)
+                            .or_insert(HashMap::new())
+                            .entry(termid.clone())
+                            .or_insert(vec![])
+                            .push(detail.clone());
+                        seen_annotations_for_ref.insert(detail.id);
+                    }
                 }
 
                 for condition_termid in &detail.conditions {
