@@ -1014,6 +1014,7 @@ impl <'a> WebDataBuild<'a> {
                     is_gene_type(&feature_rel.subject.feat_type.name) &&
                     is_gene_type(&feature_rel.object.feat_type.name) {
                         let mut evidence: Option<Evidence> = None;
+                        let mut is_inferred_interaction: bool = false;
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0).clone();
@@ -1034,6 +1035,13 @@ impl <'a> WebDataBuild<'a> {
                                     }
                                 }
                             }
+                            if prop.prop_type.name == "is_inferred" {
+                                if let Some(is_inferred_value) = prop.value.clone() {
+                                    if is_inferred_value == "yes" {
+                                        is_inferred_interaction = true;
+                                    }
+                                }
+                            }
                         }
 
                         let evidence_clone = evidence.clone();
@@ -1046,10 +1054,9 @@ impl <'a> WebDataBuild<'a> {
                         let other_gene_organism_short = {
                              self.genes.get(object_uniquename).unwrap().organism.clone()
                         };
-                        {
-                            let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                             match rel_config.annotation_type {
-                                FeatureRelAnnotationType::Interaction => {
+                                FeatureRelAnnotationType::Interaction =>
+                                    if !is_inferred_interaction {
                                     let interaction_annotation =
                                         InteractionAnnotation {
                                             gene_uniquename: gene_uniquename.clone(),
@@ -1057,15 +1064,30 @@ impl <'a> WebDataBuild<'a> {
                                             evidence: evidence,
                                             reference_uniquename: maybe_reference_uniquename.clone(),
                                         };
-                                    if rel_name == "interacts_physically" {
-                                        gene_details.physical_interactions.push(interaction_annotation.clone());
-                                    } else {
-                                        if rel_name == "interacts_genetically" {
-                                            gene_details.genetic_interactions.push(interaction_annotation.clone());
+                                    {
+                                        let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
+                                        if rel_name == "interacts_physically" {
+                                            gene_details.physical_interactions.push(interaction_annotation.clone());
                                         } else {
-                                            panic!("unknown interaction type: {}", rel_name);
-                                        }
-                                    };
+                                            if rel_name == "interacts_genetically" {
+                                                gene_details.genetic_interactions.push(interaction_annotation.clone());
+                                            } else {
+                                                panic!("unknown interaction type: {}", rel_name);
+                                            }
+                                        };
+                                    }
+                                    {
+                                        let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
+                                        if rel_name == "interacts_physically" {
+                                            other_gene_details.physical_interactions.push(interaction_annotation.clone());
+                                        } else {
+                                            if rel_name == "interacts_genetically" {
+                                                other_gene_details.genetic_interactions.push(interaction_annotation.clone());
+                                            } else {
+                                                panic!("unknown interaction type: {}", rel_name);
+                                            }
+                                        };
+                                    }
 
                                     if let Some(ref_details) =
                                         if let Some(ref reference_uniquename) = maybe_reference_uniquename {
@@ -1094,6 +1116,7 @@ impl <'a> WebDataBuild<'a> {
                                             evidence: evidence,
                                             reference_uniquename: maybe_reference_uniquename.clone(),
                                         };
+                                    let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                     gene_details.ortholog_annotations.push(ortholog_annotation.clone());
                                     if let Some(ref_details) =
                                         if let Some(ref reference_uniquename) = maybe_reference_uniquename {
@@ -1113,6 +1136,7 @@ impl <'a> WebDataBuild<'a> {
                                             evidence: evidence,
                                             reference_uniquename: maybe_reference_uniquename.clone(),
                                         };
+                                    let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                     gene_details.paralog_annotations.push(paralog_annotation.clone());
                                     if let Some(ref_details) =
                                         if let Some(ref reference_uniquename) = maybe_reference_uniquename {
@@ -1125,8 +1149,7 @@ impl <'a> WebDataBuild<'a> {
                                     }
                                 }
                             }
-                        }
-                        {
+
                             // for orthologs and paralogs, store the reverses annotation too
                             let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
                             match rel_config.annotation_type {
@@ -1149,7 +1172,6 @@ impl <'a> WebDataBuild<'a> {
                                             reference_uniquename: maybe_reference_uniquename
                                         }),
                             }
-                        }
                     }
             }
         }
