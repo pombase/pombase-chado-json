@@ -2,7 +2,6 @@ extern crate postgres;
 extern crate regex;
 extern crate getopts;
 extern crate bit_set;
-#[macro_use]
 extern crate serde;
 extern crate serde_json;
 extern crate serde_yaml;
