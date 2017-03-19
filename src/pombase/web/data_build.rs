@@ -86,6 +86,7 @@ pub fn remove_first<T, P>(vec: &mut Vec<T>, predicate: P) -> Option<T>
     None
 }
 
+// merge two ExtPart objects into one by merging gene ranges
 pub fn merge_gene_ext_parts(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart {
     if ext_part1.rel_type_name == ext_part2.rel_type_name {
         if let ExtRange::SummaryGenes(ref part1_summ_genes) = ext_part1.ext_range {
@@ -106,6 +107,7 @@ pub fn merge_gene_ext_parts(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart
     }
 }
 
+// turn "has_substrate(gene1),has_substrate(gene2)" into "has_substrate(gene1,gene2)"
 pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>)
                              -> Vec<TermSummaryRow> {
     let conf_gene_rels = &cv_config.summary_gene_relations_to_collect;
@@ -291,8 +293,6 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                     continue;
                 }
 
-            summary_extension.sort();
-
             collect_duplicated_relations(&mut summary_extension);
 
             let row = TermSummaryRow {
@@ -356,6 +356,44 @@ pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
 
     ext.clear();
     ext.append(&mut result);
+}
+
+fn compare_ext_part_with_config(config: &Config, ep1: &ExtPart, ep2: &ExtPart) -> Ordering {
+    let rel_order_conf = &config.extension_relation_order;
+    let order_conf = &rel_order_conf.relation_order;
+    let always_last_conf = &rel_order_conf.always_last;
+
+    let maybe_ep1_index = order_conf.iter().position(|r| *r == ep1.rel_type_name);
+    let maybe_ep2_index = order_conf.iter().position(|r| *r == ep2.rel_type_name);
+
+    if let Some(ep1_index) = maybe_ep1_index {
+        if let Some(ep2_index) = maybe_ep2_index {
+            ep1_index.cmp(&ep2_index)
+        } else {
+            Ordering::Less
+        }
+    } else {
+        if let Some(_) = maybe_ep2_index {
+            Ordering::Greater
+        } else {
+            let maybe_ep1_last_index = always_last_conf.iter().position(|r| *r == ep1.rel_type_name);
+            let maybe_ep2_last_index = always_last_conf.iter().position(|r| *r == ep2.rel_type_name);
+
+            if let Some(ep1_last_index) = maybe_ep1_last_index {
+                if let Some(ep2_last_index) = maybe_ep2_last_index {
+                    ep1_last_index.cmp(&ep2_last_index)
+                } else {
+                    Ordering::Greater
+                }
+            } else {
+                if let Some(_) = maybe_ep2_last_index {
+                    Ordering::Less
+                } else {
+                    ep1.rel_type_name.cmp(&ep2.rel_type_name)
+                }
+            }
+        }
+    }
 }
 
 impl <'a> WebDataBuild<'a> {
@@ -562,7 +600,17 @@ impl <'a> WebDataBuild<'a> {
                 None => vec![],
             };
 
-        let mut new_extension = extension_parts.clone();
+        let mut new_extension = {
+            let mut new_ext = extension_parts.clone();
+
+            let compare_ext_part_func =
+                |e1: &ExtPart, e2: &ExtPart| compare_ext_part_with_config(&self.config, e1, e2);
+
+            new_ext.sort_by(compare_ext_part_func);
+
+            new_ext
+        };
+
         let mut existing_extensions = annotation_template.extension.clone();
         new_extension.append(&mut existing_extensions);
 
@@ -1192,8 +1240,8 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn matching_ext_config(&self, annotation_termid: &str,
-                           rel_type_name: &str) -> Option<ExtensionConfig> {
-        let ext_configs = &self.config.extensions;
+                           rel_type_name: &str) -> Option<ExtensionDisplayNames> {
+        let ext_configs = &self.config.extension_display_names;
 
         if let Some(annotation_term_details) = self.terms.get(annotation_termid) {
             for ext_config in ext_configs {
@@ -2050,7 +2098,7 @@ impl <'a> WebDataBuild<'a> {
                 }
         }
 
-        for ext_conf in &self.config.extensions {
+        for ext_conf in &self.config.extension_display_names {
             if let Some(ref conf_termid) = ext_conf.if_descendent_of {
                 if conf_termid == termid && rel_name == "is_a" {
                     return true;
@@ -2633,3 +2681,109 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 }
+
+#[allow(dead_code)]
+fn get_test_config() -> Config {
+    let mut config = Config {
+        extension_display_names: vec![],
+        extension_relation_order: RelationOrder {
+            relation_order: vec![
+                String::from("directly_positively_regulates"),
+                String::from("has_direct_input"),
+                String::from("involved_in"),
+                String::from("occurs_at"),
+                String::from("occurs_in"),
+                String::from("added_by"),
+                String::from("added_during"),
+                String::from("has_penetrance"),
+            ],
+            always_last: vec![String::from("happens_during"),
+                              String::from("exists_during")],
+        },
+        evidence_types: HashMap::new(),
+        cv_config: HashMap::new(),
+    };
+
+    config.cv_config.insert(String::from("molecular_function"),
+                            CvConfig {
+                                feature_type: String::from("Gene"),
+                                summary_relations_to_hide: vec![],
+                                summary_gene_relations_to_collect: vec![String::from("has_substrate")],
+                            });
+
+    config
+}
+
+
+#[test]
+fn test_compare_ext_part_with_config() {
+    let config = get_test_config();
+    let mut ext_part1 = ExtPart {
+        rel_type_name: String::from("has_direct_input"),
+        rel_type_display_name: String::from("NA"),
+        ext_range: ExtRange::Misc(String::from("misc_ext_part_1")),
+    };
+    let mut ext_part2 = ExtPart {
+        rel_type_name: String::from("has_direct_input"),
+        rel_type_display_name: String::from("NA"),
+        ext_range: ExtRange::Misc(String::from("misc_ext_part_2")),
+    };
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Equal);
+
+    ext_part1.rel_type_name = "directly_positively_regulates".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Less);
+
+    ext_part1.rel_type_name = "has_direct_input".into();
+    ext_part2.rel_type_name = "directly_positively_regulates".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Greater);
+
+    ext_part2.rel_type_name = "absent_during".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Less);
+
+    ext_part2.rel_type_name = "misc_rel".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Less);
+
+    ext_part1.rel_type_name = "other_misc_rel".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Greater);
+
+    ext_part1.rel_type_name = "other_misc_rel".into();
+    ext_part2.rel_type_name = "other_misc_rel".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Equal);
+
+    ext_part2.rel_type_name = "happens_during".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Less);
+
+    ext_part1.rel_type_name = "happens_during".into();
+    ext_part2.rel_type_name = "misc_rel".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Greater);
+
+    ext_part1.rel_type_name = "has_direct_input".into();
+    ext_part2.rel_type_name = "happens_during".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Less);
+
+    ext_part1.rel_type_name = "happens_during".into();
+    ext_part2.rel_type_name = "has_direct_input".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Greater);
+
+    ext_part1.rel_type_name = "happens_during".into();
+    ext_part2.rel_type_name = "exists_during".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Less);
+
+    ext_part1.rel_type_name = "happens_during".into();
+    ext_part2.rel_type_name = "happens_during".into();
+    assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+            Ordering::Equal);
+}
+

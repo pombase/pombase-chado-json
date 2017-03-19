@@ -397,7 +397,12 @@ fn get_test_raw() -> Raw {
 
 fn get_test_config() -> Config {
     let mut config = Config {
-        extensions: vec![],
+        extension_display_names: vec![],
+        extension_relation_order: RelationOrder {
+            relation_order: vec![
+            ],
+            always_last: vec![],
+        },
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
     };
@@ -772,4 +777,3 @@ fn test_locations() {
     assert_eq!(&cdc16_gene.gene_neighbourhood[0].uniquename, "SPAC2F7.03c");
     assert_eq!(&cdc16_gene.gene_neighbourhood[1].uniquename, "SPAC6F6.08c");
 }
-

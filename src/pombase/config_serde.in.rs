@@ -1,10 +1,19 @@
 // configuration for extension display names and for the "Target of" section
 #[derive(Deserialize, Clone, Debug)]
-pub struct ExtensionConfig {
+pub struct ExtensionDisplayNames {
     pub rel_name: String, // name of extension relation
     pub display_name: String, // text to display
     pub if_descendent_of: Option<String>, // None if applies to any extension
     pub reciprocal_display: Option<String>, // None if reciprocal shouldn't be displayed
+}
+
+// the order of relations within an extension:
+#[derive(Deserialize, Clone, Debug)]
+pub struct RelationOrder {
+    // put the realtion in this order in the displayed extensions:
+    pub relation_order: Vec<String>,
+    // except for these reactions which should always come last:
+    pub always_last: Vec<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -23,7 +32,8 @@ pub type LongEvidenceCode = String;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
-    pub extensions: Vec<ExtensionConfig>,
+    pub extension_display_names: Vec<ExtensionDisplayNames>,
+    pub extension_relation_order: RelationOrder,
     pub evidence_types: HashMap<ShortEvidenceCode, LongEvidenceCode>,
     pub cv_config: HashMap<CvName, CvConfig>,
 }
