@@ -1944,7 +1944,9 @@ impl <'a> WebDataBuild<'a> {
             let term_short = self.make_term_short(termid);
 
             // genotype annotations are stored in all_ont_annotations
-            // once for each gene mentioned in the genotype
+            // once for each gene mentioned in the genotype - this set is
+            // used to avoid adding an annotation multiple times to a
+            // GenotypeDetails
             let mut seen_annotations_for_term = HashSet::new();
 
             let annotations_for_term: Vec<Rc<OntAnnotationDetail>> = 

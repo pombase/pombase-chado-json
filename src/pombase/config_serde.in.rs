@@ -10,7 +10,7 @@ pub struct ExtensionDisplayNames {
 // the order of relations within an extension:
 #[derive(Deserialize, Clone, Debug)]
 pub struct RelationOrder {
-    // put the realtion in this order in the displayed extensions:
+    // put the relations in this order in the displayed extensions:
     pub relation_order: Vec<String>,
     // except for these reactions which should always come last:
     pub always_last: Vec<String>,
