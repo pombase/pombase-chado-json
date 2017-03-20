@@ -205,8 +205,6 @@ pub fn collect_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     let mut results = vec![];
 
-    rows.sort();
-
     if rows.len() <= 1 {
         return;
     }
@@ -240,8 +238,6 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 
         prev = current;
     }
-
-    results.sort();
 
     *rows = results;
 }
@@ -391,6 +387,52 @@ fn compare_ext_part_with_config(config: &Config, ep1: &ExtPart, ep2: &ExtPart) -
                 } else {
                     ep1.rel_type_name.cmp(&ep2.rel_type_name)
                 }
+            }
+        }
+    }
+}
+
+fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart) -> Ordering {
+    
+}
+
+fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>) -> Ordering {
+    let len_cmp = ext1.len().cmp(&ext2.len());
+    if len_cmp == Ordering::Equal {
+        ext1.cmp(&ext2)
+    } else {
+        len_cmp
+    }
+}
+
+fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
+                             detail2: &Rc<OntAnnotationDetail>) -> Ordering {
+    if let Some(ref genotype_uniquename) = detail1.genotype_uniquename {
+        if let Some(ref detail2_genotype_uniquename) = detail2.genotype_uniquename {
+            let ord = genotype_uniquename.cmp(detail2_genotype_uniquename);
+            if ord == Ordering::Equal {
+                cmp_extension(&detail1.extension, &detail2.extension)
+            } else {
+                ord
+            }
+        } else {
+            panic!("comparing two OntAnnotationDetail but one has a genotype and
+ one a gene:\n{:?}\n{:?}\n");
+        }
+    } else {
+        if detail2.genotype_uniquename.is_some() {
+            panic!("comparing two OntAnnotationDetail but one has a genotype and
+ one a gene:\n{:?}\n{:?}\n");
+        } else {
+            let gene_uniquename1 = detail1.gene_uniquename.clone().unwrap();
+            let gene_uniquename2 = detail2.gene_uniquename.clone().unwrap();
+
+            let ord = gene_uniquename1.cmp(&gene_uniquename2);
+
+            if ord == Ordering::Equal {
+                cmp_extension(&detail1.extension, &detail2.extension)
+            } else {
+                ord
             }
         }
     }
@@ -1949,7 +1991,7 @@ impl <'a> WebDataBuild<'a> {
             // GenotypeDetails
             let mut seen_annotations_for_term = HashSet::new();
 
-            let annotations_for_term: Vec<Rc<OntAnnotationDetail>> = 
+            let mut annotations_for_term: Vec<Rc<OntAnnotationDetail>> = 
                 annotations.iter().cloned()
                 .filter(|annotation|
                         if seen_annotations_for_term.contains(&annotation.id) {
@@ -1958,6 +2000,8 @@ impl <'a> WebDataBuild<'a> {
                             seen_annotations_for_term.insert(annotation.id);
                             true
                         }).collect();
+
+            annotations_for_term.sort_by(cmp_ont_annotation_detail);
 
             if let Some(ref mut term_details) = self.terms.get_mut(termid) {
                 let new_rel_ont_annotation = OntTermAnnotations {
