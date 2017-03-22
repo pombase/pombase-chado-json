@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
+use std::iter::FromIterator;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 
@@ -2833,3 +2834,112 @@ fn test_compare_ext_part_with_config() {
             Ordering::Equal);
 }
 
+#[allow(dead_code)]
+fn get_test_annotations() -> Vec<OntTermAnnotations> {
+    let annotations1 =
+        vec![
+            Rc::new(OntAnnotationDetail {
+                id: 188448,
+                gene_uniquename: Some("SPBC11B10.09".into()),
+                genotype_uniquename: None,
+                reference_uniquename: Some("PMID:3322810".into()),
+                evidence: Some("IDA".into()),
+                extension: vec![],
+                qualifiers: vec![],
+                from: WithFromValue::None,
+                with: WithFromValue::None,
+                gene_ex_props: None,
+                conditions: vec![],
+                residue: None,
+            }),
+            Rc::new(OntAnnotationDetail {
+                id: 202017,
+                gene_uniquename: Some("SPBC11B10.09".into()),
+                genotype_uniquename: None,
+                reference_uniquename: Some("PMID:2665944".into()),
+                evidence: Some("IDA".into()),
+                extension: vec![],
+                qualifiers: vec![],
+                from: WithFromValue::None,
+                with: WithFromValue::None,
+                gene_ex_props: None,
+                conditions: vec![],
+                residue: None,
+            }),
+        ];
+    let ont_term1 = OntTermAnnotations {
+        term: TermShort {
+            name: "cyclin-dependent protein kinase activity".into(),
+            cv_name: "molecular_function".into(),
+            interesting_parents: HashSet::from_iter(vec!["GO:0003824".into()]),
+            termid: "GO:0097472".into(),
+            is_obsolete: false,
+            gene_count: 6,
+            genotype_count: 0
+        },
+        is_not: false,
+        rel_names: HashSet::new(),
+        annotations: annotations1,
+    };
+
+    let annotations2 =
+        vec![
+            Rc::new(OntAnnotationDetail {
+                id: 41717,
+                gene_uniquename: Some("SPBC11B10.09".into()),
+                genotype_uniquename: None,
+                reference_uniquename: Some("PMID:9242669".into()),
+                evidence: Some("IDA".into()),
+                extension: vec![
+                    ExtPart {
+                        rel_type_name: "has_direct_input".into(),
+                        rel_type_display_name: "has substrate".into(),
+                        ext_range: ExtRange::Gene("SPBC646.13".into())
+                    }
+                ],
+                qualifiers: vec![],
+                from: WithFromValue::None,
+                with: WithFromValue::None,
+                gene_ex_props: None,
+                conditions: vec![],
+                residue: None,
+              }),
+            Rc::new(OntAnnotationDetail {
+                id: 41718,
+                gene_uniquename: Some("SPBC11B10.09".into()),
+                genotype_uniquename: None,
+                reference_uniquename: Some("PMID:9490630".into()),
+                evidence: Some("IDA".into()),
+                extension: vec![
+                    ExtPart {
+                        rel_type_name: "has_direct_input".into(),
+                        rel_type_display_name: "has substrate".into(),
+                        ext_range: ExtRange::Gene("SPAC25G10.07c".into()),
+                    },
+                ],
+                qualifiers: vec![],
+                from: WithFromValue::None,
+                with: WithFromValue::None,
+                gene_ex_props: None,
+                conditions: vec![],
+                residue: None,
+            }),
+        ];
+
+    let ont_term2 = OntTermAnnotations {
+        term: TermShort {
+            name: "cyclin-dependent protein serine/threonine kinase activity".into(),
+            cv_name: "molecular_function".into(),
+            gene_count: 5,
+            genotype_count: 0,
+            interesting_parents: HashSet::from_iter(vec!{"GO:0003824".into()}),
+            is_obsolete: false,
+            termid: "GO:0004693".into(),
+        },
+        is_not: false,
+        rel_names: HashSet::new(),
+        annotations: annotations2,
+    };
+
+    vec![ont_term1, ont_term2]
+}
