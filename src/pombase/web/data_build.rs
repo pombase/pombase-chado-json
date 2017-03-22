@@ -126,7 +126,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>
     if let Some(mut prev_row) = row_iter.next() {
         for current_row in row_iter {
             if prev_row.gene_uniquenames != current_row.gene_uniquenames ||
-                prev_row.genotype_uniquename != current_row.genotype_uniquename {
+                prev_row.genotype_uniquenames != current_row.genotype_uniquenames {
                     ret_rows.push(prev_row);
                     prev_row = current_row;
                     continue;
@@ -165,32 +165,41 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>
     ret_rows
 }
 
-// combine rows that have a gene and no extension into one row
+// combine rows that have a gene or genotype but no extension into one row
 pub fn collect_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     let mut no_ext_rows = vec![];
     let mut other_rows = vec![];
 
     for row in rows.drain(0..) {
-        if row.gene_uniquenames.len() > 0 && row.extension.len() == 0 {
-            if row.gene_uniquenames.len() > 1 {
-                panic!("row has more than one gene\n");
+        if (row.gene_uniquenames.len() > 0 || row.genotype_uniquenames.len() > 0)
+            && row.extension.len() == 0 {
+                if row.gene_uniquenames.len() > 1 {
+                    panic!("row has more than one gene\n");
+                }
+                if row.genotype_uniquenames.len() > 1 {
+                    panic!("row has more than one genotype\n");
+                }
+                no_ext_rows.push(row);
+            } else {
+                other_rows.push(row);
             }
-            no_ext_rows.push(row);
-        } else {
-            other_rows.push(row);
-        }
     }
 
     let gene_uniquenames: Vec<String> =
-        no_ext_rows.iter().map(|row| row.gene_uniquenames.get(0).unwrap().clone())
+        no_ext_rows.iter().filter(|row| row.gene_uniquenames.len() > 0)
+        .map(|row| row.gene_uniquenames.get(0).unwrap().clone())
+        .collect();
+    let genotype_uniquenames: Vec<String> =
+        no_ext_rows.iter().filter(|row| row.genotype_uniquenames.len() > 0)
+        .map(|row| row.genotype_uniquenames.get(0).unwrap().clone())
         .collect();
 
     rows.clear();
 
-    if gene_uniquenames.len() > 0 {
+    if gene_uniquenames.len() > 0 || genotype_uniquenames.len() > 0 {
         let genes_row = TermSummaryRow {
             gene_uniquenames: gene_uniquenames,
-            genotype_uniquename: None,
+            genotype_uniquenames: genotype_uniquenames,
             extension: vec![],
         };
 
@@ -225,8 +234,8 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
             panic!("remove_redundant_summary_rows() failed: num genes > 1\n");
         }
 
-        if (&prev.gene_uniquenames, &prev.genotype_uniquename) ==
-            (&current.gene_uniquenames, &current.genotype_uniquename) {
+        if (&prev.gene_uniquenames, &prev.genotype_uniquenames) ==
+            (&current.gene_uniquenames, &current.genotype_uniquenames) {
                 if !vec_set.contains_superset(&current.extension) {
                     results.push(current.clone());
                     vec_set.insert(&current.extension);
@@ -257,23 +266,21 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
         let mut rows = vec![];
 
         for annotation in &term_and_annotations.annotations {
-            let gene_uniquenames =
-                if include_gene && cv_config.feature_type == "gene" {
-                    if let Some(ref gene_uniquename) = annotation.gene_uniquename {
-                        vec![gene_uniquename.clone()]
-                    } else {
-                        vec![]
-                    }
-                } else {
-                    vec![]
-                };
+            let mut gene_uniquenames = vec![];
 
-            let maybe_genotype_uniquename =
-                if include_genotype && cv_config.feature_type == "genotype" {
-                    annotation.genotype_uniquename.clone()
-                } else {
-                    None
-                };
+            if include_gene && cv_config.feature_type == "gene" {
+                if let Some(ref gene_uniquename) = annotation.gene_uniquename {
+                    gene_uniquenames = vec![gene_uniquename.clone()];
+                }
+            }
+
+            let mut genotype_uniquenames = vec![];
+
+            if include_genotype && cv_config.feature_type == "genotype" {
+                if let Some(ref genotype_uniquename) = annotation.genotype_uniquename {
+                    genotype_uniquenames = vec![genotype_uniquename.clone()];
+                }
+            }
 
             let mut summary_extension = annotation.extension.iter().cloned()
                 .filter(|ext_part|
@@ -287,7 +294,7 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
                 .collect::<Vec<ExtPart>>();
 
             if gene_uniquenames.len() == 0 &&
-                maybe_genotype_uniquename.is_none() &&
+                genotype_uniquenames.len() == 0 &&
                 summary_extension.len() == 0 {
                     continue;
                 }
@@ -296,7 +303,7 @@ fn make_cv_summaries(config: &Config, cvtermpath: &Vec<Rc<Cvtermpath>>,
 
             let row = TermSummaryRow {
                 gene_uniquenames: gene_uniquenames,
-                genotype_uniquename: maybe_genotype_uniquename,
+                genotype_uniquenames: genotype_uniquenames,
                 extension: summary_extension,
             };
 

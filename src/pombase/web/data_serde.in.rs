@@ -312,8 +312,8 @@ impl Hash for OntTermAnnotations {
 pub struct TermSummaryRow {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_uniquenames: Vec<GeneUniquename>, // for term and ref pages
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_uniquename: Option<GenotypeUniquename>, // for term pages
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub genotype_uniquenames: Vec<GenotypeUniquename>, // for term pages
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub extension: Vec<ExtPart>,
 }
@@ -321,7 +321,7 @@ pub struct TermSummaryRow {
 impl Hash for TermSummaryRow {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.gene_uniquenames.hash(state);
-        self.genotype_uniquename.hash(state);
+        self.genotype_uniquenames.hash(state);
         for ext_part in &self.extension {
             ext_part.hash(state);
         }

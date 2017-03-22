@@ -548,22 +548,22 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
 
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC25B2.01c")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC25B2.01c")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC25B8.03")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC25B8.03")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
                 rel_type_name: String::from("some_good_rel"),
@@ -573,7 +573,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC25B8.03")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
                 rel_type_name: String::from("has_substrate"),
@@ -584,7 +584,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC25B8.03")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
                 rel_type_name: String::from("has_substrate"),
@@ -600,7 +600,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC25B8.03")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
                 rel_type_name: String::from("has_substrate"),
@@ -616,7 +616,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC1786.03")], // change annotated gene
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
                 rel_type_name: String::from("has_substrate"),
@@ -632,7 +632,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC1786.03")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
                 rel_type_name: String::from("has_substrate"),
@@ -648,7 +648,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     });
     rows.push(TermSummaryRow {
         gene_uniquenames: vec![String::from("SPAC1786.03")],
-        genotype_uniquename: None,
+        genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
                 rel_type_name: String::from("has_substrate"),
