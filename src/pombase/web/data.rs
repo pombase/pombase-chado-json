@@ -43,12 +43,13 @@ pub type AlleleUniquename = String;
 
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
+pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
 
 pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
-pub type IdTermShortMap = HashMap<TermId, Rc<TermShort>>;
-pub type IdTermDetailsMap = HashMap<TermId, Rc<TermDetails>>;
+pub type IdRcTermShortMap = HashMap<TermId, Rc<TermShort>>;
+pub type IdRcTermDetailsMap = HashMap<TermId, Rc<TermDetails>>;
 pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
 pub type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
@@ -69,7 +70,7 @@ impl WebData {
     fn get_references(&self) -> &IdReferenceMap {
         &self.references
     }
-    fn get_terms(&self) -> &IdTermDetailsMap {
+    fn get_terms(&self) -> &IdRcTermDetailsMap {
         &self.terms
     }
 

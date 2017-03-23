@@ -22,13 +22,7 @@ pub enum ExtRange {
     GeneProduct(String),
 }
 
-impl Ord for ExtRange {
-    fn cmp(&self, other: &ExtRange) -> Ordering {
-        Ordering::Greater
-    }
-}
-
-#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct ExtPart {
     pub rel_type_name: String,
     pub rel_type_display_name: String,
@@ -627,8 +621,8 @@ pub struct SearchAPIMaps {
 pub struct WebData {
     pub genes: IdGeneMap,
     pub genotypes: IdGenotypeMap,
-    pub terms: IdTermDetailsMap,
-    pub used_terms: IdTermDetailsMap,
+    pub terms: IdRcTermDetailsMap,
+    pub used_terms: IdRcTermDetailsMap,
     pub metadata: Metadata,
     pub references: IdReferenceMap,
 

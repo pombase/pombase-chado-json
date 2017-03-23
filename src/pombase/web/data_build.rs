@@ -35,7 +35,7 @@ pub struct WebDataBuild<'a> {
     transcripts: UniquenameTranscriptMap,
     genotypes: UniquenameGenotypeMap,
     alleles: UniquenameAlleleMap,
-    terms: HashMap<TermId, TermDetails>,
+    terms: TermIdDetailsMap,
     references: IdReferenceMap,
     all_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
     all_not_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
@@ -402,16 +402,61 @@ fn compare_ext_part_with_config(config: &Config, ep1: &ExtPart, ep2: &ExtPart) -
     }
 }
 
-fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart) -> Ordering {
+fn string_from_ext_range(ext_range: &ExtRange,
+                         genes: &UniquenameGeneMap, terms: &TermIdDetailsMap) -> String {
+    match ext_range {
+        &ExtRange::Gene(ref gene_uniquename) => {
+            let gene = genes.get(gene_uniquename).unwrap();
+            gene_display_name(&gene)
+        },
+        &ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
+        &ExtRange::Term(ref termid) => terms.get(termid).unwrap().name.clone(),
+        &ExtRange::Misc(ref misc) => misc.clone(),
+        &ExtRange::Domain(ref domain) => domain.clone(),
+        &ExtRange::GeneProduct(ref gene_product) => gene_product.clone(),
+    }
+}
+
+fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart,
+                genes: &UniquenameGeneMap,
+                terms: &TermIdDetailsMap) -> Ordering {
+    let ord = ext_part1.rel_type_display_name.cmp(&ext_part2.rel_type_display_name);
+
+    if ord == Ordering::Equal {
+        let ext_part1_str = string_from_ext_range(&ext_part1.ext_range, genes, terms);
+        let ext_part2_str = string_from_ext_range(&ext_part2.ext_range, genes, terms);
+
+        ext_part1_str.to_lowercase().cmp(&ext_part2_str.to_lowercase())
+    } else {
+        ord
+    }
+}
+
+// compare the extension up to the last common index
+fn cmp_extension_prefix(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
+                        genes: &UniquenameGeneMap,
+                        terms: &TermIdDetailsMap) -> Ordering {
+    let iter = ext1.iter().zip(ext2);
+    for (ext1_part, ext2_part) in iter {
+        let ord = cmp_ext_part(&ext1_part, &ext2_part, genes, terms);
+
+        if ord != Ordering::Equal {
+            return ord
+        }
+    }
+
     Ordering::Equal
 }
 
-fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>) -> Ordering {
-    let len_cmp = ext1.len().cmp(&ext2.len());
-    if len_cmp == Ordering::Equal {
-        ext1.cmp(&ext2)
+fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
+                 genes: &UniquenameGeneMap,
+                 terms: &TermIdDetailsMap) -> Ordering {
+    let cmp = cmp_extension_prefix(ext1, ext2, genes, terms);
+
+    if cmp == Ordering::Equal {
+        ext1.len().cmp(&ext2.len())
     } else {
-        len_cmp
+        cmp
     }
 }
 
@@ -461,21 +506,35 @@ pub fn allele_display_name(allele: &AlleleShort) -> String {
 }
 
 
+pub fn gene_display_name(gene: &GeneDetails) -> String {
+    if let Some(name) = gene.name.clone() {
+        name
+    } else {
+        gene.uniquename.clone()
+    }
+}
+
 pub fn genotype_display_name(genotype: &GenotypeDetails,
                              alleles: &UniquenameAlleleMap) -> String {
-    let allele_display_names: Vec<String> =
-        genotype.expressed_alleles.iter().map(|ref expressed_allele| {
-            let allele_short = alleles.get(&expressed_allele.allele_uniquename).unwrap();
-            allele_display_name(allele_short)
-        }).collect();
+    if let Some(ref name) = genotype.name {
+        name.clone()
+    } else {
+        let allele_display_names: Vec<String> =
+            genotype.expressed_alleles.iter().map(|ref expressed_allele| {
+                let allele_short = alleles.get(&expressed_allele.allele_uniquename).unwrap();
+                allele_display_name(allele_short)
+            }).collect();
 
-    allele_display_names.join(" ")
+        allele_display_names.join(" ")
+    }
 }
 
 fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
                              detail2: &Rc<OntAnnotationDetail>,
+                             genes: &UniquenameGeneMap,
                              genotypes: &UniquenameGenotypeMap,
-                             alleles: &UniquenameAlleleMap) -> Ordering {
+                             alleles: &UniquenameAlleleMap,
+                             terms: &TermIdDetailsMap) -> Ordering {
     if let Some(ref detail1_genotype_uniquename) = detail1.genotype_uniquename {
         if let Some(ref detail2_genotype_uniquename) = detail2.genotype_uniquename {
             let genotype1 = genotypes.get(detail1_genotype_uniquename).unwrap();
@@ -484,7 +543,7 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
             let ord = cmp_genotypes(&genotype1, &genotype2, alleles);
 
             if ord == Ordering::Equal {
-                cmp_extension(&detail1.extension, &detail2.extension)
+                cmp_extension(&detail1.extension, &detail2.extension, genes, terms)
             } else {
                 ord
             }
@@ -500,10 +559,15 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
             let gene_uniquename1 = detail1.gene_uniquename.clone().unwrap();
             let gene_uniquename2 = detail2.gene_uniquename.clone().unwrap();
 
-            let ord = gene_uniquename1.cmp(&gene_uniquename2);
+            let gene1_display_name =
+                gene_display_name(&genes.get(&gene_uniquename1).unwrap());
+            let gene2_display_name =
+                gene_display_name(&genes.get(&gene_uniquename2).unwrap());
+
+            let ord = gene1_display_name.cmp(&gene2_display_name);
 
             if ord == Ordering::Equal {
-                cmp_extension(&detail1.extension, &detail2.extension)
+                cmp_extension(&detail1.extension, &detail2.extension, genes, terms)
             } else {
                 ord
             }
@@ -2056,7 +2120,20 @@ impl <'a> WebDataBuild<'a> {
             HashMap::new();
 
         for (termid, annotations) in ont_annotations {
-            let term_short = self.make_term_short(termid);
+            let term_short = self.make_term_short(&termid);
+
+            let mut sorted_annotations = annotations.clone();
+
+            {
+                let cmp_detail_with_maps =
+                    |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
+                        cmp_ont_annotation_detail(annotation1, annotation2, &self.genes,
+                                                  &self.genotypes, &self.alleles,
+                                                  &self.terms)
+                    };
+
+                sorted_annotations.sort_by(cmp_detail_with_maps);
+            }
 
             // genotype annotations are stored in all_ont_annotations
             // once for each gene mentioned in the genotype - this set is
@@ -2064,8 +2141,8 @@ impl <'a> WebDataBuild<'a> {
             // GenotypeDetails
             let mut seen_annotations_for_term = HashSet::new();
 
-            let mut annotations_for_term: Vec<Rc<OntAnnotationDetail>> =
-                annotations.iter().cloned()
+            let annotations_for_term: Vec<Rc<OntAnnotationDetail>> =
+                sorted_annotations.iter().cloned()
                 .filter(|annotation|
                         if seen_annotations_for_term.contains(&annotation.id) {
                             false
@@ -2074,14 +2151,6 @@ impl <'a> WebDataBuild<'a> {
                             true
                         }).collect();
 
-            {
-                let cmp_detail_with_genotypes =
-                    |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
-                        cmp_ont_annotation_detail(annotation1, annotation2, &self.genotypes, &self.alleles)
-                    };
-
-                annotations_for_term.sort_by(cmp_detail_with_genotypes);
-            }
 
             if let Some(ref mut term_details) = self.terms.get_mut(termid) {
                 let new_rel_ont_annotation = OntTermAnnotations {
@@ -2103,7 +2172,7 @@ impl <'a> WebDataBuild<'a> {
             // once for each gene mentioned in the genotype
             let mut seen_annotations_for_ref = HashSet::new();
 
-            for detail in annotations {
+            for detail in sorted_annotations {
                 gene_annotation_by_term.entry(detail.gene_uniquename.clone().unwrap())
                     .or_insert(HashMap::new())
                     .entry(termid.clone())
@@ -2116,7 +2185,7 @@ impl <'a> WebDataBuild<'a> {
                         .or_insert(HashMap::new())
                         .entry(termid.clone())
                         .or_insert(vec![]);
-                    if !existing.contains(detail) {
+                    if !existing.contains(&detail) {
                         existing.push(detail.clone());
                     }
                 }
@@ -2312,7 +2381,8 @@ impl <'a> WebDataBuild<'a> {
                 {
                     let cmp_detail_with_genotypes =
                         |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
-                            cmp_ont_annotation_detail(annotation1, annotation2, &self.genotypes, &self.alleles)
+                            cmp_ont_annotation_detail(annotation1, annotation2, &self.genes,
+                                                      &self.genotypes, &self.alleles, &self.terms)
                         };
 
                     new_details.sort_by(cmp_detail_with_genotypes);
@@ -2785,7 +2855,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_reference_details_maps();
         self.set_counts();
 
-        let mut web_data_terms: IdTermDetailsMap = HashMap::new();
+        let mut web_data_terms: IdRcTermDetailsMap = HashMap::new();
 
         let search_api_maps = self.make_search_api_maps();
 
@@ -2795,7 +2865,7 @@ impl <'a> WebDataBuild<'a> {
 
         self.terms = HashMap::new();
 
-        let mut used_terms: IdTermDetailsMap = HashMap::new();
+        let mut used_terms: IdRcTermDetailsMap = HashMap::new();
 
         // remove terms with no annotation
         for (termid, term_details) in &web_data_terms {
@@ -2925,37 +2995,23 @@ fn test_compare_ext_part_with_config() {
 }
 
 #[allow(dead_code)]
+fn make_test_ext_part(rel_type_name: &str, rel_type_display_name: &str,
+                      ext_range: ExtRange) -> ExtPart {
+    ExtPart {
+        rel_type_name: rel_type_name.into(),
+        rel_type_display_name: rel_type_display_name.into(),
+        ext_range: ext_range,
+    }
+}
+
+#[allow(dead_code)]
 fn get_test_annotations() -> Vec<OntTermAnnotations> {
     let annotations1 =
         vec![
-            Rc::new(OntAnnotationDetail {
-                id: 188448,
-                gene_uniquename: Some("SPBC11B10.09".into()),
-                genotype_uniquename: None,
-                reference_uniquename: Some("PMID:3322810".into()),
-                evidence: Some("IDA".into()),
-                extension: vec![],
-                qualifiers: vec![],
-                from: WithFromValue::None,
-                with: WithFromValue::None,
-                gene_ex_props: None,
-                conditions: vec![],
-                residue: None,
-            }),
-            Rc::new(OntAnnotationDetail {
-                id: 202017,
-                gene_uniquename: Some("SPBC11B10.09".into()),
-                genotype_uniquename: None,
-                reference_uniquename: Some("PMID:2665944".into()),
-                evidence: Some("IDA".into()),
-                extension: vec![],
-                qualifiers: vec![],
-                from: WithFromValue::None,
-                with: WithFromValue::None,
-                gene_ex_props: None,
-                conditions: vec![],
-                residue: None,
-            }),
+            make_one_detail(188448, "SPBC11B10.09", "PMID:3322810", None,
+                                    "IDA", vec![], vec![]),
+            make_one_detail(202017,"SPBC11B10.09", "PMID:2665944", None,
+                                    "IDA", vec![], vec![]),
         ];
     let ont_term1 = OntTermAnnotations {
         term: TermShort {
@@ -2974,46 +3030,71 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
 
     let annotations2 =
         vec![
-            Rc::new(OntAnnotationDetail {
-                id: 41717,
-                gene_uniquename: Some("SPBC11B10.09".into()),
-                genotype_uniquename: None,
-                reference_uniquename: Some("PMID:9242669".into()),
-                evidence: Some("IDA".into()),
-                extension: vec![
-                    ExtPart {
-                        rel_type_name: "has_direct_input".into(),
-                        rel_type_display_name: "has substrate".into(),
-                        ext_range: ExtRange::Gene("SPBC646.13".into())
-                    }
-                ],
-                qualifiers: vec![],
-                from: WithFromValue::None,
-                with: WithFromValue::None,
-                gene_ex_props: None,
-                conditions: vec![],
-                residue: None,
-              }),
-            Rc::new(OntAnnotationDetail {
-                id: 41718,
-                gene_uniquename: Some("SPBC11B10.09".into()),
-                genotype_uniquename: None,
-                reference_uniquename: Some("PMID:9490630".into()),
-                evidence: Some("IDA".into()),
-                extension: vec![
-                    ExtPart {
-                        rel_type_name: "has_direct_input".into(),
-                        rel_type_display_name: "has substrate".into(),
-                        ext_range: ExtRange::Gene("SPAC25G10.07c".into()),
-                    },
-                ],
-                qualifiers: vec![],
-                from: WithFromValue::None,
-                with: WithFromValue::None,
-                gene_ex_props: None,
-                conditions: vec![],
-                residue: None,
-            }),
+            make_one_detail(41717, "SPBC11B10.09", "PMID:9242669", None,
+                            "IDA",vec![
+                                make_test_ext_part("has_direct_input", "has substrate",
+                                                   ExtRange::Gene("SPBC646.13".into())),
+                            ], vec![]),
+            make_one_detail(41718, "SPBC11B10.09", "PMID:9490630", None,
+                            "IDA", vec![
+                                make_test_ext_part("has_direct_input", "has substrate",
+                                                   ExtRange::Gene("SPAC25G10.07c".into())),
+                            ], vec![]),
+            make_one_detail(41718, "SPBC11B10.09", "PMID:11937031", None,
+                            "IDA", vec![
+                                make_test_ext_part("has_direct_input", "has substrate",
+                                                   ExtRange::Gene("SPBC32F12.09".into())),
+                            ], vec![]),
+            make_one_detail(187893, "SPBC11B10.09", "PMID:19523829", None, "IMP",
+                            vec![
+                                make_test_ext_part("has_direct_input", "has substrate",
+                                                   ExtRange::Gene("SPBC6B1.04".into())),
+                                make_test_ext_part("part_of", "involved in",
+                                                   ExtRange::Term("GO:1902845".into())),
+                                make_test_ext_part("happens_during", "during",
+                                                   ExtRange::Term("GO:0000089".into())),
+                            ],
+                            vec![]),
+            make_one_detail(187907, "SPBC11B10.09", "PMID:19523829", None, "IMP",
+                            vec![
+                                make_test_ext_part("has_direct_input", "has substrate",
+                                                   ExtRange::Gene("SPBC6B1.04".into())),
+                                make_test_ext_part("part_of", "involved in",
+                                                   ExtRange::Term("GO:0098783".into())),
+                                make_test_ext_part("happens_during", "during",
+                                                   ExtRange::Term("GO:0000089".into())),
+                            ],
+                            vec![]),
+            make_one_detail(193221, "SPBC11B10.09", "PMID:10921876", None, "IMP",
+                            vec![
+                                make_test_ext_part("directly_negatively_regulates", "directly inhibits",
+                                                   ExtRange::Gene("SPAC144.13c".into())),
+                                make_test_ext_part("part_of", "involved in",
+                                                   ExtRange::Term("GO:1903693".into())),
+                                make_test_ext_part("part_of", "involved in",
+                                                   ExtRange::Term("GO:1905785".into())),
+                                make_test_ext_part("happens_during", "during",
+                                                   ExtRange::Term("GO:0000080".into())),
+                            ],
+                            vec![]),
+            make_one_detail(194213, "SPBC11B10.09", "PMID:7957097", None, "IDA",
+                            vec![
+                                make_test_ext_part("has_direct_input", "has substrate",
+                                                   ExtRange::Gene("SPBC776.02c".into())),
+                            ],
+                            vec![]),
+            make_one_detail(194661, "SPBC11B10.09", "PMID:10485849", None, "IMP",
+                            vec![
+                                make_test_ext_part("has_direct_input", "has substrate",
+                                                   ExtRange::Gene("SPBC146.03c".into())),
+                                make_test_ext_part("part_of", "involved in",
+                                                   ExtRange::Term("GO:1903380".into())),
+                                make_test_ext_part("part_of", "involved in",
+                                                   ExtRange::Term("GO:0042307".into())),
+                                make_test_ext_part("happens_during", "during",
+                                                   ExtRange::Term("GO:0000089".into())),
+                            ],
+                            vec![]),
         ];
 
     let ont_term2 = OntTermAnnotations {
@@ -3036,19 +3117,20 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
 
 #[allow(dead_code)]
 fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
-                   genotype_uniquename: &str, evidence: &str,
+                   maybe_genotype_uniquename: Option<&str>, evidence: &str,
+                   extension: Vec<ExtPart>,
                    conditions: Vec<TermId>) -> Rc<OntAnnotationDetail> {
     Rc::new(OntAnnotationDetail {
         id: id,
         gene_uniquename: Some(gene_uniquename.into()),
-        genotype_uniquename: Some(genotype_uniquename.into()),
+        genotype_uniquename: maybe_genotype_uniquename.map(str::to_string),
         reference_uniquename: Some(reference_uniquename.into()),
         evidence: Some(evidence.into()),
         with: WithFromValue::None,
         from: WithFromValue::None,
         residue: None,
         qualifiers: vec![],
-        extension: vec![],
+        extension: extension,
         gene_ex_props: None,
         conditions: conditions,
     })
@@ -3057,38 +3139,36 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
 #[allow(dead_code)]
 fn get_test_fypo_term_details() -> Vec<Rc<OntAnnotationDetail>> {
     vec![
-        make_one_detail(201094,
-                        "SPCC1919.10c",
-                        "PMID:16421926",
-                        "d6c914796c35e3b5-genotype-2",
-                        "Cell growth assay",
-                        vec![]),
-        make_one_detail(201099,
-                        "SPCC1919.10c",
-                        "PMID:16421926",
-                        "d6c914796c35e3b5-genotype-4",
-                        "Cell growth assay",
-                        vec![]),
-        make_one_detail(201095,
-                        "SPCC1919.10c",
-                        "PMID:16421926",
-                        "d6c914796c35e3b5-genotype-3",
-                        "Cell growth assay",
-                        vec![]),
         make_one_detail(223656,
                         "SPBC16A3.11",
                         "PMID:23050226",
-                        "e674fe7ceba478aa-genotype-2",
+                        Some("e674fe7ceba478aa-genotype-2"),
                         "Cell growth assay",
+                        vec![],
                         vec![
                             "PECO:0000137".into(),
                             "PECO:0000102".into()
                         ]),
+        make_one_detail(201099,
+                        "SPCC1919.10c",
+                        "PMID:16421926",
+                        Some("d6c914796c35e3b5-genotype-4"),
+                        "Cell growth assay",
+                        vec![],
+                        vec![]),
+        make_one_detail(201095,
+                        "SPCC1919.10c",
+                        "PMID:16421926",
+                        Some("d6c914796c35e3b5-genotype-3"),
+                        "Cell growth assay",
+                        vec![],
+                        vec![]),
         make_one_detail(204063,
                         "SPAC25A8.01c",
                         "PMID:25798942",
-                        "fd4f3f52f1d38106-genotype-4",
+                        Some("fd4f3f52f1d38106-genotype-4"),
                         "Cell growth assay",
+                        vec![],
                         vec![
                             "PECO:0000137".into(),
                             "PECO:0000102".into()
@@ -3096,14 +3176,23 @@ fn get_test_fypo_term_details() -> Vec<Rc<OntAnnotationDetail>> {
         make_one_detail(227452,
                         "SPAC3G6.02",
                         "PMID:25306921",
-                        "a6d8f45c20c2227d-genotype-9",
+                        Some("a6d8f45c20c2227d-genotype-9"),
                         "Cell growth assay",
+                        vec![],
+                        vec![]),
+        make_one_detail(201094,
+                        "SPCC1919.10c",
+                        "PMID:16421926",
+                        Some("d6c914796c35e3b5-genotype-2"),
+                        "Cell growth assay",
+                        vec![],
                         vec![]),
         make_one_detail(186589,
                         "SPAC24H6.05",
                         "PMID:1464319",
-                        "65c76fa511461156-genotype-3",
+                        Some("65c76fa511461156-genotype-3"),
                         "Cell growth assay",
+                        vec![],
                         vec![
                             "PECO:0000103".into(),
                             "PECO:0000137".into()
@@ -3125,6 +3214,54 @@ fn make_one_genotype(uniquename: &str, name: Option<&str>,
         alleles_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
     }
+}
+
+#[allow(dead_code)]
+fn make_test_gene(uniquename: &str) -> GeneDetails {
+    GeneDetails {
+        uniquename: uniquename.into(),
+        name: None,
+        organism: OrganismShort {
+            genus: "Schizosaccharomyces".into(),
+            species: "pombe".into(),
+        },
+        product: None,
+        name_descriptions: vec![],
+        synonyms: vec![],
+        feature_type: "gene".into(),
+        characterisation_status: None,
+        location: None,
+        cds_location: None,
+        gene_neighbourhood: vec![],
+        transcripts: vec![],
+        cv_annotations: HashMap::new(),
+        cv_summaries: HashMap::new(),
+        physical_interactions: vec![],
+        genetic_interactions: vec![],
+        ortholog_annotations: vec![],
+        paralog_annotations: vec![],
+        target_of_annotations: vec![],
+        references_by_uniquename: HashMap::new(),
+        genes_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
+        alleles_by_uniquename: HashMap::new(),
+        terms_by_termid: HashMap::new(),
+    }
+}
+
+#[allow(dead_code)]
+fn get_test_genes_map() -> UniquenameGeneMap {
+    let mut ret = HashMap::new();
+
+    let gene_uniquenames =
+        vec!["SPBC11B10.09", "SPAC144.13c", "SPAC25G10.07c", "SPBC146.03c",
+             "SPBC32F12.09", "SPBC646.13", "SPBC6B1.04", "SPBC776.02c"];
+
+    for uniquename in gene_uniquenames {
+        ret.insert(uniquename.into(), make_test_gene(uniquename));
+    }
+
+    ret
 }
 
 #[allow(dead_code)]
@@ -3261,21 +3398,88 @@ fn get_test_alleles_map() -> UniquenameAlleleMap {
     ret
 }
 
+#[allow(dead_code)]
+fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
+    TermDetails {
+        termid: id.into(),
+        name: name.into(),
+        cv_name: cv_name.into(),
+        annotation_feature_type: "gene".into(),
+        interesting_parents: HashSet::new(),
+        definition: None,
+        direct_ancestors: vec![],
+        is_obsolete: false,
+        single_allele_genotype_uniquenames: HashSet::new(),
+        rel_annotations: vec![],
+        rel_summaries: vec![],
+        not_rel_annotations: vec![],
+        genes_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
+        alleles_by_uniquename: HashMap::new(),
+        references_by_uniquename: HashMap::new(),
+        terms_by_termid: HashMap::new(),
+    }
+}
+
+#[allow(dead_code)]
+fn get_test_terms_map() -> TermIdDetailsMap {
+    let mut ret = HashMap::new();
+
+    let term_data = vec![
+        ("GO:0000080", "mitotic G1 phase", "biological_process"),
+        ("GO:0000089", "mitotic metaphase", "biological_process"),
+        ("GO:0042307", "positive regulation of protein import into nucleus", "biological_process"),
+        ("GO:0098783", "correction of merotelic kinetochore attachment, mitotic", "biological_process"),
+        ("GO:1902845", "negative regulation of mitotic spindle elongation", "biological_process"),
+        ("GO:1903380", "positive regulation of mitotic chromosome condensation", "biological_process"),
+        ("GO:1903693", "regulation of mitotic G1 cell cycle arrest in response to nitrogen starvation", "biological_process"),
+        ("GO:1905785", "negative regulation of anaphase-promoting complex-dependent catabolic process", "biological_process"),
+    ];
+
+    for (id, name, cv_name) in term_data {
+        ret.insert(id.into(), make_test_term_details(id, name, cv_name));
+    }
+
+    ret
+}
+
 #[test]
 fn test_cmp_ont_annotation_detail() {
     let mut details_vec = get_test_fypo_term_details();
+    let genes = get_test_genes_map();
     let genotypes = get_test_genotypes_map();
     let alleles = get_test_alleles_map();
+    let terms = get_test_terms_map();
 
     let cmp_detail_with_genotypes =
         |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
-            cmp_ont_annotation_detail(annotation1, annotation2, &genotypes, &alleles)
+            cmp_ont_annotation_detail(annotation1, annotation2, &genes,
+                                      &genotypes, &alleles, &terms)
         };
 
-    details_vec.sort_by(cmp_detail_with_genotypes);
+    details_vec.sort_by(&cmp_detail_with_genotypes);
 
-    print!("{:?}\n", &details_vec);
+    let expected: Vec<String> = vec!["d6c914796c35e3b5-genotype-4",
+        "d6c914796c35e3b5-genotype-3", "65c76fa511461156-genotype-3",
+        "e674fe7ceba478aa-genotype-2", "fd4f3f52f1d38106-genotype-4",
+        "a6d8f45c20c2227d-genotype-9", "d6c914796c35e3b5-genotype-2"]
+        .iter().map(|s| str::to_string(s)).collect();
 
-//    cmp_ont_annotation_detail(annotation1, annotation2, &self.genotypes, &self.alleles)
+//     assert_eq!(details_vec.iter()
+//                .map(|detail|
+//                     detail.genotype_uniquename.clone().unwrap()).collect::<Vec<String>>(),
+//                expected);
+//
+    for detail in details_vec {
+        let genotype_uniquename: String = (*detail).clone().genotype_uniquename.unwrap();
+        let genotype = genotypes.get(&genotype_uniquename).unwrap();
+        print!("{:?}\n", genotype_display_name(&genotype, &alleles))
+    }
 
+    let test_term_annotations = get_test_annotations();
+    let mut extension_details_vec = test_term_annotations[1].annotations.clone();
+
+    extension_details_vec.sort_by(&cmp_detail_with_genotypes);
+
+    print!("{:?}\n", &extension_details_vec);
 }
