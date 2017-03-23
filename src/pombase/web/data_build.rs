@@ -3461,15 +3461,15 @@ fn test_cmp_ont_annotation_detail() {
 
     let expected: Vec<String> = vec!["d6c914796c35e3b5-genotype-4",
         "d6c914796c35e3b5-genotype-3", "65c76fa511461156-genotype-3",
-        "e674fe7ceba478aa-genotype-2", "fd4f3f52f1d38106-genotype-4",
+        "fd4f3f52f1d38106-genotype-4", "e674fe7ceba478aa-genotype-2",
         "a6d8f45c20c2227d-genotype-9", "d6c914796c35e3b5-genotype-2"]
         .iter().map(|s| str::to_string(s)).collect();
 
-//     assert_eq!(details_vec.iter()
-//                .map(|detail|
-//                     detail.genotype_uniquename.clone().unwrap()).collect::<Vec<String>>(),
-//                expected);
-//
+    assert_eq!(details_vec.iter()
+               .map(|detail|
+                    detail.genotype_uniquename.clone().unwrap()).collect::<Vec<String>>(),
+               expected);
+
     for detail in details_vec {
         let genotype_uniquename: String = (*detail).clone().genotype_uniquename.unwrap();
         let genotype = genotypes.get(&genotype_uniquename).unwrap();
@@ -3481,5 +3481,21 @@ fn test_cmp_ont_annotation_detail() {
 
     extension_details_vec.sort_by(&cmp_detail_with_genotypes);
 
-    print!("{:?}\n", &extension_details_vec);
+    let annotation_sort_results: Vec<(String, String)> =
+        extension_details_vec.iter().map(|detail| {
+            ((*detail).gene_uniquename.clone().unwrap(),
+             (*detail).reference_uniquename.clone().unwrap())
+        }).collect();
+
+
+    let expected_annotation_sort: Vec<(String, String)> =
+        vec![("SPBC11B10.09", "PMID:10921876"), ("SPBC11B10.09", "PMID:9490630"),
+             ("SPBC11B10.09", "PMID:10485849"), ("SPBC11B10.09", "PMID:11937031"),
+             ("SPBC11B10.09", "PMID:9242669"), ("SPBC11B10.09", "PMID:19523829"),
+             ("SPBC11B10.09", "PMID:19523829"), ("SPBC11B10.09", "PMID:7957097")]
+        .iter()
+        .map(|&(gene, reference)|
+             (gene.into(), reference.into())).collect();
+
+    assert_eq![annotation_sort_results, expected_annotation_sort];
 }
