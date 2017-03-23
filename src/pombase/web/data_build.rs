@@ -3459,22 +3459,25 @@ fn test_cmp_ont_annotation_detail() {
 
     details_vec.sort_by(&cmp_detail_with_genotypes);
 
-    let expected: Vec<String> = vec!["d6c914796c35e3b5-genotype-4",
-        "d6c914796c35e3b5-genotype-3", "65c76fa511461156-genotype-3",
-        "fd4f3f52f1d38106-genotype-4", "e674fe7ceba478aa-genotype-2",
-        "a6d8f45c20c2227d-genotype-9", "d6c914796c35e3b5-genotype-2"]
+    let expected: Vec<String> =
+        vec!["C-terminal truncation 940-1516(940-1516)",
+             "C-terminal truncation(1320-1516)",
+             "cdc25-22(C532Y)",
+             "K418R(K418R)",
+             "test genotype name",
+             "UBS-I&II(F18A,F21A,W26A,L40A,W41A,W45A)",
+             "ZZ-name"]
         .iter().map(|s| str::to_string(s)).collect();
 
-    assert_eq!(details_vec.iter()
-               .map(|detail|
-                    detail.genotype_uniquename.clone().unwrap()).collect::<Vec<String>>(),
-               expected);
 
-    for detail in details_vec {
-        let genotype_uniquename: String = (*detail).clone().genotype_uniquename.unwrap();
-        let genotype = genotypes.get(&genotype_uniquename).unwrap();
-        print!("{:?}\n", genotype_display_name(&genotype, &alleles))
-    }
+    assert_eq!(details_vec.drain(0..)
+               .map(|detail| {
+                   let genotype_uniquename: String =
+                       (*detail).clone().genotype_uniquename.unwrap();
+                   let genotype = genotypes.get(&genotype_uniquename).unwrap();
+                   genotype_display_name(&genotype, &alleles)
+               }).collect::<Vec<String>>(),
+               expected);
 
     let test_term_annotations = get_test_annotations();
     let mut extension_details_vec = test_term_annotations[1].annotations.clone();
