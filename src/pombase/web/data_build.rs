@@ -53,7 +53,7 @@ pub struct WebDataBuild<'a> {
 
     base_term_of_extensions: HashMap<TermId, TermId>,
 
-    parents_by_termid: HashMap<TermId, HashSet<TermId>>,
+    children_by_termid: HashMap<TermId, HashSet<TermId>>,
 }
 
 fn get_maps() ->
@@ -256,35 +256,65 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     *rows = results;
 }
 
-fn remove_redundant_summaries(parents_by_termid: &HashMap<TermId, HashSet<TermId>>,
+fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                               summaries: &mut Vec<OntTermSummary>) {
-    let mut possible_redundant_parents = HashSet::new();
-
     let mut summaries_by_termid = HashMap::new();
 
     for summary in &*summaries {
         summaries_by_termid.insert(summary.term.termid.clone(),
                                    summary.clone());
+    }
 
-        if let Some(parent_termids) = parents_by_termid.get(&summary.term.termid) {
-            for parent_termid in parent_termids {
-                possible_redundant_parents.insert(parent_termid.clone());
+    let mut new_summaries = vec![];
+
+    for summary in &*summaries {
+        if let Some(child_termids) = children_by_termid.get(&summary.term.termid) {
+            if summary.rows.len() == 0 {
+                let mut found_child_match = false;
+                for child_termid in child_termids {
+                    if summaries_by_termid.get(child_termid).is_some() {
+                        found_child_match = true;
+                    }
+                }
+                if !found_child_match {
+                    new_summaries.push(summary.clone());
+                }
+            } else {
+                let mut filtered_rows: Vec<TermSummaryRow> = vec![];
+
+                for row in &summary.rows {
+                    let mut found_child_match = false;
+                    for child_termid in child_termids {
+                        if let Some(child_summary) = summaries_by_termid.get(child_termid) {
+                            for child_row in &child_summary.rows {
+                                if *row == *child_row {
+                                    found_child_match = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if !found_child_match {
+                        filtered_rows.push(row.clone());
+                    }
+                }
+
+                if filtered_rows.len() > 0 {
+                    let mut new_summary = summary.clone();
+                    new_summary.rows = filtered_rows;
+                    new_summaries.push(new_summary);
+                }
             }
+        } else {
+            new_summaries.push(summary.clone());
         }
     }
 
-    let filtered_summaries: Vec<OntTermSummary> =
-        summaries.drain(0..).filter(|summary| {
-            summary.rows.len() > 0 ||
-                !possible_redundant_parents.contains(&summary.term.termid)
-        })
-        .collect();
-
-    *summaries = filtered_summaries
+    *summaries = new_summaries
 }
 
 fn make_cv_summaries(config: &Config,
-                     parents_by_termid: &HashMap<TermId, HashSet<TermId>>,
+                     children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                      include_gene: bool, include_genotype: bool,
                      term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
     let mut result = vec![];
@@ -354,7 +384,7 @@ fn make_cv_summaries(config: &Config,
         result.push(summary);
     }
 
-    remove_redundant_summaries(parents_by_termid, &mut result);
+    remove_redundant_summaries(children_by_termid, &mut result);
 
     result
 }
@@ -632,7 +662,7 @@ impl <'a> WebDataBuild<'a> {
 
             base_term_of_extensions: HashMap::new(),
 
-            parents_by_termid: HashMap::new(),
+            children_by_termid: HashMap::new(),
         }
     }
 
@@ -1545,14 +1575,14 @@ impl <'a> WebDataBuild<'a> {
     fn make_all_cv_summaries(&mut self) {
         for (_, term_details) in &mut self.terms {
             term_details.rel_summaries =
-                make_cv_summaries(&self.config, &self.parents_by_termid,
+                make_cv_summaries(&self.config, &self.children_by_termid,
                                   true, true, &term_details.rel_annotations);
         }
 
         for (_, gene_details) in &mut self.genes {
             for (cv_name, term_annotations) in &mut gene_details.cv_annotations {
                 let summaries =
-                    make_cv_summaries(&self.config, &self.parents_by_termid,
+                    make_cv_summaries(&self.config, &self.children_by_termid,
                                       false, true, &term_annotations);
                 gene_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
@@ -1561,7 +1591,7 @@ impl <'a> WebDataBuild<'a> {
         for (_, genotype_details) in &mut self.genotypes {
             for (cv_name, term_annotations) in &mut genotype_details.cv_annotations {
                 let summaries =
-                    make_cv_summaries(&self.config, &self.parents_by_termid,
+                    make_cv_summaries(&self.config, &self.children_by_termid,
                                       false, false, &term_annotations);
                 genotype_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
@@ -1570,7 +1600,7 @@ impl <'a> WebDataBuild<'a> {
         for (_, reference_details) in &mut self.references {
             for (cv_name, term_annotations) in &mut reference_details.cv_annotations {
                 let summaries =
-                    make_cv_summaries(&self.config, &self.parents_by_termid,
+                    make_cv_summaries(&self.config, &self.children_by_termid,
                                       true, true, &term_annotations);
                 reference_details.cv_summaries.insert(cv_name.clone(), summaries);
             }
@@ -2343,7 +2373,7 @@ impl <'a> WebDataBuild<'a> {
         let mut new_annotations: HashMap<TermId, HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
             HashMap::new();
 
-        let mut parents_by_termid: HashMap<TermId, HashSet<TermId>> = HashMap::new();
+        let mut children_by_termid: HashMap<TermId, HashSet<TermId>> = HashMap::new();
 
         for cvtermpath in &self.raw.cvtermpaths {
             let subject_term = &cvtermpath.subject;
@@ -2355,10 +2385,10 @@ impl <'a> WebDataBuild<'a> {
                 if subject_term_details.rel_annotations.len() > 0 {
                     if let Some(object_term_details) = self.terms.get(&object_termid) {
                         if object_term_details.rel_annotations.len() > 0 {
-                            parents_by_termid
-                                .entry(subject_termid.clone())
+                            children_by_termid
+                                .entry(object_termid.clone())
                                 .or_insert(HashSet::new())
-                                .insert(object_termid.clone());
+                                .insert(subject_termid.clone());
                         }
                     }
                 }
@@ -2449,7 +2479,7 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        self.parents_by_termid = parents_by_termid;
+        self.children_by_termid = children_by_termid;
     }
 
     fn make_metadata(&mut self) -> Metadata {
@@ -3476,8 +3506,11 @@ fn get_test_terms_map() -> TermIdDetailsMap {
 
     let term_data = vec![
         ("GO:0022403", "cell cycle phase", "biological_process"),
+        ("GO:0051318", "G1 phase", "biological_process"),
         ("GO:0000080", "mitotic G1 phase", "biological_process"),
+        ("GO:0088888", "fake child of mitotic G1 phase", "biological_process"),
         ("GO:0000089", "mitotic metaphase", "biological_process"),
+        ("GO:0099999", "fake child of  mitotic metaphase term", "biological_process"),
         ("GO:0042307", "positive regulation of protein import into nucleus", "biological_process"),
         ("GO:0098783", "correction of merotelic kinetochore attachment, mitotic", "biological_process"),
         ("GO:1902845", "negative regulation of mitotic spindle elongation", "biological_process"),
@@ -3582,17 +3615,33 @@ fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermSummary 
 fn get_test_summaries() -> Vec<OntTermSummary> {
     let mut summaries = vec![];
 
-    summaries.push(make_test_summary("GO:0022403", vec![]));
-    summaries.push(make_test_summary("GO:0000080", vec![]));
     let ext = make_test_ext_part("part_of", "involved in",
                                  ExtRange::Term("GO:1905785".into()));
+    let ext2 = make_test_ext_part("some_rel", "some_rel_display_name",
+                                 ExtRange::Term("GO:1234567".into()));
 
+    summaries.push(make_test_summary("GO:0022403", vec![]));
+    summaries.push(make_test_summary("GO:0051318",
+                                     vec![TermSummaryRow {
+                                         gene_uniquenames: vec![],
+                                         genotype_uniquenames: vec![],
+                                         extension: vec![ext.clone()],
+                                     }]));
+    summaries.push(make_test_summary("GO:0000080", vec![]));
     summaries.push(make_test_summary("GO:0000089",
                                      vec![
                                          TermSummaryRow {
                                              gene_uniquenames: vec![],
                                              genotype_uniquenames: vec![],
-                                             extension: vec![ext],
+                                             extension: vec![ext.clone()],
+                                         }
+                                     ]));
+    summaries.push(make_test_summary("GO:0099999",
+                                     vec![
+                                         TermSummaryRow {
+                                             gene_uniquenames: vec![],
+                                             genotype_uniquenames: vec![],
+                                             extension: vec![ext.clone(), ext2],
                                          }
                                      ]));
 
@@ -3600,18 +3649,34 @@ fn get_test_summaries() -> Vec<OntTermSummary> {
 }
 
 #[allow(dead_code)]
-fn get_test_parents_by_termid() -> HashMap<TermId, HashSet<TermId>> {
-    let mut parents_by_termid = HashMap::new();
+fn get_test_children_by_termid() -> HashMap<TermId, HashSet<TermId>> {
+    let mut children_by_termid = HashMap::new();
 
-    let mut parents_of_0000080 = HashSet::new();
-    parents_of_0000080.insert("GO:0022403".into());
-    let mut parents_of_0000089 = HashSet::new();
-    parents_of_0000089.insert("GO:0022403".into());
+    let mut children_of_0022403 = HashSet::new();
+    children_of_0022403.insert("GO:0051318".into());
+    children_of_0022403.insert("GO:0000080".into());
+    children_of_0022403.insert("GO:0088888".into());
+    children_of_0022403.insert("GO:0000089".into());
+    children_of_0022403.insert("GO:0099999".into());
 
-    parents_by_termid.insert("GO:0000080".into(), parents_of_0000080);
-    parents_by_termid.insert("GO:0000089".into(), parents_of_0000089);
+    let mut children_of_0051318 = HashSet::new();
+    children_of_0051318.insert("GO:0000080".into());
+    children_of_0051318.insert("GO:0088888".into());
+    children_of_0051318.insert("GO:0000089".into());
+    children_of_0051318.insert("GO:0099999".into());
 
-    parents_by_termid
+    let mut children_of_0000080 = HashSet::new();
+    children_of_0000080.insert("GO:0088888".into());
+
+    let mut children_of_0000089 = HashSet::new();
+    children_of_0000089.insert("GO:0099999".into());
+
+    children_by_termid.insert("GO:0022403".into(), children_of_0022403);
+    children_by_termid.insert("GO:0051318".into(), children_of_0051318);
+    children_by_termid.insert("GO:0000080".into(), children_of_0000080);
+    children_by_termid.insert("GO:0000089".into(), children_of_0000089);
+
+    children_by_termid
 }
 
 
@@ -3620,13 +3685,9 @@ fn get_test_parents_by_termid() -> HashMap<TermId, HashSet<TermId>> {
 fn test_remove_redundant_summaries() {
     let mut summaries = get_test_summaries();
 
-    let parents_by_termid = get_test_parents_by_termid();
+    let children_by_termid = get_test_children_by_termid();
+    assert_eq!(summaries.len(), 5);
 
+    remove_redundant_summaries(&children_by_termid, &mut summaries);
     assert_eq!(summaries.len(), 3);
-
-    remove_redundant_summaries(&parents_by_termid, &mut summaries);
-
-    print!("{:?}\n", &summaries);
-
-    assert_eq!(summaries.len(), 2);
 }

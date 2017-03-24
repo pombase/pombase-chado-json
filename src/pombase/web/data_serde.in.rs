@@ -302,7 +302,7 @@ impl Hash for OntTermAnnotations {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Eq, PartialEq)]
 pub struct TermSummaryRow {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_uniquenames: Vec<GeneUniquename>, // for term and ref pages
