@@ -537,7 +537,7 @@ fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails,
 }
 
 
-pub fn allele_display_name(allele: &AlleleShort) -> String {
+fn allele_display_name(allele: &AlleleShort) -> String {
     let name = allele.name.clone().unwrap_or("unnamed".into());
     let allele_type = allele.allele_type.clone();
     let mut description = allele.description.clone().unwrap_or(allele_type.clone());
@@ -568,11 +568,28 @@ pub fn allele_display_name(allele: &AlleleShort) -> String {
 }
 
 
-pub fn gene_display_name(gene: &GeneDetails) -> String {
+fn gene_display_name(gene: &GeneDetails) -> String {
     if let Some(name) = gene.name.clone() {
         name
     } else {
         gene.uniquename.clone()
+    }
+}
+
+fn cmp_genes(uniquename1: &str, maybe_name1: &Option<String>,
+             uniquename2: &str, maybe_name2: &Option<String>) -> Ordering {
+    if let Some(ref name1) = *maybe_name1 {
+        if let Some(ref name2) = *maybe_name2 {
+            name1.cmp(&name2)
+        } else {
+            Ordering::Less
+        }
+    } else {
+        if maybe_name2.is_some() {
+            Ordering::Greater
+        } else {
+            uniquename1.cmp(uniquename2)
+        }
     }
 }
 
@@ -621,12 +638,11 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
             let gene_uniquename1 = detail1.gene_uniquename.clone().unwrap();
             let gene_uniquename2 = detail2.gene_uniquename.clone().unwrap();
 
-            let gene1_display_name =
-                gene_display_name(&genes.get(&gene_uniquename1).unwrap());
-            let gene2_display_name =
-                gene_display_name(&genes.get(&gene_uniquename2).unwrap());
+            let gene1 = &genes.get(&gene_uniquename1).unwrap();
+            let gene2 = &genes.get(&gene_uniquename2).unwrap();
 
-            let ord = gene1_display_name.cmp(&gene2_display_name);
+            let ord = cmp_genes(&gene_uniquename1, &gene1.name,
+                                &gene_uniquename2, &gene2.name);
 
             if ord == Ordering::Equal {
                 cmp_extension(&detail1.extension, &detail2.extension, genes, terms)
@@ -2223,6 +2239,7 @@ impl <'a> WebDataBuild<'a> {
                     term: term_short.clone(),
                     annotations: annotations_for_term.clone(),
                 };
+
                 if is_not {
                     term_details.not_rel_annotations.push(new_rel_ont_annotation);
                 } else {
@@ -3690,4 +3707,55 @@ fn test_remove_redundant_summaries() {
 
     remove_redundant_summaries(&children_by_termid, &mut summaries);
     assert_eq!(summaries.len(), 3);
+}
+
+#[test]
+fn test_cmp_genes() {
+    assert_eq!(cmp_genes("SPAC3G6.02", &Some("n1".into()),
+                         "SPAC24H6.01", &Some("n2".into())),
+               Ordering::Less);
+    assert_eq!(cmp_genes("SPAC3G6.02", &Some("n1".into()),
+                         "SPAC24H6.01", &None),
+               Ordering::Less);
+    assert_eq!(cmp_genes("SPAC24H6.01", &Some("n1".into()),
+                         "SPAC3G6.02", &Some("n2".into())),
+               Ordering::Less);
+    assert_eq!(cmp_genes("SPAC24H6.01", &None, "SPAC3G6.02",
+                         &Some("n1".into())),
+               Ordering::Greater);
+
+    #[derive(Debug)]
+    struct TestGene {
+        pub uniquename: String,
+        pub name: Option<String>,
+    }
+
+    let mut v = vec![
+        TestGene {
+            uniquename: "SPBC28E12.06c".into(),
+            name: Some("lvs1".into()),
+        },
+        TestGene {
+            uniquename: "SPBC19F8.03c".into(),
+            name: Some("yap18".into()),
+        },
+        TestGene {
+            uniquename: "SPCPB16A4.02c".into(),
+            name: None,
+        },
+        TestGene {
+            uniquename: "SPCC162.07".into(),
+            name: Some("ent1".into()),
+        },
+    ];
+
+    v.sort_by(|a,b| {
+        cmp_genes(&a.uniquename, &a.name, &b.uniquename, &b.name)
+    });
+
+    assert_eq!(v[0].name, Some("ent1".into()));
+    assert_eq!(v[1].name, Some("lvs1".into()));
+    assert_eq!(v[2].name, Some("yap18".into()));
+    assert_eq!(v[3].name, None);
+    assert_eq!(v[3].uniquename, "SPCPB16A4.02c");
 }
