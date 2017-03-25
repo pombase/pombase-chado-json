@@ -111,7 +111,7 @@ pub fn merge_gene_ext_parts(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart
 }
 
 // turn "has_substrate(gene1),has_substrate(gene2)" into "has_substrate(gene1,gene2)"
-pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: Vec<TermSummaryRow>)
+pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &Vec<TermSummaryRow>)
                              -> Vec<TermSummaryRow> {
     let conf_gene_rels = &cv_config.summary_gene_relations_to_collect;
     let gene_range_rel_p =
@@ -378,13 +378,19 @@ fn make_cv_summaries(config: &Config,
             term: term_and_annotations.term.clone(),
             is_not: term_and_annotations.is_not,
             rel_names: term_and_annotations.rel_names.clone(),
-            rows: collect_ext_summary_genes(&cv_config, rows),
+            rows: rows,
         };
 
         result.push(summary);
     }
 
     remove_redundant_summaries(children_by_termid, &mut result);
+
+    for ref mut summary in &mut result {
+        let cv_config = config.cv_config_by_name(&summary.term.cv_name);
+
+        summary.rows = collect_ext_summary_genes(&cv_config, &summary.rows);
+    }
 
     result
 }

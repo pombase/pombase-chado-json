@@ -673,7 +673,7 @@ fn test_collect_ext_summary_genes() {
     let rows = get_test_summary_rows();
     assert_eq!(rows.len(), 10);
 
-    let res = collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), rows);
+    let res = collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), &rows);
     assert_eq!(res.len(), 8);
 
     let collected_ext = res.get(6).unwrap();
