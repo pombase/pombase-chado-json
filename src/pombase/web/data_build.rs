@@ -342,9 +342,13 @@ fn make_cv_summaries(config: &Config,
                 }
             }
 
+            let summary_relations_to_hide = &cv_config.summary_relations_to_hide;
+
             let mut summary_extension = annotation.extension.iter().cloned()
-                .filter(|ext_part|
-                        !cv_config.summary_relations_to_hide.contains(&ext_part.rel_type_name))
+                .filter(|ext_part| {
+                    !summary_relations_to_hide.contains(&ext_part.rel_type_name) &&
+                        *summary_relations_to_hide != vec!["ALL"]
+                })
                 .map(move |mut ext_part| {
                     if let ExtRange::Gene(gene_uniquename) = ext_part.ext_range.clone() {
                         let summ_genes = vec![gene_uniquename];
