@@ -3139,22 +3139,22 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
             make_one_detail(41717, "SPBC11B10.09", "PMID:9242669", None,
                             "IDA",vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
-                                                   ExtRange::Gene("SPBC646.13".into())),
+                                                   ExtRange::Gene("SPBC646.13".into())), //  sds23
                             ], vec![]),
             make_one_detail(41718, "SPBC11B10.09", "PMID:9490630", None,
                             "IDA", vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
-                                                   ExtRange::Gene("SPAC25G10.07c".into())),
+                                                   ExtRange::Gene("SPAC25G10.07c".into())), // cut7
                             ], vec![]),
             make_one_detail(41718, "SPBC11B10.09", "PMID:11937031", None,
                             "IDA", vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
-                                                   ExtRange::Gene("SPBC32F12.09".into())),
+                                                   ExtRange::Gene("SPBC32F12.09".into())), // no name
                             ], vec![]),
             make_one_detail(187893, "SPBC11B10.09", "PMID:19523829", None, "IMP",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
-                                                   ExtRange::Gene("SPBC6B1.04".into())),
+                                                   ExtRange::Gene("SPBC6B1.04".into())), //  mde4
                                 make_test_ext_part("part_of", "involved in",
                                                    ExtRange::Term("GO:1902845".into())),
                                 make_test_ext_part("happens_during", "during",
@@ -3164,7 +3164,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
             make_one_detail(187907, "SPBC11B10.09", "PMID:19523829", None, "IMP",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
-                                                   ExtRange::Gene("SPBC6B1.04".into())),
+                                                   ExtRange::Gene("SPBC6B1.04".into())), //  mde4
                                 make_test_ext_part("part_of", "involved in",
                                                    ExtRange::Term("GO:0098783".into())),
                                 make_test_ext_part("happens_during", "during",
@@ -3174,7 +3174,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
             make_one_detail(193221, "SPBC11B10.09", "PMID:10921876", None, "IMP",
                             vec![
                                 make_test_ext_part("directly_negatively_regulates", "directly inhibits",
-                                                   ExtRange::Gene("SPAC144.13c".into())),
+                                                   ExtRange::Gene("SPAC144.13c".into())), //  srw1
                                 make_test_ext_part("part_of", "involved in",
                                                    ExtRange::Term("GO:1903693".into())),
                                 make_test_ext_part("part_of", "involved in",
@@ -3186,13 +3186,13 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
             make_one_detail(194213, "SPBC11B10.09", "PMID:7957097", None, "IDA",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
-                                                   ExtRange::Gene("SPBC776.02c".into())),
+                                                   ExtRange::Gene("SPBC776.02c".into())),  // dis2
                             ],
                             vec![]),
             make_one_detail(194661, "SPBC11B10.09", "PMID:10485849", None, "IMP",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
-                                                   ExtRange::Gene("SPBC146.03c".into())),
+                                                   ExtRange::Gene("SPBC146.03c".into())), //  cut3
                                 make_test_ext_part("part_of", "involved in",
                                                    ExtRange::Term("GO:1903380".into())),
                                 make_test_ext_part("part_of", "involved in",
@@ -3323,10 +3323,10 @@ fn make_one_genotype(uniquename: &str, name: Option<&str>,
 }
 
 #[allow(dead_code)]
-fn make_test_gene(uniquename: &str) -> GeneDetails {
+fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
     GeneDetails {
         uniquename: uniquename.into(),
-        name: None,
+        name: name.map(str::to_string),
         organism: OrganismShort {
             genus: "Schizosaccharomyces".into(),
             species: "pombe".into(),
@@ -3359,12 +3359,18 @@ fn make_test_gene(uniquename: &str) -> GeneDetails {
 fn get_test_genes_map() -> UniquenameGeneMap {
     let mut ret = HashMap::new();
 
-    let gene_uniquenames =
-        vec!["SPBC11B10.09", "SPAC144.13c", "SPAC25G10.07c", "SPBC146.03c",
-             "SPBC32F12.09", "SPBC646.13", "SPBC6B1.04", "SPBC776.02c"];
+    let gene_data =
+        vec![("SPBC11B10.09", Some("cdc2")),
+             ("SPAC144.13c", Some("srw1")),
+             ("SPAC25G10.07c", Some("cut7")),
+             ("SPBC146.03c", Some("cut3")),
+             ("SPBC32F12.09", None),
+             ("SPBC646.13", Some("sds23")),
+             ("SPBC6B1.04", Some("mde4")),
+             ("SPBC776.02c", Some("dis2"))];
 
-    for uniquename in gene_uniquenames {
-        ret.insert(uniquename.into(), make_test_gene(uniquename));
+    for (uniquename, name) in gene_data {
+        ret.insert(uniquename.into(), make_test_gene(uniquename, name));
     }
 
     ret
@@ -3600,12 +3606,15 @@ fn test_cmp_ont_annotation_detail() {
              (*detail).reference_uniquename.clone().unwrap())
         }).collect();
 
-
     let expected_annotation_sort: Vec<(String, String)> =
-        vec![("SPBC11B10.09", "PMID:10921876"), ("SPBC11B10.09", "PMID:9490630"),
-             ("SPBC11B10.09", "PMID:10485849"), ("SPBC11B10.09", "PMID:11937031"),
-             ("SPBC11B10.09", "PMID:9242669"), ("SPBC11B10.09", "PMID:19523829"),
-             ("SPBC11B10.09", "PMID:19523829"), ("SPBC11B10.09", "PMID:7957097")]
+        vec![("SPBC11B10.09", "PMID:10921876"),
+             ("SPBC11B10.09", "PMID:10485849" /* has_direct_input(cut3) */),
+             ("SPBC11B10.09", "PMID:9490630" /* has_direct_input(cut7) */),
+             ("SPBC11B10.09", "PMID:7957097" /* has_direct_input(dis2) */)]
+             ("SPBC11B10.09", "PMID:19523829" /* has_direct_input(mde4), part_of(...), happens_during(...) */),
+             ("SPBC11B10.09", "PMID:19523829" /* has_direct_input(mde4), part_of(...), happens_during(...) */),
+             ("SPBC11B10.09", "PMID:9242669" /* has_direct_input(sds23) */),
+             ("SPBC11B10.09", "PMID:11937031" /* has_direct_input(SPBC32F12.09) */),
         .iter()
         .map(|&(gene, reference)|
              (gene.into(), reference.into())).collect();
