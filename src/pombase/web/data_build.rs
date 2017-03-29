@@ -3610,11 +3610,12 @@ fn test_cmp_ont_annotation_detail() {
         vec![("SPBC11B10.09", "PMID:10921876"),
              ("SPBC11B10.09", "PMID:10485849" /* has_direct_input(cut3) */),
              ("SPBC11B10.09", "PMID:9490630" /* has_direct_input(cut7) */),
-             ("SPBC11B10.09", "PMID:7957097" /* has_direct_input(dis2) */)]
+             ("SPBC11B10.09", "PMID:7957097" /* has_direct_input(dis2) */),
              ("SPBC11B10.09", "PMID:19523829" /* has_direct_input(mde4), part_of(...), happens_during(...) */),
              ("SPBC11B10.09", "PMID:19523829" /* has_direct_input(mde4), part_of(...), happens_during(...) */),
              ("SPBC11B10.09", "PMID:9242669" /* has_direct_input(sds23) */),
              ("SPBC11B10.09", "PMID:11937031" /* has_direct_input(SPBC32F12.09) */),
+             ]
         .iter()
         .map(|&(gene, reference)|
              (gene.into(), reference.into())).collect();
