@@ -49,7 +49,7 @@ fn read_config(config_file_name: &str) -> Config {
     };
     let reader = BufReader::new(file);
 
-    match serde_yaml::from_reader(reader) {
+    match serde_json::from_reader(reader) {
         Ok(config) => config,
         Err(err) => {
             print!("failed to parse {}: {}", config_file_name, err);
