@@ -3,7 +3,7 @@ use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::borrow::Borrow;
-use std::cmp::Ordering;
+use std::cmp::{Ordering, min};
 
 use regex::Regex;
 
@@ -507,23 +507,23 @@ fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart,
 // compare the extension up to the last common index
 fn cmp_extension_prefix(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
                         genes: &UniquenameGeneMap,
-                        terms: &TermIdDetailsMap) -> Ordering {
-    let iter = ext1.iter().zip(ext2);
-    for (ext1_part, ext2_part) in iter {
+                        terms: &TermIdDetailsMap) -> (usize, Ordering) {
+    let iter = ext1.iter().zip(ext2).enumerate();
+    for (index, (ext1_part, ext2_part)) in iter {
         let ord = cmp_ext_part(&ext1_part, &ext2_part, genes, terms);
 
         if ord != Ordering::Equal {
-            return ord
+            return (index, ord)
         }
     }
 
-    Ordering::Equal
+    (min(ext1.len(), ext2.len()), Ordering::Equal)
 }
 
 fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
                  genes: &UniquenameGeneMap,
                  terms: &TermIdDetailsMap) -> Ordering {
-    let cmp = cmp_extension_prefix(ext1, ext2, genes, terms);
+    let (_, cmp) = cmp_extension_prefix(ext1, ext2, genes, terms);
 
     if cmp == Ordering::Equal {
         ext1.len().cmp(&ext2.len())
