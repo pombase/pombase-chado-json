@@ -405,11 +405,13 @@ fn get_test_config() -> Config {
         },
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
+        interesting_parents: vec![],
     };
 
     config.cv_config.insert(String::from("molecular_function"),
                             CvConfig {
                                 feature_type: String::from("Gene"),
+                                filters: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_gene_relations_to_collect: vec![String::from("has_substrate")],
                             });

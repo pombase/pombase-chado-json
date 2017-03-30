@@ -7,6 +7,13 @@ pub struct ExtensionDisplayNames {
     pub reciprocal_display: Option<String>, // None if reciprocal shouldn't be displayed
 }
 
+// "interesting parents" are those stored in the JSON in the TermShort structs
+#[derive(Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct InterestingParent {
+    pub termid: String,
+    pub rel_name: String,
+}
+
 // the order of relations within an extension:
 #[derive(Deserialize, Clone, Debug)]
 pub struct RelationOrder {
@@ -16,14 +23,36 @@ pub struct RelationOrder {
     pub always_last: Vec<String>,
 }
 
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct TermFilterDivision {
+    display_name: String,
+    // this category matches these terms and their descendants
+    ancestors: Vec<InterestingParent>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub enum FilterConfig {
+#[serde(rename = "term")]
+    TermFilter {
+        display_name: String,
+        divisions: Vec<TermFilterDivision>,
+    }
+}
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: String,
+    // filtering configured per CV
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub filters: Vec<FilterConfig>,
     // relations to not show in the summary
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub summary_relations_to_hide: Vec<String>,
     // relations where the range is a gene ID to display like:
     //   has substrate pom1, cdc1 involved in negative regulation of ...
     // rather than as two lines
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub summary_gene_relations_to_collect: Vec<String>,
 }
 
@@ -36,6 +65,10 @@ pub struct Config {
     pub extension_relation_order: RelationOrder,
     pub evidence_types: HashMap<ShortEvidenceCode, LongEvidenceCode>,
     pub cv_config: HashMap<CvName, CvConfig>,
+// when creating a TermShort struct, for each of these termids if the term has
+// an "interesting parent" using the given rel_name, we store it in the
+// interesting_parents field of the TermShort
+    pub interesting_parents: Vec<InterestingParent>,
 }
 
 impl Config {
@@ -45,6 +78,7 @@ impl Config {
         } else {
             CvConfig {
                 feature_type: "gene".into(),
+                filters: vec![],
                 summary_relations_to_hide: vec![],
                 summary_gene_relations_to_collect: vec![],
             }

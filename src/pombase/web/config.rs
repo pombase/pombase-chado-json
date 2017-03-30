@@ -45,36 +45,3 @@ pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
 pub const TRANSCRIPT_FEATURE_TYPES: [&'static str; 6] =
     ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA"];
 
-// "interesting parents" are those stored in the JSON in the TermShort structs
-#[derive(Clone)]
-pub struct InterestingParent {
-    pub termid: &'static str,
-    pub rel_name: &'static str,
-}
-
-// when creating a TermShort struct, for each of these termids if the term has
-// an "interesting parent" using the given rel_name, we store it in the
-// interesting_parents field of the TermShort
-pub const INTERESTING_PARENTS: [InterestingParent; 4] = [
-    InterestingParent {
-        termid: "FYPO:0000002",
-        rel_name: "is_a",
-    },
-    InterestingParent {
-        termid: "FYPO:0000003",
-        rel_name: "is_a",
-    },
-    InterestingParent {
-        termid: "FYPO:0000652",
-        rel_name: "is_a",
-    },
-
-    // a with property on a protein binding (GO:0005515) is displayed
-    // as a binds extension - configure this to allow easy checking for that in
-    // process_feature_cvterms()
-    // see: https://github.com/pombase/website/issues/108
-    InterestingParent {
-        termid: "GO:0005515",
-        rel_name: "is_a",
-    },
-];

@@ -54,6 +54,8 @@ pub struct WebDataBuild<'a> {
     base_term_of_extensions: HashMap<TermId, TermId>,
 
     children_by_termid: HashMap<TermId, HashSet<TermId>>,
+
+    possible_interesting_parents: HashSet<InterestingParent>,
 }
 
 fn get_maps() ->
@@ -663,6 +665,44 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
     }
 }
 
+// Some ancestor terms are useful in the web code.  This function uses the Config and returns
+// the terms that might be useful.
+fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParent> {
+    let mut ret = HashSet::new();
+
+    for parent_conf in config.interesting_parents.iter() {
+        ret.insert(parent_conf.clone());
+    }
+
+    for ext_conf in &config.extension_display_names {
+        if let Some(ref conf_termid) = ext_conf.if_descendent_of {
+            ret.insert(InterestingParent {
+                termid: conf_termid.clone(),
+                rel_name: "is_a".into(),
+            });
+        }
+    }
+
+    for (_, conf) in &config.cv_config {
+        for filter in &conf.filters {
+            match *filter {
+                FilterConfig::TermFilter {
+                    display_name: _,
+                    ref divisions,
+                } => {
+                    for division in divisions {
+                        for ancestor in &division.ancestors {
+                            ret.insert(ancestor.clone());
+                        }
+                    }
+                },
+            }
+        }
+    }
+
+    ret
+}
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw, config: &'a Config) -> WebDataBuild<'a> {
         WebDataBuild {
@@ -689,6 +729,8 @@ impl <'a> WebDataBuild<'a> {
             base_term_of_extensions: HashMap::new(),
 
             children_by_termid: HashMap::new(),
+
+            possible_interesting_parents: get_possible_interesting_parents(config),
         }
     }
 
@@ -2376,23 +2418,13 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // return true if the term could or should appear in the interesting_parents
+    // field of the TermDetails and TermShort structs 
     fn is_interesting_parent(&self, termid: &str, rel_name: &str) -> bool {
-        for parent_conf in INTERESTING_PARENTS.iter() {
-            if parent_conf.termid == termid &&
-                parent_conf.rel_name == rel_name {
-                    return true;
-                }
-        }
-
-        for ext_conf in &self.config.extension_display_names {
-            if let Some(ref conf_termid) = ext_conf.if_descendent_of {
-                if conf_termid == termid && rel_name == "is_a" {
-                    return true;
-                }
-            }
-        }
-
-        false
+        return self.possible_interesting_parents.contains(&InterestingParent {
+            termid: termid.into(),
+            rel_name: rel_name.into(),
+        });
     }
 
     fn process_cvtermpath(&mut self) {
@@ -3015,11 +3047,13 @@ fn get_test_config() -> Config {
         },
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
+        interesting_parents: vec![],
     };
 
     config.cv_config.insert(String::from("molecular_function"),
                             CvConfig {
                                 feature_type: String::from("Gene"),
+                                filters: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_gene_relations_to_collect: vec![String::from("has_substrate")],
                             });
