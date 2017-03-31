@@ -3813,3 +3813,18 @@ fn test_cmp_genes() {
     assert_eq!(v[3].name, None);
     assert_eq!(v[3].uniquename, "SPCPB16A4.02c");
 }
+
+#[test]
+fn test_summary_row_equals() {
+    let r1 = TermSummaryRow {
+        gene_uniquenames: vec!["SPAPB1A10.09".into()],
+        genotype_uniquenames: vec![],
+        extension: vec![],
+    };
+    let r2 = TermSummaryRow {
+        gene_uniquenames: vec!["SPAPB1A10.09".into()],
+        genotype_uniquenames: vec![],
+        extension: vec![],
+    };
+    assert!(r1 == r2);
+}
