@@ -688,10 +688,10 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
             match *filter {
                 FilterConfig::TermFilter {
                     display_name: _,
-                    ref divisions,
+                    ref categories,
                 } => {
-                    for division in divisions {
-                        for ancestor in &division.ancestors {
+                    for category in categories {
+                        for ancestor in &category.ancestors {
                             ret.insert(ancestor.clone());
                         }
                     }

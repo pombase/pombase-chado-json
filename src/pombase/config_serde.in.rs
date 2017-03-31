@@ -25,7 +25,7 @@ pub struct RelationOrder {
 
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct TermFilterDivision {
+pub struct TermFilterCategory {
     display_name: String,
     // this category matches these terms and their descendants
     ancestors: Vec<InterestingParent>,
@@ -36,7 +36,7 @@ pub enum FilterConfig {
 #[serde(rename = "term")]
     TermFilter {
         display_name: String,
-        divisions: Vec<TermFilterDivision>,
+        categories: Vec<TermFilterCategory>,
     }
 }
 
