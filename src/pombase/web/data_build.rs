@@ -2441,17 +2441,6 @@ impl <'a> WebDataBuild<'a> {
             let object_termid = object_term.termid();
 
             if let Some(subject_term_details) = self.terms.get(&subject_termid) {
-                if subject_term_details.rel_annotations.len() > 0 {
-                    if let Some(object_term_details) = self.terms.get(&object_termid) {
-                        if object_term_details.rel_annotations.len() > 0 {
-                            children_by_termid
-                                .entry(object_termid.clone())
-                                .or_insert(HashSet::new())
-                                .insert(subject_termid.clone());
-                        }
-                    }
-                }
-
                 let rel_termid =
                     match cvtermpath.rel_type {
                         Some(ref rel_type) => {
@@ -2471,6 +2460,17 @@ impl <'a> WebDataBuild<'a> {
 
                 if !DESCENDANT_REL_NAMES.contains(&rel_term_name.as_str()) {
                     continue;
+                }
+
+                if subject_term_details.rel_annotations.len() > 0 {
+                    if let Some(object_term_details) = self.terms.get(&object_termid) {
+                        if object_term_details.rel_annotations.len() > 0 {
+                            children_by_termid
+                                .entry(object_termid.clone())
+                                .or_insert(HashSet::new())
+                                .insert(subject_termid.clone());
+                        }
+                    }
                 }
 
                 let annotations = &subject_term_details.rel_annotations;
