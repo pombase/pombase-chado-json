@@ -378,8 +378,6 @@ fn make_cv_summaries(config: &Config,
 
         remove_redundant_summary_rows(&mut rows);
 
-        collect_summary_rows(&mut rows);
-
         let summary = OntTermSummary {
             term: term_and_annotations.term.clone(),
             is_not: term_and_annotations.is_not,
@@ -393,6 +391,8 @@ fn make_cv_summaries(config: &Config,
     remove_redundant_summaries(children_by_termid, &mut result);
 
     for ref mut summary in &mut result {
+        collect_summary_rows(&mut summary.rows);
+
         let cv_config = config.cv_config_by_name(&summary.term.cv_name);
 
         summary.rows = collect_ext_summary_genes(&cv_config, &summary.rows);
