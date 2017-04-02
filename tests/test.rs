@@ -428,10 +428,13 @@ fn get_test_web_data() -> WebData {
 
 #[test]
 fn test_gene_details() {
-    let web_data = get_test_web_data();
+    let mut web_data = get_test_web_data();
 
     assert_eq!(web_data.genes.len(), 3);
-    let par1_gene = web_data.genes.get("SPCC188.02").unwrap().clone();
+    let mut par1_gene = web_data.genes.remove("SPCC188.02").unwrap();
+
+    print!("{:?}\n", &par1_gene);
+
     assert_eq!(par1_gene.uniquename, "SPCC188.02");
     assert_eq!(par1_gene.name.unwrap(), "par1");
     assert_eq!(par1_gene.cv_annotations.len(), 2);
@@ -440,7 +443,10 @@ fn test_gene_details() {
         panic!("extension cv shouldn't be in the annotations");
     }
 
-    assert_eq!(par1_gene.cv_summaries.len(), 2);
+    let mut process = par1_gene.cv_annotations.remove("biological_process").unwrap();
+    assert!(process.remove(0).summary.unwrap().len() == 0);
+    let mut phenotype = par1_gene.cv_annotations.remove("multi_allele_phenotype").unwrap();
+    assert!(phenotype.remove(0).summary.unwrap().len() == 1);
 }
 
 #[test]

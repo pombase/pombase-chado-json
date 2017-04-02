@@ -198,7 +198,6 @@ pub struct ReferenceDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
     pub cv_annotations: OntAnnotationMap,
-    pub cv_summaries: OntSummaryMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
     pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
@@ -271,6 +270,7 @@ pub struct OntTermAnnotations {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub rel_names: HashSet<RelName>,
     pub annotations: Vec<Rc<OntAnnotationDetail>>,
+    pub summary: Option<Vec<TermSummaryRow>>,
 }
 
 impl PartialEq for OntTermAnnotations {
@@ -320,15 +320,6 @@ impl Hash for TermSummaryRow {
             ext_part.hash(state);
         }
     }
-}
-
-#[derive(Serialize, Clone, Debug)]
-pub struct OntTermSummary {
-    pub term: TermShort,
-    pub is_not: bool,
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub rel_names: HashSet<RelName>,
-    pub rows: Vec<TermSummaryRow>,
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash)]
@@ -392,7 +383,6 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptShort>,
     pub cv_annotations: OntAnnotationMap,
-    pub cv_summaries: OntSummaryMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
     pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
@@ -432,7 +422,6 @@ pub struct GenotypeDetails {
     pub background: Option<String>,
     pub expressed_alleles: Vec<ExpressedAllele>,
     pub cv_annotations: OntAnnotationMap,
-    pub cv_summaries: OntSummaryMap,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
@@ -471,7 +460,6 @@ pub struct GeneExProps {
 
 pub type OntName = String;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
-pub type OntSummaryMap = HashMap<OntName, Vec<OntTermSummary>>;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct TermAndRelation {
@@ -493,7 +481,6 @@ pub struct TermDetails {
     pub is_obsolete: bool,
     pub single_allele_genotype_uniquenames: HashSet<String>,
     pub rel_annotations: Vec<OntTermAnnotations>,
-    pub rel_summaries: Vec<OntTermSummary>,
     pub not_rel_annotations: Vec<OntTermAnnotations>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,

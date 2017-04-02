@@ -259,41 +259,40 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 }
 
 fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
-                              summaries: &mut Vec<OntTermSummary>) {
-    let mut summaries_by_termid = HashMap::new();
+                              term_annotations: &mut Vec<OntTermAnnotations>) {
+    let mut term_annotations_by_termid = HashMap::new();
 
-    for summary in &*summaries {
-        summaries_by_termid.insert(summary.term.termid.clone(),
-                                   summary.clone());
+    for term_annotation in &*term_annotations {
+        term_annotations_by_termid.insert(term_annotation.term.termid.clone(),
+                                          term_annotation.clone());
     }
 
-    let mut new_summaries = vec![];
-
-    for summary in &*summaries {
-        if let Some(child_termids) = children_by_termid.get(&summary.term.termid) {
-            if summary.rows.len() == 0 {
+    for mut term_annotation in term_annotations.iter_mut() {
+       if let Some(child_termids) = children_by_termid.get(&term_annotation.term.termid) {
+            if term_annotation.summary.clone().unwrap().len() == 0 {
                 let mut found_child_match = false;
                 for child_termid in child_termids {
-                    if summaries_by_termid.get(child_termid).is_some() {
+                    if term_annotations_by_termid.get(child_termid).is_some() {
                         found_child_match = true;
                     }
                 }
                 if !found_child_match {
-                    new_summaries.push(summary.clone());
+                    term_annotation.summary = None;
                 }
             } else {
                 let mut filtered_rows: Vec<TermSummaryRow> = vec![];
 
-                for row in &summary.rows {
+                for row in &mut term_annotation.summary.clone().unwrap() {
                     let mut found_child_match = false;
                     for child_termid in child_termids {
-                        if let Some(child_summary) = summaries_by_termid.get(child_termid) {
-                            for child_row in &child_summary.rows {
-                                if *row == *child_row {
-                                    found_child_match = true;
-                                    break;
+                        if let Some(ref mut child_term_annotation) =
+                            term_annotations_by_termid.get(child_termid) {
+                                for child_row in &child_term_annotation.summary.clone().unwrap() {
+                                    if *row == *child_row {
+                                        found_child_match = true;
+                                        break;
+                                    }
                                 }
-                            }
                         }
                     }
                     if !found_child_match {
@@ -301,27 +300,21 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
                     }
                 }
 
-                if filtered_rows.len() > 0 {
-                    let mut new_summary = summary.clone();
-                    new_summary.rows = filtered_rows;
-                    new_summaries.push(new_summary);
+                if filtered_rows.len() == 0 {
+                    term_annotation.summary = None;
                 }
             }
-        } else {
-            new_summaries.push(summary.clone());
         }
     }
-
-    *summaries = new_summaries
 }
 
 fn make_cv_summaries(config: &Config,
                      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                      include_gene: bool, include_genotype: bool,
-                     term_and_annotations_vec: &Vec<OntTermAnnotations>) -> Vec<OntTermSummary> {
+                     term_and_annotations_vec: &mut Vec<OntTermAnnotations>) {
     let mut result = vec![];
 
-    for ref term_and_annotations in term_and_annotations_vec {
+    for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let term = &term_and_annotations.term;
         let cv_config = config.cv_config_by_name(&term.cv_name);
 
@@ -378,27 +371,19 @@ fn make_cv_summaries(config: &Config,
 
         remove_redundant_summary_rows(&mut rows);
 
-        let summary = OntTermSummary {
-            term: term_and_annotations.term.clone(),
-            is_not: term_and_annotations.is_not,
-            rel_names: term_and_annotations.rel_names.clone(),
-            rows: rows,
-        };
-
-        result.push(summary);
+        term_and_annotations.summary = Some(rows);
     }
 
     remove_redundant_summaries(children_by_termid, &mut result);
 
-    for ref mut summary in &mut result {
-        collect_summary_rows(&mut summary.rows);
+    for ref mut term_and_annotations in term_and_annotations_vec.iter_mut() {
+        collect_summary_rows(&mut term_and_annotations.summary.clone().unwrap());
 
-        let cv_config = config.cv_config_by_name(&summary.term.cv_name);
+        let cv_config = config.cv_config_by_name(&term_and_annotations.term.cv_name);
 
-        summary.rows = collect_ext_summary_genes(&cv_config, &summary.rows);
+        term_and_annotations.summary =
+            Some(collect_ext_summary_genes(&cv_config, &term_and_annotations.summary.clone().unwrap()));
     }
-
-    result
 }
 
 // turns binds([[gene1]]),binds([[gene2]]),other_rel(...) into:
@@ -991,7 +976,6 @@ impl <'a> WebDataBuild<'a> {
                                        pubmed_publication_date: pubmed_publication_date.clone(),
                                        publication_year: publication_year,
                                        cv_annotations: HashMap::new(),
-                                       cv_summaries: HashMap::new(),
                                        physical_interactions: vec![],
                                        genetic_interactions: vec![],
                                        ortholog_annotations: vec![],
@@ -1108,7 +1092,6 @@ impl <'a> WebDataBuild<'a> {
             gene_neighbourhood: vec![],
             cds_location: None,
             cv_annotations: HashMap::new(),
-            cv_summaries: HashMap::new(),
             physical_interactions: vec![],
             genetic_interactions: vec![],
             ortholog_annotations: vec![],
@@ -1141,7 +1124,6 @@ impl <'a> WebDataBuild<'a> {
                                   background: background,
                                   expressed_alleles: vec![],
                                   cv_annotations: HashMap::new(),
-                                  cv_summaries: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
                                   references_by_uniquename: HashMap::new(),
@@ -1642,35 +1624,28 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_all_cv_summaries(&mut self) {
         for (_, term_details) in &mut self.terms {
-            term_details.rel_summaries =
-                make_cv_summaries(&self.config, &self.children_by_termid,
-                                  true, true, &term_details.rel_annotations);
+            make_cv_summaries(&self.config, &self.children_by_termid,
+                              true, true, &mut term_details.rel_annotations);
         }
 
         for (_, gene_details) in &mut self.genes {
-            for (cv_name, term_annotations) in &mut gene_details.cv_annotations {
-                let summaries =
-                    make_cv_summaries(&self.config, &self.children_by_termid,
-                                      false, true, &term_annotations);
-                gene_details.cv_summaries.insert(cv_name.clone(), summaries);
+            for (_, mut term_annotations) in &mut gene_details.cv_annotations {
+                make_cv_summaries(&self.config, &self.children_by_termid,
+                                  false, true, &mut term_annotations);
             }
         }
 
         for (_, genotype_details) in &mut self.genotypes {
-            for (cv_name, term_annotations) in &mut genotype_details.cv_annotations {
-                let summaries =
-                    make_cv_summaries(&self.config, &self.children_by_termid,
-                                      false, false, &term_annotations);
-                genotype_details.cv_summaries.insert(cv_name.clone(), summaries);
+            for (_, mut term_annotations) in &mut genotype_details.cv_annotations {
+                make_cv_summaries(&self.config, &self.children_by_termid,
+                                  false, false, &mut term_annotations);
             }
         }
 
         for (_, reference_details) in &mut self.references {
-            for (cv_name, term_annotations) in &mut reference_details.cv_annotations {
-                let summaries =
-                    make_cv_summaries(&self.config, &self.children_by_termid,
-                                      true, true, &term_annotations);
-                reference_details.cv_summaries.insert(cv_name.clone(), summaries);
+            for (_, mut term_annotations) in &mut reference_details.cv_annotations {
+                make_cv_summaries(&self.config, &self.children_by_termid,
+                                  true, true, &mut term_annotations);
             }
         }
     }
@@ -1694,7 +1669,6 @@ impl <'a> WebDataBuild<'a> {
                                       is_obsolete: cvterm.is_obsolete,
                                       single_allele_genotype_uniquenames: HashSet::new(),
                                       rel_annotations: vec![],
-                                      rel_summaries: vec![],
                                       not_rel_annotations: vec![],
                                       genes_by_uniquename: HashMap::new(),
                                       genotypes_by_uniquename: HashMap::new(),
@@ -2150,6 +2124,7 @@ impl <'a> WebDataBuild<'a> {
                         is_not: false,
                         rel_names: HashSet::new(),
                         annotations: vec![],
+                        summary: None,
                     };
                 let mut quant_annotations =
                     OntTermAnnotations {
@@ -2157,6 +2132,7 @@ impl <'a> WebDataBuild<'a> {
                         is_not: false,
                         rel_names: HashSet::new(),
                         annotations: vec![],
+                        summary: None,
                     };
                 for detail in details {
                     if detail.gene_ex_props.is_some() {
@@ -2186,14 +2162,16 @@ impl <'a> WebDataBuild<'a> {
                         term: term_short.clone(),
                         is_not: is_not,
                         rel_names: HashSet::new(),
-                        annotations: vec![],
-                    };
+                        annotations: vec![], 
+                        summary: None,
+                   };
                 let mut multi_allele =
                     OntTermAnnotations {
                         term: term_short.clone(),
                         is_not: is_not,
                         rel_names: HashSet::new(),
                         annotations: vec![],
+                        summary: None,
                     };
 
                 for detail in details {
@@ -2229,8 +2207,9 @@ impl <'a> WebDataBuild<'a> {
                           term: term_short.clone(),
                           is_not: is_not,
                           rel_names: HashSet::new(),
-                          annotations: details.clone(),
-                      })]
+                          annotations: details.clone(), 
+                          summary: None,
+                     })]
             }
         }
     }
@@ -2290,6 +2269,7 @@ impl <'a> WebDataBuild<'a> {
                     is_not: is_not,
                     term: term_short.clone(),
                     annotations: annotations_for_term.clone(),
+                    summary: None,
                 };
 
                 if is_not {
@@ -2348,6 +2328,7 @@ impl <'a> WebDataBuild<'a> {
                                     is_not: is_not,
                                     rel_names: HashSet::new(),
                                     annotations: vec![],
+                                    summary: None,
                                 });
                         }
                         if let Some(rel_annotation) = condition_term_details.rel_annotations.get_mut(0) {
@@ -2479,7 +2460,8 @@ impl <'a> WebDataBuild<'a> {
                         rel_names: _,
                         is_not: _,
                         term: _,
-                        annotations: existing_details
+                        annotations: existing_details,
+                        summary: _,
                     } = rel_annotation.clone();
 
                     for detail in &existing_details {
@@ -2534,6 +2516,7 @@ impl <'a> WebDataBuild<'a> {
                     is_not: false,
                     term: source_term_short.clone(),
                     annotations: new_details,
+                    summary: None,
                 });
             }
         }
@@ -3166,7 +3149,8 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations1,
-    };
+        summary: None,
+   };
 
     let annotations2 =
         vec![
@@ -3250,6 +3234,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations2,
+        summary: None,
     };
 
     vec![ont_term1, ont_term2]
@@ -3348,7 +3333,6 @@ fn make_one_genotype(uniquename: &str, name: Option<&str>,
         background: None,
         expressed_alleles: expressed_alleles,
         cv_annotations: HashMap::new(),
-        cv_summaries: HashMap::new(),
         references_by_uniquename: HashMap::new(),
         genes_by_uniquename: HashMap::new(),
         alleles_by_uniquename: HashMap::new(),
@@ -3375,7 +3359,6 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         gene_neighbourhood: vec![],
         transcripts: vec![],
         cv_annotations: HashMap::new(),
-        cv_summaries: HashMap::new(),
         physical_interactions: vec![],
         genetic_interactions: vec![],
         ortholog_annotations: vec![],
@@ -3557,7 +3540,6 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         is_obsolete: false,
         single_allele_genotype_uniquenames: HashSet::new(),
         rel_annotations: vec![],
-        rel_summaries: vec![],
         not_rel_annotations: vec![],
         genes_by_uniquename: HashMap::new(),
         genotypes_by_uniquename: HashMap::new(),
@@ -3671,19 +3653,20 @@ fn make_term_short_from_details(term_details: &TermDetails) -> TermShort {
 }
 
 #[allow(dead_code)]
-fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermSummary {
+fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermAnnotations {
     let terms = get_test_terms_map();
 
-    OntTermSummary {
+    OntTermAnnotations {
         term: make_term_short_from_details(&terms.get(termid).unwrap().clone()),
         is_not: false,
+        annotations: vec![],
         rel_names: HashSet::new(),
-        rows: rows,
+        summary: Some(rows),
     }
 }
 
 #[allow(dead_code)]
-fn get_test_summaries() -> Vec<OntTermSummary> {
+fn get_test_summaries() -> Vec<OntTermAnnotations> {
     let mut summaries = vec![];
 
     let ext = make_test_ext_part("part_of", "involved in",
@@ -3754,13 +3737,16 @@ fn get_test_children_by_termid() -> HashMap<TermId, HashSet<TermId>> {
 
 #[test]
 fn test_remove_redundant_summaries() {
-    let mut summaries = get_test_summaries();
+    let mut term_annotations: Vec<OntTermAnnotations> = get_test_summaries();
 
     let children_by_termid = get_test_children_by_termid();
-    assert_eq!(summaries.len(), 5);
+    assert_eq!(term_annotations.len(), 5);
 
-    remove_redundant_summaries(&children_by_termid, &mut summaries);
-    assert_eq!(summaries.len(), 3);
+    remove_redundant_summaries(&children_by_termid, &mut term_annotations);
+
+    assert_eq!(term_annotations.iter().filter(|term_annotation| {
+        term_annotation.summary.is_some()
+    }).collect::<Vec<&OntTermAnnotations>>().len(), 3);
 }
 
 #[test]
