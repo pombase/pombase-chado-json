@@ -113,8 +113,7 @@ pub fn merge_gene_ext_parts(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart
 }
 
 // turn "has_substrate(gene1),has_substrate(gene2)" into "has_substrate(gene1,gene2)"
-pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &Vec<TermSummaryRow>)
-                             -> Vec<TermSummaryRow> {
+pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>) {
     let conf_gene_rels = &cv_config.summary_gene_relations_to_collect;
     let gene_range_rel_p =
         |ext_part: &ExtPart| {
@@ -125,48 +124,50 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &Vec<TermSummaryRow
             }
         };
     let mut ret_rows = vec![];
+    {
     let mut row_iter = rows.iter().cloned();
 
-    if let Some(mut prev_row) = row_iter.next() {
-        for current_row in row_iter {
-            if prev_row.gene_uniquenames != current_row.gene_uniquenames ||
-                prev_row.genotype_uniquenames != current_row.genotype_uniquenames {
-                    ret_rows.push(prev_row);
-                    prev_row = current_row;
-                    continue;
-                }
+        if let Some(mut prev_row) = row_iter.next() {
+            for current_row in row_iter {
+                if prev_row.gene_uniquenames != current_row.gene_uniquenames ||
+                    prev_row.genotype_uniquenames != current_row.genotype_uniquenames {
+                        ret_rows.push(prev_row);
+                        prev_row = current_row;
+                        continue;
+                    }
 
-            let mut prev_row_extension = prev_row.extension.clone();
-            let prev_matching_gene_ext_part =
-                remove_first(&mut prev_row_extension, &gene_range_rel_p);
-            let mut current_row_extension = current_row.extension.clone();
-            let current_matching_gene_ext_part =
-                remove_first(&mut current_row_extension, &gene_range_rel_p);
+                let mut prev_row_extension = prev_row.extension.clone();
+                let prev_matching_gene_ext_part =
+                    remove_first(&mut prev_row_extension, &gene_range_rel_p);
+                let mut current_row_extension = current_row.extension.clone();
+                let current_matching_gene_ext_part =
+                    remove_first(&mut current_row_extension, &gene_range_rel_p);
 
-            if let (Some(prev_gene_ext_part), Some(current_gene_ext_part)) =
-                (prev_matching_gene_ext_part, current_matching_gene_ext_part) {
-                    if current_row_extension == prev_row_extension &&
-                        prev_gene_ext_part.rel_type_name == current_gene_ext_part.rel_type_name {
-                            let merged_gene_ext_parts =
-                                merge_gene_ext_parts(&prev_gene_ext_part,
-                                                     &current_gene_ext_part);
-                            let mut new_ext = vec![merged_gene_ext_parts];
-                            new_ext.extend_from_slice(&prev_row_extension);
-                            prev_row.extension = new_ext;
-                        } else {
-                            ret_rows.push(prev_row);
-                            prev_row = current_row;
-                        }
-                } else {
-                    ret_rows.push(prev_row);
-                    prev_row = current_row
-                }
+                if let (Some(prev_gene_ext_part), Some(current_gene_ext_part)) =
+                    (prev_matching_gene_ext_part, current_matching_gene_ext_part) {
+                        if current_row_extension == prev_row_extension &&
+                            prev_gene_ext_part.rel_type_name == current_gene_ext_part.rel_type_name {
+                                let merged_gene_ext_parts =
+                                    merge_gene_ext_parts(&prev_gene_ext_part,
+                                                         &current_gene_ext_part);
+                                let mut new_ext = vec![merged_gene_ext_parts];
+                                new_ext.extend_from_slice(&prev_row_extension);
+                                prev_row.extension = new_ext;
+                            } else {
+                                ret_rows.push(prev_row);
+                                prev_row = current_row;
+                            }
+                    } else {
+                        ret_rows.push(prev_row);
+                        prev_row = current_row
+                    }
+            }
+
+            ret_rows.push(prev_row);
         }
-
-        ret_rows.push(prev_row);
     }
 
-    ret_rows
+    *rows = ret_rows;
 }
 
 // combine rows that have a gene or genotype but no extension into one row
@@ -268,7 +269,7 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
     }
 
     for mut term_annotation in term_annotations.iter_mut() {
-       if let Some(child_termids) = children_by_termid.get(&term_annotation.term.termid) {
+        if let Some(child_termids) = children_by_termid.get(&term_annotation.term.termid) {
             if term_annotation.summary.clone().unwrap().len() == 0 {
                 let mut found_child_match = false;
                 for child_termid in child_termids {
@@ -276,7 +277,7 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
                         found_child_match = true;
                     }
                 }
-                if !found_child_match {
+                if found_child_match {
                     term_annotation.summary = None;
                 }
             } else {
@@ -312,8 +313,6 @@ fn make_cv_summaries(config: &Config,
                      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                      include_gene: bool, include_genotype: bool,
                      term_and_annotations_vec: &mut Vec<OntTermAnnotations>) {
-    let mut result = vec![];
-
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let term = &term_and_annotations.term;
         let cv_config = config.cv_config_by_name(&term.cv_name);
@@ -374,15 +373,14 @@ fn make_cv_summaries(config: &Config,
         term_and_annotations.summary = Some(rows);
     }
 
-    remove_redundant_summaries(children_by_termid, &mut result);
+    remove_redundant_summaries(children_by_termid, term_and_annotations_vec);
 
     for ref mut term_and_annotations in term_and_annotations_vec.iter_mut() {
-        collect_summary_rows(&mut term_and_annotations.summary.clone().unwrap());
-
-        let cv_config = config.cv_config_by_name(&term_and_annotations.term.cv_name);
-
-        term_and_annotations.summary =
-            Some(collect_ext_summary_genes(&cv_config, &term_and_annotations.summary.clone().unwrap()));
+        if let Some(ref mut summary) = term_and_annotations.summary {
+            collect_summary_rows(summary);
+            let cv_config = config.cv_config_by_name(&term_and_annotations.term.cv_name);
+            collect_ext_summary_genes(&cv_config, summary);
+        }
     }
 }
 
