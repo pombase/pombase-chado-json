@@ -28,7 +28,7 @@ pub struct RelationOrder {
 pub struct TermFilterCategory {
     display_name: String,
     // this category matches these terms and their descendants
-    ancestors: Vec<InterestingParent>,
+    ancestors: Vec<TermId>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

@@ -666,7 +666,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
-    for (_, conf) in &config.cv_config {
+    for (cv_name, conf) in &config.cv_config {
         for filter in &conf.filters {
             match *filter {
                 FilterConfig::TermFilter {
@@ -675,13 +675,24 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
                 } => {
                     for category in categories {
                         for ancestor in &category.ancestors {
-                            ret.insert(ancestor.clone());
+                            for config_rel_name in DESCENDANT_REL_NAMES.iter() {
+                                if *config_rel_name == "has_part" &&
+                                    !HAS_PART_CV_NAMES.contains(&cv_name.as_str()) {
+                                        continue;
+                                    }
+                                ret.insert(InterestingParent {
+                                    termid: ancestor.clone(),
+                                    rel_name: String::from(*config_rel_name),
+                                });
+                            }
                         }
                     }
                 },
             }
         }
     }
+
+    print!("{:?}\n", ret);
 
     ret
 }
