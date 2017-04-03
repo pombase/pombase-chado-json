@@ -678,13 +678,13 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
 fn test_collect_ext_summary_genes() {
     let config = get_test_config();
 
-    let rows = get_test_summary_rows();
+    let mut rows = get_test_summary_rows();
     assert_eq!(rows.len(), 10);
 
-    let res = collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), &rows);
-    assert_eq!(res.len(), 8);
+    collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), &mut rows);
+    assert_eq!(rows.len(), 8);
 
-    let collected_ext = res.get(6).unwrap();
+    let collected_ext = rows.get(6).unwrap();
     let collected_ext_ext_part_1 = collected_ext.extension.get(0).unwrap();
     let summary_genes_vec = vec![vec![String::from("SPAC16.01")],
                                  vec![String::from("SPAC3G9.09c")]];
