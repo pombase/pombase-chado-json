@@ -692,8 +692,6 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
-    print!("{:?}\n", ret);
-
     ret
 }
 
