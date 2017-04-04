@@ -54,6 +54,7 @@ pub struct WebDataBuild<'a> {
     base_term_of_extensions: HashMap<TermId, TermId>,
 
     children_by_termid: HashMap<TermId, HashSet<TermId>>,
+    dbxrefs_of_features: HashMap<String, HashSet<String>>,
 
     possible_interesting_parents: HashSet<InterestingParent>,
 }
@@ -732,6 +733,7 @@ impl <'a> WebDataBuild<'a> {
             base_term_of_extensions: HashMap::new(),
 
             children_by_termid: HashMap::new(),
+            dbxrefs_of_features: HashMap::new(),
 
             possible_interesting_parents: get_possible_interesting_parents(config),
         }
@@ -946,6 +948,21 @@ impl <'a> WebDataBuild<'a> {
         ).push(Rc::new(ont_annotation_detail));
     }
 
+    fn process_dbxrefs(&mut self) {
+        let mut map = HashMap::new();
+
+        for feature_dbxref in self.raw.feature_dbxrefs.iter() {
+            let feature = &feature_dbxref.feature;
+            let dbxref = &feature_dbxref.dbxref;
+
+            map.entry(feature.uniquename.clone())
+                .or_insert(HashSet::new())
+                .insert(dbxref.identifier());
+        }
+
+        self.dbxrefs_of_features = map;
+    }
+
     fn process_references(&mut self) {
         for rc_publication in &self.raw.publications {
             let reference_uniquename = &rc_publication.uniquename;
@@ -1084,11 +1101,18 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn get_feature_dbxrefs(&self, feature: &Feature) -> HashSet<String> {
+        if let Some(dbxrefs) = self.dbxrefs_of_features.get(&feature.uniquename) {
+            dbxrefs.clone()
+        } else {
+            HashSet::new()
+        }
+    }
+
     fn store_gene_details(&mut self, feat: &Feature) {
         let location = self.make_location(&feat);
-
         let organism = make_organism_short(&feat.organism);
-
+        let dbxrefs = self.get_feature_dbxrefs(feat);
 
         let feature_type =
             if let Some(transcript_type) =
@@ -1105,6 +1129,7 @@ impl <'a> WebDataBuild<'a> {
             product: None,
             name_descriptions: vec![],
             synonyms: vec![],
+            dbxrefs: dbxrefs,
             feature_type: feature_type,
             characterisation_status: None,
             location: location,
@@ -2969,6 +2994,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     pub fn get_web_data(&mut self) -> WebData {
+        self.process_dbxrefs();
         self.process_references();
         self.make_feature_rel_maps();
         self.process_features();
@@ -3371,6 +3397,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         product: None,
         name_descriptions: vec![],
         synonyms: vec![],
+        dbxrefs: HashSet::new(),
         feature_type: "gene".into(),
         characterisation_status: None,
         location: None,

@@ -372,6 +372,8 @@ pub struct GeneDetails {
     pub product: Option<String>,
     pub name_descriptions: Vec<String>,
     pub synonyms: Vec<SynonymDetails>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub dbxrefs: HashSet<String>,
     pub feature_type: String,
     #[serde(skip_serializing_if="Option::is_none")]
     pub characterisation_status: Option<String>,
