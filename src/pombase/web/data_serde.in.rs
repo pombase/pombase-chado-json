@@ -372,6 +372,8 @@ pub struct GeneDetails {
     pub product: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub orfeome_identifier: Option<String>,
     pub name_descriptions: Vec<String>,
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]

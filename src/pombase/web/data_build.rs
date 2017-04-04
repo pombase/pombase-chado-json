@@ -1114,8 +1114,14 @@ impl <'a> WebDataBuild<'a> {
         let organism = make_organism_short(&feat.organism);
         let dbxrefs = self.get_feature_dbxrefs(feat);
 
-        let mut uniprot_identifier = None;
+        let mut orfeome_identifier = None;
+        for dbxref in dbxrefs.iter() {
+            if dbxref.starts_with("SPD:") {
+                orfeome_identifier = Some(String::from(&dbxref[4..]));
+            }
+        }
 
+        let mut uniprot_identifier = None;
         for prop in feat.featureprops.borrow().iter() {
             if prop.prop_type.name == "uniprot_identifier" {
                 uniprot_identifier = prop.value.clone();
@@ -1137,6 +1143,7 @@ impl <'a> WebDataBuild<'a> {
             organism: organism,
             product: None,
             uniprot_identifier: uniprot_identifier,
+            orfeome_identifier: orfeome_identifier,
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs: dbxrefs,
@@ -3406,6 +3413,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         },
         product: None,
         uniprot_identifier: None,
+        orfeome_identifier: None,
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
