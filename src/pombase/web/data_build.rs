@@ -68,10 +68,21 @@ fn get_maps() ->
     (HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new())
 }
 
-fn get_feat_rel_expression(feature_relationship: &FeatureRelationship) -> Option<String> {
-    for prop in feature_relationship.feature_relationshipprops.borrow().iter() {
-        if prop.prop_type.name == "expression" {
-            return prop.value.clone();
+fn get_feat_rel_expression(feature: &Feature,
+                           feature_relationship: &FeatureRelationship) -> Option<String> {
+    for feature_prop in feature.featureprops.borrow().iter() {
+        if feature_prop.prop_type.name == "allele_type" {
+            if let Some(ref value) = feature_prop.value {
+                if value == "deletion" {
+                    return Some("Null".into());
+                }
+            }
+        }
+    }
+
+    for rel_prop in feature_relationship.feature_relationshipprops.borrow().iter() {
+        if rel_prop.prop_type.name == "expression" {
+            return rel_prop.value.clone();
         }
     }
 
@@ -1028,10 +1039,11 @@ impl <'a> WebDataBuild<'a> {
                     }
                 if feature_rel.rel_type.name == "part_of" &&
                     object_type_name == "genotype" {
+                        let expression = get_feat_rel_expression(&feature_rel.subject, feature_rel);
                         let allele_and_expression =
                             AlleleAndExpression {
                                 allele_uniquename: subject_uniquename.clone(),
-                                expression: get_feat_rel_expression(feature_rel),
+                                expression: expression,
                             };
                         let entry = self.alleles_of_genotypes.entry(object_uniquename.clone());
                         entry.or_insert(Vec::new()).push(allele_and_expression);
