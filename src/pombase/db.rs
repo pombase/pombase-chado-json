@@ -21,6 +21,7 @@ pub struct Raw {
     pub feature_synonyms: Vec<Rc<FeatureSynonym>>,
     pub featureprops: Vec<Rc<Featureprop>>,
     pub featurelocs: Vec<Rc<Featureloc>>,
+    pub feature_dbxrefs: Vec<Rc<FeatureDbxref>>,
     pub feature_cvterms: Vec<Rc<FeatureCvterm>>,
     pub feature_cvtermprops: Vec<Rc<FeatureCvtermprop>>,
     pub feature_relationships: Vec<Rc<FeatureRelationship>>,
@@ -53,6 +54,11 @@ pub struct Db {
 pub struct Dbxref {
     pub accession: String,
     pub db: Rc<Db>,
+}
+impl Dbxref {
+    pub fn identifier(&self) -> String {
+        String::new() + &self.db.name + ":" + &self.accession
+    }
 }
 pub struct Cvterm {
     pub name: String,
@@ -127,6 +133,11 @@ pub struct FeatureSynonym {
     pub publication: Rc<Publication>,
     pub is_current: bool,
 }
+pub struct FeatureDbxref {
+    pub feature_dbxref_id: i32,
+    pub feature: Rc<Feature>,
+    pub dbxref: Rc<Dbxref>,
+}
 pub struct FeatureCvterm {
     pub feature_cvterm_id: i32,
     pub feature: Rc<Feature>,
@@ -172,6 +183,7 @@ impl Raw {
             publications: vec![], publicationprops: vec![],
             features: vec![], featureprops: vec![],
             featurelocs: vec![], feature_synonyms: vec![],
+            feature_dbxrefs: vec![],
             feature_cvterms: vec![], feature_cvtermprops: vec![],
             feature_relationships: vec![], chadoprops: vec![],
         };
@@ -183,6 +195,7 @@ impl Raw {
         let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
         let mut synonym_map: HashMap<i32, Rc<Synonym>> = HashMap::new();
         let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
+        let mut feature_dbxref_map: HashMap<i32, Rc<FeatureDbxref>> = HashMap::new();
         let mut feature_cvterm_map: HashMap<i32, Rc<FeatureCvterm>> = HashMap::new();
         let mut feature_relationship_map: HashMap<i32, Rc<FeatureRelationship>> = HashMap::new();
         let mut publication_map: HashMap<i32, Rc<Publication>> = HashMap::new();
@@ -404,6 +417,20 @@ impl Raw {
             };
             let rc_feature_synonym = Rc::new(feature_synonym);
             ret.feature_synonyms.push(rc_feature_synonym.clone());
+        }
+
+        for row in &conn.query("SELECT feature_dbxref_id, feature_id, dbxref_id FROM feature_dbxref", &[]).unwrap() {
+            let feature_dbxref_id = row.get(0);
+            let feature_id = row.get(1);
+            let dbxref_id: i32 = row.get(2);
+            let feature_dbxref = FeatureDbxref {
+                feature_dbxref_id: feature_dbxref_id,
+                feature: feature_map.get(&feature_id).unwrap().clone(),
+                dbxref: dbxref_map.get(&dbxref_id).unwrap().clone(),
+            };
+            let rc_feature_dbxref = Rc::new(feature_dbxref);
+            ret.feature_dbxrefs.push(rc_feature_dbxref.clone());
+            feature_dbxref_map.insert(feature_dbxref_id, rc_feature_dbxref);
         }
 
         for row in &conn.query("SELECT feature_cvterm_id, feature_id, cvterm_id, pub_id, is_not FROM feature_cvterm", &[]).unwrap() {
