@@ -32,12 +32,11 @@ pub struct TermFilterCategory {
 }
 
 #[derive(Deserialize, Clone, Debug)]
-pub enum FilterConfig {
-#[serde(rename = "term")]
-    TermFilter {
-        display_name: String,
-        categories: Vec<TermFilterCategory>,
-    }
+pub struct FilterConfig {
+    filter_name: String,
+    display_name: String,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    term_categories: Vec<TermFilterCategory>
 }
 
 #[derive(Deserialize, Clone, Debug)]

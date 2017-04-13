@@ -680,26 +680,19 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
 
     for (cv_name, conf) in &config.cv_config {
         for filter in &conf.filters {
-            match *filter {
-                FilterConfig::TermFilter {
-                    display_name: _,
-                    ref categories,
-                } => {
-                    for category in categories {
-                        for ancestor in &category.ancestors {
-                            for config_rel_name in DESCENDANT_REL_NAMES.iter() {
-                                if *config_rel_name == "has_part" &&
-                                    !HAS_PART_CV_NAMES.contains(&cv_name.as_str()) {
-                                        continue;
-                                    }
-                                ret.insert(InterestingParent {
-                                    termid: ancestor.clone(),
-                                    rel_name: String::from(*config_rel_name),
-                                });
+            for category in &filter.term_categories {
+                for ancestor in &category.ancestors {
+                    for config_rel_name in DESCENDANT_REL_NAMES.iter() {
+                        if *config_rel_name == "has_part" &&
+                            !HAS_PART_CV_NAMES.contains(&cv_name.as_str()) {
+                                continue;
                             }
-                        }
+                        ret.insert(InterestingParent {
+                            termid: ancestor.clone(),
+                            rel_name: String::from(*config_rel_name),
+                        });
                     }
-                },
+                }
             }
         }
     }
@@ -838,11 +831,16 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_gene_summary(&self, gene_uniquename: &str) -> GeneSummary {
         let gene_details = self.get_gene(&gene_uniquename);
+        let synonyms =
+            gene_details.synonyms.iter()
+            .filter(|synonym| synonym.synonym_type == "exact")
+            .map(|synonym| synonym.name.clone())
+            .collect::<Vec<String>>();
         GeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
-            synonyms: gene_details.synonyms.clone(),
+            synonyms: synonyms,
             feature_type: gene_details.feature_type.clone(),
             organism: gene_details.organism.clone(),
             location: gene_details.location.clone(),
