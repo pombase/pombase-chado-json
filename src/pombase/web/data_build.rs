@@ -2606,16 +2606,18 @@ impl <'a> WebDataBuild<'a> {
 
     pub fn make_search_api_maps(&self) -> SearchAPIMaps {
         let mut gene_summaries: Vec<GeneSummary> = vec![];
+        let load_org_full_name = self.config.load_organism.full_name();
 
-        let gene_uniquenames: Vec<String> =
-            self.genes.keys().map(|uniquename| uniquename.clone()).collect();
+        for (gene_uniquename, gene_details) in &self.genes {
+            let gene_genus_species = String::new() +
+                &gene_details.organism.genus + "_" + &gene_details.organism.species;
 
-        for gene_uniquename in gene_uniquenames {
-            gene_summaries.push(self.make_gene_summary(&gene_uniquename));
+            if gene_genus_species == load_org_full_name {
+                gene_summaries.push(self.make_gene_summary(&gene_uniquename));
+            }
         }
 
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
-
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
         let mut term_name_genes: HashMap<TermName, HashSet<GeneUniquename>> = HashMap::new();
 
@@ -3073,6 +3075,10 @@ impl <'a> WebDataBuild<'a> {
 #[allow(dead_code)]
 fn get_test_config() -> Config {
     let mut config = Config {
+        load_organism: ConfigOrganism {
+            genus: String::from("Schizosaccharomyces"),
+            species: String::from("pombe"),
+        },
         extension_display_names: vec![],
         extension_relation_order: RelationOrder {
             relation_order: vec![

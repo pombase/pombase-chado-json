@@ -71,8 +71,6 @@ fn main() {
                 "CONN_STR");
     opts.optopt("d", "output-directory",
                 "Destination directory for JSON output", "DIR");
-    opts.optopt("O", "organism",
-                "Only output genes from this organism (eg. 'Schizosaccharomyces_pombe')", "GENUS_SPECIES");
     opts.optflag("j", "store-json",
                  "optionally create a 'web_json' schema to store the generated JSON in the database");
 
@@ -103,16 +101,10 @@ fn main() {
         print_usage(&program, opts);
         process::exit(1);
     }
-    if !matches.opt_present("organism") {
-        print!("no -O|--organism option\n");
-        print_usage(&program, opts);
-        process::exit(1);
-    }
 
     let config = read_config(&matches.opt_str("c").unwrap());
     let connection_string = matches.opt_str("p").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
-    let organism_genus_species = matches.opt_str("O").unwrap();
 
     make_subdirs(&output_dir);
 
@@ -122,7 +114,7 @@ fn main() {
     let mut web_data_build = WebDataBuild::new(&raw, &config);
     let web_data = web_data_build.get_web_data();
 
-    web_data.write(&output_dir, &organism_genus_species);
+    web_data.write(&output_dir);
 
     if matches.opt_present("store-json") {
         conn.execute("DROP SCHEMA IF EXISTS web_json CASCADE", &[]).unwrap();

@@ -398,6 +398,10 @@ fn get_test_raw() -> Raw {
 
 fn get_test_config() -> Config {
     let mut config = Config {
+        load_organism: ConfigOrganism {
+            genus: String::from("Schizosaccharomyces"),
+            species: String::from("pombe"),
+        },
         extension_display_names: vec![],
         extension_relation_order: RelationOrder {
             relation_order: vec![

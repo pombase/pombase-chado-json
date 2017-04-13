@@ -59,7 +59,20 @@ pub type ShortEvidenceCode = String;
 pub type LongEvidenceCode = String;
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ConfigOrganism {
+    pub genus: String,
+    pub species: String,
+}
+
+impl ConfigOrganism {
+    pub fn full_name(&self) -> String {
+        self.genus.clone() + "_" + self.species.as_str()
+    }
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
+    pub load_organism: ConfigOrganism,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
     pub extension_relation_order: RelationOrder,
     pub evidence_types: HashMap<ShortEvidenceCode, LongEvidenceCode>,

@@ -104,17 +104,8 @@ impl WebData {
         }
     }
 
-    fn write_gene_summaries(&self, output_dir: &str, organism_genus_species: &str) {
-        let filtered_gene_summaries =
-            self.search_api_maps.gene_summaries.iter()
-            .filter(|gene_summary| {
-                let feature_org_genus_species = String::new() +
-                    &gene_summary.organism.genus + "_" + &gene_summary.organism.species;
-                feature_org_genus_species == organism_genus_species
-            })
-            .map(|gene_summary| gene_summary.clone())
-            .collect::<Vec<GeneSummary>>();
-        let s = serde_json::to_string(&filtered_gene_summaries).unwrap();
+    fn write_gene_summaries(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.search_api_maps.gene_summaries).unwrap();
         let file_name = String::new() + &output_dir + "/gene_summaries.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
@@ -147,14 +138,14 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
-    pub fn write(&self, output_dir: &str, organism_genus_species: &str) {
+    pub fn write(&self, output_dir: &str) {
         self.write_reference_details(output_dir);
         println!("wrote {} references", self.get_references().len());
         self.write_gene_details(output_dir);
         println!("wrote {} genes", self.get_genes().len());
         self.write_genotype_details(output_dir);
         println!("wrote {} genotypes", self.get_genotypes().len());
-        self.write_gene_summaries(output_dir, organism_genus_species);
+        self.write_gene_summaries(output_dir);
         println!("wrote gene summaries");
         self.write_terms(output_dir);
         println!("wrote {} terms", self.get_terms().len());
