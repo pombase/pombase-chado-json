@@ -1423,7 +1423,6 @@ impl <'a> WebDataBuild<'a> {
                                 None => None,
                             };
 
-
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
                             if prop.prop_type.name == "evidence" {
                                 if let Some(evidence_long) = prop.value.clone() {
@@ -1524,7 +1523,9 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    ref_details.ortholog_annotations.push(ortholog_annotation);
+                                     if self.config.load_organism == gene_details.organism {
+                                        ref_details.ortholog_annotations.push(ortholog_annotation);
+                                    }
                                 }
                             },
                             FeatureRelAnnotationType::Paralog => {
@@ -1544,32 +1545,60 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    ref_details.paralog_annotations.push(paralog_annotation);
+                                    if self.config.load_organism == gene_details.organism {
+                                        ref_details.paralog_annotations.push(paralog_annotation);
+                                    }
                                 }
                             }
                         }
 
-                        // for orthologs and paralogs, store the reverses annotation too
+                        // for orthologs and paralogs, store the reverse annotation too
                         let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
                         match rel_config.annotation_type {
                             FeatureRelAnnotationType::Interaction => {},
-                            FeatureRelAnnotationType::Ortholog =>
-                                other_gene_details.ortholog_annotations.push(
+                            FeatureRelAnnotationType::Ortholog => {
+                                let ortholog_annotation =
                                     OrthologAnnotation {
                                         gene_uniquename: other_gene_uniquename.clone(),
                                         ortholog_uniquename: gene_uniquename.clone(),
                                         ortholog_organism: gene_organism,
                                         evidence: evidence_clone,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
-                                    }),
-                            FeatureRelAnnotationType::Paralog =>
-                                other_gene_details.paralog_annotations.push(
+                                    };
+                                other_gene_details.ortholog_annotations.push(ortholog_annotation.clone());
+                                if let Some(ref_details) =
+                                    if let Some(ref reference_uniquename) = maybe_reference_uniquename {
+                                        self.references.get_mut(reference_uniquename)
+                                    } else {
+                                        None
+                                    }
+                                {
+                                    if self.config.load_organism == other_gene_details.organism {
+                                        ref_details.ortholog_annotations.push(ortholog_annotation);
+                                    }
+                                }
+                            },
+                            FeatureRelAnnotationType::Paralog => {
+                                let paralog_annotation = 
                                     ParalogAnnotation {
                                         gene_uniquename: other_gene_uniquename.clone(),
                                         paralog_uniquename: gene_uniquename.clone(),
                                         evidence: evidence_clone,
-                                        reference_uniquename: maybe_reference_uniquename
-                                    }),
+                                        reference_uniquename: maybe_reference_uniquename.clone(),
+                                    };
+                                other_gene_details.paralog_annotations.push(paralog_annotation.clone());
+                                if let Some(ref_details) =
+                                    if let Some(ref reference_uniquename) = maybe_reference_uniquename {
+                                        self.references.get_mut(reference_uniquename)
+                                    } else {
+                                        None
+                                    }
+                                {
+                                    if self.config.load_organism == other_gene_details.organism {
+                                        ref_details.paralog_annotations.push(paralog_annotation);
+                                    }
+                                }
+                            },
                         }
                     }
             }
