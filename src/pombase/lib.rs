@@ -3,3 +3,4 @@ extern crate bit_set;
 
 pub mod db;
 pub mod web;
+pub mod types;

@@ -8,14 +8,13 @@ use std::cmp::{Ordering, min};
 use regex::Regex;
 
 use db::*;
+use types::*;
 use web::data::*;
 use web::config::*;
 use web::vec_set::*;
 
-include!(concat!(env!("OUT_DIR"), "/config_serde.rs"));
-
-fn make_organism_short(rc_organism: &Rc<Organism>) -> OrganismShort {
-    OrganismShort {
+fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
+    ConfigOrganism {
         genus: rc_organism.genus.clone(),
         species: rc_organism.species.clone(),
     }
@@ -1109,7 +1108,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn store_gene_details(&mut self, feat: &Feature) {
         let location = self.make_location(&feat);
-        let organism = make_organism_short(&feat.organism);
+        let organism = make_organism(&feat.organism);
         let dbxrefs = self.get_feature_dbxrefs(feat);
 
         let mut orfeome_identifier = None;
@@ -1447,11 +1446,11 @@ impl <'a> WebDataBuild<'a> {
                         let evidence_clone = evidence.clone();
 
                         let gene_uniquename = subject_uniquename;
-                        let gene_organism_short = {
+                        let gene_organism = {
                             self.genes.get(subject_uniquename).unwrap().organism.clone()
                         };
                         let other_gene_uniquename = object_uniquename;
-                        let other_gene_organism_short = {
+                        let other_gene_organism = {
                             self.genes.get(object_uniquename).unwrap().organism.clone()
                         };
                         match rel_config.annotation_type {
@@ -1512,7 +1511,7 @@ impl <'a> WebDataBuild<'a> {
                                     OrthologAnnotation {
                                         gene_uniquename: gene_uniquename.clone(),
                                         ortholog_uniquename: other_gene_uniquename.clone(),
-                                        ortholog_organism: other_gene_organism_short,
+                                        ortholog_organism: other_gene_organism,
                                         evidence: evidence,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                     };
@@ -1559,7 +1558,7 @@ impl <'a> WebDataBuild<'a> {
                                     OrthologAnnotation {
                                         gene_uniquename: other_gene_uniquename.clone(),
                                         ortholog_uniquename: gene_uniquename.clone(),
-                                        ortholog_organism: gene_organism_short,
+                                        ortholog_organism: gene_organism,
                                         evidence: evidence_clone,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                     }),
@@ -3411,7 +3410,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
     GeneDetails {
         uniquename: uniquename.into(),
         name: name.map(str::to_string),
-        organism: OrganismShort {
+        organism: ConfigOrganism {
             genus: "Schizosaccharomyces".into(),
             species: "pombe".into(),
         },

@@ -18,6 +18,7 @@ use std::io::BufReader;
 extern crate pombase;
 
 use pombase::db::*;
+use pombase::web::config::*;
 use pombase::web::data_build::*;
 
 const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");

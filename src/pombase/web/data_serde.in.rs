@@ -3,7 +3,8 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::collections::HashSet;
 
-
+use web::config::*;
+use types::*;
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub enum ExtRange {
@@ -49,7 +50,7 @@ pub struct GeneSummary {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<GeneName>,
-    pub organism: OrganismShort,
+    pub organism: ConfigOrganism,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
     pub synonyms: Vec<String>,
@@ -357,17 +358,11 @@ pub struct ChromosomeLocation {
 }
 
 #[derive(Serialize, Clone, Debug)]
-pub struct OrganismShort {
-    pub genus: String,
-    pub species: String,
-}
-
-#[derive(Serialize, Clone, Debug)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
-    pub organism: OrganismShort,
+    pub organism: ConfigOrganism,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -539,7 +534,7 @@ impl PartialOrd for InteractionAnnotation {
 #[derive(Serialize, Clone, Debug)]
 pub struct OrthologAnnotation {
     pub gene_uniquename: GeneUniquename,
-    pub ortholog_organism: OrganismShort,
+    pub ortholog_organism: ConfigOrganism,
     pub ortholog_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,

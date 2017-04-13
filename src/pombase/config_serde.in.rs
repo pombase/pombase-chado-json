@@ -26,17 +26,17 @@ pub struct RelationOrder {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct TermFilterCategory {
-    display_name: String,
+    pub display_name: String,
     // this category matches these terms and their descendants
-    ancestors: Vec<TermId>,
+    pub ancestors: Vec<String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct FilterConfig {
-    filter_name: String,
-    display_name: String,
+    pub filter_name: String,
+    pub display_name: String,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    term_categories: Vec<TermFilterCategory>
+    pub term_categories: Vec<TermFilterCategory>
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -58,7 +58,7 @@ pub struct CvConfig {
 pub type ShortEvidenceCode = String;
 pub type LongEvidenceCode = String;
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ConfigOrganism {
     pub genus: String,
     pub species: String,

@@ -5,6 +5,8 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use self::postgres::Connection;
 
+use types::*;
+
 pub struct Raw {
     pub organisms: Vec<Rc<Organism>>,
     pub cvs: Vec<Rc<Cv>>,
@@ -44,7 +46,6 @@ pub struct Organism {
     pub abbreviation: String,
     pub common_name: String,
 }
-pub type CvName = String;
 pub struct Cv {
     pub name: CvName,
 }
