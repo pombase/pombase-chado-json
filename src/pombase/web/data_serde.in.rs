@@ -52,7 +52,7 @@ pub struct GeneSummary {
     pub organism: OrganismShort,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
-    pub synonyms: Vec<SynonymDetails>,
+    pub synonyms: Vec<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     pub feature_type: String,
