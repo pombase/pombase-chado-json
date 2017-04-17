@@ -753,11 +753,11 @@ fn test_terms() {
     let go0031030_cvterm = web_data.terms.get("GO:0031030").unwrap();
     assert_eq!("negative regulation of septation initiation signaling",
                go0031030_cvterm.name);
-    assert_eq!(go0031030_cvterm.rel_annotations.len(), 1);
+    assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 
     let bp_cvterm = web_data.terms.get("GO:0008150").unwrap();
     assert_eq!("biological_process", bp_cvterm.name);
-    assert_eq!(go0031030_cvterm.rel_annotations.len(), 1);
+    assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 }
 
 #[test]
