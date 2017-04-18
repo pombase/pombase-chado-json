@@ -236,7 +236,7 @@ impl WithFromValue {
 #[derive(Serialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
-    pub gene_uniquename: Option<GeneUniquename>,
+    pub genes: Vec<GeneUniquename>,
     pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
@@ -327,8 +327,8 @@ impl Hash for TermSummaryRow {
 pub struct TargetOfAnnotation {
     pub ontology_name: String,
     pub ext_rel_display_name: String,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub gene_uniquename: Option<GeneUniquename>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub genes: Vec<GeneUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype_uniquename: Option<GenotypeUniquename>,
     pub reference_uniquename: Option<ReferenceUniquename>,
