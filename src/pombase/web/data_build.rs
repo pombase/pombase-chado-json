@@ -331,19 +331,23 @@ fn make_cv_summaries(config: &Config,
         let mut rows = vec![];
 
         for annotation in &term_and_annotations.annotations {
-            let mut gene_uniquenames = vec![];
+            let gene_uniquenames =
+                if include_gene && cv_config.feature_type == "gene" {
+                    annotation.genes.clone()
+                } else {
+                    vec![]
+                };
 
-            if include_gene && cv_config.feature_type == "gene" {
-                gene_uniquenames = annotation.genes.clone();
-            }
-
-            let mut genotype_uniquenames = vec![];
-
-            if include_genotype && cv_config.feature_type == "genotype" {
-                if let Some(ref genotype_uniquename) = annotation.genotype_uniquename {
-                    genotype_uniquenames = vec![genotype_uniquename.clone()];
-                }
-            }
+            let genotype_uniquenames =
+                if include_genotype && cv_config.feature_type == "genotype" {
+                    if let Some(ref genotype_uniquename) = annotation.genotype_uniquename {
+                        vec![genotype_uniquename.clone()]
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                };
 
             let summary_relations_to_hide = &cv_config.summary_relations_to_hide;
 
