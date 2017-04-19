@@ -94,7 +94,7 @@ fn is_gene_type(feature_type_name: &str) -> bool {
 }
 
 pub fn remove_first<T, P>(vec: &mut Vec<T>, predicate: P) -> Option<T>
-   where P: FnMut(&T) -> bool {
+    where P: FnMut(&T) -> bool {
     if let Some(pos) = vec.iter().position(predicate) {
         return Some(vec.remove(pos));
     }
@@ -135,8 +135,9 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
             }
         };
     let mut ret_rows = vec![];
+
     {
-    let mut row_iter = rows.iter().cloned();
+        let mut row_iter = rows.iter().cloned();
 
         if let Some(mut prev_row) = row_iter.next() {
             for current_row in row_iter {
@@ -305,7 +306,7 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
                                         break;
                                     }
                                 }
-                        }
+                            }
                     }
                     if !found_child_match {
                         filtered_rows.push(row.clone());
@@ -1531,7 +1532,7 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                     if self.config.load_organism == gene_details.organism {
+                                    if self.config.load_organism == gene_details.organism {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
                                 }
@@ -1587,7 +1588,7 @@ impl <'a> WebDataBuild<'a> {
                                 }
                             },
                             FeatureRelAnnotationType::Paralog => {
-                                let paralog_annotation = 
+                                let paralog_annotation =
                                     ParalogAnnotation {
                                         gene_uniquename: other_gene_uniquename.clone(),
                                         paralog_uniquename: gene_uniquename.clone(),
@@ -2031,8 +2032,8 @@ impl <'a> WebDataBuild<'a> {
         if evidence_code.is_some() &&
             evidence_code.unwrap() == "IPI" &&
             (base_term_short.termid == "GO:0005515" ||
-            base_term_short.interesting_parents
-            .contains("GO:0005515")) {
+             base_term_short.interesting_parents
+             .contains("GO:0005515")) {
                 extension.push(self.get_with_extension(&with_value));
             } else {
                 return self.make_with_or_from_value(with_value);
@@ -2172,37 +2173,37 @@ impl <'a> WebDataBuild<'a> {
                     Some(publication.uniquename.clone())
                 };
 
-                let mut extra_props_clone = extra_props.clone();
-                let copies_per_cell = extra_props_clone.remove("quant_gene_ex_copies_per_cell");
-                let avg_copies_per_cell = extra_props_clone.remove("quant_gene_ex_avg_copies_per_cell");
-                let scale = extra_props_clone.remove("scale");
-                let gene_ex_props =
-                    if copies_per_cell.is_some() || avg_copies_per_cell.is_some() {
-                        Some(GeneExProps {
-                            copies_per_cell: copies_per_cell,
-                            avg_copies_per_cell: avg_copies_per_cell,
-                            scale: scale,
-                        })
-                    } else {
-                        None
-                    };
-                let annotation = OntAnnotationDetail {
-                    id: feature_cvterm.feature_cvterm_id,
-                    genes: gene_uniquenames_vec,
-                    reference: reference_uniquename.clone(),
-                    genotype: maybe_genotype_uniquename.clone(),
-                    with: with.clone(),
-                    from: from.clone(),
-                    residue: extra_props_clone.remove("residue"),
-                    gene_ex_props: gene_ex_props,
-                    qualifiers: qualifiers.clone(),
-                    evidence: evidence.clone(),
-                    conditions: conditions.clone(),
-                    extension: extension.clone(),
+            let mut extra_props_clone = extra_props.clone();
+            let copies_per_cell = extra_props_clone.remove("quant_gene_ex_copies_per_cell");
+            let avg_copies_per_cell = extra_props_clone.remove("quant_gene_ex_avg_copies_per_cell");
+            let scale = extra_props_clone.remove("scale");
+            let gene_ex_props =
+                if copies_per_cell.is_some() || avg_copies_per_cell.is_some() {
+                    Some(GeneExProps {
+                        copies_per_cell: copies_per_cell,
+                        avg_copies_per_cell: avg_copies_per_cell,
+                        scale: scale,
+                    })
+                } else {
+                    None
                 };
+            let annotation = OntAnnotationDetail {
+                id: feature_cvterm.feature_cvterm_id,
+                genes: gene_uniquenames_vec,
+                reference: reference_uniquename.clone(),
+                genotype: maybe_genotype_uniquename.clone(),
+                with: with.clone(),
+                from: from.clone(),
+                residue: extra_props_clone.remove("residue"),
+                gene_ex_props: gene_ex_props,
+                qualifiers: qualifiers.clone(),
+                evidence: evidence.clone(),
+                conditions: conditions.clone(),
+                extension: extension.clone(),
+            };
 
-                self.add_annotation(cvterm.borrow(), feature_cvterm.is_not,
-                                    annotation);
+            self.add_annotation(cvterm.borrow(), feature_cvterm.is_not,
+                                annotation);
         }
     }
 
@@ -2262,9 +2263,9 @@ impl <'a> WebDataBuild<'a> {
                         term: term_short.clone(),
                         is_not: is_not,
                         rel_names: HashSet::new(),
-                        annotations: vec![], 
+                        annotations: vec![],
                         summary: None,
-                   };
+                    };
                 let mut multi_allele =
                     OntTermAnnotations {
                         term: term_short.clone(),
@@ -2307,9 +2308,9 @@ impl <'a> WebDataBuild<'a> {
                           term: term_short.clone(),
                           is_not: is_not,
                           rel_names: HashSet::new(),
-                          annotations: details.clone(), 
+                          annotations: details.clone(),
                           summary: None,
-                     })]
+                      })]
             }
         }
     }
@@ -2496,7 +2497,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     // return true if the term could or should appear in the interesting_parents
-    // field of the TermDetails and TermShort structs 
+    // field of the TermDetails and TermShort structs
     fn is_interesting_parent(&self, termid: &str, rel_name: &str) -> bool {
         return self.possible_interesting_parents.contains(&InterestingParent {
             termid: termid.into(),
@@ -2721,34 +2722,34 @@ impl <'a> WebDataBuild<'a> {
              mut seen_alleles, mut seen_terms) = get_maps();
 
         for (termid, term_details) in &self.terms {
-           for (_, term_annotations) in &term_details.cv_annotations {
-               for term_annotation in term_annotations {
-                   for detail in &term_annotation.annotations {
-                       for gene_uniquename in &detail.genes {
-                           self.add_gene_to_hash(&mut seen_genes, termid.clone(), gene_uniquename.clone());
-                       }
-                       self.add_ref_to_hash(&mut seen_references, termid.clone(), detail.reference.clone());
-                       for condition_termid in &detail.conditions {
-                           self.add_term_to_hash(&mut seen_terms, termid.clone(), condition_termid.clone());
-                       }
-                       for ext_part in &detail.extension {
-                           match ext_part.ext_range {
-                               ExtRange::Term(ref range_termid) =>
-                                   self.add_term_to_hash(&mut seen_terms, termid.clone(), range_termid.clone()),
-                               ExtRange::Gene(ref allele_gene_uniquename) =>
-                                   self.add_gene_to_hash(&mut seen_genes, termid.clone(),
-                                                         allele_gene_uniquename.clone()),
-                               _ => {},
-                           }
-                       }
-                       if let Some(ref genotype_uniquename) = detail.genotype {
-                           self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
-                                                     &mut seen_genes, termid.clone(),
-                                                     &genotype_uniquename);
-                       }
-                   }
-               }
-           }
+            for (_, term_annotations) in &term_details.cv_annotations {
+                for term_annotation in term_annotations {
+                    for detail in &term_annotation.annotations {
+                        for gene_uniquename in &detail.genes {
+                            self.add_gene_to_hash(&mut seen_genes, termid.clone(), gene_uniquename.clone());
+                        }
+                        self.add_ref_to_hash(&mut seen_references, termid.clone(), detail.reference.clone());
+                        for condition_termid in &detail.conditions {
+                            self.add_term_to_hash(&mut seen_terms, termid.clone(), condition_termid.clone());
+                        }
+                        for ext_part in &detail.extension {
+                            match ext_part.ext_range {
+                                ExtRange::Term(ref range_termid) =>
+                                    self.add_term_to_hash(&mut seen_terms, termid.clone(), range_termid.clone()),
+                                ExtRange::Gene(ref allele_gene_uniquename) =>
+                                    self.add_gene_to_hash(&mut seen_genes, termid.clone(),
+                                                          allele_gene_uniquename.clone()),
+                                _ => {},
+                            }
+                        }
+                        if let Some(ref genotype_uniquename) = detail.genotype {
+                            self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                      &mut seen_genes, termid.clone(),
+                                                      &genotype_uniquename);
+                        }
+                    }
+                }
+            }
         }
 
         for (termid, term_details) in &mut self.terms {
@@ -2764,10 +2765,10 @@ impl <'a> WebDataBuild<'a> {
             if let Some(references) = seen_references.remove(termid) {
                 term_details.references_by_uniquename = references;
             }
-             if let Some(terms) = seen_terms.remove(termid) {
+            if let Some(terms) = seen_terms.remove(termid) {
                 term_details.terms_by_termid = terms;
             }
-       }
+        }
     }
 
     fn set_gene_details_maps(&mut self) {
@@ -2813,7 +2814,7 @@ impl <'a> WebDataBuild<'a> {
                                                   &annotation_genotype_uniquename.clone())
                     }
                     self.add_ref_to_hash(&mut seen_references, gene_uniquename.clone(),
-                                    target_of_annotation.reference_uniquename.clone());
+                                         target_of_annotation.reference_uniquename.clone());
                 }
             }
         }
@@ -2898,7 +2899,7 @@ impl <'a> WebDataBuild<'a> {
                                         self.add_term_to_hash(&mut seen_terms, reference_uniquename.clone(), range_termid.clone()),
                                     ExtRange::Gene(ref allele_gene_uniquename) =>
                                         self.add_gene_to_hash(&mut seen_genes, reference_uniquename.clone(),
-                                                         allele_gene_uniquename.clone()),
+                                                              allele_gene_uniquename.clone()),
                                     _ => {},
                                 }
                             }
@@ -2907,9 +2908,9 @@ impl <'a> WebDataBuild<'a> {
                                 self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                           reference_uniquename.clone(),
                                                           &genotype.uniquename);
-                           }
+                            }
                         }
-                   }
+                    }
                 }
 
                 let interaction_iter =
@@ -3176,62 +3177,62 @@ fn test_compare_ext_part_with_config() {
         ext_range: ExtRange::Misc(String::from("misc_ext_part_2")),
     };
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Equal);
+               Ordering::Equal);
 
     ext_part1.rel_type_name = "directly_positively_regulates".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Less);
+               Ordering::Less);
 
     ext_part1.rel_type_name = "has_direct_input".into();
     ext_part2.rel_type_name = "directly_positively_regulates".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Greater);
+               Ordering::Greater);
 
     ext_part2.rel_type_name = "absent_during".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Less);
+               Ordering::Less);
 
     ext_part2.rel_type_name = "misc_rel".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Less);
+               Ordering::Less);
 
     ext_part1.rel_type_name = "other_misc_rel".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Greater);
+               Ordering::Greater);
 
     ext_part1.rel_type_name = "other_misc_rel".into();
     ext_part2.rel_type_name = "other_misc_rel".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Equal);
+               Ordering::Equal);
 
     ext_part2.rel_type_name = "happens_during".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Less);
+               Ordering::Less);
 
     ext_part1.rel_type_name = "happens_during".into();
     ext_part2.rel_type_name = "misc_rel".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Greater);
+               Ordering::Greater);
 
     ext_part1.rel_type_name = "has_direct_input".into();
     ext_part2.rel_type_name = "happens_during".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Less);
+               Ordering::Less);
 
     ext_part1.rel_type_name = "happens_during".into();
     ext_part2.rel_type_name = "has_direct_input".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Greater);
+               Ordering::Greater);
 
     ext_part1.rel_type_name = "happens_during".into();
     ext_part2.rel_type_name = "exists_during".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Less);
+               Ordering::Less);
 
     ext_part1.rel_type_name = "happens_during".into();
     ext_part2.rel_type_name = "happens_during".into();
     assert_eq!(compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
-            Ordering::Equal);
+               Ordering::Equal);
 }
 
 #[allow(dead_code)]
@@ -3249,9 +3250,9 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
     let annotations1 =
         vec![
             make_one_detail(188448, "SPBC11B10.09", "PMID:3322810", None,
-                                    "IDA", vec![], vec![]),
+                            "IDA", vec![], vec![]),
             make_one_detail(202017,"SPBC11B10.09", "PMID:2665944", None,
-                                    "IDA", vec![], vec![]),
+                            "IDA", vec![], vec![]),
         ];
     let ont_term1 = OntTermAnnotations {
         term: TermShort {
@@ -3267,7 +3268,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
         rel_names: HashSet::new(),
         annotations: annotations1,
         summary: None,
-   };
+    };
 
     let annotations2 =
         vec![
@@ -3750,7 +3751,7 @@ fn test_cmp_ont_annotation_detail() {
              ("SPBC11B10.09", "PMID:19523829" /* has_direct_input(mde4), part_of(...), happens_during(...) */),
              ("SPBC11B10.09", "PMID:9242669" /* has_direct_input(sds23) */),
              ("SPBC11B10.09", "PMID:11937031" /* has_direct_input(SPBC32F12.09) */),
-             ]
+        ]
         .iter()
         .map(|&(gene, reference)|
              (gene.into(), reference.into())).collect();
@@ -3791,7 +3792,7 @@ fn get_test_summaries() -> Vec<OntTermAnnotations> {
     let ext = make_test_ext_part("part_of", "involved in",
                                  ExtRange::Term("GO:1905785".into()));
     let ext2 = make_test_ext_part("some_rel", "some_rel_display_name",
-                                 ExtRange::Term("GO:1234567".into()));
+                                  ExtRange::Term("GO:1234567".into()));
 
     summaries.push(make_test_summary("GO:0022403", vec![]));
     summaries.push(make_test_summary("GO:0051318",
