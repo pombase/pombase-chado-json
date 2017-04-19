@@ -340,7 +340,7 @@ fn make_cv_summaries(config: &Config,
 
             let genotype_uniquenames =
                 if include_genotype && cv_config.feature_type == "genotype" {
-                    if let Some(ref genotype_uniquename) = annotation.genotype_uniquename {
+                    if let Some(ref genotype_uniquename) = annotation.genotype {
                         vec![genotype_uniquename.clone()]
                     } else {
                         vec![]
@@ -635,8 +635,8 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
                              genotypes: &UniquenameGenotypeMap,
                              alleles: &UniquenameAlleleMap,
                              terms: &TermIdDetailsMap) -> Ordering {
-    if let Some(ref detail1_genotype_uniquename) = detail1.genotype_uniquename {
-        if let Some(ref detail2_genotype_uniquename) = detail2.genotype_uniquename {
+    if let Some(ref detail1_genotype_uniquename) = detail1.genotype {
+        if let Some(ref detail2_genotype_uniquename) = detail2.genotype {
             let genotype1 = genotypes.get(detail1_genotype_uniquename).unwrap();
             let genotype2 = genotypes.get(detail2_genotype_uniquename).unwrap();
 
@@ -652,7 +652,7 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
  one a gene:\n{:?}\n{:?}\n");
         }
     } else {
-        if detail2.genotype_uniquename.is_some() {
+        if detail2.genotype.is_some() {
             panic!("comparing two OntAnnotationDetail but one has a genotype and
  one a gene:\n{:?}\n{:?}\n");
         } else {
@@ -1699,8 +1699,8 @@ impl <'a> WebDataBuild<'a> {
                         let new_annotations =
                             self.make_target_of_for_ext(&term_details.cv_name,
                                                         &annotation.genes,
-                                                        &annotation.genotype_uniquename,
-                                                        &annotation.reference_uniquename,
+                                                        &annotation.genotype,
+                                                        &annotation.reference,
                                                         &term_details.termid, &annotation.extension);
                         for (target_gene_uniquename, new_annotation) in new_annotations {
                             target_of_annotations
@@ -2189,8 +2189,8 @@ impl <'a> WebDataBuild<'a> {
                 let annotation = OntAnnotationDetail {
                     id: feature_cvterm.feature_cvterm_id,
                     genes: gene_uniquenames_vec,
-                    reference_uniquename: reference_uniquename.clone(),
-                    genotype_uniquename: maybe_genotype_uniquename.clone(),
+                    reference: reference_uniquename.clone(),
+                    genotype: maybe_genotype_uniquename.clone(),
                     with: with.clone(),
                     from: from.clone(),
                     residue: extra_props_clone.remove("residue"),
@@ -2275,7 +2275,7 @@ impl <'a> WebDataBuild<'a> {
                     };
 
                 for detail in details {
-                    let genotype_uniquename = detail.genotype_uniquename.clone().unwrap();
+                    let genotype_uniquename = detail.genotype.clone().unwrap();
                     if let Some(genotype_details) = self.genotypes.get(&genotype_uniquename) {
                         if genotype_details.expressed_alleles.len() == 1 {
                             single_allele.annotations.push(detail.clone())
@@ -2383,7 +2383,7 @@ impl <'a> WebDataBuild<'a> {
                         .push(detail.clone());
                 }
 
-                if let Some(ref genotype_uniquename) = detail.genotype_uniquename {
+                if let Some(ref genotype_uniquename) = detail.genotype {
                     let mut existing =
                         genotype_annotation_by_term.entry(genotype_uniquename.clone())
                         .or_insert(HashMap::new())
@@ -2394,7 +2394,7 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
 
-                if let Some(reference_uniquename) = detail.reference_uniquename.clone() {
+                if let Some(reference_uniquename) = detail.reference.clone() {
                     ref_annotation_by_term.entry(reference_uniquename)
                         .or_insert(HashMap::new())
                         .entry(termid.clone())
@@ -2691,7 +2691,7 @@ impl <'a> WebDataBuild<'a> {
             for feat_annotation in feat_annotations.iter() {
                 for detail in &feat_annotation.annotations {
                     self.add_ref_to_hash(seen_references,
-                                         identifier.clone(), detail.reference_uniquename.clone());
+                                         identifier.clone(), detail.reference.clone());
                     for condition_termid in &detail.conditions {
                         self.add_term_to_hash(seen_terms,
                                               identifier.clone(), condition_termid.clone());
@@ -2706,7 +2706,7 @@ impl <'a> WebDataBuild<'a> {
                             _ => {},
                         }
                     }
-                    if let Some(ref genotype_uniquename) = detail.genotype_uniquename {
+                    if let Some(ref genotype_uniquename) = detail.genotype {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
                                                   identifier.clone(),
                                                   &genotype_uniquename);
@@ -2727,7 +2727,7 @@ impl <'a> WebDataBuild<'a> {
                        for gene_uniquename in &detail.genes {
                            self.add_gene_to_hash(&mut seen_genes, termid.clone(), gene_uniquename.clone());
                        }
-                       self.add_ref_to_hash(&mut seen_references, termid.clone(), detail.reference_uniquename.clone());
+                       self.add_ref_to_hash(&mut seen_references, termid.clone(), detail.reference.clone());
                        for condition_termid in &detail.conditions {
                            self.add_term_to_hash(&mut seen_terms, termid.clone(), condition_termid.clone());
                        }
@@ -2741,7 +2741,7 @@ impl <'a> WebDataBuild<'a> {
                                _ => {},
                            }
                        }
-                       if let Some(ref genotype_uniquename) = detail.genotype_uniquename {
+                       if let Some(ref genotype_uniquename) = detail.genotype {
                            self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
                                                      &mut seen_genes, termid.clone(),
                                                      &genotype_uniquename);
@@ -2902,7 +2902,7 @@ impl <'a> WebDataBuild<'a> {
                                     _ => {},
                                 }
                             }
-                            if let Some(ref genotype_uniquename) = detail.genotype_uniquename {
+                            if let Some(ref genotype_uniquename) = detail.genotype {
                                 let genotype = self.make_genotype_short(genotype_uniquename);
                                 self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                           reference_uniquename.clone(),
@@ -2963,7 +2963,7 @@ impl <'a> WebDataBuild<'a> {
                         for gene_uniquename in &annotation.genes {
                             seen_genes.insert(gene_uniquename.clone());
                         }
-                        if let Some(ref genotype_uniquename) = annotation.genotype_uniquename {
+                        if let Some(ref genotype_uniquename) = annotation.genotype {
                             seen_genotypes.insert(genotype_uniquename.clone());
                             let genotype = self.genotypes.get(genotype_uniquename).unwrap();
                             if genotype.expressed_alleles.len() == 1 {
@@ -3365,8 +3365,8 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
     Rc::new(OntAnnotationDetail {
         id: id,
         genes: vec![gene_uniquename.into()],
-        genotype_uniquename: maybe_genotype_uniquename.map(str::to_string),
-        reference_uniquename: Some(reference_uniquename.into()),
+        genotype: maybe_genotype_uniquename.map(str::to_string),
+        reference: Some(reference_uniquename.into()),
         evidence: Some(evidence.into()),
         with: WithFromValue::None,
         from: WithFromValue::None,
@@ -3724,7 +3724,7 @@ fn test_cmp_ont_annotation_detail() {
     assert_eq!(details_vec.drain(0..)
                .map(|detail| {
                    let genotype_uniquename: String =
-                       (*detail).clone().genotype_uniquename.unwrap();
+                       (*detail).clone().genotype.unwrap();
                    let genotype = genotypes.get(&genotype_uniquename).unwrap();
                    genotype_display_name(&genotype, &alleles)
                }).collect::<Vec<String>>(),
@@ -3738,7 +3738,7 @@ fn test_cmp_ont_annotation_detail() {
     let annotation_sort_results: Vec<(String, String)> =
         extension_details_vec.iter().map(|detail| {
             ((*detail).genes[0].clone(),
-             (*detail).reference_uniquename.clone().unwrap())
+             (*detail).reference.clone().unwrap())
         }).collect();
 
     let expected_annotation_sort: Vec<(String, String)> =

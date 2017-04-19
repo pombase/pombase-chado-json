@@ -237,7 +237,7 @@ impl WithFromValue {
 pub struct OntAnnotationDetail {
     pub id: i32,
     pub genes: Vec<GeneUniquename>,
-    pub reference_uniquename: Option<ReferenceUniquename>,
+    pub reference: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
@@ -252,7 +252,7 @@ pub struct OntAnnotationDetail {
     pub gene_ex_props: Option<GeneExProps>,
     // only for genotype/phenotype annotation:
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_uniquename: Option<GenotypeUniquename>,
+    pub genotype: Option<GenotypeUniquename>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub conditions: Vec<TermId>,
 }
