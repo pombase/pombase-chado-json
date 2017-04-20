@@ -532,16 +532,9 @@ fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
 
 fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails,
                  alleles: &UniquenameAlleleMap) -> Ordering {
-    // single allele genotypes come first
-    let ord = genotype1.expressed_alleles.len().cmp(&genotype2.expressed_alleles.len());
-
-    if ord == Ordering::Equal {
-        let name1 = genotype_display_name(genotype1, alleles);
-        let name2 = genotype_display_name(genotype2, alleles);
-        name1.to_lowercase().cmp(&name2.to_lowercase())
-    } else {
-        ord
-    }
+    let name1 = genotype_display_name(genotype1, alleles);
+    let name2 = genotype_display_name(genotype2, alleles);
+    name1.to_lowercase().cmp(&name2.to_lowercase())
 }
 
 
