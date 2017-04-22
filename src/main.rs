@@ -4,7 +4,6 @@ extern crate getopts;
 extern crate bit_set;
 extern crate serde;
 extern crate serde_json;
-extern crate serde_yaml;
 
 use postgres::{Connection, TlsMode};
 
