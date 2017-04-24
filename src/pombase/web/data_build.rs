@@ -1662,7 +1662,7 @@ impl <'a> WebDataBuild<'a> {
                         ext_config.reciprocal_display {
                             let (annotation_gene_uniquenames, annotation_genotype_uniquename) =
                                 if maybe_genotype_uniquename.is_some() {
-                                    (vec![], maybe_genotype_uniquename.clone())
+                                    (genes.clone(), maybe_genotype_uniquename.clone())
                                 } else {
                                     (genes.clone(), None)
                                 };
