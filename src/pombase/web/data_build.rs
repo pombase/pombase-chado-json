@@ -1746,7 +1746,7 @@ impl <'a> WebDataBuild<'a> {
                                 genotype.expressed_alleles[0].allele_uniquename.clone();
                             let allele = self.alleles.get(&allele_uniquename).unwrap();
                             if allele.allele_type != "deletion" {
-                                break 'ANNOTATION;
+                                continue 'ANNOTATION;
                             }
 
                             let interesting_parents = &term_annotation.term.interesting_parents;
