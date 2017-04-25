@@ -415,6 +415,7 @@ fn get_test_config() -> Config {
             viable: "FYPO:0002058".into(),
             inviable: "FYPO:0002059".into(),
         },
+        go_slim_terms: vec![],
     };
 
     config.cv_config.insert(String::from("molecular_function"),

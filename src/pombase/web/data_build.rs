@@ -679,6 +679,21 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
+    for go_slim_conf in &config.go_slim_terms {
+        ret.insert(InterestingParent {
+            termid: go_slim_conf.termid.clone(),
+            rel_name: "is_a".into(),
+        });
+        ret.insert(InterestingParent {
+            termid: go_slim_conf.termid.clone(),
+            rel_name: "part_of".into(),
+        });
+        ret.insert(InterestingParent {
+            termid: go_slim_conf.termid.clone(),
+            rel_name: "regulates".into(),
+        });
+    }
+
     for (cv_name, conf) in &config.cv_config {
         for filter in &conf.filters {
             for category in &filter.term_categories {
@@ -3249,6 +3264,7 @@ fn get_test_config() -> Config {
             viable: "FYPO:0002058".into(),
             inviable: "FYPO:0002059".into(),
         },
+        go_slim_terms: vec![],
     };
 
     config.cv_config.insert(String::from("molecular_function"),

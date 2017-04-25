@@ -81,6 +81,12 @@ pub struct ViabilityTerms {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct TermAndName {
+    pub termid: String,
+    pub name: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub load_organism: ConfigOrganism,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
@@ -92,6 +98,7 @@ pub struct Config {
 // interesting_parents field of the TermShort
     pub interesting_parents: Vec<InterestingParent>,
     pub viability_terms: ViabilityTerms,
+    pub go_slim_terms: Vec<TermAndName>,
 }
 
 impl Config {
