@@ -1726,6 +1726,13 @@ impl <'a> WebDataBuild<'a> {
     fn set_deletion_viability(&mut self) {
         let mut gene_statuses = HashMap::new();
 
+        let condition_string =
+            |condition_ids: HashSet<String>| {
+                let mut ids_vec: Vec<String> = condition_ids.iter().cloned().collect();
+                ids_vec.sort();
+                ids_vec.join(" ")
+            };
+
         let viable_termid = &self.config.viability_terms.viable;
         let inviable_termid = &self.config.viability_terms.inviable;
 
@@ -1734,8 +1741,8 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(single_allele_term_annotations) =
                 gene_details.cv_annotations.get("single_allele_phenotype") {
-                    let mut maybe_viable_conditions: Option<HashSet<TermId>> = None;
-                    let mut maybe_inviable_conditions: Option<HashSet<TermId>> = None;
+                    let mut viable_conditions: HashMap<String, TermShort> = HashMap::new();
+                    let mut inviable_conditions: HashMap<String, TermShort> = HashMap::new();
 
                     for term_annotation in single_allele_term_annotations {
                         'ANNOTATION: for annotation in &term_annotation.annotations {
@@ -1750,38 +1757,50 @@ impl <'a> WebDataBuild<'a> {
                             }
 
                             let interesting_parents = &term_annotation.term.interesting_parents;
+                            let conditions_as_string =
+                                condition_string(annotation.conditions.clone());
                             if interesting_parents.contains(viable_termid) {
-                                if let Some(ref mut viable_conditions) =
-                                    maybe_viable_conditions {
-                                        viable_conditions.extend(annotation.conditions.clone());
-                                    } else {
-                                        maybe_viable_conditions = Some(annotation.conditions.clone());
-                                    }
-                            }
-                            if interesting_parents.contains(inviable_termid) {
-                                if let Some(ref mut inviable_conditions) =
-                                    maybe_inviable_conditions {
-                                        inviable_conditions.extend(annotation.conditions.clone());
-                                    } else {
-                                        maybe_inviable_conditions = Some(annotation.conditions.clone());
-                                    }
+                                viable_conditions.insert(conditions_as_string,
+                                                         term_annotation.term.clone());
+                            } else {
+                                if interesting_parents.contains(inviable_termid) {
+                                    inviable_conditions.insert(conditions_as_string,
+                                                               term_annotation.term.clone());
+                                }
                             }
                         }
                     }
 
-                    if maybe_viable_conditions.is_none() {
-                        if maybe_inviable_conditions.is_some() {
+                    if viable_conditions.len() == 0 {
+                        if inviable_conditions.len() > 0 {
                             new_status = DeletionViability::Inviable;
                         }
                     } else {
-                        if maybe_inviable_conditions.is_none() {
+                        if inviable_conditions.len() == 0 {
                             new_status = DeletionViability::Viable;
                         } else {
-                            if maybe_viable_conditions == maybe_inviable_conditions {
-                                println!("{} is viable and inviable with conditions: {:?}",
-                                         gene_uniquename, maybe_viable_conditions);
-                            } else {
-                                new_status = DeletionViability::DependsOnConditions;
+                            new_status = DeletionViability::DependsOnConditions;
+
+                            let viable_conditions_set: HashSet<String> =
+                                viable_conditions.keys().cloned().collect();
+                            let inviable_conditions_set: HashSet<String> =
+                                inviable_conditions.keys().cloned().collect();
+
+                            let intersecting_conditions =
+                                viable_conditions_set.intersection(&inviable_conditions_set);
+                            if intersecting_conditions.clone().count() > 0 {
+                                println!("{} is viable and inviable with", gene_uniquename);
+                                for cond in intersecting_conditions {
+                                    if cond.len() == 0 {
+                                        println!("  no conditions");
+                                    } else {
+                                        println!("  conditions: {}", cond);
+                                    }
+                                    println!("   viable term: {}",
+                                             viable_conditions.get(cond).unwrap().termid);
+                                    println!("   inviable term: {}",
+                                             inviable_conditions.get(cond).unwrap().termid);
+                                }
                             }
                         }
                     }
