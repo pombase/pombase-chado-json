@@ -1690,13 +1690,22 @@ impl <'a> WebDataBuild<'a> {
         for (_, term_details) in &self.terms {
             for (_, term_annotations) in &term_details.cv_annotations {
                 for term_annotation in term_annotations {
-                    for annotation in &term_annotation.annotations {
+                    'ANNOTATION: for annotation in &term_annotation.annotations {
+                        if let Some(ref genotype_uniquename) = annotation.genotype {
+                            let genotype = self.genotypes.get(genotype_uniquename).unwrap();
+
+                            if genotype.expressed_alleles.len() > 1 {
+                                break 'ANNOTATION;
+                            }
+                        }
+
                         let new_annotations =
                             self.make_target_of_for_ext(&term_details.cv_name,
                                                         &annotation.genes,
                                                         &annotation.genotype,
                                                         &annotation.reference,
-                                                        &term_details.termid, &annotation.extension);
+                                                        &term_details.termid,
+                                                        &annotation.extension);
                         for (target_gene_uniquename, new_annotation) in new_annotations {
                             target_of_annotations
                                 .entry(target_gene_uniquename.clone())
