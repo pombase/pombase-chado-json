@@ -1738,7 +1738,17 @@ impl <'a> WebDataBuild<'a> {
                     let mut maybe_inviable_conditions: Option<HashSet<TermId>> = None;
 
                     for term_annotation in single_allele_term_annotations {
-                        for annotation in &term_annotation.annotations {
+                        'ANNOTATION: for annotation in &term_annotation.annotations {
+                            let genotype_uniquename = annotation.genotype.clone().unwrap();
+
+                            let genotype = self.genotypes.get(&genotype_uniquename).unwrap();
+                            let allele_uniquename =
+                                genotype.expressed_alleles[0].allele_uniquename.clone();
+                            let allele = self.alleles.get(&allele_uniquename).unwrap();
+                            if allele.allele_type != "deletion" {
+                                break 'ANNOTATION;
+                            }
+
                             let interesting_parents = &term_annotation.term.interesting_parents;
                             if interesting_parents.contains(viable_termid) {
                                 if let Some(ref mut viable_conditions) =
