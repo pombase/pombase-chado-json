@@ -411,6 +411,10 @@ fn get_test_config() -> Config {
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
         interesting_parents: vec![],
+        viability_terms: ViabilityTerms {
+            viable: "FYPO:0002058".into(),
+            inviable: "FYPO:0002059".into(),
+        },
     };
 
     config.cv_config.insert(String::from("molecular_function"),
