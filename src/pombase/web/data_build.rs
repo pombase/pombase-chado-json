@@ -1767,13 +1767,11 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                 }
-            println!("inserting: {} {:?}", gene_uniquename, new_status);
             gene_statuses.insert(gene_uniquename.clone(), new_status);
         }
 
         for (gene_uniquename, status) in &gene_statuses {
             if let Some(ref mut gene_details) = self.genes.get_mut(gene_uniquename) {
-                println!("{} {:?}", gene_uniquename, status);
                 gene_details.deletion_viability = status.clone();
             }
         }
