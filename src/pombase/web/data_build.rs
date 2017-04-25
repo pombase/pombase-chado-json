@@ -1141,6 +1141,7 @@ impl <'a> WebDataBuild<'a> {
             name: feat.name.clone(),
             organism: organism,
             product: None,
+            deletion_viability: DeletionViability::Unknown,
             uniprot_identifier: uniprot_identifier,
             orfeome_identifier: orfeome_identifier,
             name_descriptions: vec![],
@@ -1713,6 +1714,71 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn set_deletion_viability(&mut self) {
+        let mut gene_statuses = HashMap::new();
+
+        let viable_termid = &self.config.viability_terms.viable;
+        let inviable_termid = &self.config.viability_terms.inviable;
+
+        for (gene_uniquename, gene_details) in &mut self.genes {
+            let mut new_status = DeletionViability::Unknown;
+
+            if let Some(single_allele_term_annotations) =
+                gene_details.cv_annotations.get("single_allele_phenotype") {
+                    let mut maybe_viable_conditions: Option<HashSet<TermId>> = None;
+                    let mut maybe_inviable_conditions: Option<HashSet<TermId>> = None;
+
+                    for term_annotation in single_allele_term_annotations {
+                        for annotation in &term_annotation.annotations {
+                            let interesting_parents = &term_annotation.term.interesting_parents;
+                            if interesting_parents.contains(viable_termid) {
+                                if let Some(ref mut viable_conditions) =
+                                    maybe_viable_conditions {
+                                        viable_conditions.extend(annotation.conditions.clone());
+                                    } else {
+                                        maybe_viable_conditions = Some(annotation.conditions.clone());
+                                    }
+                            }
+                            if interesting_parents.contains(inviable_termid) {
+                                if let Some(ref mut inviable_conditions) =
+                                    maybe_inviable_conditions {
+                                        inviable_conditions.extend(annotation.conditions.clone());
+                                    } else {
+                                        maybe_inviable_conditions = Some(annotation.conditions.clone());
+                                    }
+                            }
+                        }
+                    }
+
+                    if maybe_viable_conditions.is_none() {
+                        if maybe_inviable_conditions.is_some() {
+                            new_status = DeletionViability::Inviable;
+                        }
+                    } else {
+                        if maybe_inviable_conditions.is_none() {
+                            new_status = DeletionViability::Viable;
+                        } else {
+                            if maybe_viable_conditions == maybe_inviable_conditions {
+                                println!("{} is viable and inviable with conditions: {:?}",
+                                         gene_uniquename, maybe_viable_conditions);
+                            } else {
+                                new_status = DeletionViability::DependsOnConditions;
+                            }
+                        }
+                    }
+                }
+            println!("inserting: {} {:?}", gene_uniquename, new_status);
+            gene_statuses.insert(gene_uniquename.clone(), new_status);
+        }
+
+        for (gene_uniquename, status) in &gene_statuses {
+            if let Some(ref mut gene_details) = self.genes.get_mut(gene_uniquename) {
+                println!("{} {:?}", gene_uniquename, status);
+                gene_details.deletion_viability = status.clone();
+            }
+        }
+    }
+
     fn make_all_cv_summaries(&mut self) {
         for (_, term_details) in &mut self.terms {
             for (_, mut term_annotations) in &mut term_details.cv_annotations {
@@ -2050,7 +2116,7 @@ impl <'a> WebDataBuild<'a> {
 
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
-            let mut conditions: Vec<TermId> = vec![];
+            let mut conditions: HashSet<TermId> = HashSet::new();
             let mut with: WithFromValue = WithFromValue::None;
             let mut from: WithFromValue = WithFromValue::None;
             let mut qualifiers: Vec<Qualifier> = vec![];
@@ -2075,7 +2141,7 @@ impl <'a> WebDataBuild<'a> {
                         },
                     "condition" =>
                         if let Some(value) = prop.value.clone() {
-                            conditions.push(value.clone());
+                            conditions.insert(value.clone());
                         },
                     "qualifier" =>
                         if let Some(value) = prop.value.clone() {
@@ -3076,6 +3142,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_cvtermpath();
         self.process_annotation_feature_rels();
         self.add_target_of_annotations();
+        self.set_deletion_viability();
         self.make_all_cv_summaries();
         self.set_term_details_maps();
         self.set_gene_details_maps();
@@ -3142,6 +3209,10 @@ fn get_test_config() -> Config {
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
         interesting_parents: vec![],
+        viability_terms: ViabilityTerms {
+            viable: "FYPO:0002058".into(),
+            inviable: "FYPO:0002059".into(),
+        },
     };
 
     config.cv_config.insert(String::from("molecular_function"),
@@ -3243,9 +3314,9 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
     let annotations1 =
         vec![
             make_one_detail(188448, "SPBC11B10.09", "PMID:3322810", None,
-                            "IDA", vec![], vec![]),
+                            "IDA", vec![], HashSet::new()),
             make_one_detail(202017,"SPBC11B10.09", "PMID:2665944", None,
-                            "IDA", vec![], vec![]),
+                            "IDA", vec![], HashSet::new()),
         ];
     let ont_term1 = OntTermAnnotations {
         term: TermShort {
@@ -3269,17 +3340,17 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
                             "IDA",vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
                                                    ExtRange::Gene("SPBC646.13".into())), //  sds23
-                            ], vec![]),
+                            ], HashSet::new()),
             make_one_detail(41718, "SPBC11B10.09", "PMID:9490630", None,
                             "IDA", vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
                                                    ExtRange::Gene("SPAC25G10.07c".into())), // cut7
-                            ], vec![]),
+                            ], HashSet::new()),
             make_one_detail(41718, "SPBC11B10.09", "PMID:11937031", None,
                             "IDA", vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
                                                    ExtRange::Gene("SPBC32F12.09".into())), // no name
-                            ], vec![]),
+                            ], HashSet::new()),
             make_one_detail(187893, "SPBC11B10.09", "PMID:19523829", None, "IMP",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
@@ -3289,7 +3360,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
                                 make_test_ext_part("happens_during", "during",
                                                    ExtRange::Term("GO:0000089".into())),
                             ],
-                            vec![]),
+                            HashSet::new()),
             make_one_detail(187907, "SPBC11B10.09", "PMID:19523829", None, "IMP",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
@@ -3299,7 +3370,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
                                 make_test_ext_part("happens_during", "during",
                                                    ExtRange::Term("GO:0000089".into())),
                             ],
-                            vec![]),
+                            HashSet::new()),
             make_one_detail(193221, "SPBC11B10.09", "PMID:10921876", None, "IMP",
                             vec![
                                 make_test_ext_part("directly_negatively_regulates", "directly inhibits",
@@ -3311,13 +3382,13 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
                                 make_test_ext_part("happens_during", "during",
                                                    ExtRange::Term("GO:0000080".into())),
                             ],
-                            vec![]),
+                            HashSet::new()),
             make_one_detail(194213, "SPBC11B10.09", "PMID:7957097", None, "IDA",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
                                                    ExtRange::Gene("SPBC776.02c".into())),  // dis2
                             ],
-                            vec![]),
+                            HashSet::new()),
             make_one_detail(194661, "SPBC11B10.09", "PMID:10485849", None, "IMP",
                             vec![
                                 make_test_ext_part("has_direct_input", "has substrate",
@@ -3329,7 +3400,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
                                 make_test_ext_part("happens_during", "during",
                                                    ExtRange::Term("GO:0000089".into())),
                             ],
-                            vec![]),
+                            HashSet::new()),
         ];
 
     let ont_term2 = OntTermAnnotations {
@@ -3355,7 +3426,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
 fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
                    maybe_genotype_uniquename: Option<&str>, evidence: &str,
                    extension: Vec<ExtPart>,
-                   conditions: Vec<TermId>) -> Rc<OntAnnotationDetail> {
+                   conditions: HashSet<TermId>) -> Rc<OntAnnotationDetail> {
     Rc::new(OntAnnotationDetail {
         id: id,
         genes: vec![gene_uniquename.into()],
@@ -3374,6 +3445,10 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
 
 #[allow(dead_code)]
 fn get_test_fypo_term_details() -> Vec<Rc<OntAnnotationDetail>> {
+    let mut test_conditions = HashSet::new();
+    test_conditions.insert("PECO:0000103".into());
+    test_conditions.insert("PECO:0000137".into());
+
     vec![
         make_one_detail(223656,
                         "SPBC16A3.11",
@@ -3381,58 +3456,49 @@ fn get_test_fypo_term_details() -> Vec<Rc<OntAnnotationDetail>> {
                         Some("e674fe7ceba478aa-genotype-2"),
                         "Cell growth assay",
                         vec![],
-                        vec![
-                            "PECO:0000137".into(),
-                            "PECO:0000102".into()
-                        ]),
+                        test_conditions.clone()),
         make_one_detail(201099,
                         "SPCC1919.10c",
                         "PMID:16421926",
                         Some("d6c914796c35e3b5-genotype-4"),
                         "Cell growth assay",
                         vec![],
-                        vec![]),
+                        HashSet::new()),
         make_one_detail(201095,
                         "SPCC1919.10c",
                         "PMID:16421926",
                         Some("d6c914796c35e3b5-genotype-3"),
                         "Cell growth assay",
                         vec![],
-                        vec![]),
+                        HashSet::new()),
         make_one_detail(204063,
                         "SPAC25A8.01c",
                         "PMID:25798942",
                         Some("fd4f3f52f1d38106-genotype-4"),
                         "Cell growth assay",
                         vec![],
-                        vec![
-                            "PECO:0000137".into(),
-                            "PECO:0000102".into()
-                        ]),
+                        test_conditions.clone()),
         make_one_detail(227452,
                         "SPAC3G6.02",
                         "PMID:25306921",
                         Some("a6d8f45c20c2227d-genotype-9"),
                         "Cell growth assay",
                         vec![],
-                        vec![]),
+                        HashSet::new()),
         make_one_detail(201094,
                         "SPCC1919.10c",
                         "PMID:16421926",
                         Some("d6c914796c35e3b5-genotype-2"),
                         "Cell growth assay",
                         vec![],
-                        vec![]),
+                        HashSet::new()),
         make_one_detail(186589,
                         "SPAC24H6.05",
                         "PMID:1464319",
                         Some("65c76fa511461156-genotype-3"),
                         "Cell growth assay",
                         vec![],
-                        vec![
-                            "PECO:0000103".into(),
-                            "PECO:0000137".into()
-                        ])]
+                        test_conditions)]
 }
 
 #[allow(dead_code)]
@@ -3461,6 +3527,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
             species: "pombe".into(),
         },
         product: None,
+        deletion_viability: DeletionViability::Unknown,
         uniprot_identifier: None,
         orfeome_identifier: None,
         name_descriptions: vec![],

@@ -75,6 +75,12 @@ impl ConfigOrganism {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ViabilityTerms {
+    pub viable: String,
+    pub inviable: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub load_organism: ConfigOrganism,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
@@ -85,6 +91,7 @@ pub struct Config {
 // an "interesting parent" using the given rel_name, we store it in the
 // interesting_parents field of the TermShort
     pub interesting_parents: Vec<InterestingParent>,
+    pub viability_terms: ViabilityTerms,
 }
 
 impl Config {

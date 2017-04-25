@@ -288,8 +288,8 @@ pub struct OntAnnotationDetail {
     // only for genotype/phenotype annotation:
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype: Option<GenotypeUniquename>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub conditions: Vec<TermId>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub conditions: HashSet<TermId>,
 }
 
 impl PartialEq for OntAnnotationDetail {
@@ -393,6 +393,18 @@ pub struct ChromosomeLocation {
 }
 
 #[derive(Serialize, Clone, Debug)]
+pub enum DeletionViability {
+    #[serde(rename="viable")]
+    Viable,
+    #[serde(rename="inviable")]
+    Inviable,
+    #[serde(rename="depends_on_conditions")]
+    DependsOnConditions,
+    #[serde(rename="unknown")]
+    Unknown,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -400,6 +412,7 @@ pub struct GeneDetails {
     pub organism: ConfigOrganism,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<String>,
+    pub deletion_viability: DeletionViability,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
