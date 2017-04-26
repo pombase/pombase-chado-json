@@ -523,6 +523,7 @@ pub struct TermDetails {
     pub cv_name: CvName,
     pub annotation_feature_type: String,
     pub interesting_parents: HashSet<String>,
+    pub subsets: Vec<String>,
     pub termid: TermId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,

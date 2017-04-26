@@ -1830,6 +1830,18 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn set_subsets(&mut self) {
+        'TERM: for go_slim_conf in self.config.go_slim_terms.clone() {
+            let slim_termid = &go_slim_conf.termid;
+            for (_, term_details) in &mut self.terms {
+                if term_details.termid == *slim_termid {
+                    term_details.subsets.push("goslim_pombe".into());
+                    break 'TERM;
+                }
+            }
+        }
+    }
+
     fn make_all_cv_summaries(&mut self) {
         for (_, term_details) in &mut self.terms {
             for (_, mut term_annotations) in &mut term_details.cv_annotations {
@@ -1873,6 +1885,7 @@ impl <'a> WebDataBuild<'a> {
                                       cv_name: cvterm.cv.name.clone(),
                                       annotation_feature_type: annotation_feature_type,
                                       interesting_parents: HashSet::new(),
+                                      subsets: vec![],
                                       termid: cvterm.termid(),
                                       definition: cvterm.definition.clone(),
                                       direct_ancestors: vec![],
@@ -3194,6 +3207,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_annotation_feature_rels();
         self.add_target_of_annotations();
         self.set_deletion_viability();
+        self.set_subsets();
         self.make_all_cv_summaries();
         self.set_term_details_maps();
         self.set_gene_details_maps();
@@ -3768,6 +3782,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         cv_name: cv_name.into(),
         annotation_feature_type: "gene".into(),
         interesting_parents: HashSet::new(),
+        subsets: vec!["goslim_pombe".into()],
         definition: None,
         direct_ancestors: vec![],
         is_obsolete: false,
