@@ -333,10 +333,19 @@ fn make_cv_summaries(config: &Config,
 
         let mut summary_sorted_annotations = term_and_annotations.annotations.clone();
 
-        // in the summary, sort by extension length to fix:
+        // in the summary, sort by extennsion type and length to fix:
         // https://github.com/pombase/website/issues/228
         let length_comp = |a1: &Rc<OntAnnotationDetail>, a2: &Rc<OntAnnotationDetail>| {
-            a1.extension.len().cmp(&a2.extension.len())
+            if a1.extension.len() == 0 || a2.extension.len() == 0 {
+                // sort is stable (hopefully) so this will keep the ordering the same
+                Ordering::Equal
+            } else {
+                if a1.extension[0].rel_type_display_name == a2.extension[0].rel_type_display_name {
+                    a1.extension.len().cmp(&a2.extension.len())
+                } else {
+                    Ordering::Equal
+                }
+            }
         };
         summary_sorted_annotations.sort_by(length_comp);
 
