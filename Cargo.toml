@@ -1,6 +1,6 @@
 [package]
 name = "pombase-chado-json"
-version = "16.6.0"
+version = "16.7.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 
 [lib]
