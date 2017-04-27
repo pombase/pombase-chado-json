@@ -58,6 +58,15 @@ pub enum ExtRange {
     GeneProduct(String),
 }
 
+impl ExtRange {
+    pub fn is_gene(&self) -> bool {
+        match *self {
+            ExtRange::Gene(_) => true,
+            _ => false,
+        }
+    }
+}
+
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct ExtPart {
     pub rel_type_name: String,

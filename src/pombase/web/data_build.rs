@@ -331,7 +331,16 @@ fn make_cv_summaries(config: &Config,
 
         let mut rows = vec![];
 
-        for annotation in &term_and_annotations.annotations {
+        let mut summary_sorted_annotations = term_and_annotations.annotations.clone();
+
+        // in the summary, sort by extension length to fix:
+        // https://github.com/pombase/website/issues/228
+        let length_comp = |a1: &Rc<OntAnnotationDetail>, a2: &Rc<OntAnnotationDetail>| {
+            a1.extension.len().cmp(&a2.extension.len())
+        };
+        summary_sorted_annotations.sort_by(length_comp);
+
+        for annotation in &summary_sorted_annotations {
             let gene_uniquenames =
                 if include_gene && cv_config.feature_type == "gene" {
                     annotation.genes.clone()
@@ -466,7 +475,21 @@ fn compare_ext_part_with_config(config: &Config, ep1: &ExtPart, ep2: &ExtPart) -
                 if let Some(_) = maybe_ep2_last_index {
                     Ordering::Less
                 } else {
-                    ep1.rel_type_name.cmp(&ep2.rel_type_name)
+                    let name_cmp = ep1.rel_type_name.cmp(&ep2.rel_type_name);
+
+                    if name_cmp == Ordering::Equal {
+                        if ep1.ext_range.is_gene() && !ep2.ext_range.is_gene() {
+                            Ordering::Less
+                        } else {
+                            if !ep1.ext_range.is_gene() && ep2.ext_range.is_gene() {
+                                Ordering::Greater
+                            } else {
+                                Ordering::Equal
+                            }
+                        }
+                    } else {
+                        name_cmp
+                    }
                 }
             }
         }
