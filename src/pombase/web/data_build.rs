@@ -271,6 +271,7 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     *rows = results;
 }
 
+// Remove annotation from the summary if there is a more specific annotation
 fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                               term_annotations: &mut Vec<OntTermAnnotations>) {
     let mut term_annotations_by_termid = HashMap::new();
@@ -315,6 +316,8 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
 
                 if filtered_rows.len() == 0 {
                     term_annotation.summary = None;
+                } else {
+                    term_annotation.summary = Some(filtered_rows);
                 }
             }
         }
