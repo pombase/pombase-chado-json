@@ -282,7 +282,7 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
 
     for mut term_annotation in term_annotations.iter_mut() {
         if let Some(child_termids) = children_by_termid.get(&term_annotation.term.termid) {
-            if term_annotation.summary.clone().unwrap().len() == 0 {
+            if term_annotation.summary.as_ref().unwrap().len() == 0 {
                 let mut found_child_match = false;
                 for child_termid in child_termids {
                     if term_annotations_by_termid.get(child_termid).is_some() {
@@ -295,12 +295,12 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
             } else {
                 let mut filtered_rows: Vec<TermSummaryRow> = vec![];
 
-                for row in &mut term_annotation.summary.clone().unwrap() {
+                for row in term_annotation.summary.as_mut().unwrap() {
                     let mut found_child_match = false;
                     for child_termid in child_termids {
                         if let Some(ref mut child_term_annotation) =
                             term_annotations_by_termid.get(child_termid) {
-                                for child_row in &child_term_annotation.summary.clone().unwrap() {
+                                for child_row in child_term_annotation.summary.as_ref().unwrap() {
                                     if *row == *child_row {
                                         found_child_match = true;
                                         break;
@@ -1793,9 +1793,9 @@ impl <'a> WebDataBuild<'a> {
 
                     for term_annotation in single_allele_term_annotations {
                         'ANNOTATION: for annotation in &term_annotation.annotations {
-                            let genotype_uniquename = annotation.genotype.clone().unwrap();
+                            let genotype_uniquename = annotation.genotype.as_ref().unwrap();
 
-                            let genotype = self.genotypes.get(&genotype_uniquename).unwrap();
+                            let genotype = self.genotypes.get(genotype_uniquename).unwrap();
                             let allele_uniquename =
                                 genotype.expressed_alleles[0].allele_uniquename.clone();
                             let allele = self.alleles.get(&allele_uniquename).unwrap();
@@ -2431,8 +2431,8 @@ impl <'a> WebDataBuild<'a> {
                     };
 
                 for detail in details {
-                    let genotype_uniquename = detail.genotype.clone().unwrap();
-                    if let Some(genotype_details) = self.genotypes.get(&genotype_uniquename) {
+                    let genotype_uniquename = detail.genotype.as_ref().unwrap();
+                    if let Some(genotype_details) = self.genotypes.get(genotype_uniquename) {
                         if genotype_details.expressed_alleles.len() == 1 {
                             single_allele.annotations.push(detail.clone())
                         } else {
