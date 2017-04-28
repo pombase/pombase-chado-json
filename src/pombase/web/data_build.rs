@@ -2786,8 +2786,8 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
-        const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+        const PKG_NAME: &str = env!("CARGO_PKG_NAME");
+        const VERSION: &str = env!("CARGO_PKG_VERSION");
 
         Metadata {
             export_prog_name: String::from(PKG_NAME),

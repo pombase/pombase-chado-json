@@ -20,8 +20,8 @@ use pombase::db::*;
 use pombase::web::config::*;
 use pombase::web::data_build::*;
 
-const PKG_NAME: &'static str = env!("CARGO_PKG_NAME");
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const PKG_NAME: &str = env!("CARGO_PKG_NAME");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn make_subdirs(output_dir: &str) {
     let subdirs = vec!["gene", "genotype", "term", "reference"];
