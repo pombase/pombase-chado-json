@@ -729,6 +729,15 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         });
     }
 
+    ret.insert(InterestingParent {
+        termid: config.viability_terms.viable.clone(),
+        rel_name: "is_a".into(),
+    });
+    ret.insert(InterestingParent {
+        termid: config.viability_terms.inviable.clone(),
+        rel_name: "is_a".into(),
+    });
+
     for (cv_name, conf) in &config.cv_config {
         for filter in &conf.filters {
             for category in &filter.term_categories {
