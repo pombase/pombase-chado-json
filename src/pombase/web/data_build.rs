@@ -1818,15 +1818,17 @@ impl <'a> WebDataBuild<'a> {
                             let interesting_parents = &term_annotation.term.interesting_parents;
                             let conditions_as_string =
                                 condition_string(annotation.conditions.clone());
-                            if interesting_parents.contains(viable_termid) {
-                                viable_conditions.insert(conditions_as_string,
-                                                         term_annotation.term.clone());
-                            } else {
-                                if interesting_parents.contains(inviable_termid) {
-                                    inviable_conditions.insert(conditions_as_string,
-                                                               term_annotation.term.clone());
+                            if interesting_parents.contains(viable_termid) ||
+                                *viable_termid == term_annotation.term.termid {
+                                    viable_conditions.insert(conditions_as_string,
+                                                             term_annotation.term.clone());
+                                } else {
+                                    if interesting_parents.contains(inviable_termid) ||
+                                        *inviable_termid == term_annotation.term.termid {
+                                            inviable_conditions.insert(conditions_as_string,
+                                                                       term_annotation.term.clone());
+                                        }
                                 }
-                            }
                         }
                     }
 
