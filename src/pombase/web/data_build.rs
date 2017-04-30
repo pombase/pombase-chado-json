@@ -2788,6 +2788,18 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
+        let term_annotation_cmp =
+            |term_annot1: &OntTermAnnotations, term_annot2: &OntTermAnnotations| {
+                term_annot1.term.name.to_lowercase().cmp(&term_annot2.term.name.to_lowercase())
+            };
+
+        for (_, term_details) in &mut self.terms {
+            for (_, term_annotations) in &mut term_details.cv_annotations {
+                term_annotations.sort_by(&term_annotation_cmp);
+            }
+        }
+
+
         self.children_by_termid = children_by_termid;
     }
 
