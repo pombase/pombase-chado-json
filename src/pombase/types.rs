@@ -18,6 +18,7 @@ pub type Condition = String;
 pub type Qualifier = String;
 
 pub type TranscriptUniquename = String;
+pub type ProteinUniquename = String;
 
 pub type GenotypeUniquename = String;
 pub type AlleleUniquename = String;

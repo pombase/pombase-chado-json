@@ -31,7 +31,6 @@ pub struct WebDataBuild<'a> {
     config: &'a Config,
 
     genes: UniquenameGeneMap,
-    transcripts: UniquenameTranscriptMap,
     genotypes: UniquenameGenotypeMap,
     alleles: UniquenameAlleleMap,
     terms: TermIdDetailsMap,
@@ -43,8 +42,6 @@ pub struct WebDataBuild<'a> {
     transcripts_of_polypeptides: HashMap<String, String>,
     genes_of_alleles: HashMap<String, String>,
     alleles_of_genotypes: HashMap<String, Vec<AlleleAndExpression>>,
-    // gene_uniquename vs transcript_type_name:
-    transcript_type_of_genes: HashMap<String, String>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -767,7 +764,6 @@ impl <'a> WebDataBuild<'a> {
             config: config,
 
             genes: HashMap::new(),
-            transcripts: HashMap::new(),
             genotypes: HashMap::new(),
             alleles: HashMap::new(),
             terms: HashMap::new(),
@@ -779,7 +775,6 @@ impl <'a> WebDataBuild<'a> {
             transcripts_of_polypeptides: HashMap::new(),
             genes_of_alleles: HashMap::new(),
             alleles_of_genotypes: HashMap::new(),
-            transcript_type_of_genes: HashMap::new(),
 
             parts_of_extensions: HashMap::new(),
 
@@ -1094,8 +1089,6 @@ impl <'a> WebDataBuild<'a> {
                 (object_type_name == "gene" || object_type_name == "pseudogene") {
                     self.genes_of_transcripts.insert(subject_uniquename.clone(),
                                                      object_uniquename.clone());
-                    self.transcript_type_of_genes.insert(object_uniquename.clone(),
-                                                         subject_type_name.clone());
                     continue;
                 }
             if subject_type_name == "polypeptide" &&
@@ -1187,14 +1180,6 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let feature_type =
-            if let Some(transcript_type) =
-                self.transcript_type_of_genes.get(&feat.uniquename) {
-                    transcript_type.clone() + " " + &feat.feat_type.name
-                } else {
-                    feat.feat_type.name.clone()
-                };
-
         let gene_feature = GeneDetails {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
@@ -1206,7 +1191,7 @@ impl <'a> WebDataBuild<'a> {
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs: dbxrefs,
-            feature_type: feature_type,
+            feature_type: feat.feat_type.name.clone(),
             characterisation_status: None,
             location: location,
             gene_neighbourhood: vec![],
@@ -1226,6 +1211,86 @@ impl <'a> WebDataBuild<'a> {
         };
 
         self.genes.insert(feat.uniquename.clone(), gene_feature);
+    }
+
+    fn store_transcript_details(&mut self, feat: &Feature) {
+        if let Some(residues) = feat.residues.clone() {
+            let transcript_uniquename = feat.uniquename.clone();
+            let transcript = TranscriptDetails {
+                uniquename: transcript_uniquename.clone(),
+                transcript_type: feat.feat_type.name.clone(),
+                sequence: residues,
+                protein: None,
+            };
+
+            if let Some(gene_uniquename) =
+                self.genes_of_transcripts.get(&transcript_uniquename) {
+                    let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+                    gene_details.feature_type =
+                        transcript.transcript_type.clone() + " " + &gene_details.feature_type;
+                    gene_details.transcripts.push(transcript);
+                } else {
+                    panic!("can't find gene for transcript: {}", transcript_uniquename);
+                }
+        } else {
+            println!("no residues for transcript: {}", feat.uniquename);
+        }
+    }
+
+    fn store_protein_details(&mut self, feat: &Feature) {
+        if let Some(residues) = feat.residues.clone() {
+            let protein_uniquename = feat.uniquename.clone();
+
+            let mut molecular_weight = None;
+
+            for prop in feat.featureprops.borrow().iter() {
+                if prop.prop_type.name == "molecular_weight" {
+                    if let Some(prop_value) = prop.value.clone() {
+                        let maybe_mol_weight = prop_value.parse();
+                        if let Ok(parsed_prop) = maybe_mol_weight {
+                            molecular_weight = Some(parsed_prop);
+                        } else {
+                            println!("{}: couldn't parse molecular_weight: {}",
+                                     feat.uniquename, prop_value);
+                        }
+                    }
+                }
+            }
+
+            if molecular_weight.is_none() {
+                panic!("{} has no molecular_weight", feat.uniquename)
+            }
+
+            let protein = ProteinDetails {
+                uniquename: feat.uniquename.clone(),
+                sequence: residues,
+                molecular_weight: molecular_weight.unwrap(),
+            };
+
+            if let Some(transcript_uniquename) =
+                self.transcripts_of_polypeptides.get(&protein_uniquename) {
+                    if let Some(gene_uniquename) =
+                        self.genes_of_transcripts.get(transcript_uniquename) {
+                            let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+                            if gene_details.transcripts.len() > 1 {
+                                panic!("unimplemented - can't handle multiple transcripts for: {}",
+                                       gene_uniquename);
+                            } else {
+                                if gene_details.transcripts.len() == 0 {
+                                    panic!("gene has no transcript: {}", gene_uniquename);
+                                } else {
+                                    gene_details.transcripts[0].protein = Some(protein);
+                                }
+                            }
+                        } else {
+                            panic!("can't find gene for transcript: {}", transcript_uniquename);
+                        }
+                } else {
+                    panic!("can't find transcript of polypeptide: {}", protein_uniquename)
+                }
+        } else {
+            panic!("no residues for protein: {}", feat.uniquename);
+        }
     }
 
     fn store_genotype_details(&mut self, feat: &Feature) {
@@ -1281,29 +1346,25 @@ impl <'a> WebDataBuild<'a> {
         self.alleles.insert(feat.uniquename.clone(), allele_details);
     }
 
-    fn process_feature(&mut self, feat: &Feature) {
-        match &feat.feat_type.name as &str {
-            "gene" | "pseudogene" =>
-                self.store_gene_details(feat),
-
-            _ => {
-                if TRANSCRIPT_FEATURE_TYPES.contains(&feat.feat_type.name.as_str()) {
-                    self.transcripts.insert(feat.uniquename.clone(),
-                                            TranscriptDetails {
-                                                uniquename: feat.uniquename.clone(),
-                                                name: feat.name.clone(),
-                                            });
-                }
-            }
-        }
-    }
-
     fn process_features(&mut self) {
         for feat in &self.raw.features {
-            if feat.feat_type.name != "genotype" && feat.feat_type.name != "allele" {
-                self.process_feature(&feat);
+            if feat.feat_type.name == "gene" || feat.feat_type.name == "pseudogene" {
+                self.store_gene_details(feat);
             }
         }
+
+        for feat in &self.raw.features {
+            if TRANSCRIPT_FEATURE_TYPES.contains(&feat.feat_type.name.as_str()) {
+                self.store_transcript_details(&feat)
+            }
+        }
+
+        for feat in &self.raw.features {
+            if feat.feat_type.name == "polypeptide"{
+                self.store_protein_details(feat);
+            }
+        }
+
     }
 
     fn add_interesting_parents(&mut self) {

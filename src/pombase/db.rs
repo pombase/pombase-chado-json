@@ -108,6 +108,7 @@ pub struct Feature {
     pub name: Option<String>,
     pub feat_type: Rc<Cvterm>,
     pub organism: Rc<Organism>,
+    pub residues: Option<String>,
     pub featureprops: RefCell<Vec<Rc<Featureprop>>>,
     pub featurelocs: RefCell<Vec<Rc<Featureloc>>>,
 }
@@ -351,15 +352,20 @@ impl Raw {
             synonym_map.insert(synonym_id, rc_synonym);
         }
 
-        for row in &conn.query("SELECT feature_id, uniquename, name, type_id, organism_id FROM feature", &[]).unwrap() {
+        for row in &conn.query(
+            "SELECT feature_id, uniquename, name, type_id, organism_id,
+                    (CASE WHEN feature.type_id IN (SELECT cvterm_id FROM cvterm WHERE name = 'chromosome')
+                          THEN NULL ELSE feature.residues END) AS residues FROM feature", &[]).unwrap() {
             let feature_id = row.get(0);
             let type_id: i32 = row.get(3);
             let organism_id: i32 = row.get(4);
+            let residues: Option<String> = row.get(5);
             let feature = Feature {
                 uniquename: row.get(1),
                 name: row.get(2),
                 feat_type: get_cvterm(&mut cvterm_map, type_id),
                 organism: organism_map.get(&organism_id).unwrap().clone(),
+                residues: residues,
                 featureprops: RefCell::new(vec![]),
                 featurelocs: RefCell::new(vec![]),
             };

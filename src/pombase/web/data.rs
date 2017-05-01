@@ -15,6 +15,8 @@ pub type UniquenameGeneMap =
     HashMap<GeneUniquename, GeneDetails>;
 pub type UniquenameTranscriptMap =
     HashMap<TranscriptUniquename, TranscriptDetails>;
+pub type UniquenameProteinMap =
+    HashMap<ProteinUniquename, ProteinDetails>;
 
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
@@ -159,13 +161,6 @@ impl Hash for GeneShort {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.uniquename.hash(state);
     }
-}
-
-#[derive(Serialize, Clone, Debug)]
-pub struct TranscriptShort {
-    pub uniquename: TranscriptUniquename,
-    //                pub exons: Vec<ExonShort>,
-    //                pub utrs: Vec<UTRShort>,
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -439,7 +434,7 @@ pub struct GeneDetails {
     pub cds_location: Option<ChromosomeLocation>,
     pub gene_neighbourhood: Vec<GeneShort>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub transcripts: Vec<TranscriptShort>,
+    pub transcripts: Vec<TranscriptDetails>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
     pub genetic_interactions: Vec<InteractionAnnotation>,
@@ -454,11 +449,18 @@ pub struct GeneDetails {
 }
 
 #[derive(Serialize, Clone, Debug)]
+pub struct ProteinDetails {
+    pub uniquename: TranscriptUniquename,
+    pub sequence: String,
+    pub molecular_weight: f32,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<String>,
-//    pub annotations: TypeFeatureAnnotationMap,
+    pub sequence: String,
+    pub transcript_type: String,
+    pub protein: Option<ProteinDetails>,
 }
 
 #[derive(Serialize, Clone, Debug)]
