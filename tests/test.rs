@@ -54,6 +54,7 @@ fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
         uniquename: String::from(uniquename),
         name: name,
         feat_type: type_cvterm.clone(),
+        residues: Some("AAAAAAA".into()),
         featurelocs: RefCell::new(vec![]),
         featureprops: RefCell::new(vec![]),
     });
@@ -217,6 +218,9 @@ fn get_test_raw() -> Raw {
     let description_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
                                 "description", "0011059");
+    let mol_weight_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "molecular_weight", "90011059");
     let polypeptide_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
                                 "polypeptide", "0000104");
@@ -341,6 +345,7 @@ fn get_test_raw() -> Raw {
                                              "SPCC188.02:pep", None);
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_polypeptide, &derives_from_cvterm, &par1_mrna);
+    make_test_featureprop(&mut featureprops, &par1_polypeptide, &mol_weight_cvterm, Some("102.3".into()));
 
     let par1_go0031030_fc =
         make_test_feature_cvterm(&mut feature_cvterms, &par1_mrna, &go0031030_cvterm, &publication);
