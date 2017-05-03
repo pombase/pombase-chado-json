@@ -2575,25 +2575,8 @@ impl <'a> WebDataBuild<'a> {
                 sorted_annotations.sort_by(cmp_detail_with_maps);
             }
 
-            // genotype annotations are stored in all_ont_annotations
-            // once for each gene mentioned in the genotype - this set is
-            // used to avoid adding an annotation multiple times to a
-            // GenotypeDetails
-            let mut seen_annotations_for_term = HashSet::new();
-
-            let annotations_for_term: Vec<Rc<OntAnnotationDetail>> =
-                sorted_annotations.iter().cloned()
-                .filter(|annotation|
-                        if seen_annotations_for_term.contains(&annotation.id) {
-                            false
-                        } else {
-                            seen_annotations_for_term.insert(annotation.id);
-                            true
-                        }).collect();
-
-
             let new_annotations =
-                self.make_term_annotations(&termid, &annotations_for_term, is_not);
+                self.make_term_annotations(&termid, &sorted_annotations, is_not);
 
             if let Some(ref mut term_details) = self.terms.get_mut(termid) {
                 for (cv_name, new_annotation) in new_annotations {
