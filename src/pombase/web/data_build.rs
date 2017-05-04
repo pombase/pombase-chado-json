@@ -2564,28 +2564,30 @@ impl <'a> WebDataBuild<'a> {
         for (termid, annotations) in ont_annotations {
             let mut sorted_annotations = annotations.clone();
 
-            {
-                let cmp_detail_with_maps =
-                    |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
-                        cmp_ont_annotation_detail(annotation1, annotation2, &self.genes,
-                                                  &self.genotypes, &self.alleles,
-                                                  &self.terms)
-                    };
+            if !is_not {
+                {
+                    let cmp_detail_with_maps =
+                        |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
+                            cmp_ont_annotation_detail(annotation1, annotation2, &self.genes,
+                                                      &self.genotypes, &self.alleles,
+                                                      &self.terms)
+                        };
 
-                sorted_annotations.sort_by(cmp_detail_with_maps);
-            }
-
-            let new_annotations =
-                self.make_term_annotations(&termid, &sorted_annotations, is_not);
-
-            if let Some(ref mut term_details) = self.terms.get_mut(termid) {
-                for (cv_name, new_annotation) in new_annotations {
-                    term_details.cv_annotations.entry(cv_name.clone())
-                        .or_insert(Vec::new())
-                        .push(new_annotation);
+                    sorted_annotations.sort_by(cmp_detail_with_maps);
                 }
-            } else {
-                panic!("missing termid: {}\n", termid);
+
+                let new_annotations =
+                    self.make_term_annotations(&termid, &sorted_annotations, is_not);
+
+                if let Some(ref mut term_details) = self.terms.get_mut(termid) {
+                    for (cv_name, new_annotation) in new_annotations {
+                        term_details.cv_annotations.entry(cv_name.clone())
+                            .or_insert(Vec::new())
+                            .push(new_annotation);
+                    }
+                } else {
+                    panic!("missing termid: {}\n", termid);
+                }
             }
 
             for detail in sorted_annotations {
