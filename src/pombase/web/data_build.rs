@@ -752,6 +752,21 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
                 }
             }
         }
+
+        for split_by_parent_config in &conf.split_by_parents {
+            for ancestor in &split_by_parent_config.termids {
+                let ancestor_termid =
+                    if ancestor.starts_with("NOT ") {
+                        ancestor[4..].to_owned()
+                    } else {
+                        ancestor.clone()
+                    };
+                ret.insert(InterestingParent {
+                    termid: ancestor_termid,
+                    rel_name: "is_a".into(),
+                });
+            }
+        }
     }
 
     ret
@@ -3389,6 +3404,7 @@ fn get_test_config() -> Config {
                             CvConfig {
                                 feature_type: String::from("Gene"),
                                 filters: vec![],
+                                split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_gene_relations_to_collect: vec![String::from("has_substrate")],
                             });

@@ -44,11 +44,21 @@ pub struct FilterConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct SplitByParentsConfig {
+    pub termids: Vec<String>,
+    pub display_name: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: String,
     // filtering configured per CV
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub filters: Vec<FilterConfig>,
+    // config for splitting cv annotation tables into sub-sections
+    // based on ancestry
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub split_by_parents: Vec<SplitByParentsConfig>,
     // relations to not show in the summary
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub summary_relations_to_hide: Vec<String>,
@@ -109,6 +119,7 @@ impl Config {
             CvConfig {
                 feature_type: "gene".into(),
                 filters: vec![],
+                split_by_parents: vec![],
                 summary_relations_to_hide: vec![],
                 summary_gene_relations_to_collect: vec![],
             }

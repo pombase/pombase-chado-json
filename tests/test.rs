@@ -427,6 +427,7 @@ fn get_test_config() -> Config {
                             CvConfig {
                                 feature_type: String::from("Gene"),
                                 filters: vec![],
+                                split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_gene_relations_to_collect: vec![String::from("has_substrate")],
                             });
