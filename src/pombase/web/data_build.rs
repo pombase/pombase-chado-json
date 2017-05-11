@@ -1038,6 +1038,10 @@ impl <'a> WebDataBuild<'a> {
             let mut pubmed_authors: Option<String> = None;
             let mut pubmed_publication_date: Option<String> = None;
             let mut pubmed_abstract: Option<String> = None;
+            let mut canto_curator_role: Option<String> = None;
+            let mut canto_curator_name: Option<String> = None;
+            let mut canto_approved_date: Option<String> = None;
+            let mut canto_session_submitted_date: Option<String> = None;
 
             for prop in rc_publication.publicationprops.borrow().iter() {
                 match &prop.prop_type.name as &str {
@@ -1047,6 +1051,14 @@ impl <'a> WebDataBuild<'a> {
                         pubmed_authors = Some(prop.value.clone()),
                     "pubmed_abstract" =>
                         pubmed_abstract = Some(prop.value.clone()),
+                    "canto_curator_role" =>
+                        canto_curator_role = Some(prop.value.clone()),
+                    "canto_curator_name" =>
+                        canto_curator_name = Some(prop.value.clone()),
+                    "canto_approved_date" =>
+                        canto_approved_date = Some(prop.value.clone()),
+                    "canto_session_submitted_date" =>
+                        canto_session_submitted_date = Some(prop.value.clone()),
                     _ => ()
                 }
             }
@@ -1077,6 +1089,10 @@ impl <'a> WebDataBuild<'a> {
                                        authors: pubmed_authors.clone(),
                                        authors_abbrev: authors_abbrev,
                                        pubmed_publication_date: pubmed_publication_date.clone(),
+                                       canto_curator_role: canto_curator_role,
+                                       canto_curator_name: canto_curator_name,
+                                       canto_approved_date: canto_approved_date,
+                                       canto_session_submitted_date: canto_session_submitted_date,
                                        publication_year: publication_year,
                                        cv_annotations: HashMap::new(),
                                        physical_interactions: vec![],

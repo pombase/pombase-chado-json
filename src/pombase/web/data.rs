@@ -237,6 +237,14 @@ pub struct ReferenceDetails {
     pub pubmed_publication_date: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_curator_role: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_curator_name: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_approved_date: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_session_submitted_date: Option<String>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
     pub genetic_interactions: Vec<InteractionAnnotation>,
