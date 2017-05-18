@@ -17,17 +17,17 @@ pub type UniquenameTranscriptMap =
     HashMap<TranscriptUniquename, TranscriptDetails>;
 pub type UniquenameProteinMap =
     HashMap<ProteinUniquename, ProteinDetails>;
+pub type UniquenameReferenceMap =
+    HashMap<TermId, ReferenceDetails>;
 
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
 
-pub type IdGeneMap = HashMap<GeneUniquename, GeneDetails>;
 pub type IdGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
 pub type IdRcTermShortMap = HashMap<TermId, Rc<TermShort>>;
 pub type IdRcTermDetailsMap = HashMap<TermId, Rc<TermDetails>>;
-pub type IdReferenceMap = HashMap<TermId, ReferenceDetails>;
 
 pub type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
 pub type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
@@ -674,24 +674,24 @@ pub struct SearchAPIMaps {
 
 #[derive(Serialize, Clone, Debug)]
 pub struct WebData {
-    pub genes: IdGeneMap,
+    pub genes: UniquenameGeneMap,
     pub genotypes: IdGenotypeMap,
     pub terms: IdRcTermDetailsMap,
     pub used_terms: IdRcTermDetailsMap,
     pub metadata: Metadata,
-    pub references: IdReferenceMap,
+    pub references: UniquenameReferenceMap,
 
     pub search_api_maps: SearchAPIMaps,
 }
 
 impl WebData {
-    fn get_genes(&self) -> &IdGeneMap {
+    fn get_genes(&self) -> &UniquenameGeneMap {
         &self.genes
     }
     fn get_genotypes(&self) -> &IdGenotypeMap {
         &self.genotypes
     }
-    fn get_references(&self) -> &IdReferenceMap {
+    fn get_references(&self) -> &UniquenameReferenceMap {
         &self.references
     }
     fn get_terms(&self) -> &IdRcTermDetailsMap {

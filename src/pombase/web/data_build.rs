@@ -34,7 +34,7 @@ pub struct WebDataBuild<'a> {
     genotypes: UniquenameGenotypeMap,
     alleles: UniquenameAlleleMap,
     terms: TermIdDetailsMap,
-    references: IdReferenceMap,
+    references: UniquenameReferenceMap,
     all_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
     all_not_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
 
@@ -638,6 +638,29 @@ fn make_gene_short<'b>(gene_map: &'b UniquenameGeneMap,
     }
 }
 
+fn make_reference_short<'a>(reference_map: &'a UniquenameReferenceMap,
+                            reference_uniquename: &str) -> Option<ReferenceShort> {
+    if reference_uniquename == "null" {
+        None
+    } else {
+        let reference_details = reference_map.get(reference_uniquename).unwrap();
+
+        let reference_short =
+            ReferenceShort {
+                uniquename: String::from(reference_uniquename),
+                title: reference_details.title.clone(),
+                citation: reference_details.citation.clone(),
+                publication_year: reference_details.publication_year.clone(),
+                authors: reference_details.authors.clone(),
+                authors_abbrev: reference_details.authors_abbrev.clone(),
+                gene_count: reference_details.genes_by_uniquename.keys().len(),
+                genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
+            };
+
+        Some(reference_short)
+    }
+}
+
 // compare two gene vectors which must be ordered vecs
 fn cmp_gene_vec(genes: &UniquenameGeneMap,
                 gene_vec1: &Vec<GeneUniquename>,
@@ -807,7 +830,8 @@ impl <'a> WebDataBuild<'a> {
                        identifier: String,
                        maybe_reference_uniquename: Option<ReferenceUniquename>) {
         if let Some(reference_uniquename) = maybe_reference_uniquename {
-            if let Some(reference_short) = self.make_reference_short(&reference_uniquename) {
+            if let Some(reference_short) =
+                make_reference_short(&self.references, &reference_uniquename) {
                 seen_references
                     .entry(identifier.clone())
                     .or_insert(HashMap::new())
@@ -914,28 +938,6 @@ impl <'a> WebDataBuild<'a> {
             feature_type: gene_details.feature_type.clone(),
             organism: gene_details.organism.clone(),
             location: gene_details.location.clone(),
-        }
-    }
-
-    fn make_reference_short(&self, reference_uniquename: &str) -> Option<ReferenceShort> {
-        if reference_uniquename == "null" {
-            None
-        } else {
-            let reference_details = self.references.get(reference_uniquename).unwrap();
-
-            let reference_short =
-                ReferenceShort {
-                    uniquename: String::from(reference_uniquename),
-                    title: reference_details.title.clone(),
-                    citation: reference_details.citation.clone(),
-                    publication_year: reference_details.publication_year.clone(),
-                    authors: reference_details.authors.clone(),
-                    authors_abbrev: reference_details.authors_abbrev.clone(),
-                    gene_count: reference_details.genes_by_uniquename.keys().len(),
-                    genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
-                };
-
-            Some(reference_short)
         }
     }
 
