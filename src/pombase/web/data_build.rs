@@ -1247,7 +1247,9 @@ impl <'a> WebDataBuild<'a> {
                                        terms_by_termid: HashMap::new(),
                                    });
 
-            all_uniquenames.push(reference_uniquename.clone());
+            if pubmed_publication_date.is_some() {
+                all_uniquenames.push(reference_uniquename.clone());
+            }
         }
 
         let (admin_curated, community_curated) =
