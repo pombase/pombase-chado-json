@@ -6,6 +6,7 @@ use std::borrow::Borrow;
 use std::cmp::{Ordering, min};
 
 use regex::Regex;
+use chrono::{UTC, TimeZone};
 
 use db::*;
 use types::*;
@@ -53,6 +54,8 @@ pub struct WebDataBuild<'a> {
     dbxrefs_of_features: HashMap<String, HashSet<String>>,
 
     possible_interesting_parents: HashSet<InterestingParent>,
+
+    recent_references: RecentReferences,
 }
 
 fn get_maps() ->
@@ -97,6 +100,25 @@ pub fn remove_first<T, P>(vec: &mut Vec<T>, predicate: P) -> Option<T>
     }
 
     None
+}
+
+// Parse two date strings and compare them.  If both can't be parsed, return Equal.
+pub fn cmp_str_dates(date_str1: &String, date_str2: &String) -> Ordering {
+    let datetime1_res = UTC.datetime_from_str(date_str1, "%Y-%m-%d %H:%M:%S");
+    let datetime2_res = UTC.datetime_from_str(date_str2, "%Y-%m-%d %H:%M:%S");
+
+    match datetime1_res {
+        Ok(datetime1) => {
+            match datetime2_res {
+                Ok(datetime2) => datetime1.cmp(&datetime2),
+                Err(_) => Ordering::Greater
+            }
+        },
+        Err(_) => match datetime2_res {
+            Ok(_) => Ordering::Less,
+            Err(_) => Ordering::Equal
+        }
+    }
 }
 
 // merge two ExtPart objects into one by merging gene ranges
@@ -795,6 +817,113 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
     ret
 }
 
+const MAX_RECENT_REFS: usize = 20;
+
+fn make_recently_added(references_map: &UniquenameReferenceMap,
+                           all_ref_uniquenames: &Vec<String>) -> Vec<ReferenceShort> {
+    let mut date_sorted_pub_uniquenames = all_ref_uniquenames.clone();
+
+    {
+        let ref_added_date_cmp =
+            |ref_uniquename1: &ReferenceUniquename, ref_uniquename2: &ReferenceUniquename| {
+                let ref1 = references_map.get(ref_uniquename1).unwrap();
+                let ref2 = references_map.get(ref_uniquename2).unwrap();
+
+                if let Some(ref ref1_added_date) = ref1.canto_added_date {
+                    if let Some(ref ref2_added_date) = ref2.canto_added_date {
+                        cmp_str_dates(ref1_added_date, ref2_added_date).reverse()
+                    } else {
+                        Ordering::Less
+                    }
+                } else {
+                    if ref2.canto_added_date.is_some() {
+                        Ordering::Greater
+                    } else {
+                        Ordering::Equal
+                    }
+                }
+            };
+
+        date_sorted_pub_uniquenames.sort_by(ref_added_date_cmp);
+    }
+
+    let recently_added_iter =
+        date_sorted_pub_uniquenames.iter().take(MAX_RECENT_REFS);
+
+    let mut recently_added: Vec<ReferenceShort> = vec![];
+
+    for ref_uniquename in recently_added_iter {
+        let ref_short_maybe = make_reference_short(&references_map, ref_uniquename);
+        if let Some(ref_short) = ref_short_maybe {
+            recently_added.push(ref_short);
+        }
+    }
+
+    recently_added
+}
+
+fn make_canto_curated(references_map: &UniquenameReferenceMap,
+                      all_ref_uniquenames: &Vec<String>)
+                      -> (Vec<ReferenceShort>, Vec<ReferenceShort>) {
+    let mut sorted_pub_uniquenames: Vec<ReferenceUniquename> =
+        all_ref_uniquenames.iter()
+        .filter(|ref_uniquename| {
+            let reference = references_map.get(*ref_uniquename).unwrap();
+            reference.canto_approved_date.is_some() &&
+                reference.canto_curator_role.is_some()
+        })
+        .map(|r| r.clone())
+        .collect();
+
+    {
+        let approved_date_cmp =
+            |ref_uniquename1: &ReferenceUniquename, ref_uniquename2: &ReferenceUniquename| {
+                let ref1 = references_map.get(ref_uniquename1).unwrap();
+                let ref2 = references_map.get(ref_uniquename2).unwrap();
+
+                if let Some(ref ref1_date) = ref1.canto_approved_date {
+                    if let Some(ref ref2_date) = ref2.canto_approved_date {
+                        cmp_str_dates(ref1_date, ref2_date).reverse()
+                    } else {
+                        panic!();
+                    }
+                } else {
+                    panic!();
+                }
+            };
+
+        sorted_pub_uniquenames.sort_by(approved_date_cmp);
+    }
+
+    let mut admin_curated = vec![];
+    let mut community_curated = vec![];
+
+    let ref_uniquename_iter = sorted_pub_uniquenames.iter();
+
+    for ref_uniquename in ref_uniquename_iter {
+        let reference = references_map.get(ref_uniquename).unwrap();
+
+        if reference.canto_curator_role == Some("community".into()) {
+            if community_curated.len() <= MAX_RECENT_REFS {
+                let ref_short = make_reference_short(&references_map, ref_uniquename).unwrap();
+                community_curated.push(ref_short);
+            }
+        } else {
+            if admin_curated.len() <= MAX_RECENT_REFS {
+                let ref_short = make_reference_short(&references_map, ref_uniquename).unwrap();
+                admin_curated.push(ref_short);
+            }
+        }
+
+        if admin_curated.len() == MAX_RECENT_REFS &&
+            community_curated.len() == MAX_RECENT_REFS {
+                break;
+            }
+    }
+
+    (admin_curated, community_curated)
+}
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw, config: &'a Config) -> WebDataBuild<'a> {
         WebDataBuild {
@@ -808,6 +937,11 @@ impl <'a> WebDataBuild<'a> {
             references: HashMap::new(),
             all_ont_annotations: HashMap::new(),
             all_not_ont_annotations: HashMap::new(),
+            recent_references: RecentReferences {
+                admin_curated: vec![],
+                community_curated: vec![],
+                pubmed: vec![],
+            },
 
             genes_of_transcripts: HashMap::new(),
             transcripts_of_polypeptides: HashMap::new(),
@@ -1034,6 +1168,8 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_references(&mut self) {
+        let mut all_uniquenames = vec![];
+
         for rc_publication in &self.raw.publications {
             let reference_uniquename = &rc_publication.uniquename;
 
@@ -1043,6 +1179,7 @@ impl <'a> WebDataBuild<'a> {
             let mut canto_curator_role: Option<String> = None;
             let mut canto_curator_name: Option<String> = None;
             let mut canto_approved_date: Option<String> = None;
+            let mut canto_added_date: Option<String> = None;
             let mut canto_session_submitted_date: Option<String> = None;
 
             for prop in rc_publication.publicationprops.borrow().iter() {
@@ -1059,6 +1196,8 @@ impl <'a> WebDataBuild<'a> {
                         canto_curator_name = Some(prop.value.clone()),
                     "canto_approved_date" =>
                         canto_approved_date = Some(prop.value.clone()),
+                    "canto_added_date" =>
+                        canto_added_date = Some(prop.value.clone()),
                     "canto_session_submitted_date" =>
                         canto_session_submitted_date = Some(prop.value.clone()),
                     _ => ()
@@ -1095,6 +1234,7 @@ impl <'a> WebDataBuild<'a> {
                                        canto_curator_name: canto_curator_name,
                                        canto_approved_date: canto_approved_date,
                                        canto_session_submitted_date: canto_session_submitted_date,
+                                       canto_added_date: canto_added_date,
                                        publication_year: publication_year,
                                        cv_annotations: HashMap::new(),
                                        physical_interactions: vec![],
@@ -1106,7 +1246,20 @@ impl <'a> WebDataBuild<'a> {
                                        alleles_by_uniquename: HashMap::new(),
                                        terms_by_termid: HashMap::new(),
                                    });
+
+            all_uniquenames.push(reference_uniquename.clone());
         }
+
+        let (admin_curated, community_curated) =
+            make_canto_curated(&self.references, &all_uniquenames);
+
+        let recent_references = RecentReferences {
+            pubmed: make_recently_added(&self.references, &all_uniquenames),
+            admin_curated: admin_curated,
+            community_curated: community_curated,
+        };
+
+        self.recent_references = recent_references;
     }
 
     fn make_feature_rel_maps(&mut self) {
@@ -3380,6 +3533,7 @@ impl <'a> WebDataBuild<'a> {
             used_terms: used_terms,
             metadata: metadata,
             references: self.references.clone(),
+            recent_references: self.recent_references.clone(),
 
             search_api_maps: search_api_maps,
         }

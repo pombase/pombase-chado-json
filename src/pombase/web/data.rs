@@ -245,6 +245,8 @@ pub struct ReferenceDetails {
     pub canto_approved_date: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_session_submitted_date: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_added_date: Option<String>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
     pub genetic_interactions: Vec<InteractionAnnotation>,
@@ -673,6 +675,16 @@ pub struct SearchAPIMaps {
 }
 
 #[derive(Serialize, Clone, Debug)]
+pub struct RecentReferences {
+    // most recent papers from PubMed
+    pub pubmed: Vec<ReferenceShort>,
+    // most recent admin curated papers
+    pub admin_curated: Vec<ReferenceShort>,
+    // most recent community curated
+    pub community_curated: Vec<ReferenceShort>,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct WebData {
     pub genes: UniquenameGeneMap,
     pub genotypes: IdGenotypeMap,
@@ -680,7 +692,7 @@ pub struct WebData {
     pub used_terms: IdRcTermDetailsMap,
     pub metadata: Metadata,
     pub references: UniquenameReferenceMap,
-
+    pub recent_references: RecentReferences,
     pub search_api_maps: SearchAPIMaps,
 }
 
@@ -754,6 +766,14 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write metadata.json");
     }
 
+    fn write_recent_references(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.recent_references).unwrap();
+        let file_name = String::new() + &output_dir + "/recent_references.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write recent references JSON");
+    }
+
     fn write_search_api_maps(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.search_api_maps).unwrap();
         let file_name = String::new() + &output_dir + "/search_api_maps.json";
@@ -775,6 +795,8 @@ impl WebData {
         println!("wrote {} terms", self.get_terms().len());
         self.write_metadata(output_dir);
         println!("wrote metadata");
+        self.write_recent_references(output_dir);
+        println!("wrote recent references");
         self.write_search_api_maps(output_dir);
         println!("wrote search data");
     }
