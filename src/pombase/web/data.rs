@@ -1,7 +1,7 @@
 extern crate serde_json;
 extern crate postgres;
 
-use std::fs::File;
+use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
 use std::collections::HashMap;
 
@@ -728,10 +728,19 @@ impl WebData {
         &self.terms
     }
 
+    fn create_dir(&self, output_dir: &str, dir_name: &str) -> String {
+        let path = String::new() + output_dir + "/" + dir_name;
+        create_dir_all(&path).unwrap_or_else(|why| {
+            println!("Creating output directory failed: {:?}", why.kind());
+        });
+        path
+    }
+
     fn write_chromosomes(&self, output_dir: &str) {
+        let new_path = self.create_dir(output_dir, "chromosome");
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
             let s = serde_json::to_string(&chromosome_details).unwrap();
-            let file_name = String::new() + &output_dir + "/chromosome/" + &chromosome_uniquename + ".json";
+            let file_name = format!("{}/{}.json", new_path, &chromosome_uniquename);
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write chromosome JSON");
@@ -739,9 +748,10 @@ impl WebData {
     }
 
     fn write_reference_details(&self, output_dir: &str) {
+        let new_path = self.create_dir(output_dir, "reference");
         for (reference_uniquename, reference_details) in &self.references {
             let s = serde_json::to_string(&reference_details).unwrap();
-            let file_name = String::new() + &output_dir + "/reference/" + &reference_uniquename + ".json";
+            let file_name = format!("{}/{}.json", new_path, &reference_uniquename);
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write reference JSON");
@@ -749,9 +759,10 @@ impl WebData {
     }
 
     fn write_gene_details(&self, output_dir: &str) {
+        let new_path = self.create_dir(output_dir, "gene");
         for (gene_uniquename, gene_details) in &self.genes {
             let s = serde_json::to_string(&gene_details).unwrap();
-            let file_name = String::new() + &output_dir + "/gene/" + &gene_uniquename + ".json";
+            let file_name = format!("{}/{}.json", new_path, &gene_uniquename);
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write gene JSON");
@@ -759,9 +770,10 @@ impl WebData {
     }
 
     fn write_genotype_details(&self, output_dir: &str) {
+        let new_path = self.create_dir(output_dir, "genotype");
         for (genotype_uniquename, genotype_details) in &self.genotypes {
             let s = serde_json::to_string(&genotype_details).unwrap();
-            let file_name = String::new() + &output_dir + "/genotype/" + &genotype_uniquename + ".json";
+            let file_name = format!("{}/{}.json", new_path, &genotype_uniquename);
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write genotype JSON");
@@ -777,9 +789,10 @@ impl WebData {
     }
 
     fn write_terms(&self, output_dir: &str) {
+        let new_path = self.create_dir(output_dir, "term");
         for (termid, term_details) in &self.terms {
             let s = serde_json::to_string(&term_details).unwrap();
-            let file_name = String::new() + &output_dir + "/term/" + &termid + ".json";
+            let file_name = format!("{}/{}.json", new_path, &termid);
             let f = File::create(file_name).expect("Unable to open file");
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write term JSON");

@@ -10,7 +10,6 @@ use postgres::{Connection, TlsMode};
 use std::env;
 use getopts::Options;
 use std::process;
-use std::fs;
 use std::fs::File;
 use std::io::BufReader;
 
@@ -22,17 +21,6 @@ use pombase::web::data_build::*;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-fn make_subdirs(output_dir: &str) {
-    let subdirs = vec!["gene", "genotype", "term", "chromosome", "reference"];
-
-    for subdir in &subdirs {
-        let dir = String::new() + output_dir + "/" + subdir;
-        fs::create_dir_all(&dir).unwrap_or_else(|why| {
-            println!("Creating output directory failed: {:?}", why.kind());
-        });
-    }
-}
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
@@ -105,8 +93,6 @@ fn main() {
     let config = read_config(&matches.opt_str("c").unwrap());
     let connection_string = matches.opt_str("p").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
-
-    make_subdirs(&output_dir);
 
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
 
