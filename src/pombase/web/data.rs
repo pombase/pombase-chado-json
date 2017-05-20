@@ -23,6 +23,7 @@ pub type UniquenameReferenceMap =
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
+pub type ChrNameDetailsMap = HashMap<ChromosomeName, ChromosomeDetails>;
 
 pub type IdGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
@@ -202,6 +203,12 @@ impl Hash for TermShort {
     }
 }
 
+#[derive(Serialize, Clone, Debug)]
+pub struct ChromosomeDetails {
+    pub name: String,
+    pub residues: String,
+    pub ena_identifier: String,
+}
 
 #[derive(Serialize, Clone, Debug)]
 pub struct ReferenceShort {
@@ -399,8 +406,15 @@ pub enum Strand {
 }
 
 #[derive(Serialize, Clone, Debug)]
+pub struct ChromosomeShort {
+    pub name: String,
+    pub length: usize,
+    pub ena_identifier: String,
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct ChromosomeLocation {
-    pub chromosome_name: String,
+    pub chromosome: ChromosomeShort,
     pub start_pos: u32,
     pub end_pos: u32,
     pub strand: Strand,
@@ -691,6 +705,7 @@ pub struct WebData {
     pub terms: IdRcTermDetailsMap,
     pub used_terms: IdRcTermDetailsMap,
     pub metadata: Metadata,
+    pub chromosomes: ChrNameDetailsMap,
     pub references: UniquenameReferenceMap,
     pub recent_references: RecentReferences,
     pub search_api_maps: SearchAPIMaps,
@@ -706,8 +721,21 @@ impl WebData {
     fn get_references(&self) -> &UniquenameReferenceMap {
         &self.references
     }
+    fn get_chromosomes(&self) -> &ChrNameDetailsMap {
+        &self.chromosomes
+    }
     fn get_terms(&self) -> &IdRcTermDetailsMap {
         &self.terms
+    }
+
+    fn write_chromosomes(&self, output_dir: &str) {
+        for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
+            let s = serde_json::to_string(&chromosome_details).unwrap();
+            let file_name = String::new() + &output_dir + "/chromosome/" + &chromosome_uniquename + ".json";
+            let f = File::create(file_name).expect("Unable to open file");
+            let mut writer = BufWriter::new(&f);
+            writer.write_all(s.as_bytes()).expect("Unable to write chromosome JSON");
+        }
     }
 
     fn write_reference_details(&self, output_dir: &str) {
@@ -783,6 +811,8 @@ impl WebData {
     }
 
     pub fn write(&self, output_dir: &str) {
+        self.write_chromosomes(output_dir);
+        println!("wrote {} chromosomes", self.get_chromosomes().len());
         self.write_reference_details(output_dir);
         println!("wrote {} references", self.get_references().len());
         self.write_gene_details(output_dir);

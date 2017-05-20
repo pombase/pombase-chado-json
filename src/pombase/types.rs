@@ -11,6 +11,7 @@ pub type GeneProduct = String;
 pub type TermName = String;
 pub type TermId = String;
 pub type TermDef = String;
+pub type ChromosomeName = String;
 
 pub type Evidence = String;
 pub type Residue = String;

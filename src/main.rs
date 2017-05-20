@@ -24,7 +24,7 @@ const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn make_subdirs(output_dir: &str) {
-    let subdirs = vec!["gene", "genotype", "term", "reference"];
+    let subdirs = vec!["gene", "genotype", "term", "chromosome", "reference"];
 
     for subdir in &subdirs {
         let dir = String::new() + output_dir + "/" + subdir;
@@ -111,7 +111,7 @@ fn main() {
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
 
     let raw = Raw::new(&conn);
-    let mut web_data_build = WebDataBuild::new(&raw, &config);
+    let web_data_build = WebDataBuild::new(&raw, &config);
     let web_data = web_data_build.get_web_data();
 
     web_data.write(&output_dir);

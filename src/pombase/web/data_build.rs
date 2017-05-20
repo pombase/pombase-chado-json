@@ -35,6 +35,7 @@ pub struct WebDataBuild<'a> {
     genotypes: UniquenameGenotypeMap,
     alleles: UniquenameAlleleMap,
     terms: TermIdDetailsMap,
+    chromosomes: ChrNameDetailsMap,
     references: UniquenameReferenceMap,
     all_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
     all_not_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
@@ -647,6 +648,19 @@ pub fn genotype_display_name(genotype: &GenotypeDetails,
     }
 }
 
+fn make_chromosome_short<'a>(chromosome_map: &'a ChrNameDetailsMap,
+                             chromosome_name: &'a str) -> ChromosomeShort {
+    if let Some(chr) = chromosome_map.get(chromosome_name) {
+        ChromosomeShort {
+            name: chr.name.clone(),
+            length: chr.residues.len(),
+            ena_identifier: chr.ena_identifier.clone(),
+        }
+    } else {
+        panic!("can't find chromosome: {}", chromosome_name);
+    }
+}
+
 fn make_gene_short<'b>(gene_map: &'b UniquenameGeneMap,
                        gene_uniquename: &'b str) -> GeneShort {
     if let Some(gene_details) = gene_map.get(gene_uniquename) {
@@ -934,6 +948,7 @@ impl <'a> WebDataBuild<'a> {
             genotypes: HashMap::new(),
             alleles: HashMap::new(),
             terms: HashMap::new(),
+            chromosomes: HashMap::new(),
             references: HashMap::new(),
             all_ont_annotations: HashMap::new(),
             all_not_ont_annotations: HashMap::new(),
@@ -1325,8 +1340,10 @@ impl <'a> WebDataBuild<'a> {
                     } else {
                         panic!("start_end less than 1");
                     };
+                let feature_uniquename = &feature_loc.srcfeature.uniquename;
+                let chr_short = make_chromosome_short(&self.chromosomes, feature_uniquename);
                 Some(ChromosomeLocation {
-                    chromosome_name: feature_loc.srcfeature.uniquename.clone(),
+                    chromosome: chr_short,
                     start_pos: start_pos,
                     end_pos: end_pos,
                     strand: match feature_loc.strand {
@@ -1481,6 +1498,28 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn store_chromosome_details(&mut self, feat: &Feature) {
+        let mut ena_identifier = None;
+
+        for prop in feat.featureprops.borrow().iter() {
+            if prop.prop_type.name == "ena_id" {
+                ena_identifier = prop.value.clone()
+            }
+        }
+
+        if feat.residues.is_none() {
+            panic!("{:?}", feat.uniquename);
+        }
+
+        let chr = ChromosomeDetails {
+            name: feat.uniquename.clone(),
+            residues: feat.residues.clone().unwrap(),
+            ena_identifier: ena_identifier.unwrap(),
+        };
+
+        self.chromosomes.insert(feat.uniquename.clone(), chr);
+    }
+
     fn store_genotype_details(&mut self, feat: &Feature) {
         let mut background = None;
 
@@ -1535,6 +1574,14 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_features(&mut self) {
+        // we need to process all chromosomes before genes, and all
+        // genes before transcripts
+        for feat in &self.raw.features {
+            if feat.feat_type.name == "chromosome" {
+                self.store_chromosome_details(feat);
+            }
+        }
+
         for feat in &self.raw.features {
             if feat.feat_type.name == "gene" || feat.feat_type.name == "pseudogene" {
                 self.store_gene_details(feat);
@@ -1624,7 +1671,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         let cmp = |a: &GeneAndLoc, b: &GeneAndLoc| {
-            let order = a.loc.chromosome_name.cmp(&b.loc.chromosome_name);
+            let order = a.loc.chromosome.name.cmp(&b.loc.chromosome.name);
             if order == Ordering::Equal {
                 a.loc.start_pos.cmp(&b.loc.start_pos)
             } else {
@@ -1647,8 +1694,8 @@ impl <'a> WebDataBuild<'a> {
                 for back_index in (start_index..i).rev() {
                     let back_gene_and_loc = &genes_and_locs[back_index];
 
-                    if back_gene_and_loc.loc.chromosome_name !=
-                        this_gene_and_loc.loc.chromosome_name {
+                    if back_gene_and_loc.loc.chromosome.name !=
+                        this_gene_and_loc.loc.chromosome.name {
                             break;
                         }
                     let back_gene_short = self.make_gene_short(&back_gene_and_loc.gene_uniquename);
@@ -1670,8 +1717,8 @@ impl <'a> WebDataBuild<'a> {
                 for forward_index in i+1..end_index {
                     let forward_gene_and_loc = &genes_and_locs[forward_index];
 
-                    if forward_gene_and_loc.loc.chromosome_name !=
-                        this_gene_and_loc.loc.chromosome_name {
+                    if forward_gene_and_loc.loc.chromosome.name !=
+                        this_gene_and_loc.loc.chromosome.name {
                             break;
                         }
 
@@ -3477,7 +3524,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    pub fn get_web_data(&mut self) -> WebData {
+    pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
         self.make_feature_rel_maps();
@@ -3529,13 +3576,14 @@ impl <'a> WebDataBuild<'a> {
         let metadata = self.make_metadata();
 
         WebData {
-            genes: self.genes.clone(),
-            genotypes: self.genotypes.clone(),
+            genes: self.genes,
+            genotypes: self.genotypes,
             terms: web_data_terms,
             used_terms: used_terms,
             metadata: metadata,
-            references: self.references.clone(),
-            recent_references: self.recent_references.clone(),
+            chromosomes: self.chromosomes,
+            references: self.references,
+            recent_references: self.recent_references,
 
             search_api_maps: search_api_maps,
         }

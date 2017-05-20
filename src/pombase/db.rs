@@ -353,9 +353,7 @@ impl Raw {
         }
 
         for row in &conn.query(
-            "SELECT feature_id, uniquename, name, type_id, organism_id,
-                    (CASE WHEN feature.type_id IN (SELECT cvterm_id FROM cvterm WHERE name = 'chromosome')
-                          THEN NULL ELSE feature.residues END) AS residues FROM feature", &[]).unwrap() {
+            "SELECT feature_id, uniquename, name, type_id, organism_id, residues FROM feature", &[]).unwrap() {
             let feature_id = row.get(0);
             let type_id: i32 = row.get(3);
             let organism_id: i32 = row.get(4);
