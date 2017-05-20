@@ -1,6 +1,7 @@
 extern crate serde_json;
 extern crate postgres;
 
+use std::cmp::min;
 use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
 use std::collections::HashMap;
@@ -711,6 +712,8 @@ pub struct WebData {
     pub search_api_maps: SearchAPIMaps,
 }
 
+const CHUNK_SIZE: usize = 10000;
+
 impl WebData {
     fn get_genes(&self) -> &UniquenameGeneMap {
         &self.genes
@@ -736,6 +739,22 @@ impl WebData {
         path
     }
 
+    fn write_chromosome_seq_chunks(&self, output_dir: &str) {
+        for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
+            let chr_path = self.create_dir(output_dir, &format!("{}/sequence", chromosome_uniquename));
+            let mut pos = 0;
+            while pos < chromosome_details.residues.len() {
+                let end_pos = min(pos+CHUNK_SIZE, chromosome_details.residues.len());
+                let chunk: String = chromosome_details.residues[pos..end_pos].into();
+                let file_name = format!("{}/chunk_{:09}", chr_path, pos);
+                let f = File::create(file_name).expect("Unable to open file");
+                let mut writer = BufWriter::new(&f);
+                writer.write_all(chunk.as_bytes()).expect("Unable to write chromosome chunk");
+                pos = pos + CHUNK_SIZE;
+            }
+        }
+    }
+
     fn write_chromosomes(&self, output_dir: &str) {
         let new_path = self.create_dir(output_dir, "chromosome");
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
@@ -745,6 +764,7 @@ impl WebData {
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write chromosome JSON");
         }
+        self.write_chromosome_seq_chunks(&new_path);
     }
 
     fn write_reference_details(&self, output_dir: &str) {
