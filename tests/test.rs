@@ -221,6 +221,9 @@ fn get_test_raw() -> Raw {
     let mol_weight_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
                                 "molecular_weight", "90011059");
+    let ena_identifier_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "ena_id", "90011060");
     let polypeptide_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
                                 "polypeptide", "0000104");
@@ -294,8 +297,12 @@ fn get_test_raw() -> Raw {
 
     let chr_1 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_1", None);
+    make_test_featureprop(&mut featureprops, &chr_1, &ena_identifier_cvterm,
+                          Some(String::from("CU329670.1")));
     let chr_3 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_3", None);
+    make_test_featureprop(&mut featureprops, &chr_3, &ena_identifier_cvterm,
+                          Some(String::from("CU329672.1")));
 
     let pom1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
                                       "SPAC2F7.03c", Some(String::from("pom1")));
@@ -438,7 +445,7 @@ fn get_test_config() -> Config {
 fn get_test_web_data() -> WebData {
     let raw = get_test_raw();
     let config = get_test_config();
-    let mut web_data_build = WebDataBuild::new(&raw, &config);
+    let web_data_build = WebDataBuild::new(&raw, &config);
     web_data_build.get_web_data()
 }
 
@@ -778,7 +785,7 @@ fn test_locations() {
     let pom1_gene = web_data.genes.get("SPAC2F7.03c").unwrap().clone();
     let pom1_loc = pom1_gene.location.unwrap().clone();
 
-    assert_eq!(&pom1_loc.chromosome_name, "chromosome_1");
+    assert_eq!(&pom1_loc.chromosome.name, "chromosome_1");
     assert_eq!(pom1_loc.start_pos, 534120);
     assert_eq!(pom1_loc.end_pos, 537869);
     assert_eq!(pom1_loc.strand, Strand::Reverse);
@@ -790,7 +797,7 @@ fn test_locations() {
     let cdc16_gene = web_data.genes.get("SPAC6F6.08c").unwrap().clone();
     let cdc16_loc = cdc16_gene.location.unwrap().clone();
 
-    assert_eq!(&cdc16_loc.chromosome_name, "chromosome_1");
+    assert_eq!(&cdc16_loc.chromosome.name, "chromosome_1");
     assert_eq!(cdc16_loc.start_pos, 2746667);
     assert_eq!(cdc16_loc.end_pos, 2748180);
     assert_eq!(cdc16_loc.strand, Strand::Reverse);
