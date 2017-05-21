@@ -739,18 +739,21 @@ impl WebData {
         path
     }
 
-    fn write_chromosome_seq_chunks(&self, output_dir: &str) {
+    fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_size: usize) {
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
-            let chr_path = self.create_dir(output_dir, &format!("{}/sequence", chromosome_uniquename));
-            let mut pos = 0;
-            while pos < chromosome_details.residues.len() {
-                let end_pos = min(pos+CHUNK_SIZE, chromosome_details.residues.len());
-                let chunk: String = chromosome_details.residues[pos..end_pos].into();
-                let file_name = format!("{}/chunk_{:09}", chr_path, pos);
+            let new_path_part = &format!("{}/sequence/{}", chromosome_uniquename, chunk_size);
+            let chr_path = self.create_dir(output_dir, new_path_part);
+            let mut index = 0;
+            let max_index = chromosome_details.residues.len() / chunk_size;
+            while index < max_index {
+                let start_pos = index*chunk_size;
+                let end_pos = min(start_pos+chunk_size, chromosome_details.residues.len());
+                let chunk: String = chromosome_details.residues[start_pos..end_pos].into();
+                let file_name = format!("{}/chunk_{}", chr_path, index);
                 let f = File::create(file_name).expect("Unable to open file");
                 let mut writer = BufWriter::new(&f);
                 writer.write_all(chunk.as_bytes()).expect("Unable to write chromosome chunk");
-                pos = pos + CHUNK_SIZE;
+                index += 1;
             }
         }
     }
@@ -764,7 +767,7 @@ impl WebData {
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write chromosome JSON");
         }
-        self.write_chromosome_seq_chunks(&new_path);
+        self.write_chromosome_seq_chunks(&new_path, CHUNK_SIZE);
     }
 
     fn write_reference_details(&self, output_dir: &str) {
