@@ -49,12 +49,20 @@ fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
 fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
                      type_cvterm: &Rc<Cvterm>, uniquename: &str, name: Option<String>)
                      -> Rc<Feature> {
+    let residues =
+        if type_cvterm.name == "chromosome" {
+            "ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT\
+ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT\
+ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
+        } else {
+            "ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
+        };
     let feature = Rc::new(Feature {
         organism: organism.clone(),
         uniquename: String::from(uniquename),
         name: name,
         feat_type: type_cvterm.clone(),
-        residues: Some("AAAAAAA".into()),
+        residues: Some(residues.into()),
         featurelocs: RefCell::new(vec![]),
         featureprops: RefCell::new(vec![]),
     });
@@ -206,6 +214,15 @@ fn get_test_raw() -> Raw {
     let mrna_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
                                 "mRNA", "0000234");
+    let exon_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
+                                "exon", "0000235");
+    let three_prime_utr_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
+                                "three_prime_UTR", "0000236");
+    let five_prime_utr_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
+                                "five_prime_UTR", "0000237");
     let genotype_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &sequence_cv, &so_db,
                                 "genotype", "0001027");
@@ -348,6 +365,19 @@ fn get_test_raw() -> Raw {
     make_test_feature_rel(&mut feature_relationships,  &publication,
                           &par1_mrna, &part_of_cvterm, &par1_gene);
 
+    let par1_exon_1 = make_test_feature(&mut features, &pombe_organism,
+                                        &exon_cvterm, "SPCC188.02.1:exon:1", None);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &par1_exon_1, &part_of_cvterm, &par1_mrna);
+    let par1_3putr_1 = make_test_feature(&mut features, &pombe_organism,
+                                         &three_prime_utr_cvterm, "SPCC188.02.1:three_prime_UTR:1", None);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &par1_3putr_1, &part_of_cvterm, &par1_mrna);
+    let par1_5putr_1 = make_test_feature(&mut features, &pombe_organism,
+                                         &five_prime_utr_cvterm, "SPCC188.02.1:three_prime_UTR:1", None);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &par1_5putr_1, &part_of_cvterm, &par1_mrna);
+
     let par1_polypeptide = make_test_feature(&mut features, &pombe_organism, &polypeptide_cvterm,
                                              "SPCC188.02:pep", None);
     make_test_feature_rel(&mut feature_relationships, &publication,
@@ -362,8 +392,32 @@ fn get_test_raw() -> Raw {
 
     par1_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
         feature: par1_gene.clone(),
-        fmin: 1475493,
-        fmax: 1478103,
+        fmin: 10,
+        fmax: 200,
+        strand: 1,
+        srcfeature: chr_3.clone(),
+    }));
+
+    par1_5putr_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
+        feature: par1_5putr_1.clone(),
+        fmin: 10,
+        fmax: 24,
+        strand: 1,
+        srcfeature: chr_3.clone(),
+    }));
+
+    par1_exon_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
+        feature: par1_exon_1.clone(),
+        fmin: 24,
+        fmax: 50,
+        strand: 1,
+        srcfeature: chr_3.clone(),
+    }));
+
+    par1_3putr_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
+        feature: par1_3putr_1.clone(),
+        fmin: 50,
+        fmax: 200,
         strand: 1,
         srcfeature: chr_3.clone(),
     }));
