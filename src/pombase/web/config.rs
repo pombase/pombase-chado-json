@@ -173,4 +173,6 @@ pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
 
 pub const TRANSCRIPT_FEATURE_TYPES: [&str; 6] =
     ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA"];
+pub const TRANSCRIPT_PART_TYPES: [&str; 3] =
+    ["five_prime_UTR", "exon", "three_prime_UTR"];
 

@@ -42,6 +42,7 @@ pub struct WebDataBuild<'a> {
 
     genes_of_transcripts: HashMap<String, String>,
     transcripts_of_polypeptides: HashMap<String, String>,
+    parts_of_transcripts: HashMap<String, Vec<FeatureShort>>,
     genes_of_alleles: HashMap<String, String>,
     alleles_of_genotypes: HashMap<String, Vec<AlleleAndExpression>>,
 
@@ -648,6 +649,93 @@ pub fn genotype_display_name(genotype: &GenotypeDetails,
     }
 }
 
+fn make_location(chromosome_map: &ChrNameDetailsMap,
+                 feat: &Feature) -> Option<ChromosomeLocation> {
+    let feature_locs = feat.featurelocs.borrow();
+    match feature_locs.get(0) {
+        Some(feature_loc) => {
+            let start_pos =
+                if feature_loc.fmin + 1 >= 1 {
+                    (feature_loc.fmin + 1) as u32
+                } else {
+                    panic!("start_pos less than 1");
+                };
+            let end_pos =
+                if feature_loc.fmax >= 1 {
+                    feature_loc.fmax as u32
+                } else {
+                    panic!("start_end less than 1");
+                };
+            let feature_uniquename = &feature_loc.srcfeature.uniquename;
+            let chr_short = make_chromosome_short(chromosome_map, feature_uniquename);
+            Some(ChromosomeLocation {
+                chromosome: chr_short,
+                start_pos: start_pos,
+                end_pos: end_pos,
+                strand: match feature_loc.strand {
+                    1 => Strand::Forward,
+                    -1 => Strand::Reverse,
+                    _ => panic!(),
+                },
+            })
+        },
+        None => None,
+    }
+}
+
+fn complement_char(base: char) -> char {
+    match base {
+        'a' => 't',
+        'A' => 'T',
+        't' => 'a',
+        'T' => 'A',
+        'g' => 'c',
+        'G' => 'C',
+        'c' => 'g',
+        'C' => 'G',
+        _ => 'n',
+    }
+}
+
+fn rev_comp(residues: &Residues) -> Residues {
+    residues.chars()
+        .rev().map(|base| complement_char(base))
+        .collect()
+}
+
+fn get_loc_residues(chr: &ChromosomeDetails,
+                    loc: &ChromosomeLocation) -> Residues {
+    let start = (loc.start_pos - 1) as usize;
+    let end = loc.end_pos as usize;
+    let residues: Residues = chr.residues[start..end].into();
+    rev_comp(&residues)
+}
+
+fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> FeatureShort {
+    let maybe_loc = make_location(chromosome_map, feat);
+    if let Some(loc) = maybe_loc {
+        if let Some(chr) = chromosome_map.get(&loc.chromosome.name) {
+            let residues = get_loc_residues(chr, &loc);
+            let feature_type = match &feat.feat_type.name as &str {
+                "five_prime_UTR" => FeatureType::FivePrimeUtr,
+                "exon" => FeatureType::Exon,
+                "three_prime_UTR" => FeatureType::ThreePrimeUtr,
+                _ => panic!("can't handle feature type: {}", feat.feat_type.name),
+            };
+            FeatureShort {
+                feature_type: feature_type,
+                uniquename: feat.uniquename.clone(),
+                location: loc,
+                residues: residues,
+            }
+        } else {
+            panic!("can't find chromosome {}", loc.chromosome.name);
+        }
+    } else {
+        panic!("{} has no featureloc", feat.uniquename);
+    }
+}
+
 fn make_chromosome_short<'a>(chromosome_map: &'a ChrNameDetailsMap,
                              chromosome_name: &'a str) -> ChromosomeShort {
     if let Some(chr) = chromosome_map.get(chromosome_name) {
@@ -938,6 +1026,143 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
     (admin_curated, community_curated)
 }
 
+fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
+                             transcript_uniquename: &str, parts: &mut Vec<FeatureShort>) {
+    let mut new_parts: Vec<FeatureShort> = vec![];
+    let mut intron_count = 0;
+
+    for part in parts.drain(0..) {
+        if part.feature_type != FeatureType::Exon {
+            new_parts.push(part);
+            continue;
+        }
+
+        let mut maybe_new_intron = None;
+
+        if let Some(ref prev_part) = new_parts.last() {
+            if prev_part.feature_type == FeatureType::Exon {
+                let prev_exon = prev_part;
+                let intron_start = prev_exon.location.end_pos + 1;
+                let intron_end = part.location.start_pos - 1;
+
+                if intron_start > intron_end {
+                    println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
+                             transcript_uniquename);
+                    continue;
+                }
+
+                intron_count += 1;
+
+                let new_loc = ChromosomeLocation {
+                    chromosome: prev_exon.location.chromosome.clone(),
+                    start_pos: intron_start,
+                    end_pos: intron_end,
+                    strand: prev_exon.location.strand.clone(),
+                };
+
+                let intron_uniquename =
+                    format!("{}:intron:{}", transcript_uniquename, intron_count);
+                let intron_residues = get_loc_residues(chromosome, &new_loc);
+
+                maybe_new_intron = Some(FeatureShort {
+                    feature_type: FeatureType::Intron,
+                    uniquename: intron_uniquename,
+                    location: new_loc,
+                    residues: intron_residues,
+                });
+            }
+        }
+
+        if let Some(new_intron) = maybe_new_intron {
+            new_parts.push(new_intron);
+        }
+
+        new_parts.push(part);
+    }
+
+    *parts = new_parts;
+}
+
+fn validate_transcript_parts(transcript_uniquename: &str, parts: &Vec<FeatureShort>) {
+    let mut seen_exon = false;
+    for part in parts {
+        if part.feature_type == FeatureType::Exon {
+            seen_exon = true;
+            break;
+        }
+    }
+    if !seen_exon {
+        panic!("transcript has no exons: {}", transcript_uniquename);
+    }
+
+    if parts.get(0).unwrap().feature_type != FeatureType::Exon {
+        for i in 1..parts.len() {
+            let part = &parts[i];
+            if part.feature_type == FeatureType::Exon {
+                let last_utr_before_exons = &parts[i-1];
+
+                let first_exon = &parts[i];
+
+                if last_utr_before_exons.location.end_pos + 1 != first_exon.location.start_pos {
+                    println!("{} and exon don't meet up: {} at pos {}",
+                             last_utr_before_exons.feature_type, transcript_uniquename,
+                             last_utr_before_exons.location.end_pos);
+                }
+
+                break;
+            } else {
+                if part.location.strand == Strand::Forward {
+                    if part.feature_type != FeatureType::FivePrimeUtr {
+                        println!("{:?}", parts);
+                        panic!("wrong feature type '{}' before exons in {}",
+                               part.feature_type, transcript_uniquename);
+                    }
+                } else {
+                    if part.feature_type != FeatureType::ThreePrimeUtr {
+                        println!("{:?}", parts);
+                        panic!("wrong feature type '{}' after exons in {}",
+                               part.feature_type, transcript_uniquename);
+                    }
+                }
+            }
+        }
+    }
+
+    let last_part = parts.last().unwrap();
+    
+    if last_part.feature_type != FeatureType::Exon {
+        for i in (0..parts.len()-1).rev() {
+            let part = &parts[i];
+            if part.feature_type == FeatureType::Exon {
+                let first_utr_after_exons = &parts[i+1];
+
+                let last_exon = &parts[i];
+
+                if last_exon.location.end_pos + 1 != first_utr_after_exons.location.start_pos {
+                    println!("{} and exon don't meet up: {} at pos {}",
+                             first_utr_after_exons.feature_type, transcript_uniquename,
+                             first_utr_after_exons.location.end_pos);
+                }
+
+                break;
+            } else {
+                if part.location.strand == Strand::Forward {
+                    if part.feature_type != FeatureType::ThreePrimeUtr {
+                        panic!("wrong feature type '{}' before exons in {}",
+                               part.feature_type, transcript_uniquename);
+                    }
+                } else {
+                    if part.feature_type != FeatureType::FivePrimeUtr {
+                        panic!("wrong feature type '{}' after exons in {}",
+                               part.feature_type, transcript_uniquename);
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw, config: &'a Config) -> WebDataBuild<'a> {
         WebDataBuild {
@@ -960,6 +1185,7 @@ impl <'a> WebDataBuild<'a> {
 
             genes_of_transcripts: HashMap::new(),
             transcripts_of_polypeptides: HashMap::new(),
+            parts_of_transcripts: HashMap::new(),
             genes_of_alleles: HashMap::new(),
             alleles_of_genotypes: HashMap::new(),
 
@@ -1279,6 +1505,8 @@ impl <'a> WebDataBuild<'a> {
         self.recent_references = recent_references;
     }
 
+    // make maps from genes to transcript, transcripts to polypeptide,
+    // exon, intron, UTRs
     fn make_feature_rel_maps(&mut self) {
         for feature_rel in self.raw.feature_relationships.iter() {
             let subject_type_name = &feature_rel.subject.feat_type.name;
@@ -1288,8 +1516,7 @@ impl <'a> WebDataBuild<'a> {
             let object_uniquename = &feature_rel.object.uniquename;
 
             if TRANSCRIPT_FEATURE_TYPES.contains(&subject_type_name.as_str()) &&
-                rel_name == "part_of" &&
-                (object_type_name == "gene" || object_type_name == "pseudogene") {
+                rel_name == "part_of" && is_gene_type(object_type_name) {
                     self.genes_of_transcripts.insert(subject_uniquename.clone(),
                                                      object_uniquename.clone());
                     continue;
@@ -1321,39 +1548,11 @@ impl <'a> WebDataBuild<'a> {
                         continue;
                     }
             }
-        }
-    }
-
-    fn make_location(&self, feat: &Feature) -> Option<ChromosomeLocation> {
-        let feature_locs = feat.featurelocs.borrow();
-        match feature_locs.get(0) {
-            Some(feature_loc) => {
-                let start_pos =
-                    if feature_loc.fmin + 1 >= 1 {
-                        (feature_loc.fmin + 1) as u32
-                    } else {
-                        panic!("start_pos less than 1");
-                    };
-                let end_pos =
-                    if feature_loc.fmax >= 1 {
-                        feature_loc.fmax as u32
-                    } else {
-                        panic!("start_end less than 1");
-                    };
-                let feature_uniquename = &feature_loc.srcfeature.uniquename;
-                let chr_short = make_chromosome_short(&self.chromosomes, feature_uniquename);
-                Some(ChromosomeLocation {
-                    chromosome: chr_short,
-                    start_pos: start_pos,
-                    end_pos: end_pos,
-                    strand: match feature_loc.strand {
-                        1 => Strand::Forward,
-                        -1 => Strand::Reverse,
-                        _ => panic!(),
-                    },
-                })
-            },
-            None => None,
+            if TRANSCRIPT_PART_TYPES.contains(&subject_type_name.as_str()) {
+                let entry = self.parts_of_transcripts.entry(object_uniquename.clone());
+                let part = make_feature_short(&self.chromosomes, &feature_rel.subject);
+                entry.or_insert(Vec::new()).push(part);
+            }
         }
     }
 
@@ -1366,7 +1565,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn store_gene_details(&mut self, feat: &Feature) {
-        let location = self.make_location(&feat);
+        let location = make_location(&self.chromosomes, &feat);
         let organism = make_organism(&feat.organism);
         let dbxrefs = self.get_feature_dbxrefs(feat);
 
@@ -1418,28 +1617,54 @@ impl <'a> WebDataBuild<'a> {
         self.genes.insert(feat.uniquename.clone(), gene_feature);
     }
 
-    fn store_transcript_details(&mut self, feat: &Feature) {
-        if let Some(residues) = feat.residues.clone() {
-            let transcript_uniquename = feat.uniquename.clone();
-            let transcript = TranscriptDetails {
-                uniquename: transcript_uniquename.clone(),
-                transcript_type: feat.feat_type.name.clone(),
-                sequence: residues,
-                protein: None,
-            };
+    fn get_transcript_parts(&mut self, transcript_uniquename: &str) -> Vec<FeatureShort> {
+        let mut parts = self.parts_of_transcripts.remove(transcript_uniquename)
+            .expect("can't find transcript");
 
-            if let Some(gene_uniquename) =
-                self.genes_of_transcripts.get(&transcript_uniquename) {
-                    let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
-                    gene_details.feature_type =
-                        transcript.transcript_type.clone() + " " + &gene_details.feature_type;
-                    gene_details.transcripts.push(transcript);
-                } else {
-                    panic!("can't find gene for transcript: {}", transcript_uniquename);
-                }
-        } else {
-            println!("no residues for transcript: {}", feat.uniquename);
+        if parts.len() == 0 {
+            panic!("transcript has no parts: {}", transcript_uniquename);
         }
+
+        let part_cmp = |a: &FeatureShort, b: &FeatureShort| {
+            a.location.start_pos.cmp(&b.location.start_pos)
+        };
+
+        parts.sort_by(&part_cmp);
+
+        validate_transcript_parts(transcript_uniquename, &parts);
+
+        let chr_name = &parts[0].location.chromosome.name.clone();
+        if let Some(chromosome) = self.chromosomes.get(chr_name) {
+            add_introns_to_transcript(chromosome, transcript_uniquename, &mut parts);
+        } else {
+            panic!("can't find chromosome details for: {}", chr_name);
+        }
+
+        if parts.get(0).unwrap().location.strand == Strand::Forward {
+            parts.reverse();
+        }
+
+        parts
+    }
+
+    fn store_transcript_details(&mut self, feat: &Feature) {
+        let transcript_uniquename = feat.uniquename.clone();
+        let transcript = TranscriptDetails {
+            uniquename: transcript_uniquename.clone(),
+            transcript_type: feat.feat_type.name.clone(),
+            parts: self.get_transcript_parts(&transcript_uniquename),
+            protein: None,
+        };
+
+        if let Some(gene_uniquename) =
+            self.genes_of_transcripts.get(&transcript_uniquename) {
+                let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+                gene_details.feature_type =
+                    transcript.transcript_type.clone() + " " + &gene_details.feature_type;
+                gene_details.transcripts.push(transcript);
+            } else {
+                panic!("can't find gene for transcript: {}", transcript_uniquename);
+            }
     }
 
     fn store_protein_details(&mut self, feat: &Feature) {
@@ -1573,15 +1798,18 @@ impl <'a> WebDataBuild<'a> {
         self.alleles.insert(feat.uniquename.clone(), allele_details);
     }
 
-    fn process_features(&mut self) {
-        // we need to process all chromosomes before genes, and all
-        // genes before transcripts
+    fn process_chromosome_features(&mut self) {
+        // we need to process all chromosomes before other featuers
         for feat in &self.raw.features {
             if feat.feat_type.name == "chromosome" {
                 self.store_chromosome_details(feat);
             }
         }
 
+    }
+
+    fn process_features(&mut self) {
+        // we need to process all genes before transcripts
         for feat in &self.raw.features {
             if feat.feat_type.name == "gene" || feat.feat_type.name == "pseudogene" {
                 self.store_gene_details(feat);
@@ -3527,6 +3755,7 @@ impl <'a> WebDataBuild<'a> {
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
+        self.process_chromosome_features();
         self.make_feature_rel_maps();
         self.process_features();
         self.add_gene_neighbourhoods();

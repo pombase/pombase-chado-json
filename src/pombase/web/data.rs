@@ -5,6 +5,8 @@ use std::cmp::min;
 use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
 use std::collections::HashMap;
+use std::fmt::Display;
+use std::fmt;
 
 use self::postgres::Connection;
 
@@ -480,10 +482,44 @@ pub struct ProteinDetails {
     pub molecular_weight: f32,
 }
 
+pub type Residues = String;
+
+#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+pub enum FeatureType {
+#[serde(rename = "five_prime_utr")]
+    FivePrimeUtr,
+#[serde(rename = "exon")]
+    Exon,
+#[serde(rename = "intron")]
+    Intron,
+#[serde(rename = "three_prime_utr")]
+    ThreePrimeUtr,
+}
+
+impl Display for FeatureType {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(match *self {
+            FeatureType::FivePrimeUtr => "5'UTR",
+            FeatureType::Exon => "exon",
+            FeatureType::Intron => "intron",
+            FeatureType::ThreePrimeUtr => "3'UTR",
+        })
+    }
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct FeatureShort {
+    pub feature_type: FeatureType,
+    pub uniquename: String,
+    pub location: ChromosomeLocation,
+    pub residues: Residues,
+}
+
+
 #[derive(Serialize, Clone, Debug)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
-    pub sequence: String,
+    pub parts: Vec<FeatureShort>,
     pub transcript_type: String,
     pub protein: Option<ProteinDetails>,
 }
