@@ -1045,9 +1045,14 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                 let intron_start = prev_exon.location.end_pos + 1;
                 let intron_end = part.location.start_pos - 1;
 
-                if intron_start > intron_end {
-                    println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
-                             transcript_uniquename);
+                if intron_start >= intron_end {
+                    if intron_start != intron_start {
+                        println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
+                                 transcript_uniquename);
+                    }
+                    // if intron_start == intron_end then it is a one base overlap that
+                    // represents a frameshift in the reference See:
+                    // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
                     continue;
                 }
 
