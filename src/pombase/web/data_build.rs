@@ -1366,19 +1366,17 @@ impl <'a> WebDataBuild<'a> {
                 None => vec![],
             };
 
-        let mut new_extension = {
-            let mut new_ext = extension_parts.clone();
-
-            let compare_ext_part_func =
-                |e1: &ExtPart, e2: &ExtPart| compare_ext_part_with_config(&self.config, e1, e2);
-
-            new_ext.sort_by(compare_ext_part_func);
-
-            new_ext
-        };
+        let mut new_extension = extension_parts.clone();
 
         let mut existing_extensions = annotation_template.extension.clone();
         new_extension.append(&mut existing_extensions);
+
+        {
+            let compare_ext_part_func =
+                |e1: &ExtPart, e2: &ExtPart| compare_ext_part_with_config(&self.config, e1, e2);
+
+            new_extension.sort_by(compare_ext_part_func);
+        };
 
         let ont_annotation_detail =
             OntAnnotationDetail {
