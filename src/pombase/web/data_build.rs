@@ -1645,7 +1645,7 @@ impl <'a> WebDataBuild<'a> {
             panic!("can't find chromosome details for: {}", chr_name);
         }
 
-        if parts.get(0).unwrap().location.strand == Strand::Forward {
+        if parts.get(0).unwrap().location.strand == Strand::Reverse {
             parts.reverse();
         }
 
