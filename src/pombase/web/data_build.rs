@@ -1134,7 +1134,7 @@ fn validate_transcript_parts(transcript_uniquename: &str, parts: &Vec<FeatureSho
     }
 
     let last_part = parts.last().unwrap();
-    
+
     if last_part.feature_type != FeatureType::Exon {
         for i in (0..parts.len()-1).rev() {
             let part = &parts[i];
