@@ -748,8 +748,6 @@ pub struct WebData {
     pub search_api_maps: SearchAPIMaps,
 }
 
-const CHUNK_SIZE: usize = 10000;
-
 impl WebData {
     fn get_genes(&self) -> &UniquenameGeneMap {
         &self.genes
@@ -775,13 +773,14 @@ impl WebData {
         path
     }
 
-    fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_size: usize) {
+    fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_sizes: &Vec<usize>) {
+        for chunk_size in chunk_sizes {
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
             let new_path_part = &format!("{}/sequence/{}", chromosome_uniquename, chunk_size);
             let chr_path = self.create_dir(output_dir, new_path_part);
             let mut index = 0;
             let max_index = chromosome_details.residues.len() / chunk_size;
-            while index < max_index {
+            while index <= max_index {
                 let start_pos = index*chunk_size;
                 let end_pos = min(start_pos+chunk_size, chromosome_details.residues.len());
                 let chunk: String = chromosome_details.residues[start_pos..end_pos].into();
@@ -792,9 +791,10 @@ impl WebData {
                 index += 1;
             }
         }
+        }
     }
 
-    fn write_chromosomes(&self, output_dir: &str) {
+    fn write_chromosomes(&self, config: &Config, output_dir: &str) {
         let new_path = self.create_dir(output_dir, "chromosome");
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
             let s = serde_json::to_string(&chromosome_details).unwrap();
@@ -803,7 +803,7 @@ impl WebData {
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes()).expect("Unable to write chromosome JSON");
         }
-        self.write_chromosome_seq_chunks(&new_path, CHUNK_SIZE);
+        self.write_chromosome_seq_chunks(&new_path, &config.api_seq_chunk_sizes);
     }
 
     fn write_reference_details(&self, output_dir: &str) {
@@ -882,8 +882,8 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
-    pub fn write(&self, output_dir: &str) {
-        self.write_chromosomes(output_dir);
+    pub fn write(&self, config: &Config, output_dir: &str) {
+        self.write_chromosomes(config, output_dir);
         println!("wrote {} chromosomes", self.get_chromosomes().len());
         self.write_reference_details(output_dir);
         println!("wrote {} references", self.get_references().len());

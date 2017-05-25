@@ -99,6 +99,7 @@ pub struct TermAndName {
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub load_organism: ConfigOrganism,
+    pub api_seq_chunk_sizes: Vec<usize>,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
     pub extension_relation_order: RelationOrder,
     pub evidence_types: HashMap<ShortEvidenceCode, LongEvidenceCode>,

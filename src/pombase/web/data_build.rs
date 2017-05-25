@@ -3829,8 +3829,9 @@ fn get_test_config() -> Config {
             genus: String::from("Schizosaccharomyces"),
             species: String::from("pombe"),
         },
+        api_seq_chunk_sizes: vec![10000, 200000],
         extension_display_names: vec![],
-        extension_relation_order: RelationOrder {
+        extension_relation_order: RelationOrder{
             relation_order: vec![
                 String::from("directly_positively_regulates"),
                 String::from("has_direct_input"),

@@ -100,7 +100,7 @@ fn main() {
     let web_data_build = WebDataBuild::new(&raw, &config);
     let web_data = web_data_build.get_web_data();
 
-    web_data.write(&output_dir);
+    web_data.write(&config, &output_dir);
 
     if matches.opt_present("store-json") {
         conn.execute("DROP SCHEMA IF EXISTS web_json CASCADE", &[]).unwrap();
