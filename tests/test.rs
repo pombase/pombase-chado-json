@@ -491,7 +491,7 @@ fn get_test_config() -> Config {
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
-                                summary_gene_relations_to_collect: vec![String::from("has_substrate")],
+                                summary_relation_ranges_to_collect: vec![String::from("has_substrate")],
                             });
 
     config
@@ -608,7 +608,7 @@ fn test_remove_first_string() {
 }
 
 #[test]
-fn test_merge_gene_ext_parts() {
+fn test_merge_ext_part_ranges() {
     let ext_part1 = ExtPart {
         rel_type_name: "has_substrate".into(),
         rel_type_display_name: "has substrate".into(),
@@ -620,7 +620,7 @@ fn test_merge_gene_ext_parts() {
         ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()]]),
     };
 
-    let res = merge_gene_ext_parts(&ext_part1, &ext_part2);
+    let res = merge_ext_part_ranges(&ext_part1, &ext_part2);
 
     assert_eq!(res.ext_range,
                ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()],

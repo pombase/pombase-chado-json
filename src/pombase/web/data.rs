@@ -51,11 +51,14 @@ use types::*;
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
-#[serde(rename = "sumary_gene_uniquenames")]
+#[serde(rename = "summary_gene_uniquenames")]
     // the inner Vec length will be > 1 for cases like "binds abc1 and def2, cdc2"
     SummaryGenes(Vec<Vec<String>>),
 #[serde(rename = "termid")]
     Term(TermId),
+#[serde(rename = "summary_termids")]
+    // See: merge_ext_part_ranges()
+    SummaryTerms(Vec<TermId>),
 #[serde(rename = "misc")]
     Misc(String),
 #[serde(rename = "domain")]

@@ -66,7 +66,7 @@ pub struct CvConfig {
     //   has substrate pom1, cdc1 involved in negative regulation of ...
     // rather than as two lines
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub summary_gene_relations_to_collect: Vec<String>,
+    pub summary_relation_ranges_to_collect: Vec<String>,
 }
 
 pub type ShortEvidenceCode = String;
@@ -122,7 +122,7 @@ impl Config {
                 filters: vec![],
                 split_by_parents: vec![],
                 summary_relations_to_hide: vec![],
-                summary_gene_relations_to_collect: vec![],
+                summary_relation_ranges_to_collect: vec![],
             }
         }
     }

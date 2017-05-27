@@ -1,3 +1,5 @@
+#![feature(discriminant_value)]
+
 extern crate regex;
 extern crate bit_set;
 extern crate chrono;

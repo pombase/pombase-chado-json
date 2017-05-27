@@ -1,3 +1,5 @@
+use std::mem;
+
 use std::rc::Rc;
 use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
@@ -123,36 +125,53 @@ pub fn cmp_str_dates(date_str1: &String, date_str2: &String) -> Ordering {
     }
 }
 
-// merge two ExtPart objects into one by merging gene ranges
-pub fn merge_gene_ext_parts(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart {
+// merge two ExtPart objects into one by merging ranges
+pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart {
     if ext_part1.rel_type_name == ext_part2.rel_type_name {
-        if let ExtRange::SummaryGenes(ref part1_summ_genes) = ext_part1.ext_range {
-            if let ExtRange::SummaryGenes(ref part2_summ_genes) = ext_part2.ext_range {
-                let mut ret_ext_part = ext_part1.clone();
-                let mut new_genes = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
-                new_genes.sort();
-                new_genes.dedup();
-                ret_ext_part.ext_range = ExtRange::SummaryGenes(new_genes);
-                return ret_ext_part
-            }
+        match ext_part1.ext_range {
+            ExtRange::SummaryGenes(ref part1_summ_genes) => {
+                if let ExtRange::SummaryGenes(ref part2_summ_genes) = ext_part2.ext_range {
+                    let mut ret_ext_part = ext_part1.clone();
+                    let mut new_genes = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
+                    new_genes.sort();
+                    new_genes.dedup();
+                    ret_ext_part.ext_range = ExtRange::SummaryGenes(new_genes);
+                    return ret_ext_part
+                }
+            },
+            ExtRange::SummaryTerms(ref part1_summ_termids) => {
+                if let ExtRange::SummaryTerms(ref part2_summ_termids) = ext_part2.ext_range {
+                    let mut ret_ext_part = ext_part1.clone();
+                    let mut new_terms =
+                        [part1_summ_termids.clone(), part2_summ_termids.clone()].concat();
+                    new_terms.sort();
+                    new_terms.dedup();
+                    ret_ext_part.ext_range = ExtRange::SummaryTerms(new_terms);
+                    return ret_ext_part
+                }
+            },
+            _ => () // fall through and panic
         }
-        panic!("passed ExtPart objects that have non-gene ranges to merge_gene_ext_parts():
-  {:?} {:?}", ext_part1, ext_part2);
+        panic!("passed ExtPart objects that have ranges that aren't genes or terms
+to merge_ext_part_ranges(): {:?} {:?}", ext_part1, ext_part2);
     } else {
-        panic!("passed ExtPart objects with mismatched relations to merge_gene_ext_parts():
+        panic!("passed ExtPart objects with mismatched relations to merge_ext_part_ranges():
   {} {}\n", ext_part1.rel_type_name, ext_part2.rel_type_name);
     }
 }
 
 // turn "has_substrate(gene1),has_substrate(gene2)" into "has_substrate(gene1,gene2)"
 pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>) {
-    let conf_gene_rels = &cv_config.summary_gene_relations_to_collect;
-    let gene_range_rel_p =
+
+    let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
+    let merge_range_rel_p =
         |ext_part: &ExtPart| {
-            if let ExtRange::SummaryGenes(_) = ext_part.ext_range {
-                conf_gene_rels.contains(&ext_part.rel_type_name)
-            } else {
-                false
+            match ext_part.ext_range {
+                ExtRange::SummaryGenes(_) =>
+                    conf_rel_ranges.contains(&ext_part.rel_type_name),
+                ExtRange::SummaryTerms(_) =>
+                    conf_rel_ranges.contains(&ext_part.rel_type_name),
+                _ =>false
             }
         };
     let mut ret_rows = vec![];
@@ -170,18 +189,24 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                     }
 
                 let mut prev_row_extension = prev_row.extension.clone();
-                let prev_matching_gene_ext_part =
-                    remove_first(&mut prev_row_extension, &gene_range_rel_p);
+                let prev_matching_ext_part =
+                    remove_first(&mut prev_row_extension, &merge_range_rel_p);
                 let mut current_row_extension = current_row.extension.clone();
-                let current_matching_gene_ext_part =
-                    remove_first(&mut current_row_extension, &gene_range_rel_p);
+                let current_matching_ext_part =
+                    remove_first(&mut current_row_extension, &merge_range_rel_p);
 
                 if let (Some(prev_gene_ext_part), Some(current_gene_ext_part)) =
-                    (prev_matching_gene_ext_part, current_matching_gene_ext_part) {
+                    (prev_matching_ext_part, current_matching_ext_part) {
+
+                        if mem::discriminant(&prev_gene_ext_part.ext_range) !=
+                            mem::discriminant(&current_gene_ext_part.ext_range) {
+                                continue;
+                            }
+
                         if current_row_extension == prev_row_extension &&
                             prev_gene_ext_part.rel_type_name == current_gene_ext_part.rel_type_name {
                                 let merged_gene_ext_parts =
-                                    merge_gene_ext_parts(&prev_gene_ext_part,
+                                    merge_ext_part_ranges(&prev_gene_ext_part,
                                                          &current_gene_ext_part);
                                 let mut new_ext = vec![merged_gene_ext_parts];
                                 new_ext.extend_from_slice(&prev_row_extension);
@@ -400,9 +425,15 @@ fn make_cv_summaries(config: &Config,
                         *summary_relations_to_hide != vec!["ALL"]
                 })
                 .map(move |mut ext_part| {
-                    if let ExtRange::Gene(gene_uniquename) = ext_part.ext_range.clone() {
-                        let summ_genes = vec![gene_uniquename];
-                        ext_part.ext_range = ExtRange::SummaryGenes(vec![summ_genes]);
+                    match ext_part.ext_range.clone() {
+                        ExtRange::Gene(gene_uniquename) => {
+                            let summ_genes = vec![gene_uniquename];
+                            ext_part.ext_range = ExtRange::SummaryGenes(vec![summ_genes]);
+                        },
+                        ExtRange::Term(termid) => {
+                            ext_part.ext_range = ExtRange::SummaryTerms(vec![termid]);
+                        },
+                        _ => (),
                     }
                     ext_part })
                 .collect::<Vec<ExtPart>>();
@@ -538,6 +569,7 @@ fn string_from_ext_range(ext_range: &ExtRange,
         },
         &ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
         &ExtRange::Term(ref termid) => terms.get(termid).unwrap().name.clone(),
+        &ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
         &ExtRange::Misc(ref misc) => misc.clone(),
         &ExtRange::Domain(ref domain) => domain.clone(),
         &ExtRange::GeneProduct(ref gene_product) => gene_product.clone(),
@@ -3861,7 +3893,7 @@ fn get_test_config() -> Config {
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
-                                summary_gene_relations_to_collect: vec![String::from("has_substrate")],
+                                summary_relation_ranges_to_collect: vec![String::from("has_substrate")],
                             });
 
     config
