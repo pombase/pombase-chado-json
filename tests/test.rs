@@ -238,6 +238,18 @@ fn get_test_raw() -> Raw {
     let mol_weight_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
                                 "molecular_weight", "90011059");
+    let average_residue_weight_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "average_residue_weight", "90011060");
+    let charge_at_ph7_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "charge_at_ph7", "90011061");
+    let isoelectric_point_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "isoelectric_point", "90011062");
+    let codon_adaptation_index_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
+                                "codon_adaptation_index", "90011063");
     let ena_identifier_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &featureprop_types_cv, &pbo_db,
                                 "ena_id", "90011060");
@@ -383,6 +395,10 @@ fn get_test_raw() -> Raw {
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_polypeptide, &derives_from_cvterm, &par1_mrna);
     make_test_featureprop(&mut featureprops, &par1_polypeptide, &mol_weight_cvterm, Some("102.3".into()));
+    make_test_featureprop(&mut featureprops, &par1_polypeptide, &average_residue_weight_cvterm, Some("114.36".into()));
+    make_test_featureprop(&mut featureprops, &par1_polypeptide, &charge_at_ph7_cvterm, Some("-3.79".into()));
+    make_test_featureprop(&mut featureprops, &par1_polypeptide, &isoelectric_point_cvterm, Some("6.85".into()));
+    make_test_featureprop(&mut featureprops, &par1_polypeptide, &codon_adaptation_index_cvterm, Some("0.63".into()));
 
     let par1_go0031030_fc =
         make_test_feature_cvterm(&mut feature_cvterms, &par1_mrna, &go0031030_cvterm, &publication);

@@ -483,6 +483,10 @@ pub struct ProteinDetails {
     pub uniquename: TranscriptUniquename,
     pub sequence: String,
     pub molecular_weight: f32,
+    pub average_residue_weight: f32,
+    pub charge_at_ph7: f32,
+    pub isoelectric_point: f32,
+    pub codon_adaptation_index: f32,
 }
 
 pub type Residues = String;

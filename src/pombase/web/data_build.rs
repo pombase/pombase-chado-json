@@ -1707,18 +1707,41 @@ impl <'a> WebDataBuild<'a> {
             let protein_uniquename = feat.uniquename.clone();
 
             let mut molecular_weight = None;
+            let mut average_residue_weight = None;
+            let mut charge_at_ph7    = None;
+            let mut isoelectric_point = None;
+            let mut codon_adaptation_index = None;
+
+            let parse_prop_as_f32 = |p: &Option<String>| {
+                if let Some(prop_value) = p.clone() {
+                    let maybe_mol_weight = prop_value.parse();
+                    if let Ok(parsed_prop) = maybe_mol_weight {
+                        Some(parsed_prop)
+                    } else {
+                        println!("{}: couldn't parse {} as f32",
+                                 feat.uniquename, prop_value);
+                        None
+                    }
+                } else {
+                    None
+                }
+            };
 
             for prop in feat.featureprops.borrow().iter() {
                 if prop.prop_type.name == "molecular_weight" {
-                    if let Some(prop_value) = prop.value.clone() {
-                        let maybe_mol_weight = prop_value.parse();
-                        if let Ok(parsed_prop) = maybe_mol_weight {
-                            molecular_weight = Some(parsed_prop);
-                        } else {
-                            println!("{}: couldn't parse molecular_weight: {}",
-                                     feat.uniquename, prop_value);
-                        }
-                    }
+                    molecular_weight = parse_prop_as_f32(&prop.value);
+                }
+                if prop.prop_type.name == "average_residue_weight" {
+                    average_residue_weight = parse_prop_as_f32(&prop.value);
+                }
+                if prop.prop_type.name == "charge_at_ph7" {
+                    charge_at_ph7 = parse_prop_as_f32(&prop.value);
+                }
+                if prop.prop_type.name == "isoelectric_point" {
+                    isoelectric_point = parse_prop_as_f32(&prop.value);
+                }
+                if prop.prop_type.name == "codon_adaptation_index" {
+                    codon_adaptation_index = parse_prop_as_f32(&prop.value);
                 }
             }
 
@@ -1730,6 +1753,10 @@ impl <'a> WebDataBuild<'a> {
                 uniquename: feat.uniquename.clone(),
                 sequence: residues,
                 molecular_weight: molecular_weight.unwrap(),
+                average_residue_weight: average_residue_weight.unwrap(),
+                charge_at_ph7: charge_at_ph7.unwrap(),
+                isoelectric_point: isoelectric_point.unwrap(),
+                codon_adaptation_index: codon_adaptation_index.unwrap(),
             };
 
             if let Some(transcript_uniquename) =
