@@ -3495,9 +3495,9 @@ impl <'a> WebDataBuild<'a> {
                             match ext_part.ext_range {
                                 ExtRange::Term(ref range_termid) =>
                                     self.add_term_to_hash(&mut seen_terms, termid.clone(), range_termid.clone()),
-                                ExtRange::Gene(ref allele_gene_uniquename) =>
+                                ExtRange::Gene(ref ext_gene_uniquename) =>
                                     self.add_gene_to_hash(&mut seen_genes, termid.clone(),
-                                                          allele_gene_uniquename.clone()),
+                                                          ext_gene_uniquename.clone()),
                                 _ => {},
                             }
                         }
