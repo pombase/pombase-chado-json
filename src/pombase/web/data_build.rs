@@ -2462,7 +2462,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn set_subsets(&mut self) {
+    fn set_term_details_subsets(&mut self) {
         'TERM: for go_slim_conf in self.config.go_slim_terms.clone() {
             let slim_termid = &go_slim_conf.termid;
             for (_, term_details) in &mut self.terms {
@@ -3847,13 +3847,14 @@ impl <'a> WebDataBuild<'a> {
         self.process_annotation_feature_rels();
         self.add_target_of_annotations();
         self.set_deletion_viability();
-        self.set_subsets();
+        self.set_term_details_subsets();
         self.make_all_cv_summaries();
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_genotype_details_maps();
         self.set_reference_details_maps();
         self.set_counts();
+        self.make_subsets();
 
         let mut web_data_terms: IdRcTermDetailsMap = HashMap::new();
 
