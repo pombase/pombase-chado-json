@@ -60,6 +60,8 @@ pub struct WebDataBuild<'a> {
     possible_interesting_parents: HashSet<InterestingParent>,
 
     recent_references: RecentReferences,
+
+    subsets: IdSubsetMap,
 }
 
 fn get_maps() ->
@@ -1234,6 +1236,8 @@ impl <'a> WebDataBuild<'a> {
             dbxrefs_of_features: HashMap::new(),
 
             possible_interesting_parents: get_possible_interesting_parents(config),
+
+            subsets: HashMap::new(),
         }
     }
 
@@ -3824,6 +3828,29 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // populated the subsets HashMap
+    pub fn make_subsets(&mut self) {
+        let mut go_slim_subset: HashSet<SubsetElement> = HashSet::new();
+        'TERM: for go_slim_conf in self.config.go_slim_terms.clone() {
+            let slim_termid = go_slim_conf.termid;
+            let term_details =
+                self.terms.get(&slim_termid).expect("can't find TermDetails");
+
+            let subset_element = SubsetElement {
+                name: term_details.name.clone(),
+                termid: slim_termid.clone(),
+                gene_count: term_details.genes_annotated_with.len(),
+            };
+            go_slim_subset.insert(subset_element);
+        }
+
+        self.subsets.insert("goslim_pombe".into(),
+                            SubsetDetails {
+                                name: "goslim_pombe".into(),
+                                elements: go_slim_subset,
+                            });
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -3886,8 +3913,8 @@ impl <'a> WebDataBuild<'a> {
             chromosomes: self.chromosomes,
             references: self.references,
             recent_references: self.recent_references,
-
             search_api_maps: search_api_maps,
+            subsets: self.subsets,
         }
     }
 }

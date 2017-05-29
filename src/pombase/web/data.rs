@@ -743,6 +743,21 @@ pub struct RecentReferences {
     pub community_curated: Vec<ReferenceShort>,
 }
 
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct SubsetElement {
+    pub name: String,
+    pub termid: TermId,
+    pub gene_count: usize,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct SubsetDetails {
+    pub name: String,
+    pub elements: HashSet<SubsetElement>,
+}
+
+pub type IdSubsetMap = HashMap<String, SubsetDetails>;
+
 #[derive(Serialize, Clone, Debug)]
 pub struct WebData {
     pub genes: UniquenameGeneMap,
@@ -754,6 +769,7 @@ pub struct WebData {
     pub references: UniquenameReferenceMap,
     pub recent_references: RecentReferences,
     pub search_api_maps: SearchAPIMaps,
+    pub subsets: IdSubsetMap,
 }
 
 impl WebData {
@@ -890,6 +906,14 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
+    fn write_subsets(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.subsets).unwrap();
+        let file_name = String::new() + &output_dir + "/subsets.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) {
         self.write_chromosomes(config, output_dir);
         println!("wrote {} chromosomes", self.get_chromosomes().len());
@@ -909,6 +933,8 @@ impl WebData {
         println!("wrote recent references");
         self.write_search_api_maps(output_dir);
         println!("wrote search data");
+        self.write_subsets(output_dir);
+        println!("wrote subsets");
     }
 
     pub fn store_jsonb(&self, conn: &Connection) {
