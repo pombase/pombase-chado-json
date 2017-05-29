@@ -2521,6 +2521,7 @@ impl <'a> WebDataBuild<'a> {
                                       termid: cvterm.termid(),
                                       definition: cvterm.definition.clone(),
                                       direct_ancestors: vec![],
+                                      genes_annotated_with: HashSet::new(),
                                       is_obsolete: cvterm.is_obsolete,
                                       single_allele_genotype_uniquenames: HashSet::new(),
                                       cv_annotations: HashMap::new(),
@@ -3473,12 +3474,18 @@ impl <'a> WebDataBuild<'a> {
         let (mut seen_references, mut seen_genes, mut seen_genotypes,
              mut seen_alleles, mut seen_terms) = get_maps();
 
+        let mut genes_annotated_with_map: HashMap<TermId, HashSet<GeneUniquename>> =
+            HashMap::new();
+
         for (termid, term_details) in &self.terms {
             for (_, term_annotations) in &term_details.cv_annotations {
                 for term_annotation in term_annotations {
                     for detail in &term_annotation.annotations {
                         for gene_uniquename in &detail.genes {
                             self.add_gene_to_hash(&mut seen_genes, termid.clone(), gene_uniquename.clone());
+                            genes_annotated_with_map
+                                .entry(termid.clone()).or_insert(HashSet::new())
+                                .insert(gene_uniquename.clone());
                         }
                         self.add_ref_to_hash(&mut seen_references, termid.clone(), detail.reference.clone());
                         for condition_termid in &detail.conditions {
@@ -3519,6 +3526,9 @@ impl <'a> WebDataBuild<'a> {
             }
             if let Some(terms) = seen_terms.remove(termid) {
                 term_details.terms_by_termid = terms;
+            }
+            if let Some(gene_uniquename_set) = genes_annotated_with_map.remove(termid) {
+                term_details.genes_annotated_with = gene_uniquename_set;
             }
         }
     }
@@ -4419,6 +4429,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         subsets: vec!["goslim_pombe".into()],
         definition: None,
         direct_ancestors: vec![],
+        genes_annotated_with: HashSet::new(),
         is_obsolete: false,
         single_allele_genotype_uniquenames: HashSet::new(),
         cv_annotations: HashMap::new(),
