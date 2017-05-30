@@ -744,19 +744,26 @@ pub struct RecentReferences {
 }
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct SubsetElement {
+pub struct TermSubsetElement {
     pub name: String,
     pub termid: TermId,
     pub gene_count: usize,
 }
 
 #[derive(Serialize, Clone, Debug)]
-pub struct SubsetDetails {
+pub struct TermSubsetDetails {
     pub name: String,
-    pub elements: HashSet<SubsetElement>,
+    pub elements: HashSet<TermSubsetElement>,
 }
 
-pub type IdSubsetMap = HashMap<String, SubsetDetails>;
+#[derive(Serialize, Clone, Debug)]
+pub struct GeneSubsetDetails {
+    pub name: String,
+    pub elements: HashSet<GeneShort>,
+}
+
+pub type IdTermSubsetMap = HashMap<String, TermSubsetDetails>;
+pub type IdGeneSubsetMap = HashMap<String, GeneSubsetDetails>;
 
 #[derive(Serialize, Clone, Debug)]
 pub struct WebData {
@@ -769,7 +776,8 @@ pub struct WebData {
     pub references: UniquenameReferenceMap,
     pub recent_references: RecentReferences,
     pub search_api_maps: SearchAPIMaps,
-    pub subsets: IdSubsetMap,
+    pub term_subsets: IdTermSubsetMap,
+    pub gene_subsets: IdGeneSubsetMap,
 }
 
 impl WebData {
@@ -907,8 +915,14 @@ impl WebData {
     }
 
     fn write_subsets(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.subsets).unwrap();
-        let file_name = String::new() + &output_dir + "/subsets.json";
+        let s = serde_json::to_string(&self.term_subsets).unwrap();
+        let file_name = String::new() + &output_dir + "/term_subsets.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write!");
+
+        let s = serde_json::to_string(&self.gene_subsets).unwrap();
+        let file_name = String::new() + &output_dir + "/gene_subsets.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");

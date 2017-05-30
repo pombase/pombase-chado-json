@@ -61,7 +61,8 @@ pub struct WebDataBuild<'a> {
 
     recent_references: RecentReferences,
 
-    subsets: IdSubsetMap,
+    term_subsets: IdTermSubsetMap,
+    gene_subsets: IdGeneSubsetMap,
 }
 
 fn get_maps() ->
@@ -1237,7 +1238,8 @@ impl <'a> WebDataBuild<'a> {
 
             possible_interesting_parents: get_possible_interesting_parents(config),
 
-            subsets: HashMap::new(),
+            term_subsets: HashMap::new(),
+            gene_subsets: HashMap::new(),
         }
     }
 
@@ -3400,15 +3402,19 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    pub fn make_search_api_maps(&self) -> SearchAPIMaps {
-        let mut gene_summaries: Vec<GeneSummary> = vec![];
+    fn org_matches_config(&self, organism: &ConfigOrganism) -> bool {
         let load_org_full_name = self.config.load_organism.full_name();
 
-        for (gene_uniquename, gene_details) in &self.genes {
-            let gene_genus_species = String::new() +
-                &gene_details.organism.genus + "_" + &gene_details.organism.species;
+        let genus_species = String::new() + &organism.genus + "_" + &organism.species;
 
-            if gene_genus_species == load_org_full_name {
+        genus_species == load_org_full_name
+    }
+
+    pub fn make_search_api_maps(&self) -> SearchAPIMaps {
+        let mut gene_summaries: Vec<GeneSummary> = vec![];
+
+        for (gene_uniquename, gene_details) in &self.genes {
+            if self.org_matches_config(&gene_details.organism) {
                 gene_summaries.push(self.make_gene_summary(&gene_uniquename));
             }
         }
@@ -3828,15 +3834,82 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    // populated the subsets HashMap
-    pub fn make_subsets(&mut self) {
-        let mut go_slim_subset: HashSet<SubsetElement> = HashSet::new();
+    fn make_non_bp_slim_gene_subset(&self, go_slim_subset: &TermSubsetDetails)
+                                    -> (GeneSubsetDetails, GeneSubsetDetails)
+    {
+        let slim_termid_set: HashSet<String> =
+            go_slim_subset.elements
+            .iter().map(|ref element| element.termid.clone()).collect();
+
+        let mut non_slim_with_bp_annotation = HashSet::new();
+        let mut non_slim_without_bp_annotation = HashSet::new();
+
+        let has_parent_in_slim = |term_annotations: &Vec<OntTermAnnotations>| {
+            for term_annotation in term_annotations {
+                if !term_annotation.is_not &&
+                    (slim_termid_set.contains(&term_annotation.term.termid) ||
+                     term_annotation.term.interesting_parents
+                     .intersection(&slim_termid_set).count() > 0)
+                {
+                    return true;
+                }
+            }
+            false
+        };
+
+        'GENE: for (_, gene_details) in &self.genes {
+            if !self.org_matches_config(&gene_details.organism) {
+                continue;
+            }
+
+            if gene_details.feature_type != "mRNA gene" {
+                continue;
+            }
+
+            if gene_details.characterisation_status == Some("transposon".into()) ||
+                gene_details.characterisation_status == Some("dubious".into())
+            {
+                continue;
+            }
+
+            let mut bp_count = 0;
+            let gene_short = self.make_gene_short(&gene_details.uniquename);
+
+            if let Some(annotations) =
+                gene_details.cv_annotations.get("biological_process") {
+                    if has_parent_in_slim(&annotations) {
+                        continue
+                    }
+                    bp_count = annotations.len();
+                }
+
+            if bp_count == 0 {
+                non_slim_without_bp_annotation.insert(gene_short);
+            } else {
+                non_slim_with_bp_annotation.insert(gene_short);
+            }
+        }
+
+        (
+            GeneSubsetDetails {
+                name: "non_go_slim_with_bp_annotation".into(),
+                elements: non_slim_with_bp_annotation,
+            },
+            GeneSubsetDetails {
+                name: "non_go_slim_without_bp_annotation".into(),
+                elements: non_slim_without_bp_annotation,
+            }
+        )
+    }
+
+    fn make_bp_go_slim_subset(&self) -> TermSubsetDetails {
+        let mut go_slim_subset: HashSet<TermSubsetElement> = HashSet::new();
         'TERM: for go_slim_conf in self.config.go_slim_terms.clone() {
             let slim_termid = go_slim_conf.termid;
             let term_details =
                 self.terms.get(&slim_termid).expect("can't find TermDetails");
 
-            let subset_element = SubsetElement {
+            let subset_element = TermSubsetElement {
                 name: term_details.name.clone(),
                 termid: slim_termid.clone(),
                 gene_count: term_details.genes_annotated_with.len(),
@@ -3844,11 +3917,21 @@ impl <'a> WebDataBuild<'a> {
             go_slim_subset.insert(subset_element);
         }
 
-        self.subsets.insert("goslim_pombe".into(),
-                            SubsetDetails {
-                                name: "goslim_pombe".into(),
-                                elements: go_slim_subset,
-                            });
+        TermSubsetDetails {
+            name: "goslim_pombe".into(),
+            elements: go_slim_subset,
+        }
+    }
+
+    // populated the subsets HashMap
+    fn make_subsets(&mut self) {
+        let bp_go_slim_subset = self.make_bp_go_slim_subset();
+        let (slim_with_bp, slim_without_bp) =
+            self.make_non_bp_slim_gene_subset(&bp_go_slim_subset);
+
+        self.term_subsets.insert("bp_goslim_pombe".into(), bp_go_slim_subset);
+        self.gene_subsets.insert(slim_with_bp.name.clone(), slim_with_bp);
+        self.gene_subsets.insert(slim_without_bp.name.clone(), slim_without_bp);
     }
 
     pub fn get_web_data(mut self) -> WebData {
@@ -3914,7 +3997,8 @@ impl <'a> WebDataBuild<'a> {
             references: self.references,
             recent_references: self.recent_references,
             search_api_maps: search_api_maps,
-            subsets: self.subsets,
+            term_subsets: self.term_subsets,
+            gene_subsets: self.gene_subsets,
         }
     }
 }
