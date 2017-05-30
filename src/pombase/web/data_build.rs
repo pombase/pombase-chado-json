@@ -3873,7 +3873,6 @@ impl <'a> WebDataBuild<'a> {
             }
 
             let mut bp_count = 0;
-            let gene_short = self.make_gene_short(&gene_details.uniquename);
 
             if let Some(annotations) =
                 gene_details.cv_annotations.get("biological_process") {
@@ -3884,9 +3883,9 @@ impl <'a> WebDataBuild<'a> {
                 }
 
             if bp_count == 0 {
-                non_slim_without_bp_annotation.insert(gene_short);
+                non_slim_without_bp_annotation.insert(gene_details.uniquename.clone());
             } else {
-                non_slim_with_bp_annotation.insert(gene_short);
+                non_slim_with_bp_annotation.insert(gene_details.uniquename.clone());
             }
         }
 

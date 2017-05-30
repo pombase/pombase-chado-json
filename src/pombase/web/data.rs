@@ -759,7 +759,7 @@ pub struct TermSubsetDetails {
 #[derive(Serialize, Clone, Debug)]
 pub struct GeneSubsetDetails {
     pub name: String,
-    pub elements: HashSet<GeneShort>,
+    pub elements: HashSet<GeneUniquename>,
 }
 
 pub type IdTermSubsetMap = HashMap<String, TermSubsetDetails>;
