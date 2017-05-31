@@ -3835,7 +3835,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_non_bp_slim_gene_subset(&self, go_slim_subset: &TermSubsetDetails)
-                                    -> HashMap<String, GeneSubsetDetails>
+                                    -> IdGeneSubsetMap
     {
         let slim_termid_set: HashSet<String> =
             go_slim_subset.elements
@@ -3925,13 +3925,38 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_characterisation_status_subsets(&self, subsets: &mut IdGeneSubsetMap) {
+        for (_, gene_details) in &self.genes {
+            if !self.org_matches_config(&gene_details.organism) {
+                continue;
+            }
+
+            if gene_details.feature_type != "mRNA gene" {
+                continue;
+            }
+
+            if let Some(ref characterisation_status) = gene_details.characterisation_status {
+                let subset_name =
+                    String::from("characterisation_status:") + &characterisation_status;
+                subsets.entry(subset_name.clone())
+                    .or_insert(GeneSubsetDetails {
+                        name: subset_name,
+                        elements: HashSet::new()
+                    })
+                    .elements.insert(gene_details.uniquename.clone());
+            }
+        }
+    }
+
     // populated the subsets HashMap
     fn make_subsets(&mut self) {
         let bp_go_slim_subset = self.make_bp_go_slim_subset();
-        let gene_subsets =
+        let mut gene_subsets =
             self.make_non_bp_slim_gene_subset(&bp_go_slim_subset);
 
         self.term_subsets.insert("bp_goslim_pombe".into(), bp_go_slim_subset);
+
+        self.make_characterisation_status_subsets(&mut gene_subsets);
 
         self.gene_subsets = gene_subsets;
     }
