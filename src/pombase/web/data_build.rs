@@ -3894,11 +3894,15 @@ impl <'a> WebDataBuild<'a> {
         return_map.insert("non_go_slim_with_bp_annotation".into(),
                           GeneSubsetDetails {
                               name: "non_go_slim_with_bp_annotation".into(),
+                              display_name: String::from("Proteins with biological process ") +
+                                  "annotation that are not in a slim category",
                               elements: non_slim_with_bp_annotation,
                           });
         return_map.insert("non_go_slim_without_bp_annotation".into(),
                           GeneSubsetDetails {
                               name: "non_go_slim_without_bp_annotation".into(),
+                              display_name: String::from("Proteins with no biological process ") +
+                                  "annotation and are not in a slim category",
                               elements: non_slim_without_bp_annotation,
                           });
         return return_map;
@@ -3938,9 +3942,12 @@ impl <'a> WebDataBuild<'a> {
             if let Some(ref characterisation_status) = gene_details.characterisation_status {
                 let subset_name =
                     String::from("characterisation_status:") + &characterisation_status;
-                subsets.entry(subset_name.clone())
+                let re = Regex::new(r"[\s,:]+").unwrap();
+                let subset_name_no_spaces = re.replace_all(&subset_name, "_");
+                subsets.entry(subset_name_no_spaces.clone())
                     .or_insert(GeneSubsetDetails {
-                        name: subset_name,
+                        name: subset_name_no_spaces,
+                        display_name: subset_name,
                         elements: HashSet::new()
                     })
                     .elements.insert(gene_details.uniquename.clone());
