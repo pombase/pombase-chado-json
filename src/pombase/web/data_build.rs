@@ -633,7 +633,7 @@ fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails,
 fn allele_display_name(allele: &AlleleShort) -> String {
     let name = allele.name.clone().unwrap_or("unnamed".into());
     let allele_type = allele.allele_type.clone();
-    let mut description = allele.description.clone().unwrap_or(allele_type.clone());
+    let description = allele.description.clone().unwrap_or(allele_type.clone());
 
     if allele_type == "deletion" && name.ends_with("delta") ||
         allele_type.starts_with("wild_type") && name.ends_with("+") {
@@ -645,17 +645,6 @@ fn allele_display_name(allele: &AlleleShort) -> String {
                 return name;
             }
         }
-
-    if allele_type.starts_with("mutation") {
-        let re = Regex::new(r"(?P<m>^|,\\s*)").unwrap();
-        if allele_type.contains("amino acid") {
-            description = re.replace_all(&description, "$maa");
-        } else {
-            if allele_type.contains("nucleotide") {
-                description = re.replace_all(&description, "$nt");
-            }
-        }
-    }
 
     name + "(" + description.as_str() + ")"
 }
