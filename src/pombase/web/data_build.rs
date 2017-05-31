@@ -2642,13 +2642,15 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_genotype_short(&self, genotype_uniquename: &str) -> GenotypeShort {
-        let details = self.genotypes.get(genotype_uniquename).unwrap().clone();
-
-        GenotypeShort {
-            uniquename: details.uniquename,
-            name: details.name,
-            background: details.background,
-            expressed_alleles: details.expressed_alleles,
+        if let Some(ref details) = self.genotypes.get(genotype_uniquename) {
+            GenotypeShort {
+                uniquename: details.uniquename.clone(),
+                name: details.name.clone(),
+                background: details.background.clone(),
+                expressed_alleles: details.expressed_alleles.clone(),
+            }
+        } else {
+            panic!("can't find genotype");
         }
     }
 
