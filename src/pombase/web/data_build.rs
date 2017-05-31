@@ -3835,7 +3835,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_non_bp_slim_gene_subset(&self, go_slim_subset: &TermSubsetDetails)
-                                    -> (GeneSubsetDetails, GeneSubsetDetails)
+                                    -> HashMap<String, GeneSubsetDetails>
     {
         let slim_termid_set: HashSet<String> =
             go_slim_subset.elements
@@ -3889,16 +3889,19 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        (
-            GeneSubsetDetails {
-                name: "non_go_slim_with_bp_annotation".into(),
-                elements: non_slim_with_bp_annotation,
-            },
-            GeneSubsetDetails {
-                name: "non_go_slim_without_bp_annotation".into(),
-                elements: non_slim_without_bp_annotation,
-            }
-        )
+        let mut return_map = HashMap::new();
+
+        return_map.insert("non_go_slim_with_bp_annotation".into(),
+                          GeneSubsetDetails {
+                              name: "non_go_slim_with_bp_annotation".into(),
+                              elements: non_slim_with_bp_annotation,
+                          });
+        return_map.insert("non_go_slim_without_bp_annotation".into(),
+                          GeneSubsetDetails {
+                              name: "non_go_slim_without_bp_annotation".into(),
+                              elements: non_slim_without_bp_annotation,
+                          });
+        return return_map;
     }
 
     fn make_bp_go_slim_subset(&self) -> TermSubsetDetails {
@@ -3925,12 +3928,12 @@ impl <'a> WebDataBuild<'a> {
     // populated the subsets HashMap
     fn make_subsets(&mut self) {
         let bp_go_slim_subset = self.make_bp_go_slim_subset();
-        let (slim_with_bp, slim_without_bp) =
+        let gene_subsets =
             self.make_non_bp_slim_gene_subset(&bp_go_slim_subset);
 
         self.term_subsets.insert("bp_goslim_pombe".into(), bp_go_slim_subset);
-        self.gene_subsets.insert(slim_with_bp.name.clone(), slim_with_bp);
-        self.gene_subsets.insert(slim_without_bp.name.clone(), slim_without_bp);
+
+        self.gene_subsets = gene_subsets;
     }
 
     pub fn get_web_data(mut self) -> WebData {
