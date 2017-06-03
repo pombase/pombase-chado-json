@@ -995,20 +995,20 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         all_ref_uniquenames.iter()
         .filter(|ref_uniquename| {
             let reference = references_map.get(*ref_uniquename).unwrap();
-            reference.canto_approved_date.is_some() &&
+            reference.canto_session_submitted_date.is_some() &&
                 reference.canto_curator_role.is_some()
         })
         .map(|r| r.clone())
         .collect();
 
     {
-        let approved_date_cmp =
+        let submitted_date_cmp =
             |ref_uniquename1: &ReferenceUniquename, ref_uniquename2: &ReferenceUniquename| {
                 let ref1 = references_map.get(ref_uniquename1).unwrap();
                 let ref2 = references_map.get(ref_uniquename2).unwrap();
 
-                if let Some(ref ref1_date) = ref1.canto_approved_date {
-                    if let Some(ref ref2_date) = ref2.canto_approved_date {
+                if let Some(ref ref1_date) = ref1.canto_session_submitted_date {
+                    if let Some(ref ref2_date) = ref2.canto_session_submitted_date {
                         cmp_str_dates(ref1_date, ref2_date).reverse()
                     } else {
                         panic!();
@@ -1018,7 +1018,7 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
                 }
             };
 
-        sorted_pub_uniquenames.sort_by(approved_date_cmp);
+        sorted_pub_uniquenames.sort_by(submitted_date_cmp);
     }
 
     let mut admin_curated = vec![];
