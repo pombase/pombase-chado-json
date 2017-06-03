@@ -15,6 +15,7 @@ use types::*;
 use web::data::*;
 use web::config::*;
 use web::vec_set::*;
+use interpro::UniprotResult;
 
 fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
     ConfigOrganism {
@@ -29,8 +30,11 @@ pub struct AlleleAndExpression {
     expression: Option<String>,
 }
 
+type UniprotIdentifier = String;
+
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
+    interpro_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -1193,9 +1197,12 @@ fn validate_transcript_parts(transcript_uniquename: &str, parts: &Vec<FeatureSho
 
 
 impl <'a> WebDataBuild<'a> {
-    pub fn new(raw: &'a Raw, config: &'a Config) -> WebDataBuild<'a> {
+    pub fn new(raw: &'a Raw, interpro_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+               config: &'a Config) -> WebDataBuild<'a>
+    {
         WebDataBuild {
             raw: raw,
+            interpro_data: interpro_data,
             config: config,
 
             genes: HashMap::new(),
@@ -1614,13 +1621,25 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let gene_feature = GeneDetails {
+        let interpro_matches =
+            if let Some(ref uniprot_identifier) = uniprot_identifier {
+                if let Some(result) = self.interpro_data.get(uniprot_identifier) {
+                    result.interpro_matches.clone()
+                } else {
+                    vec![]
+                }
+            } else {
+                vec![]
+            };
+
+        let gene_feature = GeneDetails{
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
             organism: organism,
             product: None,
             deletion_viability: DeletionViability::Unknown,
             uniprot_identifier: uniprot_identifier,
+            interpro_matches: interpro_matches,
             orfeome_identifier: orfeome_identifier,
             name_descriptions: vec![],
             synonyms: vec![],
@@ -4376,6 +4395,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         product: None,
         deletion_viability: DeletionViability::Unknown,
         uniprot_identifier: None,
+        interpro_matches: vec![],
         orfeome_identifier: None,
         name_descriptions: vec![],
         synonyms: vec![],

@@ -516,7 +516,8 @@ fn get_test_config() -> Config {
 fn get_test_web_data() -> WebData {
     let raw = get_test_raw();
     let config = get_test_config();
-    let web_data_build = WebDataBuild::new(&raw, &config);
+    let interpro_data = HashMap::new();
+    let web_data_build = WebDataBuild::new(&raw, &interpro_data, &config);
     web_data_build.get_web_data()
 }
 

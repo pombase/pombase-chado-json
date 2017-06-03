@@ -46,6 +46,7 @@ use std::collections::HashSet;
 
 use web::config::*;
 use types::*;
+use interpro::InterProMatch;
 
 #[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub enum ExtRange {
@@ -449,7 +450,7 @@ pub struct GeneDetails {
     pub deletion_viability: DeletionViability,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<String>,
-    #[serde(skip_serializing_if="Option::is_none")]
+    pub interpro_matches: Vec<InterProMatch>,
     pub orfeome_identifier: Option<String>,
     pub name_descriptions: Vec<String>,
     pub synonyms: Vec<SynonymDetails>,
