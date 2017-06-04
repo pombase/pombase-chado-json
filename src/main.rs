@@ -101,7 +101,7 @@ fn main() {
     let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
 
     let raw = Raw::new(&conn);
-    let interpro_data = parse_interpro(&interpro_json);
+    let interpro_data = parse_interpro(&config, &interpro_json);
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &config);
     let web_data = web_data_build.get_web_data();
 

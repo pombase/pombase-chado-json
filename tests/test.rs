@@ -499,6 +499,9 @@ fn get_test_config() -> Config {
             inviable: "FYPO:0002059".into(),
         },
         go_slim_terms: vec![],
+        interpro: InterPro {
+            dbnames_to_filter: vec![],
+        },
     };
 
     config.cv_config.insert(String::from("molecular_function"),

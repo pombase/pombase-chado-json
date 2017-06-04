@@ -97,6 +97,11 @@ pub struct TermAndName {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct InterPro {
+    pub dbnames_to_filter: Vec<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub load_organism: ConfigOrganism,
     pub api_seq_chunk_sizes: Vec<usize>,
@@ -110,6 +115,7 @@ pub struct Config {
     pub interesting_parents: Vec<InterestingParent>,
     pub viability_terms: ViabilityTerms,
     pub go_slim_terms: Vec<TermAndName>,
+    pub interpro: InterPro,
 }
 
 impl Config {
