@@ -8,21 +8,21 @@ use web::config::Config;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Location {
-    start: usize,
-    end: usize,
-    score: f32,
+    pub start: usize,
+    pub end: usize,
+    pub score: f32,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct InterProMatch {
-    id: String,
-    dbname: String,
-    name: String,
-    evidence: String,
-    interpro_id: String,
-    interpro_name: String,
-    interpro_type: String,
-    locations: Vec<Location>,
+    pub id: String,
+    pub dbname: String,
+    pub name: String,
+    pub evidence: String,
+    pub interpro_id: String,
+    pub interpro_name: String,
+    pub interpro_type: String,
+    pub locations: Vec<Location>,
 }
 
 #[derive(Deserialize, Debug, Clone)]

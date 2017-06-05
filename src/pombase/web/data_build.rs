@@ -3965,6 +3965,24 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_interpro_subsets(&mut self, subsets: &mut IdGeneSubsetMap) {
+        for (gene_uniquename, gene_details) in &self.genes {
+            for interpro_match in &gene_details.interpro_matches {
+                if interpro_match.interpro_id.len() > 0 {
+                    let subset_name =
+                        String::from("interpro:") + &interpro_match.interpro_id;
+                    subsets.entry(subset_name.clone())
+                        .or_insert(GeneSubsetDetails {
+                            name: subset_name,
+                            display_name: interpro_match.interpro_name.clone(),
+                            elements: HashSet::new(),
+                        })
+                        .elements.insert(gene_uniquename.clone());
+                }
+            }
+        }
+    }
+
     // populated the subsets HashMap
     fn make_subsets(&mut self) {
         let bp_go_slim_subset = self.make_bp_go_slim_subset();
@@ -3974,6 +3992,7 @@ impl <'a> WebDataBuild<'a> {
         self.term_subsets.insert("bp_goslim_pombe".into(), bp_go_slim_subset);
 
         self.make_characterisation_status_subsets(&mut gene_subsets);
+        self.make_interpro_subsets(&mut gene_subsets);
 
         self.gene_subsets = gene_subsets;
     }
