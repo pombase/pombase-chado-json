@@ -3968,17 +3968,22 @@ impl <'a> WebDataBuild<'a> {
     fn make_interpro_subsets(&mut self, subsets: &mut IdGeneSubsetMap) {
         for (gene_uniquename, gene_details) in &self.genes {
             for interpro_match in &gene_details.interpro_matches {
-                if interpro_match.interpro_id.len() > 0 {
-                    let subset_name =
-                        String::from("interpro:") + &interpro_match.interpro_id;
-                    subsets.entry(subset_name.clone())
-                        .or_insert(GeneSubsetDetails {
-                            name: subset_name,
-                            display_name: interpro_match.interpro_name.clone(),
-                            elements: HashSet::new(),
-                        })
-                        .elements.insert(gene_uniquename.clone());
-                }
+                let (subset_name, display_name) =
+                    if interpro_match.interpro_id.len() > 0 {
+                        (String::from("interpro:") + &interpro_match.interpro_id,
+                         interpro_match.interpro_name.clone())
+                    } else {
+                        (String::from("interpro:") +
+                         &interpro_match.dbname.clone() + ":" + &interpro_match.id,
+                         interpro_match.name.clone())
+                    };
+                subsets.entry(subset_name.clone())
+                    .or_insert(GeneSubsetDetails {
+                        name: subset_name,
+                        display_name: display_name,
+                        elements: HashSet::new(),
+                    })
+                    .elements.insert(gene_uniquename.clone());
             }
         }
     }
