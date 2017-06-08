@@ -887,18 +887,13 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
     }
 
     for go_slim_conf in &config.go_slim_terms {
-        ret.insert(InterestingParent {
-            termid: go_slim_conf.termid.clone(),
-            rel_name: "is_a".into(),
-        });
-        ret.insert(InterestingParent {
-            termid: go_slim_conf.termid.clone(),
-            rel_name: "part_of".into(),
-        });
-        ret.insert(InterestingParent {
-            termid: go_slim_conf.termid.clone(),
-            rel_name: "regulates".into(),
-        });
+        for rel_name in vec!["is_a", "part_of", "regulates", "positively_regulates",
+                             "negatively_regulates"] {
+            ret.insert(InterestingParent {
+                termid: go_slim_conf.termid.clone(),
+                rel_name: rel_name.into(),
+            });
+        }
     }
 
     ret.insert(InterestingParent {
