@@ -170,8 +170,9 @@ pub const FEATURE_REL_CONFIGS: [FeatureRelConfig; 4] =
 
 // relations to use when copy annotation to parents (ie. adding the
 // annotation of child terms to parents)
-pub const DESCENDANT_REL_NAMES: [&str; 5] =
-    ["is_a", "part_of", "regulates", "has_part", "output_of"];
+pub const DESCENDANT_REL_NAMES: [&str; 7] =
+    ["is_a", "part_of", "regulates", "positively_regulates", "negatively_regulates",
+     "has_part", "output_of"];
 // only consider has_part relations for these ontologies:
 pub const HAS_PART_CV_NAMES: [&str; 1] = ["fission_yeast_phenotype"];
 
