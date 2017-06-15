@@ -11,3 +11,4 @@ pub mod db;
 pub mod web;
 pub mod types;
 pub mod interpro;
+pub mod api;

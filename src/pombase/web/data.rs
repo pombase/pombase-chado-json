@@ -99,7 +99,7 @@ pub struct GeneShort {
     pub product: Option<GeneProduct>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneSummary {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -171,7 +171,7 @@ impl Hash for GeneShort {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermShort {
     pub name: TermName,
     pub cv_name: String,
@@ -404,7 +404,7 @@ pub struct SynonymDetails {
     pub synonym_type: String
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum Strand {
     #[serde(rename="forward")]
     Forward = 1,
@@ -412,14 +412,14 @@ pub enum Strand {
     Reverse = -1,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeShort {
     pub name: String,
     pub length: usize,
     pub ena_identifier: String,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeLocation {
     pub chromosome: ChromosomeShort,
     pub start_pos: u32,
@@ -726,7 +726,7 @@ pub struct Metadata {
     pub term_count: usize,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SearchAPIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub term_name_genes: HashMap<TermName, HashSet<GeneUniquename>>,
