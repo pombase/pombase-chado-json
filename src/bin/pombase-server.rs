@@ -8,8 +8,6 @@ extern crate serde_json;
 
 extern crate pombase;
 
-#[cfg(test)] mod tests;
-
 use std::sync::Mutex;
 use std::process;
 use std::env;
