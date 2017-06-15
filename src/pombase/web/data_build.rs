@@ -3426,7 +3426,7 @@ impl <'a> WebDataBuild<'a> {
 
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
-        let mut term_name_genes: HashMap<TermName, HashSet<GeneUniquename>> = HashMap::new();
+        let mut term_cv_name_genes: HashMap<TermName, HashMap<CvName, HashSet<GeneUniquename>>> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
             term_summaries.insert(self.make_term_short(&termid));
@@ -3434,7 +3434,9 @@ impl <'a> WebDataBuild<'a> {
                 termid_genes.entry(termid.clone())
                     .or_insert(HashSet::new())
                     .insert(gene_uniquename.clone());
-                term_name_genes.entry(term_details.name.clone())
+                term_cv_name_genes.entry(term_details.cv_name.clone())
+                    .or_insert(HashMap::new())
+                    .entry(term_details.name.clone())
                     .or_insert(HashSet::new())
                     .insert(gene_uniquename.clone());
             }
@@ -3443,7 +3445,7 @@ impl <'a> WebDataBuild<'a> {
         SearchAPIMaps {
             gene_summaries: gene_summaries,
             termid_genes: termid_genes,
-            term_name_genes: term_name_genes,
+            term_cv_name_genes: term_cv_name_genes,
             term_summaries: term_summaries,
         }
     }
