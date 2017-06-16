@@ -8,8 +8,7 @@ name = "pombase"
 path = "src/pombase/lib.rs"
 
 [[test]]
-name = "test"
-path = "tests/test.rs"
+name = "tests"
 
 [dependencies]
 serde_derive = "1.0"

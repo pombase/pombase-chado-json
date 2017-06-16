@@ -1,15 +1,15 @@
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct ResultRow {
     pub gene_uniquename: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
 pub enum ResultStatus {
-    OK,
+    Ok,
     Error(String),
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Result {
     pub status: ResultStatus,
     pub rows: Vec<ResultRow>,

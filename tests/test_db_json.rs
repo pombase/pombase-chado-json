@@ -4,10 +4,10 @@ use std::collections::HashMap;
 
 extern crate pombase;
 
-use pombase::db::*;
-use pombase::web::config::*;
-use pombase::web::data::*;
-use pombase::web::data_build::*;
+use self::pombase::db::*;
+use self::pombase::web::config::*;
+use self::pombase::web::data::*;
+use self::pombase::web::data_build::*;
 
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
                            cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str, accession: &str)

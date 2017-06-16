@@ -5,6 +5,7 @@ use std::io::BufReader;
 use serde_json;
 
 use web::data::SearchAPIMaps;
+use types::GeneUniquename;
 
 
 pub struct ServerData {
@@ -40,6 +41,15 @@ impl ServerData {
         ServerData {
             file_name: file_name.into(),
             search_api_maps: load(file_name),
+        }
+    }
+
+    pub fn genes_of_termid(&self, term_id: &str) -> Vec<GeneUniquename> {
+        match self.search_api_maps.termid_genes.get(term_id) {
+            Some(gene_uniquenames) => {
+                gene_uniquenames.iter().cloned().collect::<Vec<_>>()
+            },
+            None => vec![],
         }
     }
 

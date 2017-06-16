@@ -3,6 +3,7 @@ use api::query::*;
 use api::server_data::ServerData;
 
 
+
 pub struct QueryExec {
     server_data: ServerData,
 }
@@ -15,11 +16,7 @@ impl QueryExec {
     }
 
     pub fn exec(&self, query: &Query) -> Result {
-        Result {
-            status: ResultStatus::OK,
-            rows: vec![ResultRow{ gene_uniquename: "SPAC27E2.05".into(),
-            }]
-        }
+        query.exec(&self.server_data)
     }
 
     pub fn reload(&mut self) {

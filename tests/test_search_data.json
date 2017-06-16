@@ -1,0 +1,807 @@
+{
+  "termid_genes": {
+    "GO:0044237": [
+      "SPAC24B11.06c",
+      "SPAC19G12.03",
+      "SPAC2F3.09",
+      "SPAC27E2.05"
+    ],
+    "GO:0010971": [
+      "SPAC24B11.06c"
+    ],
+    "GO:0070914": [
+      "SPAC27E2.05"
+    ],
+    "FYPO:0000002": [
+      "SPAC1805.15c",
+      "SPAC27E2.06c",
+      "SPAC24B11.06c"
+    ],
+    "GO:0034248": [
+      "SPAC24B11.06c"
+    ],
+    "FYPO:0001701": [
+      "SPAC11G7.02"
+    ],
+    "GO:0031399": [
+      "SPAC24B11.06c"
+    ],
+    "GO:0030435": [
+      "SPAC19G12.03"
+    ],
+    "PECO:0000247": [
+      "SPAC24B11.06c"
+    ],
+    "FYPO:0002451": [
+      "SPAC27E2.05",
+      "SPBC9B6.04c",
+      "SPAC2F3.09",
+      "SPAC27E2.06c",
+      "SPAC1805.15c",
+      "SPAC24B11.06c"
+    ],
+    "PECO:0000283": [
+      "SPAC2F3.09"
+    ]
+  },
+  "term_cv_name_genes": {
+    "molecular_function": {
+      "transferase activity, transferring acyl groups other than amino-acyl groups": [
+        "SPAC2F3.09"
+      ],
+      "signal transducer activity": [
+        "SPAC24B11.06c"
+      ],
+      "transferase activity, transferring phosphorus-containing groups": [
+        "SPAC24B11.06c",
+        "SPAC27E2.05"
+      ],
+      "sequence-specific double-stranded DNA binding": [
+        "SPBC1D7.02c"
+      ],
+      "ubiquitin protein ligase activity": [
+        "SPAC11G7.02",
+        "SPBC18H10.20c"
+      ],
+      "catalytic activity": [
+        "SPBC18H10.02",
+        "SPAC2F3.09",
+        "SPAC27E2.05",
+        "SPBC18H10.20c",
+        "SPAC11G7.02",
+        "SPAC24B11.06c"
+      ],
+      "ligase activity, forming carbon-sulfur bonds": [
+        "SPBC18H10.02"
+      ],
+      "core promoter proximal region DNA binding": [
+        "SPBC1D7.02c"
+      ],
+      "ubiquitin-like protein transferase activity": [
+        "SPBC18H10.20c",
+        "SPAC11G7.02"
+      ],
+      "binding": [
+        "SPBC1D7.02c",
+        "SPATRNALYS.01"
+      ],
+      "N-acyltransferase activity": [
+        "SPAC2F3.09"
+      ],
+      "nucleotidyltransferase activity": [
+        "SPAC27E2.05"
+      ],
+      "hydrolase activity": [
+        "SPAC27E2.05"
+      ],
+      "RNA binding": [
+        "SPATRNALYS.01"
+      ],
+      "protein serine/threonine kinase activity": [
+        "SPAC24B11.06c"
+      ],
+      "phosphotransferase activity, alcohol group as acceptor": [
+        "SPAC24B11.06c"
+      ],
+      "regulatory region nucleic acid binding": [
+        "SPBC1D7.02c"
+      ],
+      "transcription factor activity, sequence-specific DNA binding": [
+        "SPBC1D7.02c"
+      ],
+      "3'-5' exonuclease activity": [
+        "SPAC27E2.05"
+      ],
+      "RNA polymerase II regulatory region DNA binding": [
+        "SPBC1D7.02c"
+      ],
+      "base pairing with RNA": [
+        "SPATRNALYS.01"
+      ],
+      "core promoter proximal region sequence-specific DNA binding": [
+        "SPBC1D7.02c"
+      ],
+      "AAG codon-amino acid adaptor activity": [
+        "SPATRNALYS.01"
+      ],
+      "long-chain fatty acid-CoA ligase activity": [
+        "SPBC18H10.02"
+      ],
+      "exonuclease activity": [
+        "SPAC27E2.05"
+      ]
+    },
+    "phenotype_condition": {
+      "low temperature": [
+        "SPAC27E2.05",
+        "SPBC18H10.20c"
+      ],
+      "+ NaCl": [
+        "SPAC24B11.06c"
+      ],
+      "+ FeCl3": [
+        "SPAC2F3.09"
+      ]
+    },
+    "fission_yeast_phenotype": {
+      "cell population viability": [
+        "SPBC18H10.02",
+        "SPAC1805.15c",
+        "SPAC2F3.09",
+        "SPAC19G12.04",
+        "SPAC27E2.06c"
+      ],
+      "abnormal biological process": [
+        "SPBC18H10.02",
+        "SPAC27E2.05",
+        "SPBC9B6.04c",
+        "SPAC24B11.06c"
+      ],
+      "decreased oxidoreductase activity": [
+        "SPAC24B11.06c"
+      ],
+      "cellular response phenotype during vegetative growth": [
+        "SPAC24B11.06c"
+      ],
+      "sensitive to non-ionic osmotic stress": [
+        "SPAC24B11.06c"
+      ],
+      "loss of viability upon nitrogen starvation": [
+        "SPAC24B11.06c"
+      ],
+      "abnormal cellular response to nitrogen starvation": [
+        "SPAC24B11.06c"
+      ],
+      "increased long-chain fatty acid-CoA ligase activity": [
+        "SPBC18H10.02"
+      ],
+      "sensitive to menadione": [
+        "SPAC24B11.06c"
+      ],
+      "sensitive to hydroxyurea": [
+        "SPAC11G7.02",
+        "SPAC27E2.05",
+        "SPBC11G11.01",
+        "SPAC24B11.06c"
+      ],
+      "decreased protein ubiquitination during vegetative growth": [
+        "SPBC18H10.20c"
+      ],
+      "abnormal protein localization during vegetative growth": [
+        "SPAC11G7.02",
+        "SPBC18H10.20c"
+      ],
+      "phenotype": [
+        "SPBC9B6.04c",
+        "SPAC27E2.05",
+        "SPAC1805.15c",
+        "SPAC11G7.02",
+        "SPAC27E2.06c"
+      ],
+      "cellular metabolism phenotype during vegetative growth": [
+        "SPAC24B11.06c",
+        "SPBC18H10.20c",
+        "SPAC11G7.02",
+        "SPAC27E2.05"
+      ],
+      "abnormal protein metabolic process": [
+        "SPAC11G7.02",
+        "SPBC1D7.02c",
+        "SPBC18H10.20c"
+      ]
+    },
+    "gene_ex": {
+      "RNA level": [
+        "SPAC24B11.06c",
+        "SPAC27E2.05"
+      ],
+      "protein level": [
+        "SPAC11G7.02",
+        "SPAC19G12.04"
+      ]
+    },
+    "EC numbers": {
+      "2.3.1.37": [
+        "SPAC2F3.09"
+      ]
+    },
+    "m_f_g": {
+      "nucleocytoplasmic shuttling protein": [
+        "SPAC24B11.06c"
+      ]
+    },
+    "PomBase family or domain": {
+      "TPR repeat protein": [
+        "SPBC11G11.01"
+      ],
+      "zf-C2H2 type": [
+        "SPBC1D7.02c"
+      ],
+      "Tf2-type transposon": [
+        "SPAC2E1P3.03c"
+      ]
+    },
+    "subunit_composition": {
+      "heteromeric(4)": [
+        "SPAC27E2.05"
+      ]
+    },
+    "complementation": {
+      "functionally complemented by S. cerevisiae CDA2": [
+        "SPAC19G12.03"
+      ],
+      "functionally complemented by S. cerevisiae YER125W": [
+        "SPAC1805.15c"
+      ],
+      "functionally complemented by S. cerevisiae CDA1": [
+        "SPAC19G12.03"
+      ],
+      "is not functionally complemented by S. cerevisiae Hys2": [
+        "SPAC27E2.05"
+      ]
+    },
+    "sequence": {
+      "transmembrane_helix": [
+        "SPBC11G11.01"
+      ]
+    },
+    "cellular_component": {
+      "mitochondrial envelope": [
+        "SPAC24B11.06c"
+      ],
+      "spore wall": [
+        "SPAC19G12.03"
+      ],
+      "endoplasmic reticulum": [
+        "SPBC18H10.02"
+      ],
+      "delta DNA polymerase complex": [
+        "SPAC27E2.05"
+      ],
+      "DNA polymerase complex": [
+        "SPAC27E2.05"
+      ],
+      "ascospore wall": [
+        "SPAC19G12.03"
+      ]
+    },
+    "misc": {
+      "DNA polymerase delta 3'-5' exonuclease-to-polymerase ratio is about 1:30": [
+        "SPAC27E2.05"
+      ],
+      "DNA polymerase delta nucleotide misincorporation rate 4.5-5.3x10^-4": [
+        "SPAC27E2.05"
+      ]
+    },
+    "species_dist": {
+      "conserved in vertebrates": [
+        "SPAC24B11.06c"
+      ],
+      "conserved in bacteria": [
+        "SPBC9B6.04c"
+      ]
+    },
+    "PSI-MOD": {
+      "modified L-tyrosine residue": [
+        "SPAC24B11.06c"
+      ],
+      "protein modification categorized by chemical process": [
+        "SPAC24B11.06c",
+        "SPAC11G7.02"
+      ]
+    },
+    "disease_associated": {
+      "liddle syndrome": [
+        "SPAC1805.15c"
+      ],
+      "cancer": [
+        "SPBC18H10.02"
+      ]
+    },
+    "biological_process": {
+      "aminoglycan catabolic process": [
+        "SPAC19G12.03"
+      ],
+      "negative regulation of transmembrane transport": [
+        "SPAC11G7.02"
+      ],
+      "negative regulation of cell cycle process": [
+        "SPAC24B11.06c"
+      ],
+      "protein acetylation": [
+        "SPAC24B11.06c"
+      ],
+      "amide transport": [
+        "SPAC24B11.06c"
+      ],
+      "signal transduction by protein phosphorylation": [
+        "SPAC24B11.06c"
+      ],
+      "negative regulation of transcription by glucose": [
+        "SPBC1D7.02c"
+      ],
+      "macromolecule modification": [
+        "SPAC24B11.06c"
+      ],
+      "amino acid transmembrane transport": [
+        "SPAC11G7.02"
+      ]
+    }
+  },
+  "gene_summaries": [
+    {
+      "uniquename": "SPAC19G12.04",
+      "name": "dal1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "ureidoglycolate hydrolase (predicted)",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 4049307,
+        "end_pos": 4050971,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC1805.15c",
+      "name": "pub2",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "HECT-type ubiquitin-protein ligase E3 Pub2",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 2797871,
+        "end_pos": 2800406,
+        "strand": "reverse"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC27E2.05",
+      "name": "cdc1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "DNA polymerase delta small subunit Cdc1",
+      "synonyms": [
+        "mis1"
+      ],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 4015050,
+        "end_pos": 4016557,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPBC9B6.04c",
+      "name": "tuf1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "mitochondrial translation elongation factor EF-Tu Tuf1",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_2",
+          "length": 4539804,
+          "ena_identifier": "CU329671.1"
+        },
+        "start_pos": 1819756,
+        "end_pos": 1821476,
+        "strand": "reverse"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC11G7.02",
+      "name": "pub1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "HECT-type ubiquitin-protein ligase E3 Pub1",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 3963058,
+        "end_pos": 3966172,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC19G12.03",
+      "name": "cda1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "chitin deacetylase Cda1",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 4047209,
+        "end_pos": 4049353,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC2F3.09",
+      "name": "hem1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "5-aminolevulinate synthase Hem1",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 3939598,
+        "end_pos": 3942086,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPBC18H10.02",
+      "name": "lcf1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "long-chain-fatty-acid-CoA ligase Lcf1",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_2",
+          "length": 4539804,
+          "ena_identifier": "CU329671.1"
+        },
+        "start_pos": 1769946,
+        "end_pos": 1772629,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPBC18H10.20c",
+      "name": "any1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "arrestin-related endocytic adaptor Any1",
+      "synonyms": [
+        "arn1",
+        "art1"
+      ],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_2",
+          "length": 4539804,
+          "ena_identifier": "CU329671.1"
+        },
+        "start_pos": 1808258,
+        "end_pos": 1810338,
+        "strand": "reverse"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC2E1P3.03c",
+      "name": "Tf2-3",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "retrotransposable element/transposon Tf2-type",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 2927204,
+        "end_pos": 2931205,
+        "strand": "reverse"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC27E2.06c",
+      "name": "msm1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "mitochondrial methionine-tRNA ligase Msm1 (predicted)",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 4016534,
+        "end_pos": 4018850,
+        "strand": "reverse"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPRRNA.26",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "5S rRNA",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_3",
+          "length": 2452883,
+          "ena_identifier": "CU329672.1"
+        },
+        "start_pos": 926108,
+        "end_pos": 926294,
+        "strand": "forward"
+      },
+      "feature_type": "rRNA gene"
+    },
+    {
+      "uniquename": "SPAC2E12.05",
+      "name": "wtf1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 5063258,
+        "end_pos": 5066231,
+        "strand": "forward"
+      },
+      "feature_type": "pseudogene"
+    },
+    {
+      "uniquename": "SPBC11G11.01",
+      "name": "fis1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "mitochondrial fission protein Fis1 (predicted)",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_2",
+          "length": 4539804,
+          "ena_identifier": "CU329671.1"
+        },
+        "start_pos": 1757520,
+        "end_pos": 1759229,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPAC24B11.06c",
+      "name": "sty1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "MAP kinase Sty1",
+      "synonyms": [
+        "spc1",
+        "phh1"
+      ],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 206476,
+        "end_pos": 208044,
+        "strand": "reverse"
+      },
+      "feature_type": "mRNA gene"
+    },
+    {
+      "uniquename": "SPATRNALYS.01",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "tRNA Lysine",
+      "synonyms": [],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_1",
+          "length": 5579133,
+          "ena_identifier": "CU329670.1"
+        },
+        "start_pos": 1704582,
+        "end_pos": 1704664,
+        "strand": "forward"
+      },
+      "feature_type": "tRNA gene"
+    },
+    {
+      "uniquename": "SPBC1D7.02c",
+      "name": "scr1",
+      "organism": {
+        "genus": "Schizosaccharomyces",
+        "species": "pombe"
+      },
+      "product": "transcription factor Scr1",
+      "synonyms": [
+        "SPBC1D7.02"
+      ],
+      "location": {
+        "chromosome": {
+          "name": "chromosome_2",
+          "length": 4539804,
+          "ena_identifier": "CU329671.1"
+        },
+        "start_pos": 1752100,
+        "end_pos": 1755619,
+        "strand": "forward"
+      },
+      "feature_type": "mRNA gene"
+    }
+  ],
+  "term_summaries": [
+    {
+      "name": "cellular metabolic process",
+      "cv_name": "biological_process",
+      "termid": "GO:0044237",
+      "is_obsolete": false,
+      "gene_count": 10,
+      "genotype_count": 0
+    },
+    {
+      "name": "positive regulation of G2/M transition of mitotic cell cycle",
+      "cv_name": "biological_process",
+      "termid": "GO:0010971",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 0
+    },
+    {
+      "name": "UV-damage excision repair",
+      "cv_name": "biological_process",
+      "termid": "GO:0070914",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 0
+    },
+    {
+      "name": "cell phenotype",
+      "cv_name": "fission_yeast_phenotype",
+      "termid": "FYPO:0000002",
+      "is_obsolete": false,
+      "gene_count": 13,
+      "genotype_count": 53
+    },
+    {
+      "name": "regulation of cellular amide metabolic process",
+      "cv_name": "biological_process",
+      "termid": "GO:0034248",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 0
+    },
+    {
+      "name": "sensitive to bortezomib",
+      "cv_name": "fission_yeast_phenotype",
+      "termid": "FYPO:0001701",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 1
+    },
+    {
+      "name": "regulation of protein modification process",
+      "cv_name": "biological_process",
+      "termid": "GO:0031399",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 0
+    },
+    {
+      "name": "sporulation resulting in formation of a cellular spore",
+      "cv_name": "biological_process",
+      "termid": "GO:0030435",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 0
+    },
+    {
+      "name": "+ CdSO4",
+      "cv_name": "phenotype_condition",
+      "termid": "PECO:0000247",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 2
+    },
+    {
+      "name": "inviable vegetative cell with abnormal cell shape",
+      "cv_name": "fission_yeast_phenotype",
+      "termid": "FYPO:0002451",
+      "is_obsolete": false,
+      "gene_count": 6,
+      "genotype_count": 17
+    },
+    {
+      "name": "+ hemin",
+      "cv_name": "phenotype_condition",
+      "termid": "PECO:0000283",
+      "is_obsolete": false,
+      "gene_count": 1,
+      "genotype_count": 3
+    }
+  ]
+}
