@@ -6,21 +6,21 @@ use api::result::*;
 use types::GeneUniquename;
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub enum QueryPart {
+pub enum QueryNode {
 #[serde(rename = "or")]
-    Or(Vec<QueryPart>),
+    Or(Vec<QueryNode>),
 #[serde(rename = "and")]
-    And(Vec<QueryPart>),
+    And(Vec<QueryNode>),
 #[serde(rename = "termid")]
     TermId(String),
 #[serde(rename = "gene_list")]
     GeneList(Vec<GeneUniquename>),
 }
 
-fn exec_or(server_data: &ServerData, parts: &Vec<QueryPart>) -> Result {
-    if parts.len() == 0 {
+fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
+    if nodes.len() == 0 {
         return Result {
-            status: ResultStatus::Error("illegal query: OR operator has no parts".into()),
+            status: ResultStatus::Error("illegal query: OR operator has no nodes".into()),
             rows: vec![],
         }
     }
@@ -28,20 +28,20 @@ fn exec_or(server_data: &ServerData, parts: &Vec<QueryPart>) -> Result {
     let mut seen_genes = HashSet::new();
     let mut or_rows = vec![];
 
-    for part in parts {
-        let part_result = part.exec(server_data);
-        if part_result.status != ResultStatus::Ok {
+    for node in nodes {
+        let node_result = node.exec(server_data);
+        if node_result.status != ResultStatus::Ok {
             return Result {
-                status: part_result.status,
+                status: node_result.status,
                 rows: vec![],
             }
         }
-        for part_row in &part_result.rows {
-            if !seen_genes.contains(&part_row.gene_uniquename) {
+        for node_row in &node_result.rows {
+            if !seen_genes.contains(&node_row.gene_uniquename) {
                 or_rows.push(ResultRow {
-                    gene_uniquename: part_row.gene_uniquename.clone(),
+                    gene_uniquename: node_row.gene_uniquename.clone(),
                 });
-                seen_genes.insert(part_row.gene_uniquename.clone());
+                seen_genes.insert(node_row.gene_uniquename.clone());
             }
         }
     }
@@ -51,43 +51,43 @@ fn exec_or(server_data: &ServerData, parts: &Vec<QueryPart>) -> Result {
     }
 }
 
-fn exec_and(server_data: &ServerData, parts: &Vec<QueryPart>) -> Result {
-    if parts.len() == 0 {
+fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
+    if nodes.len() == 0 {
         return Result {
-            status: ResultStatus::Error("illegal query: AND operator has no parts".into()),
+            status: ResultStatus::Error("illegal query: AND operator has no nodes".into()),
             rows: vec![],
         };
     }
 
-    let first_part_result = parts[0].exec(server_data);
+    let first_node_result = nodes[0].exec(server_data);
 
-    if first_part_result.status != ResultStatus::Ok {
+    if first_node_result.status != ResultStatus::Ok {
         return Result {
-            status: first_part_result.status,
+            status: first_node_result.status,
             rows: vec![],
         };
     }
 
     let current_genes =
-        first_part_result.rows.into_iter().map(|row| row.gene_uniquename);
+        first_node_result.rows.into_iter().map(|row| row.gene_uniquename);
 
     let mut current_gene_set =
         HashSet::from_iter(current_genes);
 
-    for part in parts[1..].iter() {
-        let part_result = part.exec(server_data);
-        if part_result.status != ResultStatus::Ok {
+    for node in nodes[1..].iter() {
+        let node_result = node.exec(server_data);
+        if node_result.status != ResultStatus::Ok {
             return Result {
-                status: part_result.status,
+                status: node_result.status,
                 rows: vec![],
             }
         }
 
-        let part_genes =
-            part_result.rows.into_iter().map(|row| row.gene_uniquename)
+        let node_genes =
+            node_result.rows.into_iter().map(|row| row.gene_uniquename)
             .collect::<HashSet<_>>();
 
-        current_gene_set = current_gene_set.intersection(&part_genes).cloned().collect();
+        current_gene_set = current_gene_set.intersection(&node_genes).cloned().collect();
     }
     Result {
         status: ResultStatus::Ok,
@@ -118,12 +118,12 @@ fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>) -> Result {
     }
 }
 
-impl QueryPart {
+impl QueryNode {
     pub fn exec(&self, server_data: &ServerData) -> Result {
-        use self::QueryPart::*;
+        use self::QueryNode::*;
         match *self {
-            Or(ref parts) => exec_or(server_data, parts),
-            And(ref parts) => exec_and(server_data, parts),
+            Or(ref nodes) => exec_or(server_data, nodes),
+            And(ref nodes) => exec_and(server_data, nodes),
             TermId(ref term_id) => exec_termid(server_data, term_id),
             GeneList(ref gene_list) => exec_gene_list(gene_list),
         }
@@ -133,17 +133,17 @@ impl QueryPart {
 
 #[derive(Serialize, Deserialize)]
 pub struct Query {
-    part: QueryPart,
+    constraints: QueryNode,
 }
 
 impl Query {
-    pub fn from_part(part: QueryPart) -> Query {
+    pub fn from_node(node: QueryNode) -> Query {
         Query {
-            part: part
+            constraints: node
         }
     }
 
     pub fn exec(&self, server_data: &ServerData) -> Result {
-        self.part.exec(server_data)
+        self.constraints.exec(server_data)
     }
 }

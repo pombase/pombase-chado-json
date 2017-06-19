@@ -1,5 +1,12 @@
 {
-  "query": {
-    "termid": "GO:0033233"
+  "constraints": {
+    "and": [
+      {
+        "termid": "GO:0006996"
+      },
+      {
+        "termid": "GO:0006996"
+      }
+    ]
   }
 }

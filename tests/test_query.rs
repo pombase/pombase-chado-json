@@ -34,31 +34,31 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
 
 #[test]
 fn test_and_or() {
-    let qp1 = QueryPart::GeneList(vec!["id_one".into(), "id_two".into(), "id_three".into()]);
-    let qp2 = QueryPart::GeneList(vec!["id_two".into(), "id_three".into(), "id_four".into()]);
-    let qp3 = QueryPart::GeneList(vec!["id_one".into(), "id_two".into(),
+    let qp1 = QueryNode::GeneList(vec!["id_one".into(), "id_two".into(), "id_three".into()]);
+    let qp2 = QueryNode::GeneList(vec!["id_two".into(), "id_three".into(), "id_four".into()]);
+    let qp3 = QueryNode::GeneList(vec!["id_one".into(), "id_two".into(),
                                        "id_three".into(), "id_four".into()]);
-    let qp4 = QueryPart::GeneList(vec!["id_two".into(), "id_three".into(),
+    let qp4 = QueryNode::GeneList(vec!["id_two".into(), "id_three".into(),
                                        "id_four".into(), "id_five".into()]);
 
-    let and_query_part_1 = QueryPart::And(vec![qp1, qp2]);
-    let and_query_part_2 = QueryPart::And(vec![qp3, qp4]);
+    let and_query_node_1 = QueryNode::And(vec![qp1, qp2]);
+    let and_query_node_2 = QueryNode::And(vec![qp3, qp4]);
 
     let and_query =
-        Query::from_part(QueryPart::And(vec![and_query_part_1.clone(), and_query_part_2.clone()]));
+        Query::from_node(QueryNode::And(vec![and_query_node_1.clone(), and_query_node_2.clone()]));
 
     check_gene_result(&and_query, vec!["id_two", "id_three"]);
 
     let or_query =
-        Query::from_part(QueryPart::Or(vec![and_query_part_1, and_query_part_2]));
+        Query::from_node(QueryNode::Or(vec![and_query_node_1, and_query_node_2]));
 
     check_gene_result(&or_query, vec!["id_two", "id_three", "id_four"]);
 }
 
 #[test]
 fn test_termid() {
-    let qp1 = QueryPart::TermId("GO:0044237".into());
-    let q1 = Query::from_part(qp1);
+    let qp1 = QueryNode::TermId("GO:0044237".into());
+    let q1 = Query::from_node(qp1);
 
     check_gene_result(&q1, vec!["SPAC24B11.06c", "SPAC19G12.03", "SPAC2F3.09", "SPAC27E2.05"]);
 }
