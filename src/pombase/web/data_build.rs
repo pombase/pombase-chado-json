@@ -736,7 +736,11 @@ fn get_loc_residues(chr: &ChromosomeDetails,
     let start = (loc.start_pos - 1) as usize;
     let end = loc.end_pos as usize;
     let residues: Residues = chr.residues[start..end].into();
-    rev_comp(&residues)
+    if loc.strand == Strand::Forward {
+        residues
+    } else {
+        rev_comp(&residues)
+    }
 }
 
 fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> FeatureShort {
