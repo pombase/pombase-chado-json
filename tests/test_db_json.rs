@@ -531,6 +531,11 @@ fn test_gene_details() {
     assert_eq!(web_data.genes.len(), 3);
     let mut par1_gene = web_data.genes.remove("SPCC188.02").unwrap();
 
+    assert_eq!(par1_gene.transcripts[0].parts[0].residues,
+               "ACATGCACTATCTA");
+    assert_eq!(par1_gene.transcripts[0].parts[1].residues,
+               "TAGCTAATCCGGATATAAATACAGCT");
+
     assert_eq!(par1_gene.uniquename, "SPCC188.02");
     assert_eq!(par1_gene.name.unwrap(), "par1");
     assert_eq!(par1_gene.cv_annotations.len(), 2);
