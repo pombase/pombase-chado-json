@@ -45,11 +45,17 @@ impl ServerData {
     }
 
     pub fn genes_of_termid(&self, term_id: &str) -> Vec<GeneUniquename> {
-        match self.search_api_maps.termid_genes.get(term_id) {
-            Some(gene_uniquenames) => {
-                gene_uniquenames.iter().cloned().collect::<Vec<_>>()
+        match self.search_api_maps.termid_genotype_genes.get(term_id) {
+            Some(genotype_genes) => {
+                genotype_genes.single_allele.iter().cloned().collect::<Vec<_>>()
             },
-            None => vec![],
+            None =>
+                match self.search_api_maps.termid_genes.get(term_id) {
+                    Some(gene_uniquenames) => {
+                        gene_uniquenames.iter().cloned().collect::<Vec<_>>()
+                    },
+                    None => vec![],
+                },
         }
     }
 

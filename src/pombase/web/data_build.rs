@@ -3430,26 +3430,50 @@ impl <'a> WebDataBuild<'a> {
 
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
-        let mut term_cv_name_genes: HashMap<TermName, HashMap<CvName, HashSet<GeneUniquename>>> = HashMap::new();
+        let mut termid_genotype_genes: HashMap<TermId, SearchAPIGenotypeGenes> =
+            HashMap::new();
 
         for (termid, term_details) in &self.terms {
             term_summaries.insert(self.make_term_short(&termid));
-            for gene_uniquename in term_details.genes_by_uniquename.keys() {
-                termid_genes.entry(termid.clone())
-                    .or_insert(HashSet::new())
-                    .insert(gene_uniquename.clone());
-                term_cv_name_genes.entry(term_details.cv_name.clone())
-                    .or_insert(HashMap::new())
-                    .entry(term_details.name.clone())
-                    .or_insert(HashSet::new())
-                    .insert(gene_uniquename.clone());
+            let cv_config = &self.config.cv_config;
+            if let Some(term_config) = cv_config.get(&term_details.cv_name) {
+                if term_config.feature_type == "gene" {
+                    for gene_uniquename in term_details.genes_by_uniquename.keys() {
+                        termid_genes.entry(termid.clone())
+                            .or_insert(HashSet::new())
+                            .insert(gene_uniquename.clone());
+                    }
+                } else {
+                    if term_details.genotypes_by_uniquename.len() > 0 {
+                        // phenotype term
+                        let mut genotype_genes = SearchAPIGenotypeGenes {
+                            single_allele: HashSet::new(),
+                            multi_allele: HashSet::new(),
+                        };
+                        for (_, genotype) in &term_details.genotypes_by_uniquename {
+                            for allele in &genotype.expressed_alleles {
+                                let allele_uniquename = &allele.allele_uniquename;
+                                let allele_short =
+                                    self.alleles.get(allele_uniquename).expect("Can't find allele");
+                                let allele_gene_uniquename =
+                                    allele_short.gene_uniquename.clone();
+                                if genotype.expressed_alleles.len() == 1 {
+                                    genotype_genes.single_allele.insert(allele_gene_uniquename);
+                                } else {
+                                    genotype_genes.multi_allele.insert(allele_gene_uniquename);
+                                }
+                            }
+                        }
+                        termid_genotype_genes.insert(termid.clone(), genotype_genes);
+                    }
+                }
             }
         }
 
         SearchAPIMaps {
             gene_summaries: gene_summaries,
             termid_genes: termid_genes,
-            term_cv_name_genes: term_cv_name_genes,
+            termid_genotype_genes: termid_genotype_genes,
             term_summaries: term_summaries,
         }
     }

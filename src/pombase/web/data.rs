@@ -727,9 +727,15 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SearchAPIGenotypeGenes {
+    pub single_allele: HashSet<GeneUniquename>,
+    pub multi_allele: HashSet<GeneUniquename>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SearchAPIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
-    pub term_cv_name_genes: HashMap<TermName, HashMap<CvName, HashSet<GeneUniquename>>>,
+    pub termid_genotype_genes: HashMap<TermId, SearchAPIGenotypeGenes>,
     pub gene_summaries: Vec<GeneSummary>,
     pub term_summaries: HashSet<TermShort>,
 }
