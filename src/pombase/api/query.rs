@@ -13,7 +13,7 @@ pub enum QueryNode {
     And(Vec<QueryNode>),
 #[serde(rename = "termid")]
     TermId(String),
-#[serde(rename = "gene_list")]
+#[serde(rename = "genelist")]
     GeneList(Vec<GeneUniquename>),
 }
 
