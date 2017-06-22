@@ -33,16 +33,18 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
 }
 
 #[test]
-fn test_and_or() {
+fn test_and_or_not() {
     let qp1 = QueryNode::GeneList(vec!["id_one".into(), "id_two".into(), "id_three".into()]);
     let qp2 = QueryNode::GeneList(vec!["id_two".into(), "id_three".into(), "id_four".into()]);
     let qp3 = QueryNode::GeneList(vec!["id_one".into(), "id_two".into(),
                                        "id_three".into(), "id_four".into()]);
     let qp4 = QueryNode::GeneList(vec!["id_two".into(), "id_three".into(),
                                        "id_four".into(), "id_five".into()]);
+    let qp5 = QueryNode::GeneList(vec!["id_three".into(), "id_four".into(),
+                                       "id_five".into()]);
 
-    let and_query_node_1 = QueryNode::And(vec![qp1, qp2]);
-    let and_query_node_2 = QueryNode::And(vec![qp3, qp4]);
+    let and_query_node_1 = QueryNode::And(vec![qp1.clone(), qp2.clone()]);
+    let and_query_node_2 = QueryNode::And(vec![qp3.clone(), qp4.clone()]);
 
     let and_query =
         Query::from_node(QueryNode::And(vec![and_query_node_1.clone(), and_query_node_2.clone()]));
@@ -53,6 +55,14 @@ fn test_and_or() {
         Query::from_node(QueryNode::Or(vec![and_query_node_1, and_query_node_2]));
 
     check_gene_result(&or_query, vec!["id_two", "id_three", "id_four"]);
+
+    let not_query_node = QueryNode::Not(Box::new(qp1.clone()), Box::new(qp2.clone()));
+    let not_query = Query::from_node(not_query_node);
+    check_gene_result(&not_query, vec!["id_one"]);
+
+    let not_query_2_node = QueryNode::Not(Box::new(qp1), Box::new(qp5));
+    let not_query_2 = Query::from_node(not_query_2_node);
+    check_gene_result(&not_query_2, vec!["id_one", "id_two"]);
 }
 
 #[test]

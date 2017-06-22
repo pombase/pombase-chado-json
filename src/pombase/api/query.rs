@@ -11,6 +11,8 @@ pub enum QueryNode {
     Or(Vec<QueryNode>),
 #[serde(rename = "and")]
     And(Vec<QueryNode>),
+#[serde(rename = "not")]
+    Not(Box<QueryNode>, Box<QueryNode>),
 #[serde(rename = "termid")]
     TermId(String),
 #[serde(rename = "genelist")]
@@ -97,6 +99,41 @@ fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
     }
 }
 
+fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode) -> Result {
+    let node_b_result = node_b.exec(server_data);
+    if node_b_result.status != ResultStatus::Ok {
+        return Result {
+            status: node_b_result.status,
+            rows: vec![],
+        }
+    }
+
+    let node_b_gene_set: HashSet<GeneUniquename> =
+        HashSet::from_iter(node_b_result.rows.into_iter().map(|row| row.gene_uniquename));
+
+    let node_a_result = node_a.exec(server_data);
+    if node_a_result.status != ResultStatus::Ok {
+        return Result {
+            status: node_a_result.status,
+            rows: vec![],
+        }
+    }
+
+    let mut not_rows = vec![];
+
+    for row in &node_a_result.rows {
+        if !node_b_gene_set.contains(&row.gene_uniquename) {
+            not_rows.push(ResultRow {
+                gene_uniquename: row.gene_uniquename.clone(),
+            });
+        }
+    }
+    Result {
+        status: ResultStatus::Ok,
+        rows: not_rows,
+    }
+}
+
 fn exec_termid(server_data: &ServerData, term_id: &str) -> Result {
     let rows = server_data.genes_of_termid(term_id).iter()
         .map(|gene_uniquename| ResultRow { gene_uniquename: gene_uniquename.clone() })
@@ -124,6 +161,7 @@ impl QueryNode {
         match *self {
             Or(ref nodes) => exec_or(server_data, nodes),
             And(ref nodes) => exec_and(server_data, nodes),
+            Not(ref node_a, ref node_b) => exec_not(server_data, node_a, node_b),
             TermId(ref term_id) => exec_termid(server_data, term_id),
             GeneList(ref gene_list) => exec_gene_list(gene_list),
         }
