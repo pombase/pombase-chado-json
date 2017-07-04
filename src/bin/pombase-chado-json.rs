@@ -10,8 +10,6 @@ use postgres::{Connection, TlsMode};
 use std::env;
 use getopts::Options;
 use std::process;
-use std::fs::File;
-use std::io::BufReader;
 
 extern crate pombase;
 
@@ -26,25 +24,6 @@ const VERSION: &str = env!("CARGO_PKG_VERSION");
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
     print!("{}", opts.usage(&brief));
-}
-
-fn read_config(config_file_name: &str) -> Config {
-    let file = match File::open(config_file_name) {
-        Ok(file) => file,
-        Err(err) => {
-            print!("Failed to read {}: {}\n", config_file_name, err);
-            process::exit(1);
-        }
-    };
-    let reader = BufReader::new(file);
-
-    match serde_json::from_reader(reader) {
-        Ok(config) => config,
-        Err(err) => {
-            print!("failed to parse {}: {}", config_file_name, err);
-            process::exit(1);
-        },
-    }
 }
 
 fn main() {
@@ -93,7 +72,7 @@ fn main() {
         process::exit(1);
     }
 
-    let config = read_config(&matches.opt_str("c").unwrap());
+    let config = Config::read(&matches.opt_str("c").unwrap());
     let connection_string = matches.opt_str("p").unwrap();
     let interpro_json = matches.opt_str("i").unwrap();
     let output_dir = matches.opt_str("d").unwrap();

@@ -15,6 +15,8 @@ pub enum QueryNode {
     Not(Box<QueryNode>, Box<QueryNode>),
 #[serde(rename = "termid")]
     TermId(String),
+#[serde(rename = "subset")]
+    Subset(String),
 #[serde(rename = "genelist")]
     GeneList(Vec<GeneUniquename>),
 }
@@ -145,6 +147,17 @@ fn exec_termid(server_data: &ServerData, term_id: &str) -> Result {
     }
 }
 
+fn exec_subset(server_data: &ServerData, subset_name: &str) -> Result {
+    let rows = server_data.genes_of_subset(subset_name).iter()
+        .map(|gene_uniquename| ResultRow { gene_uniquename: gene_uniquename.clone() })
+        .collect::<Vec<_>>();
+
+    Result {
+        status: ResultStatus::Ok,
+        rows: rows,
+    }
+}
+
 fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>) -> Result {
     Result {
         status: ResultStatus::Ok,
@@ -163,6 +176,7 @@ impl QueryNode {
             And(ref nodes) => exec_and(server_data, nodes),
             Not(ref node_a, ref node_b) => exec_not(server_data, node_a, node_b),
             TermId(ref term_id) => exec_termid(server_data, term_id),
+            Subset(ref subset_name) => exec_subset(server_data, subset_name),
             GeneList(ref gene_list) => exec_gene_list(gene_list),
         }
     }

@@ -1,0 +1,350 @@
+{
+  "load_organism": {
+    "genus": "Schizosaccharomyces",
+    "species": "pombe"
+  },
+  "api_seq_chunk_sizes": [10000, 200000],
+  "chromosomes": {
+    "chromosome_1": {
+      "display_name": "I"
+    },
+    "chromosome_2": {
+      "display_name": "II"
+    },
+    "chromosome_3": {
+      "display_name": "III"
+    }
+  },
+  "extension_display_names": [],
+  "extension_relation_order": {
+    "relation_order": [
+      "directly_positively_regulates",
+      "directly_negatively_regulates"
+    ],
+    "always_last": [
+      "happens_during",
+      "exists_during"
+    ]
+  },
+  "evidence_types": {
+    "Inferred from Mutant Phenotype": "IMP",
+    "Inferred from Direct Assay": "IDA",
+    "Inferred from Genetic Interaction": "IGI",
+    "Inferred from Physical Interaction": "IPI",
+    "Inferred from Experiment": "EXP"
+  },
+  "cv_config": {
+    "fission_yeast_phenotype": {
+      "feature_type": "genotype",
+      "display_name": "Phenotype",
+      "columns_to_show": ["desc-rel", "genotype", "evidence", "conditions", "reference", "extension"],
+      "filters": [
+        {
+          "filter_name": "term",
+          "display_name": "Term",
+          "scope": ["gene", "genotype", "reference"],
+          "detailed_view_only": "false",
+          "term_categories": [
+            {
+       "ancestors": [
+                "FYPO:0000257"
+              ],
+              "display_name": "Normal phenotype"
+            },
+            {
+              "ancestors": [
+                "FYPO:0001985"
+              ],
+              "display_name": "Abnormal phenotype"
+            },
+            {
+              "ancestors": [
+                "FYPO:0001320"
+              ],
+              "display_name": "Vegetative cell phenotype"
+            },
+            {
+              "ancestors": [
+                "FYPO:0002683"
+              ],
+              "display_name": "Sensitive to chemical"
+            },
+            {
+              "ancestors": [
+                "FYPO:0005447"
+              ],
+              "display_name": "Abnormal biological process"
+            },
+            {
+              "ancestors": [
+                "FYPO:0000005"
+              ],
+              "display_name": "Abnormal cell morphology"
+            },
+            {
+              "ancestors": [
+                "FYPO:0000631"
+              ],
+              "display_name": "Cell cycle phenotype"
+            },
+            {
+              "ancestors": [
+                "FYPO:0000138"
+              ],
+              "display_name": "Localization phenotype"
+            },
+            {
+              "ancestors": [
+                "FYPO:0000004"
+              ],
+              "display_name": "Cell viability"
+            },
+            {
+              "ancestors": [
+                "FYPO:0002057"
+              ],
+              "display_name": "Cell population viability"
+            },
+            {
+              "ancestors": [
+                "FYPO:0000707"
+              ],
+              "display_name": "Abnormal molecular function"
+            },
+            {
+              "ancestors": [
+                "FYPO:0000702"
+              ],
+              "display_name": "Protein-protein interaction"
+            },
+            {
+              "ancestors": [
+                "FYPO:0000661"
+              ],
+              "display_name": "Abnormal catalytic activity"
+            }
+          ]
+        },
+        {
+          "filter_name": "evidence",
+          "display_name": "Evidence",
+          "scope": ["gene", "term", "genotype", "reference"],
+          "detailed_view_only": "true",
+          "evidence_categories": [
+            {
+              "display_name": "Microscopy",
+              "evidence_codes": ["Microscopy",
+                                 "immunofluorescence",
+                                 "Epitope-tagged protein immunolocalization experiment data",
+                                 "Immunolocalization experiment data",
+                                 "Fusion protein localization",
+                                 "In situ hybridization assay"]
+            },
+            {
+              "display_name": "Gel electrophoresis",
+              "evidence_codes": ["Gel electrophoresis",
+                                 "Sodium dodecyl sulfate polyacrylamide gel electrophoresis",
+                                 "RNA protection assay"]
+            },
+            {
+              "display_name": "Western blot",
+              "evidence_codes": ["Western blot",
+                                 "Western blot assay"]
+            },
+            {
+              "display_name": "Co-immunoprecipitation experiment",
+              "evidence_codes": ["Co-immunoprecipitation experiment"]
+            },
+            {
+              "display_name": "Cell growth assay",
+              "evidence_codes": ["Cell growth assay"]
+            },
+            {
+              "display_name": "Chromatin immunoprecipitation experiment",
+              "evidence_codes": ["Chromatin immunoprecipitation experiment"]
+            },
+            {
+              "display_name": "Chromatography",
+              "evidence_codes": ["Chromatography"]
+            },
+            {
+              "display_name": "Competitive growth assay",
+              "evidence_codes": ["Competitive growth assay"]
+            },
+            {
+              "display_name": "Electrophoretic mobility shift assay data",
+              "evidence_codes": ["Electrophoretic mobility shift assay data"]
+            },
+            {
+              "display_name": "Enzyme assay data",
+              "evidence_codes": ["Enzyme assay data"]
+            },
+            {
+              "display_name": "Experimental phenotypic",
+              "evidence_codes": ["Experimental phenotypic"]
+            },
+            {
+              "display_name": "Flow cytometry data",
+              "evidence_codes": ["Flow cytometry data"]
+            },
+            {
+              "display_name": "High throughput nucleotide sequencing assay",
+              "evidence_codes": ["High throughput nucleotide sequencing assay"]
+            },
+            {
+              "display_name": "Inferred from Mutant Phenotype",
+              "evidence_codes": ["Inferred from Mutant Phenotype"]
+            },
+            {
+              "display_name": "Northern assay",
+              "evidence_codes": ["Northern assay"]
+            },
+            {
+              "display_name": "Particle size and count assay",
+              "evidence_codes": ["Particle size and count assay"]
+            },
+            {
+              "display_name": "Plasmid maintenance assay",
+              "evidence_codes": ["Plasmid maintenance assay"]
+            },
+            {
+              "display_name": "Quantitative PCR",
+              "evidence_codes": ["Quantitative PCR"]
+            },
+            {
+              "display_name": "Reporter gene assay",
+              "evidence_codes": ["Reporter gene assay"]
+            },
+            {
+              "display_name": "Substance quantification",
+              "evidence_codes": ["Substance quantification"]
+            },
+            {
+              "display_name": "Transcript expression level",
+              "evidence_codes": ["Transcript expression level"]
+            },
+            {
+              "display_name": "Other",
+              "evidence_codes": ["Other", "Other direct assay"]
+            }
+          ]
+        }
+      ],
+      "split_by_parents": [
+        {
+          "config_name": "population_phenotype",
+          "termids": ["FYPO:0000003"],
+          "display_name": "Population phenotype"
+        },
+        {
+          "config_name": "cell_phenotype",
+          "termids": ["FYPO:0000002", "FYPO:0000652"],
+          "display_name": "Cell phenotype"
+        }
+      ],
+      "summary_relations_to_hide": [
+        "has_penetrance",
+        "has_expressivity"
+      ],
+      "summary_relation_ranges_to_collect": [
+        "assayed_enzyme",
+        "assayed_substrate",
+        "assayed_using"
+      ]
+    },
+    "single_allele_phenotype": {
+      "feature_type": "genotype",
+      "display_name": "Single allele phenotype",
+      "inherits_from": "fission_yeast_phenotype"
+    },
+    "multi_allele_phenotype": {
+      "feature_type": "genotype",
+      "display_name": "Multi-allele phenotype",
+      "inherits_from": "fission_yeast_phenotype"
+    },
+    "phenotype_condition": {
+      "feature_type": "genotype",
+      "display_name": "Phenotype condition",
+      "columns_to_show": ["desc-rel", "genotype", "evidence", "qualifiers", "reference", "count", "extension"]
+    },
+    "molecular_function": {
+      "feature_type": "gene",
+      "display_name": "GO molecular function",
+      "columns_to_show": ["desc-rel", "gene", "evidence", "qualifiers", "reference", "count", "extension"],
+      "split_by_parents": [
+        {
+          "config_name": "NOT binding",
+          "termids": ["NOT GO:0005488"],
+          "display_name": ""
+        },
+        {
+          "config_name": "Binding",
+          "termids": ["GO:0005488"],
+          "display_name": ""
+        }
+      ],
+      "summary_relations_to_hide": [
+        "active_form"
+      ],
+      "summary_relation_ranges_to_collect": [
+        "directly_activates",
+        "directly_inhibits",
+        "has_input",
+        "has_direct_input",
+        "has_regulation_target",
+        "has_substrate",
+        "binds"
+      ]
+    },
+    "biological_process": {
+      "feature_type": "gene",
+      "display_name": "GO biological process",
+      "columns_to_show": ["desc-rel", "gene", "evidence", "qualifiers", "reference", "count", "extension"],
+      "summary_relation_ranges_to_collect": [
+        "has_input",
+        "has_regulation_target"
+      ]
+    },
+    "PomBase gene characterisation status": {
+      "feature_type": "gene"
+    }
+  },
+  "interesting_parents": [
+    {
+      "termid": "GO:0005515",
+      "rel_name": "is_a"
+    }
+  ],
+  "viability_terms": {
+    "viable": "FYPO:0002060",
+    "inviable": "FYPO:0002061"
+  },
+  "go_slim_terms": [
+    {
+      "name": "DNA recombination",
+      "termid": "GO:0006310"
+    },
+    {
+      "name": "DNA repair",
+      "termid": "GO:0006281"
+    },
+    {
+      "name": "DNA replication",
+      "termid": "GO:0006260"
+    }
+  ],
+  "interpro": {
+    "dbnames_to_filter": ["GENE3D"]
+  },
+  "server": {
+    "subsets": {
+      "prefixes_to_remove": [
+        "interpro:CDD", "interpro:MOBIDBLT", "interpro:PANTHER",
+        "interpro:PANTHER", "interpro:PFAM", "interpro:PIRSF",
+        "interpro:PRINTS", "interpro:PRODOM", "interpro:PROFILE",
+        "interpro:PROSITE", "interpro:SFLD", "interpro:SMART",
+        "interpro:SSF", "interpro:TIGRFAMs", "interpro"
+      ]
+    }
+  }
+}

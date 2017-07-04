@@ -10,9 +10,14 @@ use self::pombase::api::query_exec::*;
 
 fn get_server_data() -> ServerData {
     use std::path::PathBuf;
-    let mut data_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    data_path.push("tests/test_search_data.json");
-    ServerData::new(data_path.to_str().unwrap())
+    let mut search_maps_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    search_maps_path.push("tests/test_search_data.json");
+    let mut gene_subsets_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    gene_subsets_path.push("tests/test_gene_subsets.json");
+    let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    config_path.push("tests/test_config.json");
+    ServerData::new(config_path.to_str().unwrap(), search_maps_path.to_str().unwrap(),
+                    gene_subsets_path.to_str().unwrap())
 }
 
 fn check_gene_result(query: &Query, genes: Vec<&str>) {
@@ -71,4 +76,12 @@ fn test_termid() {
     let q1 = Query::from_node(qp1);
 
     check_gene_result(&q1, vec!["SPAC24B11.06c", "SPAC19G12.03", "SPAC2F3.09", "SPAC27E2.05"]);
+}
+
+#[test]
+fn test_gene_subset() {
+    let qp1 = QueryNode::Subset("PTHR17490:SF9".into());
+    let q1 = Query::from_node(qp1);
+
+    check_gene_result(&q1, vec!["SPCC895.03c"]);
 }

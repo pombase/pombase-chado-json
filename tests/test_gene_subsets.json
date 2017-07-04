@@ -1,0 +1,50 @@
+{
+  "interpro:IPR032472": {
+    "name": "interpro:IPR032472",
+    "display_name": "Argonaute linker 2 domain",
+    "elements": [
+      "SPCC736.11"
+    ]
+  },
+  "interpro:PANTHER:PTHR17490:SF9": {
+    "name": "interpro:PANTHER:PTHR17490:SF9",
+    "display_name": "PTHR17490:SF9",
+    "elements": [
+      "SPCC895.03c"
+    ]
+  },
+  "interpro:IPR002906": {
+    "name": "interpro:IPR002906",
+    "display_name": "Ribosomal protein S27a",
+    "elements": [
+      "SPAC589.10c",
+      "SPAC6G10.11c"
+    ]
+  },
+  "interpro:PFAM:PF03224": {
+    "name": "interpro:PFAM:PF03224",
+    "display_name": "V-ATPase_H_N",
+    "elements": [
+      "SPAC7D4.10"
+    ]
+  },
+  "interpro:PRODOM:PD033325": {
+    "name": "interpro:PRODOM:PD033325",
+    "display_name": "PD033325",
+    "elements": [
+      "SPAC17H9.16"
+    ]
+  },
+  "interpro:PANTHER:PTHR43341:SF1": {
+    "name": "interpro:PANTHER:PTHR43341:SF1",
+    "display_name": "PTHR43341:SF1",
+    "elements": [
+      "SPBC19F8.06c",
+      "SPAC1039.09",
+      "SPBC1652.02",
+      "SPBC460.01c",
+      "SPBC359.03c",
+      "SPBC359.01"
+    ]
+  }
+}

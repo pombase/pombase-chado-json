@@ -4130,6 +4130,11 @@ fn get_test_config() -> Config {
         interpro: InterPro {
             dbnames_to_filter: vec![],
         },
+        server: ServerConfig {
+            subsets: ServerSubsetConfig {
+                prefixes_to_remove: vec![],
+            },
+        },
     };
 
     config.cv_config.insert(String::from("molecular_function"),

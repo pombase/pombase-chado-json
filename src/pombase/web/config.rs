@@ -1,6 +1,10 @@
-use std::collections::hash_map::HashMap;
+use std::collections::HashMap;
+use std::process;
+use std::io::BufReader;
+use std::fs::File;
 
 use types::*;
+use serde_json;
 
 // configuration for extension display names and for the "Target of" section
 #[derive(Deserialize, Clone, Debug)]
@@ -102,6 +106,16 @@ pub struct InterPro {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ServerSubsetConfig {
+    pub prefixes_to_remove: Vec<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct ServerConfig {
+    pub subsets: ServerSubsetConfig,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub load_organism: ConfigOrganism,
     pub api_seq_chunk_sizes: Vec<usize>,
@@ -116,9 +130,30 @@ pub struct Config {
     pub viability_terms: ViabilityTerms,
     pub go_slim_terms: Vec<TermAndName>,
     pub interpro: InterPro,
+    pub server: ServerConfig,
 }
 
 impl Config {
+
+    pub fn read(config_file_name: &str) -> Config {
+        let file = match File::open(config_file_name) {
+            Ok(file) => file,
+            Err(err) => {
+                print!("Failed to read {}: {}\n", config_file_name, err);
+                process::exit(1);
+            }
+        };
+        let reader = BufReader::new(file);
+
+        match serde_json::from_reader(reader) {
+            Ok(config) => config,
+            Err(err) => {
+                print!("failed to parse {}: {}", config_file_name, err);
+                process::exit(1);
+            },
+        }
+    }
+
     pub fn cv_config_by_name(&self, cv_name: &str) -> CvConfig {
         if let Some(config) = self.cv_config.get(cv_name) {
             config.clone()

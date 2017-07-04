@@ -763,7 +763,7 @@ pub struct TermSubsetDetails {
     pub elements: HashSet<TermSubsetElement>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneSubsetDetails {
     pub name: String,
     pub display_name: String,
