@@ -70,7 +70,6 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
             if subset_name.starts_with(prefix) {
                 let new_subset_name = &subset_name[prefix.len()..];
                 new_entries.insert(String::from(new_subset_name), subset_details.clone());
-                break;
             }
         }
     }
