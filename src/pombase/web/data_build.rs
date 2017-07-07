@@ -3964,6 +3964,26 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_feature_type_subsets(&self, subsets: &mut IdGeneSubsetMap) {
+        for (_, gene_details) in &self.genes {
+            if !self.org_matches_config(&gene_details.organism) {
+                continue;
+            }
+
+            let subset_name =
+                String::from("feature_type:") + &gene_details.feature_type;
+            let re = Regex::new(r"[\s,:]+").unwrap();
+            let subset_name_no_spaces = re.replace_all(&subset_name, "_");
+            subsets.entry(subset_name_no_spaces.clone())
+                .or_insert(GeneSubsetDetails {
+                    name: subset_name_no_spaces,
+                    display_name: subset_name,
+                    elements: HashSet::new()
+                })
+                .elements.insert(gene_details.uniquename.clone());
+        }
+    }
+
     fn make_characterisation_status_subsets(&self, subsets: &mut IdGeneSubsetMap) {
         for (_, gene_details) in &self.genes {
             if !self.org_matches_config(&gene_details.organism) {
@@ -4021,6 +4041,7 @@ impl <'a> WebDataBuild<'a> {
 
         self.term_subsets.insert("bp_goslim_pombe".into(), bp_go_slim_subset);
 
+        self.make_feature_type_subsets(&mut gene_subsets);
         self.make_characterisation_status_subsets(&mut gene_subsets);
         self.make_interpro_subsets(&mut gene_subsets);
 
