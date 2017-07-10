@@ -496,21 +496,28 @@ pub type Residues = String;
 pub enum FeatureType {
 #[serde(rename = "five_prime_utr")]
     FivePrimeUtr,
+#[serde(rename = "five_prime_utr_intron")]
+    FivePrimeUtrIntron,
 #[serde(rename = "exon")]
     Exon,
-#[serde(rename = "intron")]
-    Intron,
+#[serde(rename = "cds_intron")]
+    // type for introns between exons
+    CdsIntron,
 #[serde(rename = "three_prime_utr")]
     ThreePrimeUtr,
+#[serde(rename = "three_prime_utr_intron")]
+    ThreePrimeUtrIntron,
 }
 
 impl Display for FeatureType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match *self {
             FeatureType::FivePrimeUtr => "5'UTR",
+            FeatureType::FivePrimeUtrIntron => "5'UTR_intron",
             FeatureType::Exon => "exon",
-            FeatureType::Intron => "intron",
+            FeatureType::CdsIntron => "cds_intron",
             FeatureType::ThreePrimeUtr => "3'UTR",
+            FeatureType::ThreePrimeUtrIntron => "3'UTR_intron",
         })
     }
 }

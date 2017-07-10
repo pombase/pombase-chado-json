@@ -1059,47 +1059,50 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
     let mut intron_count = 0;
 
     for part in parts.drain(0..) {
-        if part.feature_type != FeatureType::Exon {
-            new_parts.push(part);
-            continue;
-        }
-
         let mut maybe_new_intron = None;
 
-        if let Some(ref prev_part) = new_parts.last() {
-            if prev_part.feature_type == FeatureType::Exon {
-                let prev_exon = prev_part;
-                let intron_start = prev_exon.location.end_pos + 1;
-                let intron_end = part.location.start_pos - 1;
+        if let Some(prev_part) = new_parts.last() {
+            let intron_start = prev_part.location.end_pos + 1;
+            let intron_end = part.location.start_pos - 1;
 
-                if intron_start >= intron_end {
-                    if intron_start != intron_start {
-                        println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
-                                 transcript_uniquename);
-                    }
-                    // if intron_start == intron_end then it is a one base overlap that
-                    // represents a frameshift in the reference See:
-                    // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
-                    continue;
+            if intron_start >= intron_end {
+                if intron_start != intron_start {
+                    println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
+                             transcript_uniquename);
                 }
+                // if intron_start == intron_end then it is a one base overlap that
+                // represents a frameshift in the reference See:
+                // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
+            } else {
 
                 intron_count += 1;
 
-                let new_loc = ChromosomeLocation {
-                    chromosome: prev_exon.location.chromosome.clone(),
+                let new_intron_loc = ChromosomeLocation {
+                    chromosome: prev_part.location.chromosome.clone(),
                     start_pos: intron_start,
                     end_pos: intron_end,
-                    strand: prev_exon.location.strand.clone(),
+                    strand: prev_part.location.strand.clone(),
                 };
 
                 let intron_uniquename =
                     format!("{}:intron:{}", transcript_uniquename, intron_count);
-                let intron_residues = get_loc_residues(chromosome, &new_loc);
+                let intron_residues = get_loc_residues(chromosome, &new_intron_loc);
 
+                let intron_type =
+                    if prev_part.feature_type == FeatureType::Exon &&
+                    part.feature_type == FeatureType::Exon {
+                        FeatureType::CdsIntron
+                    } else {
+                        if prev_part.feature_type == FeatureType::FivePrimeUtr {
+                            FeatureType::FivePrimeUtrIntron
+                        } else {
+                            FeatureType::ThreePrimeUtrIntron
+                        }
+                    };
                 maybe_new_intron = Some(FeatureShort {
-                    feature_type: FeatureType::Intron,
+                    feature_type: intron_type,
                     uniquename: intron_uniquename,
-                    location: new_loc,
+                    location: new_intron_loc,
                     residues: intron_residues,
                 });
             }
