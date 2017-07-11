@@ -5,7 +5,7 @@ use std::collections::hash_map::HashMap;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::borrow::Borrow;
-use std::cmp::{Ordering, min};
+use std::cmp::Ordering;
 
 use regex::Regex;
 use chrono::{UTC, TimeZone};
@@ -389,7 +389,7 @@ fn make_cv_summaries(config: &Config,
 
         let mut summary_sorted_annotations = term_and_annotations.annotations.clone();
 
-        // in the summary, sort by extennsion type and length to fix:
+        // in the summary, sort by extension type and length to fix:
         // https://github.com/pombase/website/issues/228
         let length_comp = |a1: &Rc<OntAnnotationDetail>, a2: &Rc<OntAnnotationDetail>| {
             if a1.extension.len() == 0 || a2.extension.len() == 0 {
@@ -599,25 +599,40 @@ fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart,
 }
 
 // compare the extension up to the last common index
-fn cmp_extension_prefix(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
+fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
                         genes: &UniquenameGeneMap,
-                        terms: &TermIdDetailsMap) -> (usize, Ordering) {
-    let iter = ext1.iter().zip(ext2).enumerate();
-    for (index, (ext1_part, ext2_part)) in iter {
+                        terms: &TermIdDetailsMap) -> Ordering {
+    let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
+
+    let is_grouping_rel_name =
+        |ext: &ExtPart| !conf_rel_ranges.contains(&ext.rel_type_name);
+
+    // put the extension that will be grouped in the summary at the end
+    // See: https://github.com/pombase/pombase-chado/issues/636
+    let (mut ext1_for_cmp, ext1_rest): (Vec<ExtPart>, Vec<ExtPart>) =
+        ext1.clone().into_iter().partition(&is_grouping_rel_name);
+    ext1_for_cmp.extend(ext1_rest.into_iter());
+
+    let (mut ext2_for_cmp, ext2_rest): (Vec<ExtPart>, Vec<ExtPart>) =
+        ext2.clone().into_iter().partition(&is_grouping_rel_name);
+    ext2_for_cmp.extend(ext2_rest.into_iter());
+
+    let iter = ext1_for_cmp.iter().zip(&ext2_for_cmp).enumerate();
+    for (_, (ext1_part, ext2_part)) in iter {
         let ord = cmp_ext_part(&ext1_part, &ext2_part, genes, terms);
 
         if ord != Ordering::Equal {
-            return (index, ord)
+            return ord
         }
     }
 
-    (min(ext1.len(), ext2.len()), Ordering::Equal)
+    Ordering::Equal
 }
 
-fn cmp_extension(ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
+fn cmp_extension(cv_config: &CvConfig, ext1: &Vec<ExtPart>, ext2: &Vec<ExtPart>,
                  genes: &UniquenameGeneMap,
                  terms: &TermIdDetailsMap) -> Ordering {
-    let (_, cmp) = cmp_extension_prefix(ext1, ext2, genes, terms);
+    let cmp = cmp_extension_prefix(cv_config, ext1, ext2, genes, terms);
 
     if cmp == Ordering::Equal {
         ext1.len().cmp(&ext2.len())
@@ -834,7 +849,8 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
     return gene_short_vec1.cmp(&gene_short_vec2)
 }
 
-fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
+fn cmp_ont_annotation_detail(cv_config: &CvConfig,
+                             detail1: &Rc<OntAnnotationDetail>,
                              detail2: &Rc<OntAnnotationDetail>,
                              genes: &UniquenameGeneMap,
                              genotypes: &UniquenameGenotypeMap,
@@ -848,7 +864,8 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
             let ord = cmp_genotypes(&genotype1, &genotype2, alleles);
 
             if ord == Ordering::Equal {
-                cmp_extension(&detail1.extension, &detail2.extension, genes, terms)
+                cmp_extension(cv_config, &detail1.extension, &detail2.extension,
+                              genes, terms)
             } else {
                 ord
             }
@@ -864,7 +881,7 @@ fn cmp_ont_annotation_detail(detail1: &Rc<OntAnnotationDetail>,
             let ord = cmp_gene_vec(genes, &detail1.genes, &detail2.genes);
 
             if ord == Ordering::Equal {
-                cmp_extension(&detail1.extension, &detail2.extension, genes, terms)
+                cmp_extension(cv_config, &detail1.extension, &detail2.extension, genes, terms)
             } else {
                 ord
             }
@@ -3109,10 +3126,16 @@ impl <'a> WebDataBuild<'a> {
             let mut sorted_annotations = annotations.clone();
 
             if !is_not {
+                let cv_config = {
+                    let term = self.terms.get(termid).unwrap();
+                    &self.config.cv_config_by_name(&term.cv_name)
+                };
+
                 {
                     let cmp_detail_with_maps =
                         |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
-                            cmp_ont_annotation_detail(annotation1, annotation2, &self.genes,
+                            cmp_ont_annotation_detail(cv_config,
+                                                      annotation1, annotation2, &self.genes,
                                                       &self.genotypes, &self.alleles,
                                                       &self.terms)
                         };
@@ -3348,10 +3371,16 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
 
+                let cv_config = {
+                    let term = self.terms.get_mut(&dest_termid).unwrap();
+                    &self.config.cv_config_by_name(&term.cv_name)
+                };
+
                 {
                     let cmp_detail_with_genotypes =
                         |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
-                            cmp_ont_annotation_detail(annotation1, annotation2, &self.genes,
+                            cmp_ont_annotation_detail(cv_config,
+                                                      annotation1, annotation2, &self.genes,
                                                       &self.genotypes, &self.alleles, &self.terms)
                         };
 
@@ -4715,7 +4744,9 @@ fn test_cmp_ont_annotation_detail() {
 
     let cmp_detail_with_genotypes =
         |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
-            cmp_ont_annotation_detail(annotation1, annotation2, &genes,
+            let cv_config = &get_test_config().cv_config_by_name("molecular_function");
+            cmp_ont_annotation_detail(cv_config,
+                                      annotation1, annotation2, &genes,
                                       &genotypes, &alleles, &terms)
         };
 
