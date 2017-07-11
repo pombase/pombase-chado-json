@@ -3507,11 +3507,8 @@ impl <'a> WebDataBuild<'a> {
             let cv_config = &self.config.cv_config;
             if let Some(term_config) = cv_config.get(&term_details.cv_name) {
                 if term_config.feature_type == "gene" {
-                    for gene_uniquename in term_details.genes_by_uniquename.keys() {
-                        termid_genes.entry(termid.clone())
-                            .or_insert(HashSet::new())
-                            .insert(gene_uniquename.clone());
-                    }
+                    termid_genes.insert(termid.clone(),
+                                        term_details.genes_annotated_with.clone());
                 } else {
                     if term_details.genotypes_by_uniquename.len() > 0 {
                         // phenotype term
