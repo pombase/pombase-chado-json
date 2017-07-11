@@ -245,7 +245,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
 }
 
 // combine rows that have a gene or genotype but no extension into one row
-pub fn collect_summary_rows(rows: &mut Vec<TermSummaryRow>) {
+pub fn collect_summary_rows(genes: &IdGeneShortMap, rows: &mut Vec<TermSummaryRow>) {
     let mut no_ext_rows = vec![];
     let mut other_rows = vec![];
 
@@ -264,10 +264,20 @@ pub fn collect_summary_rows(rows: &mut Vec<TermSummaryRow>) {
             }
     }
 
-    let gene_uniquenames: Vec<String> =
+    let mut gene_uniquenames: Vec<String> =
         no_ext_rows.iter().filter(|row| row.gene_uniquenames.len() > 0)
         .map(|row| row.gene_uniquenames.get(0).unwrap().clone())
         .collect();
+
+    let gene_cmp =
+        |uniquename1: &String, uniquename2: &String| {
+            let gene1 = genes.get(uniquename1).unwrap();
+            let gene2 = genes.get(uniquename2).unwrap();
+            gene1.cmp(&gene2)
+        };
+    gene_uniquenames.sort_by(gene_cmp);
+    gene_uniquenames.dedup();
+
     let genotype_uniquenames: Vec<String> =
         no_ext_rows.iter().filter(|row| row.genotype_uniquenames.len() > 0)
         .map(|row| row.genotype_uniquenames.get(0).unwrap().clone())
@@ -481,7 +491,7 @@ fn make_cv_summaries(config: &Config,
 
     for ref mut term_and_annotations in term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
-            collect_summary_rows(summary);
+            collect_summary_rows(genes, summary);
             let cv_config = config.cv_config_by_name(&term_and_annotations.term.cv_name);
             collect_ext_summary_genes(&cv_config, summary, genes);
         }
