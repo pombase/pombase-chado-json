@@ -133,16 +133,23 @@ pub fn cmp_str_dates(date_str1: &String, date_str2: &String) -> Ordering {
 }
 
 // merge two ExtPart objects into one by merging ranges
-pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart) -> ExtPart {
+pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
+                             genes: &IdGeneShortMap) -> ExtPart {
     if ext_part1.rel_type_name == ext_part2.rel_type_name {
         match ext_part1.ext_range {
             ExtRange::SummaryGenes(ref part1_summ_genes) => {
                 if let ExtRange::SummaryGenes(ref part2_summ_genes) = ext_part2.ext_range {
                     let mut ret_ext_part = ext_part1.clone();
-                    let mut new_genes = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
-                    new_genes.sort();
-                    new_genes.dedup();
-                    ret_ext_part.ext_range = ExtRange::SummaryGenes(new_genes);
+                    let mut new_gene_uniquenames = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
+                    let cmp =
+                        |vec1: &Vec<String>, vec2: &Vec<String>| {
+                            let gene1 = genes.get(&vec1[0]).unwrap();
+                            let gene2 = genes.get(&vec2[0]).unwrap();
+                            gene1.cmp(&gene2)
+                        };
+                    new_gene_uniquenames.sort_by(cmp);
+                    new_gene_uniquenames.dedup();
+                    ret_ext_part.ext_range = ExtRange::SummaryGenes(new_gene_uniquenames);
                     return ret_ext_part
                 }
             },
@@ -168,7 +175,8 @@ to merge_ext_part_ranges(): {:?} {:?}", ext_part1, ext_part2);
 }
 
 // turn "has_substrate(gene1),has_substrate(gene2)" into "has_substrate(gene1,gene2)"
-pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>) {
+pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
+                                 genes: &IdGeneShortMap) {
 
     let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
     let merge_range_rel_p =
@@ -214,7 +222,8 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                             prev_gene_ext_part.rel_type_name == current_gene_ext_part.rel_type_name {
                                 let merged_gene_ext_parts =
                                     merge_ext_part_ranges(&prev_gene_ext_part,
-                                                         &current_gene_ext_part);
+                                                          &current_gene_ext_part,
+                                                          genes);
                                 let mut new_ext = vec![merged_gene_ext_parts];
                                 new_ext.extend_from_slice(&prev_row_extension);
                                 prev_row.extension = new_ext;
@@ -380,7 +389,8 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
 fn make_cv_summaries(config: &Config,
                      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                      include_gene: bool, include_genotype: bool,
-                     term_and_annotations_vec: &mut Vec<OntTermAnnotations>) {
+                     term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
+                     genes: &IdGeneShortMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let term = &term_and_annotations.term;
         let cv_config = config.cv_config_by_name(&term.cv_name);
@@ -473,7 +483,7 @@ fn make_cv_summaries(config: &Config,
         if let Some(ref mut summary) = term_and_annotations.summary {
             collect_summary_rows(summary);
             let cv_config = config.cv_config_by_name(&term_and_annotations.term.cv_name);
-            collect_ext_summary_genes(&cv_config, summary);
+            collect_ext_summary_genes(&cv_config, summary, genes);
         }
     }
 }
@@ -2507,32 +2517,49 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_gene_short_map(&self) -> IdGeneShortMap {
+        let mut ret_map = HashMap::new();
+
+        for gene_uniquename in self.genes.keys() {
+            ret_map.insert(gene_uniquename.clone(),
+                           make_gene_short(&self.genes, &gene_uniquename));
+        }
+
+        ret_map
+    }
+
     fn make_all_cv_summaries(&mut self) {
+        let gene_short_map = self.make_gene_short_map();
+
         for (_, term_details) in &mut self.terms {
             for (_, mut term_annotations) in &mut term_details.cv_annotations {
                 make_cv_summaries(&self.config, &self.children_by_termid,
-                                  true, true, &mut term_annotations);
+                                  true, true, &mut term_annotations,
+                                  &gene_short_map);
             }
         }
 
         for (_, gene_details) in &mut self.genes {
             for (_, mut term_annotations) in &mut gene_details.cv_annotations {
                 make_cv_summaries(&self.config, &self.children_by_termid,
-                                  false, true, &mut term_annotations);
+                                  false, true, &mut term_annotations,
+                                  &gene_short_map);
             }
         }
 
         for (_, genotype_details) in &mut self.genotypes {
             for (_, mut term_annotations) in &mut genotype_details.cv_annotations {
                 make_cv_summaries(&self.config, &self.children_by_termid,
-                                  false, false, &mut term_annotations);
+                                  false, false, &mut term_annotations,
+                                  &gene_short_map);
             }
         }
 
         for (_, reference_details) in &mut self.references {
             for (_, mut term_annotations) in &mut reference_details.cv_annotations {
                 make_cv_summaries(&self.config, &self.children_by_termid,
-                                  true, true, &mut term_annotations);
+                                  true, true, &mut term_annotations,
+                                  &gene_short_map);
             }
         }
     }
