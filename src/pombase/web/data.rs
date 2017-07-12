@@ -479,7 +479,7 @@ pub struct GeneDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinDetails {
     pub uniquename: TranscriptUniquename,
     pub sequence: String,
@@ -492,7 +492,7 @@ pub struct ProteinDetails {
 
 pub type Residues = String;
 
-#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum FeatureType {
 #[serde(rename = "five_prime_utr")]
     FivePrimeUtr,
@@ -522,7 +522,7 @@ impl Display for FeatureType {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FeatureShort {
     pub feature_type: FeatureType,
     pub uniquename: String,
@@ -531,7 +531,7 @@ pub struct FeatureShort {
 }
 
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
     pub parts: Vec<FeatureShort>,
@@ -740,10 +740,30 @@ pub struct SearchAPIGenotypeGenes {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct APIGeneSummary {
+    pub uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub product: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub uniprot_identifier: Option<String>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub exact_synonyms: Vec<String>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub dbxrefs: HashSet<String>,
+    pub location: Option<ChromosomeLocation>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub cds_location: Option<ChromosomeLocation>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub transcripts: Vec<TranscriptDetails>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SearchAPIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub termid_genotype_genes: HashMap<TermId, SearchAPIGenotypeGenes>,
-    pub gene_summaries: Vec<GeneSummary>,
+    pub gene_summaries: Vec<APIGeneSummary>,
     pub term_summaries: HashSet<TermShort>,
 }
 

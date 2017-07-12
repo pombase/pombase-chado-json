@@ -650,7 +650,8 @@ fn test_merge_ext_part_ranges() {
         ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()]]),
     };
 
-    let res = merge_ext_part_ranges(&ext_part1, &ext_part2);
+    let gene_short_map = get_test_gene_short_map();
+    let res = merge_ext_part_ranges(&ext_part1, &ext_part2, &gene_short_map);
 
     assert_eq!(res.ext_range,
                ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()],
@@ -780,6 +781,37 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     rows
 }
 
+fn get_test_gene_short_map() -> IdGeneShortMap {
+    let mut ret_map = HashMap::new();
+
+    ret_map.insert("SPAC977.09c".into(),
+                   GeneShort {
+                       uniquename: "SPAC977.09c".into(),
+                       name: None,
+                       product: Some("phospholipase (predicted)".into()),
+                   });
+    ret_map.insert("SPAC3G9.09c".into(),
+                   GeneShort {
+                       uniquename: "SPAC3G9.09c".into(),
+                       name: Some("tif211".into()),
+                       product: Some("translation initiation factor eIF2 alpha subunit".into()),
+                   });
+    ret_map.insert("SPAC16.01".into(),
+                   GeneShort {
+                       uniquename: "SPAC16.01".into(),
+                       name: Some("rho2".into()),
+                       product: Some("Rho family GTPase Rho2".into()),
+                   });
+    ret_map.insert("SPAC24C9.02c".into(),
+                   GeneShort { 
+                       uniquename: "SPAC24C9.02c".into(),
+                       name: Some("cyt2".into()),
+                       product: Some("cytochrome c1 heme lyase Cyt2 (predicted)".into()),
+                   });
+
+    ret_map
+}
+
 #[test]
 fn test_collect_ext_summary_genes() {
     let config = get_test_config();
@@ -787,7 +819,10 @@ fn test_collect_ext_summary_genes() {
     let mut rows = get_test_summary_rows();
     assert_eq!(rows.len(), 10);
 
-    collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), &mut rows);
+    let gene_short_map = get_test_gene_short_map();
+
+    collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"), &mut rows,
+                              &gene_short_map);
     assert_eq!(rows.len(), 8);
 
     let collected_ext = rows.get(6).unwrap();

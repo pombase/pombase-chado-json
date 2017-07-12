@@ -143,8 +143,8 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     let mut new_gene_uniquenames = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
                     let cmp =
                         |vec1: &Vec<String>, vec2: &Vec<String>| {
-                            let gene1 = genes.get(&vec1[0]).unwrap();
-                            let gene2 = genes.get(&vec2[0]).unwrap();
+                            let gene1 = genes.get(&vec1[0]).expect(&vec1[0]);
+                            let gene2 = genes.get(&vec2[0]).expect(&vec2[0]);
                             gene1.cmp(&gene2)
                         };
                     new_gene_uniquenames.sort_by(cmp);
@@ -1376,21 +1376,23 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_gene_summary(&self, gene_uniquename: &str) -> GeneSummary {
+    fn make_api_gene_summary(&self, gene_uniquename: &str) -> APIGeneSummary {
         let gene_details = self.get_gene(&gene_uniquename);
         let synonyms =
             gene_details.synonyms.iter()
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
             .collect::<Vec<String>>();
-        GeneSummary {
+        APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
-            synonyms: synonyms,
-            feature_type: gene_details.feature_type.clone(),
-            organism: gene_details.organism.clone(),
+            uniprot_identifier: gene_details.uniprot_identifier.clone(),
+            exact_synonyms: synonyms,
+            dbxrefs: gene_details.dbxrefs.clone(),
             location: gene_details.location.clone(),
+            cds_location: gene_details.cds_location.clone(),
+            transcripts: gene_details.transcripts.clone(),
         }
     }
 
@@ -3489,11 +3491,11 @@ impl <'a> WebDataBuild<'a> {
     }
 
     pub fn make_search_api_maps(&self) -> SearchAPIMaps {
-        let mut gene_summaries: Vec<GeneSummary> = vec![];
+        let mut gene_summaries: Vec<APIGeneSummary> = vec![];
 
         for (gene_uniquename, gene_details) in &self.genes {
             if self.org_matches_config(&gene_details.organism) {
-                gene_summaries.push(self.make_gene_summary(&gene_uniquename));
+                gene_summaries.push(self.make_api_gene_summary(&gene_uniquename));
             }
         }
 
