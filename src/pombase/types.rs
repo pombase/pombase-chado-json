@@ -24,3 +24,4 @@ pub type ProteinUniquename = String;
 pub type GenotypeUniquename = String;
 pub type AlleleUniquename = String;
 
+pub type OrganismTaxonId = u32;

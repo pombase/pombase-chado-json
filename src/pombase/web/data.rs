@@ -100,14 +100,21 @@ pub struct GeneShort {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct IdAndOrganism {
+    pub identifier: String,
+    pub taxonid: u32,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneSummary {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<GeneName>,
-    pub organism: ConfigOrganism,
+    pub taxonid: OrganismTaxonId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
     pub synonyms: Vec<String>,
+    pub orthologs: Vec<IdAndOrganism>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     pub feature_type: String,
@@ -444,7 +451,7 @@ pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
-    pub organism: ConfigOrganism,
+    pub taxonid: u32,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<String>,
     pub deletion_viability: DeletionViability,
@@ -670,7 +677,7 @@ impl PartialOrd for InteractionAnnotation {
 #[derive(Serialize, Clone, Debug)]
 pub struct OrthologAnnotation {
     pub gene_uniquename: GeneUniquename,
-    pub ortholog_organism: ConfigOrganism,
+    pub ortholog_taxonid: u32,
     pub ortholog_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,

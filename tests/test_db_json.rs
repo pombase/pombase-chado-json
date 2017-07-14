@@ -165,6 +165,7 @@ fn get_test_raw() -> Raw {
             species: String::from("pombe"),
             abbreviation: String::from("Spombe"),
             common_name: String::from("pombe"),
+            organismprops: RefCell::new(vec![]),
         });
 
     let bp_cv = make_test_cv(&mut cvs, "biological_process");
@@ -179,6 +180,7 @@ fn get_test_raw() -> Raw {
     let pub_type_cv = make_test_cv(&mut cvs, "PomBase publication types");
     let pubprop_type_cv = make_test_cv(&mut cvs, "pubprop_type");
     let feature_cvtermprop_type_cv = make_test_cv(&mut cvs, "feature_cvtermprop_type");
+    let organism_prop_type_cv = make_test_cv(&mut cvs, "PomBase organism property types");
 
     let pbo_db = make_test_db(&mut dbs, "PBO");
     let go_db = make_test_db(&mut dbs, "GO");
@@ -271,6 +273,17 @@ fn get_test_raw() -> Raw {
     let with_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &feature_cvtermprop_type_cv, &pbo_db,
                                 "with", "0000098");
+    let taxon_id_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &organism_prop_type_cv, &pbo_db,
+                                "taxon_id", "0001200");
+
+    let pombe_organismprop =
+        Rc::new(Organismprop {
+            organism: pombe_organism.clone(),
+            prop_type: taxon_id_cvterm.clone(),
+            value: "4896".into(),
+        });
+    pombe_organism.organismprops.borrow_mut().push(pombe_organismprop.clone());
 
     let publication = Rc::new(Publication {
         uniquename: String::from("PMID:11707284"),
@@ -456,6 +469,7 @@ fn get_test_raw() -> Raw {
 
     Raw {
         organisms: vec![pombe_organism],
+        organismprops: vec![],
         cvs: cvs,
         dbs: dbs,
         dbxrefs: dbxrefs,
@@ -480,10 +494,24 @@ fn get_test_raw() -> Raw {
 
 fn get_test_config() -> Config {
     let mut config = Config {
-        load_organism: ConfigOrganism {
-            genus: String::from("Schizosaccharomyces"),
-            species: String::from("pombe"),
-        },
+        load_organism_taxonid: 4896,
+        organisms: vec![
+            ConfigOrganism {
+                taxonid: 4896,
+                genus: "Schizosaccharomyces".into(),
+                species: "pombe".into(),
+            },
+            ConfigOrganism {
+                taxonid: 9606,
+                genus: "Homo".into(),
+                species: "sapiens".into(),
+            },
+            ConfigOrganism {
+                taxonid: 4932,
+                genus: "Saccharomyces".into(),
+                species: "cerevisiae".into(),
+            },
+        ],
         api_seq_chunk_sizes: vec![10000, 200000],
         extension_display_names: vec![],
         extension_relation_order: RelationOrder {

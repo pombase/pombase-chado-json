@@ -78,6 +78,7 @@ pub type LongEvidenceCode = String;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ConfigOrganism {
+    pub taxonid: OrganismTaxonId,
     pub genus: String,
     pub species: String,
 }
@@ -117,7 +118,8 @@ pub struct ServerConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
-    pub load_organism: ConfigOrganism,
+    pub load_organism_taxonid: OrganismTaxonId,
+    pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
     pub extension_relation_order: RelationOrder,

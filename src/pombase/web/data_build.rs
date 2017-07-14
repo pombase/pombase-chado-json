@@ -18,7 +18,14 @@ use web::vec_set::*;
 use interpro::UniprotResult;
 
 fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
+    let mut maybe_taxonid: Option<u32> = None;
+    for prop in rc_organism.organismprops.borrow().iter() {
+        if prop.prop_type.name == "taxon_id" {
+            maybe_taxonid = Some(prop.value.parse().unwrap());
+        }
+    }
     ConfigOrganism {
+        taxonid: maybe_taxonid.unwrap(),
         genus: rc_organism.genus.clone(),
         species: rc_organism.species.clone(),
     }
@@ -1383,13 +1390,23 @@ impl <'a> WebDataBuild<'a> {
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
             .collect::<Vec<String>>();
+        let ortholog_ids =
+            gene_details.ortholog_annotations.iter()
+            .map(|ortholog_annotation| {
+                IdAndOrganism {
+                    identifier: ortholog_annotation.ortholog_uniquename.clone(),
+                    taxonid: ortholog_annotation.ortholog_taxonid,
+                }
+            })
+            .collect::<Vec<IdAndOrganism>>();
         GeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
             synonyms: synonyms,
+            orthologs: ortholog_ids,
             feature_type: gene_details.feature_type.clone(),
-            organism: gene_details.organism.clone(),
+            taxonid: gene_details.taxonid.clone(),
             location: gene_details.location.clone(),
         }
     }
@@ -1691,10 +1708,10 @@ impl <'a> WebDataBuild<'a> {
                 vec![]
             };
 
-        let gene_feature = GeneDetails{
+        let gene_feature = GeneDetails {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
-            organism: organism,
+            taxonid: organism.taxonid,
             product: None,
             deletion_viability: DeletionViability::Unknown,
             uniprot_identifier: uniprot_identifier,
@@ -2166,12 +2183,12 @@ impl <'a> WebDataBuild<'a> {
                         let evidence_clone = evidence.clone();
 
                         let gene_uniquename = subject_uniquename;
-                        let gene_organism = {
-                            self.genes.get(subject_uniquename).unwrap().organism.clone()
+                        let gene_organism_taxonid = {
+                            self.genes.get(subject_uniquename).unwrap().taxonid.clone()
                         };
                         let other_gene_uniquename = object_uniquename;
-                        let other_gene_organism = {
-                            self.genes.get(object_uniquename).unwrap().organism.clone()
+                        let other_gene_organism_taxonid = {
+                            self.genes.get(object_uniquename).unwrap().taxonid.clone()
                         };
                         match rel_config.annotation_type {
                             FeatureRelAnnotationType::Interaction =>
@@ -2231,7 +2248,7 @@ impl <'a> WebDataBuild<'a> {
                                     OrthologAnnotation {
                                         gene_uniquename: gene_uniquename.clone(),
                                         ortholog_uniquename: other_gene_uniquename.clone(),
-                                        ortholog_organism: other_gene_organism,
+                                        ortholog_taxonid: other_gene_organism_taxonid,
                                         evidence: evidence,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                     };
@@ -2244,7 +2261,7 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism == gene_details.organism {
+                                    if self.config.load_organism_taxonid == gene_details.taxonid {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
                                 }
@@ -2266,7 +2283,7 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism == gene_details.organism {
+                                    if self.config.load_organism_taxonid == gene_details.taxonid {
                                         ref_details.paralog_annotations.push(paralog_annotation);
                                     }
                                 }
@@ -2282,7 +2299,7 @@ impl <'a> WebDataBuild<'a> {
                                     OrthologAnnotation {
                                         gene_uniquename: other_gene_uniquename.clone(),
                                         ortholog_uniquename: gene_uniquename.clone(),
-                                        ortholog_organism: gene_organism,
+                                        ortholog_taxonid: gene_organism_taxonid,
                                         evidence: evidence_clone,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                     };
@@ -2294,7 +2311,7 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism == other_gene_details.organism {
+                                    if self.config.load_organism_taxonid == other_gene_details.taxonid {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
                                 }
@@ -2315,7 +2332,7 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism == other_gene_details.organism {
+                                    if self.config.load_organism_taxonid == other_gene_details.taxonid {
                                         ref_details.paralog_annotations.push(paralog_annotation);
                                     }
                                 }
@@ -3500,19 +3517,11 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn org_matches_config(&self, organism: &ConfigOrganism) -> bool {
-        let load_org_full_name = self.config.load_organism.full_name();
-
-        let genus_species = String::new() + &organism.genus + "_" + &organism.species;
-
-        genus_species == load_org_full_name
-    }
-
     pub fn make_query_api_maps(&self) -> QueryAPIMaps {
         let mut gene_summaries: Vec<APIGeneSummary> = vec![];
 
         for (gene_uniquename, gene_details) in &self.genes {
-            if self.org_matches_config(&gene_details.organism) {
+            if self.config.load_organism_taxonid == gene_details.taxonid {
                 gene_summaries.push(self.make_api_gene_summary(&gene_uniquename));
             }
         }
@@ -3979,7 +3988,7 @@ impl <'a> WebDataBuild<'a> {
         };
 
         'GENE: for (_, gene_details) in &self.genes {
-            if !self.org_matches_config(&gene_details.organism) {
+            if self.config.load_organism_taxonid != gene_details.taxonid {
                 continue;
             }
 
@@ -4052,7 +4061,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_feature_type_subsets(&self, subsets: &mut IdGeneSubsetMap) {
         for (_, gene_details) in &self.genes {
-            if !self.org_matches_config(&gene_details.organism) {
+            if self.config.load_organism_taxonid != gene_details.taxonid {
                 continue;
             }
 
@@ -4072,7 +4081,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_characterisation_status_subsets(&self, subsets: &mut IdGeneSubsetMap) {
         for (_, gene_details) in &self.genes {
-            if !self.org_matches_config(&gene_details.organism) {
+            if self.config.load_organism_taxonid != gene_details.taxonid {
                 continue;
             }
 
@@ -4190,7 +4199,7 @@ impl <'a> WebDataBuild<'a> {
         let mut gene_summaries: Vec<GeneSummary> = vec![];
 
         for (gene_uniquename, gene_details) in &self.genes {
-            if self.org_matches_config(&gene_details.organism) {
+            if self.config.load_organism_taxonid == gene_details.taxonid {
                 gene_summaries.push(self.make_gene_summary(&gene_uniquename));
             }
         }
@@ -4215,10 +4224,24 @@ impl <'a> WebDataBuild<'a> {
 #[allow(dead_code)]
 fn get_test_config() -> Config {
     let mut config = Config {
-        load_organism: ConfigOrganism {
-            genus: String::from("Schizosaccharomyces"),
-            species: String::from("pombe"),
-        },
+        load_organism_taxonid: 4896,
+        organisms: vec![
+            ConfigOrganism {
+                taxonid: 4896,
+                genus: "Schizosaccharomyces".into(),
+                species: "pombe".into(),
+            },
+            ConfigOrganism {
+                taxonid: 9606,
+                genus: "Homo".into(),
+                species: "sapiens".into(),
+            },
+            ConfigOrganism {
+                taxonid: 4932,
+                genus: "Saccharomyces".into(),
+                species: "cerevisiae".into(),
+            }
+        ],
         api_seq_chunk_sizes: vec![10000, 200000],
         extension_display_names: vec![],
         extension_relation_order: RelationOrder{
@@ -4561,10 +4584,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
     GeneDetails {
         uniquename: uniquename.into(),
         name: name.map(str::to_string),
-        organism: ConfigOrganism {
-            genus: "Schizosaccharomyces".into(),
-            species: "pombe".into(),
-        },
+        taxonid: 4896,
         product: None,
         deletion_viability: DeletionViability::Unknown,
         uniprot_identifier: None,

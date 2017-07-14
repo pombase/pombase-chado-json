@@ -9,6 +9,7 @@ use types::*;
 
 pub struct Raw {
     pub organisms: Vec<Rc<Organism>>,
+    pub organismprops: Vec<Rc<Organismprop>>,
     pub cvs: Vec<Rc<Cv>>,
     pub dbs: Vec<Rc<Db>>,
     pub dbxrefs: Vec<Rc<Dbxref>>,
@@ -45,6 +46,12 @@ pub struct Organism {
     pub species: String,
     pub abbreviation: String,
     pub common_name: String,
+    pub organismprops: RefCell<Vec<Rc<Organismprop>>>,
+}
+pub struct Organismprop {
+    pub organism: Rc<Organism>,
+    pub prop_type: Rc<Cvterm>,
+    pub value: String,
 }
 pub struct Cv {
     pub name: CvName,
@@ -179,6 +186,7 @@ impl Raw {
     pub fn new(conn: &Connection) -> Raw {
         let mut ret = Raw {
             organisms: vec![],
+            organismprops: vec![],
             cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
             synonyms: vec![], cvtermprops: vec![],
             cvtermpaths: vec![], cvterm_relationships: vec![],
@@ -215,7 +223,8 @@ impl Raw {
         };
 
         fn get_cvterm(cvterm_map: &mut HashMap<i32, Rc<Cvterm>>, cvterm_id: i32) -> Rc<Cvterm> {
-            cvterm_map.get(&cvterm_id).unwrap().clone()
+            cvterm_map.get(&cvterm_id)
+                .expect(&format!("can't find {:?} in map", cvterm_id)).clone()
         };
 
         fn get_feature(feature_map: &mut HashMap<i32, Rc<Feature>>, feature_id: i32) -> Rc<Feature> {
@@ -232,6 +241,7 @@ impl Raw {
                 species: row.get(2),
                 abbreviation: row.get(3),
                 common_name: row.get(4),
+                organismprops: RefCell::new(vec![]),
             };
             let rc_organism = Rc::new(organism);
             ret.organisms.push(rc_organism.clone());
@@ -556,6 +566,21 @@ impl Raw {
             ret.chadoprops.push(rc_chadoprop.clone());
         }
 
-        ret
+        for row in &conn.query("SELECT organism_id, type_id, value FROM organismprop", &[]).unwrap() {
+            let organism_id: i32 = row.get(0);
+            let organism = organism_map.get(&organism_id).unwrap().clone();
+            let type_id: i32 = row.get(1);
+            let prop_type = get_cvterm(&mut cvterm_map, type_id);
+            let organismprop = Organismprop {
+                organism: organism.clone(),
+                prop_type: prop_type,
+                value: row.get(2),
+            };
+            let rc_organismprop = Rc::new(organismprop);
+            ret.organismprops.push(rc_organismprop.clone());
+            organism.organismprops.borrow_mut().push(rc_organismprop.clone());
+        }
+
+       ret
     }
 }
