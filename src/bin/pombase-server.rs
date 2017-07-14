@@ -14,7 +14,7 @@ use std::env;
 
 use getopts::Options;
 
-use rocket_contrib::{JSON, Value};
+use rocket_contrib::{Json, Value};
 
 use pombase::api::query::Query;
 use pombase::api::result::Result;
@@ -22,9 +22,9 @@ use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
 
 #[post("/query", data="<q>", format = "application/json")]
-fn query_post(q: JSON<Query>, state: rocket::State<Mutex<QueryExec>>) -> Option<JSON<Result>> {
+fn query_post(q: Json<Query>, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<Result>> {
     let query_exec = state.lock().expect("failed to lock");
-    Some(JSON(query_exec.exec(&q.into_inner())))
+    Some(Json(query_exec.exec(&q.into_inner())))
 }
 
 #[get ("/reload")]
@@ -36,8 +36,8 @@ fn reload(state: rocket::State<Mutex<QueryExec>>) {
 
 
 #[error(404)]
-fn not_found() -> JSON<Value> {
-    JSON(json!({
+fn not_found() -> Json<Value> {
+    Json(json!({
         "status": "error",
         "reason": "Resource was not found."
     }))

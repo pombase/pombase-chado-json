@@ -19,15 +19,15 @@ bit-set = "0.4"
 chrono = { version = "0.3", features = ["serde"] }
 
 [dependencies.rocket]
-version = "0.3"
+version = "0.3.0-dev"
 path = "../rocket/lib"
 
 [dependencies.rocket_codegen]
-version = "0.3"
+version = "0.3.0-dev"
 path = "../rocket/codegen"
 
 [dependencies.rocket_contrib]
-version = "0.3"
+version = "0.3.0-dev"
 path = "../rocket/contrib"
 
 [dependencies.serde]
