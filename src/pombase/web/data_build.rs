@@ -217,21 +217,21 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                 let current_matching_ext_part =
                     remove_first(&mut current_row_extension, &merge_range_rel_p);
 
-                if let (Some(prev_gene_ext_part), Some(current_gene_ext_part)) =
+                if let (Some(prev_ext_part), Some(current_ext_part)) =
                     (prev_matching_ext_part, current_matching_ext_part) {
 
-                        if mem::discriminant(&prev_gene_ext_part.ext_range) !=
-                            mem::discriminant(&current_gene_ext_part.ext_range) {
+                        if mem::discriminant(&prev_ext_part.ext_range) !=
+                            mem::discriminant(&current_ext_part.ext_range) {
                                 continue;
                             }
 
                         if current_row_extension == prev_row_extension &&
-                            prev_gene_ext_part.rel_type_name == current_gene_ext_part.rel_type_name {
-                                let merged_gene_ext_parts =
-                                    merge_ext_part_ranges(&prev_gene_ext_part,
-                                                          &current_gene_ext_part,
+                            prev_ext_part.rel_type_name == current_ext_part.rel_type_name {
+                                let merged_ext_parts =
+                                    merge_ext_part_ranges(&prev_ext_part,
+                                                          &current_ext_part,
                                                           genes);
-                                let mut new_ext = vec![merged_gene_ext_parts];
+                                let mut new_ext = vec![merged_ext_parts];
                                 new_ext.extend_from_slice(&prev_row_extension);
                                 prev_row.extension = new_ext;
                             } else {
