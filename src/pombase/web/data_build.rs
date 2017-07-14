@@ -1376,6 +1376,24 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_gene_summary(&self, gene_uniquename: &str) -> GeneSummary {
+        let gene_details = self.get_gene(&gene_uniquename);
+        let synonyms =
+            gene_details.synonyms.iter()
+            .filter(|synonym| synonym.synonym_type == "exact")
+            .map(|synonym| synonym.name.clone())
+            .collect::<Vec<String>>();
+        GeneSummary {
+            uniquename: gene_details.uniquename.clone(),
+            name: gene_details.name.clone(),
+            product: gene_details.product.clone(),
+            synonyms: synonyms,
+            feature_type: gene_details.feature_type.clone(),
+            organism: gene_details.organism.clone(),
+            location: gene_details.location.clone(),
+        }
+    }
+
     fn make_api_gene_summary(&self, gene_uniquename: &str) -> APIGeneSummary {
         let gene_details = self.get_gene(&gene_uniquename);
         let synonyms =
@@ -3490,7 +3508,7 @@ impl <'a> WebDataBuild<'a> {
         genus_species == load_org_full_name
     }
 
-    pub fn make_search_api_maps(&self) -> SearchAPIMaps {
+    pub fn make_query_api_maps(&self) -> QueryAPIMaps {
         let mut gene_summaries: Vec<APIGeneSummary> = vec![];
 
         for (gene_uniquename, gene_details) in &self.genes {
@@ -3501,7 +3519,7 @@ impl <'a> WebDataBuild<'a> {
 
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
-        let mut termid_genotype_genes: HashMap<TermId, SearchAPIGenotypeGenes> =
+        let mut termid_genotype_genes: HashMap<TermId, QueryAPIGenotypeGenes> =
             HashMap::new();
 
         for (termid, term_details) in &self.terms {
@@ -3514,7 +3532,7 @@ impl <'a> WebDataBuild<'a> {
                 } else {
                     if term_details.genotypes_by_uniquename.len() > 0 {
                         // phenotype term
-                        let mut genotype_genes = SearchAPIGenotypeGenes {
+                        let mut genotype_genes = QueryAPIGenotypeGenes {
                             single_allele: HashSet::new(),
                             multi_allele: HashSet::new(),
                         };
@@ -3538,7 +3556,7 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        SearchAPIMaps {
+        QueryAPIMaps {
             gene_summaries: gene_summaries,
             termid_genes: termid_genes,
             termid_genotype_genes: termid_genotype_genes,
@@ -4150,7 +4168,7 @@ impl <'a> WebDataBuild<'a> {
 
         let mut web_data_terms: IdRcTermDetailsMap = HashMap::new();
 
-        let search_api_maps = self.make_search_api_maps();
+        let query_api_maps = self.make_query_api_maps();
 
         for (termid, term_details) in self.terms.drain() {
             web_data_terms.insert(termid.clone(), Rc::new(term_details));
@@ -4169,6 +4187,14 @@ impl <'a> WebDataBuild<'a> {
 
         let metadata = self.make_metadata();
 
+        let mut gene_summaries: Vec<GeneSummary> = vec![];
+
+        for (gene_uniquename, gene_details) in &self.genes {
+            if self.org_matches_config(&gene_details.organism) {
+                gene_summaries.push(self.make_gene_summary(&gene_uniquename));
+            }
+        }
+
         WebData {
             genes: self.genes,
             genotypes: self.genotypes,
@@ -4178,7 +4204,8 @@ impl <'a> WebDataBuild<'a> {
             chromosomes: self.chromosomes,
             references: self.references,
             recent_references: self.recent_references,
-            search_api_maps: search_api_maps,
+            query_api_maps: query_api_maps,
+            search_gene_summaries: gene_summaries,
             term_subsets: self.term_subsets,
             gene_subsets: self.gene_subsets,
         }

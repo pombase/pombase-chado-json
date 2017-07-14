@@ -3,9 +3,25 @@ use std::iter::FromIterator;
 
 use api::server_data::ServerData;
 use api::result::*;
+use web::data::APIGeneSummary;
+
 use types::GeneUniquename;
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub enum IntRangeType {
+#[serde(rename = "genome_range_contains")]
+    GenomeRangeContains,
+#[serde(rename = "protein_length")]
+    ProteinLength,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub enum FloatRangeType {
+#[serde(rename = "protein_mol_weight")]
+    ProteinMolWeight,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
 pub enum QueryNode {
 #[serde(rename = "or")]
     Or(Vec<QueryNode>),
@@ -17,8 +33,12 @@ pub enum QueryNode {
     TermId(String),
 #[serde(rename = "subset")]
     Subset(String),
-#[serde(rename = "genelist")]
+#[serde(rename = "gene_list")]
     GeneList(Vec<GeneUniquename>),
+#[serde(rename = "int_range")]
+    IntRange(IntRangeType, u64, u64),
+#[serde(rename = "float_range")]
+    FloatRange(FloatRangeType, f64, f64),
 }
 
 fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
@@ -136,35 +156,91 @@ fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode) ->
     }
 }
 
-fn exec_termid(server_data: &ServerData, term_id: &str) -> Result {
-    let rows = server_data.genes_of_termid(term_id).iter()
-        .map(|gene_uniquename| ResultRow { gene_uniquename: gene_uniquename.clone() })
-        .collect::<Vec<_>>();
-
+fn results_from_gene_vec(genes: Vec<GeneUniquename>) -> Result {
     Result {
         status: ResultStatus::Ok,
-        rows: rows,
+        rows: genes.into_iter()
+            .map(|gene_uniquename| ResultRow {
+                gene_uniquename: gene_uniquename,
+            }).collect::<Vec<_>>()
     }
+}
+
+fn exec_termid(server_data: &ServerData, term_id: &str) -> Result {
+    results_from_gene_vec(server_data.genes_of_termid(term_id))
 }
 
 fn exec_subset(server_data: &ServerData, subset_name: &str) -> Result {
-    let rows = server_data.genes_of_subset(subset_name).iter()
-        .map(|gene_uniquename| ResultRow { gene_uniquename: gene_uniquename.clone() })
-        .collect::<Vec<_>>();
-
-    Result {
-        status: ResultStatus::Ok,
-        rows: rows,
-    }
+    results_from_gene_vec(server_data.genes_of_subset(subset_name))
 }
 
 fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>) -> Result {
-    Result {
-        status: ResultStatus::Ok,
-        rows: gene_uniquenames.iter()
-            .map(|gene_uniquename| ResultRow {
-                gene_uniquename: gene_uniquename.clone(),
-            }).collect(),
+    results_from_gene_vec(gene_uniquenames.clone())
+}
+
+fn exec_genome_range_overlaps(server_data: &ServerData, range_start: u64, range_end: u64)
+                              -> Result
+{
+    let gene_uniquenames =
+        server_data.filter_genes(&|gene: &APIGeneSummary| {
+            if let Some(ref location) = gene.location {
+                location.start_pos as u64 <= range_end &&
+                    location.end_pos as u64 >= range_start
+            } else {
+                false
+            }
+        });
+    results_from_gene_vec(gene_uniquenames)
+}
+
+fn exec_protein_length_range(server_data: &ServerData, range_start: u64, range_end: u64)
+                             -> Result
+{
+    let gene_uniquenames =
+        server_data.filter_genes(&|gene: &APIGeneSummary| {
+            if gene.transcripts.len() > 0 {
+                if let Some(ref protein) = gene.transcripts[0].protein {
+                    protein.sequence.len() as u64 >= range_start &&
+                        protein.sequence.len() as u64 <= range_end
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        });
+    results_from_gene_vec(gene_uniquenames)
+}
+
+fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
+                  start: u64, end: u64) -> Result {
+    match *range_type {
+        IntRangeType::GenomeRangeContains => exec_genome_range_overlaps(server_data, start, end),
+        IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
+    }
+}
+
+fn exec_mol_weight_range(server_data: &ServerData, range_start: f64, range_end: f64) -> Result {
+    let gene_uniquenames =
+        server_data.filter_genes(&|gene: &APIGeneSummary| {
+            if gene.transcripts.len() > 0 {
+                if let Some(ref protein) = gene.transcripts[0].protein {
+                    protein.molecular_weight as f64 >= range_start &&
+                        protein.molecular_weight as f64 <= range_end
+                } else {
+                    false
+                }
+            } else {
+                false
+            }
+        });
+    results_from_gene_vec(gene_uniquenames)
+}
+
+fn exec_float_range(server_data: &ServerData, range_type: &FloatRangeType,
+                    start: f64, end: f64) -> Result {
+    match *range_type {
+        FloatRangeType::ProteinMolWeight => exec_mol_weight_range(server_data, start, end)
     }
 }
 
@@ -178,6 +254,10 @@ impl QueryNode {
             TermId(ref term_id) => exec_termid(server_data, term_id),
             Subset(ref subset_name) => exec_subset(server_data, subset_name),
             GeneList(ref gene_list) => exec_gene_list(gene_list),
+            IntRange(ref range_type, start, end) =>
+                exec_int_range(server_data, range_type, start, end),
+            FloatRange(ref range_type, start, end) =>
+                exec_float_range(server_data, range_type, start, end),
         }
     }
 }

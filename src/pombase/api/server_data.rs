@@ -5,14 +5,14 @@ use std::io::BufReader;
 use serde_json;
 use std::collections::HashMap;
 
-use web::data::{SearchAPIMaps, IdGeneSubsetMap};
+use web::data::{QueryAPIMaps, IdGeneSubsetMap, APIGeneSummary};
 use web::config::Config;
 use types::GeneUniquename;
 
 
 pub struct ServerData {
     config_file_name: String,
-    maps: SearchAPIMaps,
+    maps: QueryAPIMaps,
     search_maps_file_name: String,
     gene_subsets: IdGeneSubsetMap,
     gene_subsets_file_name: String,
@@ -20,7 +20,7 @@ pub struct ServerData {
 
 
 fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &str)
-        -> (SearchAPIMaps, IdGeneSubsetMap)
+        -> (QueryAPIMaps, IdGeneSubsetMap)
 {
     let file = match File::open(search_maps_file_name) {
         Ok(file) => file,
@@ -31,7 +31,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     };
     let reader = BufReader::new(file);
 
-    let search_api_maps: SearchAPIMaps =
+    let query_api_maps: QueryAPIMaps =
         match serde_json::from_reader(reader) {
             Ok(results) => results,
             Err(err) => {
@@ -76,7 +76,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
 
     gene_subsets.extend(new_entries);
 
-    (search_api_maps, gene_subsets)
+    (query_api_maps, gene_subsets)
 }
 
 impl ServerData {
@@ -119,6 +119,15 @@ impl ServerData {
             },
             None => vec![],
         }
+    }
+
+    pub fn filter_genes(&self, p: &Fn(&APIGeneSummary) -> bool)
+                        -> Vec<GeneUniquename>
+    {
+        self.maps.gene_summaries.iter()
+            .filter(|ref summ| p(summ))
+            .map(|ref summ| summ.uniquename.clone())
+            .collect()
     }
 
     pub fn reload(&mut self) {

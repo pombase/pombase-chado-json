@@ -734,7 +734,7 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct SearchAPIGenotypeGenes {
+pub struct QueryAPIGenotypeGenes {
     pub single_allele: HashSet<GeneUniquename>,
     pub multi_allele: HashSet<GeneUniquename>,
 }
@@ -760,9 +760,9 @@ pub struct APIGeneSummary {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct SearchAPIMaps {
+pub struct QueryAPIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
-    pub termid_genotype_genes: HashMap<TermId, SearchAPIGenotypeGenes>,
+    pub termid_genotype_genes: HashMap<TermId, QueryAPIGenotypeGenes>,
     pub gene_summaries: Vec<APIGeneSummary>,
     pub term_summaries: HashSet<TermShort>,
 }
@@ -810,7 +810,8 @@ pub struct WebData {
     pub chromosomes: ChrNameDetailsMap,
     pub references: UniquenameReferenceMap,
     pub recent_references: RecentReferences,
-    pub search_api_maps: SearchAPIMaps,
+    pub query_api_maps: QueryAPIMaps,
+    pub search_gene_summaries: Vec<GeneSummary>,
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
 }
@@ -907,7 +908,7 @@ impl WebData {
     }
 
     fn write_gene_summaries(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.search_api_maps.gene_summaries).unwrap();
+        let s = serde_json::to_string(&self.search_gene_summaries).unwrap();
         let file_name = String::new() + &output_dir + "/gene_summaries.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
@@ -941,9 +942,9 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write recent references JSON");
     }
 
-    fn write_search_api_maps(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.search_api_maps).unwrap();
-        let file_name = String::new() + &output_dir + "/search_api_maps.json";
+    fn write_query_api_maps(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.query_api_maps).unwrap();
+        let file_name = String::new() + &output_dir + "/query_api_maps.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
@@ -980,7 +981,7 @@ impl WebData {
         println!("wrote metadata");
         self.write_recent_references(output_dir);
         println!("wrote recent references");
-        self.write_search_api_maps(output_dir);
+        self.write_query_api_maps(output_dir);
         println!("wrote search data");
         self.write_subsets(output_dir);
         println!("wrote subsets");
