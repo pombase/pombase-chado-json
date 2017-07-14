@@ -1,6 +1,6 @@
 [root]
 name = "pombase-chado-json"
-version = "28.0.0"
+version = "28.0.1"
 dependencies = [
  "bit-set 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
