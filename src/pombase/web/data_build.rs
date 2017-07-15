@@ -1390,7 +1390,7 @@ impl <'a> WebDataBuild<'a> {
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
             .collect::<Vec<String>>();
-        let ortholog_ids =
+        let mut ortholog_ids =
             gene_details.ortholog_annotations.iter()
             .map(|ortholog_annotation| {
                 IdAndOrganism {
@@ -1399,6 +1399,22 @@ impl <'a> WebDataBuild<'a> {
                 }
             })
             .collect::<Vec<IdAndOrganism>>();
+
+        for ortholog_annotation in gene_details.ortholog_annotations.iter() {
+            let orth_uniquename = &ortholog_annotation.ortholog_uniquename;
+            if let Some(orth_gene_short) =
+                gene_details.genes_by_uniquename.get(orth_uniquename) {
+                    if let Some(ref orth_name) = orth_gene_short.name {
+                        let id_and_org =IdAndOrganism {
+                            identifier: orth_name.clone(),
+                            taxonid: ortholog_annotation.ortholog_taxonid,
+                        };
+                        ortholog_ids.push(id_and_org);
+                    }
+                } else {
+                    panic!("missing GeneShort for: {:?}", orth_uniquename);
+                }
+        }
         GeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
