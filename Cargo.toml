@@ -30,7 +30,6 @@ serde_codegen = "0.8"
 
 [dependencies.postgres]
 version = "0.14"
-git = "https://github.com/kimrutherford/rust-postgres.git"
 features = ["with-serde_json"]
 
 [profile.release]
