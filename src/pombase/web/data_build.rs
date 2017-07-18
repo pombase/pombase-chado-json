@@ -1820,8 +1820,8 @@ impl <'a> WebDataBuild<'a> {
 
             let parse_prop_as_f32 = |p: &Option<String>| {
                 if let Some(prop_value) = p.clone() {
-                    let maybe_mol_weight = prop_value.parse();
-                    if let Ok(parsed_prop) = maybe_mol_weight {
+                    let maybe_value = prop_value.parse();
+                    if let Ok(parsed_prop) = maybe_value {
                         Some(parsed_prop)
                     } else {
                         println!("{}: couldn't parse {} as f32",
