@@ -286,21 +286,7 @@ pub enum WithFromValue {
 #[serde(rename = "term")]
     Term(TermShort),
 #[serde(rename = "identifier")]
-    Identifier(String),
-    None
-}
-
-impl WithFromValue {
-    pub fn is_some(&self) -> bool {
-        match *self {
-            WithFromValue::None => false,
-            _ => true,
-        }
-    }
-
-    pub fn is_none(&self) -> bool {
-        !self.is_some()
-    }
+    Identifier(String)
 }
 
 #[derive(Serialize, Clone, Debug)]
@@ -311,10 +297,10 @@ pub struct OntAnnotationDetail {
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
-    #[serde(skip_serializing_if="WithFromValue::is_none")]
-    pub with: WithFromValue,
-    #[serde(skip_serializing_if="WithFromValue::is_none")]
-    pub from: WithFromValue,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub withs: Vec<WithFromValue>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub froms: Vec<WithFromValue>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub residue: Option<Residue>,
     pub qualifiers: Vec<Qualifier>,

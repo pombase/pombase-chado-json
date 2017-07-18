@@ -2905,7 +2905,7 @@ impl <'a> WebDataBuild<'a> {
     // otherwise return the value
     fn make_with_extension(&self, termid: &String, evidence_code: Option<String>,
                            extension: &mut Vec<ExtPart>,
-                           with_value: String) -> WithFromValue {
+                           with_value: String) -> Option<WithFromValue> {
         let base_termid =
             match self.base_term_of_extensions.get(termid) {
                 Some(base_termid) => base_termid.clone(),
@@ -2921,9 +2921,9 @@ impl <'a> WebDataBuild<'a> {
              .contains("GO:0005515")) {
                 extension.push(self.get_with_extension(&with_value));
             } else {
-                return self.make_with_or_from_value(with_value);
+                return Some(self.make_with_or_from_value(with_value));
             }
-        WithFromValue::None
+        None
     }
 
     // process annotation
@@ -2943,11 +2943,10 @@ impl <'a> WebDataBuild<'a> {
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
             let mut conditions: HashSet<TermId> = HashSet::new();
-            let mut with: WithFromValue = WithFromValue::None;
-            let mut from: WithFromValue = WithFromValue::None;
+            let mut withs: Vec<WithFromValue> = vec![];
+            let mut froms: Vec<WithFromValue> = vec![];
             let mut qualifiers: Vec<Qualifier> = vec![];
             let mut evidence: Option<String> = None;
-            let mut raw_with_value: Option<String> = None;
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
                     "residue" | "scale" |
@@ -2974,11 +2973,17 @@ impl <'a> WebDataBuild<'a> {
                             qualifiers.push(value);
                         },
                     "with" => {
-                        raw_with_value = prop.value.clone();
+                        if let Some(with_value) = prop.value.clone() {
+                            if let Some(with_gene_short) = 
+                                self.make_with_extension(&cvterm.termid(), evidence.clone(),
+                                                         &mut extension, with_value) {
+                                    withs.push(with_gene_short);
+                                }
+                        }
                     },
                     "from" => {
                         if let Some(value) = prop.value.clone() {
-                            from = self.make_with_or_from_value(value);
+                            froms.push(self.make_with_or_from_value(value));
                         }
                     },
                     "gene_product_form_id" => {
@@ -2987,15 +2992,6 @@ impl <'a> WebDataBuild<'a> {
                         }
                     },
                     _ => ()
-                }
-            }
-
-            if let Some(value) = raw_with_value {
-                let with_gene_short =
-                    self.make_with_extension(&cvterm.termid(), evidence.clone(),
-                                             &mut extension, value);
-                if with_gene_short.is_some() {
-                    with = with_gene_short;
                 }
             }
 
@@ -3077,8 +3073,8 @@ impl <'a> WebDataBuild<'a> {
                 genes: gene_uniquenames_vec,
                 reference: reference_uniquename.clone(),
                 genotype: maybe_genotype_uniquename.clone(),
-                with: with.clone(),
-                from: from.clone(),
+                withs: withs.clone(),
+                froms: froms.clone(),
                 residue: extra_props_clone.remove("residue"),
                 gene_ex_props: gene_ex_props,
                 qualifiers: qualifiers.clone(),
@@ -4515,8 +4511,8 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         genotype: maybe_genotype_uniquename.map(str::to_string),
         reference: Some(reference_uniquename.into()),
         evidence: Some(evidence.into()),
-        with: WithFromValue::None,
-        from: WithFromValue::None,
+        withs: vec![],
+        froms: vec![],
         residue: None,
         qualifiers: vec![],
         extension: extension,
