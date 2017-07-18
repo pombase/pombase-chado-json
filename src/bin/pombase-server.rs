@@ -34,6 +34,10 @@ fn reload(state: rocket::State<Mutex<QueryExec>>) {
     query_exec.reload();
 }
 
+#[get ("/ping")]
+fn ping() -> Option<String> {
+    Some("OK".into())
+}
 
 #[error(404)]
 fn not_found() -> Json<Value> {
@@ -101,7 +105,7 @@ fn main() {
 
     println!("Starting server ...");
     rocket::ignite()
-        .mount("/", routes![query_post, reload])
+        .mount("/", routes![query_post, reload, ping])
         .catch(errors![not_found])
         .manage(Mutex::new(query_exec))
         .launch();
