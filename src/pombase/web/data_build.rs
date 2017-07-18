@@ -1835,10 +1835,14 @@ impl <'a> WebDataBuild<'a> {
 
             for prop in feat.featureprops.borrow().iter() {
                 if prop.prop_type.name == "molecular_weight" {
-                    molecular_weight = parse_prop_as_f32(&prop.value);
+                    if let Some(value) = parse_prop_as_f32(&prop.value) {
+                        molecular_weight = Some(value / 1000.0);
+                    }
                 }
                 if prop.prop_type.name == "average_residue_weight" {
-                    average_residue_weight = parse_prop_as_f32(&prop.value);
+                    if let Some(value) = parse_prop_as_f32(&prop.value) {
+                        average_residue_weight = Some(value / 1000.0);
+                    }
                 }
                 if prop.prop_type.name == "charge_at_ph7" {
                     charge_at_ph7 = parse_prop_as_f32(&prop.value);
