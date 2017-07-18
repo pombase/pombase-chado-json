@@ -36,9 +36,9 @@ pub enum QueryNode {
 #[serde(rename = "gene_list")]
     GeneList(Vec<GeneUniquename>),
 #[serde(rename = "int_range")]
-    IntRange(IntRangeType, u64, u64),
+    IntRange(IntRangeType, Option<u64>, Option<u64>),
 #[serde(rename = "float_range")]
-    FloatRange(FloatRangeType, f64, f64),
+    FloatRange(FloatRangeType, Option<f64>, Option<f64>),
 }
 
 fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
@@ -178,14 +178,15 @@ fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>) -> Result {
     results_from_gene_vec(gene_uniquenames.clone())
 }
 
-fn exec_genome_range_overlaps(server_data: &ServerData, range_start: u64, range_end: u64)
+fn exec_genome_range_overlaps(server_data: &ServerData,
+                              range_start: Option<u64>, range_end: Option<u64>)
                               -> Result
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             if let Some(ref location) = gene.location {
-                location.start_pos as u64 <= range_end &&
-                    location.end_pos as u64 >= range_start
+                (range_end.is_none() || location.start_pos as u64 <= range_end.unwrap()) &&
+                (range_start.is_none() || location.end_pos as u64 >= range_start.unwrap())
             } else {
                 false
             }
@@ -193,15 +194,16 @@ fn exec_genome_range_overlaps(server_data: &ServerData, range_start: u64, range_
     results_from_gene_vec(gene_uniquenames)
 }
 
-fn exec_protein_length_range(server_data: &ServerData, range_start: u64, range_end: u64)
+fn exec_protein_length_range(server_data: &ServerData,
+                             range_start: Option<u64>, range_end: Option<u64>)
                              -> Result
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             if gene.transcripts.len() > 0 {
                 if let Some(ref protein) = gene.transcripts[0].protein {
-                    protein.sequence.len() as u64 >= range_start &&
-                        protein.sequence.len() as u64 <= range_end
+                    (range_start.is_none() || protein.sequence.len() as u64 >= range_start.unwrap()) &&
+                    (range_end.is_none() || protein.sequence.len() as u64 <= range_end.unwrap())
                 } else {
                     false
                 }
@@ -213,20 +215,24 @@ fn exec_protein_length_range(server_data: &ServerData, range_start: u64, range_e
 }
 
 fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
-                  start: u64, end: u64) -> Result {
+                  start: Option<u64>, end: Option<u64>) -> Result {
     match *range_type {
         IntRangeType::GenomeRangeContains => exec_genome_range_overlaps(server_data, start, end),
         IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
     }
 }
 
-fn exec_mol_weight_range(server_data: &ServerData, range_start: f64, range_end: f64) -> Result {
+fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, range_end: Option<f64>)
+                         -> Result
+{
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             if gene.transcripts.len() > 0 {
                 if let Some(ref protein) = gene.transcripts[0].protein {
-                    protein.molecular_weight as f64 >= range_start &&
-                        protein.molecular_weight as f64 <= range_end
+                    (range_start.is_none() ||
+                        protein.molecular_weight as f64 >= range_start.unwrap()) &&
+                    (range_end.is_none() ||
+                        protein.molecular_weight as f64 <= range_end.unwrap())
                 } else {
                     false
                 }
@@ -238,7 +244,7 @@ fn exec_mol_weight_range(server_data: &ServerData, range_start: f64, range_end: 
 }
 
 fn exec_float_range(server_data: &ServerData, range_type: &FloatRangeType,
-                    start: f64, end: f64) -> Result {
+                    start: Option<f64>, end: Option<f64>) -> Result {
     match *range_type {
         FloatRangeType::ProteinMolWeight => exec_mol_weight_range(server_data, start, end)
     }
