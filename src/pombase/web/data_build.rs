@@ -2947,6 +2947,21 @@ impl <'a> WebDataBuild<'a> {
             let mut froms: Vec<WithFromValue> = vec![];
             let mut qualifiers: Vec<Qualifier> = vec![];
             let mut evidence: Option<String> = None;
+
+            // need to get evidence first as it's use later
+            // See: https://github.com/pombase/website/issues/455
+            for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
+                if &prop.type_name() == "evidence" {
+                    if let Some(evidence_long) = prop.value.clone() {
+                        if let Some(code) = self.config.evidence_types.get(&evidence_long) {
+                            evidence = Some(code.clone());
+                        } else {
+                            evidence = Some(evidence_long);
+                        }
+                    }
+                }
+            }
+
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
                     "residue" | "scale" |
@@ -2956,14 +2971,6 @@ impl <'a> WebDataBuild<'a> {
                             extra_props.insert(prop.type_name().clone(), value);
                         }
                     },
-                    "evidence" =>
-                        if let Some(evidence_long) = prop.value.clone() {
-                            if let Some(code) = self.config.evidence_types.get(&evidence_long) {
-                                evidence = Some(code.clone());
-                            } else {
-                                evidence = Some(evidence_long);
-                            }
-                        },
                     "condition" =>
                         if let Some(value) = prop.value.clone() {
                             conditions.insert(value.clone());
