@@ -4062,6 +4062,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_bp_go_slim_subset(&self) -> TermSubsetDetails {
+        let mut all_genes = HashSet::new();
         let mut go_slim_subset: HashSet<TermSubsetElement> = HashSet::new();
         'TERM: for go_slim_conf in self.config.go_slim_terms.clone() {
             let slim_termid = go_slim_conf.termid;
@@ -4073,11 +4074,16 @@ impl <'a> WebDataBuild<'a> {
                 termid: slim_termid.clone(),
                 gene_count: term_details.genes_annotated_with.len(),
             };
+
+            for gene in &term_details.genes_annotated_with {
+                all_genes.insert(gene);
+            }
             go_slim_subset.insert(subset_element);
         }
 
         TermSubsetDetails {
             name: "goslim_pombe".into(),
+            total_gene_count: all_genes.len(),
             elements: go_slim_subset,
         }
     }

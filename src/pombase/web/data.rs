@@ -780,6 +780,7 @@ pub struct TermSubsetElement {
 #[derive(Serialize, Clone, Debug)]
 pub struct TermSubsetDetails {
     pub name: String,
+    pub total_gene_count: usize, // total unique genes in all subsets
     pub elements: HashSet<TermSubsetElement>,
 }
 
