@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::process;
 use std::io::BufReader;
 use std::fs::File;
 
@@ -141,8 +140,7 @@ impl Config {
         let file = match File::open(config_file_name) {
             Ok(file) => file,
             Err(err) => {
-                print!("Failed to read {}: {}\n", config_file_name, err);
-                process::exit(1);
+                panic!("Failed to read {}: {}\n", config_file_name, err)
             }
         };
         let reader = BufReader::new(file);
@@ -150,8 +148,7 @@ impl Config {
         match serde_json::from_reader(reader) {
             Ok(config) => config,
             Err(err) => {
-                print!("failed to parse {}: {}", config_file_name, err);
-                process::exit(1);
+                panic!("failed to parse {}: {}", config_file_name, err)
             },
         }
     }
