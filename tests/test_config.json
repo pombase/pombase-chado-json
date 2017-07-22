@@ -1,8 +1,22 @@
 {
-  "load_organism": {
-    "genus": "Schizosaccharomyces",
-    "species": "pombe"
-  },
+  "load_organism_taxonid": 4896,
+  "organisms": [
+    {
+      "taxonid": 4896,
+      "genus": "Schizosaccharomyces",
+      "species": "pombe"
+    },
+    {
+      "taxonid": 9606,
+      "genus": "Homo",
+      "species": "sapiens"
+    },
+    {
+      "taxonid": 4932,
+      "genus": "Saccharomyces",
+      "species": "cerevisiae"
+    }
+  ],
   "api_seq_chunk_sizes": [10000, 200000],
   "chromosomes": {
     "chromosome_1": {
