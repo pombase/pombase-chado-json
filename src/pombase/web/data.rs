@@ -77,6 +77,7 @@ impl ExtRange {
     }
 }
 
+// A single part of an extension.
 #[derive(Serialize, Clone, Debug, PartialEq, Eq)]
 pub struct ExtPart {
     pub rel_type_name: String,
@@ -90,6 +91,7 @@ impl Hash for ExtPart {
     }
 }
 
+// minimal information about a gene used in other objects
 #[derive(Serialize, Clone, Debug)]
 pub struct GeneShort {
     pub uniquename: GeneUniquename,
@@ -97,55 +99,6 @@ pub struct GeneShort {
     pub name: Option<GeneName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct IdAndOrganism {
-    pub identifier: String,
-    pub taxonid: u32,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct GeneSummary {
-    pub uniquename: GeneUniquename,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<GeneName>,
-    pub taxonid: OrganismTaxonId,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub product: Option<GeneProduct>,
-    pub synonyms: Vec<String>,
-    pub orthologs: Vec<IdAndOrganism>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub location: Option<ChromosomeLocation>,
-    pub feature_type: String,
-}
-
-pub struct TermIdPair {
-    pub firstid: TermId,
-    pub secondid: TermId,
-}
-
-impl TermIdPair {
-    pub fn new(firstid: &TermId, secondid: &TermId) -> TermIdPair {
-        TermIdPair {
-            firstid: firstid.clone(),
-            secondid: secondid.clone(),
-        }
-    }
-}
-
-impl PartialEq for TermIdPair {
-    fn eq(&self, other: &TermIdPair) -> bool { 
-        self.firstid == other.firstid &&
-            self.secondid == other.secondid
-    }
-}
-impl Eq for TermIdPair { }
-impl Hash for TermIdPair {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.firstid.hash(state);
-        self.secondid.hash(state);
-    }
 }
 
 impl PartialEq for GeneShort {
@@ -178,6 +131,30 @@ impl Hash for GeneShort {
     }
 }
 
+// a gene uniquename and an organism ID
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct IdAndOrganism {
+    pub identifier: String,
+    pub taxonid: u32,
+}
+
+// identifiers used for autocomplete in the search box
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GeneSummary {
+    pub uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<GeneName>,
+    pub taxonid: OrganismTaxonId,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub product: Option<GeneProduct>,
+    pub synonyms: Vec<String>,
+    pub orthologs: Vec<IdAndOrganism>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub location: Option<ChromosomeLocation>,
+    pub feature_type: String,
+}
+
+// minimal information about a terms used in other objects
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermShort {
     pub name: TermName,
@@ -279,6 +256,7 @@ pub struct ReferenceDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
+// the GO with/from
 #[derive(Serialize, Clone, Debug)]
 pub enum WithFromValue {
 #[serde(rename = "gene")]
