@@ -21,6 +21,9 @@ use pombase::api::result::Result;
 use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
 
+const PKG_NAME: &str = env!("CARGO_PKG_NAME");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
+
 #[post("/query", data="<q>", format = "application/json")]
 fn query_post(q: Json<Query>, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<Result>> {
     let query_exec = state.lock().expect("failed to lock");
@@ -36,7 +39,7 @@ fn reload(state: rocket::State<Mutex<QueryExec>>) {
 
 #[get ("/ping")]
 fn ping() -> Option<String> {
-    Some("OK".into())
+    Some(String::from("OK") + " " + PKG_NAME + " " + VERSION)
 }
 
 #[error(404)]
@@ -46,9 +49,6 @@ fn not_found() -> Json<Value> {
         "reason": "Resource was not found."
     }))
 }
-
-const PKG_NAME: &str = env!("CARGO_PKG_NAME");
-const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn print_usage(program: &str, opts: Options) {
     let brief = format!("Usage: {} [options]", program);
