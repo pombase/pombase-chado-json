@@ -98,17 +98,11 @@ impl ServerData {
     }
 
     pub fn genes_of_termid(&self, term_id: &str) -> Vec<GeneUniquename> {
-        match self.maps.termid_genotype_genes.get(term_id) {
-            Some(genotype_genes) => {
-                genotype_genes.single_allele.iter().cloned().collect::<Vec<_>>()
+        match self.maps.termid_genes.get(term_id) {
+            Some(gene_uniquenames) => {
+                gene_uniquenames.iter().cloned().collect::<Vec<_>>()
             },
-            None =>
-                match self.maps.termid_genes.get(term_id) {
-                    Some(gene_uniquenames) => {
-                        gene_uniquenames.iter().cloned().collect::<Vec<_>>()
-                    },
-                    None => vec![],
-                },
+            None => vec![],
         }
     }
 
@@ -116,6 +110,24 @@ impl ServerData {
         match self.gene_subsets.get(subset_name) {
             Some(subset_details) => {
                 subset_details.elements.iter().cloned().collect::<Vec<_>>()
+            },
+            None => vec![],
+        }
+    }
+
+    pub fn genes_of_single_allele_genotypes(&self, term_id: &str) -> Vec<GeneUniquename> {
+        match self.maps.termid_genotype_genes.get(term_id) {
+            Some(genotype_genes) => {
+                genotype_genes.single_allele.iter().cloned().collect::<Vec<_>>()
+            },
+            None => vec![],
+        }
+    }
+
+    pub fn genes_of_multi_allele_genotypes(&self, term_id: &str) -> Vec<GeneUniquename> {
+        match self.maps.termid_genotype_genes.get(term_id) {
+            Some(genotype_genes) => {
+                genotype_genes.multi_allele.iter().cloned().collect::<Vec<_>>()
             },
             None => vec![],
         }
