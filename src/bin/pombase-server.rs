@@ -35,6 +35,7 @@ fn reload(state: rocket::State<Mutex<QueryExec>>) {
     let mut query_exec = state.lock().expect("failed to lock");
     print!("reloading ...\n");
     query_exec.reload();
+    print!("... done\n");
 }
 
 #[get ("/ping")]
