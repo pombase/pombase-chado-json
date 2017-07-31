@@ -31,6 +31,16 @@ pub enum SingleOrMultiAllele {
     Both,
 }
 
+#[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
+pub enum QueryExpressionLevel {
+#[serde(rename = "any")]
+    Any,
+#[serde(rename = "null")]
+    Null,
+#[serde(rename = "wt-overexpressed")]
+    WtOverexpressed,
+}
+
 #[derive(Serialize, Deserialize, Clone)]
 pub enum QueryNode {
 #[serde(rename = "or")]
@@ -40,7 +50,8 @@ pub enum QueryNode {
 #[serde(rename = "not")]
     Not(Box<QueryNode>, Box<QueryNode>),
 #[serde(rename = "termid")]
-    TermId(String, Option<SingleOrMultiAllele>),
+    TermId(String, Option<SingleOrMultiAllele>,
+           Option<QueryExpressionLevel>),
 #[serde(rename = "subset")]
     Subset(String),
 #[serde(rename = "gene_list")]
@@ -177,32 +188,14 @@ fn results_from_gene_vec(genes: Vec<GeneUniquename>) -> Result {
 }
 
 fn exec_termid(server_data: &ServerData, term_id: &str,
-               maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>) -> Result {
-    let mut ret_genes = HashSet::new();
-
+               maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
+               expression: &Option<QueryExpressionLevel>) -> Result {
     if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
-        let mut add_single = false;
-        let mut add_multi = false;
-        match *single_or_multi_allele {
-            SingleOrMultiAllele::Single => add_single = true,
-            SingleOrMultiAllele::Multi => add_multi = true,
-            SingleOrMultiAllele::Both => {
-                add_single = true;
-                add_multi = true;
-            },
-        }
-
-        if add_single {
-            let genes = server_data.genes_of_single_allele_genotypes(term_id);
-            ret_genes.extend(genes.into_iter());
-        }
-        if add_multi {
-            let genes = server_data.genes_of_multi_allele_genotypes(term_id);
-            ret_genes.extend(genes.into_iter());
-        }
+        let genes = server_data.genes_of_genotypes(term_id, single_or_multi_allele,
+                                                   expression);
         return Result {
             status: ResultStatus::Ok,
-            rows: ret_genes.into_iter()
+            rows: genes.into_iter()
                 .map(|gene_uniquename| ResultRow {
                     gene_uniquename: gene_uniquename.clone(),
                 }).collect::<Vec<_>>(),
@@ -299,8 +292,10 @@ impl QueryNode {
             Or(ref nodes) => exec_or(server_data, nodes),
             And(ref nodes) => exec_and(server_data, nodes),
             Not(ref node_a, ref node_b) => exec_not(server_data, node_a, node_b),
-            TermId(ref term_id, ref single_or_multi_allele) =>
-                exec_termid(server_data, term_id, single_or_multi_allele),
+            TermId(ref term_id, ref single_or_multi_allele,
+                   ref expression) =>
+                exec_termid(server_data, term_id, single_or_multi_allele,
+                            expression),
             Subset(ref subset_name) => exec_subset(server_data, subset_name),
             GeneList(ref gene_list) => exec_gene_list(gene_list),
             IntRange(ref range_type, start, end) =>

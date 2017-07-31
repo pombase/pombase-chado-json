@@ -8,8 +8,9 @@ use std::collections::HashSet;
 
 use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary};
 use web::config::Config;
-use types::GeneUniquename;
+use api::query::{SingleOrMultiAllele, QueryExpressionLevel};
 
+use types::GeneUniquename;
 
 pub struct ServerData {
     config_file_name: String,
@@ -116,30 +117,67 @@ impl ServerData {
         }
     }
 
-    fn genes_of_genotypes(&self, term_id: &str, find_multi_allele: bool)
-                          -> Vec<GeneUniquename>
+    pub fn genes_of_genotypes(&self, term_id: &str,
+                              single_or_multi_allele: &SingleOrMultiAllele,
+                              expression_filter: &Option<QueryExpressionLevel>)
+                              -> Vec<GeneUniquename>
     {
         if let Some(annotations) = self.maps.termid_genotype_annotation.get(term_id) {
             let mut genes: HashSet<GeneUniquename> = HashSet::new();
             for annotation in annotations {
-                if annotation.is_multi == find_multi_allele {
-                    for allele_details in &annotation.alleles {
-                        genes.insert(allele_details.gene.clone());
-                    }
+
+                let mut add_single = false;
+                let mut add_multi = false;
+
+                match *single_or_multi_allele {
+                    SingleOrMultiAllele::Single => add_single = true,
+                    SingleOrMultiAllele::Multi => add_multi = true,
+                    SingleOrMultiAllele::Both => {
+                        add_single = true;
+                        add_multi = true;
+                    },
+                }
+
+                let expression_matches =
+                    |expression: &Option<String>| {
+                        if let Some(ref expression_filter) = *expression_filter {
+                            if *expression_filter == QueryExpressionLevel::Any {
+                                return true;
+                            }
+                            if *expression_filter == QueryExpressionLevel::Null {
+                                if let Some(ref expression) = *expression {
+                                    expression == "Null"
+                                } else {
+                                    false
+                                }
+                            } else {
+                                if *expression_filter == QueryExpressionLevel::WtOverexpressed {
+                                    if let Some(ref expression) = *expression {
+                                        expression == "Overexpression"
+                                    } else {
+                                        false
+                                    }
+                                } else {
+                                    false
+                                }
+                            }
+                        } else {
+                            true
+                        }
+                    };
+
+                if annotation.is_multi && add_multi ||
+                    !annotation.is_multi && add_single &&
+                    expression_matches(&annotation.alleles[0].expression) {
+                        for allele_details in &annotation.alleles {
+                            genes.insert(allele_details.gene.clone());
+                        }
                 }
             }
             genes.into_iter().collect::<Vec<_>>()
         } else {
             vec![]
         }
-    }
-
-    pub fn genes_of_single_allele_genotypes(&self, term_id: &str) -> Vec<GeneUniquename> {
-        self.genes_of_genotypes(term_id, false)
-    }
-
-    pub fn genes_of_multi_allele_genotypes(&self, term_id: &str) -> Vec<GeneUniquename> {
-        self.genes_of_genotypes(term_id, true)
     }
 
     pub fn filter_genes(&self, p: &Fn(&APIGeneSummary) -> bool)
