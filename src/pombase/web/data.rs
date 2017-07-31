@@ -705,9 +705,16 @@ pub struct Metadata {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct QueryAPIGenotypeGenes {
-    pub single_allele: HashSet<GeneUniquename>,
-    pub multi_allele: HashSet<GeneUniquename>,
+pub struct APIAlleleDetails {
+    pub gene: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub expression: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct APIGenotypeAnnotation {
+    pub is_multi: bool,
+    pub alleles: Vec<APIAlleleDetails>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -731,9 +738,9 @@ pub struct APIGeneSummary {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct QueryAPIMaps {
+pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
-    pub termid_genotype_genes: HashMap<TermId, QueryAPIGenotypeGenes>,
+    pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
     pub gene_summaries: Vec<APIGeneSummary>,
     pub term_summaries: HashSet<TermShort>,
 }
@@ -782,7 +789,7 @@ pub struct WebData {
     pub chromosomes: ChrNameDetailsMap,
     pub references: UniquenameReferenceMap,
     pub recent_references: RecentReferences,
-    pub query_api_maps: QueryAPIMaps,
+    pub api_maps: APIMaps,
     pub search_gene_summaries: Vec<GeneSummary>,
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
@@ -914,9 +921,9 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write recent references JSON");
     }
 
-    fn write_query_api_maps(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.query_api_maps).unwrap();
-        let file_name = String::new() + &output_dir + "/query_api_maps.json";
+    fn write_api_maps(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.api_maps).unwrap();
+        let file_name = String::new() + &output_dir + "/api_maps.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
@@ -953,7 +960,7 @@ impl WebData {
         println!("wrote metadata");
         self.write_recent_references(output_dir);
         println!("wrote recent references");
-        self.write_query_api_maps(output_dir);
+        self.write_api_maps(output_dir);
         println!("wrote search data");
         self.write_subsets(output_dir);
         println!("wrote subsets");

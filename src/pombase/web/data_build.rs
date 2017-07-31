@@ -3540,7 +3540,49 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    pub fn make_query_api_maps(&self) -> QueryAPIMaps {
+    pub fn get_api_genotype_annotation(&self) -> HashMap<TermId, Vec<APIGenotypeAnnotation>>
+    {
+        let mut app_genotype_annotation = HashMap::new();
+
+        'TERM: for (_, term_details) in &self.terms {
+            for (_, annotations_vec) in &term_details.cv_annotations {
+                for ont_term_annotations in annotations_vec {
+                    'DETAILS: for annotation_details in ont_term_annotations.annotations.iter() {
+                        if annotation_details.genotype.is_none() {
+                            continue 'DETAILS;
+                        }
+                        let genotype_uniquename = annotation_details.genotype.clone().unwrap();
+                        let genotype =
+                            term_details.genotypes_by_uniquename.get(&genotype_uniquename).unwrap();
+                        let mut api_annotation = APIGenotypeAnnotation {
+                            is_multi: genotype.expressed_alleles.len() > 1,
+                            alleles: vec![],
+                        };
+                        for allele in &genotype.expressed_alleles {
+                            let allele_uniquename = &allele.allele_uniquename;
+                            let allele_short =
+                                self.alleles.get(allele_uniquename).expect("Can't find allele");
+                            let allele_gene_uniquename =
+                                allele_short.gene_uniquename.clone();
+                            let allele_details = APIAlleleDetails {
+                                gene: allele_gene_uniquename,
+                                expression: allele.expression.clone(),
+                            };
+                            api_annotation.alleles.push(allele_details);
+                        }
+                        app_genotype_annotation
+                            .entry(term_details.termid.clone())
+                            .or_insert(vec![])
+                            .push(api_annotation);
+                    }
+                }
+            }
+        }
+
+        app_genotype_annotation
+    }
+
+    pub fn make_api_maps(&self) -> APIMaps {
         let mut gene_summaries: Vec<APIGeneSummary> = vec![];
 
         for (gene_uniquename, gene_details) in &self.genes {
@@ -3551,8 +3593,6 @@ impl <'a> WebDataBuild<'a> {
 
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
-        let mut termid_genotype_genes: HashMap<TermId, QueryAPIGenotypeGenes> =
-            HashMap::new();
 
         for (termid, term_details) in &self.terms {
             term_summaries.insert(self.make_term_short(&termid));
@@ -3561,37 +3601,17 @@ impl <'a> WebDataBuild<'a> {
                 if term_config.feature_type == "gene" {
                     termid_genes.insert(termid.clone(),
                                         term_details.genes_annotated_with.clone());
-                } else {
-                    if term_details.genotypes_by_uniquename.len() > 0 {
-                        // phenotype term
-                        let mut genotype_genes = QueryAPIGenotypeGenes {
-                            single_allele: HashSet::new(),
-                            multi_allele: HashSet::new(),
-                        };
-                        for (_, genotype) in &term_details.genotypes_by_uniquename {
-                            for allele in &genotype.expressed_alleles {
-                                let allele_uniquename = &allele.allele_uniquename;
-                                let allele_short =
-                                    self.alleles.get(allele_uniquename).expect("Can't find allele");
-                                let allele_gene_uniquename =
-                                    allele_short.gene_uniquename.clone();
-                                if genotype.expressed_alleles.len() == 1 {
-                                    genotype_genes.single_allele.insert(allele_gene_uniquename);
-                                } else {
-                                    genotype_genes.multi_allele.insert(allele_gene_uniquename);
-                                }
-                            }
-                        }
-                        termid_genotype_genes.insert(termid.clone(), genotype_genes);
-                    }
                 }
             }
         }
+ 
+        let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
+            self.get_api_genotype_annotation();
 
-        QueryAPIMaps {
+       APIMaps {
             gene_summaries: gene_summaries,
             termid_genes: termid_genes,
-            termid_genotype_genes: termid_genotype_genes,
+            termid_genotype_annotation: termid_genotype_annotation,
             term_summaries: term_summaries,
         }
     }
@@ -4206,7 +4226,7 @@ impl <'a> WebDataBuild<'a> {
 
         let mut web_data_terms: IdRcTermDetailsMap = HashMap::new();
 
-        let query_api_maps = self.make_query_api_maps();
+        let api_maps = self.make_api_maps();
 
         for (termid, term_details) in self.terms.drain() {
             web_data_terms.insert(termid.clone(), Rc::new(term_details));
@@ -4242,7 +4262,7 @@ impl <'a> WebDataBuild<'a> {
             chromosomes: self.chromosomes,
             references: self.references,
             recent_references: self.recent_references,
-            query_api_maps: query_api_maps,
+            api_maps: api_maps,
             search_gene_summaries: gene_summaries,
             term_subsets: self.term_subsets,
             gene_subsets: self.gene_subsets,

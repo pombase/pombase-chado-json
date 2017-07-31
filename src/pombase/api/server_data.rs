@@ -4,15 +4,16 @@ use std::io::BufReader;
 
 use serde_json;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
-use web::data::{QueryAPIMaps, IdGeneSubsetMap, APIGeneSummary};
+use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary};
 use web::config::Config;
 use types::GeneUniquename;
 
 
 pub struct ServerData {
     config_file_name: String,
-    maps: QueryAPIMaps,
+    maps: APIMaps,
     search_maps_file_name: String,
     gene_subsets: IdGeneSubsetMap,
     gene_subsets_file_name: String,
@@ -20,7 +21,7 @@ pub struct ServerData {
 
 
 fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &str)
-        -> (QueryAPIMaps, IdGeneSubsetMap)
+        -> (APIMaps, IdGeneSubsetMap)
 {
     let file = match File::open(search_maps_file_name) {
         Ok(file) => file,
@@ -31,7 +32,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     };
     let reader = BufReader::new(file);
 
-    let query_api_maps: QueryAPIMaps =
+    let query_api_maps: APIMaps =
         match serde_json::from_reader(reader) {
             Ok(results) => results,
             Err(err) => {
@@ -115,22 +116,30 @@ impl ServerData {
         }
     }
 
-    pub fn genes_of_single_allele_genotypes(&self, term_id: &str) -> Vec<GeneUniquename> {
-        match self.maps.termid_genotype_genes.get(term_id) {
-            Some(genotype_genes) => {
-                genotype_genes.single_allele.iter().cloned().collect::<Vec<_>>()
-            },
-            None => vec![],
+    fn genes_of_genotypes(&self, term_id: &str, find_multi_allele: bool)
+                          -> Vec<GeneUniquename>
+    {
+        if let Some(annotations) = self.maps.termid_genotype_annotation.get(term_id) {
+            let mut genes: HashSet<GeneUniquename> = HashSet::new();
+            for annotation in annotations {
+                if annotation.is_multi == find_multi_allele {
+                    for allele_details in &annotation.alleles {
+                        genes.insert(allele_details.gene.clone());
+                    }
+                }
+            }
+            genes.into_iter().collect::<Vec<_>>()
+        } else {
+            vec![]
         }
     }
 
+    pub fn genes_of_single_allele_genotypes(&self, term_id: &str) -> Vec<GeneUniquename> {
+        self.genes_of_genotypes(term_id, false)
+    }
+
     pub fn genes_of_multi_allele_genotypes(&self, term_id: &str) -> Vec<GeneUniquename> {
-        match self.maps.termid_genotype_genes.get(term_id) {
-            Some(genotype_genes) => {
-                genotype_genes.multi_allele.iter().cloned().collect::<Vec<_>>()
-            },
-            None => vec![],
-        }
+        self.genes_of_genotypes(term_id, true)
     }
 
     pub fn filter_genes(&self, p: &Fn(&APIGeneSummary) -> bool)
