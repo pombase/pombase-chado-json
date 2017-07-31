@@ -707,6 +707,7 @@ pub struct Metadata {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIAlleleDetails {
     pub gene: GeneUniquename,
+    pub allele_type: String,
     #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<String>,
 }

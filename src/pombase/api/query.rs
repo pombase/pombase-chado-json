@@ -32,7 +32,7 @@ pub enum SingleOrMultiAllele {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
-pub enum QueryExpressionLevel {
+pub enum QueryExpressionFilter {
 #[serde(rename = "any")]
     Any,
 #[serde(rename = "null")]
@@ -51,7 +51,7 @@ pub enum QueryNode {
     Not(Box<QueryNode>, Box<QueryNode>),
 #[serde(rename = "termid")]
     TermId(String, Option<SingleOrMultiAllele>,
-           Option<QueryExpressionLevel>),
+           Option<QueryExpressionFilter>),
 #[serde(rename = "subset")]
     Subset(String),
 #[serde(rename = "gene_list")]
@@ -189,7 +189,7 @@ fn results_from_gene_vec(genes: Vec<GeneUniquename>) -> Result {
 
 fn exec_termid(server_data: &ServerData, term_id: &str,
                maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
-               expression: &Option<QueryExpressionLevel>) -> Result {
+               expression: &Option<QueryExpressionFilter>) -> Result {
     if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
         let genes = server_data.genes_of_genotypes(term_id, single_or_multi_allele,
                                                    expression);

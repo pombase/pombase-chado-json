@@ -6,9 +6,9 @@ use serde_json;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary};
+use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails};
 use web::config::Config;
-use api::query::{SingleOrMultiAllele, QueryExpressionLevel};
+use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
 use types::GeneUniquename;
 
@@ -119,7 +119,7 @@ impl ServerData {
 
     pub fn genes_of_genotypes(&self, term_id: &str,
                               single_or_multi_allele: &SingleOrMultiAllele,
-                              expression_filter: &Option<QueryExpressionLevel>)
+                              expression_filter: &Option<QueryExpressionFilter>)
                               -> Vec<GeneUniquename>
     {
         if let Some(annotations) = self.maps.termid_genotype_annotation.get(term_id) {
@@ -139,21 +139,27 @@ impl ServerData {
                 }
 
                 let expression_matches =
-                    |expression: &Option<String>| {
+                    |allele_details: &APIAlleleDetails| {
+                        let expression = &allele_details.expression;
+                        let allele_type = &allele_details.allele_type;
                         if let Some(ref expression_filter) = *expression_filter {
-                            if *expression_filter == QueryExpressionLevel::Any {
+                            if *expression_filter == QueryExpressionFilter::Any {
                                 return true;
                             }
-                            if *expression_filter == QueryExpressionLevel::Null {
+                            if *expression_filter == QueryExpressionFilter::Null {
+                                if allele_type == "deletion" {
+                                    return true;
+                                }
                                 if let Some(ref expression) = *expression {
                                     expression == "Null"
                                 } else {
                                     false
                                 }
                             } else {
-                                if *expression_filter == QueryExpressionLevel::WtOverexpressed {
+                                if *expression_filter == QueryExpressionFilter::WtOverexpressed {
                                     if let Some(ref expression) = *expression {
-                                        expression == "Overexpression"
+                                        expression == "Overexpression" &&
+                                            allele_type == "wild_type"
                                     } else {
                                         false
                                     }
@@ -168,7 +174,7 @@ impl ServerData {
 
                 if annotation.is_multi && add_multi ||
                     !annotation.is_multi && add_single &&
-                    expression_matches(&annotation.alleles[0].expression) {
+                    expression_matches(&annotation.alleles[0]) {
                         for allele_details in &annotation.alleles {
                             genes.insert(allele_details.gene.clone());
                         }

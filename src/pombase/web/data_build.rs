@@ -3566,6 +3566,7 @@ impl <'a> WebDataBuild<'a> {
                                 allele_short.gene_uniquename.clone();
                             let allele_details = APIAlleleDetails {
                                 gene: allele_gene_uniquename,
+                                allele_type: allele_short.allele_type.clone(),
                                 expression: allele.expression.clone(),
                             };
                             api_annotation.alleles.push(allele_details);
