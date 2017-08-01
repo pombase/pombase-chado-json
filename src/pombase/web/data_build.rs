@@ -41,7 +41,7 @@ type UniprotIdentifier = String;
 
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
-    interpro_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+    domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -1243,12 +1243,12 @@ fn validate_transcript_parts(transcript_uniquename: &str, parts: &Vec<FeatureSho
 
 
 impl <'a> WebDataBuild<'a> {
-    pub fn new(raw: &'a Raw, interpro_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+    pub fn new(raw: &'a Raw, domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
             raw: raw,
-            interpro_data: interpro_data,
+            domain_data: domain_data,
             config: config,
 
             genes: HashMap::new(),
@@ -1713,15 +1713,18 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let interpro_matches =
+        let (interpro_matches, tm_domain_coords) =
             if let Some(ref uniprot_identifier) = uniprot_identifier {
-                if let Some(result) = self.interpro_data.get(uniprot_identifier) {
-                    result.interpro_matches.clone()
+                if let Some(result) = self.domain_data.get(uniprot_identifier) {
+                    let tm_domain_matches = result.tmhmm_matches.iter()
+                        .map(|tm_match| (tm_match.start, tm_match.end))
+                        .collect::<Vec<_>>();
+                    (result.interpro_matches.clone(), tm_domain_matches)
                 } else {
-                    vec![]
+                    (vec![], vec![])
                 }
             } else {
-                vec![]
+                (vec![], vec![])
             };
 
         let gene_feature = GeneDetails {
@@ -1732,6 +1735,7 @@ impl <'a> WebDataBuild<'a> {
             deletion_viability: DeletionViability::Unknown,
             uniprot_identifier: uniprot_identifier,
             interpro_matches: interpro_matches,
+            tm_domain_coords: tm_domain_coords,
             orfeome_identifier: orfeome_identifier,
             name_descriptions: vec![],
             synonyms: vec![],
@@ -4639,6 +4643,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         deletion_viability: DeletionViability::Unknown,
         uniprot_identifier: None,
         interpro_matches: vec![],
+        tm_domain_coords: vec![],
         orfeome_identifier: None,
         name_descriptions: vec![],
         synonyms: vec![],

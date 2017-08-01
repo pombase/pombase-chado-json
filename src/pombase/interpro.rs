@@ -25,9 +25,16 @@ pub struct InterProMatch {
     pub locations: Vec<Location>,
 }
 
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct TMMatch {
+    pub start: usize,
+    pub end: usize,
+}
+
 #[derive(Deserialize, Debug, Clone)]
 pub struct UniprotResult {
     pub interpro_matches: Vec<InterProMatch>,
+    pub tmhmm_matches: Vec<TMMatch>,
 }
 
 pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<String, UniprotResult> {

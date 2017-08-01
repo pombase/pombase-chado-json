@@ -422,6 +422,8 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<String>,
     pub interpro_matches: Vec<InterProMatch>,
+    // non-InterPro domains:
+    pub tm_domain_coords: Vec<(usize, usize) >,
     pub orfeome_identifier: Option<String>,
     pub name_descriptions: Vec<String>,
     pub synonyms: Vec<SynonymDetails>,
