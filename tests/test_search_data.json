@@ -369,7 +369,8 @@
         "end_pos": 4050971,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 3
     },
     {
       "uniquename": "SPAC1805.15c",
@@ -390,7 +391,8 @@
         "end_pos": 2800406,
         "strand": "reverse"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPAC27E2.05",
@@ -413,7 +415,8 @@
         "end_pos": 4016557,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPBC9B6.04c",
@@ -434,7 +437,8 @@
         "end_pos": 1821476,
         "strand": "reverse"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 7
     },
     {
       "uniquename": "SPAC11G7.02",
@@ -455,7 +459,8 @@
         "end_pos": 3966172,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPAC19G12.03",
@@ -476,7 +481,8 @@
         "end_pos": 4049353,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPAC2F3.09",
@@ -497,7 +503,8 @@
         "end_pos": 3942086,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPBC18H10.02",
@@ -518,7 +525,8 @@
         "end_pos": 1772629,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 4
     },
     {
       "uniquename": "SPBC18H10.20c",
@@ -542,7 +550,8 @@
         "end_pos": 1810338,
         "strand": "reverse"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPAC2E1P3.03c",
@@ -563,7 +572,8 @@
         "end_pos": 2931205,
         "strand": "reverse"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPAC27E2.06c",
@@ -584,7 +594,8 @@
         "end_pos": 4018850,
         "strand": "reverse"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPRRNA.26",
@@ -604,7 +615,8 @@
         "end_pos": 926294,
         "strand": "forward"
       },
-      "feature_type": "rRNA gene"
+      "feature_type": "rRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPAC2E12.05",
@@ -624,7 +636,8 @@
         "end_pos": 5066231,
         "strand": "forward"
       },
-      "feature_type": "pseudogene"
+      "feature_type": "pseudogene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPBC11G11.01",
@@ -645,7 +658,8 @@
         "end_pos": 1759229,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPAC24B11.06c",
@@ -669,7 +683,8 @@
         "end_pos": 208044,
         "strand": "reverse"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPATRNALYS.01",
@@ -689,7 +704,8 @@
         "end_pos": 1704664,
         "strand": "forward"
       },
-      "feature_type": "tRNA gene"
+      "feature_type": "tRNA gene",
+      "tm_domain_count": 0
     },
     {
       "uniquename": "SPBC1D7.02c",
@@ -712,7 +728,8 @@
         "end_pos": 1755619,
         "strand": "forward"
       },
-      "feature_type": "mRNA gene"
+      "feature_type": "mRNA gene",
+      "tm_domain_count": 0
     }
   ],
   "term_summaries": [
