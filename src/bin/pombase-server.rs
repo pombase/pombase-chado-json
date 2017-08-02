@@ -17,7 +17,7 @@ use getopts::Options;
 use rocket_contrib::{Json, Value};
 
 use pombase::api::query::Query;
-use pombase::api::result::Result;
+use pombase::api::result::QueryAPIResult;
 use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
 
@@ -25,7 +25,9 @@ const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 #[post("/query", data="<q>", format = "application/json")]
-fn query_post(q: Json<Query>, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<Result>> {
+fn query_post(q: Json<Query>, state: rocket::State<Mutex<QueryExec>>)
+              -> Option<Json<QueryAPIResult>>
+{
     let query_exec = state.lock().expect("failed to lock");
     Some(Json(query_exec.exec(&q.into_inner())))
 }

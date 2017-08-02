@@ -7,7 +7,7 @@ use web::data::APIGeneSummary;
 
 use types::GeneUniquename;
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum IntRangeType {
 #[serde(rename = "genome_range_contains")]
     GenomeRangeContains,
@@ -17,13 +17,13 @@ pub enum IntRangeType {
     TMDomainCount,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum FloatRangeType {
 #[serde(rename = "protein_mol_weight")]
     ProteinMolWeight,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum SingleOrMultiAllele {
 #[serde(rename = "single")]
     Single,
@@ -33,7 +33,7 @@ pub enum SingleOrMultiAllele {
     Both,
 }
 
-#[derive(Serialize, Deserialize, Eq, PartialEq, Clone)]
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum QueryExpressionFilter {
 #[serde(rename = "any")]
     Any,
@@ -43,7 +43,10 @@ pub enum QueryExpressionFilter {
     WtOverexpressed,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+type TermDefinition = String;
+type QueryRowsResult = Result<Vec<ResultRow>, String>;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum QueryNode {
 #[serde(rename = "or")]
     Or(Vec<QueryNode>),
@@ -52,7 +55,8 @@ pub enum QueryNode {
 #[serde(rename = "not")]
     Not(Box<QueryNode>, Box<QueryNode>),
 #[serde(rename = "termid")]
-    TermId(String, Option<SingleOrMultiAllele>,
+    TermId(String, Option<TermDefinition>,
+           Option<SingleOrMultiAllele>,
            Option<QueryExpressionFilter>),
 #[serde(rename = "subset")]
     Subset(String),
@@ -64,26 +68,18 @@ pub enum QueryNode {
     FloatRange(FloatRangeType, Option<f64>, Option<f64>),
 }
 
-fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
+fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult {
     if nodes.len() == 0 {
-        return Result {
-            status: ResultStatus::Error("illegal query: OR operator has no nodes".into()),
-            rows: vec![],
-        }
+        return Err("illegal query: OR operator has no nodes".into());
     }
 
     let mut seen_genes = HashSet::new();
     let mut or_rows = vec![];
 
     for node in nodes {
-        let node_result = node.exec(server_data);
-        if node_result.status != ResultStatus::Ok {
-            return Result {
-                status: node_result.status,
-                rows: vec![],
-            }
-        }
-        for node_row in &node_result.rows {
+        let exec_rows = node.exec(server_data)?;
+
+        for node_row in &exec_rows {
             if !seen_genes.contains(&node_row.gene_uniquename) {
                 or_rows.push(ResultRow {
                     gene_uniquename: node_row.gene_uniquename.clone(),
@@ -92,132 +88,94 @@ fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
             }
         }
     }
-    Result {
-        status: ResultStatus::Ok,
-        rows: or_rows
-    }
+  
+    Ok(or_rows)
 }
 
-fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> Result {
+fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult {
     if nodes.len() == 0 {
-        return Result {
-            status: ResultStatus::Error("illegal query: AND operator has no nodes".into()),
-            rows: vec![],
-        };
+        return Err("illegal query: AND operator has no nodes".into());
     }
 
-    let first_node_result = nodes[0].exec(server_data);
-
-    if first_node_result.status != ResultStatus::Ok {
-        return Result {
-            status: first_node_result.status,
-            rows: vec![],
-        };
-    }
+    let first_node_result = nodes[0].exec(server_data)?;
 
     let current_genes =
-        first_node_result.rows.into_iter().map(|row| row.gene_uniquename);
+        first_node_result.into_iter().map(|row| row.gene_uniquename);
 
     let mut current_gene_set =
         HashSet::from_iter(current_genes);
 
     for node in nodes[1..].iter() {
-        let node_result = node.exec(server_data);
-        if node_result.status != ResultStatus::Ok {
-            return Result {
-                status: node_result.status,
-                rows: vec![],
-            }
-        }
+        let node_result = node.exec(server_data)?;
 
         let node_genes =
-            node_result.rows.into_iter().map(|row| row.gene_uniquename)
+            node_result.into_iter().map(|row| row.gene_uniquename)
             .collect::<HashSet<_>>();
 
         current_gene_set = current_gene_set.intersection(&node_genes).cloned().collect();
     }
-    Result {
-        status: ResultStatus::Ok,
-        rows: current_gene_set.iter().map(|gene_uniquename| ResultRow {
-            gene_uniquename: gene_uniquename.clone()
-        }).collect(),
-    }
+
+    Ok(current_gene_set.iter().map(|gene_uniquename| ResultRow {
+        gene_uniquename: gene_uniquename.clone()
+    }).collect())
 }
 
-fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode) -> Result {
-    let node_b_result = node_b.exec(server_data);
-    if node_b_result.status != ResultStatus::Ok {
-        return Result {
-            status: node_b_result.status,
-            rows: vec![],
-        }
-    }
+fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode)
+            -> QueryRowsResult
+{
+    let node_b_result = node_b.exec(server_data)?;
 
     let node_b_gene_set: HashSet<GeneUniquename> =
-        HashSet::from_iter(node_b_result.rows.into_iter().map(|row| row.gene_uniquename));
+        HashSet::from_iter(node_b_result.into_iter().map(|row| row.gene_uniquename));
 
-    let node_a_result = node_a.exec(server_data);
-    if node_a_result.status != ResultStatus::Ok {
-        return Result {
-            status: node_a_result.status,
-            rows: vec![],
-        }
-    }
+    let node_a_result = node_a.exec(server_data)?;
 
     let mut not_rows = vec![];
 
-    for row in &node_a_result.rows {
+    for row in &node_a_result {
         if !node_b_gene_set.contains(&row.gene_uniquename) {
             not_rows.push(ResultRow {
                 gene_uniquename: row.gene_uniquename.clone(),
             });
         }
     }
-    Result {
-        status: ResultStatus::Ok,
-        rows: not_rows,
-    }
+
+    Ok(not_rows)
 }
 
-fn results_from_gene_vec(genes: Vec<GeneUniquename>) -> Result {
-    Result {
-        status: ResultStatus::Ok,
-        rows: genes.into_iter()
-            .map(|gene_uniquename| ResultRow {
-                gene_uniquename: gene_uniquename,
-            }).collect::<Vec<_>>()
-    }
+fn results_from_gene_vec(genes: Vec<GeneUniquename>) -> QueryRowsResult {
+    Ok(genes.into_iter()
+       .map(|gene_uniquename| ResultRow {
+           gene_uniquename: gene_uniquename,
+       }).collect::<Vec<_>>())
 }
 
 fn exec_termid(server_data: &ServerData, term_id: &str,
                maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
-               expression: &Option<QueryExpressionFilter>) -> Result {
+               expression: &Option<QueryExpressionFilter>) -> QueryRowsResult {
     if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
         let genes = server_data.genes_of_genotypes(term_id, single_or_multi_allele,
                                                    expression);
-        return Result {
-            status: ResultStatus::Ok,
-            rows: genes.into_iter()
-                .map(|gene_uniquename| ResultRow {
-                    gene_uniquename: gene_uniquename.clone(),
-                }).collect::<Vec<_>>(),
-        }
+        Ok(genes.into_iter()
+           .map(|gene_uniquename| ResultRow {
+               gene_uniquename: gene_uniquename.clone(),
+           }).collect::<Vec<_>>())
     } else {
         results_from_gene_vec(server_data.genes_of_termid(term_id))
     }
 }
 
-fn exec_subset(server_data: &ServerData, subset_name: &str) -> Result {
+fn exec_subset(server_data: &ServerData, subset_name: &str) -> QueryRowsResult {
     results_from_gene_vec(server_data.genes_of_subset(subset_name))
 }
 
-fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>) -> Result {
+fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>) -> QueryRowsResult {
     results_from_gene_vec(gene_uniquenames.clone())
 }
 
 fn exec_genome_range_overlaps(server_data: &ServerData,
                               range_start: Option<u64>, range_end: Option<u64>)
-                              -> Result
+                              -> QueryRowsResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
@@ -233,7 +191,7 @@ fn exec_genome_range_overlaps(server_data: &ServerData,
 
 fn exec_protein_length_range(server_data: &ServerData,
                              range_start: Option<u64>, range_end: Option<u64>)
-                             -> Result
+                             -> QueryRowsResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
@@ -253,7 +211,7 @@ fn exec_protein_length_range(server_data: &ServerData,
 
 fn exec_tm_domain_count_range(server_data: &ServerData,
                               range_start: Option<u64>, range_end: Option<u64>)
-                              -> Result
+                              -> QueryRowsResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
@@ -264,7 +222,7 @@ fn exec_tm_domain_count_range(server_data: &ServerData,
 }
 
 fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
-                  start: Option<u64>, end: Option<u64>) -> Result {
+                  start: Option<u64>, end: Option<u64>) -> QueryRowsResult {
     match *range_type {
         IntRangeType::GenomeRangeContains => exec_genome_range_overlaps(server_data, start, end),
         IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
@@ -273,7 +231,7 @@ fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
 }
 
 fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, range_end: Option<f64>)
-                         -> Result
+                         -> QueryRowsResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
@@ -294,20 +252,20 @@ fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, ran
 }
 
 fn exec_float_range(server_data: &ServerData, range_type: &FloatRangeType,
-                    start: Option<f64>, end: Option<f64>) -> Result {
+                    start: Option<f64>, end: Option<f64>) -> QueryRowsResult {
     match *range_type {
         FloatRangeType::ProteinMolWeight => exec_mol_weight_range(server_data, start, end)
     }
 }
 
 impl QueryNode {
-    pub fn exec(&self, server_data: &ServerData) -> Result {
+    pub fn exec(&self, server_data: &ServerData) -> QueryRowsResult {
         use self::QueryNode::*;
         match *self {
             Or(ref nodes) => exec_or(server_data, nodes),
             And(ref nodes) => exec_and(server_data, nodes),
             Not(ref node_a, ref node_b) => exec_not(server_data, node_a, node_b),
-            TermId(ref term_id, ref single_or_multi_allele,
+            TermId(ref term_id, _, ref single_or_multi_allele,
                    ref expression) =>
                 exec_termid(server_data, term_id, single_or_multi_allele,
                             expression),
@@ -322,7 +280,7 @@ impl QueryNode {
 }
 
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Query {
     constraints: QueryNode,
 }
@@ -334,7 +292,7 @@ impl Query {
         }
     }
 
-    pub fn exec(&self, server_data: &ServerData) -> Result {
+    pub fn exec(&self, server_data: &ServerData) -> QueryRowsResult {
         self.constraints.exec(server_data)
     }
 }
