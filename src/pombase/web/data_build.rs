@@ -1444,6 +1444,7 @@ impl <'a> WebDataBuild<'a> {
             location: gene_details.location.clone(),
             cds_location: gene_details.cds_location.clone(),
             transcripts: gene_details.transcripts.clone(),
+            tm_domain_count: gene_details.tm_domain_coords.len(),
         }
     }
 

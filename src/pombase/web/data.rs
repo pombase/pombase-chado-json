@@ -738,6 +738,7 @@ pub struct APIGeneSummary {
     pub cds_location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
+    pub tm_domain_count: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
