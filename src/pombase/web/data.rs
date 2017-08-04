@@ -147,6 +147,7 @@ pub struct GeneSummary {
     pub taxonid: OrganismTaxonId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
+    pub uniprot_identifier: Option<String>,
     pub synonyms: Vec<String>,
     pub orthologs: Vec<IdAndOrganism>,
     #[serde(skip_serializing_if="Option::is_none")]
