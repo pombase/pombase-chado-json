@@ -43,7 +43,7 @@ pub enum QueryExpressionFilter {
     WtOverexpressed,
 }
 
-type TermDefinition = String;
+type TermName = String;
 type QueryRowsResult = Result<Vec<ResultRow>, String>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -53,19 +53,22 @@ pub enum QueryNode {
 #[serde(rename = "and")]
     And(Vec<QueryNode>),
 #[serde(rename = "not")]
-    Not(Box<QueryNode>, Box<QueryNode>),
-#[serde(rename = "termid")]
-    TermId(String, Option<TermDefinition>,
-           Option<SingleOrMultiAllele>,
-           Option<QueryExpressionFilter>),
+    Not { node_a: Box<QueryNode>, node_b: Box<QueryNode> },
+#[serde(rename = "term")]
+    Term {
+        termid: String,
+        name: Option<TermName>,
+        single_or_multi_allele: Option<SingleOrMultiAllele>,
+        expression: Option<QueryExpressionFilter>,
+    },
 #[serde(rename = "subset")]
-    Subset(String),
+    Subset { subset_name: String },
 #[serde(rename = "gene_list")]
-    GeneList(Vec<GeneUniquename>),
+    GeneList { ids: Vec<GeneUniquename> },
 #[serde(rename = "int_range")]
-    IntRange(IntRangeType, Option<u64>, Option<u64>),
+    IntRange { range_type: IntRangeType, start: Option<u64>, end: Option<u64> },
 #[serde(rename = "float_range")]
-    FloatRange(FloatRangeType, Option<f64>, Option<f64>),
+    FloatRange { range_type: FloatRangeType, start: Option<f64>, end: Option<f64> },
 }
 
 fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult {
@@ -88,7 +91,7 @@ fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult 
             }
         }
     }
-  
+
     Ok(or_rows)
 }
 
@@ -264,16 +267,18 @@ impl QueryNode {
         match *self {
             Or(ref nodes) => exec_or(server_data, nodes),
             And(ref nodes) => exec_and(server_data, nodes),
-            Not(ref node_a, ref node_b) => exec_not(server_data, node_a, node_b),
-            TermId(ref term_id, _, ref single_or_multi_allele,
-                   ref expression) =>
-                exec_termid(server_data, term_id, single_or_multi_allele,
-                            expression),
-            Subset(ref subset_name) => exec_subset(server_data, subset_name),
-            GeneList(ref gene_list) => exec_gene_list(gene_list),
-            IntRange(ref range_type, start, end) =>
+            Not { ref node_a, ref node_b } => exec_not(server_data, node_a, node_b),
+            Term {
+                ref termid,
+                name: _,
+                ref single_or_multi_allele,
+                ref expression,
+            } => exec_termid(server_data, termid, single_or_multi_allele, expression),
+            Subset { ref subset_name } => exec_subset(server_data, subset_name),
+            GeneList { ref ids } => exec_gene_list(ids),
+            IntRange { ref range_type, start, end } =>
                 exec_int_range(server_data, range_type, start, end),
-            FloatRange(ref range_type, start, end) =>
+            FloatRange { ref range_type, start, end } =>
                 exec_float_range(server_data, range_type, start, end),
         }
     }
