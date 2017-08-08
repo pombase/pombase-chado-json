@@ -73,8 +73,8 @@ fn test_and_or_not() {
 
 #[test]
 fn test_termid() {
-    let qp1 = QueryNode::TermId { termid: "GO:0044237".into(), definition: None,
-                                  single_or_multi_allele: None, expression: None };
+    let qp1 = QueryNode::Term { termid: "GO:0044237".into(), name: None,
+                                single_or_multi_allele: None, expression: None };
     let q1 = Query::from_node(qp1);
 
     check_gene_result(&q1, vec!["SPAC24B11.06c", "SPAC19G12.03", "SPAC2F3.09", "SPAC27E2.05"]);
