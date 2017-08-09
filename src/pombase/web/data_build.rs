@@ -4164,22 +4164,29 @@ impl <'a> WebDataBuild<'a> {
     fn make_interpro_subsets(&mut self, subsets: &mut IdGeneSubsetMap) {
         for (gene_uniquename, gene_details) in &self.genes {
             for interpro_match in &gene_details.interpro_matches {
-                let (subset_name, display_name) =
-                    if interpro_match.interpro_id.len() > 0 {
-                        (String::from("interpro:") + &interpro_match.interpro_id,
-                         interpro_match.interpro_name.clone())
-                    } else {
-                        (String::from("interpro:") +
-                         &interpro_match.dbname.clone() + ":" + &interpro_match.id,
-                         interpro_match.name.clone())
-                    };
-                subsets.entry(subset_name.clone())
-                    .or_insert(GeneSubsetDetails {
-                        name: subset_name,
-                        display_name: display_name,
-                        elements: HashSet::new(),
-                    })
-                    .elements.insert(gene_uniquename.clone());
+
+                let mut new_subset_names = vec![];
+
+                if interpro_match.interpro_id.len() > 0 {
+                    let subset_name =
+                        String::from("interpro:") + &interpro_match.interpro_id;
+                    new_subset_names.push((subset_name,
+                                           interpro_match.interpro_name.clone()));
+                }
+
+                let subset_name = String::from("interpro:") +
+                     &interpro_match.dbname.clone() + ":" + &interpro_match.id;
+                new_subset_names.push((subset_name, interpro_match.name.clone()));
+
+                for (subset_name, display_name) in new_subset_names {
+                    subsets.entry(subset_name.clone())
+                        .or_insert(GeneSubsetDetails {
+                            name: subset_name,
+                            display_name: display_name,
+                            elements: HashSet::new(),
+                        })
+                        .elements.insert(gene_uniquename.clone());
+                }
             }
         }
     }
