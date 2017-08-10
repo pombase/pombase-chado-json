@@ -15,6 +15,8 @@ pub enum IntRangeType {
     ProteinLength,
 #[serde(rename = "tm_domain_count")]
     TMDomainCount,
+#[serde(rename = "exon_count")]
+    ExonCount,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -224,12 +226,25 @@ fn exec_tm_domain_count_range(server_data: &ServerData,
     results_from_gene_vec(gene_uniquenames)
 }
 
+fn exec_exon_count_range(server_data: &ServerData,
+                         range_start: Option<u64>, range_end: Option<u64>)
+                         -> QueryRowsResult
+{
+    let gene_uniquenames =
+        server_data.filter_genes(&|gene: &APIGeneSummary| {
+            (range_start.is_none() || gene.exon_count as u64 >= range_start.unwrap()) &&
+            (range_end.is_none() || gene.exon_count as u64 <= range_end.unwrap())
+        });
+    results_from_gene_vec(gene_uniquenames)
+}
+
 fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
                   start: Option<u64>, end: Option<u64>) -> QueryRowsResult {
     match *range_type {
         IntRangeType::GenomeRangeContains => exec_genome_range_overlaps(server_data, start, end),
         IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
         IntRangeType::TMDomainCount => exec_tm_domain_count_range(server_data, start, end),
+        IntRangeType::ExonCount => exec_exon_count_range(server_data, start, end),
     }
 }
 

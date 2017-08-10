@@ -1435,6 +1435,18 @@ impl <'a> WebDataBuild<'a> {
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
             .collect::<Vec<String>>();
+        let exon_count =
+            if let Some(transcript) = gene_details.transcripts.get(0) {
+                let mut count = 0;
+                for part in &transcript.parts {
+                    if part.feature_type == FeatureType::Exon {
+                        count += 1;
+                    }
+                }
+                count
+            } else {
+                0
+            };
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
@@ -1446,6 +1458,7 @@ impl <'a> WebDataBuild<'a> {
             cds_location: gene_details.cds_location.clone(),
             transcripts: gene_details.transcripts.clone(),
             tm_domain_count: gene_details.tm_domain_coords.len(),
+            exon_count: exon_count,
         }
     }
 
