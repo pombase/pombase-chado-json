@@ -360,7 +360,7 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
                                           term_annotation.clone());
     }
 
-    for mut term_annotation in term_annotations.iter_mut() {
+    for term_annotation in term_annotations.iter_mut() {
         if let Some(child_termids) = children_by_termid.get(&term_annotation.term.termid) {
             if term_annotation.summary.as_ref().unwrap().len() == 0 {
                 let mut found_child_match = false;
@@ -1479,17 +1479,17 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_characterisation_status(&mut self, gene_uniquename: &String, cvterm_name: &String) {
-        let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+        let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
         gene_details.characterisation_status = Some(cvterm_name.clone());
     }
 
     fn add_gene_product(&mut self, gene_uniquename: &String, product: &String) {
-        let mut gene_details = self.get_gene_mut(gene_uniquename);
+        let gene_details = self.get_gene_mut(gene_uniquename);
         gene_details.product = Some(product.clone());
     }
 
     fn add_name_description(&mut self, gene_uniquename: &str, name_description: &str) {
-        let mut gene_details = self.get_gene_mut(gene_uniquename);
+        let gene_details = self.get_gene_mut(gene_uniquename);
         gene_details.name_descriptions.push(name_description.into());
     }
 
@@ -1818,7 +1818,7 @@ impl <'a> WebDataBuild<'a> {
 
         if let Some(gene_uniquename) =
             self.genes_of_transcripts.get(&transcript_uniquename) {
-                let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+                let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
                 gene_details.feature_type =
                     transcript.transcript_type.clone() + " " + &gene_details.feature_type;
                 gene_details.transcripts.push(transcript);
@@ -1892,7 +1892,7 @@ impl <'a> WebDataBuild<'a> {
                 self.transcripts_of_polypeptides.get(&protein_uniquename) {
                     if let Some(gene_uniquename) =
                         self.genes_of_transcripts.get(transcript_uniquename) {
-                            let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+                            let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
                             if gene_details.transcripts.len() > 1 {
                                 panic!("unimplemented - can't handle multiple transcripts for: {}",
                                        gene_uniquename);
@@ -2051,7 +2051,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         for (termid, interesting_parents) in interesting_parents_by_termid {
-            let mut term_details = self.terms.get_mut(&termid).unwrap();
+            let term_details = self.terms.get_mut(&termid).unwrap();
             term_details.interesting_parents = interesting_parents;
         }
     }
@@ -2146,7 +2146,7 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            let mut this_gene_details =
+            let this_gene_details =
                 self.genes.get_mut(&this_gene_and_loc.gene_uniquename).unwrap();
 
             this_gene_details.gene_neighbourhood.append(&mut nearby_genes);
@@ -2240,7 +2240,7 @@ impl <'a> WebDataBuild<'a> {
                                             reference_uniquename: maybe_reference_uniquename.clone(),
                                         };
                                     {
-                                        let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
+                                        let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                         if rel_name == "interacts_physically" {
                                             gene_details.physical_interactions.push(interaction_annotation.clone());
                                         } else {
@@ -2252,7 +2252,7 @@ impl <'a> WebDataBuild<'a> {
                                         };
                                     }
                                     {
-                                        let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
+                                        let other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
                                         if rel_name == "interacts_physically" {
                                             other_gene_details.physical_interactions.push(interaction_annotation.clone());
                                         } else {
@@ -2291,7 +2291,7 @@ impl <'a> WebDataBuild<'a> {
                                         evidence: evidence,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                     };
-                                let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
+                                let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                 gene_details.ortholog_annotations.push(ortholog_annotation.clone());
                                 if let Some(ref_details) =
                                     if let Some(ref reference_uniquename) = maybe_reference_uniquename {
@@ -2313,7 +2313,7 @@ impl <'a> WebDataBuild<'a> {
                                         evidence: evidence,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                     };
-                                let mut gene_details = self.genes.get_mut(subject_uniquename).unwrap();
+                                let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                 gene_details.paralog_annotations.push(paralog_annotation.clone());
                                 if let Some(ref_details) =
                                     if let Some(ref reference_uniquename) = maybe_reference_uniquename {
@@ -2330,7 +2330,7 @@ impl <'a> WebDataBuild<'a> {
                         }
 
                         // for orthologs and paralogs, store the reverse annotation too
-                        let mut other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
+                        let other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
                         match rel_config.annotation_type {
                             FeatureRelAnnotationType::Interaction => {},
                             FeatureRelAnnotationType::Ortholog => {
@@ -2492,7 +2492,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         for (gene_uniquename, mut target_of_annotations) in target_of_annotations {
-            let mut gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
+            let gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
             gene_details.target_of_annotations = target_of_annotations.drain().collect();
         }
     }
@@ -3283,7 +3283,7 @@ impl <'a> WebDataBuild<'a> {
                 }
 
                 if let Some(ref genotype_uniquename) = detail.genotype {
-                    let mut existing =
+                    let existing =
                         genotype_annotation_by_term.entry(genotype_uniquename.clone())
                         .or_insert(HashMap::new())
                         .entry(termid.clone())
@@ -3339,7 +3339,7 @@ impl <'a> WebDataBuild<'a> {
                 let new_annotations =
                     self.make_term_annotations(&termid, &details, is_not);
 
-                let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+                let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
 
                 for (cv_name, new_annotation) in new_annotations {
                     gene_details.cv_annotations.entry(cv_name.clone())
@@ -3348,8 +3348,8 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            let mut gene_details = self.genes.get_mut(gene_uniquename).unwrap();
-            for (_, mut cv_annotations) in &mut gene_details.cv_annotations {
+            let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+            for (_, cv_annotations) in &mut gene_details.cv_annotations {
                 cv_annotations.sort()
             }
         }
@@ -3359,7 +3359,7 @@ impl <'a> WebDataBuild<'a> {
                 let new_annotations =
                     self.make_term_annotations(&termid, &details, is_not);
 
-                let mut details = self.genotypes.get_mut(genotype_uniquename).unwrap();
+                let details = self.genotypes.get_mut(genotype_uniquename).unwrap();
 
                 for (cv_name, new_annotation) in new_annotations {
                     details.cv_annotations.entry(cv_name.clone())
@@ -3368,8 +3368,8 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            let mut details = self.genotypes.get_mut(genotype_uniquename).unwrap();
-            for (_, mut cv_annotations) in &mut details.cv_annotations {
+            let details = self.genotypes.get_mut(genotype_uniquename).unwrap();
+            for (_, cv_annotations) in &mut details.cv_annotations {
                 cv_annotations.sort()
             }
         }
@@ -3379,7 +3379,7 @@ impl <'a> WebDataBuild<'a> {
                 let new_annotations =
                     self.make_term_annotations(&termid, &details, is_not);
 
-                let mut ref_details = self.references.get_mut(reference_uniquename).unwrap();
+                let ref_details = self.references.get_mut(reference_uniquename).unwrap();
 
                 for (cv_name, new_annotation) in new_annotations {
                     ref_details.cv_annotations.entry(cv_name).or_insert(Vec::new())
@@ -3387,8 +3387,8 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            let mut ref_details = self.references.get_mut(reference_uniquename).unwrap();
-            for (_, mut term_annotations) in &mut ref_details.cv_annotations {
+            let ref_details = self.references.get_mut(reference_uniquename).unwrap();
+            for (_, term_annotations) in &mut ref_details.cv_annotations {
                 term_annotations.sort()
             }
         }
@@ -3506,7 +3506,7 @@ impl <'a> WebDataBuild<'a> {
                 let new_annotations =
                     self.make_term_annotations(&source_termid, &new_details, false);
 
-                let mut dest_term_details = {
+                let dest_term_details = {
                     self.terms.get_mut(&dest_termid).unwrap()
                 };
 
@@ -3971,7 +3971,7 @@ impl <'a> WebDataBuild<'a> {
 
         for (_, gene_details) in &mut self.genes {
             for (_, feat_annotations) in &mut gene_details.cv_annotations {
-                for mut feat_annotation in feat_annotations.iter_mut() {
+                for feat_annotation in feat_annotations.iter_mut() {
                     feat_annotation.term.gene_count =
                         term_seen_genes.get(&feat_annotation.term.termid).unwrap().len();
                     feat_annotation.term.genotype_count =
@@ -3988,7 +3988,7 @@ impl <'a> WebDataBuild<'a> {
 
         for (_, genotype_details) in &mut self.genotypes {
             for (_, feat_annotations) in &mut genotype_details.cv_annotations {
-                for mut feat_annotation in feat_annotations.iter_mut() {
+                for feat_annotation in feat_annotations.iter_mut() {
                     feat_annotation.term.genotype_count =
                         term_seen_genotypes.get(&feat_annotation.term.termid).unwrap().len();
                 }
