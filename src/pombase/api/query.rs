@@ -87,6 +87,7 @@ fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult 
         for node_row in &exec_rows {
             if !seen_genes.contains(&node_row.gene_uniquename) {
                 or_rows.push(ResultRow {
+                    sequence: None,
                     gene_uniquename: node_row.gene_uniquename.clone(),
                 });
                 seen_genes.insert(node_row.gene_uniquename.clone());
@@ -121,6 +122,7 @@ fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult
     }
 
     Ok(current_gene_set.iter().map(|gene_uniquename| ResultRow {
+        sequence: None,
         gene_uniquename: gene_uniquename.clone()
     }).collect())
 }
@@ -140,6 +142,7 @@ fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode)
     for row in &node_a_result {
         if !node_b_gene_set.contains(&row.gene_uniquename) {
             not_rows.push(ResultRow {
+                sequence: None,
                 gene_uniquename: row.gene_uniquename.clone(),
             });
         }
@@ -151,6 +154,7 @@ fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode)
 fn results_from_gene_vec(genes: Vec<GeneUniquename>) -> QueryRowsResult {
     Ok(genes.into_iter()
        .map(|gene_uniquename| ResultRow {
+           sequence: None,
            gene_uniquename: gene_uniquename,
        }).collect::<Vec<_>>())
 }
@@ -163,6 +167,7 @@ fn exec_termid(server_data: &ServerData, term_id: &str,
                                                    expression);
         Ok(genes.into_iter()
            .map(|gene_uniquename| ResultRow {
+               sequence: None,
                gene_uniquename: gene_uniquename.clone(),
            }).collect::<Vec<_>>())
     } else {
@@ -299,16 +304,36 @@ impl QueryNode {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum SeqType {
+#[serde(rename = "protein")]
+    Protein,
+#[serde(rename = "nucleotide")]
+    Nucleotide {
+        include_introns: bool,
+        include_5_prime_utr: bool,
+        include_3_prime_utr: bool,
+    },
+    None,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct QueryOutputOptions {
+    pub sequence: SeqType,
+    pub field_names: Vec<String>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Query {
+    output_options: QueryOutputOptions,
     constraints: QueryNode,
 }
 
 impl Query {
-    pub fn from_node(node: QueryNode) -> Query {
+    pub fn new(constraints: QueryNode, output_options: QueryOutputOptions) -> Query {
         Query {
-            constraints: node
+            output_options: output_options,
+            constraints: constraints
         }
     }
 

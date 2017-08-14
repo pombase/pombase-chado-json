@@ -3,6 +3,7 @@ use api::query::Query;
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ResultRow {
     pub gene_uniquename: String,
+    pub sequence: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

@@ -51,23 +51,29 @@ fn test_and_or_not() {
     let and_query_node_1 = QueryNode::And(vec![qp1.clone(), qp2.clone()]);
     let and_query_node_2 = QueryNode::And(vec![qp3.clone(), qp4.clone()]);
 
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned()],
+        sequence: SeqType::None,
+    };
+
     let and_query =
-        Query::from_node(QueryNode::And(vec![and_query_node_1.clone(), and_query_node_2.clone()]));
+        Query::new(QueryNode::And(vec![and_query_node_1.clone(), and_query_node_2.clone()]),
+                   opts.clone());
 
     check_gene_result(&and_query, vec!["id_two", "id_three"]);
 
     let or_query =
-        Query::from_node(QueryNode::Or(vec![and_query_node_1, and_query_node_2]));
+        Query::new(QueryNode::Or(vec![and_query_node_1, and_query_node_2]), opts.clone());
 
     check_gene_result(&or_query, vec!["id_two", "id_three", "id_four"]);
 
     let not_query_node =
         QueryNode::Not { node_a: Box::new(qp1.clone()), node_b: Box::new(qp2.clone()) };
-    let not_query = Query::from_node(not_query_node);
+    let not_query = Query::new(not_query_node, opts.clone());
     check_gene_result(&not_query, vec!["id_one"]);
 
     let not_query_2_node = QueryNode::Not { node_a: Box::new(qp1), node_b: Box::new(qp5) };
-    let not_query_2 = Query::from_node(not_query_2_node);
+    let not_query_2 = Query::new(not_query_2_node, opts.clone());
     check_gene_result(&not_query_2, vec!["id_one", "id_two"]);
 }
 
@@ -75,7 +81,11 @@ fn test_and_or_not() {
 fn test_termid() {
     let qp1 = QueryNode::Term { termid: "GO:0044237".into(), name: None,
                                 single_or_multi_allele: None, expression: None };
-    let q1 = Query::from_node(qp1);
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned()],
+        sequence: SeqType::None,
+    };
+    let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1, vec!["SPAC24B11.06c", "SPAC19G12.03", "SPAC2F3.09", "SPAC27E2.05"]);
 }
@@ -83,7 +93,11 @@ fn test_termid() {
 #[test]
 fn test_gene_subset() {
     let qp1 = QueryNode::Subset { subset_name: "PTHR17490:SF9".into() };
-    let q1 = Query::from_node(qp1);
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned()],
+        sequence: SeqType::None,
+    };
+    let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1, vec!["SPCC895.03c"]);
 }
