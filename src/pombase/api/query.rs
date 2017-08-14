@@ -47,6 +47,7 @@ pub enum QueryExpressionFilter {
 
 type TermName = String;
 type QueryRowsResult = Result<Vec<ResultRow>, String>;
+type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, String>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum QueryNode {
@@ -73,7 +74,7 @@ pub enum QueryNode {
     FloatRange { range_type: FloatRangeType, start: Option<f64>, end: Option<f64> },
 }
 
-fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult {
+fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> GeneUniquenameVecResult {
     if nodes.len() == 0 {
         return Err("illegal query: OR operator has no nodes".into());
     }
@@ -84,13 +85,10 @@ fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult 
     for node in nodes {
         let exec_rows = node.exec(server_data)?;
 
-        for node_row in &exec_rows {
-            if !seen_genes.contains(&node_row.gene_uniquename) {
-                or_rows.push(ResultRow {
-                    sequence: None,
-                    gene_uniquename: node_row.gene_uniquename.clone(),
-                });
-                seen_genes.insert(node_row.gene_uniquename.clone());
+        for row_gene_uniquename in &exec_rows {
+            if !seen_genes.contains(row_gene_uniquename) {
+                or_rows.push(row_gene_uniquename.clone());
+                seen_genes.insert(row_gene_uniquename.clone());
             }
         }
     }
@@ -98,94 +96,71 @@ fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult 
     Ok(or_rows)
 }
 
-fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> QueryRowsResult {
+fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> GeneUniquenameVecResult {
     if nodes.len() == 0 {
         return Err("illegal query: AND operator has no nodes".into());
     }
 
-    let first_node_result = nodes[0].exec(server_data)?;
+    let first_node_genes = nodes[0].exec(server_data)?;
 
-    let current_genes =
-        first_node_result.into_iter().map(|row| row.gene_uniquename);
+    let current_genes = first_node_genes;
 
-    let mut current_gene_set =
-        HashSet::from_iter(current_genes);
+    let mut current_gene_set = HashSet::from_iter(current_genes);
 
     for node in nodes[1..].iter() {
-        let node_result = node.exec(server_data)?;
-
-        let node_genes =
-            node_result.into_iter().map(|row| row.gene_uniquename)
-            .collect::<HashSet<_>>();
+        let node_result_rows = node.exec(server_data)?;
+        let node_genes = node_result_rows.into_iter().collect::<HashSet<_>>();
 
         current_gene_set = current_gene_set.intersection(&node_genes).cloned().collect();
     }
 
-    Ok(current_gene_set.iter().map(|gene_uniquename| ResultRow {
-        sequence: None,
-        gene_uniquename: gene_uniquename.clone()
-    }).collect())
+    Ok(current_gene_set.into_iter().collect())
 }
 
 fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode)
-            -> QueryRowsResult
+             -> GeneUniquenameVecResult
 {
     let node_b_result = node_b.exec(server_data)?;
 
     let node_b_gene_set: HashSet<GeneUniquename> =
-        HashSet::from_iter(node_b_result.into_iter().map(|row| row.gene_uniquename));
+        HashSet::from_iter(node_b_result.into_iter());
 
     let node_a_result = node_a.exec(server_data)?;
 
     let mut not_rows = vec![];
 
-    for row in &node_a_result {
-        if !node_b_gene_set.contains(&row.gene_uniquename) {
-            not_rows.push(ResultRow {
-                sequence: None,
-                gene_uniquename: row.gene_uniquename.clone(),
-            });
+    for row_gene_uniquename in &node_a_result {
+        if !node_b_gene_set.contains(row_gene_uniquename) {
+            not_rows.push(row_gene_uniquename.clone());
         }
     }
 
     Ok(not_rows)
 }
 
-fn results_from_gene_vec(genes: Vec<GeneUniquename>) -> QueryRowsResult {
-    Ok(genes.into_iter()
-       .map(|gene_uniquename| ResultRow {
-           sequence: None,
-           gene_uniquename: gene_uniquename,
-       }).collect::<Vec<_>>())
-}
-
 fn exec_termid(server_data: &ServerData, term_id: &str,
                maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
-               expression: &Option<QueryExpressionFilter>) -> QueryRowsResult {
+               expression: &Option<QueryExpressionFilter>)  -> GeneUniquenameVecResult {
     if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
         let genes = server_data.genes_of_genotypes(term_id, single_or_multi_allele,
                                                    expression);
-        Ok(genes.into_iter()
-           .map(|gene_uniquename| ResultRow {
-               sequence: None,
-               gene_uniquename: gene_uniquename.clone(),
-           }).collect::<Vec<_>>())
+        Ok(genes)
     } else {
-        results_from_gene_vec(server_data.genes_of_termid(term_id))
+        Ok(server_data.genes_of_termid(term_id))
     }
 }
 
-fn exec_subset(server_data: &ServerData, subset_name: &str) -> QueryRowsResult {
-    results_from_gene_vec(server_data.genes_of_subset(subset_name))
+fn exec_subset(server_data: &ServerData, subset_name: &str)  -> GeneUniquenameVecResult {
+    Ok(server_data.genes_of_subset(subset_name))
 }
 
-fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>) -> QueryRowsResult {
-    results_from_gene_vec(gene_uniquenames.clone())
+fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>)  -> GeneUniquenameVecResult {
+    Ok(gene_uniquenames.clone())
 }
 
 fn exec_genome_range_overlaps(server_data: &ServerData,
                               range_start: Option<u64>, range_end: Option<u64>)
-                              -> QueryRowsResult
+                               -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
@@ -196,12 +171,12 @@ fn exec_genome_range_overlaps(server_data: &ServerData,
                 false
             }
         });
-    results_from_gene_vec(gene_uniquenames)
+    Ok(gene_uniquenames)
 }
 
 fn exec_protein_length_range(server_data: &ServerData,
                              range_start: Option<u64>, range_end: Option<u64>)
-                             -> QueryRowsResult
+                              -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
@@ -216,35 +191,35 @@ fn exec_protein_length_range(server_data: &ServerData,
                 false
             }
         });
-    results_from_gene_vec(gene_uniquenames)
+    Ok(gene_uniquenames)
 }
 
 fn exec_tm_domain_count_range(server_data: &ServerData,
                               range_start: Option<u64>, range_end: Option<u64>)
-                              -> QueryRowsResult
+                               -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.tm_domain_count as u64 >= range_start.unwrap()) &&
             (range_end.is_none() || gene.tm_domain_count as u64 <= range_end.unwrap())
         });
-    results_from_gene_vec(gene_uniquenames)
+    Ok(gene_uniquenames)
 }
 
 fn exec_exon_count_range(server_data: &ServerData,
                          range_start: Option<u64>, range_end: Option<u64>)
-                         -> QueryRowsResult
+                         -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.exon_count as u64 >= range_start.unwrap()) &&
             (range_end.is_none() || gene.exon_count as u64 <= range_end.unwrap())
         });
-    results_from_gene_vec(gene_uniquenames)
+    Ok(gene_uniquenames)
 }
 
 fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
-                  start: Option<u64>, end: Option<u64>) -> QueryRowsResult {
+                  start: Option<u64>, end: Option<u64>) -> GeneUniquenameVecResult {
     match *range_type {
         IntRangeType::GenomeRangeContains => exec_genome_range_overlaps(server_data, start, end),
         IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
@@ -254,7 +229,7 @@ fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
 }
 
 fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, range_end: Option<f64>)
-                         -> QueryRowsResult
+                         -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
@@ -271,18 +246,18 @@ fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, ran
                 false
             }
         });
-    results_from_gene_vec(gene_uniquenames)
+    Ok(gene_uniquenames)
 }
 
 fn exec_float_range(server_data: &ServerData, range_type: &FloatRangeType,
-                    start: Option<f64>, end: Option<f64>) -> QueryRowsResult {
+                    start: Option<f64>, end: Option<f64>) -> GeneUniquenameVecResult {
     match *range_type {
         FloatRangeType::ProteinMolWeight => exec_mol_weight_range(server_data, start, end)
     }
 }
 
 impl QueryNode {
-    pub fn exec(&self, server_data: &ServerData) -> QueryRowsResult {
+    pub fn exec(&self, server_data: &ServerData) -> GeneUniquenameVecResult {
         use self::QueryNode::*;
         match *self {
             Or(ref nodes) => exec_or(server_data, nodes),
@@ -314,6 +289,7 @@ pub enum SeqType {
         include_5_prime_utr: bool,
         include_3_prime_utr: bool,
     },
+#[serde(rename = "none")]
     None,
 }
 
@@ -337,7 +313,20 @@ impl Query {
         }
     }
 
+    fn make_result_rows(&self, genes: Vec<String>) -> QueryRowsResult {
+        Ok(genes.into_iter()
+           .map(|gene_uniquename| ResultRow {
+               sequence: None,
+               gene_uniquename: gene_uniquename,
+           }).collect::<Vec<_>>())
+    }
+
     pub fn exec(&self, server_data: &ServerData) -> QueryRowsResult {
-        self.constraints.exec(server_data)
+        let genes_result = self.constraints.exec(server_data);
+
+        match genes_result {
+            Ok(genes) => self.make_result_rows(genes),
+            Err(err) => Err(err)
+        }
     }
 }
