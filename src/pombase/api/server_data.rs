@@ -99,6 +99,10 @@ impl ServerData {
         }
     }
 
+    pub fn get_gene_summary(&self, gene_uniquename: &str) -> Option<&APIGeneSummary> {
+        self.maps.gene_summaries.get(gene_uniquename)
+    }
+
     pub fn genes_of_termid(&self, term_id: &str) -> Vec<GeneUniquename> {
         match self.maps.termid_genes.get(term_id) {
             Some(gene_uniquenames) => {
@@ -189,7 +193,7 @@ impl ServerData {
     pub fn filter_genes(&self, p: &Fn(&APIGeneSummary) -> bool)
                         -> Vec<GeneUniquename>
     {
-        self.maps.gene_summaries.iter()
+        self.maps.gene_summaries.values()
             .filter(|ref summ| p(summ))
             .map(|ref summ| summ.uniquename.clone())
             .collect()

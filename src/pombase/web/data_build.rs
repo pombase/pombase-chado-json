@@ -3603,11 +3603,12 @@ impl <'a> WebDataBuild<'a> {
     }
 
     pub fn make_api_maps(&self) -> APIMaps {
-        let mut gene_summaries: Vec<APIGeneSummary> = vec![];
+        let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
 
         for (gene_uniquename, gene_details) in &self.genes {
             if self.config.load_organism_taxonid == gene_details.taxonid {
-                gene_summaries.push(self.make_api_gene_summary(&gene_uniquename));
+                gene_summaries.insert(gene_uniquename.clone(),
+                                      self.make_api_gene_summary(&gene_uniquename));
             }
         }
 
@@ -3624,7 +3625,7 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
         }
- 
+
         let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
             self.get_api_genotype_annotation();
 

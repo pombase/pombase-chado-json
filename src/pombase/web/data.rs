@@ -747,7 +747,7 @@ pub struct APIGeneSummary {
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
-    pub gene_summaries: Vec<APIGeneSummary>,
+    pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
     pub term_summaries: HashSet<TermShort>,
 }
 

@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use api::server_data::ServerData;
 use api::result::*;
-use web::data::APIGeneSummary;
+use web::data::{APIGeneSummary, TranscriptDetails, FeatureType};
 
 use types::GeneUniquename;
 
@@ -280,15 +280,18 @@ impl QueryNode {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct NucleotideDownloadOptions {
+    include_introns: bool,
+    include_5_prime_utr: bool,
+    include_3_prime_utr: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum SeqType {
 #[serde(rename = "protein")]
     Protein,
 #[serde(rename = "nucleotide")]
-    Nucleotide {
-        include_introns: bool,
-        include_5_prime_utr: bool,
-        include_3_prime_utr: bool,
-    },
+    Nucleotide(NucleotideDownloadOptions),
 #[serde(rename = "none")]
     None,
 }
@@ -313,11 +316,58 @@ impl Query {
         }
     }
 
-    fn make_result_rows(&self, genes: Vec<String>) -> QueryRowsResult {
+    fn make_nucleotide_sequence(&self, transcript: &TranscriptDetails,
+                                options: &NucleotideDownloadOptions) -> String {
+        let mut seq = String::from("");
+
+        for part in &transcript.parts {
+            if part.feature_type == FeatureType::Exon ||
+                options.include_introns && part.feature_type == FeatureType::CdsIntron ||
+                options.include_5_prime_utr &&
+                (part.feature_type == FeatureType::FivePrimeUtr ||
+                 options.include_introns && part.feature_type == FeatureType::FivePrimeUtrIntron) ||
+                options.include_3_prime_utr &&
+                (part.feature_type == FeatureType::ThreePrimeUtr ||
+                 options.include_introns && part.feature_type == FeatureType::ThreePrimeUtrIntron) {
+                    seq += &part.residues;
+                }
+        }
+
+        seq
+    }
+
+    fn make_sequence(&self, server_data: &ServerData,
+                     gene_uniquename: &str) -> Option<String> {
+        let maybe_gene_summary = server_data.get_gene_summary(gene_uniquename);
+
+        if let Some(gene_summary) = maybe_gene_summary {
+            let maybe_transcript = gene_summary.transcripts.get(0);
+            if let Some(transcript) = maybe_transcript {
+                match self.output_options.sequence {
+                    SeqType::Protein =>
+                        if let Some(ref protein) = transcript.protein {
+                            return Some(protein.sequence.clone());
+                        }
+                    SeqType::Nucleotide(ref options) => {
+                        return Some(self.make_nucleotide_sequence(transcript, options))
+                    }
+                    SeqType::None => (),
+                }
+            }
+        }
+
+        None
+    }
+
+    fn make_result_rows(&self, server_data: &ServerData,
+                        genes: Vec<String>) -> QueryRowsResult {
         Ok(genes.into_iter()
-           .map(|gene_uniquename| ResultRow {
-               sequence: None,
-               gene_uniquename: gene_uniquename,
+           .map(|gene_uniquename| {
+               let sequence = self.make_sequence(server_data, &gene_uniquename);
+               ResultRow {
+                   sequence: sequence,
+                   gene_uniquename: gene_uniquename,
+               }
            }).collect::<Vec<_>>())
     }
 
@@ -325,7 +375,7 @@ impl Query {
         let genes_result = self.constraints.exec(server_data);
 
         match genes_result {
-            Ok(genes) => self.make_result_rows(genes),
+            Ok(genes) => self.make_result_rows(server_data, genes),
             Err(err) => Err(err)
         }
     }

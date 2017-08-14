@@ -349,8 +349,8 @@
       ]
     }
   },
-  "gene_summaries": [
-    {
+  "gene_summaries": {
+    "SPAC19G12.04": {
       "uniquename": "SPAC19G12.04",
       "name": "dal1",
       "organism": {
@@ -373,7 +373,7 @@
       "tm_domain_count": 3,
       "exon_count": 3
     },
-    {
+    "SPAC1805.15c": {
       "uniquename": "SPAC1805.15c",
       "name": "pub2",
       "organism": {
@@ -396,7 +396,7 @@
       "tm_domain_count": 0,
       "exon_count": 4
     },
-    {
+    "SPAC27E2.05": {
       "uniquename": "SPAC27E2.05",
       "name": "cdc1",
       "organism": {
@@ -421,7 +421,7 @@
       "tm_domain_count": 0,
       "exon_count": 5
     },
-    {
+    "SPBC9B6.04c": {
       "uniquename": "SPBC9B6.04c",
       "name": "tuf1",
       "organism": {
@@ -444,7 +444,7 @@
       "tm_domain_count": 7,
       "exon_count": 2
     },
-    {
+    "SPAC11G7.02": {
       "uniquename": "SPAC11G7.02",
       "name": "pub1",
       "organism": {
@@ -467,7 +467,7 @@
       "tm_domain_count": 0,
       "exon_count": 5
     },
-    {
+    "SPAC19G12.03": {
       "uniquename": "SPAC19G12.03",
       "name": "cda1",
       "organism": {
@@ -490,7 +490,7 @@
       "tm_domain_count": 0,
       "exon_count": 1
     },
-    {
+    "SPAC2F3.09": {
       "uniquename": "SPAC2F3.09",
       "name": "hem1",
       "organism": {
@@ -513,7 +513,7 @@
       "tm_domain_count": 0,
       "exon_count": 1
     },
-    {
+    "SPBC18H10.02": {
       "uniquename": "SPBC18H10.02",
       "name": "lcf1",
       "organism": {
@@ -536,7 +536,7 @@
       "tm_domain_count": 4,
       "exon_count": 3
     },
-    {
+    "SPBC18H10.20c": {
       "uniquename": "SPBC18H10.20c",
       "name": "any1",
       "organism": {
@@ -562,7 +562,7 @@
       "tm_domain_count": 0,
       "exon_count": 7
     },
-    {
+    "SPAC2E1P3.03c": {
       "uniquename": "SPAC2E1P3.03c",
       "name": "Tf2-3",
       "organism": {
@@ -585,7 +585,7 @@
       "tm_domain_count": 0,
       "exon_count": 5
     },
-    {
+    "SPAC27E2.06c": {
       "uniquename": "SPAC27E2.06c",
       "name": "msm1",
       "organism": {
@@ -608,7 +608,7 @@
       "tm_domain_count": 0,
       "exon_count": 2
     },
-    {
+    "SPRRNA.26": {
       "uniquename": "SPRRNA.26",
       "organism": {
         "genus": "Schizosaccharomyces",
@@ -630,7 +630,7 @@
       "tm_domain_count": 0,
       "exon_count": 5
     },
-    {
+    "SPAC2E12.05": {
       "uniquename": "SPAC2E12.05",
       "name": "wtf1",
       "organism": {
@@ -652,7 +652,7 @@
       "tm_domain_count": 0,
       "exon_count": 3
     },
-    {
+    "SPBC11G11.01": {
       "uniquename": "SPBC11G11.01",
       "name": "fis1",
       "organism": {
@@ -675,7 +675,7 @@
       "tm_domain_count": 0,
       "exon_count": 2
     },
-    {
+    "SPAC24B11.06c": {
       "uniquename": "SPAC24B11.06c",
       "name": "sty1",
       "organism": {
@@ -701,7 +701,7 @@
       "tm_domain_count": 0,
       "exon_count": 1
     },
-    {
+    "SPATRNALYS.01": {
       "uniquename": "SPATRNALYS.01",
       "organism": {
         "genus": "Schizosaccharomyces",
@@ -723,7 +723,7 @@
       "tm_domain_count": 0,
       "exon_count": 2
     },
-    {
+    "SPBC1D7.02c": {
       "uniquename": "SPBC1D7.02c",
       "name": "scr1",
       "organism": {
@@ -748,7 +748,7 @@
       "tm_domain_count": 0,
       "exon_count": 7
     }
-  ],
+  },
   "term_summaries": [
     {
       "name": "cellular metabolic process",
