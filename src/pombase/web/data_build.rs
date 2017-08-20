@@ -2396,6 +2396,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // find the extension_display_names config for the given termid and relation type name
     fn matching_ext_config(&self, annotation_termid: &str,
                            rel_type_name: &str) -> Option<ExtensionDisplayNames> {
         let ext_configs = &self.config.extension_display_names;
@@ -4281,6 +4282,22 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
+        let mut solr_term_summaries = HashMap::new();
+
+        for (termid, term_details) in &used_terms {
+            let term_summ = SolrTermSummary {
+                id: termid.clone(),
+                cv_name: term_details.cv_name.clone(),
+                name: term_details.name.clone(),
+                definition: term_details.definition.clone(),
+            };
+            solr_term_summaries.insert(termid.clone(), term_summ);
+        }
+
+        let solr_data = SolrData {
+            term_summaries: solr_term_summaries,
+        };
+
         WebData {
             genes: self.genes,
             genotypes: self.genotypes,
@@ -4294,6 +4311,7 @@ impl <'a> WebDataBuild<'a> {
             search_gene_summaries: gene_summaries,
             term_subsets: self.term_subsets,
             gene_subsets: self.gene_subsets,
+            solr_data: solr_data,
         }
     }
 }

@@ -751,6 +751,20 @@ pub struct APIMaps {
     pub term_summaries: HashSet<TermShort>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SolrTermSummary {
+    pub id: TermId,
+    pub name: TermName,
+    pub cv_name: CvName,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub definition: Option<TermDef>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SolrData {
+    pub term_summaries: HashMap<TermId, SolrTermSummary>,
+}
+
 #[derive(Serialize, Clone, Debug)]
 pub struct RecentReferences {
     // most recent papers from PubMed
@@ -796,6 +810,7 @@ pub struct WebData {
     pub references: UniquenameReferenceMap,
     pub recent_references: RecentReferences,
     pub api_maps: APIMaps,
+    pub solr_data: SolrData,
     pub search_gene_summaries: Vec<GeneSummary>,
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
@@ -935,6 +950,17 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write!");
     }
 
+    fn write_solr_data(&self, output_dir: &str) {
+        let new_path = self.create_dir(output_dir, "solr_data/terms");
+        for (termid, term_summary) in &self.solr_data.term_summaries {
+            let s = serde_json::to_string(&term_summary).unwrap();
+            let file_name = format!("{}/{}.json", new_path, &termid);
+            let f = File::create(file_name).expect("Unable to open file");
+            let mut writer = BufWriter::new(&f);
+            writer.write_all(s.as_bytes()).expect("Unable to write term JSON");
+        }
+    }
+
     fn write_subsets(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.term_subsets).unwrap();
         let file_name = String::new() + &output_dir + "/term_subsets.json";
@@ -967,6 +993,7 @@ impl WebData {
         self.write_recent_references(output_dir);
         println!("wrote recent references");
         self.write_api_maps(output_dir);
+        self.write_solr_data(output_dir);
         println!("wrote search data");
         self.write_subsets(output_dir);
         println!("wrote subsets");
