@@ -46,7 +46,7 @@ impl Search {
             if i == clean_words_length - 1 {
                 terms_url += &format!("{}^2 {}*", word, word);
             } else {
-                terms_url += &format!("{}^2 {}~1 ", word, word);
+                terms_url += &format!("{}^2 {}~0.8 ", word, word);
             }
         }
         terms_url += ")";
