@@ -4,6 +4,7 @@ extern crate regex;
 extern crate bit_set;
 extern crate chrono;
 extern crate serde_json;
+extern crate reqwest;
 
 #[macro_use] extern crate serde_derive;
 

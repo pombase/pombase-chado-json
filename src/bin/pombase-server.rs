@@ -3,6 +3,7 @@
 
 extern crate getopts;
 extern crate rocket;
+#[macro_use] extern crate serde_derive;
 extern crate serde_json;
 #[macro_use] extern crate rocket_contrib;
 
@@ -18,8 +19,10 @@ use rocket_contrib::{Json, Value};
 
 use pombase::api::query::Query;
 use pombase::api::result::QueryAPIResult;
+use pombase::api::search::Search;
 use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
+use pombase::web::data::SolrTermSummary;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -38,6 +41,39 @@ fn reload(state: rocket::State<Mutex<QueryExec>>) {
     print!("reloading ...\n");
     query_exec.reload();
     print!("... done\n");
+}
+
+#[derive(Serialize, Debug)]
+struct CompletionResponse {
+    status: String,
+    matches: Vec<SolrTermSummary>,
+}
+
+#[get ("/complete/<cv_name>/<q>")]
+fn complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
+              -> Option<Json<CompletionResponse>>
+{
+    let search = state.lock().expect("failed to lock");
+    let res = search.term_complete(&cv_name, &q);
+
+    let completion_response =
+        match res {
+            Ok(matches) => {
+                CompletionResponse {
+                    status: "Ok".to_owned(),
+                    matches: matches,
+                }
+            },
+            Err(err) => {
+                println!("{:?}", err);
+                CompletionResponse {
+                    status: "Error".to_owned(),
+                    matches: vec![],
+                }
+            },
+        };
+
+    Some(Json(completion_response))
 }
 
 #[get ("/ping")]
@@ -105,11 +141,13 @@ fn main() {
     let server_data = ServerData::new(&config_file_name, &search_maps_filename,
                                       &gene_subsets_filename);
     let query_exec = QueryExec::new(server_data);
+    let searcher = Search::new("http://localhost:8983/solr".to_owned());
 
     println!("Starting server ...");
     rocket::ignite()
-        .mount("/", routes![query_post, reload, ping])
+        .mount("/", routes![query_post, reload, complete, ping])
         .catch(errors![not_found])
         .manage(Mutex::new(query_exec))
+        .manage(Mutex::new(searcher))
         .launch();
 }

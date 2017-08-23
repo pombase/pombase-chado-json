@@ -20,6 +20,7 @@ chrono = { version = "0.3", features = ["serde"] }
 rocket = "0.3.0"
 rocket_codegen = "0.3.0"
 rocket_contrib = "0.3.0"
+reqwest = "0.7.3"
 
 [dependencies.serde]
 version = "1.0"
