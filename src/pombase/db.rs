@@ -15,6 +15,7 @@ pub struct Raw {
     pub dbxrefs: Vec<Rc<Dbxref>>,
     pub cvterms: Vec<Rc<Cvterm>>,
     pub cvtermprops: Vec<Rc<Cvtermprop>>,
+    pub cvtermsynonyms: Vec<Rc<Cvtermsynonym>>,
     pub cvtermpaths: Vec<Rc<Cvtermpath>>,
     pub cvterm_relationships: Vec<Rc<CvtermRelationship>>,
     pub publications: Vec<Rc<Publication>>,
@@ -75,12 +76,18 @@ pub struct Cvterm {
     pub definition: Option<String>,
     pub is_obsolete: bool,
     pub is_relationshiptype: bool,
+    pub cvtermsynonyms: RefCell<Vec<Rc<Cvtermsynonym>>>,
     pub cvtermprops: RefCell<Vec<Rc<Cvtermprop>>>,
 }
 impl Cvterm {
     pub fn termid(&self) -> String {
         String::new() + &self.dbxref.db.name + ":" + &self.dbxref.accession
     }
+}
+pub struct Cvtermsynonym {
+    pub cvterm: Rc<Cvterm>,
+    pub synonym_type: Rc<Cvterm>,
+    pub name: String,
 }
 pub struct Cvtermprop {
     pub cvterm: Rc<Cvterm>,
@@ -188,10 +195,11 @@ impl Raw {
             organisms: vec![],
             organismprops: vec![],
             cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
-            synonyms: vec![], cvtermprops: vec![],
+            cvtermsynonyms: vec![], cvtermprops: vec![],
             cvtermpaths: vec![], cvterm_relationships: vec![],
             publications: vec![], publicationprops: vec![],
             features: vec![], featureprops: vec![],
+            synonyms: vec![], 
             featurelocs: vec![], feature_synonyms: vec![],
             feature_dbxrefs: vec![],
             feature_cvterms: vec![], feature_cvtermprops: vec![],
@@ -294,11 +302,27 @@ impl Raw {
                 is_obsolete: is_obsolete != 0,
                 is_relationshiptype: is_relationshiptype != 0,
                 definition: definition,
+                cvtermsynonyms: RefCell::new(vec![]),
                 cvtermprops: RefCell::new(vec![]),
             };
             let rc_cvterm = Rc::new(cvterm);
             ret.cvterms.push(rc_cvterm.clone());
             cvterm_map.insert(cvterm_id, rc_cvterm);
+        }
+
+        for row in &conn.query("SELECT cvterm_id, type_id, synonym FROM cvtermsynonym", &[]).unwrap() {
+            let cvterm_id: i32 = row.get(0);
+            let cvterm = get_cvterm(&mut cvterm_map, cvterm_id);
+            let type_id: i32 = row.get(1);
+            let synonym: String = row.get(2);
+            let cvtermsynonym = Cvtermsynonym {
+                cvterm: cvterm.clone(),
+                synonym_type: get_cvterm(&mut cvterm_map, type_id),
+                name: synonym,
+            };
+            let rc_cvtermsynonym = Rc::new(cvtermsynonym);
+            ret.cvtermsynonyms.push(rc_cvtermsynonym.clone());
+            cvterm.cvtermsynonyms.borrow_mut().push(rc_cvtermsynonym.clone());
         }
 
         for row in &conn.query("SELECT cvterm_id, type_id, value FROM cvtermprop", &[]).unwrap() {

@@ -2658,6 +2658,13 @@ impl <'a> WebDataBuild<'a> {
                     self.config.cv_config_by_name(&cvterm.cv.name);
                 let annotation_feature_type =
                     cv_config.feature_type.clone();
+                let synonyms =
+                    cvterm.cvtermsynonyms.borrow().iter().map(|syn| {
+                        SynonymDetails {
+                            synonym_type: (*syn).synonym_type.name.clone(),
+                            name: syn.name.clone(),
+                        }
+                    }).collect::<Vec<_>>();
                 self.terms.insert(cvterm.termid(),
                                   TermDetails {
                                       name: cvterm.name.clone(),
@@ -2666,6 +2673,7 @@ impl <'a> WebDataBuild<'a> {
                                       interesting_parents: HashSet::new(),
                                       subsets: vec![],
                                       termid: cvterm.termid(),
+                                      synonyms: synonyms,
                                       definition: cvterm.definition.clone(),
                                       direct_ancestors: vec![],
                                       genes_annotated_with: HashSet::new(),
@@ -4285,11 +4293,23 @@ impl <'a> WebDataBuild<'a> {
         let mut solr_term_summaries = HashMap::new();
 
         for (termid, term_details) in &used_terms {
+            let mut close_synonyms = vec![];
+            let mut distant_synonyms = vec![];
+            for synonym in &term_details.synonyms {
+                if synonym.synonym_type == "exact" || synonym.synonym_type == "exact" {
+                    close_synonyms.push(synonym.name.clone());
+                } else {
+                    distant_synonyms.push(synonym.name.clone());
+                }
+            }
             let term_summ = SolrTermSummary {
                 id: termid.clone(),
                 cv_name: term_details.cv_name.clone(),
                 name: term_details.name.clone(),
                 definition: term_details.definition.clone(),
+                close_synonyms: close_synonyms,
+                distant_synonyms: distant_synonyms,
+                interesting_parents: term_details.interesting_parents.clone(),
             };
             solr_term_summaries.insert(termid.clone(), term_summ);
         }
@@ -4873,6 +4893,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         annotation_feature_type: "gene".into(),
         interesting_parents: HashSet::new(),
         subsets: vec!["goslim_pombe".into()],
+        synonyms: vec![],
         definition: None,
         direct_ancestors: vec![],
         genes_annotated_with: HashSet::new(),

@@ -23,6 +23,7 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
         dbxref: dbxref.clone(),
         is_obsolete: false,
         is_relationshiptype: false,
+        cvtermsynonyms: RefCell::new(vec![]),
         cvtermprops: RefCell::new(vec![]),
     });
     cvterms.push(cvterm.clone());
@@ -474,6 +475,7 @@ fn get_test_raw() -> Raw {
         dbs: dbs,
         dbxrefs: dbxrefs,
         cvterms: cvterms,
+        cvtermsynonyms: vec![],
         cvtermprops: vec![],
         cvtermpaths: vec![],
         cvterm_relationships: cvterm_relationships,

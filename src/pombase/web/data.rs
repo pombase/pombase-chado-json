@@ -586,6 +586,7 @@ pub struct TermDetails {
     pub interesting_parents: HashSet<String>,
     pub subsets: Vec<String>,
     pub termid: TermId,
+    pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
     pub direct_ancestors: Vec<TermAndRelation>,
@@ -758,6 +759,9 @@ pub struct SolrTermSummary {
     pub cv_name: CvName,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
+    pub close_synonyms: Vec<String>,   // exact and narrow
+    pub distant_synonyms: Vec<String>, // broad and related
+    pub interesting_parents: HashSet<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
