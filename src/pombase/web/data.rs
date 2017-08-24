@@ -759,8 +759,11 @@ pub struct SolrTermSummary {
     pub cv_name: CvName,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub close_synonyms: Vec<String>,   // exact and narrow
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub distant_synonyms: Vec<String>, // broad and related
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parents: HashSet<String>,
 }
 

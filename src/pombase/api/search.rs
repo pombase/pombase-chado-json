@@ -25,12 +25,37 @@ impl Search {
         }
     }
 
+    fn get_query_part(&self, words: &Vec<String>, weight: f32) -> String {
+        let mut ret = String::new();
+
+        let words_length = words.len();
+
+        for (i, word) in words.iter().enumerate() {
+            if i == words_length - 1 {
+                ret += &format!("{}^{} {}*", word, weight, word);
+            } else {
+                ret += &format!("{}^{} {}~0.8 ", word, weight, word);
+            }
+        }
+
+        ret
+    }
+
     pub fn term_complete(&self, cv_name: &str, q: &str)
                          -> Result<Vec<SolrTermSummary>, reqwest::Error>
     {
         let mut terms_url =
-            self.solr_url.to_owned() + "/terms/select?wt=json&q=cv_name:" +
-            cv_name + " AND name:(";
+            self.solr_url.to_owned() + "/terms/select?wt=json&q=";
+
+        if Regex::new(r"^\D+:\d+$").unwrap().is_match(cv_name) {
+            terms_url += "interesting_parents:";
+            terms_url += cv_name;
+        } else {
+            terms_url += "cv_name:";
+            terms_url += cv_name;
+        }
+
+        terms_url += " AND name:(";
 
         let clean_words: Vec<String> =
             Regex::new(r"(\w+)").unwrap().captures_iter(q)
@@ -42,13 +67,18 @@ impl Search {
 
         let clean_words_length = clean_words.len();
 
-        for (i, word) in clean_words.into_iter().enumerate() {
+        for (i, word) in clean_words.iter().enumerate() {
             if i == clean_words_length - 1 {
-                terms_url += &format!("{}^2 {}*", word, word);
+                terms_url += &format!("{}^4 {}*", word, word);
             } else {
-                terms_url += &format!("{}^2 {}~0.8 ", word, word);
+                terms_url += &format!("{}^4 {}~0.8 ", word, word);
             }
         }
+
+        terms_url += ") OR close_synonyms:(";
+        terms_url += &self.get_query_part(&clean_words, 0.5);
+        terms_url += ") OR distant_synonyms:(";
+        terms_url += &self.get_query_part(&clean_words, 0.1);
         terms_url += ")";
 
         print!("{:?}\n", terms_url);
@@ -64,7 +94,7 @@ impl Search {
                 Ok(container.response.docs)
             },
             Err(err) => {
-                panic!(err);
+                panic!(format!("{:?}", err));
             }
         }
     }
