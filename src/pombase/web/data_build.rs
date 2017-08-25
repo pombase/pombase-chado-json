@@ -4302,6 +4302,8 @@ impl <'a> WebDataBuild<'a> {
                     distant_synonyms.push(synonym.name.clone());
                 }
             }
+            let interesting_parents_for_solr =
+                term_details.interesting_parents.clone();
             let term_summ = SolrTermSummary {
                 id: termid.clone(),
                 cv_name: term_details.cv_name.clone(),
@@ -4309,7 +4311,7 @@ impl <'a> WebDataBuild<'a> {
                 definition: term_details.definition.clone(),
                 close_synonyms: close_synonyms,
                 distant_synonyms: distant_synonyms,
-                interesting_parents: term_details.interesting_parents.clone(),
+                interesting_parents: interesting_parents_for_solr,
             };
             solr_term_summaries.insert(termid.clone(), term_summ);
         }
