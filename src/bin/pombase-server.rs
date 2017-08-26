@@ -12,10 +12,13 @@ extern crate pombase;
 use std::sync::Mutex;
 use std::process;
 use std::env;
+use std::path::{Path, PathBuf};
 
 use getopts::Options;
 
 use rocket_contrib::{Json, Value};
+
+use rocket::response::NamedFile;
 
 use pombase::api::query::Query;
 use pombase::api::result::QueryAPIResult;
@@ -27,7 +30,47 @@ use pombase::web::data::SolrTermSummary;
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-#[post("/query", data="<q>", format = "application/json")]
+struct StaticFileState {
+    web_root_dir: String,
+}
+
+// try the path, then try path + ".json", then default to loading the Angular app
+// from /index.html
+#[get("/<path..>", rank=3)]
+fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> {
+    print!("full_path 1: {:?}\n", path);
+    let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
+    print!("web_root_dir: {:?}\n", web_root_dir);
+    let root_dir_path = Path::new("/").join(web_root_dir);
+    print!("root_dir_path: {:?}\n", root_dir_path);
+    let full_path = root_dir_path.join(path);
+    print!("full_path 1: {:?}\n", full_path);
+    if full_path.exists() {
+        NamedFile::open(full_path).ok()
+    } else {
+        print!("full_path: {:?}\n", full_path);
+        let mut json_path_str = full_path.to_str().unwrap().to_owned();
+        json_path_str += ".json";
+        let json_path: PathBuf = json_path_str.into();
+
+        if json_path.exists() {
+            print!("exists: {:?}\n", json_path);
+            NamedFile::open(json_path).ok()
+        } else {
+            print!("not exists: {:?}\n", json_path);
+            NamedFile::open(root_dir_path.join("index.html")).ok()
+        }
+    }
+}
+
+#[get("/", rank=1)]
+fn get_index(state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> {
+    let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
+    let root_dir_path = Path::new("/").join(web_root_dir);
+    NamedFile::open(root_dir_path.join("index.html")).ok()
+}
+
+#[post("/api/v1/dataset/latest/query", rank=1, data="<q>", format = "application/json")]
 fn query_post(q: Json<Query>, state: rocket::State<Mutex<QueryExec>>)
               -> Option<Json<QueryAPIResult>>
 {
@@ -49,7 +92,7 @@ struct CompletionResponse {
     matches: Vec<SolrTermSummary>,
 }
 
-#[get ("/complete/<cv_name>/<q>")]
+#[get ("/api/v1/dataset/latest/complete/<cv_name>/<q>", rank=1)]
 fn complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
               -> Option<Json<CompletionResponse>>
 {
@@ -76,7 +119,7 @@ fn complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
     Some(Json(completion_response))
 }
 
-#[get ("/ping")]
+#[get ("/ping", rank=1)]
 fn ping() -> Option<String> {
     Some(String::from("OK") + " " + PKG_NAME + " " + VERSION)
 }
@@ -104,6 +147,7 @@ fn main() {
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
     opts.optopt("s", "gene-subsets", "Gene subset data", "SUBSETS_JSON_FILE");
+    opts.optopt("w", "web-root-dir", "Root web data directory", "WEB_ROOT_DIR");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -132,6 +176,11 @@ fn main() {
         print_usage(&program, opts);
         process::exit(1);
     }
+    if !matches.opt_present("web-root-dir") {
+        print!("no --web-root-dir|-w option\n");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
 
     let search_maps_filename = matches.opt_str("m").unwrap();
     let gene_subsets_filename = matches.opt_str("s").unwrap();
@@ -143,11 +192,17 @@ fn main() {
     let query_exec = QueryExec::new(server_data);
     let searcher = Search::new("http://localhost:8983/solr".to_owned());
 
+    let web_root_dir = matches.opt_str("w").unwrap();
+    let static_file_state = StaticFileState {
+        web_root_dir: web_root_dir,
+    };
+
     println!("Starting server ...");
     rocket::ignite()
-        .mount("/", routes![query_post, reload, complete, ping])
+        .mount("/", routes![get_index, get_misc, query_post, reload, complete, ping])
         .catch(errors![not_found])
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))
+        .manage(Mutex::new(static_file_state))
         .launch();
 }
