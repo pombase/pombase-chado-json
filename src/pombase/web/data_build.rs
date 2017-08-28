@@ -873,7 +873,7 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
             make_gene_short(genes, &gene_uniquename)
         }).collect();
 
-    return gene_short_vec1.cmp(&gene_short_vec2)
+    gene_short_vec1.cmp(&gene_short_vec2)
 }
 
 fn cmp_ont_annotation_detail(cv_config: &CvConfig,
