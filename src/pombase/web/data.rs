@@ -626,7 +626,7 @@ impl Ord for InteractionAnnotation {
     fn cmp(&self, other: &Self) -> Ordering {
         if let Some(ref evidence) = self.evidence {
             if let Some(ref other_evidence) = other.evidence {
-                let order = evidence.cmp(&other_evidence);
+                let order = evidence.cmp(other_evidence);
                 if order != Ordering::Equal {
                     return order;
                 }
@@ -848,7 +848,7 @@ impl WebData {
         path
     }
 
-    fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_sizes: &Vec<usize>) {
+    fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_sizes: &[usize]) {
         for chunk_size in chunk_sizes {
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
             let new_path_part = &format!("{}/sequence/{}", chromosome_uniquename, chunk_size);
@@ -916,7 +916,7 @@ impl WebData {
 
     fn write_gene_summaries(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.search_gene_summaries).unwrap();
-        let file_name = String::new() + &output_dir + "/gene_summaries.json";
+        let file_name = String::new() + output_dir + "/gene_summaries.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write gene_summaries.json");
@@ -935,7 +935,7 @@ impl WebData {
 
     fn write_metadata(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.metadata).unwrap();
-        let file_name = String::new() + &output_dir + "/metadata.json";
+        let file_name = String::new() + output_dir + "/metadata.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write metadata.json");
@@ -943,7 +943,7 @@ impl WebData {
 
     fn write_recent_references(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.recent_references).unwrap();
-        let file_name = String::new() + &output_dir + "/recent_references.json";
+        let file_name = String::new() + output_dir + "/recent_references.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write recent references JSON");
@@ -951,7 +951,7 @@ impl WebData {
 
     fn write_api_maps(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.api_maps).unwrap();
-        let file_name = String::new() + &output_dir + "/api_maps.json";
+        let file_name = String::new() + output_dir + "/api_maps.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
@@ -970,13 +970,13 @@ impl WebData {
 
     fn write_subsets(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.term_subsets).unwrap();
-        let file_name = String::new() + &output_dir + "/term_subsets.json";
+        let file_name = String::new() + output_dir + "/term_subsets.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");
 
         let s = serde_json::to_string(&self.gene_subsets).unwrap();
-        let file_name = String::new() + &output_dir + "/gene_subsets.json";
+        let file_name = String::new() + output_dir + "/gene_subsets.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write!");

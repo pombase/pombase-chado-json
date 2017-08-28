@@ -579,6 +579,8 @@ fn test_gene_details() {
         panic!("extension cv shouldn't be in the annotations");
     }
 
+print!("{:?}\n", par1_gene.cv_annotations);
+
     let mut process = par1_gene.cv_annotations.remove("biological_process").unwrap();
     assert!(process.remove(0).summary.unwrap().len() == 0);
     let mut phenotype = par1_gene.cv_annotations.remove("multi_allele_phenotype").unwrap();
