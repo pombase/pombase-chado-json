@@ -47,7 +47,11 @@ impl Search {
         let mut terms_url =
             self.solr_url.to_owned() + "/terms/select?wt=json&q=";
 
-        let parent_re = Regex::new(r"^\[(?P<prefix>[\w_]+):(?P<accession>\d+)\]$").unwrap();
+        let termid_re_string = r"(?P<prefix>[\w_]+):(?P<accession>\d+)";
+        let termid_re = Regex::new(termid_re_string).unwrap();
+
+        let parent_re_string = r"^\[".to_owned() + termid_re_string + r"\]$";
+        let parent_re = Regex::new(&parent_re_string).unwrap();
 
         let maybe_captures = parent_re.captures(cv_name);
 
@@ -61,32 +65,40 @@ impl Search {
             terms_url += cv_name;
         }
 
-        terms_url += " AND (name:(";
+        if let Some(captures) = termid_re.captures(q) {
+            let prefix = captures.name("prefix").unwrap();
+            let accession = captures.name("accession").unwrap();
+            terms_url += " AND id:";
+            terms_url += prefix;
+            terms_url += r"\:";
+            terms_url += accession;
+        } else {
+            terms_url += " AND (name:(";
 
-        let clean_words: Vec<String> =
-            Regex::new(r"(\w+)").unwrap().captures_iter(q)
-            .map(|cap| cap.at(1).unwrap().to_owned()).collect();
+            let clean_words: Vec<String> =
+                Regex::new(r"(\w+)").unwrap().captures_iter(q)
+                .map(|cap| cap.at(1).unwrap().to_owned()).collect();
 
-        if clean_words.len() == 0 {
-            return Ok(vec![]);
-        }
-
-        let clean_words_length = clean_words.len();
-
-        for (i, word) in clean_words.iter().enumerate() {
-            if i == clean_words_length - 1 {
-                terms_url += &format!("{}^4 {}*", word, word);
-            } else {
-                terms_url += &format!("{}^4 {}~0.8 ", word, word);
+            if clean_words.len() == 0 {
+                return Ok(vec![]);
             }
+
+            let clean_words_length = clean_words.len();
+
+            for (i, word) in clean_words.iter().enumerate() {
+                if i == clean_words_length - 1 {
+                    terms_url += &format!("{}^4 {}*", word, word);
+                } else {
+                    terms_url += &format!("{}^4 {}~0.8 ", word, word);
+                }
+            }
+
+            terms_url += ") OR close_synonyms:(";
+            terms_url += &self.get_query_part(&clean_words, 0.5);
+            terms_url += ") OR distant_synonyms:(";
+            terms_url += &self.get_query_part(&clean_words, 0.1);
+            terms_url += "))";
         }
-
-        terms_url += ") OR close_synonyms:(";
-        terms_url += &self.get_query_part(&clean_words, 0.5);
-        terms_url += ") OR distant_synonyms:(";
-        terms_url += &self.get_query_part(&clean_words, 0.1);
-        terms_url += "))";
-
         print!("{:?}\n", terms_url);
 
         let res = reqwest::get(&terms_url)?;
