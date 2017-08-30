@@ -87,7 +87,7 @@ impl Search {
 
             for (i, word) in clean_words.iter().enumerate() {
                 if i == clean_words_length - 1 {
-                    terms_url += &format!("{}^4 {}*", word, word);
+                    terms_url += &format!("{}^4 {}~0.8 {}*", word, word, word);
                 } else {
                     terms_url += &format!("{}^4 {}~0.8 ", word, word);
                 }
