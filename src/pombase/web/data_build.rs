@@ -50,8 +50,8 @@ pub struct WebDataBuild<'a> {
     terms: TermIdDetailsMap,
     chromosomes: ChrNameDetailsMap,
     references: UniquenameReferenceMap,
-    all_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
-    all_not_ont_annotations: HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>,
+    all_ont_annotations: HashMap<TermId, Vec<OntAnnotationDetail>>,
+    all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationDetail>>,
 
     genes_of_transcripts: HashMap<String, String>,
     transcripts_of_polypeptides: HashMap<String, String>,
@@ -416,7 +416,7 @@ fn make_cv_summaries(config: &Config,
 
         // in the summary, sort by extension type and length to fix:
         // https://github.com/pombase/website/issues/228
-        let length_comp = |a1: &Rc<OntAnnotationDetail>, a2: &Rc<OntAnnotationDetail>| {
+        let length_comp = |a1: &OntAnnotationDetail, a2: &OntAnnotationDetail| {
             if a1.extension.is_empty() || a2.extension.is_empty() {
                 // sort is stable (hopefully) so this will keep the ordering the same
                 Ordering::Equal
@@ -875,8 +875,8 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
 }
 
 fn cmp_ont_annotation_detail(cv_config: &CvConfig,
-                             detail1: &Rc<OntAnnotationDetail>,
-                             detail2: &Rc<OntAnnotationDetail>,
+                             detail1: &OntAnnotationDetail,
+                             detail2: &OntAnnotationDetail,
                              genes: &UniquenameGeneMap,
                              genotypes: &UniquenameGenotypeMap,
                              alleles: &UniquenameAlleleMap,
@@ -1531,7 +1531,7 @@ impl <'a> WebDataBuild<'a> {
         };
 
         let entry = annotation_map.entry(termid.clone());
-        entry.or_insert_with(Vec::new).push(Rc::new(ont_annotation_detail));
+        entry.or_insert_with(Vec::new).push(ont_annotation_detail);
     }
 
     fn process_dbxrefs(&mut self) {
@@ -3120,7 +3120,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_term_annotations(&self, termid: &str, details: &Vec<Rc<OntAnnotationDetail>>,
+    fn make_term_annotations(&self, termid: &str, details: &Vec<OntAnnotationDetail>,
                              is_not: bool)
                        -> Vec<(CvName, OntTermAnnotations)> {
         let term_short = self.make_term_short(termid);
@@ -3150,9 +3150,11 @@ impl <'a> WebDataBuild<'a> {
                     };
                 for detail in details {
                     if detail.gene_ex_props.is_some() {
-                        quant_annotations.annotations.push(detail.clone())
+                        let v: &OntAnnotationDetail = &*detail;
+                        quant_annotations.annotations.push(v.clone())
                     } else {
-                        qual_annotations.annotations.push(detail.clone())
+                        let v: &OntAnnotationDetail = &*detail;
+                        qual_annotations.annotations.push(v.clone())
                     }
                 }
 
@@ -3192,9 +3194,11 @@ impl <'a> WebDataBuild<'a> {
                     let genotype_uniquename = detail.genotype.as_ref().unwrap();
                     if let Some(genotype_details) = self.genotypes.get(genotype_uniquename) {
                         if genotype_details.expressed_alleles.len() == 1 {
-                            single_allele.annotations.push(detail.clone())
+                            let v: &OntAnnotationDetail = &*detail;
+                            single_allele.annotations.push(v.clone())
                         } else {
-                            multi_allele.annotations.push(detail.clone())
+                            let v: &OntAnnotationDetail = &*detail;
+                            multi_allele.annotations.push(v.clone())
                         }
                     } else {
                         panic!("can't find genotype details for {}\n", genotype_uniquename);
@@ -3237,11 +3241,11 @@ impl <'a> WebDataBuild<'a> {
             &self.all_ont_annotations
         };
 
-        let mut gene_annotation_by_term: HashMap<GeneUniquename, HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>> =
+        let mut gene_annotation_by_term: HashMap<GeneUniquename, HashMap<TermId, Vec<OntAnnotationDetail>>> =
             HashMap::new();
-        let mut genotype_annotation_by_term: HashMap<GenotypeUniquename, HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>> =
+        let mut genotype_annotation_by_term: HashMap<GenotypeUniquename, HashMap<TermId, Vec<OntAnnotationDetail>>> =
             HashMap::new();
-        let mut ref_annotation_by_term: HashMap<String, HashMap<TermId, Vec<Rc<OntAnnotationDetail>>>> =
+        let mut ref_annotation_by_term: HashMap<String, HashMap<TermId, Vec<OntAnnotationDetail>>> =
             HashMap::new();
 
         for (termid, annotations) in ont_annotations {
@@ -3255,7 +3259,7 @@ impl <'a> WebDataBuild<'a> {
 
                 {
                     let cmp_detail_with_maps =
-                        |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
+                        |annotation1: &OntAnnotationDetail, annotation2: &OntAnnotationDetail| {
                             cmp_ont_annotation_detail(cv_config,
                                                       annotation1, annotation2, &self.genes,
                                                       &self.genotypes, &self.alleles,
@@ -3410,7 +3414,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_cvtermpath(&mut self) {
-        let mut annotation_by_id: HashMap<i32, Rc<OntAnnotationDetail>> = HashMap::new();
+        let mut annotation_by_id: HashMap<i32, OntAnnotationDetail> = HashMap::new();
         let mut new_annotations: HashMap<TermId, HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
             HashMap::new();
 
@@ -3483,7 +3487,7 @@ impl <'a> WebDataBuild<'a> {
 
         for (dest_termid, dest_annotations_map) in new_annotations.drain() {
             for (source_termid, source_annotations_map) in dest_annotations_map {
-                let mut new_details: Vec<Rc<OntAnnotationDetail>> = vec![];
+                let mut new_details: Vec<OntAnnotationDetail> = vec![];
                 let mut all_rel_names: HashSet<String> = HashSet::new();
                 for (id, rel_names) in source_annotations_map {
                     let detail = annotation_by_id.get(&id).unwrap().clone();
@@ -3500,7 +3504,7 @@ impl <'a> WebDataBuild<'a> {
 
                 {
                     let cmp_detail_with_genotypes =
-                        |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
+                        |annotation1: &OntAnnotationDetail, annotation2: &OntAnnotationDetail| {
                             cmp_ont_annotation_detail(cv_config,
                                                       annotation1, annotation2, &self.genes,
                                                       &self.genotypes, &self.alleles, &self.terms)
@@ -4602,8 +4606,8 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
 fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
                    maybe_genotype_uniquename: Option<&str>, evidence: &str,
                    extension: Vec<ExtPart>,
-                   conditions: HashSet<TermId>) -> Rc<OntAnnotationDetail> {
-    Rc::new(OntAnnotationDetail {
+                   conditions: HashSet<TermId>) -> OntAnnotationDetail {
+    OntAnnotationDetail {
         id: id,
         genes: vec![gene_uniquename.into()],
         genotype: maybe_genotype_uniquename.map(str::to_string),
@@ -4616,11 +4620,11 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         extension: extension,
         gene_ex_props: None,
         conditions: conditions,
-    })
+    }
 }
 
 #[allow(dead_code)]
-fn get_test_fypo_term_details() -> Vec<Rc<OntAnnotationDetail>> {
+fn get_test_fypo_term_details() -> Vec<OntAnnotationDetail> {
     let mut test_conditions = HashSet::new();
     test_conditions.insert("PECO:0000103".into());
     test_conditions.insert("PECO:0000137".into());
@@ -4942,7 +4946,7 @@ fn test_cmp_ont_annotation_detail() {
     let terms = get_test_terms_map();
 
     let cmp_detail_with_genotypes =
-        |annotation1: &Rc<OntAnnotationDetail>, annotation2: &Rc<OntAnnotationDetail>| {
+        |annotation1: &OntAnnotationDetail, annotation2: &OntAnnotationDetail| {
             let cv_config = &get_test_config().cv_config_by_name("molecular_function");
             cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2, &genes,
@@ -4965,7 +4969,7 @@ fn test_cmp_ont_annotation_detail() {
     assert_eq!(details_vec.drain(0..)
                .map(|detail| {
                    let genotype_uniquename: String =
-                       (*detail).clone().genotype.unwrap();
+                       detail.genotype.unwrap();
                    let genotype = genotypes.get(&genotype_uniquename).unwrap();
                    genotype_display_name(&genotype, &alleles)
                }).collect::<Vec<String>>(),

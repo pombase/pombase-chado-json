@@ -305,7 +305,7 @@ pub struct OntTermAnnotations {
     pub is_not: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub rel_names: HashSet<RelName>,
-    pub annotations: Vec<Rc<OntAnnotationDetail>>,
+    pub annotations: Vec<OntAnnotationDetail>,
     pub summary: Option<Vec<TermSummaryRow>>,
 }
 
