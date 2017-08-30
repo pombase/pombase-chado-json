@@ -37,29 +37,22 @@ struct StaticFileState {
 // from /index.html
 #[get("/<path..>", rank=3)]
 fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> {
-    print!("full_path 1: {:?}\n", path);
     let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
-    print!("web_root_dir: {:?}\n", web_root_dir);
     let root_dir_path = Path::new("/").join(web_root_dir);
-    print!("root_dir_path: {:?}\n", root_dir_path);
     let full_path = root_dir_path.join(path);
-    print!("full_path 1: {:?}\n", full_path);
     if full_path.exists() {
-        NamedFile::open(full_path).ok()
-    } else {
-        print!("full_path: {:?}\n", full_path);
-        let mut json_path_str = full_path.to_str().unwrap().to_owned();
-        json_path_str += ".json";
-        let json_path: PathBuf = json_path_str.into();
-
-        if json_path.exists() {
-            print!("exists: {:?}\n", json_path);
-            NamedFile::open(json_path).ok()
-        } else {
-            print!("not exists: {:?}\n", json_path);
-            NamedFile::open(root_dir_path.join("index.html")).ok()
-        }
+        return NamedFile::open(full_path).ok();
     }
+
+    let mut json_path_str = full_path.to_str().unwrap().to_owned();
+    json_path_str += ".json";
+    let json_path: PathBuf = json_path_str.into();
+
+    if json_path.exists() {
+        return NamedFile::open(json_path).ok();
+    }
+
+    NamedFile::open(root_dir_path.join("index.html")).ok()
 }
 
 #[get("/", rank=1)]
