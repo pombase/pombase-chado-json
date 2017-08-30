@@ -1,5 +1,3 @@
-extern crate bit_set;
-
 use std::hash::Hash;
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::HashMap;

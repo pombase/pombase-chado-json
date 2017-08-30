@@ -1,9 +1,5 @@
 extern crate postgres;
-extern crate regex;
 extern crate getopts;
-extern crate bit_set;
-extern crate serde;
-extern crate serde_json;
 
 use postgres::{Connection, TlsMode};
 
