@@ -3625,6 +3625,8 @@ impl <'a> WebDataBuild<'a> {
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
 
+        let mut terms_for_api: HashMap<TermId, TermDetails> = HashMap::new();
+
         for (termid, term_details) in &self.terms {
             term_summaries.insert(self.make_term_short(&termid));
             let cv_config = &self.config.cv_config;
@@ -3634,16 +3636,22 @@ impl <'a> WebDataBuild<'a> {
                                         term_details.genes_annotated_with.clone());
                 }
             }
+
+            terms_for_api.insert(termid.clone(), term_details.clone());
         }
 
         let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
             self.get_api_genotype_annotation();
 
-       APIMaps {
+        APIMaps {
             gene_summaries: gene_summaries,
             termid_genes: termid_genes,
             termid_genotype_annotation: termid_genotype_annotation,
             term_summaries: term_summaries,
+            genes: self.genes.clone(),
+            genotypes: self.genotypes.clone(),
+            terms: terms_for_api.clone(),
+            references: self.references.clone(),
         }
     }
 
@@ -4322,13 +4330,8 @@ impl <'a> WebDataBuild<'a> {
         };
 
         WebData {
-            genes: self.genes,
-            genotypes: self.genotypes,
-            terms: web_data_terms,
-            used_terms: used_terms,
             metadata: metadata,
             chromosomes: self.chromosomes,
-            references: self.references,
             recent_references: self.recent_references,
             api_maps: api_maps,
             search_gene_summaries: gene_summaries,

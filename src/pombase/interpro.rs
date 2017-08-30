@@ -31,7 +31,7 @@ pub struct TMMatch {
     pub end: usize,
 }
 
-#[derive(Deserialize, Debug, Clone)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct UniprotResult {
     pub interpro_matches: Vec<InterProMatch>,
     pub tmhmm_matches: Vec<TMMatch>,

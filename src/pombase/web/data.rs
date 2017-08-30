@@ -48,7 +48,7 @@ use web::config::*;
 use types::*;
 use interpro::InterProMatch;
 
-#[derive(Serialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
@@ -78,7 +78,7 @@ impl ExtRange {
 }
 
 // A single part of an extension.
-#[derive(Serialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ExtPart {
     pub rel_type_name: String,
     pub rel_type_display_name: String,
@@ -92,7 +92,7 @@ impl Hash for ExtPart {
 }
 
 // minimal information about a gene used in other objects
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneShort {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -195,14 +195,14 @@ impl Hash for TermShort {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeDetails {
     pub name: String,
     pub residues: String,
     pub ena_identifier: String,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceShort {
     pub uniquename: String,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -219,7 +219,7 @@ pub struct ReferenceShort {
     pub genotype_count: usize,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceDetails {
     pub uniquename: String,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -258,7 +258,7 @@ pub struct ReferenceDetails {
 }
 
 // the GO with/from
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum WithFromValue {
 #[serde(rename = "gene")]
     Gene(GeneShort),
@@ -268,7 +268,7 @@ pub enum WithFromValue {
     Identifier(String)
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
     pub genes: Vec<GeneUniquename>,
@@ -299,7 +299,7 @@ impl PartialEq for OntAnnotationDetail {
 }
 impl Eq for OntAnnotationDetail { }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntTermAnnotations {
     pub term: TermShort,
     pub is_not: bool,
@@ -338,7 +338,7 @@ impl Hash for OntTermAnnotations {
     }
 }
 
-#[derive(Serialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct TermSummaryRow {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_uniquenames: Vec<GeneUniquename>, // for term and ref pages
@@ -358,7 +358,7 @@ impl Hash for TermSummaryRow {
     }
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TargetOfAnnotation {
     pub ontology_name: String,
     pub ext_rel_display_name: String,
@@ -369,7 +369,7 @@ pub struct TargetOfAnnotation {
     pub reference_uniquename: Option<ReferenceUniquename>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SynonymDetails {
     pub name: String,
     #[serde(rename = "type")]
@@ -399,7 +399,7 @@ pub struct ChromosomeLocation {
     pub strand: Strand,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum DeletionViability {
     #[serde(rename="viable")]
     Viable,
@@ -411,7 +411,7 @@ pub enum DeletionViability {
     Unknown,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -513,7 +513,7 @@ pub struct TranscriptDetails {
     pub protein: Option<ProteinDetails>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeShort {
     pub uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -523,7 +523,7 @@ pub struct GenotypeShort {
     pub expressed_alleles: Vec<ExpressedAllele>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeDetails {
     pub uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -538,14 +538,14 @@ pub struct GenotypeDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<String>,
     pub allele_uniquename: AlleleUniquename,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AlleleShort {
     pub uniquename: String,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -558,7 +558,7 @@ pub struct AlleleShort {
 
 pub type RelName = String;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneExProps {
     #[serde(skip_serializing_if="Option::is_none")]
     pub copies_per_cell: Option<String>,
@@ -571,14 +571,14 @@ pub struct GeneExProps {
 pub type OntName = String;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermAndRelation {
     pub termid: TermId,
     pub term_name: TermName,
     pub relation_name: RelName,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
@@ -601,7 +601,7 @@ pub struct TermDetails {
     pub terms_by_termid: HashMap<TermId, TermShort>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct InteractionAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub interactor_uniquename: GeneUniquename,
@@ -642,7 +642,7 @@ impl PartialOrd for InteractionAnnotation {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OrthologAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub ortholog_taxonid: u32,
@@ -671,7 +671,7 @@ impl PartialOrd for OrthologAnnotation {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ParalogAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub paralog_uniquename: GeneUniquename,
@@ -699,7 +699,7 @@ impl PartialOrd for ParalogAnnotation {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Metadata {
     pub db_creation_datetime: String,
     pub export_prog_name: String,
@@ -750,6 +750,10 @@ pub struct APIMaps {
     pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
     pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
     pub term_summaries: HashSet<TermShort>,
+    pub genes: UniquenameGeneMap,
+    pub genotypes: IdGenotypeMap,
+    pub terms: HashMap<TermId, TermDetails>,
+    pub references: UniquenameReferenceMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -772,7 +776,7 @@ pub struct SolrData {
     pub term_summaries: HashMap<TermId, SolrTermSummary>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RecentReferences {
     // most recent papers from PubMed
     pub pubmed: Vec<ReferenceShort>,
@@ -782,14 +786,14 @@ pub struct RecentReferences {
     pub community_curated: Vec<ReferenceShort>,
 }
 
-#[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TermSubsetElement {
     pub name: String,
     pub termid: TermId,
     pub gene_count: usize,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermSubsetDetails {
     pub name: String,
     pub total_gene_count: usize, // total unique genes in all subsets
@@ -806,15 +810,10 @@ pub struct GeneSubsetDetails {
 pub type IdTermSubsetMap = HashMap<String, TermSubsetDetails>;
 pub type IdGeneSubsetMap = HashMap<String, GeneSubsetDetails>;
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
-    pub genes: UniquenameGeneMap,
-    pub genotypes: IdGenotypeMap,
-    pub terms: IdRcTermDetailsMap,
-    pub used_terms: IdRcTermDetailsMap,
     pub metadata: Metadata,
     pub chromosomes: ChrNameDetailsMap,
-    pub references: UniquenameReferenceMap,
     pub recent_references: RecentReferences,
     pub api_maps: APIMaps,
     pub solr_data: SolrData,
@@ -824,20 +823,8 @@ pub struct WebData {
 }
 
 impl WebData {
-    fn get_genes(&self) -> &UniquenameGeneMap {
-        &self.genes
-    }
-    fn get_genotypes(&self) -> &IdGenotypeMap {
-        &self.genotypes
-    }
-    fn get_references(&self) -> &UniquenameReferenceMap {
-        &self.references
-    }
     fn get_chromosomes(&self) -> &ChrNameDetailsMap {
         &self.chromosomes
-    }
-    fn get_terms(&self) -> &IdRcTermDetailsMap {
-        &self.terms
     }
 
     fn create_dir(&self, output_dir: &str, dir_name: &str) -> String {
@@ -881,56 +868,12 @@ impl WebData {
         self.write_chromosome_seq_chunks(&new_path, &config.api_seq_chunk_sizes);
     }
 
-    fn write_reference_details(&self, output_dir: &str) {
-        let new_path = self.create_dir(output_dir, "reference");
-        for (reference_uniquename, reference_details) in &self.references {
-            let s = serde_json::to_string(&reference_details).unwrap();
-            let file_name = format!("{}/{}.json", new_path, &reference_uniquename);
-            let f = File::create(file_name).expect("Unable to open file");
-            let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write reference JSON");
-        }
-    }
-
-    fn write_gene_details(&self, output_dir: &str) {
-        let new_path = self.create_dir(output_dir, "gene");
-        for (gene_uniquename, gene_details) in &self.genes {
-            let s = serde_json::to_string(&gene_details).unwrap();
-            let file_name = format!("{}/{}.json", new_path, &gene_uniquename);
-            let f = File::create(file_name).expect("Unable to open file");
-            let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write gene JSON");
-        }
-    }
-
-    fn write_genotype_details(&self, output_dir: &str) {
-        let new_path = self.create_dir(output_dir, "genotype");
-        for (genotype_uniquename, genotype_details) in &self.genotypes {
-            let s = serde_json::to_string(&genotype_details).unwrap();
-            let file_name = format!("{}/{}.json", new_path, &genotype_uniquename);
-            let f = File::create(file_name).expect("Unable to open file");
-            let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write genotype JSON");
-        }
-    }
-
     fn write_gene_summaries(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.search_gene_summaries).unwrap();
         let file_name = String::new() + output_dir + "/gene_summaries.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write gene_summaries.json");
-    }
-
-    fn write_terms(&self, output_dir: &str) {
-        let new_path = self.create_dir(output_dir, "term");
-        for (termid, term_details) in &self.terms {
-            let s = serde_json::to_string(&term_details).unwrap();
-            let file_name = format!("{}/{}.json", new_path, &termid);
-            let f = File::create(file_name).expect("Unable to open file");
-            let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write term JSON");
-        }
     }
 
     fn write_metadata(&self, output_dir: &str) {
@@ -973,28 +916,20 @@ impl WebData {
         let file_name = String::new() + output_dir + "/term_subsets.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
+        writer.write_all(s.as_bytes()).expect("Unable to write");
 
         let s = serde_json::to_string(&self.gene_subsets).unwrap();
         let file_name = String::new() + output_dir + "/gene_subsets.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
+        writer.write_all(s.as_bytes()).expect("Unable to write");
     }
 
     pub fn write(&self, config: &Config, output_dir: &str) {
         self.write_chromosomes(config, output_dir);
         println!("wrote {} chromosomes", self.get_chromosomes().len());
-        self.write_reference_details(output_dir);
-        println!("wrote {} references", self.get_references().len());
-        self.write_gene_details(output_dir);
-        println!("wrote {} genes", self.get_genes().len());
-        self.write_genotype_details(output_dir);
-        println!("wrote {} genotypes", self.get_genotypes().len());
         self.write_gene_summaries(output_dir);
         println!("wrote gene summaries");
-        self.write_terms(output_dir);
-        println!("wrote {} terms", self.get_terms().len());
         self.write_metadata(output_dir);
         println!("wrote metadata");
         self.write_recent_references(output_dir);
@@ -1009,17 +944,17 @@ impl WebData {
     pub fn store_jsonb(&self, conn: &Connection) {
         let trans = conn.transaction().unwrap();
 
-        for (uniquename, gene_details) in &self.genes {
+        for (uniquename, gene_details) in &self.api_maps.genes {
             let serde_value = serde_json::value::to_value(&gene_details).unwrap();
             trans.execute("INSERT INTO web_json.gene (uniquename, data) values ($1, $2)",
                           &[&uniquename, &serde_value]).unwrap();
         }
-        for (uniquename, ref_details) in &self.references {
+        for (uniquename, ref_details) in &self.api_maps.references {
             let serde_value = serde_json::value::to_value(&ref_details).unwrap();
             trans.execute("INSERT INTO web_json.reference (uniquename, data) values ($1, $2)",
                           &[&uniquename, &serde_value]).unwrap();
         }
-        for (termid, term_details) in &self.terms {
+        for (termid, term_details) in &self.api_maps.terms {
             let serde_value = serde_json::value::to_value(&term_details).unwrap();
             trans.execute("INSERT INTO web_json.term (termid, data) values ($1, $2)",
                          &[&termid, &serde_value]).unwrap();
