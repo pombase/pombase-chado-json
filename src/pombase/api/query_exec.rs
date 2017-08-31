@@ -2,8 +2,6 @@ use api::result::*;
 use api::query::*;
 use api::server_data::ServerData;
 
-
-
 pub struct QueryExec {
     server_data: ServerData,
 }
@@ -20,6 +18,7 @@ impl QueryExec {
         query.clone()
     }
 
+    // execute a Query
     pub fn exec(&self, query: &Query) -> QueryAPIResult {
         let filled_query = self.fill_query_details(query);
         let rows_result = query.exec(&self.server_data);
@@ -36,6 +35,10 @@ impl QueryExec {
                 rows: vec![],
             },
         }
+    }
+
+    pub fn get_server_data(&self) -> &ServerData {
+        &self.server_data
     }
 
     pub fn reload(&mut self) {

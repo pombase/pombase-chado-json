@@ -1,14 +1,17 @@
 use std::process;
 use std::fs::File;
-use std::io::BufReader;
+use std::io::{Read, BufReader};
 
 use serde_json;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails};
+use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
+                GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails};
 use web::config::Config;
 use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
+
+use xz2::read::XzDecoder;
 
 use types::GeneUniquename;
 
@@ -33,8 +36,12 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     };
     let reader = BufReader::new(file);
 
+    let mut decoder = XzDecoder::new(reader);
+    let mut decoded_json = String::new();
+    decoder.read_to_string(&mut decoded_json).unwrap();
+
     let query_api_maps: APIMaps =
-        match serde_json::from_reader(reader) {
+        match serde_json::from_str(&decoded_json) {
             Ok(results) => results,
             Err(err) => {
                 print!("failed to parse {}: {}", search_maps_file_name, err);
@@ -197,6 +204,22 @@ impl ServerData {
             .filter(|ref summ| p(summ))
             .map(|ref summ| summ.uniquename.clone())
             .collect()
+    }
+
+    pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<&GeneDetails> {
+        self.maps.genes.get(gene_uniquename)
+    }
+
+    pub fn get_genotype_details(&self, genotype_uniquename: &str) -> Option<&GenotypeDetails> {
+        self.maps.genotypes.get(genotype_uniquename)
+    }
+
+    pub fn get_term_details(&self, termid: &str) -> Option<&TermDetails> {
+        self.maps.terms.get(termid)
+    }
+
+    pub fn get_reference_details(&self, reference_uniquename: &str) -> Option<&ReferenceDetails> {
+        self.maps.references.get(reference_uniquename)
     }
 
     pub fn reload(&mut self) {

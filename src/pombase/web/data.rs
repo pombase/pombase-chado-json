@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt;
 
+use xz2::write::XzEncoder;
+
 use self::postgres::Connection;
 
 type CvName = String;
@@ -894,10 +896,12 @@ impl WebData {
 
     fn write_api_maps(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.api_maps).unwrap();
-        let file_name = String::new() + output_dir + "/api_maps.json";
+        let file_name = String::new() + output_dir + "/api_maps.json.xz";
         let f = File::create(file_name).expect("Unable to open file");
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write!");
+
+        let mut compressor = XzEncoder::new(f, 2);
+        compressor.write_all(s.as_bytes()).unwrap();
+        compressor.finish().unwrap();
     }
 
     fn write_solr_data(&self, output_dir: &str) {

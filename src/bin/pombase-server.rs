@@ -3,8 +3,9 @@
 
 extern crate getopts;
 extern crate rocket;
-#[macro_use] extern crate serde_derive;
 #[macro_use] extern crate rocket_contrib;
+
+#[macro_use] extern crate serde_derive;
 
 extern crate pombase;
 
@@ -24,7 +25,8 @@ use pombase::api::result::QueryAPIResult;
 use pombase::api::search::Search;
 use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
-use pombase::web::data::SolrTermSummary;
+use pombase::web::data::{SolrTermSummary, GeneDetails, GenotypeDetails,
+                         TermDetails, ReferenceDetails};
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -53,6 +55,46 @@ fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Opti
     }
 
     NamedFile::open(root_dir_path.join("index.html")).ok()
+}
+
+#[get("/api/v1/dataset/latest/data/gene/<id>", rank=4)]
+fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GeneDetails>> {
+    let query_exec = state.lock().expect("failed to lock");
+    if let Some(gene) = query_exec.get_server_data().get_gene_details(&id) {
+        Some(Json(gene.clone()))
+    } else {
+        None
+    }
+}
+
+#[get("/api/v1/dataset/latest/data/genotype/<id>", rank=4)]
+fn get_genotype(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GenotypeDetails>> {
+    let query_exec = state.lock().expect("failed to lock");
+    if let Some(genotype) = query_exec.get_server_data().get_genotype_details(&id) {
+        Some(Json(genotype.clone()))
+    } else {
+        None
+    }
+}
+
+#[get("/api/v1/dataset/latest/data/term/<id>", rank=4)]
+fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<TermDetails>> {
+    let query_exec = state.lock().expect("failed to lock");
+    if let Some(term) = query_exec.get_server_data().get_term_details(&id) {
+        Some(Json(term.clone()))
+    } else {
+        None
+    }
+}
+
+#[get("/api/v1/dataset/latest/data/reference/<id>", rank=4)]
+fn get_reference(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<ReferenceDetails>> {
+    let query_exec = state.lock().expect("failed to lock");
+    if let Some(reference) = query_exec.get_server_data().get_reference_details(&id) {
+        Some(Json(reference.clone()))
+    } else {
+        None
+    }
 }
 
 #[get("/", rank=1)]
@@ -191,7 +233,9 @@ fn main() {
 
     println!("Starting server ...");
     rocket::ignite()
-        .mount("/", routes![get_index, get_misc, query_post, reload, complete, ping])
+        .mount("/", routes![get_index, get_misc, query_post,
+                            get_gene, get_genotype, get_term, get_reference,
+                            reload, complete, ping])
         .catch(errors![not_found])
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))

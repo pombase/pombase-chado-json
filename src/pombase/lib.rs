@@ -5,6 +5,7 @@ extern crate bit_set;
 extern crate chrono;
 extern crate serde_json;
 extern crate reqwest;
+extern crate xz2;
 
 #[macro_use] extern crate serde_derive;
 
