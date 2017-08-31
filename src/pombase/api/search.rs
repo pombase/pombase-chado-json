@@ -25,16 +25,16 @@ impl Search {
         }
     }
 
-    fn get_query_part(&self, words: &Vec<String>, weight: f32) -> String {
+    fn get_query_part(&self, words: &Vec<String>) -> String {
         let mut ret = String::new();
 
         let words_length = words.len();
 
         for (i, word) in words.iter().enumerate() {
             if i == words_length - 1 {
-                ret += &format!("{}^{} {}*", word, weight, word);
+                ret += &format!("{} {}~0.8 {}*", word, word, word);
             } else {
-                ret += &format!("{}^{} {}~0.8 ", word, weight, word);
+                ret += &format!("{} {}~0.8 ", word, word);
             }
         }
 
@@ -87,17 +87,16 @@ impl Search {
 
             for (i, word) in clean_words.iter().enumerate() {
                 if i == clean_words_length - 1 {
-                    terms_url += &format!("{}^4 {}~0.8 {}*", word, word, word);
+                    terms_url += &format!("{} {}~0.8 {}*", word, word, word);
                 } else {
-                    terms_url += &format!("{}^4 {}~0.8 ", word, word);
+                    terms_url += &format!("{} {}~0.8 ", word, word);
                 }
             }
 
-            terms_url += ") OR close_synonyms:(";
-            terms_url += &self.get_query_part(&clean_words, 0.5);
-            terms_url += ") OR distant_synonyms:(";
-            terms_url += &self.get_query_part(&clean_words, 0.1);
-            terms_url += "))";
+            let query_part = self.get_query_part(&clean_words);
+
+            terms_url += &format!(")^4 OR close_synonyms:({})^0.2 OR distant_synonyms:({})^0.1)",
+                                 query_part, query_part);
         }
         print!("{:?}\n", terms_url);
 
