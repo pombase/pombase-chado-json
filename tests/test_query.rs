@@ -11,7 +11,7 @@ use self::pombase::api::query_exec::*;
 fn get_server_data() -> ServerData {
     use std::path::PathBuf;
     let mut search_maps_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    search_maps_path.push("tests/test_search_data.json.xz");
+    search_maps_path.push("tests/test_search_data.json.gz");
     let mut gene_subsets_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     gene_subsets_path.push("tests/test_gene_subsets.json");
     let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));

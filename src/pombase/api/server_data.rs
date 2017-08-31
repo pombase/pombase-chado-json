@@ -11,7 +11,7 @@ use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
 use web::config::Config;
 use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
-use xz2::read::XzDecoder;
+use flate2::read::GzDecoder;
 
 use types::GeneUniquename;
 
@@ -36,7 +36,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     };
     let reader = BufReader::new(file);
 
-    let mut decoder = XzDecoder::new(reader);
+    let mut decoder = GzDecoder::new(reader).unwrap();
     let mut decoded_json = String::new();
     decoder.read_to_string(&mut decoded_json).unwrap();
 

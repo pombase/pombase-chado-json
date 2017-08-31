@@ -8,7 +8,8 @@ use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt;
 
-use xz2::write::XzEncoder;
+use flate2::Compression;
+use flate2::write::GzEncoder;
 
 use self::postgres::Connection;
 
@@ -896,10 +897,10 @@ impl WebData {
 
     fn write_api_maps(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.api_maps).unwrap();
-        let file_name = String::new() + output_dir + "/api_maps.json.xz";
+        let file_name = String::new() + output_dir + "/api_maps.json.gz";
         let f = File::create(file_name).expect("Unable to open file");
 
-        let mut compressor = XzEncoder::new(f, 2);
+        let mut compressor = GzEncoder::new(f, Compression::Default);
         compressor.write_all(s.as_bytes()).unwrap();
         compressor.finish().unwrap();
     }
