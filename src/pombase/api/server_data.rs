@@ -119,12 +119,22 @@ impl ServerData {
         }
     }
 
-    pub fn genes_of_subset(&self, subset_name: &str) -> Vec<GeneUniquename> {
-        match self.gene_subsets.get(subset_name) {
-            Some(subset_details) => {
-                subset_details.elements.iter().cloned().collect::<Vec<_>>()
-            },
-            None => vec![],
+    pub fn genes_of_subset(&self, search_name: &str) -> Vec<GeneUniquename> {
+        if search_name.ends_with(':') {
+            let mut genes = HashSet::new();
+            for (subset_name, subset_details) in &self.gene_subsets {
+                if subset_name.starts_with(search_name) {
+                    genes.extend(subset_details.elements.iter().cloned());
+                }
+            }
+            genes.iter().cloned().collect::<Vec<_>>()
+        } else {
+            match self.gene_subsets.get(search_name) {
+                Some(subset_details) => {
+                    subset_details.elements.iter().cloned().collect::<Vec<_>>()
+                },
+                None => vec![],
+            }
         }
     }
 
