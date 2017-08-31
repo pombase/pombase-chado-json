@@ -57,7 +57,7 @@ fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Opti
     NamedFile::open(root_dir_path.join("index.html")).ok()
 }
 
-#[get("/api/v1/dataset/latest/data/gene/<id>", rank=4)]
+#[get("/api/v1/dataset/latest/data/gene/<id>", rank=2)]
 fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GeneDetails>> {
     let query_exec = state.lock().expect("failed to lock");
     if let Some(gene) = query_exec.get_server_data().get_gene_details(&id) {
@@ -67,7 +67,7 @@ fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<G
     }
 }
 
-#[get("/api/v1/dataset/latest/data/genotype/<id>", rank=4)]
+#[get("/api/v1/dataset/latest/data/genotype/<id>", rank=2)]
 fn get_genotype(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GenotypeDetails>> {
     let query_exec = state.lock().expect("failed to lock");
     if let Some(genotype) = query_exec.get_server_data().get_genotype_details(&id) {
@@ -77,7 +77,7 @@ fn get_genotype(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Js
     }
 }
 
-#[get("/api/v1/dataset/latest/data/term/<id>", rank=4)]
+#[get("/api/v1/dataset/latest/data/term/<id>", rank=2)]
 fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<TermDetails>> {
     let query_exec = state.lock().expect("failed to lock");
     if let Some(term) = query_exec.get_server_data().get_term_details(&id) {
@@ -87,7 +87,7 @@ fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<T
     }
 }
 
-#[get("/api/v1/dataset/latest/data/reference/<id>", rank=4)]
+#[get("/api/v1/dataset/latest/data/reference/<id>", rank=2)]
 fn get_reference(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<ReferenceDetails>> {
     let query_exec = state.lock().expect("failed to lock");
     if let Some(reference) = query_exec.get_server_data().get_reference_details(&id) {
