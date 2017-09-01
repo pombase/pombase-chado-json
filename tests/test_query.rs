@@ -103,6 +103,23 @@ fn test_gene_subset() {
 }
 
 #[test]
+fn test_gene_subset_invert() {
+    let qp1 = QueryNode::Subset { subset_name: "!interpro:IPR002906".into() };
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned()],
+        sequence: SeqType::None,
+    };
+    let q1 = Query::new(qp1, opts);
+
+    check_gene_result(&q1,
+                      vec!["SPAC589.10c", "SPAC17H9.16",
+                           "SPBC460.01c", "SPBC1652.02", "SPCC736.11",
+                           "SPBC19F8.06c", "SPAC6G10.11c",
+                           "SPBC359.01", "SPAC1039.09", "SPBC359.03c",
+                           "SPAC7D4.10", "SPCC895.03c"]);
+}
+
+#[test]
 fn test_gene_subset_wildcard() {
     let qp1 = QueryNode::Subset { subset_name: "interpro:IPR*".into() };
     let opts = QueryOutputOptions {
@@ -111,5 +128,23 @@ fn test_gene_subset_wildcard() {
     };
     let q1 = Query::new(qp1, opts);
 
-    check_gene_result(&q1, vec!["SPAC589.10c", "SPCC736.11", "SPAC6G10.11c"]);
+    check_gene_result(&q1,
+                      vec!["SPAC589.10c", "SPCC736.11", "SPAC6G10.11c"]);
+}
+
+#[test]
+fn test_gene_subset_not_wildcard() {
+    let qp1 = QueryNode::Subset { subset_name: "!interpro:IPR*".into() };
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned()],
+        sequence: SeqType::None,
+    };
+    let q1 = Query::new(qp1, opts);
+
+    check_gene_result(&q1,
+                      vec!["SPAC589.10c", "SPAC7D4.10",
+                           "SPBC359.01", "SPAC17H9.16", "SPAC1039.09",
+                           "SPBC359.03c", "SPCC736.11", "SPBC1652.02",
+                           "SPBC460.01c", "SPAC6G10.11c", "SPCC895.03c",
+                           "SPBC19F8.06c"]);
 }
