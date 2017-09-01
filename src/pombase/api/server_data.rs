@@ -120,10 +120,12 @@ impl ServerData {
     }
 
     pub fn genes_of_subset(&self, search_name: &str) -> Vec<GeneUniquename> {
-        if search_name.ends_with(':') {
+        if search_name.ends_with('*') {
+            let mut trimmed_search_name = search_name.to_owned();
+            trimmed_search_name.pop();
             let mut genes = HashSet::new();
             for (subset_name, subset_details) in &self.gene_subsets {
-                if subset_name.starts_with(search_name) {
+                if subset_name.starts_with(&trimmed_search_name) {
                     genes.extend(subset_details.elements.iter().cloned());
                 }
             }

@@ -101,3 +101,15 @@ fn test_gene_subset() {
 
     check_gene_result(&q1, vec!["SPCC895.03c"]);
 }
+
+#[test]
+fn test_gene_subset_wildcard() {
+    let qp1 = QueryNode::Subset { subset_name: "interpro:IPR*".into() };
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned()],
+        sequence: SeqType::None,
+    };
+    let q1 = Query::new(qp1, opts);
+
+    check_gene_result(&q1, vec!["SPAC589.10c", "SPCC736.11", "SPAC6G10.11c"]);
+}
