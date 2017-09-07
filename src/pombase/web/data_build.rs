@@ -4300,7 +4300,7 @@ impl <'a> WebDataBuild<'a> {
             let mut close_synonyms = vec![];
             let mut distant_synonyms = vec![];
             for synonym in &term_details.synonyms {
-                if synonym.synonym_type == "exact" || synonym.synonym_type == "exact" {
+                if synonym.synonym_type == "exact" || synonym.synonym_type == "narrow" {
                     close_synonyms.push(synonym.name.clone());
                 } else {
                     distant_synonyms.push(synonym.name.clone());
