@@ -24,9 +24,8 @@ DELETE FROM cvterm
 "
 
 
-#psql -e $1 -c "
-echo "
-CREATE TABLE go_slim_term_names(name text);
+psql -e $1 -c "
+CREATE TEMP TABLE go_slim_term_names(name text);
 COPY go_slim_term_names FROM '$slim_file_name';
 
 DELETE FROM feature
