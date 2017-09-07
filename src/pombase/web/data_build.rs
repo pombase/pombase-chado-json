@@ -4280,15 +4280,6 @@ impl <'a> WebDataBuild<'a> {
 
         self.terms = HashMap::new();
 
-        let mut used_terms: IdRcTermDetailsMap = HashMap::new();
-
-        // remove terms with no annotation
-        for (termid, term_details) in &web_data_terms {
-            if term_details.cv_annotations.keys().len() > 0 {
-                used_terms.insert(termid.clone(), term_details.clone());
-            }
-        }
-
         let metadata = self.make_metadata();
 
         let mut gene_summaries: Vec<GeneSummary> = vec![];
@@ -4301,7 +4292,11 @@ impl <'a> WebDataBuild<'a> {
 
         let mut solr_term_summaries = HashMap::new();
 
-        for (termid, term_details) in &used_terms {
+        for (termid, term_details) in &web_data_terms {
+            if term_details.cv_annotations.keys().len() == 0 {
+                continue;
+            }
+
             let mut close_synonyms = vec![];
             let mut distant_synonyms = vec![];
             for synonym in &term_details.synonyms {
