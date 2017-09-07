@@ -1,5 +1,6 @@
 extern crate serde_json;
 extern crate postgres;
+extern crate bio;
 
 use std::cmp::min;
 use std::fs::{File, create_dir_all};
@@ -7,6 +8,7 @@ use std::io::{Write, BufWriter};
 use std::collections::HashMap;
 use std::fmt::Display;
 use std::fmt;
+use self::bio::io::fasta::Writer;
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -930,20 +932,61 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write");
     }
 
+    fn write_fasta(&self, output_dir: &str) {
+        let make_seq_writer = |name: &str| {
+            let file_name = String::new() + output_dir + "/" + name;
+            let file = File::create(file_name).expect("Unable to open file");
+            Writer::new(file)
+        };
+
+        let mut cds_writer = make_seq_writer("cds.fa");
+        let mut cds_introns_utrs_writer = make_seq_writer("cds_introns_utrs.fa");
+        let mut peptide_writer = make_seq_writer("peptide.fa");
+
+        for (gene_uniquename, gene_details) in &self.api_maps.genes {
+            if let Some(transcript) = gene_details.transcripts.get(0) {
+                let mut cds_seq = String::new();
+                let mut cds_introns_utrs_seq = String::new();
+                for part in &transcript.parts {
+                    if part.feature_type == FeatureType::Exon {
+                        cds_seq += &part.residues;
+                    }
+                    cds_introns_utrs_seq += &part.residues;
+                }
+
+                cds_writer.write(gene_uniquename, None, cds_seq.as_bytes()).unwrap();
+                cds_introns_utrs_writer.write(gene_uniquename, None, cds_introns_utrs_seq.as_bytes()).unwrap();
+                if let Some(ref protein) = transcript.protein {
+                    peptide_writer.write(&(gene_uniquename.to_owned() + ":pep"),
+                                         None, protein.sequence.as_bytes()).unwrap();
+                }
+            }
+        }
+
+        cds_writer.flush().unwrap();
+        cds_introns_utrs_writer.flush().unwrap();
+        peptide_writer.flush().unwrap();
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) {
-        self.write_chromosomes(config, output_dir);
+        let web_json_path = self.create_dir(output_dir, "web-json");
+        let fasta_path = self.create_dir(output_dir, "fasta");
+
+        self.write_chromosomes(config, &web_json_path);
         println!("wrote {} chromosomes", self.get_chromosomes().len());
-        self.write_gene_summaries(output_dir);
+        self.write_gene_summaries(&web_json_path);
         println!("wrote gene summaries");
-        self.write_metadata(output_dir);
+        self.write_metadata(&web_json_path);
         println!("wrote metadata");
-        self.write_recent_references(output_dir);
+        self.write_recent_references(&web_json_path);
         println!("wrote recent references");
-        self.write_api_maps(output_dir);
-        self.write_solr_data(output_dir);
+        self.write_api_maps(&web_json_path);
+        self.write_solr_data(&web_json_path);
         println!("wrote search data");
-        self.write_subsets(output_dir);
+        self.write_subsets(&web_json_path);
         println!("wrote subsets");
+
+        self.write_fasta(&fasta_path);
     }
 
     pub fn store_jsonb(&self, conn: &Connection) {
