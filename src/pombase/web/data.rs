@@ -840,22 +840,22 @@ impl WebData {
 
     fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_sizes: &[usize]) {
         for chunk_size in chunk_sizes {
-        for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
-            let new_path_part = &format!("{}/sequence/{}", chromosome_uniquename, chunk_size);
-            let chr_path = self.create_dir(output_dir, new_path_part);
-            let mut index = 0;
-            let max_index = chromosome_details.residues.len() / chunk_size;
-            while index <= max_index {
-                let start_pos = index*chunk_size;
-                let end_pos = min(start_pos+chunk_size, chromosome_details.residues.len());
-                let chunk: String = chromosome_details.residues[start_pos..end_pos].into();
-                let file_name = format!("{}/chunk_{}", chr_path, index);
-                let f = File::create(file_name).expect("Unable to open file");
-                let mut writer = BufWriter::new(&f);
-                writer.write_all(chunk.as_bytes()).expect("Unable to write chromosome chunk");
-                index += 1;
+            for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
+                let new_path_part = &format!("{}/sequence/{}", chromosome_uniquename, chunk_size);
+                let chr_path = self.create_dir(output_dir, new_path_part);
+                let mut index = 0;
+                let max_index = chromosome_details.residues.len() / chunk_size;
+                while index <= max_index {
+                    let start_pos = index*chunk_size;
+                    let end_pos = min(start_pos+chunk_size, chromosome_details.residues.len());
+                    let chunk: String = chromosome_details.residues[start_pos..end_pos].into();
+                    let file_name = format!("{}/chunk_{}", chr_path, index);
+                    let f = File::create(file_name).expect("Unable to open file");
+                    let mut writer = BufWriter::new(&f);
+                    writer.write_all(chunk.as_bytes()).expect("Unable to write chromosome chunk");
+                    index += 1;
+                }
             }
-        }
         }
     }
 
@@ -962,7 +962,7 @@ impl WebData {
         for (termid, term_details) in &self.api_maps.terms {
             let serde_value = serde_json::value::to_value(&term_details).unwrap();
             trans.execute("INSERT INTO web_json.term (termid, data) values ($1, $2)",
-                         &[&termid, &serde_value]).unwrap();
+                          &[&termid, &serde_value]).unwrap();
         }
 
         trans.execute("CREATE INDEX gene_jsonb_idx ON web_json.gene USING gin (data jsonb_path_ops)", &[]).unwrap();
