@@ -166,6 +166,17 @@ impl Config {
             }
         }
     }
+
+    pub fn load_organism(&self) -> ConfigOrganism {
+        for org in &self.organisms {
+            if org.taxonid == self.load_organism_taxonid {
+                return org.clone();
+            }
+        }
+
+        panic!("can't find configuration for load_organism_taxonid: {}",
+               self.load_organism_taxonid);
+    }
 }
 
 pub const POMBASE_ANN_EXT_TERM_CV_NAME: &str = "PomBase annotation extension terms";
