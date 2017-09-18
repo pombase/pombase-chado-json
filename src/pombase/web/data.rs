@@ -861,7 +861,7 @@ impl WebData {
         }
     }
 
-    fn write_chromosomes(&self, config: &Config, output_dir: &str) {
+    fn write_chromosome_json(&self, config: &Config, output_dir: &str) {
         let new_path = self.create_dir(output_dir, "chromosome");
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
             let s = serde_json::to_string(&chromosome_details).unwrap();
@@ -932,7 +932,7 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write");
     }
 
-    fn write_fasta(&self, output_dir: &str) {
+    fn write_feature_sequences(&self, output_dir: &str) {
         let make_seq_writer = |name: &str| {
             let file_name = String::new() + output_dir + "/" + name;
             let file = File::create(file_name).expect("Unable to open file");
@@ -975,11 +975,29 @@ impl WebData {
         peptide_writer.flush().unwrap();
     }
 
+    pub fn write_chromosome_sequences(&self, config: &Config, output_dir: &str) {
+        let make_seq_writer = |name: &str| {
+            let file_name = String::new() + output_dir + "/" + name;
+            let file = File::create(file_name).expect("Unable to open file");
+            Writer::new(file)
+        };
+
+        let load_org_name = config.load_organism().full_name();
+        let chromosomes_file_name = load_org_name + "_chromosomes.fa";
+        let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name);
+
+        for (uniquename, details) in &self.chromosomes {
+            let chr_residue_bytes = details.residues.as_bytes();
+            chromosomes_writer.write(uniquename, None, chr_residue_bytes).unwrap();
+        }
+
+        chromosomes_writer.flush().unwrap();
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) {
         let web_json_path = self.create_dir(output_dir, "web-json");
-        let fasta_path = self.create_dir(output_dir, "fasta");
 
-        self.write_chromosomes(config, &web_json_path);
+        self.write_chromosome_json(config, &web_json_path);
         println!("wrote {} chromosomes", self.get_chromosomes().len());
         self.write_gene_summaries(&web_json_path);
         println!("wrote gene summaries");
@@ -993,7 +1011,11 @@ impl WebData {
         self.write_subsets(&web_json_path);
         println!("wrote subsets");
 
-        self.write_fasta(&fasta_path);
+        let fasta_path = self.create_dir(output_dir, "fasta");
+        let feature_sequences_path = self.create_dir(&fasta_path, "feature_sequences");
+        self.write_feature_sequences(&feature_sequences_path);
+        let chromosomes_path = self.create_dir(&fasta_path, "chromosomes");
+        self.write_chromosome_sequences(config, &chromosomes_path);
     }
 
     pub fn store_jsonb(&self, conn: &Connection) {
