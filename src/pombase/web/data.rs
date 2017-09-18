@@ -5,7 +5,7 @@ extern crate bio;
 use std::cmp::min;
 use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 use std::fmt;
 use self::bio::io::fasta::Writer;
@@ -20,7 +20,7 @@ type CvName = String;
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
 pub type UniquenameGeneMap =
-    HashMap<GeneUniquename, GeneDetails>;
+    BTreeMap<GeneUniquename, GeneDetails>;
 pub type UniquenameTranscriptMap =
     HashMap<TranscriptUniquename, TranscriptDetails>;
 pub type UniquenameProteinMap =
@@ -31,7 +31,7 @@ pub type UniquenameReferenceMap =
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
-pub type ChrNameDetailsMap = HashMap<ChromosomeName, ChromosomeDetails>;
+pub type ChrNameDetailsMap = BTreeMap<ChromosomeName, ChromosomeDetails>;
 
 pub type IdGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
@@ -983,12 +983,21 @@ impl WebData {
         };
 
         let load_org_name = config.load_organism().full_name();
-        let chromosomes_file_name = load_org_name + "_chromosomes.fa";
+        let chromosomes_file_name = load_org_name.clone() + "_all_chromosomes.fa";
         let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name);
 
         for (uniquename, details) in &self.chromosomes {
             let chr_residue_bytes = details.residues.as_bytes();
-            chromosomes_writer.write(uniquename, None, chr_residue_bytes).unwrap();
+            chromosomes_writer.write(uniquename, Some(&load_org_name),
+                                     chr_residue_bytes).unwrap();
+
+            let this_chr_file_name = load_org_name.clone() + "_chromosome_" +
+                uniquename + ".fa";
+            let mut this_chr_writer = make_seq_writer(&this_chr_file_name);
+            this_chr_writer.write(uniquename, Some(&load_org_name),
+                                  chr_residue_bytes).unwrap();
+            this_chr_writer.flush().unwrap();
+
         }
 
         chromosomes_writer.flush().unwrap();

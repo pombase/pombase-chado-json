@@ -1,7 +1,7 @@
 use std::mem;
 
 use std::rc::Rc;
-use std::collections::hash_map::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::borrow::Borrow;
@@ -1249,11 +1249,11 @@ impl <'a> WebDataBuild<'a> {
             domain_data: domain_data,
             config: config,
 
-            genes: HashMap::new(),
+            genes: BTreeMap::new(),
             genotypes: HashMap::new(),
             alleles: HashMap::new(),
             terms: HashMap::new(),
-            chromosomes: HashMap::new(),
+            chromosomes: BTreeMap::new(),
             references: HashMap::new(),
             all_ont_annotations: HashMap::new(),
             all_not_ont_annotations: HashMap::new(),
@@ -4732,7 +4732,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
 
 #[allow(dead_code)]
 fn get_test_genes_map() -> UniquenameGeneMap {
-    let mut ret = HashMap::new();
+    let mut ret = BTreeMap::new();
 
     let gene_data =
         vec![("SPBC11B10.09", Some("cdc2")),
