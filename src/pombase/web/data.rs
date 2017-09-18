@@ -940,21 +940,28 @@ impl WebData {
         };
 
         let mut cds_writer = make_seq_writer("cds.fa");
-        let mut cds_introns_utrs_writer = make_seq_writer("cds_introns_utrs.fa");
+        let mut cds_introns_writer = make_seq_writer("cds+introns.fa");
+        let mut cds_introns_utrs_writer = make_seq_writer("cds+introns+utrs.fa");
         let mut peptide_writer = make_seq_writer("peptide.fa");
 
         for (gene_uniquename, gene_details) in &self.api_maps.genes {
             if let Some(transcript) = gene_details.transcripts.get(0) {
                 let mut cds_seq = String::new();
+                let mut cds_introns_seq = String::new();
                 let mut cds_introns_utrs_seq = String::new();
                 for part in &transcript.parts {
                     if part.feature_type == FeatureType::Exon {
                         cds_seq += &part.residues;
+                        cds_introns_seq += &part.residues;
+                    }
+                    if part.feature_type == FeatureType::CdsIntron {
+                        cds_introns_seq += &part.residues;
                     }
                     cds_introns_utrs_seq += &part.residues;
                 }
 
                 cds_writer.write(gene_uniquename, None, cds_seq.as_bytes()).unwrap();
+                cds_introns_writer.write(gene_uniquename, None, cds_introns_seq.as_bytes()).unwrap();
                 cds_introns_utrs_writer.write(gene_uniquename, None, cds_introns_utrs_seq.as_bytes()).unwrap();
                 if let Some(ref protein) = transcript.protein {
                     peptide_writer.write(&(gene_uniquename.to_owned() + ":pep"),
