@@ -3612,7 +3612,7 @@ impl <'a> WebDataBuild<'a> {
         app_genotype_annotation
     }
 
-    pub fn make_api_maps(&self) -> APIMaps {
+    pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
 
         for (gene_uniquename, gene_details) in &self.genes {
@@ -3627,8 +3627,11 @@ impl <'a> WebDataBuild<'a> {
 
         let mut terms_for_api: HashMap<TermId, TermDetails> = HashMap::new();
 
-        for (termid, term_details) in &self.terms {
-            term_summaries.insert(self.make_term_short(&termid));
+        for ref termid in self.terms.keys() {
+            term_summaries.insert(self.make_term_short(termid));
+        }
+
+        for (termid, term_details) in self.terms.drain() {
             let cv_config = &self.config.cv_config;
             if let Some(term_config) = cv_config.get(&term_details.cv_name) {
                 if term_config.feature_type == "gene" {
@@ -4272,8 +4275,6 @@ impl <'a> WebDataBuild<'a> {
 
         let mut web_data_terms: IdRcTermDetailsMap = HashMap::new();
 
-        let api_maps = self.make_api_maps();
-
         for (termid, term_details) in self.terms.drain() {
             web_data_terms.insert(termid.clone(), Rc::new(term_details));
         }
@@ -4324,14 +4325,19 @@ impl <'a> WebDataBuild<'a> {
             term_summaries: solr_term_summaries,
         };
 
+        let chromosomes = self.chromosomes.clone();
+        let term_subsets = self.term_subsets.clone();
+        let gene_subsets = self.gene_subsets.clone();
+        let recent_references = self.recent_references.clone();
+
         WebData {
             metadata: metadata,
-            chromosomes: self.chromosomes,
-            recent_references: self.recent_references,
-            api_maps: api_maps,
+            chromosomes: chromosomes,
+            recent_references: recent_references,
+            api_maps: self.make_api_maps(),
             search_gene_summaries: gene_summaries,
-            term_subsets: self.term_subsets,
-            gene_subsets: self.gene_subsets,
+            term_subsets: term_subsets,
+            gene_subsets: gene_subsets,
             solr_data: solr_data,
         }
     }
