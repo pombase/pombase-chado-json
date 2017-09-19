@@ -4273,14 +4273,6 @@ impl <'a> WebDataBuild<'a> {
         self.set_counts();
         self.make_subsets();
 
-        let mut web_data_terms: IdRcTermDetailsMap = HashMap::new();
-
-        for (termid, term_details) in self.terms.drain() {
-            web_data_terms.insert(termid.clone(), Rc::new(term_details));
-        }
-
-        self.terms = HashMap::new();
-
         let metadata = self.make_metadata();
 
         let mut gene_summaries: Vec<GeneSummary> = vec![];
@@ -4293,7 +4285,7 @@ impl <'a> WebDataBuild<'a> {
 
         let mut solr_term_summaries = HashMap::new();
 
-        for (termid, term_details) in &web_data_terms {
+        for (termid, term_details) in self.terms.iter() {
             if term_details.cv_annotations.keys().len() == 0 {
                 continue;
             }
