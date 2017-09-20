@@ -880,7 +880,7 @@ fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                              genes: &UniquenameGeneMap,
                              genotypes: &UniquenameGenotypeMap,
                              alleles: &UniquenameAlleleMap,
-                             terms: &TermIdDetailsMap) -> Ordering {
+                             terms: &TermIdDetailsMap) -> Result<Ordering, String> {
     if let Some(ref detail1_genotype_uniquename) = detail1.genotype {
         if let Some(ref detail2_genotype_uniquename) = detail2.genotype {
             let genotype1 = genotypes.get(detail1_genotype_uniquename).unwrap();
@@ -889,26 +889,26 @@ fn cmp_ont_annotation_detail(cv_config: &CvConfig,
             let ord = cmp_genotypes(genotype1, genotype2, alleles);
 
             if ord == Ordering::Equal {
-                cmp_extension(cv_config, &detail1.extension, &detail2.extension,
-                              genes, terms)
+                Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
+                                 genes, terms))
             } else {
-                ord
+                Ok(ord)
             }
         } else {
-            panic!("comparing two OntAnnotationDetail but one has a genotype and
- one a gene:\n{:?}\n{:?}\n", detail1, detail2);
+            Err(format!("comparing two OntAnnotationDetail but one has a genotype and
+ one a gene:\n{:?}\n{:?}\n", detail1, detail2))
         }
     } else {
         if detail2.genotype.is_some() {
-            panic!("comparing two OntAnnotationDetail but one has a genotype and
- one a gene:\n{:?}\n{:?}\n", detail1, detail2);
+            Err(format!("comparing two OntAnnotationDetail but one has a genotype and
+ one a gene:\n{:?}\n{:?}\n", detail1, detail2))
         } else {
             let ord = cmp_gene_vec(genes, &detail1.genes, &detail2.genes);
 
             if ord == Ordering::Equal {
-                cmp_extension(cv_config, &detail1.extension, &detail2.extension, genes, terms)
+                Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension, genes, terms))
             } else {
-                ord
+                Ok(ord)
             }
         }
     }
@@ -3260,10 +3260,12 @@ impl <'a> WebDataBuild<'a> {
                 {
                     let cmp_detail_with_maps =
                         |annotation1: &OntAnnotationDetail, annotation2: &OntAnnotationDetail| {
-                            cmp_ont_annotation_detail(cv_config,
-                                                      annotation1, annotation2, &self.genes,
-                                                      &self.genotypes, &self.alleles,
-                                                      &self.terms)
+                            let result = 
+                                cmp_ont_annotation_detail(cv_config,
+                                                          annotation1, annotation2, &self.genes,
+                                                          &self.genotypes, &self.alleles,
+                                                          &self.terms);
+                            result.unwrap_or_else(|err| panic!("error from cmp_ont_annotation_detail: {}", err))
                         };
 
                     sorted_annotations.sort_by(cmp_detail_with_maps);
@@ -3505,9 +3507,14 @@ impl <'a> WebDataBuild<'a> {
                 {
                     let cmp_detail_with_genotypes =
                         |annotation1: &OntAnnotationDetail, annotation2: &OntAnnotationDetail| {
-                            cmp_ont_annotation_detail(cv_config,
-                                                      annotation1, annotation2, &self.genes,
-                                                      &self.genotypes, &self.alleles, &self.terms)
+                            let result =
+                                cmp_ont_annotation_detail(cv_config,
+                                                          annotation1, annotation2, &self.genes,
+                                                          &self.genotypes, &self.alleles, &self.terms);
+                            result.unwrap_or_else(|err| {
+                                panic!("error from cmp_ont_annotation_detail: {} with terms: {} and {}",
+                                       err, source_termid, dest_termid)
+                            })
                         };
 
                     new_details.sort_by(cmp_detail_with_genotypes);
@@ -4946,7 +4953,7 @@ fn test_cmp_ont_annotation_detail() {
             let cv_config = &get_test_config().cv_config_by_name("molecular_function");
             cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2, &genes,
-                                      &genotypes, &alleles, &terms)
+                                      &genotypes, &alleles, &terms).unwrap()
         };
 
     details_vec.sort_by(&cmp_detail_with_genotypes);
