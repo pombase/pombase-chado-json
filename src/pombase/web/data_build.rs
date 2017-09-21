@@ -3638,6 +3638,9 @@ impl <'a> WebDataBuild<'a> {
             term_summaries.insert(self.make_term_short(termid));
         }
 
+        let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
+            self.get_api_genotype_annotation();
+
         for (termid, term_details) in self.terms.drain() {
             let cv_config = &self.config.cv_config;
             if let Some(term_config) = cv_config.get(&term_details.cv_name) {
@@ -3649,9 +3652,6 @@ impl <'a> WebDataBuild<'a> {
 
             terms_for_api.insert(termid.clone(), term_details.clone());
         }
-
-        let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
-            self.get_api_genotype_annotation();
 
         APIMaps {
             gene_summaries: gene_summaries,
