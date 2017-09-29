@@ -5,9 +5,13 @@ extern crate bio;
 use std::cmp::min;
 use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
+use std::io;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 use std::fmt;
+
+use regex::Regex;
+
 use self::bio::io::fasta::Writer;
 
 use flate2::Compression;
@@ -1005,7 +1009,54 @@ impl WebData {
         chromosomes_writer.flush().unwrap();
     }
 
-    pub fn write(&self, config: &Config, output_dir: &str) {
+    fn write_gene_id_table(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+        let load_org_taxonid = config.load_organism_taxonid;
+
+        let gene_file_name = output_dir.to_owned() + "/sysID2product.tsv";
+        let rna_file_name = output_dir.to_owned() + "/sysID2product.rna.tsv";
+
+        let gene_file = File::create(gene_file_name).expect("Unable to open file");
+        let rna_file = File::create(rna_file_name).expect("Unable to open file");
+        let mut gene_writer = BufWriter::new(&gene_file);
+        let mut rna_writer = BufWriter::new(&rna_file);
+
+        let rna_re = Regex::new(r"RNA").unwrap();
+
+        for (_, gene_details) in &self.api_maps.genes {
+            if gene_details.taxonid != load_org_taxonid {
+                continue;
+            }
+
+            let synonyms =
+                gene_details.synonyms.iter().filter(|synonym| {
+                    synonym.synonym_type == "exact"
+                })
+                .map(|synonym| synonym.name.clone())
+                .collect::<Vec<_>>()
+                .join(",");
+
+            let line = format!("{}\t{}\t{}\t{}\n",
+                               gene_details.uniquename,
+                               gene_details.name.clone().unwrap_or("".to_owned()),
+                               synonyms,
+                               gene_details.product.clone().unwrap_or("".to_owned()));
+
+            if gene_details.feature_type == "mRNA gene" {
+                gene_writer.write(line.as_bytes())?;
+            } else {
+                if rna_re.is_match(&gene_details.feature_type) {
+                    rna_writer.write(line.as_bytes())?;
+                }
+            }
+        }
+
+        gene_writer.flush()?;
+        rna_writer.flush()?;
+
+        Ok(())
+    }
+
+    pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
         self.write_chromosome_json(config, &web_json_path);
@@ -1027,6 +1078,11 @@ impl WebData {
         self.write_feature_sequences(&feature_sequences_path);
         let chromosomes_path = self.create_dir(&fasta_path, "chromosomes");
         self.write_chromosome_sequences(config, &chromosomes_path);
+
+        let misc_path = self.create_dir(output_dir, "misc");
+        self.write_gene_id_table(&config, &misc_path)?;
+
+        Ok(())
     }
 
     pub fn store_jsonb(&self, conn: &Connection) {
