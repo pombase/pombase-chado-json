@@ -12,3 +12,4 @@ pub mod web;
 pub mod types;
 pub mod interpro;
 pub mod api;
+pub mod bio;

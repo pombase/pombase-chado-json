@@ -1,6 +1,5 @@
 extern crate serde_json;
 extern crate postgres;
-extern crate bio;
 
 use std::cmp::min;
 use std::fs::{File, create_dir_all};
@@ -12,7 +11,7 @@ use std::fmt;
 
 use regex::Regex;
 
-use self::bio::io::fasta::Writer;
+use bio::util::format_fasta;
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -56,6 +55,13 @@ use std::collections::HashSet;
 use web::config::*;
 use types::*;
 use interpro::InterProMatch;
+
+const FASTA_SEQ_COLUMNS: usize = 60;
+
+fn write_as_fasta(writer: &mut Write, id: &str, desc: Option<String>, seq: &str) {
+    let fasta = format_fasta(id, desc, &seq, FASTA_SEQ_COLUMNS);
+    writer.write(fasta.as_bytes()).unwrap();
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub enum ExtRange {
@@ -942,7 +948,7 @@ impl WebData {
         let make_seq_writer = |name: &str| {
             let file_name = String::new() + output_dir + "/" + name;
             let file = File::create(file_name).expect("Unable to open file");
-            Writer::new(file)
+            BufWriter::new(file)
         };
 
         let mut cds_writer = make_seq_writer("cds.fa");
@@ -966,12 +972,13 @@ impl WebData {
                     cds_introns_utrs_seq += &part.residues;
                 }
 
-                cds_writer.write(gene_uniquename, None, cds_seq.as_bytes()).unwrap();
-                cds_introns_writer.write(gene_uniquename, None, cds_introns_seq.as_bytes()).unwrap();
-                cds_introns_utrs_writer.write(gene_uniquename, None, cds_introns_utrs_seq.as_bytes()).unwrap();
+                write_as_fasta(&mut cds_writer, gene_uniquename, None, &cds_seq);
+                write_as_fasta(&mut cds_introns_writer, gene_uniquename, None, &cds_introns_seq);
+                write_as_fasta(&mut cds_introns_utrs_writer,
+                               gene_uniquename, None, &cds_introns_utrs_seq);
                 if let Some(ref protein) = transcript.protein {
-                    peptide_writer.write(&(gene_uniquename.to_owned() + ":pep"),
-                                         None, protein.sequence.as_bytes()).unwrap();
+                    write_as_fasta(&mut peptide_writer, &(gene_uniquename.to_owned() + ":pep"),
+                                   None, &protein.sequence);
                 }
             }
         }
@@ -985,7 +992,7 @@ impl WebData {
         let make_seq_writer = |name: &str| {
             let file_name = String::new() + output_dir + "/" + name;
             let file = File::create(file_name).expect("Unable to open file");
-            Writer::new(file)
+            BufWriter::new(file)
         };
 
         let load_org_name = config.load_organism().full_name();
@@ -993,15 +1000,14 @@ impl WebData {
         let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name);
 
         for (uniquename, details) in &self.chromosomes {
-            let chr_residue_bytes = details.residues.as_bytes();
-            chromosomes_writer.write(uniquename, Some(&load_org_name),
-                                     chr_residue_bytes).unwrap();
+            write_as_fasta(&mut chromosomes_writer, &uniquename, Some(load_org_name.clone()),
+                           &details.residues);
 
             let this_chr_file_name = load_org_name.clone() + "_chromosome_" +
                 uniquename + ".fa";
             let mut this_chr_writer = make_seq_writer(&this_chr_file_name);
-            this_chr_writer.write(uniquename, Some(&load_org_name),
-                                  chr_residue_bytes).unwrap();
+            write_as_fasta(&mut this_chr_writer, uniquename, Some(load_org_name.clone()),
+                           &details.residues);
             this_chr_writer.flush().unwrap();
 
         }
