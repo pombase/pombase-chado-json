@@ -31,14 +31,14 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
 
 #[test]
 fn test_format_fasta() {
-    assert!(format_fasta("id1", None, "", 8) == ">id1\n");
+    assert!(format_fasta("id1", None, "", 8) == ">id1\n\n");
     assert!(format_fasta("id2", Some("desc1".to_owned()), "atgc", 4) ==
             ">id2 desc1\natgc\n");
-    assert!(format_fasta("id3", None, "atgc", 4) == "atgc");
+    assert!(format_fasta("id3", None, "atgc", 4) == ">id3\natgc\n");
     let input1 = "acgtacgattattaccggttacgcatccgtgtaaca";
-    let expected1 = "acgtacga\nttattacc\nggttacgc\natccgtgt\naaca\n";
+    let expected1 = ">id4 desc4\nacgtacga\nttattacc\nggttacgc\natccgtgt\naaca\n";
     assert!(format_fasta("id4", Some("desc4".to_owned()), input1, 8) == expected1);
     let input2 = "acgtacgattattaccggttacgcatccgtgt";
-    let expected2 = "acgtacga\nttattacc\nggttacgc\natccgtgt\n";
+    let expected2 = ">id5\nacgtacga\nttattacc\nggttacgc\natccgtgt\n";
     assert!(format_fasta("id5", None, input2, 8) == expected2);
 }
