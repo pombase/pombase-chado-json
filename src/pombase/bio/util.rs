@@ -9,17 +9,21 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
 
     ret.push('\n');
 
-    let mut count = 0;
-    for c in seq.chars() {
-        ret.push(c);
-        if count % width == 0 {
+    if seq.len() == 0 {
+        ret.push('\n');
+    } else {
+        let mut count = 0;
+        for c in seq.chars() {
+            ret.push(c);
+            count += 1;
+            if count % width == 0 {
+                ret.push('\n');
+            }
+        }
+
+        if count % width != 0 {
             ret.push('\n');
         }
-        count += 1;
-    }
-
-    if count % width != 0 {
-        ret.push('\n');
     }
 
     ret
