@@ -35,7 +35,8 @@ version = "0.14"
 features = ["with-serde_json"]
 
 [profile.release]
-opt-level = 3
+opt-level = 2
+codegen-units = 12
 
 [profile.dev]
 opt-level = 0
