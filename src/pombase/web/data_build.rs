@@ -1729,7 +1729,14 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn store_gene_details(&mut self, feat: &Feature) {
-        let location = make_location(&self.chromosomes, feat);
+        let maybe_location = make_location(&self.chromosomes, feat);
+
+        if let Some(ref location) = maybe_location {
+            if let Some(ref mut chr) = self.chromosomes.get_mut(&location.chromosome.name) {
+                chr.gene_uniquenames.push(feat.uniquename.clone());
+            }
+        }
+
         let organism = make_organism(&feat.organism);
         let dbxrefs = self.get_feature_dbxrefs(feat);
 
@@ -1777,7 +1784,7 @@ impl <'a> WebDataBuild<'a> {
             dbxrefs: dbxrefs,
             feature_type: feat.feat_type.name.clone(),
             characterisation_status: None,
-            location: location,
+            location: maybe_location,
             gene_neighbourhood: vec![],
             cds_location: None,
             cv_annotations: HashMap::new(),
@@ -1951,6 +1958,7 @@ impl <'a> WebDataBuild<'a> {
             name: feat.uniquename.clone(),
             residues: feat.residues.clone().unwrap(),
             ena_identifier: ena_identifier.unwrap(),
+            gene_uniquenames: vec![],
         };
 
         self.chromosomes.insert(feat.uniquename.clone(), chr);

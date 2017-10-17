@@ -215,6 +215,7 @@ pub struct ChromosomeDetails {
     pub name: String,
     pub residues: String,
     pub ena_identifier: String,
+    pub gene_uniquenames: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
