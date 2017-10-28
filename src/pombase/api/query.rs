@@ -154,8 +154,18 @@ fn exec_subset(server_data: &ServerData, subset_name: &str)  -> GeneUniquenameVe
     Ok(server_data.genes_of_subset(subset_name))
 }
 
-fn exec_gene_list(gene_uniquenames: &Vec<GeneUniquename>)  -> GeneUniquenameVecResult {
-    Ok(gene_uniquenames.clone())
+fn exec_gene_list(server_data: &ServerData, ids: &Vec<GeneUniquename>)
+                  -> GeneUniquenameVecResult
+{
+    let mut return_vec = vec![];
+
+    for id in ids {
+        if let Some(gene_uniquename) = server_data.gene_uniquename_of_id(id) {
+            return_vec.push(gene_uniquename.clone());
+        }
+    }
+
+    Ok(return_vec)
 }
 
 fn exec_genome_range_overlaps(server_data: &ServerData,
@@ -270,7 +280,7 @@ impl QueryNode {
                 ref expression,
             } => exec_termid(server_data, termid, single_or_multi_allele, expression),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
-            GeneList { ref ids } => exec_gene_list(ids),
+            GeneList { ref ids } => exec_gene_list(server_data, ids),
             IntRange { ref range_type, start, end } =>
                 exec_int_range(server_data, range_type, start, end),
             FloatRange { ref range_type, start, end } =>

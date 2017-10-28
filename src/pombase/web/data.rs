@@ -769,6 +769,7 @@ pub struct APIMaps {
     pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
     pub term_summaries: HashSet<TermShort>,
     pub genes: UniquenameGeneMap,
+    pub gene_name_gene_map: HashMap<String, GeneUniquename>,
     pub genotypes: IdGenotypeMap,
     pub terms: HashMap<TermId, TermDetails>,
     pub references: UniquenameReferenceMap,
@@ -1027,6 +1028,9 @@ impl WebData {
         let mut gene_writer = BufWriter::new(&gene_file);
         let mut rna_writer = BufWriter::new(&rna_file);
 
+        let db_version = "# Chado database date: ".to_owned() + &self.metadata.db_creation_datetime + "\n";
+        gene_writer.write(db_version.as_bytes())?;
+
         let rna_re = Regex::new(r"RNA").unwrap();
 
         for (_, gene_details) in &self.api_maps.genes {
@@ -1063,6 +1067,53 @@ impl WebData {
         Ok(())
     }
 
+/*
+  fn write_feature_coords(&self, config: &Config, output_dir: &str)
+                            -> Result<(), io::Error>
+    {
+        let load_org_taxonid = config.load_organism_taxonid;
+
+        let cds_coord_file_name = output_dir.to_owned() + "/sys.tsv";
+
+        let gene_file = File::create(gene_file_name).expect("Unable to open file");
+        let mut gene_writer = BufWriter::new(&gene_file);
+        let mut rna_writer = BufWriter::new(&rna_file);
+
+        let rna_re = Regex::new(r"RNA").unwrap();
+
+        for (_, gene_details) in &self.api_maps.genes {
+            if gene_details.taxonid != load_org_taxonid {
+                continue;
+            }
+
+            let synonyms =
+                gene_details.synonyms.iter().filter(|synonym| {
+                    synonym.synonym_type == "exact"
+                })
+                .map(|synonym| synonym.name.clone())
+                .collect::<Vec<_>>()
+                .join(",");
+
+            let line = format!("{}\t{}\t{}\t{}\n",
+                               gene_details.uniquename,
+                               gene_details.name.clone().unwrap_or("".to_owned()),
+                               synonyms,
+                               gene_details.product.clone().unwrap_or("".to_owned()));
+
+            if gene_details.feature_type == "mRNA gene" {
+                gene_writer.write(line.as_bytes())?;
+            } else {
+                if rna_re.is_match(&gene_details.feature_type) {
+                    rna_writer.write(line.as_bytes())?;
+                }
+            }
+        }
+
+        gene_writer.flush()?;
+
+        Ok(())
+    }
+*/
     pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 

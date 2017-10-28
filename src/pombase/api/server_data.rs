@@ -106,6 +106,19 @@ impl ServerData {
         }
     }
 
+    pub fn gene_uniquename_of_id(&self, id: &str) -> Option<GeneUniquename> {
+        if self.maps.gene_summaries.contains_key(id) {
+            Some(id.to_owned())
+        } else {
+            if let Some(gene_uniquename) =
+                self.maps.gene_name_gene_map.get(id) {
+                    Some(gene_uniquename.clone())
+                } else {
+                    None
+                }
+        }
+    }
+
     pub fn get_gene_summary(&self, gene_uniquename: &str) -> Option<&APIGeneSummary> {
         self.maps.gene_summaries.get(gene_uniquename)
     }

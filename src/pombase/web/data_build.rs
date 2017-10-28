@@ -3652,11 +3652,15 @@ impl <'a> WebDataBuild<'a> {
 
     pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
+        let mut gene_name_gene_map = HashMap::new();
 
         for (gene_uniquename, gene_details) in &self.genes {
             if self.config.load_organism_taxonid == gene_details.taxonid {
-                gene_summaries.insert(gene_uniquename.clone(),
-                                      self.make_api_gene_summary(&gene_uniquename));
+                let gene_summary = self.make_api_gene_summary(&gene_uniquename);
+                if let Some(ref gene_name) = gene_summary.name {
+                    gene_name_gene_map.insert(gene_name.clone(), gene_uniquename.clone());
+                }
+                gene_summaries.insert(gene_uniquename.clone(), gene_summary);
             }
         }
 
@@ -3690,6 +3694,7 @@ impl <'a> WebDataBuild<'a> {
             termid_genotype_annotation: termid_genotype_annotation,
             term_summaries: term_summaries,
             genes: self.genes.clone(),
+            gene_name_gene_map: gene_name_gene_map,
             genotypes: self.genotypes.clone(),
             terms: terms_for_api.clone(),
             references: self.references.clone(),
