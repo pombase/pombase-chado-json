@@ -2973,8 +2973,9 @@ impl <'a> WebDataBuild<'a> {
         if evidence_code.is_some() &&
             evidence_code.unwrap() == "IPI" &&
             (base_term_short.termid == "GO:0005515" ||
-             base_term_short.interesting_parents
-             .contains("GO:0005515")) {
+             base_term_short.interesting_parents.contains("GO:0005515") ||
+             base_term_short.termid == "GO:0003723" ||
+             base_term_short.interesting_parents.contains("GO:0003723")) {
                 extension.push(self.get_with_extension(&with_value));
             } else {
                 return Some(self.make_with_or_from_value(with_value));
