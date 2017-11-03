@@ -2279,7 +2279,7 @@ impl <'a> WebDataBuild<'a> {
                                             }
                                         };
                                     }
-                                    {
+                                    if gene_uniquename != other_gene_uniquename {
                                         let other_gene_details = self.genes.get_mut(object_uniquename).unwrap();
                                         if rel_name == "interacts_physically" {
                                             other_gene_details.physical_interactions.push(interaction_annotation.clone());
