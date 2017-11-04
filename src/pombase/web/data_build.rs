@@ -2972,6 +2972,7 @@ impl <'a> WebDataBuild<'a> {
 
         if evidence_code.is_some() &&
             evidence_code.unwrap() == "IPI" &&
+            // add new IDs to the interesting_parents config
             (base_term_short.termid == "GO:0005515" ||
              base_term_short.interesting_parents.contains("GO:0005515") ||
              base_term_short.termid == "GO:0003723" ||
