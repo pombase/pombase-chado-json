@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use std::iter::FromIterator;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::u32;
 
 use regex::Regex;
 use chrono::{UTC, TimeZone};
@@ -1472,7 +1473,6 @@ impl <'a> WebDataBuild<'a> {
             exact_synonyms: synonyms,
             dbxrefs: gene_details.dbxrefs.clone(),
             location: gene_details.location.clone(),
-            cds_location: gene_details.cds_location.clone(),
             transcripts: gene_details.transcripts.clone(),
             tm_domain_count: gene_details.tm_domain_coords.len(),
             exon_count: exon_count,
@@ -1786,7 +1786,6 @@ impl <'a> WebDataBuild<'a> {
             characterisation_status: None,
             location: maybe_location,
             gene_neighbourhood: vec![],
-            cds_location: None,
             cv_annotations: HashMap::new(),
             physical_interactions: vec![],
             genetic_interactions: vec![],
@@ -1836,11 +1835,42 @@ impl <'a> WebDataBuild<'a> {
 
     fn store_transcript_details(&mut self, feat: &Feature) {
         let transcript_uniquename = feat.uniquename.clone();
+
+        let parts = self.get_transcript_parts(&transcript_uniquename);
+
+        let mut cds_start = u32::MAX;
+        let mut cds_end = 0;
+
+        for part in &parts {
+            if part.feature_type == FeatureType::Exon {
+                if part.location.start_pos < cds_start {
+                    cds_start = part.location.start_pos;
+                }
+                if part.location.end_pos > cds_end {
+                    cds_end = part.location.end_pos;
+                }
+            }
+        }
+
+        let maybe_cds_location =
+            if cds_end == 0 {
+                None
+            } else {
+                let first_part_loc = &parts[0].location;
+                Some(ChromosomeLocation {
+                    chromosome: first_part_loc.chromosome.clone(),
+                    start_pos: cds_start,
+                    end_pos: cds_end,
+                    strand: first_part_loc.strand.clone(),
+                })
+            };
+
         let transcript = TranscriptDetails {
             uniquename: transcript_uniquename.clone(),
             transcript_type: feat.feat_type.name.clone(),
-            parts: self.get_transcript_parts(&transcript_uniquename),
+            parts: parts,
             protein: None,
+            cds_location: maybe_cds_location,
         };
 
         if let Some(gene_uniquename) =
@@ -1954,11 +1984,14 @@ impl <'a> WebDataBuild<'a> {
             panic!("{:?}", feat.uniquename);
         }
 
+        let org = make_organism(&feat.organism);
+
         let chr = ChromosomeDetails {
             name: feat.uniquename.clone(),
             residues: feat.residues.clone().unwrap(),
             ena_identifier: ena_identifier.unwrap(),
             gene_uniquenames: vec![],
+            taxonid: org.taxonid,
         };
 
         self.chromosomes.insert(feat.uniquename.clone(), chr);
@@ -4756,7 +4789,6 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         feature_type: "gene".into(),
         characterisation_status: None,
         location: None,
-        cds_location: None,
         gene_neighbourhood: vec![],
         transcripts: vec![],
         cv_annotations: HashMap::new(),

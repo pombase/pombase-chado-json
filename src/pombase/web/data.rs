@@ -216,6 +216,7 @@ pub struct ChromosomeDetails {
     pub residues: String,
     pub ena_identifier: String,
     pub gene_uniquenames: Vec<String>,
+    pub taxonid: OrganismTaxonId,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -453,8 +454,6 @@ pub struct GeneDetails {
     pub characterisation_status: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub cds_location: Option<ChromosomeLocation>,
     pub gene_neighbourhood: Vec<GeneShort>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
@@ -529,6 +528,7 @@ pub struct TranscriptDetails {
     pub parts: Vec<FeatureShort>,
     pub transcript_type: String,
     pub protein: Option<ProteinDetails>,
+    pub cds_location: Option<ChromosomeLocation>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -754,8 +754,6 @@ pub struct APIGeneSummary {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<String>,
     pub location: Option<ChromosomeLocation>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub cds_location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
     pub tm_domain_count: usize,
@@ -1067,53 +1065,67 @@ impl WebData {
         Ok(())
     }
 
-/*
-  fn write_feature_coords(&self, config: &Config, output_dir: &str)
+    fn write_feature_coords(&self, config: &Config, output_dir: &str)
                             -> Result<(), io::Error>
     {
         let load_org_taxonid = config.load_organism_taxonid;
 
-        let cds_coord_file_name = output_dir.to_owned() + "/sys.tsv";
+        let write_line =
+            |uniquename: &str, location: &ChromosomeLocation,
+             writer: &mut BufWriter<&File>| {
+                let display_strand =
+                    if location.strand == Strand::Forward {1} else {-1};
+                let line = format!("{}\t{}\t{}\t{}\n",
+                                   uniquename, location.start_pos,
+                                   location.end_pos, display_strand);
+                writer.write(line.as_bytes())
+        };
 
-        let gene_file = File::create(gene_file_name).expect("Unable to open file");
-        let mut gene_writer = BufWriter::new(&gene_file);
-        let mut rna_writer = BufWriter::new(&rna_file);
+        for (chr_uniquename, chr_details) in &self.chromosomes {
 
-        let rna_re = Regex::new(r"RNA").unwrap();
-
-        for (_, gene_details) in &self.api_maps.genes {
-            if gene_details.taxonid != load_org_taxonid {
+            if chr_details.taxonid != load_org_taxonid {
                 continue;
             }
 
-            let synonyms =
-                gene_details.synonyms.iter().filter(|synonym| {
-                    synonym.synonym_type == "exact"
-                })
-                .map(|synonym| synonym.name.clone())
-                .collect::<Vec<_>>()
-                .join(",");
+            let gene_file_name = format!("{}/{}.gene.coords.tsv", output_dir, chr_uniquename);
+            let cds_file_name = format!("{}/{}.cds.coords.tsv", output_dir, chr_uniquename);
+            let exon_file_name = format!("{}/{}.exon.coords.tsv", output_dir, chr_uniquename);
 
-            let line = format!("{}\t{}\t{}\t{}\n",
-                               gene_details.uniquename,
-                               gene_details.name.clone().unwrap_or("".to_owned()),
-                               synonyms,
-                               gene_details.product.clone().unwrap_or("".to_owned()));
+            let gene_file = File::create(gene_file_name).expect("Unable to open file");
+            let cds_file = File::create(cds_file_name).expect("Unable to open file");
+            let exon_file = File::create(exon_file_name).expect("Unable to open file");
 
-            if gene_details.feature_type == "mRNA gene" {
-                gene_writer.write(line.as_bytes())?;
-            } else {
-                if rna_re.is_match(&gene_details.feature_type) {
-                    rna_writer.write(line.as_bytes())?;
+            let mut gene_writer = BufWriter::new(&gene_file);
+            let mut cds_writer = BufWriter::new(&cds_file);
+            let mut exon_writer = BufWriter::new(&exon_file);
+
+            for gene_uniquename in &chr_details.gene_uniquenames {
+                let gene = self.api_maps.genes.get(gene_uniquename).unwrap();
+                if let Some(ref gene_location) = gene.location {
+                    write_line(gene_uniquename, gene_location, &mut gene_writer)?;
+
+                    for transcript in &gene.transcripts {
+                        if let Some(ref cds_location) = transcript.cds_location {
+                            write_line(gene_uniquename, cds_location, &mut cds_writer)?;
+                        }
+
+                        for part in &transcript.parts {
+                            if part.feature_type == FeatureType::Exon {
+                                write_line(gene_uniquename, &part.location, &mut exon_writer)?;
+                            }
+                        }
+                    }
                 }
             }
-        }
 
-        gene_writer.flush()?;
+            gene_writer.flush()?;
+            cds_writer.flush()?;
+            exon_writer.flush()?;
+        }
 
         Ok(())
     }
-*/
+
     pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
@@ -1139,6 +1151,8 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc");
         self.write_gene_id_table(&config, &misc_path)?;
+//        self.write_protein_features(&config, &misc_path)?;
+        self.write_feature_coords(&config, &misc_path)?;
 
         Ok(())
     }
