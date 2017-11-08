@@ -4319,6 +4319,55 @@ impl <'a> WebDataBuild<'a> {
         self.gene_subsets = gene_subsets;
     }
 
+    // sort the list of genes in the ChromosomeDetails by start_pos
+    pub fn sort_chromosome_genes(&mut self) {
+        let mut genes_to_sort: HashMap<ChromosomeName, Vec<GeneUniquename>> =
+            HashMap::new();
+
+        {
+            let sorter = |uniquename1: &GeneUniquename, uniquename2: &GeneUniquename| {
+                let gene1 = self.genes.get(uniquename1).unwrap();
+                let gene2 = self.genes.get(uniquename2).unwrap();
+
+                if let Some(ref gene1_loc) = gene1.location {
+                    if let Some(ref gene2_loc) = gene2.location {
+                        let cmp = gene1_loc.start_pos.cmp(&gene2_loc.start_pos);
+                        if cmp != Ordering::Equal {
+                            return cmp;
+                        }
+                    }
+                }
+                if gene1.name.is_some() {
+                    if gene2.name.is_some() {
+                        gene1.name.cmp(&gene2.name)
+                    } else {
+                        Ordering::Less
+                    }
+                } else {
+                    if gene2.name.is_some() {
+                        Ordering::Greater
+                    } else {
+                        gene1.uniquename.cmp(&gene2.uniquename)
+                    }
+                }
+            };
+
+            for (chr_uniquename, chr_details) in &self.chromosomes {
+                genes_to_sort.insert(chr_uniquename.clone(),
+                                     chr_details.gene_uniquenames.clone());
+            }
+
+            for (_, gene_uniquenames) in &mut genes_to_sort {
+                gene_uniquenames.sort_by(&sorter);
+            }
+        }
+
+        for (chr_uniquename, gene_uniquenames) in genes_to_sort {
+            self.chromosomes.get_mut(&chr_uniquename).unwrap().gene_uniquenames =
+                gene_uniquenames;
+        }
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -4350,6 +4399,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_reference_details_maps();
         self.set_counts();
         self.make_subsets();
+        self.sort_chromosome_genes();
 
         let metadata = self.make_metadata();
 
