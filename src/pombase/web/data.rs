@@ -1109,11 +1109,24 @@ impl WebData {
                             write_line(gene_uniquename, cds_location, &mut cds_writer)?;
                         }
 
-                        for part in &transcript.parts {
-                            if part.feature_type == FeatureType::Exon
+                        let is_forward =
+                            transcript.parts[0].location.strand == Strand::Forward;
+
+                        if is_forward {
+                            for part in &transcript.parts {
+                                if part.feature_type == FeatureType::Exon
                                 // && gene.feature_type == "mRNA gene"
-                            {
-                                write_line(gene_uniquename, &part.location, &mut exon_writer)?;
+                                {
+                                    write_line(gene_uniquename, &part.location, &mut exon_writer)?;
+                                }
+                            }
+                        } else {
+                            for part in transcript.parts.iter().rev() {
+                                if part.feature_type == FeatureType::Exon
+                                // && gene.feature_type == "mRNA gene"
+                                {
+                                    write_line(gene_uniquename, &part.location, &mut exon_writer)?;
+                                }
                             }
                         }
                     }
