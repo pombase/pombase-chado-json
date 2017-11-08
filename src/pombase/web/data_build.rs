@@ -1838,31 +1838,35 @@ impl <'a> WebDataBuild<'a> {
 
         let parts = self.get_transcript_parts(&transcript_uniquename);
 
-        let mut cds_start = u32::MAX;
-        let mut cds_end = 0;
-
-        for part in &parts {
-            if part.feature_type == FeatureType::Exon {
-                if part.location.start_pos < cds_start {
-                    cds_start = part.location.start_pos;
-                }
-                if part.location.end_pos > cds_end {
-                    cds_end = part.location.end_pos;
-                }
-            }
-        }
-
         let maybe_cds_location =
-            if cds_end == 0 {
-                None
+            if feat.feat_type.name == "mRNA" {
+                let mut cds_start = u32::MAX;
+                let mut cds_end = 0;
+
+                for part in &parts {
+                    if part.feature_type == FeatureType::Exon {
+                        if part.location.start_pos < cds_start {
+                            cds_start = part.location.start_pos;
+                        }
+                        if part.location.end_pos > cds_end {
+                            cds_end = part.location.end_pos;
+                        }
+                    }
+                }
+
+                if cds_end == 0 {
+                    None
+                } else {
+                    let first_part_loc = &parts[0].location;
+                    Some(ChromosomeLocation {
+                        chromosome: first_part_loc.chromosome.clone(),
+                        start_pos: cds_start,
+                        end_pos: cds_end,
+                        strand: first_part_loc.strand.clone(),
+                    })
+                }
             } else {
-                let first_part_loc = &parts[0].location;
-                Some(ChromosomeLocation {
-                    chromosome: first_part_loc.chromosome.clone(),
-                    start_pos: cds_start,
-                    end_pos: cds_end,
-                    strand: first_part_loc.strand.clone(),
-                })
+                None
             };
 
         let transcript = TranscriptDetails {

@@ -1110,7 +1110,9 @@ impl WebData {
                         }
 
                         for part in &transcript.parts {
-                            if part.feature_type == FeatureType::Exon {
+                            if part.feature_type == FeatureType::Exon
+                                // && gene.feature_type == "mRNA gene"
+                            {
                                 write_line(gene_uniquename, &part.location, &mut exon_writer)?;
                             }
                         }
