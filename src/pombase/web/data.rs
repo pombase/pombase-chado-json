@@ -1065,6 +1065,33 @@ impl WebData {
         Ok(())
     }
 
+    fn write_protein_features(&self, output_dir: &str) -> Result<(), io::Error> {
+        let peptide_stats_name = format!("{}/PeptideStats.tsv", output_dir);
+        let peptide_stats_file = File::create(peptide_stats_name).expect("Unable to open file");
+        let mut peptide_stats_writer = BufWriter::new(&peptide_stats_file);
+
+        let peptide_stats_header = "Systematic_ID\tMass (kDa)\tpI\tCharge\tResidues\tCAI\n";
+        peptide_stats_writer.write(peptide_stats_header.as_bytes())?;
+
+        for (gene_uniquename, gene_details) in &self.api_maps.genes {
+            if let Some(transcript) = gene_details.transcripts.get(0) {
+                if let Some(ref protein) = transcript.protein {
+                    let line = format!("{}\t{:.2}\t{}\t{}\t{}\t{}\n",
+                                       gene_uniquename, protein.molecular_weight,
+                                       protein.isoelectric_point,
+                                       protein.charge_at_ph7,
+                                       protein.sequence.len() - 1,
+                                       protein.codon_adaptation_index);
+                    peptide_stats_writer.write(line.as_bytes())?;
+                }
+            }
+        }
+
+        peptide_stats_writer.flush()?;
+
+        Ok(())
+    }
+
     fn write_feature_coords(&self, config: &Config, output_dir: &str)
                             -> Result<(), io::Error>
     {
@@ -1166,7 +1193,7 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc");
         self.write_gene_id_table(&config, &misc_path)?;
-//        self.write_protein_features(&config, &misc_path)?;
+        self.write_protein_features(&misc_path)?;
         self.write_feature_coords(&config, &misc_path)?;
 
         Ok(())
