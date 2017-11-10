@@ -528,6 +528,7 @@ pub struct TranscriptDetails {
     pub parts: Vec<FeatureShort>,
     pub transcript_type: String,
     pub protein: Option<ProteinDetails>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
 }
 
