@@ -1142,17 +1142,13 @@ impl WebData {
 
                         if is_forward {
                             for part in &transcript.parts {
-                                if part.feature_type == FeatureType::Exon
-                                // && gene.feature_type == "mRNA gene"
-                                {
+                                if part.feature_type == FeatureType::Exon {
                                     write_line(gene_uniquename, &part.location, &mut exon_writer)?;
                                 }
                             }
                         } else {
                             for part in transcript.parts.iter().rev() {
-                                if part.feature_type == FeatureType::Exon
-                                // && gene.feature_type == "mRNA gene"
-                                {
+                                if part.feature_type == FeatureType::Exon {
                                     write_line(gene_uniquename, &part.location, &mut exon_writer)?;
                                 }
                             }
