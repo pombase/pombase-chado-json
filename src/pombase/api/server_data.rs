@@ -114,6 +114,12 @@ impl ServerData {
                 self.maps.gene_name_gene_map.get(id) {
                     Some(gene_uniquename.clone())
                 } else {
+                    let lower_case_id = id.to_lowercase();
+                    for gene_uniquename in self.maps.gene_summaries.keys() {
+                        if gene_uniquename.to_lowercase() == lower_case_id {
+                            return Some(gene_uniquename.clone());
+                        }
+                    }
                     None
                 }
         }
