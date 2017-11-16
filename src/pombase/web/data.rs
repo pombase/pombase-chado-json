@@ -1021,14 +1021,24 @@ impl WebData {
 
         let gene_file_name = output_dir.to_owned() + "/sysID2product.tsv";
         let rna_file_name = output_dir.to_owned() + "/sysID2product.rna.tsv";
+        let pseudogenes_file_name = output_dir.to_owned() + "/pseudogeneIDs.tsv";
+        let all_names_file_name = output_dir.to_owned() + "/allNames.tsv";
 
         let gene_file = File::create(gene_file_name).expect("Unable to open file");
         let rna_file = File::create(rna_file_name).expect("Unable to open file");
+        let pseudogenes_file = File::create(pseudogenes_file_name).expect("Unable to open file");
+        let all_names_file = File::create(all_names_file_name).expect("Unable to open file");
+
         let mut gene_writer = BufWriter::new(&gene_file);
         let mut rna_writer = BufWriter::new(&rna_file);
+        let mut pseudogenes_writer = BufWriter::new(&pseudogenes_file);
+        let mut all_names_writer = BufWriter::new(&all_names_file);
 
-        let db_version = "# Chado database date: ".to_owned() + &self.metadata.db_creation_datetime + "\n";
+        let db_version = format!("# Chado database date: {}\n", self.metadata.db_creation_datetime);
         gene_writer.write(db_version.as_bytes())?;
+        rna_writer.write(db_version.as_bytes())?;
+        pseudogenes_writer.write(db_version.as_bytes())?;
+        all_names_writer.write(db_version.as_bytes())?;
 
         let rna_re = Regex::new(r"RNA").unwrap();
 
@@ -1045,23 +1055,36 @@ impl WebData {
                 .collect::<Vec<_>>()
                 .join(",");
 
-            let line = format!("{}\t{}\t{}\t{}\n",
+            let line = format!("{}\t{}\t{}\n",
                                gene_details.uniquename,
                                gene_details.name.clone().unwrap_or("".to_owned()),
-                               synonyms,
-                               gene_details.product.clone().unwrap_or("".to_owned()));
+                               synonyms);
 
-            if gene_details.feature_type == "mRNA gene" {
-                gene_writer.write(line.as_bytes())?;
+            let line_with_product = format!("{}\t{}\t{}\t{}\n",
+                                            gene_details.uniquename,
+                                            gene_details.name.clone().unwrap_or("".to_owned()),
+                                            synonyms,
+                                            gene_details.product.clone().unwrap_or("".to_owned()));
+
+            all_names_writer.write(line.as_bytes())?;
+
+            if gene_details.feature_type == "pseudogene" {
+                pseudogenes_writer.write(line.as_bytes())?;
             } else {
-                if rna_re.is_match(&gene_details.feature_type) {
-                    rna_writer.write(line.as_bytes())?;
+                if gene_details.feature_type == "mRNA gene" {
+                    gene_writer.write(line_with_product.as_bytes())?;
+                } else {
+                    if rna_re.is_match(&gene_details.feature_type) {
+                        rna_writer.write(line_with_product.as_bytes())?;
+                    }
                 }
             }
         }
 
         gene_writer.flush()?;
         rna_writer.flush()?;
+        pseudogenes_writer.flush()?;
+        all_names_writer.flush()?;
 
         Ok(())
     }
