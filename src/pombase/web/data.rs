@@ -254,6 +254,8 @@ pub struct ReferenceDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_triage_status: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub canto_curator_role: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_curator_name: Option<String>,

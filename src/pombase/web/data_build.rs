@@ -1577,6 +1577,7 @@ impl <'a> WebDataBuild<'a> {
             let mut pubmed_authors: Option<String> = None;
             let mut pubmed_publication_date: Option<String> = None;
             let mut pubmed_abstract: Option<String> = None;
+            let mut canto_triage_status: Option<String> = None;
             let mut canto_curator_role: Option<String> = None;
             let mut canto_curator_name: Option<String> = None;
             let mut canto_first_approved_date: Option<String> = None;
@@ -1592,6 +1593,8 @@ impl <'a> WebDataBuild<'a> {
                         pubmed_authors = Some(prop.value.clone()),
                     "pubmed_abstract" =>
                         pubmed_abstract = Some(prop.value.clone()),
+                    "canto_triage_status" =>
+                        canto_triage_status = Some(prop.value.clone()),
                     "canto_curator_role" =>
                         canto_curator_role = Some(prop.value.clone()),
                     "canto_curator_name" =>
@@ -1634,6 +1637,7 @@ impl <'a> WebDataBuild<'a> {
                                        authors: pubmed_authors.clone(),
                                        authors_abbrev: authors_abbrev,
                                        pubmed_publication_date: pubmed_publication_date.clone(),
+                                       canto_triage_status: canto_triage_status,
                                        canto_curator_role: canto_curator_role,
                                        canto_curator_name: canto_curator_name,
                                        canto_first_approved_date: canto_first_approved_date,
