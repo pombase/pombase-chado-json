@@ -7,6 +7,7 @@ use self::pombase::api::query::*;
 use self::pombase::api::result::*;
 use self::pombase::api::server_data::*;
 use self::pombase::api::query_exec::*;
+use self::pombase::web::data::GeneShort;
 
 fn get_server_data() -> ServerData {
     use std::path::PathBuf;
@@ -39,15 +40,28 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
 
 #[test]
 fn test_and_or_not() {
-    let qp1 = QueryNode::GeneList { ids: vec!["SPAC19G12.04".into(), "SPAC1805.15c".into(), "SPAC27E2.05".into()] };
-    let qp2 = QueryNode::GeneList { ids: vec!["SPAC1805.15c".into(), "SPAC27E2.05".into(), "hem1".into()] };
-    let qp3 = QueryNode::GeneList { ids: vec!["SPAC19G12.04".into(), "SPAC1805.15c".into(),
-                                              "SPAC27E2.05".into(), "hem1".into()] };
-    let qp4 = QueryNode::GeneList { ids: vec!["SPAC1805.15c".into(), "SPAC27E2.05".into(),
-                                              "hem1".into(), "SPRRNA.26".into()] };
-    let qp5 = QueryNode::GeneList { ids: vec!["SPAC27E2.05".into(), "hem1".into(),
-                                              "SPRRNA.26".into()] };
-
+    let make_genes = |ids: Vec<&str>| {
+        let mut ret = vec![];
+        for id in ids {
+            ret.push(GeneShort { uniquename: id.into(), name: None, product: None });
+        }
+        ret
+    };
+    let qp1 = QueryNode::GeneList {
+        genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
+    };
+    let qp2 = QueryNode::GeneList {
+        genes: make_genes(vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"])
+    };
+    let qp3 = QueryNode::GeneList {
+        genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"])
+    };
+    let qp4 = QueryNode::GeneList {
+        genes: make_genes(vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09", "SPRRNA.26"])
+    };
+    let qp5 = QueryNode::GeneList {
+        genes: make_genes(vec!["SPAC27E2.05", "SPAC27E2.05", "SPRRNA.26"])
+    };
     let and_query_node_1 = QueryNode::And(vec![qp1.clone(), qp2.clone()]);
     let and_query_node_2 = QueryNode::And(vec![qp3.clone(), qp4.clone()]);
 

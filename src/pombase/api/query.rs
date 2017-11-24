@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use api::server_data::ServerData;
 use api::result::*;
-use web::data::{APIGeneSummary, TranscriptDetails, FeatureType};
+use web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort};
 
 use types::GeneUniquename;
 
@@ -67,7 +67,7 @@ pub enum QueryNode {
 #[serde(rename = "subset")]
     Subset { subset_name: String },
 #[serde(rename = "gene_list")]
-    GeneList { ids: Vec<GeneUniquename> },
+    GeneList { genes: Vec<GeneShort> },
 #[serde(rename = "int_range")]
     IntRange { range_type: IntRangeType, start: Option<u64>, end: Option<u64> },
 #[serde(rename = "float_range")]
@@ -154,18 +154,16 @@ fn exec_subset(server_data: &ServerData, subset_name: &str)  -> GeneUniquenameVe
     Ok(server_data.genes_of_subset(subset_name))
 }
 
-fn exec_gene_list(server_data: &ServerData, ids: &Vec<GeneUniquename>)
+fn exec_gene_list(genes: &Vec<GeneShort>)
                   -> GeneUniquenameVecResult
 {
-    let mut return_vec = vec![];
+    let mut ret = vec![];
 
-    for id in ids {
-        if let Some(gene_uniquename) = server_data.gene_uniquename_of_id(id) {
-            return_vec.push(gene_uniquename.clone());
-        }
+    for gene in genes {
+        ret.push(gene.uniquename.clone());
     }
 
-    Ok(return_vec)
+    Ok(ret)
 }
 
 fn exec_genome_range_overlaps(server_data: &ServerData,
@@ -280,7 +278,7 @@ impl QueryNode {
                 ref expression,
             } => exec_termid(server_data, termid, single_or_multi_allele, expression),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
-            GeneList { ref ids } => exec_gene_list(server_data, ids),
+            GeneList { ref genes } => exec_gene_list(genes),
             IntRange { ref range_type, start, end } =>
                 exec_int_range(server_data, range_type, start, end),
             FloatRange { ref range_type, start, end } =>
