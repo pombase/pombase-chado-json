@@ -271,6 +271,9 @@ fn get_test_raw() -> Raw {
     let pubmed_authors_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pubprop_type_cv, &pbo_db,
                                 "pubmed_authors", "0034035");
+    let canto_triage_status_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pubprop_type_cv, &pbo_db,
+                                "canto_triage_status", "0034029");
     let with_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &feature_cvtermprop_type_cv, &pbo_db,
                                 "with", "0000098");
@@ -307,6 +310,14 @@ fn get_test_raw() -> Raw {
 
     publication.publicationprops.borrow_mut().push(publication_pub_date);
     publication.publicationprops.borrow_mut().push(publication_authors);
+
+    let triage_status = Rc::new(Publicationprop {
+        publication: publication.clone(),
+        prop_type: canto_triage_status_cvterm,
+        value: String::from("Curatable"),
+    });
+
+    publication.publicationprops.borrow_mut().push(triage_status);
 
     let bp_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &bp_cv, &go_db, "biological_process",

@@ -108,6 +108,14 @@ fn get_feat_rel_expression(feature: &Feature,
     None
 }
 
+fn reference_has_annotation(reference_details: &ReferenceDetails) -> bool {
+    reference_details.cv_annotations.is_empty() &&
+        reference_details.physical_interactions.is_empty() &&
+        reference_details.genetic_interactions.is_empty() &&
+        reference_details.ortholog_annotations.is_empty() &&
+        reference_details.paralog_annotations.is_empty()
+}
+
 fn is_gene_type(feature_type_name: &str) -> bool {
     feature_type_name == "gene" || feature_type_name == "pseudogene"
 }
@@ -4376,6 +4384,22 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn remove_non_curatable_refs(&mut self) {
+        let filtered_refs = self.references.drain()
+            .filter(|&(_, ref reference_details)| {
+                if reference_has_annotation(reference_details) {
+                    return true;
+                }
+                if let Some (ref triage_status) = reference_details.canto_triage_status {
+                    return triage_status != "Wrong organism" && triage_status != "Loaded in error";
+                }
+                false
+            })
+            .into_iter().collect();
+
+        self.references = filtered_refs;
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -4408,6 +4432,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_counts();
         self.make_subsets();
         self.sort_chromosome_genes();
+        self.remove_non_curatable_refs();
 
         let metadata = self.make_metadata();
 
