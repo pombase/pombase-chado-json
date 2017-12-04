@@ -4266,6 +4266,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // make subsets using the characterisation_status field of GeneDetails
     fn make_characterisation_status_subsets(&self, subsets: &mut IdGeneSubsetMap) {
         for (_, gene_details) in &self.genes {
             if self.config.load_organism_taxonid != gene_details.taxonid {
@@ -4292,6 +4293,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // make InterPro subsets using the interpro_matches field of GeneDetails
     fn make_interpro_subsets(&mut self, subsets: &mut IdGeneSubsetMap) {
         for (gene_uniquename, gene_details) in &self.genes {
             for interpro_match in &gene_details.interpro_matches {
@@ -4386,6 +4388,8 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    // remove some of the refs that have no annotations.
+    // See: https://github.com/pombase/website/issues/628
     fn remove_non_curatable_refs(&mut self) {
         let filtered_refs = self.references.drain()
             .filter(|&(_, ref reference_details)| {
