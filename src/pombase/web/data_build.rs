@@ -4433,6 +4433,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_deletion_viability();
         self.set_term_details_subsets();
         self.make_all_cv_summaries();
+        self.remove_non_curatable_refs();
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_genotype_details_maps();
@@ -4440,7 +4441,6 @@ impl <'a> WebDataBuild<'a> {
         self.set_counts();
         self.make_subsets();
         self.sort_chromosome_genes();
-        self.remove_non_curatable_refs();
 
         let metadata = self.make_metadata();
 
