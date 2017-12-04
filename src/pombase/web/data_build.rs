@@ -109,11 +109,11 @@ fn get_feat_rel_expression(feature: &Feature,
 }
 
 fn reference_has_annotation(reference_details: &ReferenceDetails) -> bool {
-    reference_details.cv_annotations.is_empty() &&
-        reference_details.physical_interactions.is_empty() &&
-        reference_details.genetic_interactions.is_empty() &&
-        reference_details.ortholog_annotations.is_empty() &&
-        reference_details.paralog_annotations.is_empty()
+    !reference_details.cv_annotations.is_empty() ||
+        !reference_details.physical_interactions.is_empty() ||
+        !reference_details.genetic_interactions.is_empty() ||
+        !reference_details.ortholog_annotations.is_empty() ||
+        !reference_details.paralog_annotations.is_empty()
 }
 
 fn is_gene_type(feature_type_name: &str) -> bool {
