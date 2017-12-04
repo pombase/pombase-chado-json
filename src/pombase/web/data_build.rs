@@ -848,7 +848,9 @@ fn make_reference_short<'a>(reference_map: &'a UniquenameReferenceMap,
     if reference_uniquename == "null" {
         None
     } else {
-        let reference_details = reference_map.get(reference_uniquename).unwrap();
+        let reference_details = reference_map.get(reference_uniquename)
+            .expect(&format!("missing reference in make_reference_short(): {}",
+                            reference_uniquename));
 
         let reference_short =
             ReferenceShort {
