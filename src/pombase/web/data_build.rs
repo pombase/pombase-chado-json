@@ -4399,7 +4399,9 @@ impl <'a> WebDataBuild<'a> {
                 if let Some (ref triage_status) = reference_details.canto_triage_status {
                     return triage_status != "Wrong organism" && triage_status != "Loaded in error";
                 }
-                false
+                // default to true because there are references that
+                // haven't or shouldn't be triaged, eg. GO_REF:...
+                true
             })
             .into_iter().collect();
 
