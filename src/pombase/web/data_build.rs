@@ -885,6 +885,44 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
     gene_short_vec1.cmp(&gene_short_vec2)
 }
 
+lazy_static
+! {
+    static ref MODIFICATION_RE: Regex = Regex::new(r"^(?P<aa>[A-Z])(?P<pos>\d+)$").unwrap();
+}
+
+fn cmp_residues(residue1: &Option<Residue>, residue2: &Option<Residue>) -> Ordering {
+    if let Some(ref res1) = *residue1 {
+        if let Some(ref res2) = *residue2 {
+            if let (Some(res1_captures), Some(res2_captures)) =
+                (MODIFICATION_RE.captures(res1), MODIFICATION_RE.captures(res2))
+            {
+                let res1_aa = res1_captures.name("aa").unwrap();
+                let res2_aa = res2_captures.name("aa").unwrap();
+                let aa_order = res1_aa.cmp(&res2_aa);
+                if aa_order == Ordering::Equal {
+                    let res1_pos =
+                        res1_captures.name("pos").unwrap().parse::<i32>().unwrap();
+                    let res2_pos =
+                        res2_captures.name("pos").unwrap().parse::<i32>().unwrap();
+                    res1_pos.cmp(&res2_pos)
+                } else {
+                    aa_order
+                }
+            } else {
+                res1.cmp(&res2)
+            }
+        } else {
+            Ordering::Less
+        }
+    } else {
+        if let Some(_) = *residue2 {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
+        }
+    }
+}
+
 fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                              detail1: &OntAnnotationDetail,
                              detail2: &OntAnnotationDetail,
@@ -917,7 +955,26 @@ fn cmp_ont_annotation_detail(cv_config: &CvConfig,
             let ord = cmp_gene_vec(genes, &detail1.genes, &detail2.genes);
 
             if ord == Ordering::Equal {
-                Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension, genes, terms))
+                                if let Some(ref sort_details_by) = cv_config.sort_details_by {
+                    for sort_type in sort_details_by {
+                        if sort_type == "modification" {
+                            let res = cmp_residues(&detail1.residue, &detail2.residue);
+                            if res != Ordering::Equal {
+                                return Ok(res);
+                            }
+                        } else {
+                            let res = cmp_extension(cv_config, &detail1.extension,
+                                                    &detail2.extension, genes, terms);
+                            if res != Ordering::Equal {
+                                return Ok(res);
+                            }
+                        }
+                    }
+                    Ok(Ordering::Equal)
+                } else {
+                    Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
+                                     genes, terms))
+                }
             } else {
                 Ok(ord)
             }
@@ -4566,6 +4623,7 @@ fn get_test_config() -> Config {
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_relation_ranges_to_collect: vec![String::from("has_substrate")],
+                                sort_details_by: None,
                             });
 
     config

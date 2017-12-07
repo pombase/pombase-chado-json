@@ -557,6 +557,7 @@ fn get_test_config() -> Config {
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_relation_ranges_to_collect: vec![String::from("has_substrate")],
+                                sort_details_by: None,
                             });
 
     config

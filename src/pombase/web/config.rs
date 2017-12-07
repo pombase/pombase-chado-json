@@ -70,6 +70,8 @@ pub struct CvConfig {
     // rather than as two lines
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub summary_relation_ranges_to_collect: Vec<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub sort_details_by: Option<Vec<String>>,
 }
 
 pub type ShortEvidenceCode = String;
@@ -163,6 +165,7 @@ impl Config {
                 split_by_parents: vec![],
                 summary_relations_to_hide: vec![],
                 summary_relation_ranges_to_collect: vec![],
+                sort_details_by: None,
             }
         }
     }
