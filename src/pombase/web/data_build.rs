@@ -3147,7 +3147,7 @@ impl <'a> WebDataBuild<'a> {
                         },
                     "with" => {
                         if let Some(with_value) = prop.value.clone() {
-                            if let Some(with_gene_short) = 
+                            if let Some(with_gene_short) =
                                 self.make_with_extension(&cvterm.termid(), evidence.clone(),
                                                          &mut extension, with_value) {
                                     withs.push(with_gene_short);
@@ -3401,7 +3401,7 @@ impl <'a> WebDataBuild<'a> {
                 {
                     let cmp_detail_with_maps =
                         |annotation1: &OntAnnotationDetail, annotation2: &OntAnnotationDetail| {
-                            let result = 
+                            let result =
                                 cmp_ont_annotation_detail(cv_config,
                                                           annotation1, annotation2, &self.genes,
                                                           &self.genotypes, &self.alleles,
