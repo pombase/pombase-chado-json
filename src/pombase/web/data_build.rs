@@ -4453,6 +4453,15 @@ impl <'a> WebDataBuild<'a> {
                 if reference_has_annotation(reference_details) {
                     return true;
                 }
+                if let Some(ref canto_triage_status) = reference_details.canto_triage_status {
+                    if canto_triage_status == "New" {
+                        return false;
+                    }
+                } else {
+                    if reference_details.uniquename.starts_with("PMID:") {
+                        print!("reference {} has no canto_triage_status\n", reference_details.uniquename);
+                    }
+                }
                 if let Some (ref triage_status) = reference_details.canto_triage_status {
                     return triage_status != "Wrong organism" && triage_status != "Loaded in error";
                 }
