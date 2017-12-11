@@ -2308,6 +2308,20 @@ impl <'a> WebDataBuild<'a> {
             alleles_to_add.insert(genotype_uniquename.clone(), expressed_allele_vec);
         }
 
+        {
+            let allele_cmp = |allele1: &ExpressedAllele, allele2: &ExpressedAllele| {
+                let allele1_display_name =
+                    allele_display_name(&self.alleles.get(&allele1.allele_uniquename).unwrap());
+                let allele2_display_name =
+                    allele_display_name(&self.alleles.get(&allele2.allele_uniquename).unwrap());
+                allele1_display_name.cmp(&allele2_display_name)
+            };
+
+            for (_, alleles) in &mut alleles_to_add {
+                alleles.sort_by(&allele_cmp);
+            }
+        }
+
         for (genotype_uniquename, genotype_details) in &mut self.genotypes {
             genotype_details.expressed_alleles =
                 alleles_to_add.remove(genotype_uniquename).unwrap();
