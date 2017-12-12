@@ -41,11 +41,21 @@
     ]
   },
   "evidence_types": {
-    "Inferred from Mutant Phenotype": "IMP",
-    "Inferred from Direct Assay": "IDA",
-    "Inferred from Genetic Interaction": "IGI",
-    "Inferred from Physical Interaction": "IPI",
-    "Inferred from Experiment": "EXP"
+    "IMP": {
+      "long": "Inferred from Mutant Phenotype"
+    },
+    "IDA": {
+      "long": "Inferred from Direct Assay"
+    },
+    "IGI": {
+      "long": "Inferred from Genetic Interaction"
+    },
+    "IPI": {
+      "long": "Inferred from Physical Interaction"
+    },
+    "EXP": {
+      "long": "Inferred from Experiment"
+    }
   },
   "cv_config": {
     "fission_yeast_phenotype": {
