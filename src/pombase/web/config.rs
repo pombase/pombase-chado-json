@@ -118,13 +118,19 @@ pub struct ServerConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct EvidenceDetails {
+    pub long: LongEvidenceCode,
+    pub link: Option<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub load_organism_taxonid: OrganismTaxonId,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
     pub extension_relation_order: RelationOrder,
-    pub evidence_types: HashMap<ShortEvidenceCode, LongEvidenceCode>,
+    pub evidence_types: HashMap<ShortEvidenceCode, EvidenceDetails>,
     pub cv_config: HashMap<CvName, CvConfig>,
 // when creating a TermShort struct, for each of these termids if the term has
 // an "interesting parent" using the given rel_name, we store it in the

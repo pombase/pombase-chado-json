@@ -2352,11 +2352,13 @@ impl <'a> WebDataBuild<'a> {
 
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
                             if prop.prop_type.name == "evidence" {
-                                if let Some(evidence_long) = prop.value.clone() {
-                                    if let Some(code) = self.config.evidence_types.get(&evidence_long) {
-                                        evidence = Some(code.clone());
-                                    } else {
-                                        evidence = Some(evidence_long);
+                                if let Some(ref evidence_long) = prop.value {
+                                    for (evidence_code, ev_details) in &self.config.evidence_types {
+                                        if &ev_details.long == evidence_long {
+                                            evidence = Some(evidence_code.clone());
+                                        } else {
+                                            evidence = Some(evidence_long.clone());
+                                        }
                                     }
                                 }
                             }
@@ -3128,15 +3130,17 @@ impl <'a> WebDataBuild<'a> {
             let mut qualifiers: Vec<Qualifier> = vec![];
             let mut evidence: Option<String> = None;
 
-            // need to get evidence first as it's use later
+            // need to get evidence first as it's used later
             // See: https://github.com/pombase/website/issues/455
             for ref prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 if &prop.type_name() == "evidence" {
-                    if let Some(evidence_long) = prop.value.clone() {
-                        if let Some(code) = self.config.evidence_types.get(&evidence_long) {
-                            evidence = Some(code.clone());
-                        } else {
-                            evidence = Some(evidence_long);
+                    if let Some(ref evidence_long) = prop.value {
+                        for (evidence_code, ev_details) in &self.config.evidence_types {
+                            if &ev_details.long == evidence_long {
+                                evidence = Some(evidence_code.clone());
+                            } else {
+                                evidence = Some(evidence_long.clone());
+                            }
                         }
                     }
                 }
