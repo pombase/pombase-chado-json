@@ -1098,6 +1098,14 @@ impl WebData {
 
         let peptide_stats_header = "Systematic_ID\tMass (kDa)\tpI\tCharge\tResidues\tCAI\n";
         peptide_stats_writer.write(peptide_stats_header.as_bytes())?;
+ 
+        let protein_features_name = format!("{}/ProteinFeatures.tsv", output_dir);
+        let protein_features_file = File::create(protein_features_name).expect("Unable to open file");
+        let mut protein_features_writer = BufWriter::new(&protein_features_file);
+
+        let protein_features_header =
+            "systematic_id\tgene_name\tpeptide_id\tdomain_id\tdatabase\tseq_start\tseq_end\n";
+        protein_features_writer.write(protein_features_header.as_bytes())?;
 
         for (gene_uniquename, gene_details) in &self.api_maps.genes {
             if let Some(transcript) = gene_details.transcripts.get(0) {
@@ -1109,8 +1117,22 @@ impl WebData {
                                        protein.sequence.len() - 1,
                                        protein.codon_adaptation_index);
                     peptide_stats_writer.write(line.as_bytes())?;
+
+                    let gene_name = gene_details.name.clone().unwrap_or("".to_owned());
+                    for interpro_match in &gene_details.interpro_matches {
+                        let line_start = format!("{}\t{}\t{}\t{}\t{}",
+                                                 gene_uniquename, gene_name,
+                                                 protein.uniquename, interpro_match.id,
+                                                 interpro_match.dbname);
+                        for location in &interpro_match.locations {
+                            let line = format!("{}\t{}\t{}\n", line_start,
+                                               location.start, location.end);
+                            protein_features_writer.write(line.as_bytes())?;
+                        }
+                    }
                 }
             }
+
         }
 
         peptide_stats_writer.flush()?;
