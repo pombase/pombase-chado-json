@@ -3000,7 +3000,11 @@ impl <'a> WebDataBuild<'a> {
                                     vec![]
                                 }
                         } else {
-                            vec![]
+                            if feature.feat_type.name == "gene" {
+                                vec![feature.uniquename.clone()]
+                            } else {
+                                vec![]
+                            }
                         }
                     }
                 } else {
