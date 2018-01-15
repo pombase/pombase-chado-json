@@ -3142,8 +3142,6 @@ impl <'a> WebDataBuild<'a> {
                         for (evidence_code, ev_details) in &self.config.evidence_types {
                             if &ev_details.long == evidence_long {
                                 evidence = Some(evidence_code.clone());
-                            } else {
-                                evidence = Some(evidence_long.clone());
                             }
                         }
                     }
