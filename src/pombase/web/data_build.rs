@@ -3783,6 +3783,7 @@ impl <'a> WebDataBuild<'a> {
     pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
         let mut gene_name_gene_map = HashMap::new();
+        let mut interactors_of_genes = HashMap::new();
 
         for (gene_uniquename, gene_details) in &self.genes {
             if self.config.load_organism_taxonid == gene_details.taxonid {
@@ -3791,6 +3792,40 @@ impl <'a> WebDataBuild<'a> {
                     gene_name_gene_map.insert(gene_name.clone(), gene_uniquename.clone());
                 }
                 gene_summaries.insert(gene_uniquename.clone(), gene_summary);
+
+                let mut interactors = vec![];
+
+                for interaction_annotation in &gene_details.physical_interactions {
+                    let interactor_uniquename =
+                        if gene_uniquename == &interaction_annotation.gene_uniquename {
+                            interaction_annotation.interactor_uniquename.clone()
+                        } else {
+                            interaction_annotation.gene_uniquename.clone()
+                        };
+                    let interactor = APIInteractor {
+                        interaction_type: InteractionType::Physical,
+                        interactor_uniquename: interactor_uniquename,
+                    };
+                    if !interactors.contains(&interactor) {
+                        interactors.push(interactor);
+                    }
+                }
+                for interaction_annotation in &gene_details.genetic_interactions {
+                    let interactor_uniquename =
+                        if gene_uniquename == &interaction_annotation.gene_uniquename {
+                            interaction_annotation.interactor_uniquename.clone()
+                        } else {
+                            interaction_annotation.gene_uniquename.clone()
+                        };
+                    let interactor = APIInteractor {
+                        interaction_type: InteractionType::Genetic,
+                        interactor_uniquename: interactor_uniquename,
+                    };
+                    if !interactors.contains(&interactor) {
+                        interactors.push(interactor);
+                    }
+                }
+                interactors_of_genes.insert(gene_uniquename.clone(), interactors);
             }
         }
 
@@ -3827,6 +3862,7 @@ impl <'a> WebDataBuild<'a> {
             gene_name_gene_map: gene_name_gene_map,
             genotypes: self.genotypes.clone(),
             terms: terms_for_api.clone(),
+            interactors_of_genes: interactors_of_genes,
             references: self.references.clone(),
         }
     }

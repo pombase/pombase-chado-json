@@ -763,6 +763,20 @@ pub struct APIGeneSummary {
     pub exon_count: usize,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum InteractionType {
+#[serde(rename = "physical")]
+    Physical,
+#[serde(rename = "genetic")]
+    Genetic
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub struct APIInteractor {
+    pub interaction_type: InteractionType,
+    pub interactor_uniquename: GeneUniquename,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
@@ -773,6 +787,7 @@ pub struct APIMaps {
     pub gene_name_gene_map: HashMap<String, GeneUniquename>,
     pub genotypes: IdGenotypeMap,
     pub terms: HashMap<TermId, TermDetails>,
+    pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
     pub references: UniquenameReferenceMap,
 }
 

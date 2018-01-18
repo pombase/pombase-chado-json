@@ -3,7 +3,7 @@ use std::iter::FromIterator;
 
 use api::server_data::ServerData;
 use api::result::*;
-use web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort};
+use web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType};
 
 use types::GeneUniquename;
 
@@ -72,6 +72,8 @@ pub enum QueryNode {
     IntRange { range_type: IntRangeType, start: Option<u64>, end: Option<u64> },
 #[serde(rename = "float_range")]
     FloatRange { range_type: FloatRangeType, start: Option<f64>, end: Option<f64> },
+#[serde(rename = "interactors")]
+    Interactors { gene_uniquename: GeneUniquename, interaction_type: String },
 }
 
 fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> GeneUniquenameVecResult {
@@ -264,6 +266,11 @@ fn exec_float_range(server_data: &ServerData, range_type: &FloatRangeType,
     }
 }
 
+fn exec_interactors_of_gene(server_data: &ServerData, gene_uniquename: &GeneUniquename,
+                            interaction_type: InteractionType) -> GeneUniquenameVecResult {
+    Ok(server_data.interactors_of_genes(gene_uniquename, interaction_type))
+}
+
 impl QueryNode {
     pub fn exec(&self, server_data: &ServerData) -> GeneUniquenameVecResult {
         use self::QueryNode::*;
@@ -279,6 +286,18 @@ impl QueryNode {
             } => exec_termid(server_data, termid, single_or_multi_allele, expression),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
             GeneList { ref genes } => exec_gene_list(genes),
+            Interactors { ref gene_uniquename, ref interaction_type } => {
+                match &interaction_type as &str {
+                    "physical" =>
+                        exec_interactors_of_gene(server_data, gene_uniquename,
+                                                 InteractionType::Physical),
+                    "genetic" =>
+                        exec_interactors_of_gene(server_data, gene_uniquename,
+                                                 InteractionType::Genetic),
+                    _ => Err(format!("No such interaction type: {}",
+                                    interaction_type))
+                }
+            },
             IntRange { ref range_type, start, end } =>
                 exec_int_range(server_data, range_type, start, end),
             FloatRange { ref range_type, start, end } =>

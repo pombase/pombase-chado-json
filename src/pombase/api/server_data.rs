@@ -7,7 +7,8 @@ use std::collections::HashMap;
 use std::collections::HashSet;
 
 use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
-                GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails};
+                GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
+                InteractionType};
 use web::config::Config;
 use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
@@ -262,6 +263,21 @@ impl ServerData {
 
     pub fn get_reference_details(&self, reference_uniquename: &str) -> Option<&ReferenceDetails> {
         self.maps.references.get(reference_uniquename)
+    }
+
+    pub fn interactors_of_genes(&self, gene_uniquename: &GeneUniquename,
+                                interaction_type: InteractionType)
+                                -> Vec<GeneUniquename> {
+        if let Some(interactors) = self.maps.interactors_of_genes.get(gene_uniquename) {
+            interactors.iter()
+                .filter(|interactor| {
+                    interactor.interaction_type == interaction_type
+                })
+                .map(|interactor| interactor.interactor_uniquename.clone())
+                .collect::<Vec<_>>()
+        } else {
+            vec![]
+        }
     }
 
     pub fn reload(&mut self) {
