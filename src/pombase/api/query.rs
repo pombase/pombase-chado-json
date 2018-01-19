@@ -70,8 +70,8 @@ pub enum QueryNode {
     IntRange { range_type: IntRangeType, start: Option<u64>, end: Option<u64> },
 #[serde(rename = "float_range")]
     FloatRange { range_type: FloatRangeType, start: Option<f64>, end: Option<f64> },
-#[serde(rename = "genome_range_contains")]
-    GenomeRangeContains { start: Option<u64>, end: Option<u64>, chromosome_name: String, },
+#[serde(rename = "genome_range")]
+    GenomeRange { start: Option<u64>, end: Option<u64>, chromosome_name: String, },
 #[serde(rename = "interactors")]
     Interactors { gene_uniquename: GeneUniquename, interaction_type: String },
 }
@@ -284,7 +284,7 @@ impl QueryNode {
             } => exec_termid(server_data, termid, single_or_multi_allele, expression),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
             GeneList { ref genes } => exec_gene_list(genes),
-            GenomeRangeContains { start, end, ref chromosome_name } =>
+            GenomeRange { start, end, ref chromosome_name } =>
                 exec_genome_range_overlaps(server_data, start, end, chromosome_name),
             Interactors { ref gene_uniquename, ref interaction_type } => {
                 match &interaction_type as &str {
