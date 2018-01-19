@@ -4609,11 +4609,10 @@ impl <'a> WebDataBuild<'a> {
         };
 
         let chromosomes = self.chromosomes.clone();
-        let mut chromosome_summaries = HashMap::new();
+        let mut chromosome_summaries = vec![];
 
-        for (chr_uniquename, chr_details) in &self.chromosomes {
-            chromosome_summaries.insert(chr_uniquename.clone(),
-                                        chr_details.make_chromosome_short());
+        for (_, chr_details) in &self.chromosomes {
+            chromosome_summaries.push(chr_details.make_chromosome_short());
         }
 
         let term_subsets = self.term_subsets.clone();

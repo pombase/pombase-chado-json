@@ -859,7 +859,7 @@ pub type IdGeneSubsetMap = HashMap<String, GeneSubsetDetails>;
 pub struct WebData {
     pub metadata: Metadata,
     pub chromosomes: ChrNameDetailsMap,
-    pub chromosome_summaries: HashMap<String, ChromosomeShort>,
+    pub chromosome_summaries: Vec<ChromosomeShort>,
     pub recent_references: RecentReferences,
     pub api_maps: APIMaps,
     pub solr_data: SolrData,
