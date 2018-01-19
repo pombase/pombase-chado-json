@@ -817,14 +817,10 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
     }
 }
 
-fn make_chromosome_short<'a>(chromosome_map: &'a ChrNameDetailsMap,
-                             chromosome_name: &'a str) -> ChromosomeShort {
+pub fn make_chromosome_short<'a>(chromosome_map: &'a ChrNameDetailsMap,
+                                 chromosome_name: &'a str) -> ChromosomeShort {
     if let Some(chr) = chromosome_map.get(chromosome_name) {
-        ChromosomeShort {
-            name: chr.name.clone(),
-            length: chr.residues.len(),
-            ena_identifier: chr.ena_identifier.clone(),
-        }
+        chr.make_chromosome_short()
     } else {
         panic!("can't find chromosome: {}", chromosome_name);
     }

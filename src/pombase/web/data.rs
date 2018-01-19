@@ -219,6 +219,16 @@ pub struct ChromosomeDetails {
     pub taxonid: OrganismTaxonId,
 }
 
+impl ChromosomeDetails {
+    pub fn make_chromosome_short(&self) -> ChromosomeShort {
+        ChromosomeShort {
+            name: self.name.clone(),
+            length: self.residues.len(),
+            ena_identifier: self.ena_identifier.clone(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceShort {
     pub uniquename: String,
