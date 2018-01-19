@@ -4609,6 +4609,13 @@ impl <'a> WebDataBuild<'a> {
         };
 
         let chromosomes = self.chromosomes.clone();
+        let mut chromosome_summaries = HashMap::new();
+
+        for (chr_uniquename, chr_details) in &self.chromosomes {
+            chromosome_summaries.insert(chr_uniquename.clone(),
+                                        chr_details.make_chromosome_short());
+        }
+
         let term_subsets = self.term_subsets.clone();
         let gene_subsets = self.gene_subsets.clone();
         let recent_references = self.recent_references.clone();
@@ -4616,6 +4623,7 @@ impl <'a> WebDataBuild<'a> {
         WebData {
             metadata: metadata,
             chromosomes: chromosomes,
+            chromosome_summaries: chromosome_summaries,
             recent_references: recent_references,
             api_maps: self.make_api_maps(),
             search_gene_summaries: gene_summaries,

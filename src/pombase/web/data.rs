@@ -859,6 +859,7 @@ pub type IdGeneSubsetMap = HashMap<String, GeneSubsetDetails>;
 pub struct WebData {
     pub metadata: Metadata,
     pub chromosomes: ChrNameDetailsMap,
+    pub chromosome_summaries: HashMap<String, ChromosomeShort>,
     pub recent_references: RecentReferences,
     pub api_maps: APIMaps,
     pub solr_data: SolrData,
@@ -1041,6 +1042,14 @@ impl WebData {
         }
 
         chromosomes_writer.flush().unwrap();
+    }
+
+    fn write_chromosome_summaries(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.chromosome_summaries).unwrap();
+        let file_name = String::new() + output_dir + "/chromosome_summaries.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write chromosome_summaries.json");
     }
 
     fn write_gene_id_table(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
@@ -1243,7 +1252,8 @@ impl WebData {
         self.write_chromosome_json(config, &web_json_path);
         println!("wrote {} chromosomes", self.get_chromosomes().len());
         self.write_gene_summaries(&web_json_path);
-        println!("wrote gene summaries");
+        self.write_chromosome_summaries(&web_json_path);
+        println!("wrote summaries");
         self.write_metadata(&web_json_path);
         println!("wrote metadata");
         self.write_recent_references(&web_json_path);
