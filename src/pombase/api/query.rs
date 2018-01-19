@@ -9,8 +9,6 @@ use types::GeneUniquename;
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum IntRangeType {
-#[serde(rename = "genome_range_contains")]
-    GenomeRangeContains,
 #[serde(rename = "protein_length")]
     ProteinLength,
 #[serde(rename = "tm_domain_count")]
@@ -72,6 +70,8 @@ pub enum QueryNode {
     IntRange { range_type: IntRangeType, start: Option<u64>, end: Option<u64> },
 #[serde(rename = "float_range")]
     FloatRange { range_type: FloatRangeType, start: Option<f64>, end: Option<f64> },
+#[serde(rename = "genome_range_contains")]
+    GenomeRangeContains { start: Option<u64>, end: Option<u64>, chromosome_name: String, },
 #[serde(rename = "interactors")]
     Interactors { gene_uniquename: GeneUniquename, interaction_type: String },
 }
@@ -168,15 +168,14 @@ fn exec_gene_list(genes: &Vec<GeneShort>)
     Ok(ret)
 }
 
-fn exec_genome_range_overlaps(server_data: &ServerData,
-                              range_start: Option<u64>, range_end: Option<u64>)
-                               -> GeneUniquenameVecResult
-{
+fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<u64>, end: Option<u64>,
+                              chromosome_name: &str) -> GeneUniquenameVecResult {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             if let Some(ref location) = gene.location {
-                (range_end.is_none() || location.start_pos as u64 <= range_end.unwrap()) &&
-                (range_start.is_none() || location.end_pos as u64 >= range_start.unwrap())
+                (end.is_none() || location.start_pos as u64 <= end.unwrap()) &&
+                    (start.is_none() || location.end_pos as u64 >= start.unwrap()) &&
+                    location.chromosome.name == chromosome_name
             } else {
                 false
             }
@@ -231,7 +230,6 @@ fn exec_exon_count_range(server_data: &ServerData,
 fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
                   start: Option<u64>, end: Option<u64>) -> GeneUniquenameVecResult {
     match *range_type {
-        IntRangeType::GenomeRangeContains => exec_genome_range_overlaps(server_data, start, end),
         IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
         IntRangeType::TMDomainCount => exec_tm_domain_count_range(server_data, start, end),
         IntRangeType::ExonCount => exec_exon_count_range(server_data, start, end),
@@ -286,6 +284,8 @@ impl QueryNode {
             } => exec_termid(server_data, termid, single_or_multi_allele, expression),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
             GeneList { ref genes } => exec_gene_list(genes),
+            GenomeRangeContains { start, end, ref chromosome_name } =>
+                exec_genome_range_overlaps(server_data, start, end, chromosome_name),
             Interactors { ref gene_uniquename, ref interaction_type } => {
                 match &interaction_type as &str {
                     "physical" =>
