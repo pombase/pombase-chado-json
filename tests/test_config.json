@@ -370,5 +370,7 @@
         "interpro:SSF", "interpro:TIGRFAMs", "interpro"
       ]
     }
+  },
+  "extra_database_aliases": {
   }
 }

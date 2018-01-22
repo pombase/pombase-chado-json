@@ -123,6 +123,9 @@ pub struct EvidenceDetails {
     pub link: Option<String>,
 }
 
+pub type DatabaseName = String;
+pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
+
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub load_organism_taxonid: OrganismTaxonId,
@@ -140,6 +143,7 @@ pub struct Config {
     pub go_slim_terms: Vec<TermAndName>,
     pub interpro: InterPro,
     pub server: ServerConfig,
+    pub extra_database_aliases: DatabaseAliases,
 }
 
 impl Config {

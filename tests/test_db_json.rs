@@ -548,6 +548,7 @@ fn get_test_config() -> Config {
                 prefixes_to_remove: vec![],
             },
         },
+        extra_database_aliases: HashMap::new(),
     };
 
     config.cv_config.insert(String::from("molecular_function"),

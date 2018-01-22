@@ -1125,7 +1125,9 @@ impl WebData {
         Ok(())
     }
 
-    fn write_protein_features(&self, output_dir: &str) -> Result<(), io::Error> {
+    fn write_protein_features(&self, config: &Config, output_dir: &str)
+                              -> Result<(), io::Error>
+    {
         let peptide_stats_name = format!("{}/PeptideStats.tsv", output_dir);
         let peptide_stats_file = File::create(peptide_stats_name).expect("Unable to open file");
         let mut peptide_stats_writer = BufWriter::new(&peptide_stats_file);
@@ -1140,6 +1142,14 @@ impl WebData {
         let protein_features_header =
             "systematic_id\tgene_name\tpeptide_id\tdomain_id\tdatabase\tseq_start\tseq_end\n";
         protein_features_writer.write(protein_features_header.as_bytes())?;
+
+        let db_display_name = |db_alias: &str| {
+            if let Some(name) = config.extra_database_aliases.get(&db_alias.to_lowercase()) {
+                name.clone()
+            } else {
+                db_alias.to_owned()
+            }
+        };
 
         for (gene_uniquename, gene_details) in &self.api_maps.genes {
             if let Some(transcript) = gene_details.transcripts.get(0) {
@@ -1157,7 +1167,7 @@ impl WebData {
                         let line_start = format!("{}\t{}\t{}\t{}\t{}",
                                                  gene_uniquename, gene_name,
                                                  protein.uniquename, interpro_match.id,
-                                                 interpro_match.dbname);
+                                                 db_display_name(&interpro_match.dbname));
                         for location in &interpro_match.locations {
                             let line = format!("{}\t{}\t{}\n", line_start,
                                                location.start, location.end);
@@ -1297,7 +1307,7 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc");
         self.write_gene_id_table(&config, &misc_path)?;
-        self.write_protein_features(&misc_path)?;
+        self.write_protein_features(&config, &misc_path)?;
         self.write_feature_coords(&config, &misc_path)?;
 
         Ok(())
