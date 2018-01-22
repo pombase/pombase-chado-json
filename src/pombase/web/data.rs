@@ -1221,18 +1221,43 @@ impl WebData {
                         let is_forward =
                             transcript.parts[0].location.strand == Strand::Forward;
 
-                        if is_forward {
-                            for part in &transcript.parts {
-                                if part.feature_type == FeatureType::Exon {
-                                    write_line(gene_uniquename, &part.location, &mut exon_writer)?;
-                                }
-                            }
+                        let parts: Vec<FeatureShort> = if is_forward {
+                            transcript.parts.iter().cloned().filter(|part| {
+                                part.feature_type == FeatureType::Exon ||
+                                    part.feature_type == FeatureType::FivePrimeUtr ||
+                                    part.feature_type == FeatureType::ThreePrimeUtr
+                            }).collect()
                         } else {
-                            for part in transcript.parts.iter().rev() {
-                                if part.feature_type == FeatureType::Exon {
-                                    write_line(gene_uniquename, &part.location, &mut exon_writer)?;
+                            transcript.parts.iter().cloned().rev().filter(|part| {
+                                part.feature_type == FeatureType::Exon ||
+                                    part.feature_type == FeatureType::FivePrimeUtr ||
+                                    part.feature_type == FeatureType::ThreePrimeUtr
+                            }).collect()
+                        };
+
+                        // merge Exon and (Three|Five)PrimeUtrs that abut 
+                        let mut merged_locs: Vec<ChromosomeLocation> = vec![];
+
+                        for part in parts {
+                            if let Some(prev) = merged_locs.pop() {
+                                if prev.end_pos + 1 == part.location.start_pos {
+                                    merged_locs.push(ChromosomeLocation {
+                                        start_pos: prev.start_pos,
+                                        end_pos: part.location.end_pos,
+                                        chromosome: prev.chromosome,
+                                        strand: prev.strand,
+                                    });
+                                } else {
+                                    merged_locs.push(prev);
+                                    merged_locs.push(part.location);
                                 }
+                            } else {
+                                merged_locs.push(part.location);
                             }
+                        }
+
+                        for loc in merged_locs {
+                            write_line(gene_uniquename, &loc, &mut exon_writer)?;
                         }
                     }
                 }
