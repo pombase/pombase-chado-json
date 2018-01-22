@@ -1139,6 +1139,10 @@ impl WebData {
         let protein_features_file = File::create(protein_features_name).expect("Unable to open file");
         let mut protein_features_writer = BufWriter::new(&protein_features_file);
 
+        let aa_composition_name = format!("{}/aa_composition.tsv", output_dir);
+        let aa_composition_file = File::create(aa_composition_name).expect("Unable to open file");
+        let mut aa_composition_writer = BufWriter::new(&aa_composition_file);
+
         let protein_features_header =
             "systematic_id\tgene_name\tpeptide_id\tdomain_id\tdatabase\tseq_start\tseq_end\n";
         protein_features_writer.write(protein_features_header.as_bytes())?;
@@ -1150,6 +1154,25 @@ impl WebData {
                 db_alias.to_owned()
             }
         };
+
+        type AAComposition = HashMap<char, u32>;
+
+        let mut total_composition: AAComposition = HashMap::new();
+
+        let prot_composition =
+            |total_composition: &mut AAComposition, protein: &ProteinDetails|
+        {
+            let mut composition = HashMap::new();
+            for c in protein.sequence.chars() {
+                let mut count = composition.entry(c).or_insert(0);
+                *count += 1;
+                let mut total_count = total_composition.entry(c).or_insert(0);
+                *total_count += 1;
+            }
+            composition
+        };
+
+        let mut compositions_to_write = vec![];
 
         for (gene_uniquename, gene_details) in &self.api_maps.genes {
             if let Some(transcript) = gene_details.transcripts.get(0) {
@@ -1174,10 +1197,57 @@ impl WebData {
                             protein_features_writer.write(line.as_bytes())?;
                         }
                     }
+
+                    let composition = prot_composition(&mut total_composition, &protein);
+
+                    compositions_to_write.push((gene_uniquename.clone(), composition));
                 }
             }
 
         }
+
+        let mut all_composition_aa: Vec<char> = vec![];
+
+        for (ch, _) in &total_composition {
+            if *ch != '*' {
+                all_composition_aa.push(*ch);
+            }
+        }
+
+        all_composition_aa.sort();
+
+        let all_composition_string =
+            all_composition_aa.iter()
+            .map(|c| c.to_string())
+            .collect::<Vec<_>>().join("\t");
+
+        let composition_header = "Systematic_ID\t".to_owned() +
+            &all_composition_string + "\n";
+        aa_composition_writer.write(composition_header.as_bytes())?;
+
+        let composition_line = |first_col_string: String, comp: &AAComposition| {
+            let mut line = first_col_string;
+
+            for ch in &all_composition_aa {
+                line.push_str("\t");
+                if let Some(count) = comp.get(ch) {
+                    line.push_str(&count.to_string());
+                } else {
+                    line.push_str("0");
+                }
+            }
+            line.push_str("\n");
+            line
+        };
+
+        for (gene_uniquename, comp) in compositions_to_write.drain(0..) {
+            let line = composition_line(gene_uniquename, &comp);
+            aa_composition_writer.write(line.as_bytes())?;
+        }
+
+        let composition_total_line =
+            composition_line("total".to_owned(), &total_composition);
+        aa_composition_writer.write(composition_total_line.as_bytes())?;
 
         peptide_stats_writer.flush()?;
 
