@@ -169,13 +169,35 @@ impl Config {
         if let Some(config) = self.cv_config.get(cv_name) {
             config.clone()
         } else {
-            CvConfig {
-                feature_type: "gene".into(),
-                filters: vec![],
-                split_by_parents: vec![],
-                summary_relations_to_hide: vec![],
-                summary_relation_ranges_to_collect: vec![],
-                sort_details_by: None,
+            if cv_name.starts_with("extension:") {
+                if cv_name.ends_with(":gene") {
+                    CvConfig {
+                        feature_type: "gene".into(),
+                        filters: vec![],
+                        split_by_parents: vec![],
+                        summary_relations_to_hide: vec![],
+                        summary_relation_ranges_to_collect: vec![],
+                        sort_details_by: None,
+                    }
+                } else {
+                    CvConfig {
+                        feature_type: "genotype".into(),
+                        filters: vec![],
+                        split_by_parents: vec![],
+                        summary_relations_to_hide: vec![],
+                        summary_relation_ranges_to_collect: vec![],
+                        sort_details_by: None,
+                    }
+                }
+            } else {
+                CvConfig {
+                    feature_type: "gene".into(),
+                    filters: vec![],
+                    split_by_parents: vec![],
+                    summary_relations_to_hide: vec![],
+                    summary_relation_ranges_to_collect: vec![],
+                    sort_details_by: None,
+                }
             }
         }
     }

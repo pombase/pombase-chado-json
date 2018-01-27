@@ -410,15 +410,12 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
     }
 }
 
-fn make_cv_summaries(config: &Config,
+fn make_cv_summaries(cv_config: &CvConfig,
                      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                      include_gene: bool, include_genotype: bool,
                      term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
                      genes: &IdGeneShortMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
-        let term = &term_and_annotations.term;
-        let cv_config = config.cv_config_by_name(&term.cv_name);
-
         let mut rows = vec![];
 
         let mut summary_sorted_annotations = term_and_annotations.annotations.clone();
@@ -506,7 +503,6 @@ fn make_cv_summaries(config: &Config,
     for ref mut term_and_annotations in term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
             collect_summary_rows(genes, summary);
-            let cv_config = config.cv_config_by_name(&term_and_annotations.term.cv_name);
             collect_ext_summary_genes(&cv_config, summary, genes);
         }
     }
@@ -2768,32 +2764,36 @@ impl <'a> WebDataBuild<'a> {
         let gene_short_map = self.make_gene_short_map();
 
         for (_, term_details) in &mut self.terms {
-            for (_, mut term_annotations) in &mut term_details.cv_annotations {
-                make_cv_summaries(&self.config, &self.children_by_termid,
+            for (cv_name, mut term_annotations) in &mut term_details.cv_annotations {
+                let cv_config = self.config.cv_config_by_name(cv_name);
+                make_cv_summaries(&cv_config, &self.children_by_termid,
                                   true, true, &mut term_annotations,
                                   &gene_short_map);
             }
         }
 
         for (_, gene_details) in &mut self.genes {
-            for (_, mut term_annotations) in &mut gene_details.cv_annotations {
-                make_cv_summaries(&self.config, &self.children_by_termid,
+            for (cv_name, mut term_annotations) in &mut gene_details.cv_annotations {
+                let cv_config = self.config.cv_config_by_name(cv_name);
+                make_cv_summaries(&cv_config, &self.children_by_termid,
                                   false, true, &mut term_annotations,
                                   &gene_short_map);
             }
         }
 
         for (_, genotype_details) in &mut self.genotypes {
-            for (_, mut term_annotations) in &mut genotype_details.cv_annotations {
-                make_cv_summaries(&self.config, &self.children_by_termid,
+            for (cv_name, mut term_annotations) in &mut genotype_details.cv_annotations {
+                let cv_config = self.config.cv_config_by_name(cv_name);
+                make_cv_summaries(&cv_config, &self.children_by_termid,
                                   false, false, &mut term_annotations,
                                   &gene_short_map);
             }
         }
 
         for (_, reference_details) in &mut self.references {
-            for (_, mut term_annotations) in &mut reference_details.cv_annotations {
-                make_cv_summaries(&self.config, &self.children_by_termid,
+            for (cv_name, mut term_annotations) in &mut reference_details.cv_annotations {
+                let cv_config = self.config.cv_config_by_name(cv_name);
+                make_cv_summaries(&cv_config, &self.children_by_termid,
                                   true, true, &mut term_annotations,
                                   &gene_short_map);
             }
@@ -3261,6 +3261,11 @@ impl <'a> WebDataBuild<'a> {
                 } else {
                     None
                 };
+
+            if gene_uniquenames_vec.len() > 1 && maybe_genotype_uniquename.is_none() {
+                panic!("non-genotype annotation has more than one gene");
+            }
+
             let annotation = OntAnnotationDetail {
                 id: feature_cvterm.feature_cvterm_id,
                 genes: gene_uniquenames_vec,
@@ -3504,6 +3509,53 @@ impl <'a> WebDataBuild<'a> {
                             .annotations.push(detail.clone());
                     }
                 }
+
+                // Add annotations to terms referred to in extensions.  They
+                // are added to fake CV that have a name starting with
+                // "extension:".  The CV name will end with ":genotype" if the
+                // annotation is a phentoype/genotype, and will end with ":end"
+                // otherwise.  The middle of the fake CV name is the display
+                // name for the extension relation.
+                // eg. "extension:directly activates:gene"
+                for ext_part in &detail.extension {
+                    if let ExtRange::Term(ref part_termid) = ext_part.ext_range {
+                        let part_term_short = {
+                            self.make_term_short(&part_termid)
+                        };
+
+                        let cv_name = "extension:".to_owned() + &ext_part.rel_type_display_name;
+
+                        if let Some(ref mut part_term_details) =
+                            self.terms.get_mut(part_termid)
+                        {
+                            let extension_cv_name =
+                                if detail.genotype.is_some() {
+                                    cv_name.clone() + ":genotype"
+                                } else {
+                                    cv_name.clone() + ":gene"
+                                };
+
+                            part_term_details.cv_annotations
+                                .entry(extension_cv_name.clone())
+                                .or_insert({
+                                    let mut new_vec = Vec::new();
+                                    let new_term_annotation =
+                                        OntTermAnnotations {
+                                            term: part_term_short.clone(),
+                                            is_not: is_not,
+                                            rel_names: HashSet::new(),
+                                            annotations: vec![],
+                                            summary: None,
+                                        };
+                                    new_vec.push(new_term_annotation);
+                                    new_vec
+                                });
+                            part_term_details.cv_annotations.get_mut(&extension_cv_name)
+                                .unwrap()[0]
+                                .annotations.push(detail.clone());
+                        }
+                    }
+                }
             }
         }
 
@@ -3622,7 +3674,12 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
 
-                for (_, term_annotations) in &subject_term_details.cv_annotations {
+                for (cv_name, term_annotations) in &subject_term_details.cv_annotations {
+                    if cv_name.starts_with("extension:") {
+                        // don't add extension annotations to all parents
+                        // see: https://github.com/pombase/website/issues/473
+                        continue;
+                    }
                     for term_annotation in term_annotations {
                         for detail in &term_annotation.annotations {
                             if !annotation_by_id.contains_key(&detail.id) {
@@ -3912,14 +3969,18 @@ impl <'a> WebDataBuild<'a> {
             HashMap::new();
 
         for (termid, term_details) in &self.terms {
-            for (_, term_annotations) in &term_details.cv_annotations {
+            for (cv_name, term_annotations) in &term_details.cv_annotations {
                 for term_annotation in term_annotations {
                     for detail in &term_annotation.annotations {
                         for gene_uniquename in &detail.genes {
                             self.add_gene_to_hash(&mut seen_genes, termid.clone(), gene_uniquename.clone());
-                            genes_annotated_with_map
-                                .entry(termid.clone()).or_insert(HashSet::new())
-                                .insert(gene_uniquename.clone());
+                            if !cv_name.starts_with("extension:") {
+                                // prevent extension annotations from appears
+                                // in the normal query builder searches
+                                genes_annotated_with_map
+                                    .entry(termid.clone()).or_insert(HashSet::new())
+                                    .insert(gene_uniquename.clone());
+                            }
                         }
                         self.add_ref_to_hash(&mut seen_references, termid.clone(), detail.reference.clone());
                         for condition_termid in &detail.conditions {
