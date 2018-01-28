@@ -3630,7 +3630,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn process_cvtermpath(&mut self) {
         let mut annotation_by_id: HashMap<i32, OntAnnotationDetail> = HashMap::new();
-        let mut new_annotations: HashMap<TermId, HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
+        let mut new_annotations: HashMap<(CvName, TermId), HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
             HashMap::new();
 
         let mut children_by_termid: HashMap<TermId, HashSet<TermId>> = HashMap::new();
@@ -3675,11 +3675,6 @@ impl <'a> WebDataBuild<'a> {
                 }
 
                 for (cv_name, term_annotations) in &subject_term_details.cv_annotations {
-                    if cv_name.starts_with("extension:") {
-                        // don't add extension annotations to all parents
-                        // see: https://github.com/pombase/website/issues/473
-                        continue;
-                    }
                     for term_annotation in term_annotations {
                         for detail in &term_annotation.annotations {
                             if !annotation_by_id.contains_key(&detail.id) {
@@ -3689,7 +3684,7 @@ impl <'a> WebDataBuild<'a> {
                             let source_termid = subject_termid.clone();
 
                             if !term_annotation.is_not {
-                                new_annotations.entry(dest_termid)
+                                new_annotations.entry((cv_name.clone(), dest_termid))
                                     .or_insert(HashMap::new())
                                     .entry(source_termid)
                                     .or_insert(HashMap::new())
@@ -3705,7 +3700,7 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        for (dest_termid, dest_annotations_map) in new_annotations.drain() {
+        for ((dest_cv_name, dest_termid), dest_annotations_map) in new_annotations.drain() {
             for (source_termid, source_annotations_map) in dest_annotations_map {
                 let mut new_details: Vec<OntAnnotationDetail> = vec![];
                 let mut all_rel_names: HashSet<String> = HashSet::new();
@@ -3717,16 +3712,13 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
 
-                let cv_config = {
-                    let term = self.terms.get_mut(&dest_termid).unwrap();
-                    &self.config.cv_config_by_name(&term.cv_name)
-                };
+                let dest_cv_config = &self.config.cv_config_by_name(&dest_cv_name);
 
                 {
                     let cmp_detail_with_genotypes =
                         |annotation1: &OntAnnotationDetail, annotation2: &OntAnnotationDetail| {
                             let result =
-                                cmp_ont_annotation_detail(cv_config,
+                                cmp_ont_annotation_detail(dest_cv_config,
                                                           annotation1, annotation2, &self.genes,
                                                           &self.genotypes, &self.alleles, &self.terms);
                             result.unwrap_or_else(|err| {
@@ -3745,13 +3737,13 @@ impl <'a> WebDataBuild<'a> {
                     self.terms.get_mut(&dest_termid).unwrap()
                 };
 
-                for (cv_name, new_annotation) in new_annotations {
+                for (_, new_annotation) in new_annotations {
                     let mut new_annotation_clone = new_annotation.clone();
 
                     new_annotation_clone.rel_names.extend(all_rel_names.clone());
 
                     dest_term_details.cv_annotations
-                        .entry(cv_name.clone())
+                        .entry(dest_cv_name.clone())
                         .or_insert(Vec::new())
                         .push(new_annotation_clone);
                 }
