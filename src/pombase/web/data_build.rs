@@ -722,6 +722,19 @@ pub fn genotype_display_name(genotype: &GenotypeDetails,
     }
 }
 
+fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
+    if let Some(phase) = feature_loc.phase {
+        match phase {
+            0 => Some(Phase::Zero),
+            1 => Some(Phase::One),
+            2 => Some(Phase::Two),
+            _ => panic!(),
+        }
+    } else {
+        None
+    }
+}
+
 fn make_location(chromosome_map: &ChrNameDetailsMap,
                  feat: &Feature) -> Option<ChromosomeLocation> {
     let feature_locs = feat.featurelocs.borrow();
@@ -750,6 +763,7 @@ fn make_location(chromosome_map: &ChrNameDetailsMap,
                     -1 => Strand::Reverse,
                     _ => panic!(),
                 },
+                phase: make_phase(&feature_loc),
             })
         },
         None => None,
@@ -1203,6 +1217,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     start_pos: intron_start,
                     end_pos: intron_end,
                     strand: prev_part.location.strand.clone(),
+                    phase: None,
                 };
 
                 let intron_uniquename =
@@ -1920,13 +1935,18 @@ impl <'a> WebDataBuild<'a> {
                 if cds_end == 0 {
                     None
                 } else {
-                    let first_part_loc = &parts[0].location;
-                    Some(ChromosomeLocation {
-                        chromosome: first_part_loc.chromosome.clone(),
-                        start_pos: cds_start,
-                        end_pos: cds_end,
-                        strand: first_part_loc.strand.clone(),
-                    })
+                    if let Some(mrna_location) = feat.featurelocs.borrow().get(0) {
+                        let first_part_loc = &parts[0].location;
+                        Some(ChromosomeLocation {
+                            chromosome: first_part_loc.chromosome.clone(),
+                            start_pos: cds_start,
+                            end_pos: cds_end,
+                            strand: first_part_loc.strand.clone(),
+                            phase: make_phase(&mrna_location),
+                        })
+                    } else {
+                        None
+                    }
                 }
             } else {
                 None

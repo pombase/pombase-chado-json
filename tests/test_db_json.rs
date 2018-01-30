@@ -437,6 +437,7 @@ fn get_test_raw() -> Raw {
         fmax: 200,
         strand: 1,
         srcfeature: chr_3.clone(),
+        phase: None,
     }));
 
     par1_5putr_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
@@ -445,6 +446,7 @@ fn get_test_raw() -> Raw {
         fmax: 24,
         strand: 1,
         srcfeature: chr_3.clone(),
+        phase: None,
     }));
 
     par1_exon_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
@@ -453,6 +455,7 @@ fn get_test_raw() -> Raw {
         fmax: 50,
         strand: 1,
         srcfeature: chr_3.clone(),
+        phase: None,
     }));
 
     par1_3putr_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
@@ -461,6 +464,7 @@ fn get_test_raw() -> Raw {
         fmax: 200,
         strand: 1,
         srcfeature: chr_3.clone(),
+        phase: None,
     }));
 
     cdc16_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
@@ -469,6 +473,7 @@ fn get_test_raw() -> Raw {
         fmax: 2748180,
         strand: -1,
         srcfeature: chr_1.clone(),
+        phase: None,
     }));
 
     pom1_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
@@ -477,6 +482,7 @@ fn get_test_raw() -> Raw {
         fmax: 537869,
         strand: -1,
         srcfeature: chr_1.clone(),
+        phase: None,
     }));
 
     Raw {

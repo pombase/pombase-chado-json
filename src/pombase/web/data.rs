@@ -415,6 +415,15 @@ pub enum Strand {
     Reverse = -1,
 }
 
+impl Strand {
+    pub fn to_gff_str(&self) -> &'static str {
+        match *self {
+            Strand::Forward => "+",
+            Strand::Reverse => "-",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeShort {
     pub name: String,
@@ -422,12 +431,32 @@ pub struct ChromosomeShort {
     pub ena_identifier: String,
 }
 
+#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+pub enum Phase {
+    Zero,
+    One,
+    Two,
+}
+
+impl Phase {
+    pub fn to_gff_str(&self) -> &'static str {
+        match *self {
+            Phase::Zero => "0",
+            Phase::One => "1",
+            Phase::Two => "2",
+        }
+    }
+}
+
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeLocation {
     pub chromosome: ChromosomeShort,
     pub start_pos: u32,
     pub end_pos: u32,
     pub strand: Strand,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub phase: Option<Phase>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1326,6 +1355,7 @@ impl WebData {
                                         end_pos: part.location.end_pos,
                                         chromosome: prev.chromosome,
                                         strand: prev.strand,
+                                        phase: prev.phase,
                                     });
                                 } else {
                                     merged_locs.push(prev);

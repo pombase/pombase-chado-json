@@ -132,7 +132,7 @@ pub struct Featureloc {
     pub fmin: i32,
     pub fmax: i32,
     pub strand: i16,
-//    pub phase: i32,
+    pub phase: Option<i32>,
 }
 pub struct Featureprop {
     pub feature: Rc<Feature>,
@@ -421,7 +421,7 @@ impl Raw {
             feature.featureprops.borrow_mut().push(rc_featureprop.clone());
         }
 
-        for row in &conn.query("SELECT feature_id, srcfeature_id, fmin, fmax, strand FROM featureloc", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_id, srcfeature_id, fmin, fmax, strand, phase FROM featureloc", &[]).unwrap() {
             let feature_id: i32 = row.get(0);
             let feature = get_feature(&mut feature_map, feature_id);
             let srcfeature_id: i32 = row.get(1);
@@ -429,14 +429,14 @@ impl Raw {
             let fmin: i32 = row.get(2);
             let fmax: i32 = row.get(3);
             let strand: i16 = row.get(4);
-//            let phase: i32 = row.get(5);
+            let phase: Option<i32> = row.get(5);
             let featureloc = Featureloc {
                 feature: feature.clone(),
                 srcfeature: srcfeature.clone(),
                 fmin: fmin,
                 fmax: fmax,
                 strand: strand,
-//                phase: phase,
+                phase: phase,
             };
             let rc_featureloc = Rc::new(featureloc);
             ret.featurelocs.push(rc_featureloc.clone());
