@@ -34,8 +34,8 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
     ret
 }
 
-fn to_gff(source: &str, feat_type: &str,
-          location: &ChromosomeLocation, maybe_parent: &Option<String>) -> String {
+fn to_gff(source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str,
+          location: &ChromosomeLocation, maybe_parent: Option<&str>) -> String {
     let phase_char =
         if let Some(ref phase) = location.phase {
             phase.to_gff_str()
@@ -54,21 +54,51 @@ fn to_gff(source: &str, feat_type: &str,
         ret_val.push_str("\t");
     }
 
-    if let &Some(ref parent_id) = maybe_parent {
-        ret_val.push_str("ID=");
-        ret_val.push_str(&parent_id);
+    ret_val.push_str("ID=");
+    ret_val.push_str(feat_id);
+
+    if let Some(parent_id) = maybe_parent {
+        ret_val.push_str(";Parent=");
+        ret_val.push_str(parent_id);
+    };
+
+    if let Some(name) = maybe_name {
+        ret_val.push_str(";Name=");
+        ret_val.push_str(name);
     };
 
     ret_val
 }
 
 
-pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Option<String> {
+pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
+    let mut ret_val = vec![];
     if let Some (ref gene_loc) = gene.location {
-        Some(to_gff(source, "gene", &gene_loc, &None))
-    } else {
-        None
+        let maybe_gene_name =
+            if let Some(gene_name) = gene.name.as_ref() {
+                Some(gene_name as &str)
+            } else {
+                None
+            };
+
+        ret_val.push(to_gff(source, &gene.uniquename, maybe_gene_name,
+                            "gene", &gene_loc, None));
+        for tr in &gene.transcripts {
+            if let Some(ref cds_loc) = tr.cds_location {
+                ret_val.push(to_gff(source, &tr.uniquename, None, &tr.transcript_type,
+                                    cds_loc, Some(&gene.uniquename)));
+                for part in &tr.parts {
+                    if part.feature_type == FeatureType::Exon {
+                        ret_val.push(to_gff(source, &part.uniquename, None, "CDS",
+                                            &part.location, Some(&tr.uniquename)));
+                    }
+                }
+            } else {
+                panic!("transcript has no cds_location");
+            }
+        }
     }
+    ret_val
 }
 
 #[test]
@@ -83,6 +113,22 @@ fn test_format_fasta() {
     let input2 = "acgtacgattattaccggttacgcatccgtgt";
     let expected2 = ">id5\nacgtacga\nttattacc\nggttacgc\natccgtgt\n";
     assert!(format_fasta("id5", None, input2, 8) == expected2);
+}
+
+#[test]
+fn test_format_gff() {
+    let gene = make_test_gene();
+    let gene_gff_lines = format_gene_gff("PomBase", &gene);
+
+    assert_eq!(gene_gff_lines.len(), 7);
+    assert_eq!(gene_gff_lines[0],
+               "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34");
+    assert_eq!(gene_gff_lines[1],
+               "chromosome_3\tPomBase\tmRNA\t729133\t730522\t.\t+\t.\tID=SPCC18B5.06.1;Parent=SPCC18B5.06");
+    assert_eq!(gene_gff_lines[2],
+               "chromosome_3\tPomBase\tCDS\t729133\t729212\t.\t+\t.\tID=SPCC18B5.06.1:exon:1;Parent=SPCC18B5.06.1");
+    assert_eq!(gene_gff_lines[3],
+               "chromosome_3\tPomBase\tCDS\t729266\t729319\t.\t+\t.\tID=SPCC18B5.06.1:exon:2;Parent=SPCC18B5.06.1")
 }
 
 #[allow(dead_code)]
@@ -330,10 +376,4 @@ fn make_test_gene() -> GeneDetails {
         alleles_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
     }
-}
-
-#[test]
-fn test_format_gff() {
-    let gene = make_test_gene();
-    assert!(format_gene_gff("PomBase", &gene).unwrap() == "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\t");
 }
