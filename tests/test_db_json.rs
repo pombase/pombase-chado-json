@@ -514,6 +514,7 @@ fn get_test_raw() -> Raw {
 fn get_test_config() -> Config {
     let mut config = Config {
         load_organism_taxonid: 4896,
+        database_name: "PomBase".into(),
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,

@@ -1,5 +1,6 @@
 {
   "load_organism_taxonid": 4896,
+  "database_name": "PomBase",
   "organisms": [
     {
       "taxonid": 4896,
