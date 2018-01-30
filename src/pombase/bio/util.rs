@@ -164,6 +164,17 @@ fn make_test_gene() -> GeneDetails {
         transcripts: vec![
             TranscriptDetails {
                 uniquename:"SPCC18B5.06.1".to_owned(),
+                location: ChromosomeLocation {
+                    chromosome: ChromosomeShort {
+                        name: "chromosome_3".to_owned(),
+                        length: 2452883,
+                        ena_identifier: "CU329672.1".to_owned(),
+                    },
+                    start_pos: 729054,
+                    end_pos: 730829,
+                    strand: Strand::Forward,
+                    phase: None,
+                },
                 parts: vec![
                     FeatureShort {
                         feature_type: FeatureType::FivePrimeUtr,

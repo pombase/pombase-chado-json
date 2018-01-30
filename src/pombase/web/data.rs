@@ -566,6 +566,7 @@ pub struct FeatureShort {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
+    pub location: ChromosomeLocation,
     pub parts: Vec<FeatureShort>,
     pub transcript_type: String,
     pub protein: Option<ProteinDetails>,

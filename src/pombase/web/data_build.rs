@@ -1916,6 +1916,31 @@ impl <'a> WebDataBuild<'a> {
 
         let parts = self.get_transcript_parts(&transcript_uniquename);
 
+        if parts.len() == 0 {
+            panic!("transcript has no parts");
+        }
+
+        let mut transcript_start = u32::MAX;
+        let mut transcript_end = 0;
+
+        for part in &parts {
+            if part.location.start_pos < transcript_start {
+                transcript_start = part.location.start_pos;
+            }
+            if part.location.end_pos > transcript_end {
+                transcript_end = part.location.end_pos;
+            }
+        }
+
+        // use the first part as a template to get the chromosome details
+        let transcript_location =
+            ChromosomeLocation {
+                start_pos: transcript_start,
+                end_pos: transcript_end,
+                phase: None,
+                .. parts[0].location.clone()
+            };
+
         let maybe_cds_location =
             if feat.feat_type.name == "mRNA" {
                 let mut cds_start = u32::MAX;
@@ -1954,6 +1979,7 @@ impl <'a> WebDataBuild<'a> {
 
         let transcript = TranscriptDetails {
             uniquename: transcript_uniquename.clone(),
+            location: transcript_location,
             transcript_type: feat.feat_type.name.clone(),
             parts: parts,
             protein: None,
