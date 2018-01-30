@@ -4709,6 +4709,7 @@ impl <'a> WebDataBuild<'a> {
 #[allow(dead_code)]
 fn get_test_config() -> Config {
     let mut config = Config {
+        database_name: "PomBase".into(),
         load_organism_taxonid: 4896,
         organisms: vec![
             ConfigOrganism {

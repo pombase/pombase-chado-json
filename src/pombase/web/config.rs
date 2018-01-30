@@ -128,6 +128,7 @@ pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
+    pub database_name: String,
     pub load_organism_taxonid: OrganismTaxonId,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
