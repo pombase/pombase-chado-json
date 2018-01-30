@@ -11,7 +11,7 @@ use std::fmt;
 
 use regex::Regex;
 
-use bio::util::format_fasta;
+use bio::util::{format_fasta, format_gene_gff};
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -1381,6 +1381,26 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_gff(&self, config: &Config, output_dir: &str)
+                     -> Result<(), io::Error>
+    {
+        let all_gff_name = format!("{}/all_chromosomes.gff3", output_dir);
+        let all_gff_file = File::create(all_gff_name).expect("Unable to open file");
+        let mut all_gff_writer = BufWriter::new(&all_gff_file);
+
+        all_gff_writer.write("##gff-version 3\n".as_bytes())?;
+
+        for (_, gene_details) in &self.api_maps.genes {
+            let gene_gff_lines =
+                format_gene_gff(&config.database_name, &gene_details);
+            for gff_line in gene_gff_lines {
+                all_gff_writer.write(gff_line.as_bytes())?;
+                all_gff_writer.write("\n".as_bytes())?;
+            }
+        }
+        Ok(())
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
@@ -1409,6 +1429,9 @@ impl WebData {
         self.write_gene_id_table(&config, &misc_path)?;
         self.write_protein_features(&config, &misc_path)?;
         self.write_feature_coords(&config, &misc_path)?;
+
+        let gff_path = self.create_dir(output_dir, "gff");
+        self.write_gff(&config, &gff_path)?;
 
         Ok(())
     }
