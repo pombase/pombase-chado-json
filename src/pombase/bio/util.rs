@@ -94,7 +94,8 @@ pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
                     }
                 }
             } else {
-                println!("transcript for {} has no cds_location", gene.uniquename);
+                ret_val.push(to_gff(source, &tr.uniquename, None, &tr.transcript_type,
+                                    gene_loc, Some(&gene.uniquename)));
             }
         }
     }
