@@ -10,4 +10,4 @@ Build status
 [![Build Status](https://travis-ci.org/pombase/pombase-chado-json.svg?branch=master)](https://travis-ci.org/pombase/pombase-chado-json)
 
 
-Copyright 2016 Kim Rutherford and PomBase
+Copyright 2016, 2017 and 2018 Kim Rutherford and PomBase
