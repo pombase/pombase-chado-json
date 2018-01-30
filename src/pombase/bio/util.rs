@@ -84,18 +84,19 @@ pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
         ret_val.push(to_gff(source, &gene.uniquename, maybe_gene_name,
                             "gene", &gene_loc, None));
         for tr in &gene.transcripts {
-            if let Some(ref cds_loc) = tr.cds_location {
-                ret_val.push(to_gff(source, &tr.uniquename, None, &tr.transcript_type,
-                                    cds_loc, Some(&gene.uniquename)));
-                for part in &tr.parts {
-                    if part.feature_type == FeatureType::Exon {
-                        ret_val.push(to_gff(source, &part.uniquename, None, "CDS",
-                                            &part.location, Some(&tr.uniquename)));
-                    }
-                }
-            } else {
-                ret_val.push(to_gff(source, &tr.uniquename, None, &tr.transcript_type,
-                                    gene_loc, Some(&gene.uniquename)));
+            ret_val.push(to_gff(source, &tr.uniquename, None, &tr.transcript_type,
+                                &tr.location, Some(&gene.uniquename)));
+            for part in &tr.parts {
+                let gff_feat_type =
+                    match part.feature_type {
+                        FeatureType::Exon => "CDS",
+                        FeatureType::CdsIntron | FeatureType::FivePrimeUtrIntron |
+                        FeatureType::ThreePrimeUtrIntron => "intron",
+                        FeatureType::FivePrimeUtr => "five_prime_UTR",
+                        FeatureType::ThreePrimeUtr => "three_prime_UTR",
+                    };
+                ret_val.push(to_gff(source, &part.uniquename, None, gff_feat_type,
+                                    &part.location, Some(&tr.uniquename)));
             }
         }
     }
