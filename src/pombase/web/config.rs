@@ -260,8 +260,12 @@ pub const HAS_PART_CV_NAMES: [&str; 1] = ["fission_yeast_phenotype"];
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
 
-pub const TRANSCRIPT_FEATURE_TYPES: [&str; 6] =
-    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA"];
-pub const TRANSCRIPT_PART_TYPES: [&str; 3] =
-    ["five_prime_UTR", "exon", "three_prime_UTR"];
+pub const TRANSCRIPT_FEATURE_TYPES: [&str; 7] =
+    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA", "pseudogenic_transcript"];
+pub const TRANSCRIPT_PART_TYPES: [&str; 4] =
+    ["five_prime_UTR", "exon", "pseudogenic_exon", "three_prime_UTR"];
+// any feature with a type not in this list or in the two TRANSCRIPT lists above
+// will be stored in the other_features map
+pub const HANDLED_FEATURE_TYPES: [&str; 7] =
+    ["gene", "pseudogene", "intron", "genotype", "allele", "chromosome", "polypeptide"];
 

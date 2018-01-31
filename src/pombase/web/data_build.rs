@@ -48,6 +48,7 @@ pub struct WebDataBuild<'a> {
     genes: UniquenameGeneMap,
     genotypes: UniquenameGenotypeMap,
     alleles: UniquenameAlleleMap,
+    other_features: UniquenameFeatureShortMap,
     terms: TermIdDetailsMap,
     chromosomes: ChrNameDetailsMap,
     references: UniquenameReferenceMap,
@@ -809,8 +810,27 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
             let residues = get_loc_residues(chr, &loc);
             let feature_type = match &feat.feat_type.name as &str {
                 "five_prime_UTR" => FeatureType::FivePrimeUtr,
-                "exon" => FeatureType::Exon,
+                "pseudogenic_exon" | "exon" => FeatureType::Exon,
                 "three_prime_UTR" => FeatureType::ThreePrimeUtr,
+                "dg_repeat" => FeatureType::DGRepeat,
+                "dh_repeat" => FeatureType::DHRepeat,
+                "gap" => FeatureType::Gap,
+                "gene_group" => FeatureType::GeneGroup,
+                "long_terminal_repeat" => FeatureType::LongTerminalRepeat,
+                "low_complexity_region" => FeatureType::LowComplexityRegion,
+                "LTR_retrotransposon" => FeatureType::LTRRetrotransposon,
+                "mating_type_region" => FeatureType::MatingTypeRegion,
+                "nuclear_mt_pseudogene" => FeatureType::NuclearMtPseudogene,
+                "origin_of_replication" => FeatureType::OriginOfReplication,
+                "polyA_signal_sequence" => FeatureType::PolyASignalSequence,
+                "polyA_site" => FeatureType::PolyASite,
+                "promoter" => FeatureType::Promoter,
+                "region" => FeatureType::Region,
+                "regional_centromere" => FeatureType::RegionalCentromere,
+                "regional_centromere_central_core" => FeatureType::RegionalCentromereCentralCore,
+                "regional_centromere_inner_repeat_region" => FeatureType::RegionalCentromereInnerRepeatRegion,
+                "repeat_region" => FeatureType::RepeatRegion,
+                "TR_box" => FeatureType::TRBox,
                 _ => panic!("can't handle feature type: {}", feat.feat_type.name),
             };
             FeatureShort {
@@ -1346,6 +1366,7 @@ impl <'a> WebDataBuild<'a> {
             genes: BTreeMap::new(),
             genotypes: HashMap::new(),
             alleles: HashMap::new(),
+            other_features: HashMap::new(),
             terms: HashMap::new(),
             chromosomes: BTreeMap::new(),
             references: HashMap::new(),
@@ -2193,6 +2214,18 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
+        for feat in &self.raw.features {
+            if !TRANSCRIPT_FEATURE_TYPES.contains(&feat.feat_type.name.as_str()) &&
+                !TRANSCRIPT_PART_TYPES.contains(&feat.feat_type.name.as_str()) &&
+                !HANDLED_FEATURE_TYPES.contains(&feat.feat_type.name.as_str())
+            {
+                // for now, ignore features without locations
+                if feat.featurelocs.borrow().len() > 0 {
+                    let feature_short = make_feature_short(&self.chromosomes, &feat);
+                    self.other_features.insert(feat.feat_type.name.clone(), feature_short);
+                }
+            }
+        }
     }
 
     fn add_interesting_parents(&mut self) {

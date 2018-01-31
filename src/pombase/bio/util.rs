@@ -89,13 +89,14 @@ pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
             for part in &tr.parts {
                 let gff_feat_type =
                     match part.feature_type {
-                        FeatureType::Exon => "CDS",
+                        FeatureType::Exon => "CDS".to_owned(),
                         FeatureType::CdsIntron | FeatureType::FivePrimeUtrIntron |
-                        FeatureType::ThreePrimeUtrIntron => "intron",
-                        FeatureType::FivePrimeUtr => "five_prime_UTR",
-                        FeatureType::ThreePrimeUtr => "three_prime_UTR",
+                        FeatureType::ThreePrimeUtrIntron => "intron".to_owned(),
+                        FeatureType::FivePrimeUtr => "five_prime_UTR".to_owned(),
+                        FeatureType::ThreePrimeUtr => "three_prime_UTR".to_owned(),
+                        _ => format!("{}", part.feature_type),
                     };
-                ret_val.push(to_gff(source, &part.uniquename, None, gff_feat_type,
+                ret_val.push(to_gff(source, &part.uniquename, None, &gff_feat_type,
                                     &part.location, Some(&tr.uniquename)));
             }
         }

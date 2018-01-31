@@ -33,6 +33,7 @@ pub type UniquenameReferenceMap =
 
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
+pub type UniquenameFeatureShortMap = HashMap<String, FeatureShort>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
 pub type ChrNameDetailsMap = BTreeMap<ChromosomeName, ChromosomeDetails>;
 
@@ -539,6 +540,44 @@ pub enum FeatureType {
     ThreePrimeUtr,
 #[serde(rename = "three_prime_utr_intron")]
     ThreePrimeUtrIntron,
+#[serde(rename = "dg_repeat")]
+    DGRepeat,
+#[serde(rename = "dh_repeat")]
+    DHRepeat,
+#[serde(rename = "gap")]
+    Gap,
+#[serde(rename = "gene_group")]
+    GeneGroup,
+#[serde(rename = "long_terminal_repeat")]
+    LongTerminalRepeat,
+#[serde(rename = "low_complexity_region")]
+    LowComplexityRegion,
+#[serde(rename = "LTR_retrotransposon")]
+    LTRRetrotransposon,
+#[serde(rename = "mating_type_region")]
+    MatingTypeRegion,
+#[serde(rename = "nuclear_mt_pseudogene")]
+    NuclearMtPseudogene,
+#[serde(rename = "origin_of_replication")]
+    OriginOfReplication,
+#[serde(rename = "polyA_signal_sequence")]
+    PolyASignalSequence,
+#[serde(rename = "polyA_site")]
+    PolyASite,
+#[serde(rename = "promoter")]
+    Promoter,
+#[serde(rename = "region")]
+    Region,
+#[serde(rename = "regional_centromere")]
+    RegionalCentromere,
+#[serde(rename = "regional_centromere_central_core")]
+    RegionalCentromereCentralCore,
+#[serde(rename = "regional_centromere_inner_repeat_region")]
+    RegionalCentromereInnerRepeatRegion,
+#[serde(rename = "repeat_region")]
+    RepeatRegion,
+#[serde(rename = "TR_box")]
+    TRBox,
 }
 
 impl Display for FeatureType {
@@ -550,6 +589,25 @@ impl Display for FeatureType {
             FeatureType::CdsIntron => "cds_intron",
             FeatureType::ThreePrimeUtr => "3'UTR",
             FeatureType::ThreePrimeUtrIntron => "3'UTR_intron",
+            FeatureType::DGRepeat => "dg_repeat",
+            FeatureType::DHRepeat => "dh_repeat",
+            FeatureType::Gap => "gap",
+            FeatureType::GeneGroup => "gene_group",
+            FeatureType::LongTerminalRepeat => "long_terminal_repeat",
+            FeatureType::LowComplexityRegion => "low_complexity_region",
+            FeatureType::LTRRetrotransposon => "LTR_retrotransposon",
+            FeatureType::MatingTypeRegion => "mating_type_region",
+            FeatureType::NuclearMtPseudogene => "nuclear_mt_pseudogene",
+            FeatureType::OriginOfReplication => "origin_of_replication",
+            FeatureType::PolyASignalSequence => "polyA_signal_sequence",
+            FeatureType::PolyASite => "polyA_site",
+            FeatureType::Promoter => "promoter",
+            FeatureType::Region => "region",
+            FeatureType::RegionalCentromere => "regional_centromere",
+            FeatureType::RegionalCentromereCentralCore => "regional_centromere_central_core",
+            FeatureType::RegionalCentromereInnerRepeatRegion => "regional_centromere_inner_repeat_region",
+            FeatureType::RepeatRegion => "repeat_region",
+            FeatureType::TRBox => "TR_box",
         })
     }
 }
