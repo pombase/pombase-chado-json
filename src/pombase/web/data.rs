@@ -11,7 +11,7 @@ use std::fmt;
 
 use regex::Regex;
 
-use bio::util::{format_fasta, format_gene_gff};
+use bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -887,6 +887,7 @@ pub struct APIMaps {
     pub terms: HashMap<TermId, TermDetails>,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
     pub references: UniquenameReferenceMap,
+    pub other_features: UniquenameFeatureShortMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1453,6 +1454,14 @@ impl WebData {
             let gene_gff_lines =
                 format_gene_gff(&config.database_name, &gene_details);
             for gff_line in gene_gff_lines {
+                all_gff_writer.write(gff_line.as_bytes())?;
+                all_gff_writer.write("\n".as_bytes())?;
+            }
+        }
+        for (_, feature_short) in &self.api_maps.other_features {
+            let gff_lines =
+                format_misc_feature_gff(&config.database_name, &feature_short);
+            for gff_line in gff_lines {
                 all_gff_writer.write(gff_line.as_bytes())?;
                 all_gff_writer.write("\n".as_bytes())?;
             }

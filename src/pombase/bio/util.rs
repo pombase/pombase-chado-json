@@ -104,6 +104,14 @@ pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
     ret_val
 }
 
+pub fn format_misc_feature_gff(source: &str, feature_short: &FeatureShort) -> Vec<String> {
+    let mut ret_val = vec![];
+    let feature_type_name = format!("{}", feature_short.feature_type);
+    ret_val.push(to_gff(source, &feature_short.uniquename, None,
+                        &feature_type_name, &feature_short.location, None));
+    ret_val
+}
+
 #[test]
 fn test_format_fasta() {
     assert!(format_fasta("id1", None, "", 8) == ">id1\n\n");
@@ -123,14 +131,18 @@ fn test_format_gff() {
     let gene = make_test_gene();
     let gene_gff_lines = format_gene_gff("PomBase", &gene);
 
-    assert_eq!(gene_gff_lines.len(), 7);
+    assert_eq!(gene_gff_lines.len(), 13);
     assert_eq!(gene_gff_lines[0],
                "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34");
     assert_eq!(gene_gff_lines[1],
-               "chromosome_3\tPomBase\tmRNA\t729133\t730522\t.\t+\t.\tID=SPCC18B5.06.1;Parent=SPCC18B5.06");
+               "chromosome_3\tPomBase\tmRNA\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06.1;Parent=SPCC18B5.06");
     assert_eq!(gene_gff_lines[2],
-               "chromosome_3\tPomBase\tCDS\t729133\t729212\t.\t+\t.\tID=SPCC18B5.06.1:exon:1;Parent=SPCC18B5.06.1");
+               "chromosome_3\tPomBase\tfive_prime_UTR\t729054\t729132\t.\t+\t.\tID=SPCC18B5.06.1:five_prime_UTR:1;Parent=SPCC18B5.06.1");
     assert_eq!(gene_gff_lines[3],
+               "chromosome_3\tPomBase\tCDS\t729133\t729212\t.\t+\t.\tID=SPCC18B5.06.1:exon:1;Parent=SPCC18B5.06.1");
+    assert_eq!(gene_gff_lines[4],
+               "chromosome_3\tPomBase\tintron\t729213\t729265\t.\t+\t.\tID=SPCC18B5.06.1:intron:1;Parent=SPCC18B5.06.1");
+    assert_eq!(gene_gff_lines[5],
                "chromosome_3\tPomBase\tCDS\t729266\t729319\t.\t+\t.\tID=SPCC18B5.06.1:exon:2;Parent=SPCC18B5.06.1")
 }
 

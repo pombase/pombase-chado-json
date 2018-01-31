@@ -3992,6 +3992,7 @@ impl <'a> WebDataBuild<'a> {
             terms: terms_for_api.clone(),
             interactors_of_genes: interactors_of_genes,
             references: self.references.clone(),
+            other_features: self.other_features.clone(),
         }
     }
 
