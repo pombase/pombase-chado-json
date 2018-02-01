@@ -21,13 +21,22 @@
   "api_seq_chunk_sizes": [10000, 200000],
   "chromosomes": {
     "chromosome_1": {
-      "display_name": "I"
+      "export_id": "I",
+      "export_file_id": "chromosome_I",
+      "short_display_name": "I",
+      "long_display_name": "Chromosome I"
     },
     "chromosome_2": {
-      "display_name": "II"
+      "export_id": "II",
+      "export_file_id": "chromosome_II",
+      "short_display_name": "II",
+      "long_display_name": "Chromosome II"
     },
     "chromosome_3": {
-      "display_name": "III"
+      "export_id": "III",
+      "export_file_id": "chromosome_III",
+      "short_display_name": "III",
+      "long_display_name": "Chromosome III"
     }
   },
   "extension_display_names": [],

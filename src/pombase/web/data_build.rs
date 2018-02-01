@@ -4821,6 +4821,7 @@ fn get_test_config() -> Config {
             },
         },
         extra_database_aliases: HashMap::new(),
+        chromosomes: HashMap::new(),
     };
 
     config.cv_config.insert(String::from("molecular_function"),

@@ -34,7 +34,8 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
     ret
 }
 
-fn to_gff(source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str,
+fn to_gff(chromosome_export_id: &str,
+          source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str,
           location: &ChromosomeLocation, maybe_parent: Option<&str>) -> String {
     let phase_char =
         if let Some(ref phase) = location.phase {
@@ -46,7 +47,7 @@ fn to_gff(source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str
     let end_pos_str = format!("{}", location.end_pos);
     let mut ret_val = String::new();
     let bits: Vec<&str> =
-        vec![&location.chromosome.name, source, feat_type,
+        vec![&chromosome_export_id, source, feat_type,
              &start_pos_str, &end_pos_str,
              ".", location.strand.to_gff_str(), phase_char];
     for s in bits {
@@ -71,7 +72,8 @@ fn to_gff(source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str
 }
 
 
-pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
+pub fn format_gene_gff(chromosome_export_id: &str,
+                       source: &str, gene: &GeneDetails) -> Vec<String> {
     let mut ret_val = vec![];
     if let Some (ref gene_loc) = gene.location {
         let maybe_gene_name =
@@ -81,10 +83,11 @@ pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
                 None
             };
 
-        ret_val.push(to_gff(source, &gene.uniquename, maybe_gene_name,
+        ret_val.push(to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
                             "gene", &gene_loc, None));
         for tr in &gene.transcripts {
-            ret_val.push(to_gff(source, &tr.uniquename, None, &tr.transcript_type,
+            ret_val.push(to_gff(chromosome_export_id,
+                                source, &tr.uniquename, None, &tr.transcript_type,
                                 &tr.location, Some(&gene.uniquename)));
             for part in &tr.parts {
                 let gff_feat_type =
@@ -96,7 +99,8 @@ pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
                         FeatureType::ThreePrimeUtr => "three_prime_UTR".to_owned(),
                         _ => format!("{}", part.feature_type),
                     };
-                ret_val.push(to_gff(source, &part.uniquename, None, &gff_feat_type,
+                ret_val.push(to_gff(chromosome_export_id,
+                                    source, &part.uniquename, None, &gff_feat_type,
                                     &part.location, Some(&tr.uniquename)));
             }
         }
@@ -104,10 +108,12 @@ pub fn format_gene_gff(source: &str, gene: &GeneDetails) -> Vec<String> {
     ret_val
 }
 
-pub fn format_misc_feature_gff(source: &str, feature_short: &FeatureShort) -> Vec<String> {
+pub fn format_misc_feature_gff(chromosome_export_id: &str,
+                               source: &str, feature_short: &FeatureShort) -> Vec<String> {
     let mut ret_val = vec![];
     let feature_type_name = format!("{}", feature_short.feature_type);
-    ret_val.push(to_gff(source, &feature_short.uniquename, None,
+    ret_val.push(to_gff(chromosome_export_id,
+                        source, &feature_short.uniquename, None,
                         &feature_type_name, &feature_short.location, None));
     ret_val
 }
@@ -129,7 +135,7 @@ fn test_format_fasta() {
 #[test]
 fn test_format_gff() {
     let gene = make_test_gene();
-    let gene_gff_lines = format_gene_gff("PomBase", &gene);
+    let gene_gff_lines = format_gene_gff("chromosome_3", "PomBase", &gene);
 
     assert_eq!(gene_gff_lines.len(), 13);
     assert_eq!(gene_gff_lines[0],

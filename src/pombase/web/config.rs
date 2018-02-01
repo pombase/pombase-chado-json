@@ -53,6 +53,19 @@ pub struct SplitByParentsConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ChromosomeConfig {
+    // string to use for this chromosome in a file name, eg. "chromosome_II"
+    // or "mitochondrial_chromosome"
+    pub export_file_id: String,
+    // string to use within files, eg. "II" or "mitochondrial"
+    pub export_id: String,
+    // eg. "Chromosome II" or "Mitochondrial chromosome"
+    pub long_display_name: String,
+    // eg. "II" or "Mitochondrial"
+    pub short_display_name: String,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: String,
     // filtering configured per CV
@@ -145,6 +158,7 @@ pub struct Config {
     pub interpro: InterPro,
     pub server: ServerConfig,
     pub extra_database_aliases: DatabaseAliases,
+    pub chromosomes: HashMap<String, ChromosomeConfig>,
 }
 
 impl Config {
@@ -212,6 +226,16 @@ impl Config {
 
         panic!("can't find configuration for load_organism_taxonid: {}",
                self.load_organism_taxonid);
+    }
+
+    pub fn find_chromosome_config<'a>(&'a self, chromosome_name: &str)
+                                      -> &'a ChromosomeConfig
+    {
+        if let Some(ref chr_conf) = self.chromosomes.get(chromosome_name) {
+            &chr_conf
+        } else {
+            panic!("can't find chromosome configuration for {}", &chromosome_name);
+        }
     }
 }
 

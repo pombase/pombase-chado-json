@@ -1118,14 +1118,14 @@ impl WebData {
         let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name);
 
         for (uniquename, details) in &self.chromosomes {
-            write_as_fasta(&mut chromosomes_writer, &uniquename, Some(load_org_name.clone()),
-                           &details.residues);
-
-            let this_chr_file_name = load_org_name.clone() + "_chromosome_" +
-                uniquename + ".fa";
+            let chr_config = config.find_chromosome_config(uniquename);
+            write_as_fasta(&mut chromosomes_writer, &chr_config.export_id,
+                           Some(load_org_name.clone()), &details.residues);
+            let this_chr_file_name =
+                load_org_name.clone() + "_" + &chr_config.export_file_id + ".fa";
             let mut this_chr_writer = make_seq_writer(&this_chr_file_name);
-            write_as_fasta(&mut this_chr_writer, uniquename, Some(load_org_name.clone()),
-                           &details.residues);
+            write_as_fasta(&mut this_chr_writer, &chr_config.export_id,
+                           Some(load_org_name.clone()), &details.residues);
             this_chr_writer.flush().unwrap();
 
         }
@@ -1441,8 +1441,8 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write_gff(&self, config: &Config, output_dir: &str)
-                     -> Result<(), io::Error>
+    pub fn write_gff<'a>(&self, config: &Config, output_dir: &str)
+                         -> Result<(), io::Error>
     {
         let all_gff_name = format!("{}/all_chromosomes.gff3", output_dir);
         let all_gff_file = File::create(all_gff_name).expect("Unable to open file");
@@ -1451,16 +1451,25 @@ impl WebData {
         all_gff_writer.write("##gff-version 3\n".as_bytes())?;
 
         for (_, gene_details) in &self.api_maps.genes {
-            let gene_gff_lines =
-                format_gene_gff(&config.database_name, &gene_details);
-            for gff_line in gene_gff_lines {
-                all_gff_writer.write(gff_line.as_bytes())?;
-                all_gff_writer.write("\n".as_bytes())?;
+            if let Some(ref gene_loc) = gene_details.location {
+                let chromosome_name = &gene_loc.chromosome.name;
+                let chromosome_export_id =
+                    &config.find_chromosome_config(chromosome_name).export_id;
+                let gene_gff_lines =
+                    format_gene_gff(chromosome_export_id, &config.database_name, &gene_details);
+                for gff_line in gene_gff_lines {
+                    all_gff_writer.write(gff_line.as_bytes())?;
+                    all_gff_writer.write("\n".as_bytes())?;
+                }
             }
         }
         for (_, feature_short) in &self.api_maps.other_features {
+            let chromosome_name = &feature_short.location.chromosome.name;
+            let chromosome_export_id =
+                &config.find_chromosome_config(chromosome_name).export_id;
             let gff_lines =
-                format_misc_feature_gff(&config.database_name, &feature_short);
+                format_misc_feature_gff(&chromosome_export_id, &config.database_name,
+                                        &feature_short);
             for gff_line in gff_lines {
                 all_gff_writer.write(gff_line.as_bytes())?;
                 all_gff_writer.write("\n".as_bytes())?;
