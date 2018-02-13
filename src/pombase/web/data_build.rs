@@ -1027,8 +1027,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
     }
 
     for go_slim_conf in &config.go_slim_terms {
-        for rel_name in &["is_a", "part_of", "regulates", "positively_regulates",
-                          "negatively_regulates"] {
+        for rel_name in DESCENDANT_REL_NAMES.iter() {
             ret.insert(InterestingParent {
                 termid: go_slim_conf.termid.clone(),
                 rel_name: (*rel_name).to_owned(),
@@ -3853,6 +3852,14 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
+        let mut cv_versions = HashMap::new();
+
+        for cvprop in &self.raw.cvprops {
+            if cvprop.prop_type.name == "cv_version" {
+                cv_versions.insert(cvprop.cv.name.clone(), cvprop.value.clone());
+            }
+        }
+
         const PKG_NAME: &str = env!("CARGO_PKG_NAME");
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 
@@ -3862,6 +3869,7 @@ impl <'a> WebDataBuild<'a> {
             db_creation_datetime: db_creation_datetime.unwrap(),
             gene_count: self.genes.len(),
             term_count: self.terms.len(),
+            cv_versions: cv_versions,
         }
     }
 

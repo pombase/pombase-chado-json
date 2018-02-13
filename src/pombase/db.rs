@@ -11,6 +11,7 @@ pub struct Raw {
     pub organisms: Vec<Rc<Organism>>,
     pub organismprops: Vec<Rc<Organismprop>>,
     pub cvs: Vec<Rc<Cv>>,
+    pub cvprops: Vec<Rc<Cvprop>>,
     pub dbs: Vec<Rc<Db>>,
     pub dbxrefs: Vec<Rc<Dbxref>>,
     pub cvterms: Vec<Rc<Cvterm>>,
@@ -56,6 +57,12 @@ pub struct Organismprop {
 }
 pub struct Cv {
     pub name: CvName,
+    pub cvprops: RefCell<Vec<Rc<Cvprop>>>,
+}
+pub struct Cvprop {
+    pub prop_type: Rc<Cvterm>,
+    pub value: String,
+    pub cv: Rc<Cv>,
 }
 pub struct Db {
     pub name: String,
@@ -195,6 +202,7 @@ impl Raw {
             organisms: vec![],
             organismprops: vec![],
             cvs: vec![], dbs: vec![], dbxrefs: vec![], cvterms: vec![],
+            cvprops: vec![],
             cvtermsynonyms: vec![], cvtermprops: vec![],
             cvtermpaths: vec![], cvterm_relationships: vec![],
             publications: vec![], publicationprops: vec![],
@@ -259,6 +267,7 @@ impl Raw {
         for row in &conn.query("SELECT cv_id, name FROM cv", &[]).unwrap() {
             let cv = Cv {
                 name: row.get(1),
+                cvprops: RefCell::new(vec![]),
             };
             let rc_cv = Rc::new(cv);
             ret.cvs.push(rc_cv.clone());
@@ -371,6 +380,21 @@ impl Raw {
             let rc_publicationprop = Rc::new(publicationprop);
             ret.publicationprops.push(rc_publicationprop.clone());
             publication.publicationprops.borrow_mut().push(rc_publicationprop.clone());
+        }
+
+        for row in &conn.query("SELECT cv_id, type_id, value FROM cvprop", &[]).unwrap() {
+            let cv_id: i32 = row.get(0);
+            let type_id: i32 = row.get(1);
+            let value: String = row.get(2);
+            let cv = cv_map.get(&cv_id).unwrap().clone();
+            let cvprop = Cvprop {
+                cv: cv.clone(),
+                prop_type: get_cvterm(&mut cvterm_map, type_id),
+                value: value,
+            };
+            let rc_cvprop = Rc::new(cvprop);
+            ret.cvprops.push(rc_cvprop.clone());
+            cv.cvprops.borrow_mut().push(rc_cvprop);
         }
 
         for row in &conn.query("SELECT synonym_id, name, type_id FROM synonym", &[]).unwrap() {

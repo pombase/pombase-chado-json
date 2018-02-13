@@ -825,6 +825,7 @@ pub struct Metadata {
     pub export_prog_version: String,
     pub gene_count: usize,
     pub term_count: usize,
+    pub cv_versions: HashMap<String, String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -34,6 +34,7 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
 fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
     let cv = Rc::new(Cv {
         name: String::from(cv_name),
+        cvprops: RefCell::new(vec![]),
     });
     cvs.push(cv.clone());
     cv
@@ -489,6 +490,7 @@ fn get_test_raw() -> Raw {
         organisms: vec![pombe_organism],
         organismprops: vec![],
         cvs: cvs,
+        cvprops: vec![],
         dbs: dbs,
         dbxrefs: dbxrefs,
         cvterms: cvterms,
