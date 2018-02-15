@@ -73,6 +73,7 @@ pub struct WebDataBuild<'a> {
     possible_interesting_parents: HashSet<InterestingParent>,
 
     recent_references: RecentReferences,
+    all_community_curated: Vec<ReferenceShort>,
 
     term_subsets: IdTermSubsetMap,
     gene_subsets: IdGeneSubsetMap,
@@ -1128,7 +1129,7 @@ fn make_recently_added(references_map: &UniquenameReferenceMap,
 
 fn make_canto_curated(references_map: &UniquenameReferenceMap,
                       all_ref_uniquenames: &[String])
-                      -> (Vec<ReferenceShort>, Vec<ReferenceShort>) {
+                      -> (Vec<ReferenceShort>, Vec<ReferenceShort>, Vec<ReferenceShort>) {
     let mut sorted_pub_uniquenames: Vec<ReferenceUniquename> =
         all_ref_uniquenames.iter()
         .filter(|ref_uniquename| {
@@ -1178,8 +1179,9 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         sorted_pub_uniquenames.sort_by(submitted_date_cmp);
     }
 
-    let mut admin_curated = vec![];
-    let mut community_curated = vec![];
+    let mut recent_admin_curated = vec![];
+    let mut recent_community_curated = vec![];
+    let mut all_community_curated = vec![];
 
     let ref_uniquename_iter = sorted_pub_uniquenames.iter();
 
@@ -1187,24 +1189,20 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         let reference = references_map.get(ref_uniquename).unwrap();
 
         if reference.canto_curator_role == Some("community".into()) {
-            if community_curated.len() <= MAX_RECENT_REFS {
-                let ref_short = make_reference_short(references_map, ref_uniquename).unwrap();
-                community_curated.push(ref_short);
+            let ref_short = make_reference_short(references_map, ref_uniquename).unwrap();
+            all_community_curated.push(ref_short.clone());
+            if recent_community_curated.len() <= MAX_RECENT_REFS {
+                recent_community_curated.push(ref_short);
             }
         } else {
-            if admin_curated.len() <= MAX_RECENT_REFS {
+            if recent_admin_curated.len() <= MAX_RECENT_REFS {
                 let ref_short = make_reference_short(references_map, ref_uniquename).unwrap();
-                admin_curated.push(ref_short);
+                recent_admin_curated.push(ref_short);
             }
         }
-
-        if admin_curated.len() == MAX_RECENT_REFS &&
-            community_curated.len() == MAX_RECENT_REFS {
-                break;
-            }
     }
 
-    (admin_curated, community_curated)
+    (recent_admin_curated, recent_community_curated, all_community_curated)
 }
 
 fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
@@ -1376,6 +1374,7 @@ impl <'a> WebDataBuild<'a> {
                 community_curated: vec![],
                 pubmed: vec![],
             },
+            all_community_curated: vec![],
 
             genes_of_transcripts: HashMap::new(),
             transcripts_of_polypeptides: HashMap::new(),
@@ -1755,16 +1754,19 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let (admin_curated, community_curated) =
+        let (recent_admin_curated, recent_community_curated,
+             all_community_curated) =
             make_canto_curated(&self.references, &all_uniquenames);
 
         let recent_references = RecentReferences {
             pubmed: make_recently_added(&self.references, &all_uniquenames),
-            admin_curated: admin_curated,
-            community_curated: community_curated,
+            admin_curated: recent_admin_curated,
+            community_curated: recent_community_curated,
         };
 
         self.recent_references = recent_references;
+
+        self.all_community_curated = all_community_curated;
     }
 
     // make maps from genes to transcript, transcripts to polypeptide,
@@ -4759,12 +4761,14 @@ impl <'a> WebDataBuild<'a> {
         let term_subsets = self.term_subsets.clone();
         let gene_subsets = self.gene_subsets.clone();
         let recent_references = self.recent_references.clone();
+        let all_community_curated = self.all_community_curated.clone();
 
         WebData {
             metadata: metadata,
             chromosomes: chromosomes,
             chromosome_summaries: chromosome_summaries,
             recent_references: recent_references,
+            all_community_curated: all_community_curated,
             api_maps: self.make_api_maps(),
             search_gene_summaries: gene_summaries,
             term_subsets: term_subsets,
