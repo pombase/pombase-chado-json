@@ -953,7 +953,7 @@ fn test_locations() {
     let pom1_gene = web_data.api_maps.genes.get("SPAC2F7.03c").unwrap().clone();
     let pom1_loc = pom1_gene.location.unwrap().clone();
 
-    assert_eq!(&pom1_loc.chromosome.name, "chromosome_1");
+    assert_eq!(&pom1_loc.chromosome_name, "chromosome_1");
     assert_eq!(pom1_loc.start_pos, 534120);
     assert_eq!(pom1_loc.end_pos, 537869);
     assert_eq!(pom1_loc.strand, Strand::Reverse);
@@ -965,7 +965,7 @@ fn test_locations() {
     let cdc16_gene = web_data.api_maps.genes.get("SPAC6F6.08c").unwrap().clone();
     let cdc16_loc = cdc16_gene.location.unwrap().clone();
 
-    assert_eq!(&cdc16_loc.chromosome.name, "chromosome_1");
+    assert_eq!(&cdc16_loc.chromosome_name, "chromosome_1");
     assert_eq!(cdc16_loc.start_pos, 2746667);
     assert_eq!(cdc16_loc.end_pos, 2748180);
     assert_eq!(cdc16_loc.strand, Strand::Reverse);

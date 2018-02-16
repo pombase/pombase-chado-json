@@ -1,7 +1,6 @@
 use std::collections::{HashSet, HashMap};
 use web::data::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
-                ChromosomeShort, TranscriptDetails, FeatureShort,
-                ProteinDetails, FeatureType};
+                TranscriptDetails, FeatureShort, ProteinDetails, FeatureType};
 
 pub fn format_fasta(id: &str, maybe_desc: Option<String>,
                     seq: &str, width: usize) -> String {
@@ -170,11 +169,7 @@ fn make_test_gene() -> GeneDetails {
         feature_type: "mRNA gene".to_owned(),
         characterisation_status: Some("published".to_owned()),
         location: Some(ChromosomeLocation {
-            chromosome: ChromosomeShort {
-                name: "chromosome_3".to_owned(),
-                length: 2452883,
-                ena_identifier: "CU329672.1".to_owned(),
-            },
+            chromosome_name: "chromosome_3".to_owned(),
             start_pos: 729054,
             end_pos: 730829,
             strand: Strand::Forward,
@@ -185,11 +180,7 @@ fn make_test_gene() -> GeneDetails {
             TranscriptDetails {
                 uniquename:"SPCC18B5.06.1".to_owned(),
                 location: ChromosomeLocation {
-                    chromosome: ChromosomeShort {
-                        name: "chromosome_3".to_owned(),
-                        length: 2452883,
-                        ena_identifier: "CU329672.1".to_owned(),
-                    },
+                    chromosome_name: "chromosome_3".to_owned(),
                     start_pos: 729054,
                     end_pos: 730829,
                     strand: Strand::Forward,
@@ -200,11 +191,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::FivePrimeUtr,
                         uniquename: "SPCC18B5.06.1:five_prime_UTR:1".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729054,
                             end_pos: 729132,
                             strand: Strand::Forward,
@@ -216,11 +203,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::Exon,
                         uniquename: "SPCC18B5.06.1:exon:1".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729133,
                             end_pos: 729212,
                             strand: Strand::Forward,
@@ -232,11 +215,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: "SPCC18B5.06.1:intron:1".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729213,
                             end_pos: 729265,
                             strand: Strand::Forward,
@@ -248,11 +227,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::Exon,
                         uniquename: "SPCC18B5.06.1:exon:2".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729266,
                             end_pos: 729319,
                             strand: Strand::Forward,
@@ -264,11 +239,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: "SPCC18B5.06.1:intron:2".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729320,
                             end_pos: 729379,
                             strand: Strand::Forward,
@@ -280,11 +251,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::Exon,
                         uniquename: "SPCC18B5.06.1:exon:3".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729380,
                             end_pos: 729678,
                             strand: Strand::Forward,
@@ -296,11 +263,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: "SPCC18B5.06.1:intron:3".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729679,
                             end_pos: 729734,
                             strand: Strand::Forward,
@@ -312,11 +275,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::Exon,
                         uniquename: "SPCC18B5.06.1:exon:4".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729735,
                             end_pos: 729841,
                             strand: Strand::Forward,
@@ -328,11 +287,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: "SPCC18B5.06.1:intron:4".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729842,
                             end_pos: 729889,
                             strand: Strand::Forward,
@@ -344,11 +299,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::Exon,
                         uniquename: "SPCC18B5.06.1:exon:5".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 729890,
                             end_pos: 730522,
                             strand: Strand::Forward,
@@ -360,11 +311,7 @@ fn make_test_gene() -> GeneDetails {
                         feature_type: FeatureType::ThreePrimeUtr,
                         uniquename: "SPCC18B5.06.1:three_prime_UTR:1".to_owned(),
                         location: ChromosomeLocation {
-                            chromosome: ChromosomeShort {
-                                name: "chromosome_3".to_owned(),
-                                length: 2452883,
-                                ena_identifier: "CU329672.1".to_owned(),
-                            },
+                            chromosome_name: "chromosome_3".to_owned(),
                             start_pos: 730523,
                             end_pos: 730829,
                             strand: Strand::Forward,
@@ -384,11 +331,7 @@ fn make_test_gene() -> GeneDetails {
                     codon_adaptation_index: 0.59
                 }),
                 cds_location: Some(ChromosomeLocation {
-                    chromosome: ChromosomeShort {
-                        name: "chromosome_3".to_owned(),
-                        length: 2452883,
-                        ena_identifier: "CU329672.1".to_owned(),
-                    },
+                    chromosome_name: "chromosome_3".to_owned(),
                     start_pos: 729133,
                     end_pos: 730522,
                     strand: Strand::Forward,

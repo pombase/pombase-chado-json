@@ -452,7 +452,7 @@ impl Phase {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeLocation {
-    pub chromosome: ChromosomeShort,
+    pub chromosome_name: String,
     pub start_pos: u32,
     pub end_pos: u32,
     pub strand: Strand,
@@ -1423,7 +1423,7 @@ impl WebData {
                                     merged_locs.push(ChromosomeLocation {
                                         start_pos: prev.start_pos,
                                         end_pos: part.location.end_pos,
-                                        chromosome: prev.chromosome,
+                                        chromosome_name: prev.chromosome_name,
                                         strand: prev.strand,
                                         phase: prev.phase,
                                     });
@@ -1462,7 +1462,7 @@ impl WebData {
 
         for (_, gene_details) in &self.api_maps.genes {
             if let Some(ref gene_loc) = gene_details.location {
-                let chromosome_name = &gene_loc.chromosome.name;
+                let chromosome_name = &gene_loc.chromosome_name;
                 let chromosome_export_id =
                     &config.find_chromosome_config(chromosome_name).export_id;
                 let gene_gff_lines =
@@ -1474,7 +1474,7 @@ impl WebData {
             }
         }
         for (_, feature_short) in &self.api_maps.other_features {
-            let chromosome_name = &feature_short.location.chromosome.name;
+            let chromosome_name = &feature_short.location.chromosome_name;
             let chromosome_export_id =
                 &config.find_chromosome_config(chromosome_name).export_id;
             let gff_lines =

@@ -757,7 +757,7 @@ fn make_location(chromosome_map: &ChrNameDetailsMap,
             let feature_uniquename = &feature_loc.srcfeature.uniquename;
             let chr_short = make_chromosome_short(chromosome_map, feature_uniquename);
             Some(ChromosomeLocation {
-                chromosome: chr_short,
+                chromosome_name: chr_short.name,
                 start_pos: start_pos,
                 end_pos: end_pos,
                 strand: match feature_loc.strand {
@@ -807,7 +807,7 @@ fn get_loc_residues(chr: &ChromosomeDetails,
 fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> FeatureShort {
     let maybe_loc = make_location(chromosome_map, feat);
     if let Some(loc) = maybe_loc {
-        if let Some(chr) = chromosome_map.get(&loc.chromosome.name) {
+        if let Some(chr) = chromosome_map.get(&loc.chromosome_name) {
             let residues = get_loc_residues(chr, &loc);
             let feature_type = match &feat.feat_type.name as &str {
                 "five_prime_UTR" => FeatureType::FivePrimeUtr,
@@ -841,7 +841,7 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
                 residues: residues,
             }
         } else {
-            panic!("can't find chromosome {}", loc.chromosome.name);
+            panic!("can't find chromosome {}", loc.chromosome_name);
         }
     } else {
         panic!("{} has no featureloc", feat.uniquename);
@@ -1230,7 +1230,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                 intron_count += 1;
 
                 let new_intron_loc = ChromosomeLocation {
-                    chromosome: prev_part.location.chromosome.clone(),
+                    chromosome_name: prev_part.location.chromosome_name.clone(),
                     start_pos: intron_start,
                     end_pos: intron_end,
                     strand: prev_part.location.strand.clone(),
@@ -1832,7 +1832,7 @@ impl <'a> WebDataBuild<'a> {
         let maybe_location = make_location(&self.chromosomes, feat);
 
         if let Some(ref location) = maybe_location {
-            if let Some(ref mut chr) = self.chromosomes.get_mut(&location.chromosome.name) {
+            if let Some(ref mut chr) = self.chromosomes.get_mut(&location.chromosome_name) {
                 chr.gene_uniquenames.push(feat.uniquename.clone());
             }
         }
@@ -1919,7 +1919,7 @@ impl <'a> WebDataBuild<'a> {
 
         validate_transcript_parts(transcript_uniquename, &parts);
 
-        let chr_name = &parts[0].location.chromosome.name.clone();
+        let chr_name = &parts[0].location.chromosome_name.clone();
         if let Some(chromosome) = self.chromosomes.get(chr_name) {
             add_introns_to_transcript(chromosome, transcript_uniquename, &mut parts);
         } else {
@@ -1985,7 +1985,7 @@ impl <'a> WebDataBuild<'a> {
                     if let Some(mrna_location) = feat.featurelocs.borrow().get(0) {
                         let first_part_loc = &parts[0].location;
                         Some(ChromosomeLocation {
-                            chromosome: first_part_loc.chromosome.clone(),
+                            chromosome_name: first_part_loc.chromosome_name.clone(),
                             start_pos: cds_start,
                             end_pos: cds_end,
                             strand: first_part_loc.strand.clone(),
@@ -2298,7 +2298,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         let cmp = |a: &GeneAndLoc, b: &GeneAndLoc| {
-            let order = a.loc.chromosome.name.cmp(&b.loc.chromosome.name);
+            let order = a.loc.chromosome_name.cmp(&b.loc.chromosome_name);
             if order == Ordering::Equal {
                 a.loc.start_pos.cmp(&b.loc.start_pos)
             } else {
@@ -2321,8 +2321,8 @@ impl <'a> WebDataBuild<'a> {
                 for back_index in (start_index..i).rev() {
                     let back_gene_and_loc = &genes_and_locs[back_index];
 
-                    if back_gene_and_loc.loc.chromosome.name !=
-                        this_gene_and_loc.loc.chromosome.name {
+                    if back_gene_and_loc.loc.chromosome_name !=
+                        this_gene_and_loc.loc.chromosome_name {
                             break;
                         }
                     let back_gene_short = self.make_gene_short(&back_gene_and_loc.gene_uniquename);
@@ -2344,8 +2344,8 @@ impl <'a> WebDataBuild<'a> {
                 for forward_index in i+1..end_index {
                     let forward_gene_and_loc = &genes_and_locs[forward_index];
 
-                    if forward_gene_and_loc.loc.chromosome.name !=
-                        this_gene_and_loc.loc.chromosome.name {
+                    if forward_gene_and_loc.loc.chromosome_name !=
+                        this_gene_and_loc.loc.chromosome_name {
                             break;
                         }
 

@@ -175,7 +175,7 @@ fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<u64>, end:
             if let Some(ref location) = gene.location {
                 (end.is_none() || location.start_pos as u64 <= end.unwrap()) &&
                     (start.is_none() || location.end_pos as u64 >= start.unwrap()) &&
-                    location.chromosome.name == chromosome_name
+                    location.chromosome_name == chromosome_name
             } else {
                 false
             }
