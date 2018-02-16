@@ -887,6 +887,7 @@ fn make_reference_short<'a>(reference_map: &'a UniquenameReferenceMap,
                 publication_year: reference_details.publication_year.clone(),
                 authors: reference_details.authors.clone(),
                 authors_abbrev: reference_details.authors_abbrev.clone(),
+                approved_date: reference_details.approved_date.clone(),
                 gene_count: reference_details.genes_by_uniquename.keys().len(),
                 genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
             };
@@ -1721,6 +1722,19 @@ impl <'a> WebDataBuild<'a> {
                 publication_year = Some(date_re.replace_all(&publication_date, "$y"));
             }
 
+            let mut approved_date = canto_first_approved_date.clone();
+
+            if approved_date.is_none() {
+                approved_date = canto_session_submitted_date.clone();
+            }
+            approved_date =
+                if let Some(date) = approved_date {
+                    let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
+                    Some(re.replace_all(&date, "$date"))
+                } else {
+                    None
+                };
+
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
                                        uniquename: reference_uniquename.clone(),
@@ -1737,6 +1751,7 @@ impl <'a> WebDataBuild<'a> {
                                        canto_approved_date: canto_approved_date,
                                        canto_session_submitted_date: canto_session_submitted_date,
                                        canto_added_date: canto_added_date,
+                                       approved_date: approved_date,
                                        publication_year: publication_year,
                                        cv_annotations: HashMap::new(),
                                        physical_interactions: vec![],

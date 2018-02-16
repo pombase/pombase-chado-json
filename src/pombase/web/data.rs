@@ -243,6 +243,8 @@ pub struct ReferenceShort {
     pub authors_abbrev: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub approved_date: Option<String>,
     pub gene_count: usize,
     pub genotype_count: usize,
 }
@@ -278,6 +280,11 @@ pub struct ReferenceDetails {
     pub canto_session_submitted_date: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_added_date: Option<String>,
+
+    // This is set to the year part of canto_first_approved_date if it is
+    // not None, otherwise set to the year part of canto_session_submitted_date
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub approved_date: Option<String>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
     pub genetic_interactions: Vec<InteractionAnnotation>,
