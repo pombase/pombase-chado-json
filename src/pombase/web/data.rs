@@ -68,6 +68,8 @@ fn write_as_fasta(writer: &mut Write, id: &str, desc: Option<String>, seq: &str)
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
+#[serde(rename = "promoter_uniquename")]
+    Promoter(String),
 #[serde(rename = "summary_gene_uniquenames")]
     // the inner Vec length will be > 1 for cases like "binds abc1 and def2, cdc2"
     SummaryGenes(Vec<Vec<String>>),

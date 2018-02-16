@@ -603,9 +603,11 @@ fn string_from_ext_range(ext_range: &ExtRange,
                          genes: &UniquenameGeneMap, terms: &TermIdDetailsMap) -> String {
     match *ext_range {
         ExtRange::Gene(ref gene_uniquename) => {
-            let gene = genes.get(gene_uniquename).unwrap();
+            let gene = genes.get(gene_uniquename)
+                .unwrap_or_else(|| panic!("can't find gene: {}", gene_uniquename));
             gene_display_name(gene)
         },
+        ExtRange::Promoter(ref promoter_uniquename) => promoter_uniquename.clone(),
         ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::Term(ref termid) => terms.get(termid).unwrap().name.clone(),
         ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
@@ -2954,7 +2956,11 @@ impl <'a> WebDataBuild<'a> {
                         let ext_rel_name = String::from(ext_rel_name_str);
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with("SP") {
-                            ExtRange::Gene(ext_range)
+                            if ext_range.ends_with("-promoter") {
+                                ExtRange::Promoter(ext_range)
+                            } else {
+                                ExtRange::Gene(ext_range)
+                            }
                         } else {
                             ExtRange::Misc(ext_range)
                         };
