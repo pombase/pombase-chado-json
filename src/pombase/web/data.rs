@@ -1091,6 +1091,8 @@ impl WebData {
         let mut cds_writer = make_seq_writer("cds.fa");
         let mut cds_introns_writer = make_seq_writer("cds+introns.fa");
         let mut cds_introns_utrs_writer = make_seq_writer("cds+introns+utrs.fa");
+        let mut five_prime_utrs_writer = make_seq_writer("five_prime_utrs.fa");
+        let mut three_prime_utrs_writer = make_seq_writer("three_prime_utrs.fa");
         let mut peptide_writer = make_seq_writer("peptide.fa");
 
         for (gene_uniquename, gene_details) in &self.api_maps.genes {
@@ -1098,6 +1100,8 @@ impl WebData {
                 let mut cds_seq = String::new();
                 let mut cds_introns_seq = String::new();
                 let mut cds_introns_utrs_seq = String::new();
+                let mut five_prime_utr_seq = String::new();
+                let mut three_prime_utr_seq = String::new();
                 for part in &transcript.parts {
                     if part.feature_type == FeatureType::Exon {
                         cds_seq += &part.residues;
@@ -1107,12 +1111,26 @@ impl WebData {
                         cds_introns_seq += &part.residues;
                     }
                     cds_introns_utrs_seq += &part.residues;
+                    if part.feature_type == FeatureType::FivePrimeUtr {
+                        five_prime_utr_seq += &part.residues;
+                    }
+                    if part.feature_type == FeatureType::ThreePrimeUtr {
+                        three_prime_utr_seq += &part.residues;
+                    }
                 }
 
                 write_as_fasta(&mut cds_writer, gene_uniquename, None, &cds_seq);
                 write_as_fasta(&mut cds_introns_writer, gene_uniquename, None, &cds_introns_seq);
                 write_as_fasta(&mut cds_introns_utrs_writer,
                                gene_uniquename, None, &cds_introns_utrs_seq);
+                if five_prime_utr_seq.len() > 0 {
+                    write_as_fasta(&mut five_prime_utrs_writer,
+                                   gene_uniquename, None, &five_prime_utr_seq);
+                }
+                if three_prime_utr_seq.len() > 0 {
+                    write_as_fasta(&mut three_prime_utrs_writer,
+                                   gene_uniquename, None, &three_prime_utr_seq);
+                }
                 if let Some(ref protein) = transcript.protein {
                     write_as_fasta(&mut peptide_writer, &(gene_uniquename.to_owned() + ":pep"),
                                    None, &protein.sequence);
