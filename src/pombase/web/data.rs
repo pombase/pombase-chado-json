@@ -1185,16 +1185,19 @@ impl WebData {
         let rna_file_name = output_dir.to_owned() + "/sysID2product.rna.tsv";
         let pseudogenes_file_name = output_dir.to_owned() + "/pseudogeneIDs.tsv";
         let all_names_file_name = output_dir.to_owned() + "/allNames.tsv";
+        let all_ids_file_name = output_dir.to_owned() + "/all_ids.tsv";
 
         let gene_file = File::create(gene_file_name).expect("Unable to open file");
         let rna_file = File::create(rna_file_name).expect("Unable to open file");
         let pseudogenes_file = File::create(pseudogenes_file_name).expect("Unable to open file");
         let all_names_file = File::create(all_names_file_name).expect("Unable to open file");
+        let all_ids_file = File::create(all_ids_file_name).expect("Unable to open file");
 
         let mut gene_writer = BufWriter::new(&gene_file);
         let mut rna_writer = BufWriter::new(&rna_file);
         let mut pseudogenes_writer = BufWriter::new(&pseudogenes_file);
         let mut all_names_writer = BufWriter::new(&all_names_file);
+        let mut all_ids_writer = BufWriter::new(&all_ids_file);
 
         let db_version = format!("# Chado database date: {}\n", self.metadata.db_creation_datetime);
         gene_writer.write(db_version.as_bytes())?;
@@ -1222,11 +1225,23 @@ impl WebData {
                                gene_details.name.clone().unwrap_or("".to_owned()),
                                synonyms);
 
+            let gene_name = if let Some(ref gene_details_name) = gene_details.name {
+                gene_details_name.clone()
+            } else {
+                String::new()
+            };
+
+            let gene_product = if let Some(ref gene_details_product) = gene_details.product {
+                gene_details_product.clone()
+            } else {
+                String::new()
+            };
+
             let line_with_product = format!("{}\t{}\t{}\t{}\n",
                                             gene_details.uniquename,
-                                            gene_details.name.clone().unwrap_or("".to_owned()),
+                                            gene_name,
                                             synonyms,
-                                            gene_details.product.clone().unwrap_or("".to_owned()));
+                                            gene_product);
 
             all_names_writer.write(line.as_bytes())?;
 
@@ -1241,6 +1256,30 @@ impl WebData {
                     }
                 }
             }
+
+            let uniprot_id =
+                if let Some(ref gene_uniprot_id) = gene_details.uniprot_identifier {
+                    gene_uniprot_id
+                } else {
+                    ""
+                };
+
+            let chromosome_name =
+                if let Some(ref loc) = gene_details.location {
+                    &loc.chromosome_name
+                } else {
+                    ""
+                };
+
+            let all_ids_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                                       gene_details.uniquename,
+                                       gene_name,
+                                       chromosome_name,
+                                       gene_product,
+                                       uniprot_id,
+                                       gene_details.feature_type,
+                                       synonyms);
+            all_ids_writer.write(all_ids_line.as_bytes())?;
         }
 
         gene_writer.flush()?;
