@@ -4501,8 +4501,8 @@ impl <'a> WebDataBuild<'a> {
         let mut go_slim_subset: HashSet<TermSubsetElement> = HashSet::new();
         'TERM: for go_slim_conf in self.config.go_slim_terms.clone() {
             let slim_termid = go_slim_conf.termid;
-            let term_details =
-                self.terms.get(&slim_termid).expect("can't find TermDetails");
+            let term_details = self.terms.get(&slim_termid)
+                .expect(&format!("can't find TermDetails for {}", &slim_termid));
 
             let subset_element = TermSubsetElement {
                 name: term_details.name.clone(),
