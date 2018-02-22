@@ -365,8 +365,11 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
     let mut term_annotations_by_termid = HashMap::new();
 
     for term_annotation in &*term_annotations {
-        term_annotations_by_termid.insert(term_annotation.term.termid.clone(),
-                                          term_annotation.clone());
+        if !term_annotation.is_not {
+            // NOT annotation don't count as more specific
+            term_annotations_by_termid.insert(term_annotation.term.termid.clone(),
+                                              term_annotation.clone());
+        }
     }
 
     for term_annotation in term_annotations.iter_mut() {
