@@ -2031,8 +2031,10 @@ impl <'a> WebDataBuild<'a> {
         if let Some(gene_uniquename) =
             self.genes_of_transcripts.get(&transcript_uniquename) {
                 let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
-                gene_details.feature_type =
-                    transcript.transcript_type.clone() + " " + &gene_details.feature_type;
+                if gene_details.feature_type != "pseudogene" {
+                    gene_details.feature_type =
+                        transcript.transcript_type.clone() + " " + &gene_details.feature_type;
+                }
                 gene_details.transcripts.push(transcript);
             } else {
                 panic!("can't find gene for transcript: {}", transcript_uniquename);
