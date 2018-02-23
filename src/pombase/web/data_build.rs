@@ -2245,7 +2245,7 @@ impl <'a> WebDataBuild<'a> {
                 // for now, ignore features without locations
                 if feat.featurelocs.borrow().len() > 0 {
                     let feature_short = make_feature_short(&self.chromosomes, &feat);
-                    self.other_features.insert(feat.feat_type.name.clone(), feature_short);
+                    self.other_features.insert(feat.uniquename.clone(), feature_short);
                 }
             }
         }
