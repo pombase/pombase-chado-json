@@ -350,5 +350,6 @@ fn make_test_gene() -> GeneDetails {
         genotypes_by_uniquename: HashMap::new(),
         alleles_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
+        annotation_details: HashMap::new(),
     }
 }

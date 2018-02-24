@@ -84,18 +84,21 @@ fn make_test_featureprop(featureprops: &mut Vec<Rc<Featureprop>>, feature: &Rc<F
     featureprop
 }
 
+static mut FEATURE_CVTERM_ID_COUNTER: i32 = 1000;
+
 fn make_test_feature_cvterm(feature_cvterms: &mut Vec<Rc<FeatureCvterm>>,
                             feature: &Rc<Feature>, cvterm: &Rc<Cvterm>,
                             publication: &Rc<Publication>)
                      -> Rc<FeatureCvterm> {
     let feature_cvterm = Rc::new(FeatureCvterm {
-        feature_cvterm_id: 0,
+        feature_cvterm_id: unsafe { FEATURE_CVTERM_ID_COUNTER },
         feature: feature.clone(),
         cvterm: cvterm.clone(),
         publication: publication.clone(),
         is_not: false,
         feature_cvtermprops: RefCell::new(vec![]),
     });
+    unsafe { FEATURE_CVTERM_ID_COUNTER += 1 };
     feature_cvterms.push(feature_cvterm.clone());
     feature_cvterm
 }
@@ -603,9 +606,9 @@ fn test_gene_details() {
     }
 
     let mut process = par1_gene.cv_annotations.remove("biological_process").unwrap();
-    assert!(process.remove(0).summary.unwrap().len() == 0);
+    assert_eq!(process.remove(0).summary.unwrap().len(), 0);
     let mut phenotype = par1_gene.cv_annotations.remove("multi_allele_phenotype").unwrap();
-    assert!(phenotype.remove(0).summary.unwrap().len() == 1);
+    assert_eq!(phenotype.remove(0).summary.unwrap().len(), 1);
 }
 
 #[test]
@@ -639,9 +642,14 @@ fn test_gene_with() {
     let par1_gene = web_data.api_maps.genes.get("SPCC188.02").unwrap().clone();
     let cv_annotations = par1_gene.cv_annotations;
     let biological_process_annotations = cv_annotations.get("biological_process").unwrap();
-    assert_eq!(biological_process_annotations.len(), 1);
-    let first_annotation = &biological_process_annotations[0].annotations[0];
-    if let WithFromValue::Gene(ref with_gene) = first_annotation.withs[0] {
+    assert_eq!(biological_process_annotations[0].annotations.len(), 1);
+    let first_process_annotation_id =
+        biological_process_annotations[0].annotations[0];
+    let first_process_annotation =
+        web_data.api_maps.annotation_details.get(&first_process_annotation_id).unwrap();
+print!("{:?}\n", first_process_annotation);
+
+    if let WithFromValue::Gene(ref with_gene) = first_process_annotation.withs[0] {
         assert_eq!(with_gene.clone().uniquename, "SPAC6F6.08c");
         assert_eq!(with_gene.clone().name.unwrap(), "cdc16");
     }

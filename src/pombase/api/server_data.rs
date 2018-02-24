@@ -8,7 +8,7 @@ use std::collections::HashSet;
 
 use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
-                InteractionType};
+                InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap};
 use web::config::Config;
 use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
@@ -249,20 +249,66 @@ impl ServerData {
             .collect()
     }
 
-    pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<&GeneDetails> {
-        self.maps.genes.get(gene_uniquename)
+    fn detail_map_of_cv_annotations(&self, ont_annotation_map: &OntAnnotationMap)
+                                    -> IdOntAnnotationDetailMap
+    {
+        let mut details_map = HashMap::new();
+
+        for (_, term_annotations) in ont_annotation_map {
+            for term_annotation in term_annotations {
+                for annotation_detail_id in &term_annotation.annotations {
+                    let details =
+                        self.maps.annotation_details.get(annotation_detail_id).unwrap();
+                    details_map.insert(*annotation_detail_id, details.clone());
+                }
+            }
+        }
+
+        details_map
     }
 
-    pub fn get_genotype_details(&self, genotype_uniquename: &str) -> Option<&GenotypeDetails> {
-        self.maps.genotypes.get(genotype_uniquename)
+    pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<GeneDetails> {
+        if let Some(gene_ref) = self.maps.genes.get(gene_uniquename) {
+            let mut gene = gene_ref.clone();
+            let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
+            gene.annotation_details = details_map;
+            Some(gene)
+        } else {
+            None
+        }
     }
 
-    pub fn get_term_details(&self, termid: &str) -> Option<&TermDetails> {
-        self.maps.terms.get(termid)
+    pub fn get_genotype_details(&self, genotype_uniquename: &str) -> Option<GenotypeDetails> {
+        if let Some(genotype_ref) = self.maps.genotypes.get(genotype_uniquename) {
+            let mut genotype = genotype_ref.clone();
+            let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
+            genotype.annotation_details = details_map;
+            Some(genotype)
+        } else {
+            None
+        }
     }
 
-    pub fn get_reference_details(&self, reference_uniquename: &str) -> Option<&ReferenceDetails> {
-        self.maps.references.get(reference_uniquename)
+    pub fn get_term_details(&self, termid: &str) -> Option<TermDetails> {
+        if let Some(term_ref) = self.maps.terms.get(termid) {
+            let mut term = term_ref.clone();
+            let details_map = self.detail_map_of_cv_annotations(&term.cv_annotations);
+            term.annotation_details = details_map;
+            Some(term)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_reference_details(&self, reference_uniquename: &str) -> Option<ReferenceDetails> {
+        if let Some(reference_ref) = self.maps.references.get(reference_uniquename) {
+            let mut reference = reference_ref.clone();
+            let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);
+            reference.annotation_details = details_map;
+            Some(reference)
+        } else {
+            None
+        }
     }
 
     pub fn interactors_of_genes(&self, gene_uniquename: &GeneUniquename,

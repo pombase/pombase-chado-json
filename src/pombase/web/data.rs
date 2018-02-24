@@ -48,6 +48,9 @@ pub type GenotypeShortMap = HashMap<GeneUniquename, GenotypeShort>;
 pub type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type TermShortMap = HashMap<TermId, TermShort>;
 
+pub type OntAnnotationId = i32;
+pub type IdOntAnnotationDetailMap = HashMap<OntAnnotationId, OntAnnotationDetail>;
+
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -296,6 +299,7 @@ pub struct ReferenceDetails {
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub annotation_details: IdOntAnnotationDetailMap,
 }
 
 // the GO with/from
@@ -346,7 +350,7 @@ pub struct OntTermAnnotations {
     pub is_not: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub rel_names: HashSet<RelName>,
-    pub annotations: Vec<OntAnnotationDetail>,
+    pub annotations: Vec<OntAnnotationId>,
     pub summary: Option<Vec<TermSummaryRow>>,
 }
 
@@ -519,6 +523,7 @@ pub struct GeneDetails {
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub annotation_details: IdOntAnnotationDetailMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -664,6 +669,7 @@ pub struct GenotypeDetails {
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub annotation_details: IdOntAnnotationDetailMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -727,6 +733,7 @@ pub struct TermDetails {
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub annotation_details: IdOntAnnotationDetailMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -898,6 +905,7 @@ pub struct APIMaps {
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
     pub references: UniquenameReferenceMap,
     pub other_features: UniquenameFeatureShortMap,
+    pub annotation_details: IdOntAnnotationDetailMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
