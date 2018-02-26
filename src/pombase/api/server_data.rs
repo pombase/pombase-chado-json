@@ -10,7 +10,8 @@ use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
                 InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
                 TermShort, TermShortOptionMap,
-                ReferenceShort, ReferenceShortOptionMap};
+                ReferenceShort, ReferenceShortOptionMap,
+                GeneShort, GeneShortOptionMap};
 use web::config::Config;
 use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
@@ -279,6 +280,16 @@ impl ServerData {
         ret
     }
 
+    fn fill_gene_map(&self, gene_map: &GeneShortOptionMap) -> GeneShortOptionMap {
+        let mut ret = gene_map.clone();
+        for (gene_uniquename, _) in gene_map {
+            let gene_details = self.maps.genes.get(gene_uniquename).unwrap();
+            let gene_short = GeneShort::from_gene_details(gene_details);
+            ret.insert(gene_uniquename.clone(), Some(gene_short));
+        }
+        ret
+    }
+
     fn fill_reference_map(&self, reference_map: &ReferenceShortOptionMap) -> ReferenceShortOptionMap {
         let mut ret = reference_map.clone();
         for (reference_uniquename, _) in reference_map {
@@ -295,6 +306,7 @@ impl ServerData {
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
             gene.annotation_details = details_map;
             gene.terms_by_termid = self.fill_term_map(&gene.terms_by_termid);
+            gene.genes_by_uniquename = self.fill_gene_map(&gene.genes_by_uniquename);
             gene.references_by_uniquename =
                 self.fill_reference_map(&gene.references_by_uniquename);
             Some(gene)
@@ -309,6 +321,7 @@ impl ServerData {
             let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
             genotype.annotation_details = details_map;
             genotype.terms_by_termid = self.fill_term_map(&genotype.terms_by_termid);
+            genotype.genes_by_uniquename = self.fill_gene_map(&genotype.genes_by_uniquename);
             genotype.references_by_uniquename =
                 self.fill_reference_map(&genotype.references_by_uniquename);
             Some(genotype)
@@ -323,6 +336,7 @@ impl ServerData {
             let details_map = self.detail_map_of_cv_annotations(&term.cv_annotations);
             term.annotation_details = details_map;
             term.terms_by_termid = self.fill_term_map(&term.terms_by_termid);
+            term.genes_by_uniquename = self.fill_gene_map(&term.genes_by_uniquename);
             term.references_by_uniquename =
                 self.fill_reference_map(&term.references_by_uniquename);
             Some(term)
@@ -337,6 +351,7 @@ impl ServerData {
             let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);
             reference.annotation_details = details_map;
             reference.terms_by_termid = self.fill_term_map(&reference.terms_by_termid);
+            reference.genes_by_uniquename = self.fill_gene_map(&reference.genes_by_uniquename);
             Some(reference)
         } else {
             None

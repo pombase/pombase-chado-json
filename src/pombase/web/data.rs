@@ -51,6 +51,7 @@ pub type OntAnnotationId = i32;
 pub type IdOntAnnotationDetailMap = HashMap<OntAnnotationId, OntAnnotationDetail>;
 
 pub type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
+pub type GeneShortOptionMap = HashMap<GeneUniquename, Option<GeneShort>>;
 pub type ReferenceShortOptionMap = HashMap<ReferenceUniquename, Option<ReferenceShort>>;
 
 use std::rc::Rc;
@@ -122,6 +123,16 @@ pub struct GeneShort {
     pub name: Option<GeneName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
+}
+
+impl GeneShort {
+    pub fn from_gene_details(gene_details: &GeneDetails) -> Self {
+        GeneShort {
+            uniquename: gene_details.uniquename.clone(),
+            name: gene_details.name.clone(),
+            product: gene_details.product.clone(),
+        }
+    }
 }
 
 impl PartialEq for GeneShort {
@@ -327,7 +338,7 @@ pub struct ReferenceDetails {
     pub genetic_interactions: Vec<InteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
-    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub genes_by_uniquename: GeneShortOptionMap,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: TermShortOptionMap,
@@ -535,7 +546,7 @@ pub struct GeneDetails {
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub target_of_annotations: Vec<TargetOfAnnotation>,
     pub references_by_uniquename: ReferenceShortOptionMap,
-    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub genes_by_uniquename: GeneShortOptionMap,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: TermShortOptionMap,
@@ -682,7 +693,7 @@ pub struct GenotypeDetails {
     pub expressed_alleles: Vec<ExpressedAllele>,
     pub cv_annotations: OntAnnotationMap,
     pub references_by_uniquename: ReferenceShortOptionMap,
-    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub genes_by_uniquename: GeneShortOptionMap,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
@@ -744,7 +755,7 @@ pub struct TermDetails {
     pub is_obsolete: bool,
     pub single_allele_genotype_uniquenames: HashSet<String>,
     pub cv_annotations: OntAnnotationMap,
-    pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
+    pub genes_by_uniquename: GeneShortOptionMap,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub references_by_uniquename: ReferenceShortOptionMap,

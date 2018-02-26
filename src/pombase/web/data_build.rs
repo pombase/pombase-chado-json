@@ -84,7 +84,7 @@ pub struct WebDataBuild<'a> {
 
 fn get_maps() ->
     (HashMap<String, ReferenceShortOptionMap>,
-     HashMap<String, GeneShortMap>,
+     HashMap<String, GeneShortOptionMap>,
      HashMap<String, GenotypeShortMap>,
      HashMap<String, AlleleShortMap>,
      HashMap<GeneUniquename, TermShortOptionMap>)
@@ -1416,21 +1416,21 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+
     fn add_gene_to_hash(&self,
-                        seen_genes: &mut HashMap<String, GeneShortMap>,
+                        seen_genes: &mut HashMap<String, GeneShortOptionMap>,
                         identifier: String,
                         other_gene_uniquename: GeneUniquename) {
         seen_genes
             .entry(identifier)
             .or_insert_with(HashMap::new)
-            .insert(other_gene_uniquename.clone(),
-                    self.make_gene_short(&other_gene_uniquename));
+            .insert(other_gene_uniquename.clone(), None);
     }
 
     fn add_genotype_to_hash(&self,
                             seen_genotypes: &mut HashMap<String, GenotypeShortMap>,
                             seen_alleles: &mut HashMap<String, AlleleShortMap>,
-                            seen_genes: &mut HashMap<String, GeneShortMap>,
+                            seen_genes: &mut HashMap<String, GeneShortOptionMap>,
                             identifier: String,
                             genotype_uniquename: &str) {
         let genotype = self.make_genotype_short(genotype_uniquename);
@@ -1448,7 +1448,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_allele_to_hash(&self,
                           seen_alleles: &mut HashMap<String, AlleleShortMap>,
-                          seen_genes: &mut HashMap<String, GeneShortMap>,
+                          seen_genes: &mut HashMap<String, GeneShortOptionMap>,
                           identifier: String,
                           allele_uniquename: AlleleUniquename) -> AlleleShort {
         let allele_short = self.make_allele_short(&allele_uniquename);
@@ -1516,9 +1516,9 @@ impl <'a> WebDataBuild<'a> {
 
         for ortholog_annotation in &gene_details.ortholog_annotations {
             let orth_uniquename = &ortholog_annotation.ortholog_uniquename;
-            if let Some(orth_gene_short) =
-                gene_details.genes_by_uniquename.get(orth_uniquename) {
-                    if let Some(ref orth_name) = orth_gene_short.name {
+            if let Some(orth_gene) =
+                self.genes.get(orth_uniquename) {
+                    if let Some(ref orth_name) = orth_gene.name {
                         let id_and_org =IdAndOrganism {
                             identifier: orth_name.clone(),
                             taxonid: ortholog_annotation.ortholog_taxonid,
@@ -4080,7 +4080,7 @@ impl <'a> WebDataBuild<'a> {
                                   identifier: &String,
                                   cv_annotations: &OntAnnotationMap,
                                   seen_references: &mut HashMap<String, ReferenceShortOptionMap>,
-                                  seen_genes: &mut HashMap<String, GeneShortMap>,
+                                  seen_genes: &mut HashMap<String, GeneShortOptionMap>,
                                   seen_genotypes: &mut HashMap<String, GenotypeShortMap>,
                                   seen_alleles: &mut HashMap<String, AlleleShortMap>,
                                   seen_terms: &mut HashMap<String, TermShortOptionMap>) {
@@ -4290,8 +4290,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_reference_details_maps(&mut self) {
-        type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
-        let mut seen_genes: HashMap<String, GeneShortMap> = HashMap::new();
+        let mut seen_genes: HashMap<String, GeneShortOptionMap> = HashMap::new();
 
         type GenotypeShortMap = HashMap<GenotypeUniquename, GenotypeShort>;
         let mut seen_genotypes: HashMap<ReferenceUniquename, GenotypeShortMap> = HashMap::new();
