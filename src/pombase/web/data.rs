@@ -42,7 +42,6 @@ pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
 pub type IdRcTermShortMap = HashMap<TermId, Rc<TermShort>>;
 pub type IdRcTermDetailsMap = HashMap<TermId, Rc<TermDetails>>;
 
-pub type ReferenceShortMap = HashMap<ReferenceUniquename, ReferenceShort>;
 pub type GeneShortMap = HashMap<GeneUniquename, GeneShort>;
 pub type GenotypeShortMap = HashMap<GeneUniquename, GenotypeShort>;
 pub type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
@@ -52,6 +51,7 @@ pub type OntAnnotationId = i32;
 pub type IdOntAnnotationDetailMap = HashMap<OntAnnotationId, OntAnnotationDetail>;
 
 pub type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
+pub type ReferenceShortOptionMap = HashMap<ReferenceUniquename, Option<ReferenceShort>>;
 
 use std::rc::Rc;
 use std::cmp::Ordering;
@@ -268,6 +268,22 @@ pub struct ReferenceShort {
     pub approved_date: Option<String>,
     pub gene_count: usize,
     pub genotype_count: usize,
+}
+
+impl ReferenceShort {
+    pub fn from_reference_details(reference_details: &ReferenceDetails) -> ReferenceShort {
+        ReferenceShort {
+            uniquename: reference_details.uniquename.clone(),
+            title: reference_details.title.clone(),
+            citation: reference_details.citation.clone(),
+            publication_year: reference_details.publication_year.clone(),
+            authors: reference_details.authors.clone(),
+            authors_abbrev: reference_details.authors_abbrev.clone(),
+            approved_date: reference_details.approved_date.clone(),
+            gene_count: reference_details.genes_by_uniquename.keys().len(),
+            genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -518,7 +534,7 @@ pub struct GeneDetails {
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub target_of_annotations: Vec<TargetOfAnnotation>,
-    pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
+    pub references_by_uniquename: ReferenceShortOptionMap,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
@@ -665,7 +681,7 @@ pub struct GenotypeDetails {
     pub background: Option<String>,
     pub expressed_alleles: Vec<ExpressedAllele>,
     pub cv_annotations: OntAnnotationMap,
-    pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
+    pub references_by_uniquename: ReferenceShortOptionMap,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: TermShortOptionMap,
@@ -731,7 +747,7 @@ pub struct TermDetails {
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
-    pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
+    pub references_by_uniquename: ReferenceShortOptionMap,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
     pub gene_count: usize,

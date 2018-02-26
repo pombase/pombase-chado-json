@@ -83,7 +83,7 @@ pub struct WebDataBuild<'a> {
 }
 
 fn get_maps() ->
-    (HashMap<String, ReferenceShortMap>,
+    (HashMap<String, ReferenceShortOptionMap>,
      HashMap<String, GeneShortMap>,
      HashMap<String, GenotypeShortMap>,
      HashMap<String, AlleleShortMap>,
@@ -895,18 +895,7 @@ fn make_reference_short<'a>(reference_map: &'a UniquenameReferenceMap,
             .expect(&format!("missing reference in make_reference_short(): {}",
                             reference_uniquename));
 
-        let reference_short =
-            ReferenceShort {
-                uniquename: String::from(reference_uniquename),
-                title: reference_details.title.clone(),
-                citation: reference_details.citation.clone(),
-                publication_year: reference_details.publication_year.clone(),
-                authors: reference_details.authors.clone(),
-                authors_abbrev: reference_details.authors_abbrev.clone(),
-                approved_date: reference_details.approved_date.clone(),
-                gene_count: reference_details.genes_by_uniquename.keys().len(),
-                genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
-            };
+        let reference_short = ReferenceShort::from_reference_details(reference_details);
 
         Some(reference_short)
     }
@@ -1416,18 +1405,14 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_ref_to_hash(&self,
-                       seen_references: &mut HashMap<String, ReferenceShortMap>,
+                       seen_references: &mut HashMap<String, ReferenceShortOptionMap>,
                        identifier: String,
                        maybe_reference_uniquename: Option<ReferenceUniquename>) {
         if let Some(reference_uniquename) = maybe_reference_uniquename {
-            if let Some(reference_short) =
-                make_reference_short(&self.references, &reference_uniquename) {
-                seen_references
-                    .entry(identifier.clone())
-                    .or_insert_with(HashMap::new)
-                    .insert(reference_uniquename.clone(),
-                            reference_short);
-            }
+            seen_references
+                .entry(identifier.clone())
+                .or_insert_with(HashMap::new)
+                .insert(reference_uniquename.clone(), None);
         }
     }
 
@@ -4094,7 +4079,7 @@ impl <'a> WebDataBuild<'a> {
     fn add_cv_annotations_to_maps(&self,
                                   identifier: &String,
                                   cv_annotations: &OntAnnotationMap,
-                                  seen_references: &mut HashMap<String, ReferenceShortMap>,
+                                  seen_references: &mut HashMap<String, ReferenceShortOptionMap>,
                                   seen_genes: &mut HashMap<String, GeneShortMap>,
                                   seen_genotypes: &mut HashMap<String, GenotypeShortMap>,
                                   seen_alleles: &mut HashMap<String, AlleleShortMap>,

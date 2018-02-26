@@ -9,7 +9,8 @@ use std::collections::HashSet;
 use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
                 InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
-                TermShort, TermShortOptionMap};
+                TermShort, TermShortOptionMap,
+                ReferenceShort, ReferenceShortOptionMap};
 use web::config::Config;
 use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
@@ -278,12 +279,24 @@ impl ServerData {
         ret
     }
 
+    fn fill_reference_map(&self, reference_map: &ReferenceShortOptionMap) -> ReferenceShortOptionMap {
+        let mut ret = reference_map.clone();
+        for (reference_uniquename, _) in reference_map {
+            let reference_details = self.maps.references.get(reference_uniquename).unwrap();
+            let reference_short = ReferenceShort::from_reference_details(reference_details);
+            ret.insert(reference_uniquename.clone(), Some(reference_short));
+        }
+        ret
+    }
+
     pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<GeneDetails> {
         if let Some(gene_ref) = self.maps.genes.get(gene_uniquename) {
             let mut gene = gene_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
             gene.annotation_details = details_map;
             gene.terms_by_termid = self.fill_term_map(&gene.terms_by_termid);
+            gene.references_by_uniquename =
+                self.fill_reference_map(&gene.references_by_uniquename);
             Some(gene)
         } else {
             None
@@ -296,6 +309,8 @@ impl ServerData {
             let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
             genotype.annotation_details = details_map;
             genotype.terms_by_termid = self.fill_term_map(&genotype.terms_by_termid);
+            genotype.references_by_uniquename =
+                self.fill_reference_map(&genotype.references_by_uniquename);
             Some(genotype)
         } else {
             None
@@ -308,6 +323,8 @@ impl ServerData {
             let details_map = self.detail_map_of_cv_annotations(&term.cv_annotations);
             term.annotation_details = details_map;
             term.terms_by_termid = self.fill_term_map(&term.terms_by_termid);
+            term.references_by_uniquename =
+                self.fill_reference_map(&term.references_by_uniquename);
             Some(term)
         } else {
             None
