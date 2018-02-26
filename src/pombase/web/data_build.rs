@@ -3,7 +3,6 @@ use std::mem;
 use std::rc::Rc;
 use std::collections::{BTreeMap, HashMap};
 use std::collections::HashSet;
-use std::iter::FromIterator;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::u32;
@@ -369,13 +368,13 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
     for term_annotation in &*term_annotations {
         if !term_annotation.is_not {
             // NOT annotation don't count as more specific
-            term_annotations_by_termid.insert(term_annotation.term.termid.clone(),
+            term_annotations_by_termid.insert(term_annotation.term.clone(),
                                               term_annotation.clone());
         }
     }
 
     for term_annotation in term_annotations.iter_mut() {
-        if let Some(child_termids) = children_by_termid.get(&term_annotation.term.termid) {
+        if let Some(child_termids) = children_by_termid.get(&term_annotation.term) {
             if term_annotation.summary.as_ref().unwrap().is_empty() {
                 let mut found_child_match = false;
                 for child_termid in child_termids {
@@ -1592,15 +1591,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_term_short(&self, termid: &str) -> TermShort {
         if let Some(term_details) = self.terms.get(termid) {
-            TermShort {
-                name: term_details.name.clone(),
-                cv_name: term_details.cv_name.clone(),
-                interesting_parents: term_details.interesting_parents.clone(),
-                termid: term_details.termid.clone(),
-                is_obsolete: term_details.is_obsolete,
-                gene_count: term_details.genes_by_uniquename.keys().len(),
-                genotype_count: term_details.genotypes_by_uniquename.keys().len(),
-            }
+            TermShort::from_term_details(&term_details)
         } else {
             panic!("can't find TermDetails for termid: {}", termid)
         }
@@ -2783,8 +2774,8 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(single_allele_term_annotations) =
                 gene_details.cv_annotations.get("single_allele_phenotype") {
-                    let mut viable_conditions: HashMap<String, TermShort> = HashMap::new();
-                    let mut inviable_conditions: HashMap<String, TermShort> = HashMap::new();
+                    let mut viable_conditions: HashMap<String, TermId> = HashMap::new();
+                    let mut inviable_conditions: HashMap<String, TermId> = HashMap::new();
 
                     for term_annotation in single_allele_term_annotations {
                         'ANNOTATION: for annotation_id in &term_annotation.annotations {
@@ -2801,16 +2792,17 @@ impl <'a> WebDataBuild<'a> {
                                 continue 'ANNOTATION;
                             }
 
-                            let interesting_parents = &term_annotation.term.interesting_parents;
+                            let term = self.terms.get(&term_annotation.term).unwrap();
+                            let ref interesting_parents = term.interesting_parents;
                             let conditions_as_string =
                                 condition_string(annotation.conditions.clone());
                             if interesting_parents.contains(viable_termid) ||
-                                *viable_termid == term_annotation.term.termid {
+                                *viable_termid == term_annotation.term {
                                     viable_conditions.insert(conditions_as_string,
                                                              term_annotation.term.clone());
                                 } else {
                                     if interesting_parents.contains(inviable_termid) ||
-                                        *inviable_termid == term_annotation.term.termid {
+                                        *inviable_termid == term_annotation.term {
                                             inviable_conditions.insert(conditions_as_string,
                                                                        term_annotation.term.clone());
                                         }
@@ -2844,9 +2836,9 @@ impl <'a> WebDataBuild<'a> {
                                         println!("  conditions: {}", cond);
                                     }
                                     println!("   viable term: {}",
-                                             viable_conditions.get(cond).unwrap().termid);
+                                             viable_conditions.get(cond).unwrap());
                                     println!("   inviable term: {}",
-                                             inviable_conditions.get(cond).unwrap().termid);
+                                             inviable_conditions.get(cond).unwrap());
                                 }
                             }
                         }
@@ -2960,6 +2952,8 @@ impl <'a> WebDataBuild<'a> {
                                       references_by_uniquename: HashMap::new(),
                                       terms_by_termid: HashMap::new(),
                                       annotation_details: HashMap::new(),
+                                      gene_count: 0,
+                                      genotype_count: 0,
                                   });
             }
         }
@@ -3419,9 +3413,9 @@ impl <'a> WebDataBuild<'a> {
     fn make_term_annotations(&self, termid: &str, detail_ids: &Vec<OntAnnotationId>,
                              is_not: bool)
                        -> Vec<(CvName, OntTermAnnotations)> {
-        let term_short = self.make_term_short(termid);
+        let term_details = self.terms.get(termid).unwrap();
 
-        let cv_name = term_short.cv_name.clone();
+        let cv_name = term_details.cv_name.clone();
 
         match cv_name.as_ref() {
             "gene_ex" => {
@@ -3430,7 +3424,7 @@ impl <'a> WebDataBuild<'a> {
                 }
                 let mut qual_annotations =
                     OntTermAnnotations {
-                        term: term_short.clone(),
+                        term: termid.to_owned(),
                         is_not: false,
                         rel_names: HashSet::new(),
                         annotations: vec![],
@@ -3438,7 +3432,7 @@ impl <'a> WebDataBuild<'a> {
                     };
                 let mut quant_annotations =
                     OntTermAnnotations {
-                        term: term_short.clone(),
+                        term: termid.to_owned(),
                         is_not: false,
                         rel_names: HashSet::new(),
                         annotations: vec![],
@@ -3472,7 +3466,7 @@ impl <'a> WebDataBuild<'a> {
             "fission_yeast_phenotype" => {
                 let mut single_allele =
                     OntTermAnnotations {
-                        term: term_short.clone(),
+                        term: termid.to_owned(),
                         is_not: is_not,
                         rel_names: HashSet::new(),
                         annotations: vec![],
@@ -3480,7 +3474,7 @@ impl <'a> WebDataBuild<'a> {
                     };
                 let mut multi_allele =
                     OntTermAnnotations {
-                        term: term_short.clone(),
+                        term: termid.to_owned(),
                         is_not: is_not,
                         rel_names: HashSet::new(),
                         annotations: vec![],
@@ -3519,7 +3513,7 @@ impl <'a> WebDataBuild<'a> {
             _ => {
                 vec![(cv_name,
                       OntTermAnnotations {
-                          term: term_short.clone(),
+                          term: termid.to_owned(),
                           is_not: is_not,
                           rel_names: HashSet::new(),
                           annotations: detail_ids.clone(),
@@ -3619,11 +3613,12 @@ impl <'a> WebDataBuild<'a> {
                 }
 
                 for condition_termid in &annotation.conditions {
-                    let condition_term_short = {
-                        self.make_term_short(&condition_termid)
-                    };
-
-                    let cv_name = condition_term_short.cv_name.clone();
+                    let cv_name =
+                        if let Some(ref term_details) = self.terms.get(condition_termid) {
+                            term_details.cv_name.clone()
+                        } else {
+                            panic!("can't find term details for {}", condition_termid);
+                        };
 
                     if let Some(ref mut condition_term_details) =
                         self.terms.get_mut(&condition_termid.clone())
@@ -3634,7 +3629,7 @@ impl <'a> WebDataBuild<'a> {
                                 let mut new_vec = Vec::new();
                                 let new_term_annotation =
                                     OntTermAnnotations {
-                                        term: condition_term_short.clone(),
+                                        term: condition_termid.clone(),
                                         is_not: is_not,
                                         rel_names: HashSet::new(),
                                         annotations: vec![],
@@ -3658,10 +3653,6 @@ impl <'a> WebDataBuild<'a> {
                 // eg. "extension:directly activates:gene"
                 for ext_part in &annotation.extension {
                     if let ExtRange::Term(ref part_termid) = ext_part.ext_range {
-                        let part_term_short = {
-                            self.make_term_short(&part_termid)
-                        };
-
                         let cv_name = "extension:".to_owned() + &ext_part.rel_type_display_name;
 
                         if let Some(ref mut part_term_details) =
@@ -3680,7 +3671,7 @@ impl <'a> WebDataBuild<'a> {
                                     let mut new_vec = Vec::new();
                                     let new_term_annotation =
                                         OntTermAnnotations {
-                                            term: part_term_short.clone(),
+                                            term: part_termid.to_owned(),
                                             is_not: is_not,
                                             rel_names: HashSet::new(),
                                             annotations: vec![],
@@ -3698,6 +3689,24 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
+        let mut term_names = HashMap::new();
+        for (termid, term_details) in &self.terms {
+            term_names.insert(termid.clone(), term_details.name.to_lowercase());
+        }
+
+        let ont_term_cmp = |ont_term_1: &OntTermAnnotations, ont_term_2: &OntTermAnnotations| {
+            if !ont_term_1.is_not && ont_term_2.is_not {
+                return Ordering::Less;
+            }
+            if ont_term_1.is_not && !ont_term_2.is_not {
+                return Ordering::Greater;
+            }
+            let term1 = term_names.get(&ont_term_1.term).unwrap();
+            let term2 = term_names.get(&ont_term_2.term).unwrap();
+
+            term1.cmp(&term2)
+        };
+
         for (gene_uniquename, term_annotation_map) in &gene_annotation_by_term {
             for (termid, details) in term_annotation_map {
                 let new_annotations =
@@ -3714,7 +3723,7 @@ impl <'a> WebDataBuild<'a> {
 
             let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
             for (_, cv_annotations) in &mut gene_details.cv_annotations {
-                cv_annotations.sort()
+                cv_annotations.sort_by(&ont_term_cmp)
             }
         }
 
@@ -3734,7 +3743,7 @@ impl <'a> WebDataBuild<'a> {
 
             let details = self.genotypes.get_mut(genotype_uniquename).unwrap();
             for (_, cv_annotations) in &mut details.cv_annotations {
-                cv_annotations.sort()
+                cv_annotations.sort_by(&ont_term_cmp)
             }
         }
 
@@ -3752,8 +3761,8 @@ impl <'a> WebDataBuild<'a> {
             }
 
             let ref_details = self.references.get_mut(reference_uniquename).unwrap();
-            for (_, term_annotations) in &mut ref_details.cv_annotations {
-                term_annotations.sort()
+            for (_, cv_annotations) in &mut ref_details.cv_annotations {
+                cv_annotations.sort_by(&ont_term_cmp)
             }
         }
     }
@@ -3888,17 +3897,30 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let term_annotation_cmp =
-            |term_annot1: &OntTermAnnotations, term_annot2: &OntTermAnnotations| {
-                term_annot1.term.name.to_lowercase().cmp(&term_annot2.term.name.to_lowercase())
-            };
+
+        let mut term_names = HashMap::new();
+        for (termid, term_details) in &self.terms {
+            term_names.insert(termid.clone(), term_details.name.to_lowercase());
+        }
+
+        let ont_term_cmp = |ont_term_1: &OntTermAnnotations, ont_term_2: &OntTermAnnotations| {
+            if !ont_term_1.is_not && ont_term_2.is_not {
+                return Ordering::Less;
+            }
+            if ont_term_1.is_not && !ont_term_2.is_not {
+                return Ordering::Greater;
+            }
+            let term1 = term_names.get(&ont_term_1.term).unwrap();
+            let term2 = term_names.get(&ont_term_2.term).unwrap();
+
+            term1.cmp(&term2)
+        };
 
         for (_, term_details) in &mut self.terms {
             for (_, term_annotations) in &mut term_details.cv_annotations {
-                term_annotations.sort_by(&term_annotation_cmp);
+                term_annotations.sort_by(&ont_term_cmp);
             }
         }
-
 
         self.children_by_termid = children_by_termid;
     }
@@ -4078,6 +4100,9 @@ impl <'a> WebDataBuild<'a> {
                                   seen_terms: &mut HashMap<String, TermShortMap>) {
         for (_, feat_annotations) in cv_annotations {
             for feat_annotation in feat_annotations.iter() {
+                self.add_term_to_hash(seen_terms,
+                                      identifier.clone(), feat_annotation.term.clone());
+
                 for annotation_detail_id in &feat_annotation.annotations {
                     let annotation_detail = self.annotation_details.
                         get(&annotation_detail_id).expect("can't find OntAnnotationDetail");
@@ -4118,6 +4143,8 @@ impl <'a> WebDataBuild<'a> {
         for (termid, term_details) in &self.terms {
             for (cv_name, term_annotations) in &term_details.cv_annotations {
                 for term_annotation in term_annotations {
+                    self.add_term_to_hash(&mut seen_terms,
+                                          termid.clone(), term_annotation.term.clone());
                     for annotation_detail_id in &term_annotation.annotations {
                         let annotation_detail = self.annotation_details
                             .get(&annotation_detail_id).expect("can't find OntAnnotationDetail");
@@ -4293,7 +4320,10 @@ impl <'a> WebDataBuild<'a> {
             for (reference_uniquename, reference_details) in &self.references {
                 for (_, feat_annotations) in &reference_details.cv_annotations {
                     for feat_annotation in feat_annotations.iter() {
-                        for annotation_detail_id in &feat_annotation.annotations {
+                        self.add_term_to_hash(&mut seen_terms, reference_uniquename.clone(),
+                                              feat_annotation.term.clone());
+
+                       for annotation_detail_id in &feat_annotation.annotations {
                             let annotation_detail = self.annotation_details
                                 .get(&annotation_detail_id).expect("can't find OntAnnotationDetail");
                             for gene_uniquename in &annotation_detail.genes {
@@ -4418,61 +4448,14 @@ impl <'a> WebDataBuild<'a> {
             ref_seen_genes.insert(reference_uniquename.clone(), seen_genes);
         }
 
-        for (_, gene_details) in &mut self.genes {
-            for (_, feat_annotations) in &mut gene_details.cv_annotations {
-                for feat_annotation in feat_annotations.iter_mut() {
-                    feat_annotation.term.gene_count =
-                        term_seen_genes.get(&feat_annotation.term.termid).unwrap().len();
-                    feat_annotation.term.genotype_count =
-                        term_seen_genotypes.get(&feat_annotation.term.termid).unwrap().len();
-                }
-            }
-
-            for (reference_uniquename, reference_short) in
-                &mut gene_details.references_by_uniquename {
-                    reference_short.gene_count =
-                        ref_seen_genes.get(reference_uniquename).unwrap().len();
-                }
-        }
-
-        for (_, genotype_details) in &mut self.genotypes {
-            for (_, feat_annotations) in &mut genotype_details.cv_annotations {
-                for feat_annotation in feat_annotations.iter_mut() {
-                    feat_annotation.term.genotype_count =
-                        term_seen_genotypes.get(&feat_annotation.term.termid).unwrap().len();
-                }
-            }
-        }
-
-        for (_, ref_details) in &mut self.references {
-            for (_, ref_annotations) in &mut ref_details.cv_annotations {
-                for ref_annotation in ref_annotations {
-                    ref_annotation.term.gene_count =
-                        term_seen_genes.get(&ref_annotation.term.termid).unwrap().len();
-                    ref_annotation.term.genotype_count =
-                        term_seen_genotypes.get(&ref_annotation.term.termid).unwrap().len();
-                }
-            }
-        }
-
         for (_, term_details) in &mut self.terms {
-            for (_, term_annotations) in &mut term_details.cv_annotations {
-                for term_annotation in term_annotations {
-                    term_annotation.term.gene_count =
-                        term_seen_genes.get(&term_annotation.term.termid).unwrap().len();
-                    term_annotation.term.genotype_count =
-                        term_seen_genotypes.get(&term_annotation.term.termid).unwrap().len();
-                }
-            }
-
-            for (reference_uniquename, reference_short) in
-                &mut term_details.references_by_uniquename {
-                    reference_short.gene_count =
-                        ref_seen_genes.get(reference_uniquename).unwrap().len();
-                }
-
             term_details.single_allele_genotype_uniquenames =
                 term_seen_single_allele_genotypes.remove(&term_details.termid).unwrap();
+
+            term_details.gene_count =
+                term_seen_genes.get(&term_details.termid).unwrap().len();
+            term_details.genotype_count =
+                term_seen_genotypes.get(&term_details.termid).unwrap().len();
         }
     }
 
@@ -4488,10 +4471,11 @@ impl <'a> WebDataBuild<'a> {
 
         let has_parent_in_slim = |term_annotations: &Vec<OntTermAnnotations>| {
             for term_annotation in term_annotations {
+                let ref interesting_parents =
+                    self.terms.get(&term_annotation.term).unwrap().interesting_parents;
                 if !term_annotation.is_not &&
-                    (slim_termid_set.contains(&term_annotation.term.termid) ||
-                     term_annotation.term.interesting_parents
-                     .intersection(&slim_termid_set).count() > 0)
+                    (slim_termid_set.contains(&term_annotation.term) ||
+                     interesting_parents.intersection(&slim_termid_set).count() > 0)
                 {
                     return true;
                 }
@@ -5134,15 +5118,7 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 fn get_test_annotations() -> Vec<OntTermAnnotations> {
     let annotations1 = vec![188_448, 202_017];
     let ont_term1 = OntTermAnnotations {
-        term: TermShort {
-            name: "cyclin-dependent protein kinase activity".into(),
-            cv_name: "molecular_function".into(),
-            interesting_parents: HashSet::from_iter(vec!["GO:0003824".into()]),
-            termid: "GO:0097472".into(),
-            is_obsolete: false,
-            gene_count: 6,
-            genotype_count: 0
-        },
+        term: "GO:0097472".into(),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations1,
@@ -5153,15 +5129,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
         vec![41_717, 41_718, 187_893, 193_221, 194_213, 194_661];
 
     let ont_term2 = OntTermAnnotations {
-        term: TermShort {
-            name: "cyclin-dependent protein serine/threonine kinase activity".into(),
-            cv_name: "molecular_function".into(),
-            gene_count: 5,
-            genotype_count: 0,
-            interesting_parents: HashSet::from_iter(vec!{"GO:0003824".into()}),
-            is_obsolete: false,
-            termid: "GO:0004693".into(),
-        },
+        term: "GO:0004693".into(),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations2,
@@ -5426,6 +5394,8 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         references_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
         annotation_details: HashMap::new(),
+        gene_count: 0,
+        genotype_count: 0,
     }
 }
 
@@ -5524,24 +5494,9 @@ fn test_cmp_ont_annotation_detail() {
 }
 
 #[allow(dead_code)]
-fn make_term_short_from_details(term_details: &TermDetails) -> TermShort {
-    TermShort {
-        name: term_details.name.clone(),
-        cv_name: term_details.cv_name.clone(),
-        interesting_parents: term_details.interesting_parents.clone(),
-        termid: term_details.termid.clone(),
-        is_obsolete: false,
-        gene_count: 0,
-        genotype_count: 0
-    }
-}
-
-#[allow(dead_code)]
 fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermAnnotations {
-    let terms = get_test_terms_map();
-
     OntTermAnnotations {
-        term: make_term_short_from_details(&terms.get(termid).unwrap().clone()),
+        term: termid.to_owned(),
         is_not: false,
         annotations: vec![],
         rel_names: HashSet::new(),

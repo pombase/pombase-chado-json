@@ -189,6 +189,20 @@ pub struct TermShort {
     pub genotype_count: usize,
 }
 
+impl TermShort {
+    pub fn from_term_details(term_details: &TermDetails) -> Self {
+        TermShort {
+            name: term_details.name.clone(),
+            cv_name: term_details.cv_name.clone(),
+            interesting_parents: term_details.interesting_parents.clone(),
+            termid: term_details.termid.clone(),
+            is_obsolete: term_details.is_obsolete,
+            gene_count: term_details.gene_count,
+            genotype_count: term_details.genotype_count,
+        }
+    }
+}
+
 impl PartialEq for TermShort {
     fn eq(&self, other: &TermShort) -> bool {
         self.termid == other.termid
@@ -346,7 +360,7 @@ impl Eq for OntAnnotationDetail { }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntTermAnnotations {
-    pub term: TermShort,
+    pub term: TermId,
     pub is_not: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub rel_names: HashSet<RelName>,
@@ -356,29 +370,13 @@ pub struct OntTermAnnotations {
 
 impl PartialEq for OntTermAnnotations {
     fn eq(&self, other: &OntTermAnnotations) -> bool {
-        self.term.termid == other.term.termid
+        self.term == other.term
     }
 }
 impl Eq for OntTermAnnotations { }
-impl Ord for OntTermAnnotations {
-    fn cmp(&self, other: &OntTermAnnotations) -> Ordering {
-        if !self.is_not && other.is_not {
-            return Ordering::Less;
-        }
-        if self.is_not && !other.is_not {
-            return Ordering::Greater;
-        }
-        self.term.name.to_lowercase().cmp(&other.term.name.to_lowercase())
-    }
-}
-impl PartialOrd for OntTermAnnotations {
-    fn partial_cmp(&self, other: &OntTermAnnotations) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
 impl Hash for OntTermAnnotations {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.term.termid.hash(state);
+        self.term.hash(state);
         self.is_not.hash(state);
     }
 }
@@ -734,6 +732,8 @@ pub struct TermDetails {
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     pub terms_by_termid: HashMap<TermId, TermShort>,
     pub annotation_details: IdOntAnnotationDetailMap,
+    pub gene_count: usize,
+    pub genotype_count: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
