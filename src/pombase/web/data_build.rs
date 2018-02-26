@@ -37,6 +37,8 @@ pub struct AlleleAndExpression {
     expression: Option<String>,
 }
 
+type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
+
 type UniprotIdentifier = String;
 
 pub struct WebDataBuild<'a> {
@@ -85,7 +87,7 @@ fn get_maps() ->
      HashMap<String, GeneShortMap>,
      HashMap<String, GenotypeShortMap>,
      HashMap<String, AlleleShortMap>,
-     HashMap<GeneUniquename, TermShortMap>)
+     HashMap<GeneUniquename, TermShortOptionMap>)
 {
     (HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new())
 }
@@ -1476,14 +1478,13 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_term_to_hash(&self,
-                        seen_terms: &mut HashMap<TermId, TermShortMap>,
+                        seen_terms: &mut HashMap<TermId, TermShortOptionMap>,
                         identifier: String,
                         other_termid: TermId) {
         seen_terms
             .entry(identifier)
             .or_insert_with(HashMap::new)
-            .insert(other_termid.clone(),
-                    self.make_term_short(&other_termid));
+            .insert(other_termid.clone(), None);
     }
 
     fn get_gene<'b>(&'b self, gene_uniquename: &'b str) -> &'b GeneDetails {
@@ -4097,7 +4098,7 @@ impl <'a> WebDataBuild<'a> {
                                   seen_genes: &mut HashMap<String, GeneShortMap>,
                                   seen_genotypes: &mut HashMap<String, GenotypeShortMap>,
                                   seen_alleles: &mut HashMap<String, AlleleShortMap>,
-                                  seen_terms: &mut HashMap<String, TermShortMap>) {
+                                  seen_terms: &mut HashMap<String, TermShortOptionMap>) {
         for (_, feat_annotations) in cv_annotations {
             for feat_annotation in feat_annotations.iter() {
                 self.add_term_to_hash(seen_terms,
@@ -4313,8 +4314,7 @@ impl <'a> WebDataBuild<'a> {
         type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
         let mut seen_alleles: HashMap<TermId, AlleleShortMap> = HashMap::new();
 
-        type TermShortMap = HashMap<TermId, TermShort>;
-        let mut seen_terms: HashMap<GeneUniquename, TermShortMap> = HashMap::new();
+        let mut seen_terms: HashMap<GeneUniquename, TermShortOptionMap> = HashMap::new();
 
         {
             for (reference_uniquename, reference_details) in &self.references {

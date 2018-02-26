@@ -51,6 +51,8 @@ pub type TermShortMap = HashMap<TermId, TermShort>;
 pub type OntAnnotationId = i32;
 pub type IdOntAnnotationDetailMap = HashMap<OntAnnotationId, OntAnnotationDetail>;
 
+pub type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
+
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -312,7 +314,7 @@ pub struct ReferenceDetails {
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
-    pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
@@ -520,7 +522,7 @@ pub struct GeneDetails {
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
-    pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
@@ -666,7 +668,7 @@ pub struct GenotypeDetails {
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
     pub genes_by_uniquename: HashMap<GeneUniquename, GeneShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
-    pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
@@ -730,7 +732,7 @@ pub struct TermDetails {
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub references_by_uniquename: HashMap<ReferenceUniquename, ReferenceShort>,
-    pub terms_by_termid: HashMap<TermId, TermShort>,
+    pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
     pub gene_count: usize,
     pub genotype_count: usize,
