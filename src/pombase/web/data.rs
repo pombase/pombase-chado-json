@@ -527,6 +527,7 @@ pub struct GeneDetails {
     // non-InterPro domains:
     pub tm_domain_coords: Vec<(usize, usize) >,
     pub orfeome_identifier: Option<String>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<String>,
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
@@ -540,16 +541,27 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
     pub cv_annotations: OntAnnotationMap,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub physical_interactions: Vec<InteractionAnnotation>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub genetic_interactions: Vec<InteractionAnnotation>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub ortholog_annotations: Vec<OrthologAnnotation>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub paralog_annotations: Vec<ParalogAnnotation>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub target_of_annotations: Vec<TargetOfAnnotation>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub references_by_uniquename: ReferenceShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub genes_by_uniquename: GeneShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub terms_by_termid: TermShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
@@ -744,22 +756,35 @@ pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
     pub annotation_feature_type: String,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parents: HashSet<String>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub subsets: Vec<String>,
     pub termid: TermId,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub direct_ancestors: Vec<TermAndRelation>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub genes_annotated_with: HashSet<GeneUniquename>,
     pub is_obsolete: bool,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub single_allele_genotype_uniquenames: HashSet<String>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub cv_annotations: OntAnnotationMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub genes_by_uniquename: GeneShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub references_by_uniquename: ReferenceShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub terms_by_termid: TermShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub annotation_details: IdOntAnnotationDetailMap,
     pub gene_count: usize,
     pub genotype_count: usize,
