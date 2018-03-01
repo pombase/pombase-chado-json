@@ -1333,13 +1333,20 @@ impl WebData {
                     ""
                 };
 
+            let gene_type =
+                if gene_details.feature_type == "mRNA gene" {
+                    "protein coding gene"
+                } else {
+                    &gene_details.feature_type
+                };
+
             let all_ids_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                        gene_details.uniquename,
                                        gene_name,
                                        chromosome_name,
                                        gene_product,
                                        uniprot_id,
-                                       gene_details.feature_type,
+                                       gene_type,
                                        synonyms);
             all_ids_writer.write(all_ids_line.as_bytes())?;
         }
