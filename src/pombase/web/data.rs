@@ -1337,7 +1337,9 @@ impl WebData {
                     &gene_details.feature_type
                 };
 
-            let all_ids_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            let all_ids_line = format!("{}\t{}:{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                                       gene_details.uniquename,
+                                       config.database_name,
                                        gene_details.uniquename,
                                        gene_name,
                                        chromosome_name,
