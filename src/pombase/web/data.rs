@@ -270,8 +270,6 @@ pub struct ReferenceShort {
     #[serde(skip_serializing_if="Option::is_none")]
     pub citation: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub authors: Option<String>,
-    #[serde(skip_serializing_if="Option::is_none")]
     pub authors_abbrev: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<String>,
@@ -288,7 +286,6 @@ impl ReferenceShort {
             title: reference_details.title.clone(),
             citation: reference_details.citation.clone(),
             publication_year: reference_details.publication_year.clone(),
-            authors: reference_details.authors.clone(),
             authors_abbrev: reference_details.authors_abbrev.clone(),
             approved_date: reference_details.approved_date.clone(),
             gene_count: reference_details.genes_by_uniquename.keys().len(),
