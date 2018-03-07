@@ -451,6 +451,8 @@ pub enum Strand {
     Forward = 1,
     #[serde(rename="reverse")]
     Reverse = -1,
+    #[serde(rename="unstranded")]
+    Unstranded = 0,
 }
 
 impl Strand {
@@ -458,6 +460,7 @@ impl Strand {
         match *self {
             Strand::Forward => "+",
             Strand::Reverse => "-",
+            Strand::Unstranded => ".",
         }
     }
 }
@@ -1592,7 +1595,22 @@ impl WebData {
         let all_gff_file = File::create(all_gff_name).expect("Unable to open file");
         let mut all_gff_writer = BufWriter::new(&all_gff_file);
 
+        let forward_features_gff_name = format!("{}/all_chromosomes_forward_strand.gff3", output_dir);
+        let forward_features_gff_file = File::create(forward_features_gff_name).expect("Unable to open file");
+        let mut forward_features_gff_writer = BufWriter::new(&forward_features_gff_file);
+
+        let reverse_features_gff_name = format!("{}/all_chromosomes_reverse_strand.gff3", output_dir);
+        let reverse_features_gff_file = File::create(reverse_features_gff_name).expect("Unable to open file");
+        let mut reverse_features_gff_writer = BufWriter::new(&reverse_features_gff_file);
+
+        let unstranded_features_gff_name = format!("{}/all_chromosomes_unstranded.gff3", output_dir);
+        let unstranded_features_gff_file = File::create(unstranded_features_gff_name).expect("Unable to open file");
+        let mut unstranded_features_gff_writer = BufWriter::new(&unstranded_features_gff_file);
+
         all_gff_writer.write("##gff-version 3\n".as_bytes())?;
+        forward_features_gff_writer.write("##gff-version 3\n".as_bytes())?;
+        reverse_features_gff_writer.write("##gff-version 3\n".as_bytes())?;
+        unstranded_features_gff_writer.write("##gff-version 3\n".as_bytes())?;
 
         for (_, gene_details) in &self.api_maps.genes {
             if let Some(ref gene_loc) = gene_details.location {
@@ -1604,6 +1622,21 @@ impl WebData {
                 for gff_line in gene_gff_lines {
                     all_gff_writer.write(gff_line.as_bytes())?;
                     all_gff_writer.write("\n".as_bytes())?;
+
+                    match gene_loc.strand {
+                        Strand::Forward => {
+                            forward_features_gff_writer.write(gff_line.as_bytes())?;
+                            forward_features_gff_writer.write("\n".as_bytes())?;
+                        },
+                        Strand::Reverse => {
+                            reverse_features_gff_writer.write(gff_line.as_bytes())?;
+                            reverse_features_gff_writer.write("\n".as_bytes())?;
+                        }
+                        Strand::Unstranded => {
+                            unstranded_features_gff_writer.write(gff_line.as_bytes())?;
+                            unstranded_features_gff_writer.write("\n".as_bytes())?;
+                        }
+                    }
                 }
             }
         }
@@ -1617,6 +1650,21 @@ impl WebData {
             for gff_line in gff_lines {
                 all_gff_writer.write(gff_line.as_bytes())?;
                 all_gff_writer.write("\n".as_bytes())?;
+
+                match feature_short.location.strand {
+                    Strand::Forward => {
+                        forward_features_gff_writer.write(gff_line.as_bytes())?;
+                        forward_features_gff_writer.write("\n".as_bytes())?;
+                    },
+                    Strand::Reverse => {
+                        reverse_features_gff_writer.write(gff_line.as_bytes())?;
+                        reverse_features_gff_writer.write("\n".as_bytes())?;
+                    }
+                    Strand::Unstranded => {
+                        unstranded_features_gff_writer.write(gff_line.as_bytes())?;
+                        unstranded_features_gff_writer.write("\n".as_bytes())?;
+                    }
+                }
             }
         }
         Ok(())
