@@ -4760,7 +4760,7 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let mut solr_term_summaries = HashMap::new();
+        let mut solr_term_summaries = vec![];
 
         for (termid, term_details) in self.terms.iter() {
             if term_details.cv_annotations.keys().len() == 0 {
@@ -4787,11 +4787,12 @@ impl <'a> WebDataBuild<'a> {
                 distant_synonyms: distant_synonyms,
                 interesting_parents: interesting_parents_for_solr,
             };
-            solr_term_summaries.insert(termid.clone(), term_summ);
+            solr_term_summaries.push(term_summ);
         }
 
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,
+            gene_summaries: gene_summaries.clone(),
         };
 
         let chromosomes = self.chromosomes.clone();

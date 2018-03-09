@@ -979,7 +979,8 @@ pub struct SolrTermSummary {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SolrData {
-    pub term_summaries: HashMap<TermId, SolrTermSummary>,
+    pub term_summaries: Vec<SolrTermSummary>,
+    pub gene_summaries: Vec<GeneSummary>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1119,14 +1120,27 @@ impl WebData {
     }
 
     fn write_solr_data(&self, output_dir: &str) {
-        let new_path = self.create_dir(output_dir, "solr_data/terms");
-        for (termid, term_summary) in &self.solr_data.term_summaries {
-            let s = serde_json::to_string(&term_summary).unwrap();
-            let file_name = format!("{}/{}.json", new_path, &termid);
-            let f = File::create(file_name).expect("Unable to open file");
-            let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write term JSON");
-        }
+        let new_path = self.create_dir(output_dir, "solr_data/");
+
+        let terms = self.solr_data.term_summaries.clone();
+
+        let terms_json_text = serde_json::to_string(&terms).unwrap();
+        let terms_file_name = format!("{}/terms.json.gz", new_path);
+        let terms_file = File::create(terms_file_name).expect("Unable to open file");
+
+        let mut terms_compressor = GzEncoder::new(terms_file, Compression::Default);
+        terms_compressor.write_all(terms_json_text.as_bytes()).expect("Unable to write terms as JSON");
+        terms_compressor.finish().expect("Unable to write terms as JSON");
+
+        let genes = self.solr_data.gene_summaries.clone();
+
+        let genes_json_text = serde_json::to_string(&genes).unwrap();
+        let genes_file_name = format!("{}/genes.json.gz", new_path);
+        let genes_file = File::create(genes_file_name).expect("Unable to open file");
+
+        let mut genes_compressor = GzEncoder::new(genes_file, Compression::Default);
+        genes_compressor.write_all(genes_json_text.as_bytes()).expect("Unable to write genes as JSON");
+        genes_compressor.finish().expect("Unable to write genes as JSON");
     }
 
     fn write_subsets(&self, output_dir: &str) {
