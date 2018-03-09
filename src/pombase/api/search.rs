@@ -95,7 +95,7 @@ impl Search {
 
             let query_part = self.get_query_part(&clean_words);
 
-            terms_url += &format!(")^4 OR close_synonyms:({})^0.2 OR distant_synonyms:({})^0.1)",
+            terms_url += &format!(") OR close_synonyms:({})^0.8 OR distant_synonyms:({})^0.6)",
                                  query_part, query_part);
         }
         print!("{:?}\n", terms_url);
