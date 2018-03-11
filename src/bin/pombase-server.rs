@@ -35,13 +35,20 @@ struct StaticFileState {
     web_root_dir: String,
 }
 
-// try the path, then try path + ".json", then default to loading the Angular app
-// from /index.html
+// If the path is a directory, return path+"/index.html".  Otherwise
+// try the path, then try path + ".json", then default to loading the
+// Angular app from /index.html
 #[get("/<path..>", rank=3)]
 fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> {
     let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
     let root_dir_path = Path::new("/").join(web_root_dir);
     let full_path = root_dir_path.join(path);
+
+    if full_path.is_dir() {
+        let index_path = full_path.join("index.html");
+        return NamedFile::open(index_path).ok();
+    }
+
     if full_path.exists() {
         return NamedFile::open(full_path).ok();
     }
