@@ -971,8 +971,12 @@ pub struct SolrTermSummary {
     pub definition: Option<TermDef>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub close_synonyms: Vec<String>,   // exact and narrow
+    // a uniquified list of the words in all close synonyms
+    pub close_synonym_words: String,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub distant_synonyms: Vec<String>, // broad and related
+    // a uniquified list of the words in all distant synonyms
+    pub distant_synonym_words: String,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parents: HashSet<String>,
 }

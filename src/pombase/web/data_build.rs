@@ -4767,15 +4767,36 @@ impl <'a> WebDataBuild<'a> {
                 continue;
             }
 
+            let term_name_words =
+                term_details.name.split_whitespace().map(|s: &str| s.to_owned())
+                .collect::<Vec<String>>();
+
             let mut close_synonyms = vec![];
+            let mut close_synonym_words_vec: Vec<String> = vec![];
             let mut distant_synonyms = vec![];
+            let mut distant_synonym_words_vec: Vec<String> = vec![];
+
+            let add_to_words_vec = |synonym: &str, words_vec: &mut Vec<String>| {
+                let synonym_words = synonym.split_whitespace();
+                for word in synonym_words {
+                    let word_string = word.to_owned();
+                    if !words_vec.contains(&word_string) &&
+                        !term_name_words.contains(&word_string) {
+                            words_vec.push(word_string);
+                        }
+                }
+            };
+
             for synonym in &term_details.synonyms {
                 if synonym.synonym_type == "exact" || synonym.synonym_type == "narrow" {
+                    add_to_words_vec(&synonym.name, &mut close_synonym_words_vec);
                     close_synonyms.push(synonym.name.clone());
                 } else {
+                    add_to_words_vec(&synonym.name, &mut distant_synonym_words_vec);
                     distant_synonyms.push(synonym.name.clone());
                 }
             }
+
             let interesting_parents_for_solr =
                 term_details.interesting_parents.clone();
             let term_summ = SolrTermSummary {
@@ -4784,7 +4805,9 @@ impl <'a> WebDataBuild<'a> {
                 name: term_details.name.clone(),
                 definition: term_details.definition.clone(),
                 close_synonyms: close_synonyms,
+                close_synonym_words: close_synonym_words_vec.join(" "),
                 distant_synonyms: distant_synonyms,
+                distant_synonym_words: distant_synonym_words_vec.join(" "),
                 interesting_parents: interesting_parents_for_solr,
             };
             solr_term_summaries.push(term_summ);
@@ -4875,6 +4898,9 @@ fn get_test_config() -> Config {
             subsets: ServerSubsetConfig {
                 prefixes_to_remove: vec![],
             },
+            solr_url: "http://localhost:8983/solr".to_owned(),
+            close_synonym_boost: 0.6,
+            distant_synonym_boost: 0.3,
         },
         extra_database_aliases: HashMap::new(),
         chromosomes: HashMap::new(),

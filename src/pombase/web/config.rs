@@ -128,6 +128,9 @@ pub struct ServerSubsetConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct ServerConfig {
     pub subsets: ServerSubsetConfig,
+    pub solr_url: String,
+    pub close_synonym_boost: f32,
+    pub distant_synonym_boost: f32,
 }
 
 #[derive(Deserialize, Clone, Debug)]

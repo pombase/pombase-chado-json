@@ -3,9 +3,12 @@ use reqwest;
 use serde_json;
 
 use web::data::SolrTermSummary;
+use web::config::Config;
 
 pub struct Search {
     solr_url: String,
+    close_synonym_boost: f32,
+    distant_synonym_boost: f32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -19,9 +22,11 @@ struct SolrResponseContainer {
 }
 
 impl Search {
-    pub fn new(solr_url: String) -> Search {
+    pub fn new(config: &Config) -> Search {
         Search {
-            solr_url: solr_url,
+            solr_url: config.server.solr_url.clone(),
+            close_synonym_boost: config.server.close_synonym_boost,
+            distant_synonym_boost: config.server.distant_synonym_boost,
         }
     }
 
@@ -95,8 +100,9 @@ impl Search {
 
             let query_part = self.get_query_part(&clean_words);
 
-            terms_url += &format!(") OR close_synonyms:({})^0.8 OR distant_synonyms:({})^0.6)",
-                                 query_part, query_part);
+            terms_url += &format!(") OR close_synonym_words:({})^{} OR distant_synonym_words:({})^{})",
+                                  query_part, self.close_synonym_boost,
+                                  query_part, self.distant_synonym_boost);
         }
         print!("{:?}\n", terms_url);
 

@@ -559,6 +559,9 @@ fn get_test_config() -> Config {
             subsets: ServerSubsetConfig {
                 prefixes_to_remove: vec![],
             },
+            solr_url: "http://localhost:8983/solr".to_owned(),
+            close_synonym_boost: 0.6,
+            distant_synonym_boost: 0.3,
         },
         extra_database_aliases: HashMap::new(),
         chromosomes: HashMap::new(),

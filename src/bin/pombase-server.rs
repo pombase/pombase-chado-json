@@ -17,7 +17,6 @@ use std::path::{Path, PathBuf};
 use getopts::Options;
 
 use rocket_contrib::{Json, Value};
-
 use rocket::response::NamedFile;
 
 use pombase::api::query::Query;
@@ -27,6 +26,7 @@ use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
 use pombase::web::data::{SolrTermSummary, GeneDetails, GenotypeDetails,
                          TermDetails, ReferenceDetails};
+use pombase::web::config::Config;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -231,7 +231,8 @@ fn main() {
     let server_data = ServerData::new(&config_file_name, &search_maps_filename,
                                       &gene_subsets_filename);
     let query_exec = QueryExec::new(server_data);
-    let searcher = Search::new("http://localhost:8983/solr".to_owned());
+    let config = Config::read(&config_file_name);
+    let searcher = Search::new(&config);
 
     let web_root_dir = matches.opt_str("w").unwrap();
     let static_file_state = StaticFileState {
