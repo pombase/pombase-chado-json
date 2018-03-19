@@ -81,7 +81,7 @@ impl Search {
             terms_url += " AND (name:(";
 
             let clean_words: Vec<String> =
-                Regex::new(r"(\w+)").unwrap().captures_iter(q)
+                Regex::new(r"([\w-]+)").unwrap().captures_iter(q)
                 .map(|cap| cap.at(1).unwrap().to_owned()).collect();
 
             if clean_words.len() == 0 {
