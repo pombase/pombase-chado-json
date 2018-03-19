@@ -4762,14 +4762,23 @@ impl <'a> WebDataBuild<'a> {
 
         let mut solr_term_summaries = vec![];
 
+        let term_name_split_re = Regex::new(r"\W+").unwrap();
+
         for (termid, term_details) in self.terms.iter() {
             if term_details.cv_annotations.keys().len() == 0 {
                 continue;
             }
 
+            let trimmable_p = |c: char| {
+                c.is_whitespace() || c == ',' || c == ':'
+                    || c == ';' || c == '.' || c == '\''
+            };
+
             let term_name_words =
-                term_details.name.split_whitespace().map(|s: &str| s.to_owned())
-                .collect::<Vec<String>>();
+                term_name_split_re.split(&term_details.name)
+                .map(|s: &str| {
+                    s.trim_matches(&trimmable_p).to_owned()
+                }).collect::<Vec<String>>();
 
             let mut close_synonyms = vec![];
             let mut close_synonym_words_vec: Vec<String> = vec![];
@@ -4777,9 +4786,9 @@ impl <'a> WebDataBuild<'a> {
             let mut distant_synonym_words_vec: Vec<String> = vec![];
 
             let add_to_words_vec = |synonym: &str, words_vec: &mut Vec<String>| {
-                let synonym_words = synonym.split_whitespace();
+                let synonym_words = term_name_split_re.split(&synonym);
                 for word in synonym_words {
-                    let word_string = word.to_owned();
+                    let word_string = word.trim_matches(&trimmable_p).to_owned();
                     if !words_vec.contains(&word_string) &&
                         !term_name_words.contains(&word_string) {
                             words_vec.push(word_string);
@@ -4796,6 +4805,12 @@ impl <'a> WebDataBuild<'a> {
                     distant_synonyms.push(synonym.name.clone());
                 }
             }
+
+            distant_synonyms = distant_synonyms.into_iter()
+                .filter(|ref synonym| {
+                    !close_synonyms.contains(&synonym)
+                })
+                .collect::<Vec<_>>();
 
             let interesting_parents_for_solr =
                 term_details.interesting_parents.clone();
