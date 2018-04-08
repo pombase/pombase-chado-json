@@ -21,7 +21,7 @@ rocket = "0.3.0"
 rocket_codegen = "0.3.0"
 rocket_contrib = "0.3.0"
 reqwest = "0.7.3"
-flate2 = "0.2"
+flate2 = "1.0"
 lazy_static = "1.0"
 
 [dependencies.serde]
