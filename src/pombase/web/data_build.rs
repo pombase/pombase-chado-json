@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use std::u32;
 
 use regex::Regex;
-use chrono::{UTC, TimeZone};
+use chrono::NaiveTime;
 
 use db::*;
 use types::*;
@@ -136,8 +136,8 @@ pub fn remove_first<T, P>(vec: &mut Vec<T>, predicate: P) -> Option<T>
 
 // Parse two date strings and compare them.  If both can't be parsed, return Equal.
 pub fn cmp_str_dates(date_str1: &str, date_str2: &str) -> Ordering {
-    let datetime1_res = UTC.datetime_from_str(date_str1, "%Y-%m-%d %H:%M:%S");
-    let datetime2_res = UTC.datetime_from_str(date_str2, "%Y-%m-%d %H:%M:%S");
+    let datetime1_res = NaiveTime::parse_from_str(date_str1, "%Y-%m-%d %H:%M:%S");
+    let datetime2_res = NaiveTime::parse_from_str(date_str2, "%Y-%m-%d %H:%M:%S");
 
     match datetime1_res {
         Ok(datetime1) => {
