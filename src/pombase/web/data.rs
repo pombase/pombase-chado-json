@@ -1118,7 +1118,7 @@ impl WebData {
         let file_name = String::new() + output_dir + "/api_maps.json.gz";
         let f = File::create(file_name).expect("Unable to open file");
 
-        let mut compressor = GzEncoder::new(f, Compression::Default);
+        let mut compressor = GzEncoder::new(f, Compression::default());
         compressor.write_all(s.as_bytes()).unwrap();
         compressor.finish().unwrap();
     }
@@ -1132,7 +1132,7 @@ impl WebData {
         let terms_file_name = format!("{}/terms.json.gz", new_path);
         let terms_file = File::create(terms_file_name).expect("Unable to open file");
 
-        let mut terms_compressor = GzEncoder::new(terms_file, Compression::Default);
+        let mut terms_compressor = GzEncoder::new(terms_file, Compression::default());
         terms_compressor.write_all(terms_json_text.as_bytes()).expect("Unable to write terms as JSON");
         terms_compressor.finish().expect("Unable to write terms as JSON");
 
@@ -1142,7 +1142,7 @@ impl WebData {
         let genes_file_name = format!("{}/genes.json.gz", new_path);
         let genes_file = File::create(genes_file_name).expect("Unable to open file");
 
-        let mut genes_compressor = GzEncoder::new(genes_file, Compression::Default);
+        let mut genes_compressor = GzEncoder::new(genes_file, Compression::default());
         genes_compressor.write_all(genes_json_text.as_bytes()).expect("Unable to write genes as JSON");
         genes_compressor.finish().expect("Unable to write genes as JSON");
     }

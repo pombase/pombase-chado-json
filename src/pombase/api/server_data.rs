@@ -40,7 +40,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     };
     let reader = BufReader::new(file);
 
-    let mut decoder = GzDecoder::new(reader).unwrap();
+    let mut decoder = GzDecoder::new(reader);
     let mut decoded_json = String::new();
     decoder.read_to_string(&mut decoded_json).unwrap();
 
