@@ -61,8 +61,8 @@ impl Search {
         let maybe_captures = parent_re.captures(cv_name);
 
         if let Some(captures) = maybe_captures {
-            let prefix = captures.name("prefix").unwrap();
-            let accession = captures.name("accession").unwrap();
+            let prefix = captures.name("prefix").unwrap().as_str();
+            let accession = captures.name("accession").unwrap().as_str();
             terms_url += &format!("(interesting_parents:{}\\:{} OR id:{}\\:{})",
                                   prefix, accession, prefix, accession);
         } else {
@@ -71,8 +71,8 @@ impl Search {
         }
 
         if let Some(captures) = termid_re.captures(q) {
-            let prefix = captures.name("prefix").unwrap();
-            let accession = captures.name("accession").unwrap();
+            let prefix = captures.name("prefix").unwrap().as_str();
+            let accession = captures.name("accession").unwrap().as_str();
             terms_url += " AND id:";
             terms_url += prefix;
             terms_url += r"\:";
@@ -85,7 +85,7 @@ impl Search {
 
             let clean_words: Vec<String> =
                 Regex::new(r"([\w-]+)").unwrap().captures_iter(&lower_q)
-                .map(|cap| cap.at(1).unwrap().to_owned()).collect();
+                .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
 
             if clean_words.len() == 0 {
                 return Ok(vec![]);

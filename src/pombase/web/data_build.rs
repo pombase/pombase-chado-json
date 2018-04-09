@@ -929,14 +929,14 @@ fn cmp_residues(residue1: &Option<Residue>, residue2: &Option<Residue>) -> Order
             if let (Some(res1_captures), Some(res2_captures)) =
                 (MODIFICATION_RE.captures(res1), MODIFICATION_RE.captures(res2))
             {
-                let res1_aa = res1_captures.name("aa").unwrap();
-                let res2_aa = res2_captures.name("aa").unwrap();
+                let res1_aa = res1_captures.name("aa").unwrap().as_str();
+                let res2_aa = res2_captures.name("aa").unwrap().as_str();
                 let aa_order = res1_aa.cmp(&res2_aa);
                 if aa_order == Ordering::Equal {
                     let res1_pos =
-                        res1_captures.name("pos").unwrap().parse::<i32>().unwrap();
+                        res1_captures.name("pos").unwrap().as_str().parse::<i32>().unwrap();
                     let res2_pos =
-                        res2_captures.name("pos").unwrap().parse::<i32>().unwrap();
+                        res2_captures.name("pos").unwrap().as_str().parse::<i32>().unwrap();
                     res1_pos.cmp(&res2_pos)
                 } else {
                     aa_order
@@ -1708,7 +1708,9 @@ impl <'a> WebDataBuild<'a> {
             if let Some(authors) = pubmed_authors.clone() {
                 if authors.contains(',') {
                     let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
-                    authors_abbrev = Some(author_re.replace_all(&authors, "$f et al."));
+                    let replaced: String =
+                        author_re.replace_all(&authors, "$f et al.").into();
+                    authors_abbrev = Some(replaced);
                 } else {
                     authors_abbrev = Some(authors.clone());
                 }
@@ -1716,7 +1718,7 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(publication_date) = pubmed_publication_date.clone() {
                 let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
-                publication_year = Some(date_re.replace_all(&publication_date, "$y"));
+                publication_year = Some(date_re.replace_all(&publication_date, "$y").into());
             }
 
             let mut approved_date = canto_first_approved_date.clone();
@@ -1727,7 +1729,7 @@ impl <'a> WebDataBuild<'a> {
             approved_date =
                 if let Some(date) = approved_date {
                     let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
-                    Some(re.replace_all(&date, "$date"))
+                    Some(re.replace_all(&date, "$date").into())
                 } else {
                     None
                 };
@@ -2951,7 +2953,7 @@ impl <'a> WebDataBuild<'a> {
             ext_conf.display_name.clone()
         } else {
             let re = Regex::new("_").unwrap();
-            re.replace_all(&ext_rel_name, " ")
+            re.replace_all(&ext_rel_name, " ").into()
         }
     }
 
@@ -3179,7 +3181,7 @@ impl <'a> WebDataBuild<'a> {
     fn make_with_or_from_value(&self, with_or_from_value: String) -> WithFromValue {
         let db_prefix_patt = String::from("^") + DB_NAME + ":";
         let re = Regex::new(&db_prefix_patt).unwrap();
-        let gene_uniquename = re.replace_all(&with_or_from_value, "");
+        let gene_uniquename: String = re.replace_all(&with_or_from_value, "").into();
         if self.genes.contains_key(&gene_uniquename) {
             let gene_short = self.make_gene_short(&gene_uniquename);
             WithFromValue::Gene(gene_short)
@@ -4554,7 +4556,7 @@ impl <'a> WebDataBuild<'a> {
             let subset_name =
                 String::from("feature_type:") + &gene_details.feature_type;
             let re = Regex::new(r"[\s,:]+").unwrap();
-            let subset_name_no_spaces = re.replace_all(&subset_name, "_");
+            let subset_name_no_spaces: String = re.replace_all(&subset_name, "_").into();
             subsets.entry(subset_name_no_spaces.clone())
                 .or_insert(GeneSubsetDetails {
                     name: subset_name_no_spaces,
@@ -4580,7 +4582,7 @@ impl <'a> WebDataBuild<'a> {
                 let subset_name =
                     String::from("characterisation_status:") + &characterisation_status;
                 let re = Regex::new(r"[\s,:]+").unwrap();
-                let subset_name_no_spaces = re.replace_all(&subset_name, "_");
+                let subset_name_no_spaces: String = re.replace_all(&subset_name, "_").into();
                 subsets.entry(subset_name_no_spaces.clone())
                     .or_insert(GeneSubsetDetails {
                         name: subset_name_no_spaces,
