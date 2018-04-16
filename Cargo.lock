@@ -751,7 +751,7 @@ dependencies = [
  "flate2 1.0.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "getopts 0.2.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "postgres 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "postgres 0.15.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "regex 0.2.10 (registry+https://github.com/rust-lang/crates.io-index)",
  "reqwest 0.8.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rocket 0.3.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -765,14 +765,15 @@ dependencies = [
 
 [[package]]
 name = "postgres"
-version = "0.14.2"
+version = "0.15.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "bytes 0.4.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "fallible-iterator 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
- "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
+ "log 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres-protocol 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "postgres-shared 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "postgres-shared 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "socket2 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -795,7 +796,7 @@ dependencies = [
 
 [[package]]
 name = "postgres-shared"
-version = "0.3.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "fallible-iterator 0.1.4 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1140,6 +1141,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "smallvec"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "socket2"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "cfg-if 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.40 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winapi 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "state"
@@ -1666,9 +1677,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum phf_generator 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)" = "6b07ffcc532ccc85e3afc45865469bf5d9e4ef5bfcf9622e3cfe80c2d275ec03"
 "checksum phf_shared 0.7.21 (registry+https://github.com/rust-lang/crates.io-index)" = "07e24b0ca9643bdecd0632f2b3da6b1b89bbb0030e0b992afc1113b23a7bc2f2"
 "checksum pkg-config 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)" = "3a8b4c6b8165cd1a1cd4b9b120978131389f64bdaf456435caa41e630edba903"
-"checksum postgres 0.14.2 (registry+https://github.com/rust-lang/crates.io-index)" = "b51f9f4b74a0d3a475fe272f5acc72761d750fd67af90cd2241bce49639ca395"
+"checksum postgres 0.15.2 (registry+https://github.com/rust-lang/crates.io-index)" = "115dde90ef51af573580c035857badbece2aa5cde3de1dfb3c932969ca92a6c5"
 "checksum postgres-protocol 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)" = "2487e66455bf88a1b247bf08a3ce7fe5197ac6d67228d920b0ee6a0e97fd7312"
-"checksum postgres-shared 0.3.0 (registry+https://github.com/rust-lang/crates.io-index)" = "ab14a2b628b6c36696d194e4b7c36187b505e2f51091191aeacfed89d6942d71"
+"checksum postgres-shared 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)" = "bafecadf25b7de9a5f747e93073db444c9ddcc7b3ae37bcdf63c2508f9a17f2d"
 "checksum proc-macro2 0.3.6 (registry+https://github.com/rust-lang/crates.io-index)" = "49b6a521dc81b643e9a51e0d1cf05df46d5a2f3c0280ea72bcb68276ba64a118"
 "checksum quote 0.3.15 (registry+https://github.com/rust-lang/crates.io-index)" = "7a6e920b65c65f10b2ae65c831a81a073a89edd28c7cce89475bff467ab4167a"
 "checksum quote 0.5.1 (registry+https://github.com/rust-lang/crates.io-index)" = "7b0ff51282f28dc1b53fd154298feaa2e77c5ea0dba68e1fd8b03b72fbe13d2a"
@@ -1706,6 +1717,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum slab 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "fdeff4cd9ecff59ec7e3744cbca73dfe5ac35c2aedb2cfba8a1c715a18912e9d"
 "checksum smallvec 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "4c8cbcd6df1e117c2210e13ab5109635ad68a929fcbb8964dc965b76cb5ee013"
 "checksum smallvec 0.4.4 (registry+https://github.com/rust-lang/crates.io-index)" = "ee4f357e8cd37bf8822e1b964e96fd39e2cb5a0424f8aaa284ccaccc2162411c"
+"checksum socket2 0.3.4 (registry+https://github.com/rust-lang/crates.io-index)" = "71ebbe82fcdd697244ba7fe6e05e63b5c45910c3927e28469a04947494ff48d8"
 "checksum state 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)" = "d5562ac59585fe3d9a1ccf6b4e298ce773f5063db80d59f783776b410c1714c2"
 "checksum stringprep 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)" = "8ee348cb74b87454fff4b551cbf727025810a004f88aeacae7f85b87f4e9a1c1"
 "checksum syn 0.10.8 (registry+https://github.com/rust-lang/crates.io-index)" = "58fd09df59565db3399efbba34ba8a2fec1307511ebd245d0061ff9d42691673"
