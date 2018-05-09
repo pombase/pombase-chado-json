@@ -73,7 +73,10 @@ fn main() {
     let interpro_json = matches.opt_str("i").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
 
-    let conn = Connection::connect(connection_string.as_str(), TlsMode::None).unwrap();
+    let conn = match Connection::connect(connection_string.as_str(), TlsMode::None) {
+        Ok(conn) => conn,
+        Err(err) => panic!("failed to connect using: {}, err: {}", connection_string, err)
+    };
 
     let raw = Raw::new(&conn);
     let interpro_data = parse_interpro(&config, &interpro_json);
