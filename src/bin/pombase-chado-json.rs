@@ -22,7 +22,7 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn main() {
+fn main() -> Result<(), std::io::Error> {
     print!("{} v{}\n", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
@@ -91,15 +91,17 @@ fn main() {
     }
 
     if matches.opt_present("store-json") {
-        conn.execute("DROP SCHEMA IF EXISTS web_json CASCADE", &[]).unwrap();
-        conn.execute("CREATE SCHEMA web_json", &[]).unwrap();
-        conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;", &[]).unwrap();
-        conn.execute("CREATE TABLE web_json.gene (uniquename TEXT, data JSONB)", &[]).unwrap();
-        conn.execute("CREATE TABLE web_json.term (termid TEXT, data JSONB)", &[]).unwrap();
-        conn.execute("CREATE TABLE web_json.reference (uniquename TEXT, data JSONB)", &[]).unwrap();
+        conn.execute("DROP SCHEMA IF EXISTS web_json CASCADE", &[])?;
+        conn.execute("CREATE SCHEMA web_json", &[])?;
+        conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;", &[])?;
+        conn.execute("CREATE TABLE web_json.gene (uniquename TEXT, data JSONB)", &[])?;
+        conn.execute("CREATE TABLE web_json.term (termid TEXT, data JSONB)", &[])?;
+        conn.execute("CREATE TABLE web_json.reference (uniquename TEXT, data JSONB)", &[])?;
 
         web_data.store_jsonb(&conn);
 
         print!("stored results as JSONB using {}\n", &connection_string);
     }
+
+    Ok(())
 }
