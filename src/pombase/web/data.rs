@@ -1264,8 +1264,8 @@ impl WebData {
         let gene_file_name = output_dir.to_owned() + "/sysID2product.tsv";
         let rna_file_name = output_dir.to_owned() + "/sysID2product.rna.tsv";
         let pseudogenes_file_name = output_dir.to_owned() + "/pseudogeneIDs.tsv";
-        let all_names_file_name = output_dir.to_owned() + "/allNames.tsv";
-        let all_ids_file_name = output_dir.to_owned() + "/all_ids.tsv";
+        let all_names_file_name = output_dir.to_owned() + "/gene_IDs_names.tsv";
+        let all_ids_file_name = output_dir.to_owned() + "/gene_IDs_names_products.tsv";
 
         let gene_file = File::create(gene_file_name).expect("Unable to open file");
         let rna_file = File::create(rna_file_name).expect("Unable to open file");
