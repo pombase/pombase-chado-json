@@ -1418,9 +1418,9 @@ impl WebData {
         {
             let mut composition = HashMap::new();
             for c in protein.sequence.chars() {
-                let mut count = composition.entry(c).or_insert(0);
+                let count = composition.entry(c).or_insert(0);
                 *count += 1;
-                let mut total_count = total_composition.entry(c).or_insert(0);
+                let total_count = total_composition.entry(c).or_insert(0);
                 *total_count += 1;
             }
             composition

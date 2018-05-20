@@ -4450,7 +4450,7 @@ impl <'a> WebDataBuild<'a> {
     {
         let slim_termid_set: HashSet<String> =
             go_slim_subset.elements
-            .iter().map(|ref element| element.termid.clone()).collect();
+            .iter().map(|element| element.termid.clone()).collect();
 
         let mut non_slim_with_bp_annotation = HashSet::new();
         let mut non_slim_without_bp_annotation = HashSet::new();
@@ -4809,7 +4809,7 @@ impl <'a> WebDataBuild<'a> {
             }
 
             distant_synonyms = distant_synonyms.into_iter()
-                .filter(|ref synonym| {
+                .filter(|synonym| {
                     !close_synonyms.contains(&synonym)
                 })
                 .collect::<Vec<_>>();

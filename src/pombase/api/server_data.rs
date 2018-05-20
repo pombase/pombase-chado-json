@@ -247,8 +247,8 @@ impl ServerData {
                         -> Vec<GeneUniquename>
     {
         self.maps.gene_summaries.values()
-            .filter(|ref summ| p(summ))
-            .map(|ref summ| summ.uniquename.clone())
+            .filter(|summ| p(summ))
+            .map(|summ| summ.uniquename.clone())
             .collect()
     }
 
