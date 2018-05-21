@@ -294,6 +294,10 @@ impl ReferenceShort {
     }
 }
 
+pub trait AnnotationContainer {
+    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap;
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceDetails {
     pub uniquename: String,
@@ -340,6 +344,12 @@ pub struct ReferenceDetails {
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
+}
+
+impl AnnotationContainer for ReferenceDetails {
+    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+        &mut self.cv_annotations
+    }
 }
 
 // the GO with/from
@@ -565,6 +575,12 @@ pub struct GeneDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
+impl AnnotationContainer for GeneDetails {
+    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+        &mut self.cv_annotations
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinDetails {
     pub uniquename: TranscriptUniquename,
@@ -711,6 +727,12 @@ pub struct GenotypeDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
+impl AnnotationContainer for GenotypeDetails {
+    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+        &mut self.cv_annotations
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
@@ -788,6 +810,12 @@ pub struct TermDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
     pub gene_count: usize,
     pub genotype_count: usize,
+}
+
+impl AnnotationContainer for TermDetails {
+    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+        &mut self.cv_annotations
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
