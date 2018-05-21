@@ -30,12 +30,6 @@ fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
     }
 }
 
-#[derive(Clone)]
-pub struct AlleleAndExpression {
-    allele_uniquename: String,
-    expression: Option<String>,
-}
-
 type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
 
 type UniprotIdentifier = String;
@@ -47,6 +41,7 @@ pub struct WebDataBuild<'a> {
 
     genes: UniquenameGeneMap,
     genotypes: UniquenameGenotypeMap,
+    genotype_backgrounds: HashMap<GenotypeUniquename, String>,
     alleles: UniquenameAlleleMap,
     other_features: UniquenameFeatureShortMap,
     terms: TermIdDetailsMap,
@@ -59,7 +54,7 @@ pub struct WebDataBuild<'a> {
     transcripts_of_polypeptides: HashMap<String, String>,
     parts_of_transcripts: HashMap<String, Vec<FeatureShort>>,
     genes_of_alleles: HashMap<String, String>,
-    alleles_of_genotypes: HashMap<String, Vec<AlleleAndExpression>>,
+    alleles_of_genotypes: HashMap<String, Vec<ExpressedAllele>>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -252,11 +247,8 @@ fn cmp_extension(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart],
     }
 }
 
-fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails,
-                 alleles: &UniquenameAlleleMap) -> Ordering {
-    let name1 = genotype_display_name(genotype1, alleles);
-    let name2 = genotype_display_name(genotype2, alleles);
-    name1.to_lowercase().cmp(&name2.to_lowercase())
+fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails) -> Ordering {
+    genotype1.display_uniquename.to_lowercase().cmp(&genotype2.display_uniquename.to_lowercase())
 }
 
 
@@ -288,19 +280,23 @@ fn gene_display_name(gene: &GeneDetails) -> String {
     }
 }
 
-pub fn genotype_display_name(genotype: &GenotypeDetails,
-                             alleles: &UniquenameAlleleMap) -> String {
-    if let Some(ref name) = genotype.name {
-        name.clone()
-    } else {
-        let allele_display_names: Vec<String> =
-            genotype.expressed_alleles.iter().map(|expressed_allele| {
-                let allele_short = alleles.get(&expressed_allele.allele_uniquename).unwrap();
-                allele_display_name(allele_short)
-            }).collect();
+pub fn make_genotype_display_name(genotype_expressed_alleles: &Vec<ExpressedAllele>,
+                                  allele_map: &UniquenameAlleleMap) -> String {
+    let mut allele_display_names: Vec<String> =
+        genotype_expressed_alleles.iter().map(|expressed_allele| {
+            let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
+            let mut display_name = allele_display_name(allele_short);
+            if allele_short.allele_type != "deletion" {
+                if let Some(ref expression) = expressed_allele.expression {
+                    display_name += &format!("[{}]", expression);
+                }
+            }
+            display_name
+        }).collect();
 
-        allele_display_names.join(" ")
-    }
+    allele_display_names.sort();
+
+    allele_display_names.join(" ")
 }
 
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
@@ -524,14 +520,13 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                              detail2: &OntAnnotationDetail,
                              genes: &UniquenameGeneMap,
                              genotypes: &UniquenameGenotypeMap,
-                             alleles: &UniquenameAlleleMap,
                              terms: &TermIdDetailsMap) -> Result<Ordering, String> {
     if let Some(ref detail1_genotype_uniquename) = detail1.genotype {
         if let Some(ref detail2_genotype_uniquename) = detail2.genotype {
             let genotype1 = genotypes.get(detail1_genotype_uniquename).unwrap();
             let genotype2 = genotypes.get(detail2_genotype_uniquename).unwrap();
 
-            let ord = cmp_genotypes(genotype1, genotype2, alleles);
+            let ord = cmp_genotypes(genotype1, genotype2);
 
             if ord == Ordering::Equal {
                 Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
@@ -931,6 +926,7 @@ impl <'a> WebDataBuild<'a> {
 
             genes: BTreeMap::new(),
             genotypes: HashMap::new(),
+            genotype_backgrounds: HashMap::new(),
             alleles: HashMap::new(),
             other_features: HashMap::new(),
             terms: HashMap::new(),
@@ -996,8 +992,8 @@ impl <'a> WebDataBuild<'a> {
                             seen_genes: &mut HashMap<String, GeneShortOptionMap>,
                             identifier: String,
                             genotype_uniquename: &str) {
-        let genotype = self.make_genotype_short(genotype_uniquename);
-        for expressed_allele in &genotype.expressed_alleles {
+        let genotype_short = self.make_genotype_short(&genotype_uniquename);
+        for expressed_allele in &genotype_short.expressed_alleles {
             self.add_allele_to_hash(seen_alleles, seen_genes, identifier.clone(),
                                     expressed_allele.allele_uniquename.clone());
         }
@@ -1005,8 +1001,7 @@ impl <'a> WebDataBuild<'a> {
         seen_genotypes
             .entry(identifier)
             .or_insert_with(HashMap::new)
-            .insert(genotype_uniquename.to_owned(),
-                    self.make_genotype_short(genotype_uniquename));
+            .insert(genotype_uniquename.to_owned(), genotype_short);
     }
 
     fn add_allele_to_hash(&self,
@@ -1381,7 +1376,7 @@ impl <'a> WebDataBuild<'a> {
                     object_type_name == "genotype" {
                         let expression = get_feat_rel_expression(&feature_rel.subject, feature_rel);
                         let allele_and_expression =
-                            AlleleAndExpression {
+                            ExpressedAllele {
                                 allele_uniquename: subject_uniquename.clone(),
                                 expression: expression,
                             };
@@ -1714,20 +1709,37 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn store_genotype_details(&mut self, feat: &Feature) {
-        let mut background = None;
+        let mut expressed_alleles =
+            self.alleles_of_genotypes.get(&feat.uniquename).unwrap().clone();
+        let genotype_display_uniquename =
+            make_genotype_display_name(&expressed_alleles, &self.alleles);
+
+        {
+            let allele_cmp = |allele1: &ExpressedAllele, allele2: &ExpressedAllele| {
+                let allele1_display_name =
+                    allele_display_name(&self.alleles.get(&allele1.allele_uniquename).unwrap());
+                let allele2_display_name =
+                    allele_display_name(&self.alleles.get(&allele2.allele_uniquename).unwrap());
+                allele1_display_name.cmp(&allele2_display_name)
+            };
+
+            expressed_alleles.sort_by(&allele_cmp);
+        }
 
         for prop in feat.featureprops.borrow().iter() {
             if prop.prop_type.name == "genotype_background" {
-                background = prop.value.clone()
+                if let Some(ref background) = prop.value {
+                    self.genotype_backgrounds.insert(feat.uniquename.clone(),
+                                                     background.clone());
+                }
             }
         }
 
-        self.genotypes.insert(feat.uniquename.clone(),
+        self.genotypes.insert(genotype_display_uniquename.clone(),
                               GenotypeDetails {
-                                  uniquename: feat.uniquename.clone(),
+                                  display_uniquename: genotype_display_uniquename,
                                   name: feat.name.clone(),
-                                  background: background,
-                                  expressed_alleles: vec![],
+                                  expressed_alleles: expressed_alleles,
                                   cv_annotations: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
@@ -1943,44 +1955,6 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn add_alleles_to_genotypes(&mut self) {
-        let mut alleles_to_add: HashMap<String, Vec<ExpressedAllele>> = HashMap::new();
-
-        for genotype_uniquename in self.genotypes.keys() {
-            let allele_uniquenames: Vec<AlleleAndExpression> =
-                self.alleles_of_genotypes[genotype_uniquename].clone();
-            let expressed_allele_vec: Vec<ExpressedAllele> =
-                allele_uniquenames.iter()
-                .map(|allele_and_expression| {
-                    ExpressedAllele {
-                        allele_uniquename: allele_and_expression.allele_uniquename.clone(),
-                        expression: allele_and_expression.expression.clone(),
-                    }
-                })
-                .collect();
-
-            alleles_to_add.insert(genotype_uniquename.clone(), expressed_allele_vec);
-        }
-
-        {
-            let allele_cmp = |allele1: &ExpressedAllele, allele2: &ExpressedAllele| {
-                let allele1_display_name =
-                    allele_display_name(&self.alleles.get(&allele1.allele_uniquename).unwrap());
-                let allele2_display_name =
-                    allele_display_name(&self.alleles.get(&allele2.allele_uniquename).unwrap());
-                allele1_display_name.cmp(&allele2_display_name)
-            };
-
-            for (_, alleles) in &mut alleles_to_add {
-                alleles.sort_by(&allele_cmp);
-            }
-        }
-
-        for (genotype_uniquename, genotype_details) in &mut self.genotypes {
-            genotype_details.expressed_alleles =
-                alleles_to_add.remove(genotype_uniquename).unwrap();
-        }
-    }
 
     // add interaction, ortholog and paralog annotations
     fn process_annotation_feature_rels(&mut self) {
@@ -2609,16 +2583,15 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_genotype_short(&self, genotype_uniquename: &str) -> GenotypeShort {
-        if let Some(ref details) = self.genotypes.get(genotype_uniquename) {
+    fn make_genotype_short(&self, genotype_display_name: &str) -> GenotypeShort {
+        if let Some(ref details) = self.genotypes.get(genotype_display_name) {
             GenotypeShort {
-                uniquename: details.uniquename.clone(),
+                display_uniquename: details.display_uniquename.clone(),
                 name: details.name.clone(),
-                background: details.background.clone(),
                 expressed_alleles: details.expressed_alleles.clone(),
             }
         } else {
-            panic!("can't find genotype");
+            panic!("can't find genotype {}", genotype_display_name);
         }
     }
 
@@ -2864,9 +2837,12 @@ impl <'a> WebDataBuild<'a> {
                             }
                     },
                     "genotype" => {
-                        let genotype_short = self.make_genotype_short(&feature.uniquename);
-                        maybe_genotype_uniquename = Some(genotype_short.uniquename.clone());
-                        genotype_short.expressed_alleles.iter()
+                        let expressed_alleles =
+                            self.alleles_of_genotypes.get(&feature.uniquename).unwrap();
+                        let genotype_display_name =
+                            make_genotype_display_name(&expressed_alleles, &self.alleles);
+                        maybe_genotype_uniquename = Some(genotype_display_name.clone());
+                        expressed_alleles.iter()
                             .map(|expressed_allele| {
                                 let allele_short =
                                     self.make_allele_short(&expressed_allele.allele_uniquename);
@@ -3019,7 +2995,9 @@ impl <'a> WebDataBuild<'a> {
                 for annotation_id in detail_ids {
                     let annotation = self.annotation_details.
                         get(&annotation_id).expect("can't find OntAnnotationDetail");
+
                     let genotype_uniquename = annotation.genotype.as_ref().unwrap();
+
                     if let Some(genotype_details) = self.genotypes.get(genotype_uniquename) {
                         if genotype_details.expressed_alleles.len() == 1 {
                             single_allele.annotations.push(*annotation_id);
@@ -3094,7 +3072,7 @@ impl <'a> WebDataBuild<'a> {
                             let result =
                                 cmp_ont_annotation_detail(cv_config,
                                                           annotation1, annotation2, &self.genes,
-                                                          &self.genotypes, &self.alleles,
+                                                          &self.genotypes,
                                                           &self.terms);
                             result.unwrap_or_else(|err| panic!("error from cmp_ont_annotation_detail: {}", err))
                         };
@@ -3402,7 +3380,7 @@ impl <'a> WebDataBuild<'a> {
                             let result =
                                 cmp_ont_annotation_detail(dest_cv_config,
                                                           annotation1, annotation2, &self.genes,
-                                                          &self.genotypes, &self.alleles, &self.terms);
+                                                          &self.genotypes, &self.terms);
                             result.unwrap_or_else(|err| {
                                 panic!("error from cmp_ont_annotation_detail: {} with terms: {} and {}",
                                        err, source_termid, dest_termid)
@@ -3880,7 +3858,7 @@ impl <'a> WebDataBuild<'a> {
                                 let genotype = self.make_genotype_short(genotype_uniquename);
                                 self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                           reference_uniquename.clone(),
-                                                          &genotype.uniquename);
+                                                          &genotype.display_uniquename);
                             }
                         }
                     }
@@ -4275,7 +4253,6 @@ impl <'a> WebDataBuild<'a> {
         self.process_props_from_feature_cvterms();
         self.process_allele_features();
         self.process_genotype_features();
-        self.add_alleles_to_genotypes();
         self.process_cvterms();
         self.add_interesting_parents();
         self.process_cvterm_rels();

@@ -341,12 +341,11 @@ fn get_test_fypo_term_details() -> Vec<i32> {
 }
 
 #[allow(dead_code)]
-fn make_one_genotype(uniquename: &str, name: Option<&str>,
+fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
                      expressed_alleles: Vec<ExpressedAllele>) -> GenotypeDetails {
     GenotypeDetails {
-        uniquename: uniquename.into(),
+        display_uniquename: display_uniquename.into(),
         name: name.map(str::to_string),
-        background: None,
         expressed_alleles: expressed_alleles,
         cv_annotations: HashMap::new(),
         references_by_uniquename: HashMap::new(),
@@ -419,7 +418,7 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 
     ret.insert(String::from("e674fe7ceba478aa-genotype-2"),
                make_one_genotype(
-                   "e674fe7ceba478aa-genotype-2",
+                   "G799D(G799D)",
                    Some("test genotype name"),
                    vec![
                        ExpressedAllele {
@@ -431,7 +430,7 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 
     ret.insert(String::from("d6c914796c35e3b5-genotype-4"),
                make_one_genotype(
-                   "d6c914796c35e3b5-genotype-4",
+                   "C-terminal truncation 940-1516(940-1516)",
                    None,
                    vec![
                        ExpressedAllele {
@@ -443,7 +442,7 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 
     ret.insert(String::from("65c76fa511461156-genotype-3"),
                make_one_genotype(
-                   "65c76fa511461156-genotype-3",
+                   "cdc25-22(c532y)",
                    None,
                    vec![
                        ExpressedAllele {
@@ -455,7 +454,7 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 
     ret.insert(String::from("d6c914796c35e3b5-genotype-2"),
                make_one_genotype(
-                   "d6c914796c35e3b5-genotype-2",
+                   "ATPase dead mutant(unknown)",
                    Some("ZZ-name"),
                    vec![
                        ExpressedAllele {
@@ -467,7 +466,7 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 
     ret.insert(String::from("d6c914796c35e3b5-genotype-3"),
                make_one_genotype(
-                   "d6c914796c35e3b5-genotype-3",
+                   "C-terminal truncation(1320-1516)",
                    None,
                    vec![
                        ExpressedAllele {
@@ -479,7 +478,7 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 
     ret.insert(String::from("fd4f3f52f1d38106-genotype-4"),
                make_one_genotype(
-                   "fd4f3f52f1d38106-genotype-4",
+                   "K418R(K418R)",
                    None,
                    vec![
                        ExpressedAllele {
@@ -491,7 +490,7 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 
     ret.insert(String::from("a6d8f45c20c2227d-genotype-9"),
                make_one_genotype(
-                   "a6d8f45c20c2227d-genotype-9",
+                   "UBS-I&II(F18A,F21A,W26A,L40A,W41A,W45A)",
                    None,
                    vec![
                        ExpressedAllele {
@@ -616,30 +615,34 @@ fn test_cmp_ont_annotation_detail() {
             let cv_config = &get_test_config().cv_config_by_name("molecular_function");
             pombase::web::data_build::cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2, &genes,
-                                      &genotypes, &alleles, &terms).unwrap()
+                                      &genotypes, &terms).unwrap()
         };
 
     details_vec.sort_by(&cmp_detail_with_genotypes);
 
     let expected: Vec<String> =
-        vec!["C-terminal truncation 940-1516(940-1516)",
-             "C-terminal truncation(1320-1516)",
-             "cdc25-22(C532Y)",
-             "K418R(K418R)",
-             "test genotype name",
-             "UBS-I&II(F18A,F21A,W26A,L40A,W41A,W45A)",
-             "ZZ-name"]
+        vec!["atpase dead mutant(unknown)[not assayed]",
+             "c-terminal truncation 940-1516(940-1516)[not assayed]",
+             "c-terminal truncation(1320-1516)[not assayed]",
+             "cdc25-22(c532y)[not assayed]",
+             "g799d(g799d)[not assayed]",
+             "k418r(k418r)[wild type product level]",
+             "ubs-i&ii(f18a,f21a,w26a,l40a,w41a,w45a)[not assayed]"]
         .iter().map(|s| str::to_string(s)).collect();
 
+    let mut result_genotype_display_names =
+        details_vec.drain(0..)
+        .map(|detail_id| {
+            let detail = annotation_details_maps.get(&detail_id).unwrap();
+            let genotype_uniquename = detail.clone().genotype.unwrap();
+            let genotype = genotypes.get(&genotype_uniquename).unwrap();
+            pombase::web::data_build::make_genotype_display_name(&genotype.expressed_alleles, &alleles)
+                .to_lowercase()
+        }).collect::<Vec<String>>();
 
-    assert_eq!(details_vec.drain(0..)
-               .map(|detail_id| {
-                   let detail = annotation_details_maps.get(&detail_id).unwrap();
-                   let genotype_uniquename = detail.clone().genotype.unwrap();
-                   let genotype = genotypes.get(&genotype_uniquename).unwrap();
-                   pombase::web::data_build::genotype_display_name(&genotype, &alleles)
-               }).collect::<Vec<String>>(),
-               expected);
+    result_genotype_display_names.sort();
+
+    assert_eq!(result_genotype_display_names, expected);
 
     let test_term_annotations = get_test_annotations();
     let mut extension_details_vec = test_term_annotations[1].annotations.clone();
