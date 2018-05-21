@@ -621,13 +621,13 @@ fn test_cmp_ont_annotation_detail() {
     details_vec.sort_by(&cmp_detail_with_genotypes);
 
     let expected: Vec<String> =
-        vec!["atpase dead mutant(unknown)[not assayed]",
-             "c-terminal truncation 940-1516(940-1516)[not assayed]",
-             "c-terminal truncation(1320-1516)[not assayed]",
-             "cdc25-22(c532y)[not assayed]",
-             "g799d(g799d)[not assayed]",
-             "k418r(k418r)[wild type product level]",
-             "ubs-i&ii(f18a,f21a,w26a,l40a,w41a,w45a)[not assayed]"]
+        vec!["atpase_dead_mutant-unknown-unknown-expression-not_assayed",
+        "c-terminal_truncation-1320-1516-partial_amino_acid_deletion-expression-not_assayed",
+        "c-terminal_truncation_940-1516-940-1516-partial_amino_acid_deletion-expression-not_assayed",
+        "cdc25-22-c532y-amino_acid_mutation-expression-not_assayed",
+        "g799d-g799d-amino_acid_mutation-expression-not_assayed",
+        "k418r-k418r-amino_acid_mutation-expression-wild_type_product_level",
+        "ubs-i&ii-f18a,f21a,w26a,l40a,w41a,w45a-amino_acid_mutation-expression-not_assayed"]
         .iter().map(|s| str::to_string(s)).collect();
 
     let mut result_genotype_display_names =

@@ -268,7 +268,11 @@ fn allele_display_name(allele: &AlleleShort) -> String {
             }
         }
 
-    name + "(" + description.as_str() + ")"
+    if allele_type == "deletion" {
+        name + "-" + description.as_str()
+    } else {
+        name + "-" + description.as_str() + "-" + &allele.allele_type
+    }
 }
 
 
@@ -288,7 +292,7 @@ pub fn make_genotype_display_name(genotype_expressed_alleles: &Vec<ExpressedAlle
             let mut display_name = allele_display_name(allele_short);
             if allele_short.allele_type != "deletion" {
                 if let Some(ref expression) = expressed_allele.expression {
-                    display_name += &format!("[{}]", expression);
+                    display_name += &format!("-expression-{}", expression.to_lowercase());
                 }
             }
             display_name
@@ -296,7 +300,7 @@ pub fn make_genotype_display_name(genotype_expressed_alleles: &Vec<ExpressedAlle
 
     allele_display_names.sort();
 
-    allele_display_names.join(" ")
+    Regex::new(" ").unwrap().replace_all(&allele_display_names.join("  "), "_").into()
 }
 
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
