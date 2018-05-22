@@ -383,6 +383,8 @@ pub struct OntAnnotationDetail {
     // only for genotype/phenotype annotation:
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype: Option<GenotypeUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_background: Option<String>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermId>,
 }
@@ -703,21 +705,17 @@ pub struct TranscriptDetails {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeShort {
-    pub uniquename: GenotypeUniquename,
+    pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub background: Option<String>,
     pub expressed_alleles: Vec<ExpressedAllele>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeDetails {
-    pub uniquename: GenotypeUniquename,
+    pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<String>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub background: Option<String>,
     pub expressed_alleles: Vec<ExpressedAllele>,
     pub cv_annotations: OntAnnotationMap,
     pub references_by_uniquename: ReferenceShortOptionMap,
