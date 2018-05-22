@@ -2766,6 +2766,7 @@ impl <'a> WebDataBuild<'a> {
             let mut froms: Vec<WithFromValue> = vec![];
             let mut qualifiers: Vec<Qualifier> = vec![];
             let mut evidence: Option<String> = None;
+            let mut genotype_background: Option<String> = None;
 
             // need to get evidence first as it's used later
             // See: https://github.com/pombase/website/issues/455
@@ -2846,6 +2847,8 @@ impl <'a> WebDataBuild<'a> {
                         let genotype_display_name =
                             make_genotype_display_name(&expressed_alleles, &self.alleles);
                         maybe_genotype_uniquename = Some(genotype_display_name.clone());
+                        genotype_background =
+                            self.genotype_backgrounds.get(&feature.uniquename).map(String::clone);
                         expressed_alleles.iter()
                             .map(|expressed_allele| {
                                 let allele_short =
@@ -2910,6 +2913,7 @@ impl <'a> WebDataBuild<'a> {
                 genes: gene_uniquenames_vec,
                 reference: reference_uniquename.clone(),
                 genotype: maybe_genotype_uniquename.clone(),
+                genotype_background: genotype_background,
                 withs: withs.clone(),
                 froms: froms.clone(),
                 residue: extra_props_clone.remove("residue"),

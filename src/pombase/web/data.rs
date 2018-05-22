@@ -383,6 +383,8 @@ pub struct OntAnnotationDetail {
     // only for genotype/phenotype annotation:
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype: Option<GenotypeUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_background: Option<String>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermId>,
 }
