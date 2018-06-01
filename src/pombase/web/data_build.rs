@@ -710,41 +710,28 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         .collect();
 
     {
-        let submitted_date_cmp =
+        let pub_date_cmp =
             |ref_uniquename1: &ReferenceUniquename, ref_uniquename2: &ReferenceUniquename| {
                 let ref1 = references_map.get(ref_uniquename1).unwrap();
                 let ref2 = references_map.get(ref_uniquename2).unwrap();
 
                 // use first approval date, but fall back to the most recent approval date
 
-                if let Some(ref ref1_date) = ref1.canto_first_approved_date {
-                    if let Some(ref ref2_date) = ref2.canto_first_approved_date {
-                        return cmp_str_dates(ref1_date, ref2_date).reverse();
-                    }
-                }
+                let ref1_date =
+                    ref1.canto_first_approved_date.as_ref()
+                    .unwrap_or(ref1.canto_approved_date.as_ref()
+                               .unwrap_or(ref1.canto_session_submitted_date.
+                                          as_ref().unwrap()));
+                let ref2_date =
+                    ref2.canto_first_approved_date.as_ref()
+                    .unwrap_or(ref2.canto_approved_date.as_ref()
+                               .unwrap_or(ref2.canto_session_submitted_date.
+                                          as_ref().unwrap()));
 
-                if let Some(ref ref1_date) = ref1.canto_session_submitted_date {
-                    if let Some(ref ref2_date) = ref2.canto_first_approved_date {
-                        return cmp_str_dates(ref1_date, ref2_date).reverse();
-                    }
-                }
-
-                if let Some(ref ref1_date) = ref1.canto_first_approved_date {
-                    if let Some(ref ref2_date) = ref2.canto_session_submitted_date {
-                        return cmp_str_dates(ref1_date, ref2_date).reverse();
-                    }
-                }
-
-                if let Some(ref ref1_date) = ref1.canto_session_submitted_date {
-                    if let Some(ref ref2_date) = ref2.canto_session_submitted_date {
-                        return cmp_str_dates(ref1_date, ref2_date).reverse();
-                    }
-                }
-
-                panic!();
+                cmp_str_dates(ref1_date, ref2_date).reverse()
             };
 
-        sorted_pub_uniquenames.sort_by(submitted_date_cmp);
+        sorted_pub_uniquenames.sort_by(pub_date_cmp);
     }
 
     let mut recent_admin_curated = vec![];
