@@ -1,11 +1,11 @@
 use std::cmp::Ordering;
 
-use chrono::NaiveTime;
+use chrono::NaiveDate;
 
 // Parse two date strings and compare them.  If both can't be parsed, return Equal.
 pub fn cmp_str_dates(date_str1: &str, date_str2: &str) -> Ordering {
-    let datetime1_res = NaiveTime::parse_from_str(date_str1, "%Y-%m-%d %H:%M:%S");
-    let datetime2_res = NaiveTime::parse_from_str(date_str2, "%Y-%m-%d %H:%M:%S");
+    let datetime1_res = NaiveDate::parse_from_str(date_str1, "%Y-%m-%d %H:%M:%S");
+    let datetime2_res = NaiveDate::parse_from_str(date_str2, "%Y-%m-%d %H:%M:%S");
 
     match datetime1_res {
         Ok(datetime1) => {

@@ -331,7 +331,8 @@ pub struct ReferenceDetails {
     pub canto_added_date: Option<String>,
 
     // This is set to the year part of canto_first_approved_date if it is
-    // not None, otherwise set to the year part of canto_session_submitted_date
+    // not None, otherwise set to the year part of canto_approved_date, otherwise
+    // canto_session_submitted_date
     #[serde(skip_serializing_if="Option::is_none")]
     pub approved_date: Option<String>,
     pub cv_annotations: OntAnnotationMap,

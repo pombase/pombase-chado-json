@@ -728,7 +728,7 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
                                .unwrap_or(ref2.canto_session_submitted_date.
                                           as_ref().unwrap()));
 
-                cmp_str_dates(ref1_date, ref2_date).reverse()
+                cmp_str_dates(ref2_date, ref1_date)
             };
 
         sorted_pub_uniquenames.sort_by(pub_date_cmp);
@@ -1273,8 +1273,13 @@ impl <'a> WebDataBuild<'a> {
             let mut approved_date = canto_first_approved_date.clone();
 
             if approved_date.is_none() {
+                approved_date = canto_approved_date.clone();
+            }
+
+            if approved_date.is_none() {
                 approved_date = canto_session_submitted_date.clone();
             }
+
             approved_date =
                 if let Some(date) = approved_date {
                     let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
