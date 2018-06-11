@@ -1,6 +1,6 @@
 language: rust
 rust:
-  - nightly
+  - nightly-2018-06-01
 cache:
   cargo: true
   timeout: 900
