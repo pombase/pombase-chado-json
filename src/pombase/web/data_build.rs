@@ -4243,50 +4243,8 @@ impl <'a> WebDataBuild<'a> {
         self.references = filtered_refs;
     }
 
-    pub fn get_web_data(mut self) -> WebData {
-        self.process_dbxrefs();
-        self.process_references();
-        self.process_chromosome_features();
-        self.make_feature_rel_maps();
-        self.process_features();
-        self.add_gene_neighbourhoods();
-        self.process_props_from_feature_cvterms();
-        self.process_allele_features();
-        self.process_genotype_features();
-        self.process_cvterms();
-        self.add_interesting_parents();
-        self.process_cvterm_rels();
-        self.process_extension_cvterms();
-        self.process_feature_synonyms();
-        self.process_feature_cvterms();
-        self.store_ont_annotations(false);
-        self.store_ont_annotations(true);
-        self.process_cvtermpath();
-        self.process_annotation_feature_rels();
-        self.add_target_of_annotations();
-        self.set_deletion_viability();
-        self.set_term_details_subsets();
-        self.make_all_cv_summaries();
-        self.remove_non_curatable_refs();
-        self.set_term_details_maps();
-        self.set_gene_details_maps();
-        self.set_genotype_details_maps();
-        self.set_reference_details_maps();
-        self.set_counts();
-        self.make_subsets();
-        self.sort_chromosome_genes();
-
-        let metadata = self.make_metadata();
-
-        let mut gene_summaries: Vec<GeneSummary> = vec![];
-
-        for (gene_uniquename, gene_details) in &self.genes {
-            if self.config.load_organism_taxonid == gene_details.taxonid {
-                gene_summaries.push(self.make_gene_summary(&gene_uniquename));
-            }
-        }
-
-        let mut solr_term_summaries = vec![];
+    fn make_solr_term_summaries(&mut self) -> Vec<SolrTermSummary> {
+        let mut return_summaries = vec![];
 
         let term_name_split_re = Regex::new(r"\W+").unwrap();
 
@@ -4351,12 +4309,73 @@ impl <'a> WebDataBuild<'a> {
                 distant_synonym_words: distant_synonym_words_vec.join(" "),
                 interesting_parents: interesting_parents_for_solr,
             };
-            solr_term_summaries.push(term_summ);
+            return_summaries.push(term_summ);
         }
+  
+        return_summaries
+    }
+
+    fn make_solr_reference_summaries(&mut self) -> Vec<SolrReferenceSummary> {
+        let mut return_summaries = vec![];
+
+        for (_, reference_details) in &self.references {
+            return_summaries.push(SolrReferenceSummary::from_reference_details(reference_details));
+        }
+
+        return_summaries
+    }
+
+    pub fn get_web_data(mut self) -> WebData {
+        self.process_dbxrefs();
+        self.process_references();
+        self.process_chromosome_features();
+        self.make_feature_rel_maps();
+        self.process_features();
+        self.add_gene_neighbourhoods();
+        self.process_props_from_feature_cvterms();
+        self.process_allele_features();
+        self.process_genotype_features();
+        self.process_cvterms();
+        self.add_interesting_parents();
+        self.process_cvterm_rels();
+        self.process_extension_cvterms();
+        self.process_feature_synonyms();
+        self.process_feature_cvterms();
+        self.store_ont_annotations(false);
+        self.store_ont_annotations(true);
+        self.process_cvtermpath();
+        self.process_annotation_feature_rels();
+        self.add_target_of_annotations();
+        self.set_deletion_viability();
+        self.set_term_details_subsets();
+        self.make_all_cv_summaries();
+        self.remove_non_curatable_refs();
+        self.set_term_details_maps();
+        self.set_gene_details_maps();
+        self.set_genotype_details_maps();
+        self.set_reference_details_maps();
+        self.set_counts();
+        self.make_subsets();
+        self.sort_chromosome_genes();
+
+        let metadata = self.make_metadata();
+
+        let mut gene_summaries: Vec<GeneSummary> = vec![];
+
+        for (gene_uniquename, gene_details) in &self.genes {
+            if self.config.load_organism_taxonid == gene_details.taxonid {
+                gene_summaries.push(self.make_gene_summary(&gene_uniquename));
+            }
+        }
+
+        let solr_term_summaries = self.make_solr_term_summaries();
+
+        let solr_reference_summaries = self.make_solr_reference_summaries();
 
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,
             gene_summaries: gene_summaries.clone(),
+            reference_summaries: solr_reference_summaries,
         };
 
         let chromosomes = self.chromosomes.clone();

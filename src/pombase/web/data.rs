@@ -1009,9 +1009,53 @@ pub struct SolrTermSummary {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SolrReferenceSummary {
+    pub uniquename: String,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub title: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub citation: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pubmed_abstract: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub authors: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub authors_abbrev: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pubmed_publication_date: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub publication_year: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub approved_date: Option<String>,
+    pub gene_count: usize,
+    pub genotype_count: usize,
+}
+
+impl SolrReferenceSummary {
+    pub fn from_reference_details(reference_details: &ReferenceDetails) -> SolrReferenceSummary {
+        SolrReferenceSummary {
+            uniquename: reference_details.uniquename.clone(),
+            title: reference_details.title.clone(),
+            pubmed_abstract: reference_details.pubmed_abstract.clone(),
+            citation: reference_details.citation.clone(),
+            publication_year: reference_details.publication_year.clone(),
+            pubmed_publication_date: reference_details.pubmed_publication_date.clone(),
+            authors: reference_details.authors.clone(),
+            authors_abbrev: reference_details.authors_abbrev.clone(),
+            approved_date: reference_details.approved_date.clone(),
+            gene_count: reference_details.genes_by_uniquename.keys().len(),
+            genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
+        }
+    }
+}
+
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SolrData {
     pub term_summaries: Vec<SolrTermSummary>,
     pub gene_summaries: Vec<GeneSummary>,
+    pub reference_summaries: Vec<SolrReferenceSummary>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1172,6 +1216,16 @@ impl WebData {
         let mut genes_compressor = GzEncoder::new(genes_file, Compression::default());
         genes_compressor.write_all(genes_json_text.as_bytes()).expect("Unable to write genes as JSON");
         genes_compressor.finish().expect("Unable to write genes as JSON");
+
+        let references = self.solr_data.reference_summaries.clone();
+
+        let references_json_text = serde_json::to_string(&references).unwrap();
+        let references_file_name = format!("{}/references.json.gz", new_path);
+        let references_file = File::create(references_file_name).expect("Unable to open file");
+
+        let mut references_compressor = GzEncoder::new(references_file, Compression::default());
+        references_compressor.write_all(references_json_text.as_bytes()).expect("Unable to write references as JSON");
+        references_compressor.finish().expect("Unable to write references as JSON");
     }
 
     fn write_subsets(&self, output_dir: &str) {
