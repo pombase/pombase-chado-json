@@ -9,8 +9,6 @@ use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 use std::fmt;
 
-use regex::Regex;
-
 use bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
 use flate2::Compression;
@@ -67,7 +65,7 @@ const FASTA_SEQ_COLUMNS: usize = 60;
 
 fn write_as_fasta(writer: &mut Write, id: &str, desc: Option<String>, seq: &str) {
     let fasta = format_fasta(id, desc, &seq, FASTA_SEQ_COLUMNS);
-    writer.write(fasta.as_bytes()).unwrap();
+    writer.write_all(fasta.as_bytes()).unwrap();
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
@@ -102,11 +100,19 @@ impl ExtRange {
 }
 
 // A single part of an extension.
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExtPart {
     pub rel_type_name: String,
     pub rel_type_display_name: String,
     pub ext_range: ExtRange,
+}
+impl PartialEq for ExtPart {
+    fn eq(&self, other: &Self) -> bool {
+        self.rel_type_name == other.rel_type_name &&
+            self.ext_range == other.ext_range
+    }
+}
+impl Eq for ExtPart {
 }
 impl Hash for ExtPart {
     fn hash<H: Hasher>(&self, state: &mut H) {
@@ -420,7 +426,7 @@ impl Hash for OntTermAnnotations {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermSummaryRow {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_uniquenames: Vec<GeneUniquename>, // for term and ref pages
@@ -429,7 +435,13 @@ pub struct TermSummaryRow {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub extension: Vec<ExtPart>,
 }
-
+impl PartialEq for TermSummaryRow {
+    fn eq(&self, other: &TermSummaryRow) -> bool {
+        self.gene_uniquenames == other.gene_uniquenames &&
+            self.genotype_uniquenames == other.genotype_uniquenames &&
+            self.extension == other.extension
+    }
+}
 impl Hash for TermSummaryRow {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.gene_uniquenames.hash(state);
@@ -959,7 +971,7 @@ pub struct APIGeneSummary {
     pub exon_count: usize,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
 pub enum InteractionType {
 #[serde(rename = "physical")]
     Physical,
@@ -1284,11 +1296,11 @@ impl WebData {
                 write_as_fasta(&mut cds_introns_writer, gene_uniquename, None, &cds_introns_seq);
                 write_as_fasta(&mut cds_introns_utrs_writer,
                                gene_uniquename, None, &cds_introns_utrs_seq);
-                if five_prime_utr_seq.len() > 0 {
+                if !five_prime_utr_seq.is_empty() {
                     write_as_fasta(&mut five_prime_utrs_writer,
                                    gene_uniquename, None, &five_prime_utr_seq);
                 }
-                if three_prime_utr_seq.len() > 0 {
+                if !three_prime_utr_seq.is_empty() {
                     write_as_fasta(&mut three_prime_utrs_writer,
                                    gene_uniquename, None, &three_prime_utr_seq);
                 }
@@ -1361,14 +1373,12 @@ impl WebData {
         let mut all_ids_writer = BufWriter::new(&all_ids_file);
 
         let db_version = format!("# Chado database date: {}\n", self.metadata.db_creation_datetime);
-        gene_writer.write(db_version.as_bytes())?;
-        rna_writer.write(db_version.as_bytes())?;
-        pseudogenes_writer.write(db_version.as_bytes())?;
-        all_names_writer.write(db_version.as_bytes())?;
+        gene_writer.write_all(db_version.as_bytes())?;
+        rna_writer.write_all(db_version.as_bytes())?;
+        pseudogenes_writer.write_all(db_version.as_bytes())?;
+        all_names_writer.write_all(db_version.as_bytes())?;
 
-        let rna_re = Regex::new(r"RNA").unwrap();
-
-        for (_, gene_details) in &self.api_maps.genes {
+        for gene_details in self.api_maps.genes.values() {
             if gene_details.taxonid != load_org_taxonid {
                 continue;
             }
@@ -1383,7 +1393,7 @@ impl WebData {
 
             let line = format!("{}\t{}\t{}\n",
                                gene_details.uniquename,
-                               gene_details.name.clone().unwrap_or("".to_owned()),
+                               gene_details.name.clone().unwrap_or_else(|| "".to_owned()),
                                synonyms);
 
             let gene_name = if let Some(ref gene_details_name) = gene_details.name {
@@ -1404,16 +1414,16 @@ impl WebData {
                                             synonyms,
                                             gene_product);
 
-            all_names_writer.write(line.as_bytes())?;
+            all_names_writer.write_all(line.as_bytes())?;
 
             if gene_details.feature_type == "pseudogene" {
-                pseudogenes_writer.write(line.as_bytes())?;
+                pseudogenes_writer.write_all(line.as_bytes())?;
             } else {
                 if gene_details.feature_type == "mRNA gene" {
-                    gene_writer.write(line_with_product.as_bytes())?;
+                    gene_writer.write_all(line_with_product.as_bytes())?;
                 } else {
-                    if rna_re.is_match(&gene_details.feature_type) {
-                        rna_writer.write(line_with_product.as_bytes())?;
+                    if gene_details.feature_type.contains("RNA") {
+                        rna_writer.write_all(line_with_product.as_bytes())?;
                     }
                 }
             }
@@ -1449,7 +1459,7 @@ impl WebData {
                                        uniprot_id,
                                        gene_type,
                                        synonyms);
-            all_ids_writer.write(all_ids_line.as_bytes())?;
+            all_ids_writer.write_all(all_ids_line.as_bytes())?;
         }
 
         gene_writer.flush()?;
@@ -1468,7 +1478,7 @@ impl WebData {
         let mut peptide_stats_writer = BufWriter::new(&peptide_stats_file);
 
         let peptide_stats_header = "Systematic_ID\tMass (kDa)\tpI\tCharge\tResidues\tCAI\n";
-        peptide_stats_writer.write(peptide_stats_header.as_bytes())?;
+        peptide_stats_writer.write_all(peptide_stats_header.as_bytes())?;
  
         let protein_features_name = format!("{}/ProteinFeatures.tsv", output_dir);
         let protein_features_file = File::create(protein_features_name).expect("Unable to open file");
@@ -1480,7 +1490,7 @@ impl WebData {
 
         let protein_features_header =
             "systematic_id\tgene_name\tpeptide_id\tdomain_id\tdatabase\tseq_start\tseq_end\n";
-        protein_features_writer.write(protein_features_header.as_bytes())?;
+        protein_features_writer.write_all(protein_features_header.as_bytes())?;
 
         let db_display_name = |db_alias: &str| {
             if let Some(name) = config.extra_database_aliases.get(&db_alias.to_lowercase()) {
@@ -1518,9 +1528,9 @@ impl WebData {
                                        protein.charge_at_ph7,
                                        protein.sequence.len() - 1,
                                        protein.codon_adaptation_index);
-                    peptide_stats_writer.write(line.as_bytes())?;
+                    peptide_stats_writer.write_all(line.as_bytes())?;
 
-                    let gene_name = gene_details.name.clone().unwrap_or("".to_owned());
+                    let gene_name = gene_details.name.clone().unwrap_or_else(|| "".to_owned());
                     for interpro_match in &gene_details.interpro_matches {
                         let line_start = format!("{}\t{}\t{}\t{}\t{}",
                                                  gene_uniquename, gene_name,
@@ -1529,7 +1539,7 @@ impl WebData {
                         for location in &interpro_match.locations {
                             let line = format!("{}\t{}\t{}\n", line_start,
                                                location.start, location.end);
-                            protein_features_writer.write(line.as_bytes())?;
+                            protein_features_writer.write_all(line.as_bytes())?;
                         }
                     }
 
@@ -1543,7 +1553,7 @@ impl WebData {
 
         let mut all_composition_aa: Vec<char> = vec![];
 
-        for (ch, _) in &total_composition {
+        for ch in total_composition.keys() {
             if *ch != '*' {
                 all_composition_aa.push(*ch);
             }
@@ -1558,7 +1568,7 @@ impl WebData {
 
         let composition_header = "Systematic_ID\t".to_owned() +
             &all_composition_string + "\n";
-        aa_composition_writer.write(composition_header.as_bytes())?;
+        aa_composition_writer.write_all(composition_header.as_bytes())?;
 
         let composition_line = |first_col_string: String, comp: &AAComposition| {
             let mut line = first_col_string;
@@ -1577,12 +1587,12 @@ impl WebData {
 
         for (gene_uniquename, comp) in compositions_to_write.drain(0..) {
             let line = composition_line(gene_uniquename, &comp);
-            aa_composition_writer.write(line.as_bytes())?;
+            aa_composition_writer.write_all(line.as_bytes())?;
         }
 
         let composition_total_line =
             composition_line("total".to_owned(), &total_composition);
-        aa_composition_writer.write(composition_total_line.as_bytes())?;
+        aa_composition_writer.write_all(composition_total_line.as_bytes())?;
 
         peptide_stats_writer.flush()?;
 
@@ -1624,7 +1634,7 @@ impl WebData {
             let mut exon_writer = BufWriter::new(&exon_file);
 
             for gene_uniquename in &chr_details.gene_uniquenames {
-                let gene = self.api_maps.genes.get(gene_uniquename).unwrap();
+                let gene = &self.api_maps.genes[gene_uniquename];
                 if let Some(ref gene_location) = gene.location {
                     write_line(gene_uniquename, gene_location, &mut gene_writer)?;
 
@@ -1687,7 +1697,7 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write_gff<'a>(&self, config: &Config, output_dir: &str)
+    pub fn write_gff(&self, config: &Config, output_dir: &str)
                          -> Result<(), io::Error>
     {
         let all_gff_name = format!("{}/all_chromosomes.gff3", output_dir);
@@ -1706,12 +1716,12 @@ impl WebData {
         let unstranded_features_gff_file = File::create(unstranded_features_gff_name).expect("Unable to open file");
         let mut unstranded_features_gff_writer = BufWriter::new(&unstranded_features_gff_file);
 
-        all_gff_writer.write("##gff-version 3\n".as_bytes())?;
-        forward_features_gff_writer.write("##gff-version 3\n".as_bytes())?;
-        reverse_features_gff_writer.write("##gff-version 3\n".as_bytes())?;
-        unstranded_features_gff_writer.write("##gff-version 3\n".as_bytes())?;
+        all_gff_writer.write_all(b"##gff-version 3\n")?;
+        forward_features_gff_writer.write_all(b"##gff-version 3\n")?;
+        reverse_features_gff_writer.write_all(b"##gff-version 3\n")?;
+        unstranded_features_gff_writer.write_all(b"##gff-version 3\n")?;
 
-        for (_, gene_details) in &self.api_maps.genes {
+        for gene_details in self.api_maps.genes.values() {
             if let Some(ref gene_loc) = gene_details.location {
                 let chromosome_name = &gene_loc.chromosome_name;
                 let chromosome_export_id =
@@ -1719,27 +1729,27 @@ impl WebData {
                 let gene_gff_lines =
                     format_gene_gff(chromosome_export_id, &config.database_name, &gene_details);
                 for gff_line in gene_gff_lines {
-                    all_gff_writer.write(gff_line.as_bytes())?;
-                    all_gff_writer.write("\n".as_bytes())?;
+                    all_gff_writer.write_all(gff_line.as_bytes())?;
+                    all_gff_writer.write_all(b"\n")?;
 
                     match gene_loc.strand {
                         Strand::Forward => {
-                            forward_features_gff_writer.write(gff_line.as_bytes())?;
-                            forward_features_gff_writer.write("\n".as_bytes())?;
+                            forward_features_gff_writer.write_all(gff_line.as_bytes())?;
+                            forward_features_gff_writer.write_all(b"\n")?;
                         },
                         Strand::Reverse => {
-                            reverse_features_gff_writer.write(gff_line.as_bytes())?;
-                            reverse_features_gff_writer.write("\n".as_bytes())?;
+                            reverse_features_gff_writer.write_all(gff_line.as_bytes())?;
+                            reverse_features_gff_writer.write_all(b"\n")?;
                         }
                         Strand::Unstranded => {
-                            unstranded_features_gff_writer.write(gff_line.as_bytes())?;
-                            unstranded_features_gff_writer.write("\n".as_bytes())?;
+                            unstranded_features_gff_writer.write_all(gff_line.as_bytes())?;
+                            unstranded_features_gff_writer.write_all(b"\n")?;
                         }
                     }
                 }
             }
         }
-        for (_, feature_short) in &self.api_maps.other_features {
+        for feature_short in self.api_maps.other_features.values() {
             let chromosome_name = &feature_short.location.chromosome_name;
             let chromosome_export_id =
                 &config.find_chromosome_config(chromosome_name).export_id;
@@ -1747,21 +1757,21 @@ impl WebData {
                 format_misc_feature_gff(&chromosome_export_id, &config.database_name,
                                         &feature_short);
             for gff_line in gff_lines {
-                all_gff_writer.write(gff_line.as_bytes())?;
-                all_gff_writer.write("\n".as_bytes())?;
+                all_gff_writer.write_all(gff_line.as_bytes())?;
+                all_gff_writer.write_all(b"\n")?;
 
                 match feature_short.location.strand {
                     Strand::Forward => {
-                        forward_features_gff_writer.write(gff_line.as_bytes())?;
-                        forward_features_gff_writer.write("\n".as_bytes())?;
+                        forward_features_gff_writer.write_all(gff_line.as_bytes())?;
+                        forward_features_gff_writer.write_all(b"\n")?;
                     },
                     Strand::Reverse => {
-                        reverse_features_gff_writer.write(gff_line.as_bytes())?;
-                        reverse_features_gff_writer.write("\n".as_bytes())?;
+                        reverse_features_gff_writer.write_all(gff_line.as_bytes())?;
+                        reverse_features_gff_writer.write_all(b"\n")?;
                     }
                     Strand::Unstranded => {
-                        unstranded_features_gff_writer.write(gff_line.as_bytes())?;
-                        unstranded_features_gff_writer.write("\n".as_bytes())?;
+                        unstranded_features_gff_writer.write_all(gff_line.as_bytes())?;
+                        unstranded_features_gff_writer.write_all(b"\n")?;
                     }
                 }
             }

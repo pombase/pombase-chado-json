@@ -58,7 +58,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<String, Unipr
 
     let mut filtered_results = HashMap::new();
 
-    for (uniprot_identifier, mut results) in uniprot_results.into_iter() {
+    for (uniprot_identifier, mut results) in uniprot_results {
         let new_interpro_matches =
             results.interpro_matches.into_iter()
             .filter(|interpro_match|

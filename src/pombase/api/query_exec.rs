@@ -9,7 +9,7 @@ pub struct QueryExec {
 impl QueryExec {
     pub fn new(server_data: ServerData) -> QueryExec {
         QueryExec {
-            server_data: server_data,
+            server_data,
         }
     }
 
@@ -27,7 +27,7 @@ impl QueryExec {
             Ok(rows) => QueryAPIResult {
                 query: filled_query,
                 status: "ok".to_owned(),
-                rows: rows,
+                rows,
             },
             Err(mess) => QueryAPIResult {
                 query: filled_query,

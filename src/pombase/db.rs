@@ -240,7 +240,7 @@ impl Raw {
 
         fn get_cvterm(cvterm_map: &mut HashMap<i32, Rc<Cvterm>>, cvterm_id: i32) -> Rc<Cvterm> {
             cvterm_map.get(&cvterm_id)
-                .expect(&format!("can't find {:?} in map", cvterm_id)).clone()
+                .unwrap_or_else(|| panic!("can't find {:?} in map", cvterm_id)).clone()
         };
 
         fn get_feature(feature_map: &mut HashMap<i32, Rc<Feature>>, feature_id: i32) -> Rc<Feature> {
@@ -307,10 +307,10 @@ impl Raw {
             let cvterm = Cvterm {
                 cv: get_cv(&mut cv_map, cv_id),
                 dbxref: get_dbxref(&mut dbxref_map, dbxref_id),
-                name: name,
+                name,
                 is_obsolete: is_obsolete != 0,
                 is_relationshiptype: is_relationshiptype != 0,
-                definition: definition,
+                definition,
                 cvtermsynonyms: RefCell::new(vec![]),
                 cvtermprops: RefCell::new(vec![]),
             };
@@ -342,7 +342,7 @@ impl Raw {
             let cvtermprop = Cvtermprop {
                 cvterm: cvterm.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value,
+                value,
             };
             let rc_cvtermprop = Rc::new(cvtermprop);
             ret.cvtermprops.push(rc_cvtermprop.clone());
@@ -356,10 +356,10 @@ impl Raw {
             let title: Option<String> = row.get(3);
             let miniref: Option<String> = row.get(4);
             let publication = Publication {
-                uniquename: uniquename,
+                uniquename,
                 pub_type: get_cvterm(&mut cvterm_map, type_id),
-                title: title,
-                miniref: miniref,
+                title,
+                miniref,
                 publicationprops: RefCell::new(vec![]),
             };
             let rc_publication = Rc::new(publication);
@@ -371,11 +371,11 @@ impl Raw {
             let pub_id: i32 = row.get(0);
             let type_id: i32 = row.get(1);
             let value: String = row.get(2);
-            let publication = publication_map.get(&pub_id).unwrap().clone();
+            let publication = publication_map[&pub_id].clone();
             let publicationprop = Publicationprop {
                 publication: publication.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value,
+                value,
             };
             let rc_publicationprop = Rc::new(publicationprop);
             ret.publicationprops.push(rc_publicationprop.clone());
@@ -386,11 +386,11 @@ impl Raw {
             let cv_id: i32 = row.get(0);
             let type_id: i32 = row.get(1);
             let value: String = row.get(2);
-            let cv = cv_map.get(&cv_id).unwrap().clone();
+            let cv = cv_map[&cv_id].clone();
             let cvprop = Cvprop {
                 cv: cv.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value,
+                value,
             };
             let rc_cvprop = Rc::new(cvprop);
             ret.cvprops.push(rc_cvprop.clone());
@@ -402,7 +402,7 @@ impl Raw {
             let name = row.get(1);
             let type_id: i32 = row.get(2);
             let synonym = Synonym {
-                name: name,
+                name,
                 synonym_type: get_cvterm(&mut cvterm_map, type_id),
             };
             let rc_synonym = Rc::new(synonym);
@@ -420,8 +420,8 @@ impl Raw {
                 uniquename: row.get(1),
                 name: row.get(2),
                 feat_type: get_cvterm(&mut cvterm_map, type_id),
-                organism: organism_map.get(&organism_id).unwrap().clone(),
-                residues: residues,
+                organism: organism_map[&organism_id].clone(),
+                residues,
                 featureprops: RefCell::new(vec![]),
                 featurelocs: RefCell::new(vec![]),
             };
@@ -438,7 +438,7 @@ impl Raw {
             let featureprop = Featureprop {
                 feature: feature.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value,
+                value,
             };
             let rc_featureprop = Rc::new(featureprop);
             ret.featureprops.push(rc_featureprop.clone());
@@ -457,10 +457,10 @@ impl Raw {
             let featureloc = Featureloc {
                 feature: feature.clone(),
                 srcfeature: srcfeature.clone(),
-                fmin: fmin,
-                fmax: fmax,
-                strand: strand,
-                phase: phase,
+                fmin,
+                fmax,
+                strand,
+                phase,
             };
             let rc_featureloc = Rc::new(featureloc);
             ret.featurelocs.push(rc_featureloc.clone());
@@ -473,10 +473,10 @@ impl Raw {
             let pub_id: i32 = row.get(2);
             let is_current: bool = row.get(3);
             let feature_synonym = FeatureSynonym {
-                feature: feature_map.get(&feature_id).unwrap().clone(),
+                feature: feature_map[&feature_id].clone(),
                 synonym: get_synonym(&mut synonym_map, synonym_id),
-                publication: publication_map.get(&pub_id).unwrap().clone(),
-                is_current: is_current
+                publication: publication_map[&pub_id].clone(),
+                is_current
             };
             let rc_feature_synonym = Rc::new(feature_synonym);
             ret.feature_synonyms.push(rc_feature_synonym.clone());
@@ -487,9 +487,9 @@ impl Raw {
             let feature_id = row.get(1);
             let dbxref_id: i32 = row.get(2);
             let feature_dbxref = FeatureDbxref {
-                feature_dbxref_id: feature_dbxref_id,
-                feature: feature_map.get(&feature_id).unwrap().clone(),
-                dbxref: dbxref_map.get(&dbxref_id).unwrap().clone(),
+                feature_dbxref_id,
+                feature: feature_map[&feature_id].clone(),
+                dbxref: dbxref_map[&dbxref_id].clone(),
             };
             let rc_feature_dbxref = Rc::new(feature_dbxref);
             ret.feature_dbxrefs.push(rc_feature_dbxref.clone());
@@ -503,11 +503,11 @@ impl Raw {
             let pub_id: i32 = row.get(3);
             let is_not: bool = row.get(4);
             let feature_cvterm = FeatureCvterm {
-                feature_cvterm_id: feature_cvterm_id,
-                feature: feature_map.get(&feature_id).unwrap().clone(),
-                cvterm: cvterm_map.get(&cvterm_id).unwrap().clone(),
-                publication: publication_map.get(&pub_id).unwrap().clone(),
-                is_not: is_not,
+                feature_cvterm_id,
+                feature: feature_map[&feature_id].clone(),
+                cvterm: cvterm_map[&cvterm_id].clone(),
+                publication: publication_map[&pub_id].clone(),
+                is_not,
                 feature_cvtermprops: RefCell::new(vec![]),
             };
             let rc_feature_cvterm = Rc::new(feature_cvterm);
@@ -517,13 +517,13 @@ impl Raw {
 
         for row in &conn.query("SELECT feature_cvterm_id, type_id, value FROM feature_cvtermprop", &[]).unwrap() {
             let feature_cvterm_id: i32 = row.get(0);
-            let feature_cvterm = feature_cvterm_map.get(&feature_cvterm_id).unwrap().clone();
+            let feature_cvterm = feature_cvterm_map[&feature_cvterm_id].clone();
             let type_id: i32 = row.get(1);
             let value: Option<String> = row.get(2);
             let feature_cvtermprop = FeatureCvtermprop {
                 feature_cvterm: feature_cvterm.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value,
+                value,
             };
             let rc_feature_cvtermprop = Rc::new(feature_cvtermprop);
             ret.feature_cvtermprops.push(rc_feature_cvtermprop.clone());
@@ -536,8 +536,8 @@ impl Raw {
             let object_id: i32 = row.get(2);
             let type_id: i32 = row.get(3);
             let feature_relationship = FeatureRelationship {
-                subject: feature_map.get(&subject_id).unwrap().clone(),
-                object: feature_map.get(&object_id).unwrap().clone(),
+                subject: feature_map[&subject_id].clone(),
+                object: feature_map[&object_id].clone(),
                 rel_type: get_cvterm(&mut cvterm_map, type_id),
                 feature_relationshipprops: RefCell::new(vec![]),
                 publications: RefCell::new(vec![]),
@@ -550,13 +550,13 @@ impl Raw {
         for row in &conn.query("SELECT feature_relationship_id, type_id, value FROM feature_relationshipprop", &[]).unwrap() {
             let feature_relationship_id: i32 = row.get(0);
             let feature_relationship =
-                feature_relationship_map.get(&feature_relationship_id).unwrap().clone();
+                feature_relationship_map[&feature_relationship_id].clone();
             let type_id: i32 = row.get(1);
             let value: Option<String> = row.get(2);
             let feature_relationshipprop = FeatureRelationshipprop {
                 feature_relationship: feature_relationship.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value,
+                value,
             };
             let rc_feature_relationshipprop = Rc::new(feature_relationshipprop);
             feature_relationship.feature_relationshipprops.borrow_mut().push(rc_feature_relationshipprop.clone());
@@ -565,10 +565,9 @@ impl Raw {
         for row in &conn.query("SELECT feature_relationship_id, pub_id FROM feature_relationship_pub", &[]).unwrap() {
             let feature_relationship_id: i32 = row.get(0);
             let feature_relationship =
-                feature_relationship_map.get(&feature_relationship_id).unwrap().clone();
+                feature_relationship_map[&feature_relationship_id].clone();
             let pub_id: i32 = row.get(1);
-            let publication = publication_map.get(&pub_id).unwrap().clone();
-            feature_relationship.publications.borrow_mut().push(publication.clone());
+            feature_relationship.publications.borrow_mut().push(publication_map[&pub_id].clone());
         }
 
         for row in &conn.query("SELECT object_id, subject_id, type_id FROM cvterm_relationship", &[]).unwrap() {
@@ -576,8 +575,8 @@ impl Raw {
             let subject_id: i32 = row.get(1);
             let type_id: i32 = row.get(2);
             let cvterm_relationship = CvtermRelationship {
-                subject: cvterm_map.get(&subject_id).unwrap().clone(),
-                object: cvterm_map.get(&object_id).unwrap().clone(),
+                subject: cvterm_map[&subject_id].clone(),
+                object: cvterm_map[&object_id].clone(),
                 rel_type: get_cvterm(&mut cvterm_map, type_id),
             };
             let rc_cvterm_relationship = Rc::new(cvterm_relationship);
@@ -594,10 +593,10 @@ impl Raw {
             };
             let pathdistance: Option<i32> = row.get(3);
             let cvtermpath = Cvtermpath {
-                subject: cvterm_map.get(&subject_id).unwrap().clone(),
-                object: cvterm_map.get(&object_id).unwrap().clone(),
-                rel_type: rel_type,
-                pathdistance: pathdistance,
+                subject: cvterm_map[&subject_id].clone(),
+                object: cvterm_map[&object_id].clone(),
+                rel_type,
+                pathdistance,
             };
             let rc_cvtermpath = Rc::new(cvtermpath);
             ret.cvtermpaths.push(rc_cvtermpath.clone());
@@ -607,8 +606,8 @@ impl Raw {
             let type_id: i32 = row.get(0);
             let value = row.get(1);
             let chadoprop = Chadoprop {
-                prop_type: cvterm_map.get(&type_id).unwrap().clone(),
-                value: value,
+                prop_type: cvterm_map[&type_id].clone(),
+                value,
             };
             let rc_chadoprop = Rc::new(chadoprop);
             ret.chadoprops.push(rc_chadoprop.clone());
@@ -616,12 +615,12 @@ impl Raw {
 
         for row in &conn.query("SELECT organism_id, type_id, value FROM organismprop", &[]).unwrap() {
             let organism_id: i32 = row.get(0);
-            let organism = organism_map.get(&organism_id).unwrap().clone();
+            let organism = organism_map[&organism_id].clone();
             let type_id: i32 = row.get(1);
             let prop_type = get_cvterm(&mut cvterm_map, type_id);
             let organismprop = Organismprop {
                 organism: organism.clone(),
-                prop_type: prop_type,
+                prop_type,
                 value: row.get(2),
             };
             let rc_organismprop = Rc::new(organismprop);

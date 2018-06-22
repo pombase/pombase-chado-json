@@ -76,8 +76,8 @@ pub enum QueryNode {
     Interactors { gene_uniquename: GeneUniquename, interaction_type: String },
 }
 
-fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> GeneUniquenameVecResult {
-    if nodes.len() == 0 {
+fn exec_or(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecResult {
+    if nodes.is_empty() {
         return Err("illegal query: OR operator has no nodes".into());
     }
 
@@ -98,8 +98,8 @@ fn exec_or(server_data: &ServerData, nodes: &Vec<QueryNode>) -> GeneUniquenameVe
     Ok(or_rows)
 }
 
-fn exec_and(server_data: &ServerData, nodes: &Vec<QueryNode>) -> GeneUniquenameVecResult {
-    if nodes.len() == 0 {
+fn exec_and(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecResult {
+    if nodes.is_empty() {
         return Err("illegal query: AND operator has no nodes".into());
     }
 
@@ -156,7 +156,7 @@ fn exec_subset(server_data: &ServerData, subset_name: &str)  -> GeneUniquenameVe
     Ok(server_data.genes_of_subset(subset_name))
 }
 
-fn exec_gene_list(genes: &Vec<GeneShort>)
+fn exec_gene_list(genes: &[GeneShort])
                   -> GeneUniquenameVecResult
 {
     let mut ret = vec![];
@@ -173,8 +173,8 @@ fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<u64>, end:
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             if let Some(ref location) = gene.location {
-                (end.is_none() || location.start_pos as u64 <= end.unwrap()) &&
-                    (start.is_none() || location.end_pos as u64 >= start.unwrap()) &&
+                (end.is_none() || u64::from(location.start_pos) <= end.unwrap()) &&
+                    (start.is_none() || u64::from(location.end_pos) >= start.unwrap()) &&
                     location.chromosome_name == chromosome_name
             } else {
                 false
@@ -189,7 +189,7 @@ fn exec_protein_length_range(server_data: &ServerData,
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
-            if gene.transcripts.len() > 0 {
+            if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
                     (range_start.is_none() || protein.sequence.len() as u64 >= range_start.unwrap()) &&
                     (range_end.is_none() || protein.sequence.len() as u64 <= range_end.unwrap())
@@ -241,12 +241,12 @@ fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, ran
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
-            if gene.transcripts.len() > 0 {
+            if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
                     (range_start.is_none() ||
-                        protein.molecular_weight as f64 >= range_start.unwrap()) &&
+                        f64::from(protein.molecular_weight) >= range_start.unwrap()) &&
                     (range_end.is_none() ||
-                        protein.molecular_weight as f64 <= range_end.unwrap())
+                        f64::from(protein.molecular_weight) <= range_end.unwrap())
                 } else {
                     false
                 }
@@ -278,9 +278,9 @@ impl QueryNode {
             Not { ref node_a, ref node_b } => exec_not(server_data, node_a, node_b),
             Term {
                 ref termid,
-                name: _,
                 ref single_or_multi_allele,
                 ref expression,
+                ..
             } => exec_termid(server_data, termid, single_or_multi_allele, expression),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
             GeneList { ref genes } => exec_gene_list(genes),
@@ -338,8 +338,8 @@ pub struct Query {
 impl Query {
     pub fn new(constraints: QueryNode, output_options: QueryOutputOptions) -> Query {
         Query {
-            output_options: output_options,
-            constraints: constraints
+            output_options,
+            constraints
         }
     }
 
@@ -392,8 +392,8 @@ impl Query {
            .map(|gene_uniquename| {
                let sequence = self.make_sequence(server_data, &gene_uniquename);
                ResultRow {
-                   sequence: sequence,
-                   gene_uniquename: gene_uniquename,
+                   sequence,
+                   gene_uniquename,
                }
            }).collect::<Vec<_>>())
     }

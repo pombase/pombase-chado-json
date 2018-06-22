@@ -6,7 +6,7 @@ use bit_set::BitSet;
 // A data structure for quick(-ish) lookup to find supersets of sets.
 // iff a superset of the argument was inserted earlier.
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct VecSet<T: Eq + Hash + Clone> {
     bit_sets: Vec<BitSet>,
     data: HashMap<T, usize>,
@@ -22,7 +22,7 @@ impl<T: Eq + Hash + Clone> VecSet<T> {
         }
     }
 
-    fn make_bit_set(&mut self, tvec: &Vec<T>) -> BitSet {
+    fn make_bit_set(&mut self, tvec: &[T]) -> BitSet {
         let mut new_bitset = BitSet::new();
         for t in tvec {
             let mut curr = self.curr_index;
@@ -43,16 +43,16 @@ impl<T: Eq + Hash + Clone> VecSet<T> {
     }
 
     // Insert the argument Set
-    pub fn insert(&mut self, tvec: &Vec<T>) {
+    pub fn insert(&mut self, tvec: &[T]) {
         let new_bitset = self.make_bit_set(tvec);
         self.bit_sets.push(new_bitset);
     }
 
     // Return true iff a superset of the argument was inserted
     // with insert() earlier
-    pub fn contains_superset(&mut self, tvec: &Vec<T>) -> bool {
+    pub fn contains_superset(&mut self, tvec: &[T]) -> bool {
         let new_bitset = self.make_bit_set(tvec);
-        self.bit_sets.iter().find(|s| new_bitset.is_subset(s)).is_some()
+        self.bit_sets.iter().any(|s| new_bitset.is_subset(s))
     }
 }
 

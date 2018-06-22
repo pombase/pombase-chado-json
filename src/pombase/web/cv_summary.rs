@@ -35,8 +35,8 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     let mut new_gene_uniquenames = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
                     let cmp =
                         |vec1: &Vec<String>, vec2: &Vec<String>| {
-                            let gene1 = genes.get(&vec1[0]).expect(&vec1[0]);
-                            let gene2 = genes.get(&vec2[0]).expect(&vec2[0]);
+                            let gene1 = &genes[&vec1[0]];
+                            let gene2 = &genes[&vec2[0]];
                             gene1.cmp(gene2)
                         };
                     new_gene_uniquenames.sort_by(cmp);
@@ -141,7 +141,7 @@ pub fn collect_summary_rows(genes: &IdGeneShortMap, rows: &mut Vec<TermSummaryRo
 
     for row in rows.drain(0..) {
         if (!row.gene_uniquenames.is_empty() || !row.genotype_uniquenames.is_empty())
-            && row.extension.len() == 0 {
+            && row.extension.is_empty() {
                 if row.gene_uniquenames.len() > 1 {
                     panic!("row has more than one gene\n");
                 }
@@ -177,8 +177,8 @@ pub fn collect_summary_rows(genes: &IdGeneShortMap, rows: &mut Vec<TermSummaryRo
 
     if !gene_uniquenames.is_empty() || !genotype_uniquenames.is_empty() {
         let genes_row = TermSummaryRow {
-            gene_uniquenames: gene_uniquenames,
-            genotype_uniquenames: genotype_uniquenames,
+            gene_uniquenames,
+            genotype_uniquenames,
             extension: vec![],
         };
 
@@ -410,8 +410,8 @@ fn make_cv_summary(cv_config: &CvConfig,
             collect_duplicated_relations(&mut summary_extension);
 
             let row = TermSummaryRow {
-                gene_uniquenames: gene_uniquenames,
-                genotype_uniquenames: genotype_uniquenames,
+                gene_uniquenames,
+                genotype_uniquenames,
                 extension: summary_extension,
             };
 
@@ -425,7 +425,7 @@ fn make_cv_summary(cv_config: &CvConfig,
 
     remove_redundant_summaries(children_by_termid, term_and_annotations_vec);
 
-    for ref mut term_and_annotations in term_and_annotations_vec.iter_mut() {
+    for term_and_annotations in &mut term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
             collect_summary_rows(genes, summary);
             collect_ext_summary_genes(&cv_config, summary, genes);

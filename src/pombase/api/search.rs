@@ -30,7 +30,7 @@ impl Search {
         }
     }
 
-    fn get_query_part(&self, words: &Vec<String>) -> String {
+    fn get_query_part(&self, words: &[String]) -> String {
         let mut ret = String::new();
 
         let words_length = words.len();
@@ -87,7 +87,7 @@ impl Search {
                 Regex::new(r"([\w-]+)").unwrap().captures_iter(&lower_q)
                 .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
 
-            if clean_words.len() == 0 {
+            if clean_words.is_empty() {
                 return Ok(vec![]);
             }
 
@@ -109,7 +109,7 @@ impl Search {
         }
         print!("Solr URL: {:?}\n", terms_url);
 
-        return match reqwest::get(&terms_url) {
+        match reqwest::get(&terms_url) {
             Ok(res) => {
                 println!("Status: {}", res.status());
 

@@ -78,7 +78,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
         .iter().map(|prefix| prefix.clone() + ":").collect();
 
     // strip prefixes and add to map
-    for (subset_name, subset_details) in gene_subsets.iter() {
+    for (subset_name, subset_details) in &gene_subsets {
         for prefix in &prefixes_to_remove {
             if subset_name.starts_with(prefix) {
                 let new_subset_name = &subset_name[prefix.len()..];
@@ -104,9 +104,9 @@ impl ServerData {
         ServerData {
             config_file_name: config_file_name.into(),
             search_maps_file_name: search_maps_file_name.into(),
-            maps: maps,
+            maps,
             gene_subsets_file_name: gene_subsets_file_name.into(),
-            gene_subsets: gene_subsets,
+            gene_subsets,
         }
     }
 
@@ -257,11 +257,11 @@ impl ServerData {
     {
         let mut details_map = HashMap::new();
 
-        for (_, term_annotations) in ont_annotation_map {
+        for term_annotations in ont_annotation_map.values() {
             for term_annotation in term_annotations {
                 for annotation_detail_id in &term_annotation.annotations {
                     let details =
-                        self.maps.annotation_details.get(annotation_detail_id).unwrap();
+                        &self.maps.annotation_details[annotation_detail_id];
                     details_map.insert(*annotation_detail_id, details.clone());
                 }
             }
@@ -272,9 +272,9 @@ impl ServerData {
 
     fn fill_term_map(&self, term_map: &TermShortOptionMap) -> TermShortOptionMap {
         let mut ret = term_map.clone();
-        for (termid, _) in term_map {
-            let term_details = self.maps.terms.get(termid).unwrap();
-            let term_short = TermShort::from_term_details(term_details);
+        for termid in term_map.keys() {
+            let term_details = &self.maps.terms[termid];
+            let term_short = TermShort::from_term_details(&term_details);
             ret.insert(termid.clone(), Some(term_short));
         }
         ret
@@ -282,8 +282,8 @@ impl ServerData {
 
     fn fill_gene_map(&self, gene_map: &GeneShortOptionMap) -> GeneShortOptionMap {
         let mut ret = gene_map.clone();
-        for (gene_uniquename, _) in gene_map {
-            let gene_details = self.maps.genes.get(gene_uniquename).unwrap();
+        for gene_uniquename in gene_map.keys() {
+            let gene_details = &self.maps.genes[gene_uniquename];
             let gene_short = GeneShort::from_gene_details(gene_details);
             ret.insert(gene_uniquename.clone(), Some(gene_short));
         }
@@ -292,8 +292,8 @@ impl ServerData {
 
     fn fill_reference_map(&self, reference_map: &ReferenceShortOptionMap) -> ReferenceShortOptionMap {
         let mut ret = reference_map.clone();
-        for (reference_uniquename, _) in reference_map {
-            let reference_details = self.maps.references.get(reference_uniquename).unwrap();
+        for reference_uniquename in reference_map.keys() {
+            let reference_details = &self.maps.references[reference_uniquename];
             let reference_short = ReferenceShort::from_reference_details(reference_details);
             ret.insert(reference_uniquename.clone(), Some(reference_short));
         }

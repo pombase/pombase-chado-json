@@ -13,7 +13,7 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
 
     ret.push('\n');
 
-    if seq.len() == 0 {
+    if seq.is_empty() {
         ret.push('\n');
     } else {
         let mut count = 0;
@@ -170,8 +170,8 @@ fn make_test_gene() -> GeneDetails {
         characterisation_status: Some("published".to_owned()),
         location: Some(ChromosomeLocation {
             chromosome_name: "chromosome_3".to_owned(),
-            start_pos: 729054,
-            end_pos: 730829,
+            start_pos: 729_054,
+            end_pos: 730_829,
             strand: Strand::Forward,
             phase: None,
         }),
@@ -181,8 +181,8 @@ fn make_test_gene() -> GeneDetails {
                 uniquename:"SPCC18B5.06.1".to_owned(),
                 location: ChromosomeLocation {
                     chromosome_name: "chromosome_3".to_owned(),
-                    start_pos: 729054,
-                    end_pos: 730829,
+                    start_pos: 729_054,
+                    end_pos: 730_829,
                     strand: Strand::Forward,
                     phase: None,
                 },
@@ -192,8 +192,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:five_prime_UTR:1".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729054,
-                            end_pos: 729132,
+                            start_pos: 729_054,
+                            end_pos: 729_132,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -204,8 +204,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:exon:1".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729133,
-                            end_pos: 729212,
+                            start_pos: 729_133,
+                            end_pos: 729_212,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -216,8 +216,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:intron:1".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729213,
-                            end_pos: 729265,
+                            start_pos: 729_213,
+                            end_pos: 729_265,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -228,8 +228,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:exon:2".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729266,
-                            end_pos: 729319,
+                            start_pos: 729_266,
+                            end_pos: 729_319,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -240,8 +240,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:intron:2".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729320,
-                            end_pos: 729379,
+                            start_pos: 729_320,
+                            end_pos: 729_379,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -252,8 +252,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:exon:3".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729380,
-                            end_pos: 729678,
+                            start_pos: 729_380,
+                            end_pos: 729_678,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -264,8 +264,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:intron:3".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729679,
-                            end_pos: 729734,
+                            start_pos: 729_679,
+                            end_pos: 729_734,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -276,8 +276,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:exon:4".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729735,
-                            end_pos: 729841,
+                            start_pos: 729_735,
+                            end_pos: 729_841,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -288,8 +288,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:intron:4".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729842,
-                            end_pos: 729889,
+                            start_pos: 729_842,
+                            end_pos: 729_889,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -300,8 +300,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:exon:5".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 729890,
-                            end_pos: 730522,
+                            start_pos: 729_890,
+                            end_pos: 730_522,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -312,8 +312,8 @@ fn make_test_gene() -> GeneDetails {
                         uniquename: "SPCC18B5.06.1:three_prime_UTR:1".to_owned(),
                         location: ChromosomeLocation {
                             chromosome_name: "chromosome_3".to_owned(),
-                            start_pos: 730523,
-                            end_pos: 730829,
+                            start_pos: 730_523,
+                            end_pos: 730_829,
                             strand: Strand::Forward,
                             phase: None,
                         },
@@ -332,8 +332,8 @@ fn make_test_gene() -> GeneDetails {
                 }),
                 cds_location: Some(ChromosomeLocation {
                     chromosome_name: "chromosome_3".to_owned(),
-                    start_pos: 729133,
-                    end_pos: 730522,
+                    start_pos: 729_133,
+                    end_pos: 730_522,
                     strand: Strand::Forward,
                     phase: None,
                 }),
