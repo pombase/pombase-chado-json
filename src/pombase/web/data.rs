@@ -662,6 +662,7 @@ pub enum FeatureType {
     RepeatRegion,
 #[serde(rename = "TR_box")]
     TRBox,
+    SNP,
 }
 
 impl Display for FeatureType {
@@ -692,6 +693,7 @@ impl Display for FeatureType {
             FeatureType::RegionalCentromereInnerRepeatRegion => "regional_centromere_inner_repeat_region",
             FeatureType::RepeatRegion => "repeat_region",
             FeatureType::TRBox => "TR_box",
+            FeatureType::SNP => "SNP",
         })
     }
 }

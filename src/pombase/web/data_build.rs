@@ -413,6 +413,7 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
                 "regional_centromere_inner_repeat_region" => FeatureType::RegionalCentromereInnerRepeatRegion,
                 "repeat_region" => FeatureType::RepeatRegion,
                 "TR_box" => FeatureType::TRBox,
+                "SNP" => FeatureType::SNP,
                 _ => panic!("can't handle feature type: {}", feat.feat_type.name),
             };
             FeatureShort {
