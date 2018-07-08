@@ -390,9 +390,25 @@ impl Query {
                         genes: Vec<String>) -> QueryRowsResult {
         Ok(genes.into_iter()
            .map(|gene_uniquename| {
+               let mut deletion_viability = None;
+
+               let maybe_gene = server_data.get_gene_details(&gene_uniquename);
+
+               for field_name in &self.output_options.field_names {
+                   match field_name as &str {
+                       "deletion_viability" =>
+                           if let Some(gene) = maybe_gene {
+                               deletion_viability = Some(gene.deletion_viability.clone());
+                           },
+                       "gene_uniquename" => (),
+                       _ => eprintln!("warning - no such option field: {}", field_name),
+                   }
+               }
+
                let sequence = self.make_sequence(server_data, &gene_uniquename);
                ResultRow {
                    sequence,
+                   deletion_viability,
                    gene_uniquename,
                }
            }).collect::<Vec<_>>())

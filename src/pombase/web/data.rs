@@ -525,7 +525,7 @@ pub struct ChromosomeLocation {
     pub phase: Option<Phase>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub enum DeletionViability {
     #[serde(rename="viable")]
     Viable,

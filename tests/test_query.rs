@@ -7,7 +7,7 @@ use self::pombase::api::query::*;
 use self::pombase::api::result::*;
 use self::pombase::api::server_data::*;
 use self::pombase::api::query_exec::*;
-use self::pombase::web::data::GeneShort;
+use self::pombase::web::data::{GeneShort, DeletionViability};
 
 fn get_server_data() -> ServerData {
     use std::path::PathBuf;
@@ -38,15 +38,25 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
                expect_genes_iter);
 }
 
+fn check_gene_result_with_viability(query: &Query,
+                                    expected_results: &Vec<ResultRow>) {
+    let server_data = get_server_data();
+    let query_exec = QueryExec::new(server_data);
+    let results = query_exec.exec(&query);
+
+    assert_eq!(expected_results, &results.rows);
+}
+
+fn make_genes(ids: Vec<&str>) -> Vec<GeneShort> {
+    let mut ret = vec![];
+    for id in ids {
+        ret.push(GeneShort { uniquename: id.into(), name: None, product: None });
+    }
+    ret
+}
+
 #[test]
 fn test_and_or_not() {
-    let make_genes = |ids: Vec<&str>| {
-        let mut ret = vec![];
-        for id in ids {
-            ret.push(GeneShort { uniquename: id.into(), name: None, product: None });
-        }
-        ret
-    };
     let qp1 = QueryNode::GeneList {
         genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
     };
@@ -86,9 +96,46 @@ fn test_and_or_not() {
     let not_query = Query::new(not_query_node, opts.clone());
     check_gene_result(&not_query, vec!["SPAC19G12.04"]);
 
-    let not_query_2_node = QueryNode::Not { node_a: Box::new(qp1), node_b: Box::new(qp5) };
+    let not_query_2_node = QueryNode::Not { node_a: Box::new(qp1.clone()), node_b: Box::new(qp5) };
     let not_query_2 = Query::new(not_query_2_node, opts.clone());
     check_gene_result(&not_query_2, vec!["SPAC19G12.04", "SPAC1805.15c"]);
+}
+
+#[test]
+fn test_output_options() {
+
+    // try an extra output option
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned(),
+                          "deletion_viability".to_owned()],
+        sequence: SeqType::None,
+    };
+
+    let expected_results =
+        vec![
+            ResultRow {
+                gene_uniquename: "SPAC19G12.04".to_owned(),
+                deletion_viability: Some(DeletionViability::Inviable),
+                sequence: None,
+            },
+            ResultRow {
+                gene_uniquename: "SPAC1805.15c".to_owned(),
+                deletion_viability: Some(DeletionViability::Viable),
+                sequence: None,
+            },
+            ResultRow {
+                gene_uniquename: "SPAC27E2.05".to_owned(),
+                deletion_viability: Some(DeletionViability::DependsOnConditions),
+                sequence: None,
+            }];
+
+    let qp1 = QueryNode::GeneList {
+        genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
+    };
+
+    let query = Query::new(qp1, opts);
+
+    check_gene_result_with_viability(&query, &expected_results);
 }
 
 #[test]

@@ -133,6 +133,10 @@ impl ServerData {
         self.maps.gene_summaries.get(gene_uniquename)
     }
 
+    pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<&GeneDetails> {
+        self.maps.genes.get(gene_uniquename)
+    }
+
     pub fn genes_of_termid(&self, term_id: &str) -> Vec<GeneUniquename> {
         match self.maps.termid_genes.get(term_id) {
             Some(gene_uniquenames) => {
@@ -300,7 +304,8 @@ impl ServerData {
         ret
     }
 
-    pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<GeneDetails> {
+    // return a GeneDetails object with the term, genes and references maps filled in
+    pub fn get_full_gene_details(&self, gene_uniquename: &str) -> Option<GeneDetails> {
         if let Some(gene_ref) = self.maps.genes.get(gene_uniquename) {
             let mut gene = gene_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);

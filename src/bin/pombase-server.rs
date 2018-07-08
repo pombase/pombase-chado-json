@@ -67,7 +67,7 @@ fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Opti
 #[get("/api/v1/dataset/latest/data/gene/<id>", rank=2)]
 fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GeneDetails>> {
     let query_exec = state.lock().expect("failed to lock");
-    if let Some(gene) = query_exec.get_server_data().get_gene_details(&id) {
+    if let Some(gene) = query_exec.get_server_data().get_full_gene_details(&id) {
         Some(Json(gene))
     } else {
         None
