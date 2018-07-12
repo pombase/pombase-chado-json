@@ -392,16 +392,16 @@ impl Query {
            .map(|gene_uniquename| {
                let mut deletion_viability = None;
 
-               let maybe_gene = server_data.get_gene_details(&gene_uniquename);
+               let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
 
-               for field_name in &self.output_options.field_names {
-                   match field_name as &str {
-                       "deletion_viability" =>
-                           if let Some(gene) = maybe_gene {
-                               deletion_viability = Some(gene.deletion_viability.clone());
-                           },
-                       "gene_uniquename" => (),
-                       _ => eprintln!("warning - no such option field: {}", field_name),
+               if let Some(gene_data) = maybe_gene_data {
+                   for field_name in &self.output_options.field_names {
+                       match field_name as &str {
+                           "deletion_viability" =>
+                                deletion_viability = Some(gene_data.deletion_viability.clone()),
+                           "gene_uniquename" => (),
+                           _ => eprintln!("warning - no such option field: {}", field_name),
+                       }
                    }
                }
 

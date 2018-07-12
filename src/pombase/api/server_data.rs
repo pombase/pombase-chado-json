@@ -11,7 +11,7 @@ use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
                 TermShort, TermShortOptionMap,
                 ReferenceShort, ReferenceShortOptionMap,
-                GeneShort, GeneShortOptionMap};
+                GeneShort, GeneShortOptionMap, GeneQueryData};
 use web::config::Config;
 use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
@@ -135,6 +135,10 @@ impl ServerData {
 
     pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<&GeneDetails> {
         self.maps.genes.get(gene_uniquename)
+    }
+
+    pub fn get_gene_query_data(&self, gene_uniquename: &str) -> Option<&GeneQueryData> {
+        self.maps.gene_query_data_map.get(gene_uniquename)
     }
 
     pub fn genes_of_termid(&self, term_id: &str) -> Vec<GeneUniquename> {

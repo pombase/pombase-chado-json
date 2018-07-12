@@ -3517,6 +3517,21 @@ impl <'a> WebDataBuild<'a> {
         app_genotype_annotation
     }
 
+    fn make_gene_query_data_map(&self) -> HashMap<GeneUniquename, GeneQueryData> {
+        let mut gene_query_data_map = HashMap::new();
+
+        for gene_details in self.genes.values() {
+            let gene_query_data = GeneQueryData {
+                gene_uniquename: gene_details.uniquename.clone(),
+                deletion_viability: gene_details.deletion_viability.clone(),
+            };
+
+            gene_query_data_map.insert(gene_details.uniquename.clone(), gene_query_data);
+        }
+
+        gene_query_data_map
+    }
+
     pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
         let mut gene_name_gene_map = HashMap::new();
@@ -3590,8 +3605,11 @@ impl <'a> WebDataBuild<'a> {
             terms_for_api.insert(termid.clone(), term_details.clone());
         }
 
+        let gene_query_data_map = self.make_gene_query_data_map();
+
         APIMaps {
             gene_summaries,
+            gene_query_data_map,
             termid_genes,
             termid_genotype_annotation,
             term_summaries,
