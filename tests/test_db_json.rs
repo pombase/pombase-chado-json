@@ -565,6 +565,13 @@ fn get_test_config() -> Config {
         },
         extra_database_aliases: HashMap::new(),
         chromosomes: HashMap::new(),
+        query_data_config: QueryDataConfig {
+            go_components: vec![
+                "GO:0005634".to_owned(), "GO:0005783".to_owned(),
+                "GO:0005739".to_owned(), "GO:0005737".to_owned(),
+                "GO:0005575".to_owned(),
+            ]
+        },
     };
 
     config.cv_config.insert(String::from("molecular_function"),

@@ -385,5 +385,10 @@
     "distant_synonym_boost": 0.3
   },
   "extra_database_aliases": {
+  },
+  "query_data_config": {
+    "go_components": [
+      "GO:0005634", "GO:0005783", "GO:0005739", "GO:0005737", "GO:0005575"
+    ]
   }
 }

@@ -607,6 +607,15 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
+    for query_data_go_conf in &config.query_data_config.go_components {
+        for rel_name in &DESCENDANT_REL_NAMES {
+            ret.insert(InterestingParent {
+                termid: query_data_go_conf.clone(),
+                rel_name: (*rel_name).to_owned(),
+            });
+        }
+    }
+
     ret.insert(InterestingParent {
         termid: config.viability_terms.viable.clone(),
         rel_name: "is_a".into(),
@@ -3517,6 +3526,48 @@ impl <'a> WebDataBuild<'a> {
         app_genotype_annotation
     }
 
+    fn make_gene_query_go_component_data(&self, gene_details: &GeneDetails) -> Option<GeneQueryTermData> {
+        let go_components_config = &self.config.query_data_config.go_components;
+
+        let component_term_annotations =
+            gene_details.cv_annotations.get("cellular_component");
+            if component_term_annotations.is_none() {
+                return None;
+            }
+
+        let in_component = |check_termid: &str| {
+            for term_annotation in component_term_annotations.unwrap() {
+                let maybe_term_details = self.terms.get(&term_annotation.term);
+
+                let term_details =
+                    maybe_term_details .unwrap_or_else(|| {
+                        panic!("can't find TermDetails for {}", &term_annotation.term)
+                    });
+
+                let interesting_parents = &term_details.interesting_parents;
+
+                if !term_annotation.is_not &&
+                    (term_annotation.term == check_termid ||
+                     interesting_parents.contains(check_termid))
+                {
+                    return true;
+                }
+            }
+            false
+        };
+
+        for go_component_termid in go_components_config {
+            if in_component(go_component_termid) {
+                return Some(GeneQueryTermData::Term(TermAndName {
+                    termid: go_component_termid.to_owned(),
+                    name: self.terms.get(go_component_termid).unwrap().name.clone(),
+                }));
+            }
+        }
+
+        Some(GeneQueryTermData::Other)
+    }
+
     fn make_gene_query_data_map(&self) -> HashMap<GeneUniquename, GeneQueryData> {
         let mut gene_query_data_map = HashMap::new();
 
@@ -3524,6 +3575,7 @@ impl <'a> WebDataBuild<'a> {
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
                 deletion_viability: gene_details.deletion_viability.clone(),
+                go_component: self.make_gene_query_go_component_data(gene_details),
             };
 
             gene_query_data_map.insert(gene_details.uniquename.clone(), gene_query_data);
@@ -3581,6 +3633,8 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
+        let gene_query_data_map = self.make_gene_query_data_map();
+
         let mut term_summaries: HashSet<TermShort> = HashSet::new();
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
 
@@ -3604,8 +3658,6 @@ impl <'a> WebDataBuild<'a> {
 
             terms_for_api.insert(termid.clone(), term_details.clone());
         }
-
-        let gene_query_data_map = self.make_gene_query_data_map();
 
         APIMaps {
             gene_summaries,

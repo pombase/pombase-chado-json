@@ -391,6 +391,7 @@ impl Query {
         Ok(genes.into_iter()
            .map(|gene_uniquename| {
                let mut deletion_viability = None;
+               let mut go_component = None;
 
                let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
 
@@ -399,6 +400,8 @@ impl Query {
                        match field_name as &str {
                            "deletion_viability" =>
                                 deletion_viability = Some(gene_data.deletion_viability.clone()),
+                           "go_component" =>
+                                go_component = gene_data.go_component.clone(),
                            "gene_uniquename" => (),
                            _ => eprintln!("warning - no such option field: {}", field_name),
                        }
@@ -409,6 +412,7 @@ impl Query {
                ResultRow {
                    sequence,
                    deletion_viability,
+                   go_component,
                    gene_uniquename,
                }
            }).collect::<Vec<_>>())

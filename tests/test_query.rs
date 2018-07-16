@@ -7,7 +7,8 @@ use self::pombase::api::query::*;
 use self::pombase::api::result::*;
 use self::pombase::api::server_data::*;
 use self::pombase::api::query_exec::*;
-use self::pombase::web::data::{GeneShort, DeletionViability};
+use self::pombase::web::config::TermAndName;
+use self::pombase::web::data::{GeneShort, DeletionViability, GeneQueryTermData};
 
 fn get_server_data() -> ServerData {
     use std::path::PathBuf;
@@ -104,10 +105,11 @@ fn test_and_or_not() {
 #[test]
 fn test_output_options() {
 
-    // try an extra output option
+    // try extra output options
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned(),
-                          "deletion_viability".to_owned()],
+                          "deletion_viability".to_owned(),
+                          "go_component".to_owned()],
         sequence: SeqType::None,
     };
 
@@ -116,16 +118,22 @@ fn test_output_options() {
             ResultRow {
                 gene_uniquename: "SPAC19G12.04".to_owned(),
                 deletion_viability: Some(DeletionViability::Inviable),
+                go_component: None,
                 sequence: None,
             },
             ResultRow {
                 gene_uniquename: "SPAC1805.15c".to_owned(),
                 deletion_viability: Some(DeletionViability::Viable),
+                go_component: Some(GeneQueryTermData::Other),
                 sequence: None,
             },
             ResultRow {
                 gene_uniquename: "SPAC27E2.05".to_owned(),
                 deletion_viability: Some(DeletionViability::DependsOnConditions),
+                go_component: Some(GeneQueryTermData::Term(TermAndName {
+                    termid: "GO:0005634".to_owned(),
+                    name: "nucleus".to_owned(),
+                })),
                 sequence: None,
             }];
 

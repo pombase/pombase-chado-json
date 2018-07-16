@@ -109,7 +109,7 @@ pub struct ViabilityTerms {
     pub inviable: String,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TermAndName {
     pub termid: String,
     pub name: String,
@@ -143,6 +143,11 @@ pub type DatabaseName = String;
 pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct QueryDataConfig {
+    pub go_components: Vec<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: String,
     pub load_organism_taxonid: OrganismTaxonId,
@@ -162,6 +167,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub extra_database_aliases: DatabaseAliases,
     pub chromosomes: HashMap<String, ChromosomeConfig>,
+    pub query_data_config: QueryDataConfig,
 }
 
 impl Config {

@@ -973,10 +973,20 @@ pub struct APIGeneSummary {
     pub exon_count: usize,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+pub enum GeneQueryTermData {
+#[serde(rename = "term")]
+    Term(TermAndName),
+#[serde(rename = "other")]
+    Other,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneQueryData {
     pub gene_uniquename: GeneUniquename,
     pub deletion_viability: DeletionViability,
+#[serde(skip_serializing_if="Option::is_none")]
+    pub go_component: Option<GeneQueryTermData>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
