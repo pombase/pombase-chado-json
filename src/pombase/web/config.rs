@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::BufReader;
 use std::fs::File;
 
@@ -145,6 +145,7 @@ pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 #[derive(Deserialize, Clone, Debug)]
 pub struct QueryDataConfig {
     pub go_components: Vec<String>,
+    pub ortholog_presence_taxonids: HashSet<u32>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

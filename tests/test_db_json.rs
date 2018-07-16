@@ -1,6 +1,7 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 
 extern crate pombase;
 
@@ -570,7 +571,8 @@ fn get_test_config() -> Config {
                 "GO:0005634".to_owned(), "GO:0005783".to_owned(),
                 "GO:0005739".to_owned(), "GO:0005737".to_owned(),
                 "GO:0005575".to_owned(),
-            ]
+            ],
+            ortholog_presence_taxonids: HashSet::from_iter(vec![9606, 4932]),
         },
     };
 
