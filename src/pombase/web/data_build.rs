@@ -3568,8 +3568,8 @@ impl <'a> WebDataBuild<'a> {
         Some(GeneQueryTermData::Other)
     }
 
-    fn get_ortholog_presence_taxonids(&self, gene_details: &GeneDetails)
-                                       -> HashSet<u32>
+    fn get_ortholog_taxonids(&self, gene_details: &GeneDetails)
+                             -> HashSet<u32>
     {
         let mut return_set = HashSet::new();
 
@@ -3584,13 +3584,13 @@ impl <'a> WebDataBuild<'a> {
         let mut gene_query_data_map = HashMap::new();
 
         for gene_details in self.genes.values() {
-            let ortholog_presence_taxonids = self.get_ortholog_presence_taxonids(gene_details);
+            let ortholog_taxonids = self.get_ortholog_taxonids(gene_details);
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
                 deletion_viability: gene_details.deletion_viability.clone(),
                 go_component: self.make_gene_query_go_component_data(gene_details),
-                ortholog_presence_taxonids,
+                ortholog_taxonids,
             };
 
             gene_query_data_map.insert(gene_details.uniquename.clone(), gene_query_data);

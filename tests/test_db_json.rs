@@ -572,7 +572,7 @@ fn get_test_config() -> Config {
                 "GO:0005739".to_owned(), "GO:0005737".to_owned(),
                 "GO:0005575".to_owned(),
             ],
-            ortholog_presence_taxonids: HashSet::from_iter(vec![9606, 4932]),
+            ortholog_taxonids: HashSet::from_iter(vec![9606, 4932]),
         },
     };
 
