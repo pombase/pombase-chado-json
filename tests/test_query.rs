@@ -119,12 +119,14 @@ fn test_output_options() {
                 gene_uniquename: "SPAC19G12.04".to_owned(),
                 deletion_viability: Some(DeletionViability::Inviable),
                 go_component: None,
+                ortholog_taxonids: HashSet::new(),
                 sequence: None,
             },
             ResultRow {
                 gene_uniquename: "SPAC1805.15c".to_owned(),
                 deletion_viability: Some(DeletionViability::Viable),
                 go_component: Some(GeneQueryTermData::Other),
+                ortholog_taxonids: HashSet::new(),
                 sequence: None,
             },
             ResultRow {
@@ -134,6 +136,7 @@ fn test_output_options() {
                     termid: "GO:0005634".to_owned(),
                     name: "nucleus".to_owned(),
                 })),
+                ortholog_taxonids: HashSet::new(),
                 sequence: None,
             }];
 

@@ -392,6 +392,7 @@ impl Query {
            .map(|gene_uniquename| {
                let mut deletion_viability = None;
                let mut go_component = None;
+               let mut ortholog_taxonids = HashSet::new();
 
                let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
 
@@ -400,6 +401,8 @@ impl Query {
                        match field_name as &str {
                            "deletion_viability" =>
                                 deletion_viability = Some(gene_data.deletion_viability.clone()),
+                           "ortholog_taxonids" =>
+                                ortholog_taxonids = gene_data.ortholog_taxonids.clone(),
                            "go_component" =>
                                 go_component = gene_data.go_component.clone(),
                            "gene_uniquename" => (),
@@ -413,6 +416,7 @@ impl Query {
                    sequence,
                    deletion_viability,
                    go_component,
+                   ortholog_taxonids,
                    gene_uniquename,
                }
            }).collect::<Vec<_>>())
