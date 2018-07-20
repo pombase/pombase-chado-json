@@ -291,6 +291,10 @@ pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele]
             let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
             let mut display_name = allele_display_name(allele_short);
             if allele_short.allele_type != "deletion" {
+                if display_name == "unnamed-unrecorded-unrecorded" {
+                    display_name = format!("{}-{}", allele_short.gene_uniquename,
+                                            display_name);
+                }
                 if let Some(ref expression) = expressed_allele.expression {
                     display_name += &format!("-expression-{}", expression.to_lowercase());
                 }
