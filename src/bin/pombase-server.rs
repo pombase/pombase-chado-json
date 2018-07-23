@@ -165,7 +165,7 @@ fn ping() -> Option<String> {
     Some(String::from("OK") + " " + PKG_NAME + " " + VERSION)
 }
 
-#[error(404)]
+#[catch(404)]
 fn not_found() -> Json<Value> {
     Json(json!({
         "status": "error",
@@ -244,7 +244,7 @@ fn main() {
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
                             reload, complete, ping])
-        .catch(errors![not_found])
+        .catch(catchers![not_found])
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))
         .manage(Mutex::new(static_file_state))
