@@ -1042,7 +1042,7 @@ pub struct SolrTermSummary {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SolrReferenceSummary {
-    pub uniquename: String,
+    pub id: String,
     #[serde(skip_serializing_if="Option::is_none")]
     pub title: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1066,7 +1066,7 @@ pub struct SolrReferenceSummary {
 impl SolrReferenceSummary {
     pub fn from_reference_details(reference_details: &ReferenceDetails) -> SolrReferenceSummary {
         SolrReferenceSummary {
-            uniquename: reference_details.uniquename.clone(),
+            id: reference_details.uniquename.clone(),
             title: reference_details.title.clone(),
             pubmed_abstract: reference_details.pubmed_abstract.clone(),
             citation: reference_details.citation.clone(),
