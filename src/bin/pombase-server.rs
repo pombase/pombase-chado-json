@@ -133,12 +133,39 @@ struct CompletionResponse {
     matches: Vec<SolrTermSummary>,
 }
 
-#[get ("/api/v1/dataset/latest/complete/<cv_name>/<q>", rank=1)]
-fn complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
+#[get ("/api/v1/dataset/latest/complete/<cv_name>/<q>", rank=2)]
+fn term_complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
               -> Option<Json<CompletionResponse>>
 {
     let search = state.lock().expect("failed to lock");
     let res = search.term_complete(&cv_name, &q);
+
+    let completion_response =
+        match res {
+            Ok(matches) => {
+                CompletionResponse {
+                    status: "Ok".to_owned(),
+                    matches: matches,
+                }
+            },
+            Err(err) => {
+                println!("{:?}", err);
+                CompletionResponse {
+                    status: "Error".to_owned(),
+                    matches: vec![],
+                }
+            },
+        };
+
+    Some(Json(completion_response))
+}
+
+#[get ("/api/v1/dataset/latest/complete/ref/<q>", rank=1)]
+fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
+                -> Option<Json<CompletionResponse>>
+{
+    let search = state.lock().expect("failed to lock");
+    let res = search.ref_complete(&q);
 
     let completion_response =
         match res {
@@ -243,7 +270,7 @@ fn main() {
     rocket::ignite()
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
-                            reload, complete, ping])
+                            reload, term_complete, ref_complete, ping])
         .catch(catchers![not_found])
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))
