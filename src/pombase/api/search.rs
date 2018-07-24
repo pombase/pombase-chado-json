@@ -191,12 +191,20 @@ impl Search {
             }
 
             let url_parts =
-                vec!["title", "citation", "authors", "authors_abbrev", "publication_year"]
+                vec!["title", "citation", "authors", "authors_abbrev"]
                 .iter()
                 .map(|field_name| format!("{}:({})", field_name, clean_words_for_url))
                 .collect::<Vec<String>>();
 
             refs_url += &url_parts.join(" OR ");
+
+            for word in clean_words {
+                if word.len() == 4 && (word.starts_with("19") || word.starts_with("20")) {
+                    if let Ok(num) = word.parse::<u32>() {
+                        refs_url += &format!(" OR publication_year:{}", num);
+                    }
+                }
+            }
         }
 
         print!("Solr refs URL: {:?}\n", refs_url);

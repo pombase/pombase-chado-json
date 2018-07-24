@@ -1056,7 +1056,7 @@ pub struct SolrReferenceSummary {
     #[serde(skip_serializing_if="Option::is_none")]
     pub pubmed_publication_date: Option<String>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub publication_year: Option<String>,
+    pub publication_year: Option<u32>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub approved_date: Option<String>,
     pub gene_count: usize,
@@ -1065,12 +1065,19 @@ pub struct SolrReferenceSummary {
 
 impl SolrReferenceSummary {
     pub fn from_reference_details(reference_details: &ReferenceDetails) -> SolrReferenceSummary {
+        let pub_year_as_int: Option<u32> =
+            if let Some(ref pub_year) = reference_details.publication_year {
+                pub_year.parse().ok()
+            } else {
+                None
+            };
+
         SolrReferenceSummary {
             id: reference_details.uniquename.clone(),
             title: reference_details.title.clone(),
             pubmed_abstract: reference_details.pubmed_abstract.clone(),
             citation: reference_details.citation.clone(),
-            publication_year: reference_details.publication_year.clone(),
+            publication_year: pub_year_as_int,
             pubmed_publication_date: reference_details.pubmed_publication_date.clone(),
             authors: reference_details.authors.clone(),
             authors_abbrev: reference_details.authors_abbrev.clone(),
