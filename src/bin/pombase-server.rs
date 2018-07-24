@@ -24,7 +24,7 @@ use pombase::api::result::QueryAPIResult;
 use pombase::api::search::Search;
 use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
-use pombase::web::data::{SolrTermSummary, GeneDetails, GenotypeDetails,
+use pombase::web::data::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
                          TermDetails, ReferenceDetails};
 use pombase::web::config::Config;
 
@@ -128,14 +128,20 @@ fn reload(state: rocket::State<Mutex<QueryExec>>) {
 }
 
 #[derive(Serialize, Debug)]
-struct CompletionResponse {
+struct TermCompletionResponse {
     status: String,
     matches: Vec<SolrTermSummary>,
 }
 
-#[get ("/api/v1/dataset/latest/complete/<cv_name>/<q>", rank=2)]
+#[derive(Serialize, Debug)]
+struct RefCompletionResponse {
+    status: String,
+    matches: Vec<SolrReferenceSummary>,
+}
+
+#[get ("/api/v1/dataset/latest/complete/term/<cv_name>/<q>", rank=1)]
 fn term_complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
-              -> Option<Json<CompletionResponse>>
+              -> Option<Json<TermCompletionResponse>>
 {
     let search = state.lock().expect("failed to lock");
     let res = search.term_complete(&cv_name, &q);
@@ -143,14 +149,14 @@ fn term_complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>
     let completion_response =
         match res {
             Ok(matches) => {
-                CompletionResponse {
+                TermCompletionResponse {
                     status: "Ok".to_owned(),
                     matches: matches,
                 }
             },
             Err(err) => {
                 println!("{:?}", err);
-                CompletionResponse {
+                TermCompletionResponse {
                     status: "Error".to_owned(),
                     matches: vec![],
                 }
@@ -162,7 +168,7 @@ fn term_complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>
 
 #[get ("/api/v1/dataset/latest/complete/ref/<q>", rank=1)]
 fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
-                -> Option<Json<CompletionResponse>>
+                -> Option<Json<RefCompletionResponse>>
 {
     let search = state.lock().expect("failed to lock");
     let res = search.ref_complete(&q);
@@ -170,14 +176,14 @@ fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
     let completion_response =
         match res {
             Ok(matches) => {
-                CompletionResponse {
+                RefCompletionResponse {
                     status: "Ok".to_owned(),
                     matches: matches,
                 }
             },
             Err(err) => {
                 println!("{:?}", err);
-                CompletionResponse {
+                RefCompletionResponse {
                     status: "Error".to_owned(),
                     matches: vec![],
                 }

@@ -2,7 +2,7 @@ use regex::Regex;
 use reqwest;
 use serde_json;
 
-use web::data::SolrTermSummary;
+use web::data::{SolrTermSummary, SolrReferenceSummary};
 use web::config::Config;
 
 pub struct Search {
@@ -12,13 +12,23 @@ pub struct Search {
 }
 
 #[derive(Deserialize, Debug)]
-struct SolrResponse {
+struct SolrTermResponse {
     pub docs: Vec<SolrTermSummary>,
 }
 
 #[derive(Deserialize, Debug)]
-struct SolrResponseContainer {
-    pub response: SolrResponse,
+struct SolrTermResponseContainer {
+    pub response: SolrTermResponse,
+}
+
+#[derive(Deserialize, Debug)]
+struct SolrRefResponse {
+    pub docs: Vec<SolrReferenceSummary>,
+}
+
+#[derive(Deserialize, Debug)]
+struct SolrRefResponseContainer {
+    pub response: SolrRefResponse,
 }
 
 impl Search {
@@ -44,36 +54,6 @@ impl Search {
         }
 
         ret
-    }
-
-    fn make_request(&self, url: &str) -> Result<Vec<SolrTermSummary>, String> {
-        match reqwest::get(url) {
-            Ok(res) => {
-                println!("Status: {}", res.status());
-
-                if res.status().is_success() {
-                    match serde_json::from_reader(res) {
-                        Ok(solr_response_container) => {
-                            let container: SolrResponseContainer = solr_response_container;
-                            Ok(container.response.docs)
-                        },
-                        Err(err) => {
-                            Err(format!("Error parsing response from Solr: {:?}", err))
-                        }
-                    }
-                } else {
-                    if let Some(reason) = res.status().canonical_reason() {
-                        Err(format!("HTTP request to Solr failed: {} - {}", res.status(), reason))
-                    } else {
-                        Err(format!("HTTP request to Solr failed with status code: {}",
-                                    res.status()))
-                    }
-                }
-            },
-            Err(err) => {
-                Err(format!("Error from Reqwest: {:?}", err))
-            }
-        }
     }
 
     pub fn term_complete(&self, cv_name: &str, q: &str)
@@ -139,28 +119,57 @@ impl Search {
         }
         print!("Solr URL: {:?}\n", terms_url);
 
-        self.make_request(&terms_url)
+        match reqwest::get(&terms_url) {
+            Ok(res) => {
+                println!("Status: {}", res.status());
+
+                if res.status().is_success() {
+                    match serde_json::from_reader(res) {
+                        Ok(container) => {
+                            let solr_response_container: SolrTermResponseContainer = container;
+                            Ok(solr_response_container.response.docs)
+                        },
+                        Err(err) => {
+                            Err(format!("Error parsing response from Solr: {:?}", err))
+                        }
+                    }
+                } else {
+                    if let Some(reason) = res.status().canonical_reason() {
+                        Err(format!("HTTP request to Solr failed: {} - {}", res.status(), reason))
+                    } else {
+                        Err(format!("HTTP request to Solr failed with status code: {}",
+                                    res.status()))
+                    }
+                }
+            },
+            Err(err) => {
+                Err(format!("Error from Reqwest: {:?}", err))
+            }
+        }
     }
 
-    pub fn ref_complete(&self, q: &str) -> Result<Vec<SolrTermSummary>, String> {
+    pub fn ref_complete(&self, q: &str) -> Result<Vec<SolrReferenceSummary>, String> {
         let mut refs_url =
             self.solr_url.to_owned() + "/refs/select?wt=json&q=";
 
-        let id_re_string = r"^(?P<prefix>[\w_]+):(?P<rest>\d+)$";
+        let id_re_string = r"^(?:(?P<prefix>[\w_]+):)?(?P<rest>\d\d\d\d\d+)$";
         let id_re = Regex::new(id_re_string).unwrap();
 
         if let Some(captures) = id_re.captures(q) {
-            let prefix = captures.name("prefix").unwrap().as_str();
+            let mut prefix =
+                if let Some(prefix_capture) = captures.name("prefix") {
+                    prefix_capture.as_str()
+                } else {
+                    "PMID"
+                };
             let accession = captures.name("rest").unwrap().as_str();
-            refs_url += " AND id:";
+            refs_url += "id:";
             refs_url += prefix;
             refs_url += r"\:";
             refs_url += accession;
         } else {
             let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
             let lower_q = substring(&q.to_lowercase(), 200);
-
-            refs_url += " title:(";
 
             let clean_words: Vec<String> =
                 Regex::new(r"([\w-]+)").unwrap().captures_iter(&lower_q)
@@ -171,21 +180,54 @@ impl Search {
             }
 
             let clean_words_length = clean_words.len();
+            let mut clean_words_for_url = String::new();
 
             for (i, word) in clean_words.iter().enumerate() {
                 if i == clean_words_length - 1 {
-                    refs_url += &format!("{} {}~0.8 {}*", word, word, word);
+                    clean_words_for_url += &format!("{} {}~0.8 {}*", word, word, word);
                 } else {
-                    refs_url += &format!("{} {}~0.8 ", word, word);
+                    clean_words_for_url += &format!("{} {}~0.8 ", word, word);
                 }
             }
 
-            refs_url += ")";
+            let url_parts =
+                vec!["title", "citation", "authors", "authors_abbrev", "publication_year"]
+                .iter()
+                .map(|field_name| format!("{}:({})", field_name, clean_words_for_url))
+                .collect::<Vec<String>>();
+
+            refs_url += &url_parts.join(" OR ");
         }
 
         print!("Solr refs URL: {:?}\n", refs_url);
 
-        self.make_request(&refs_url)
+        match reqwest::get(&refs_url) {
+            Ok(res) => {
+                println!("Status: {}", res.status());
+
+                if res.status().is_success() {
+                    match serde_json::from_reader(res) {
+                        Ok(container) => {
+                            let solr_response_container: SolrRefResponseContainer = container;
+                            Ok(solr_response_container.response.docs)
+                        },
+                        Err(err) => {
+                            Err(format!("Error parsing response from Solr: {:?}", err))
+                        }
+                    }
+                } else {
+                    if let Some(reason) = res.status().canonical_reason() {
+                        Err(format!("HTTP request to Solr failed: {} - {}", res.status(), reason))
+                    } else {
+                        Err(format!("HTTP request to Solr failed with status code: {}",
+                                    res.status()))
+                    }
+                }
+            },
+            Err(err) => {
+                Err(format!("Error from Reqwest: {:?}", err))
+            }
+        }
     }
 
 }
