@@ -201,7 +201,7 @@ impl Search {
             for word in clean_words {
                 if word.len() == 4 && (word.starts_with("19") || word.starts_with("20")) {
                     if let Ok(num) = word.parse::<u32>() {
-                        refs_url += &format!(" OR publication_year:{}^10", num);
+                        refs_url += &format!(" OR publication_year:{}^20", num);
                     }
                 }
             }
