@@ -94,7 +94,7 @@ impl Search {
             terms_url += " AND (name:(";
 
             let clean_words: Vec<String> =
-                Regex::new(r"([\w-]+)").unwrap().captures_iter(&lower_q)
+                Regex::new(r"([\w\d\-]+)").unwrap().captures_iter(&lower_q)
                 .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
 
             if clean_words.is_empty() {
@@ -105,9 +105,9 @@ impl Search {
 
             for (i, word) in clean_words.iter().enumerate() {
                 if i == clean_words_length - 1 {
-                    terms_url += &format!("{} {}~0.8 {}*", word, word, word);
+                    terms_url += &format!("{} {}*", word, word);
                 } else {
-                    terms_url += &format!("{} {}~0.8 ", word, word);
+                    terms_url += &format!("{} ", word);
                 }
             }
 
@@ -152,7 +152,7 @@ impl Search {
         let mut refs_url =
             self.solr_url.to_owned() + "/refs/select?wt=json&q=";
 
-        let id_re_string = r"^(?:(?P<prefix>[\w_]+):)?(?P<rest>\d\d\d\d\d+)$";
+        let id_re_string = r"^(?:(?P<prefix>[\w_]+):\w*)?(?P<rest>\d\d\d\d\d+)$";
         let id_re = Regex::new(id_re_string).unwrap();
 
         if let Some(captures) = id_re.captures(q) {
@@ -172,7 +172,7 @@ impl Search {
             let lower_q = substring(&q.to_lowercase(), 200);
 
             let clean_words: Vec<String> =
-                Regex::new(r"([\w-]+)").unwrap().captures_iter(&lower_q)
+                Regex::new(r"([\w\d\-]+)").unwrap().captures_iter(&lower_q)
                 .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
 
             if clean_words.is_empty() {
@@ -184,9 +184,9 @@ impl Search {
 
             for (i, word) in clean_words.iter().enumerate() {
                 if i == clean_words_length - 1 {
-                    clean_words_for_url += &format!("{} {}~0.8 {}*", word, word, word);
+                    clean_words_for_url += &format!("{} {}*", word, word);
                 } else {
-                    clean_words_for_url += &format!("{} {}~0.8 ", word, word);
+                    clean_words_for_url += &format!("{} ", word);
                 }
             }
 
