@@ -152,7 +152,7 @@ impl Search {
         let mut refs_url =
             self.solr_url.to_owned() + "/refs/select?wt=json&q=";
 
-        let id_re_string = r"^(?:(?P<prefix>[\w_]+):\w*)?(?P<rest>\d\d\d\d\d+)$";
+        let id_re_string = r"^(?:(?P<prefix>[\w_]+):\s*)?(?P<rest>\d\d\d\d\d+)$";
         let id_re = Regex::new(id_re_string).unwrap();
 
         if let Some(captures) = id_re.captures(q) {
