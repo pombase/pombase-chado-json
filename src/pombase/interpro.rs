@@ -18,6 +18,7 @@ pub struct InterProMatch {
     pub id: String,
     pub dbname: String,
     pub name: String,
+    pub model: Option<String>,
     pub evidence: String,
     pub interpro_id: String,
     pub interpro_name: String,
