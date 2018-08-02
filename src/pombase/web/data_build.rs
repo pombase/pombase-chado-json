@@ -2295,6 +2295,8 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_deletion_viability(&mut self) {
+        let some_null = Some("Null".to_owned());
+
         let mut gene_statuses = HashMap::new();
 
         let condition_string =
@@ -2323,10 +2325,10 @@ impl <'a> WebDataBuild<'a> {
                             let genotype_uniquename = annotation.genotype.as_ref().unwrap();
 
                             let genotype = &self.genotypes[genotype_uniquename];
-                            let allele_uniquename =
-                                genotype.expressed_alleles[0].allele_uniquename.clone();
-                            let allele = &self.alleles[&allele_uniquename];
-                            if allele.allele_type != "deletion" {
+                            let expressed_allele = &genotype.expressed_alleles[0];
+                            let allele = &self.alleles[&expressed_allele.allele_uniquename];
+                            if allele.allele_type != "deletion" &&
+                                expressed_allele.expression != some_null {
                                 continue 'ANNOTATION;
                             }
 
