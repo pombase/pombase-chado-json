@@ -149,6 +149,17 @@ pub struct QueryDataConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct MacromolecularComplexesConfig {
+    pub parent_complex_termid: String,
+    pub excluded_terms: HashSet<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct FileExportConfig {
+    pub macromolecular_complexes: Option<MacromolecularComplexesConfig>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: String,
     pub load_organism_taxonid: OrganismTaxonId,
@@ -169,6 +180,7 @@ pub struct Config {
     pub extra_database_aliases: DatabaseAliases,
     pub chromosomes: HashMap<String, ChromosomeConfig>,
     pub query_data_config: QueryDataConfig,
+    pub file_exports: FileExportConfig,
 }
 
 impl Config {

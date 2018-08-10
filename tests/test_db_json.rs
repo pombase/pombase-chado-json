@@ -574,6 +574,9 @@ fn get_test_config() -> Config {
             ],
             ortholog_presence_taxonids: HashSet::from_iter(vec![9606, 4932]),
         },
+        file_exports: FileExportConfig {
+            macromolecular_complexes: None,
+        },
     };
 
     config.cv_config.insert(String::from("molecular_function"),
@@ -660,11 +663,14 @@ fn test_gene_with() {
         biological_process_annotations[0].annotations[0];
     let first_process_annotation =
         web_data.api_maps.annotation_details.get(&first_process_annotation_id).unwrap();
-print!("{:?}\n", first_process_annotation);
 
-    if let WithFromValue::Gene(ref with_gene) = first_process_annotation.withs[0] {
+    if let WithFromValue::Gene(with_gene) =
+        first_process_annotation.withs.iter().next().unwrap()
+    {
         assert_eq!(with_gene.clone().uniquename, "SPAC6F6.08c");
         assert_eq!(with_gene.clone().name.unwrap(), "cdc16");
+    } else {
+        panic!("no with gene found");
     }
 }
 

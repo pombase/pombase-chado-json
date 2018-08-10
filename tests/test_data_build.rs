@@ -76,7 +76,10 @@ fn get_test_config() -> Config {
                 "GO:0005575".to_owned()
             ],
             ortholog_presence_taxonids: HashSet::from_iter(vec![9606, 4932]),
-        }
+        },
+        file_exports: FileExportConfig {
+            macromolecular_complexes: None,
+        },
     };
 
     config.cv_config.insert(String::from("molecular_function"),
@@ -335,13 +338,14 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         genotype_background: None,
         reference: Some(reference_uniquename.into()),
         evidence: Some(evidence.into()),
-        withs: vec![],
-        froms: vec![],
+        withs: HashSet::new(),
+        froms: HashSet::new(),
         residue: None,
         qualifiers: vec![],
         extension: extension,
         gene_ex_props: None,
         conditions: conditions,
+        assigned_by: Some("PomBase".to_owned()),
     }
 }
 

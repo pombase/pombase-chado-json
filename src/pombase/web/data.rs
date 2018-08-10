@@ -360,7 +360,7 @@ impl AnnotationContainer for ReferenceDetails {
 }
 
 // the GO with/from
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum WithFromValue {
 #[serde(rename = "gene")]
     Gene(GeneShort),
@@ -378,10 +378,10 @@ pub struct OntAnnotationDetail {
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub withs: Vec<WithFromValue>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub froms: Vec<WithFromValue>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub withs: HashSet<WithFromValue>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub froms: HashSet<WithFromValue>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub residue: Option<Residue>,
     pub qualifiers: Vec<Qualifier>,
@@ -394,6 +394,8 @@ pub struct OntAnnotationDetail {
     pub genotype_background: Option<String>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermId>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub assigned_by: Option<String>,
 }
 
 impl PartialEq for OntAnnotationDetail {
@@ -424,6 +426,35 @@ impl Hash for OntTermAnnotations {
         self.term.hash(state);
         self.is_not.hash(state);
     }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct OntAnnotation {
+    pub term_short: TermShort,
+    pub id: i32,
+    pub genes: HashSet<GeneShort>,
+    pub reference_short: Option<ReferenceShort>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub evidence: Option<Evidence>,
+    pub extension: Vec<ExtPart>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub withs: HashSet<WithFromValue>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub froms: HashSet<WithFromValue>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub residue: Option<Residue>,
+    pub qualifiers: Vec<Qualifier>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub gene_ex_props: Option<GeneExProps>,
+    // only for genotype/phenotype annotation:
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_short: Option<GenotypeShort>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_background: Option<String>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub conditions: HashSet<TermShort>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub assigned_by: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1143,6 +1174,7 @@ pub struct WebData {
     pub search_gene_summaries: Vec<GeneSummary>,
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
+    pub ont_annotations: Vec<OntAnnotation>,
 }
 
 impl WebData {
@@ -1806,6 +1838,85 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_macromolecular_complexes(&self, config: &Config, output_dir: &str)
+                                          -> Result<(), io::Error>
+    {
+        let mut complex_data: HashMap<(TermShort, GeneShort, String), _> = HashMap::new();
+
+        let make_key = |annotation: &OntAnnotation| {
+            let evidence = annotation.evidence.clone().unwrap_or_else(|| "NO_EVIDENCE".to_owned());
+            (annotation.term_short.clone(), annotation.genes.iter().next().unwrap().clone(),
+             evidence)
+        };
+
+        if let Some(ref complexes_config) = config.file_exports.macromolecular_complexes {
+            let check_parent_term = |el: &String| {
+                *el == complexes_config.parent_complex_termid
+            };
+            'TERM: for annotation in &self.ont_annotations {
+                let term_short = &annotation.term_short;
+                let termid = &term_short.termid;
+
+                if complexes_config.excluded_terms.contains(termid) {
+                    continue 'TERM;
+                }
+                if !term_short.interesting_parents.iter().any(check_parent_term) {
+                    continue 'TERM;
+                }
+
+                let key: (TermShort, GeneShort, String) = make_key(annotation);
+                complex_data.entry(key)
+                    .or_insert_with(Vec::new)
+                    .push((annotation.reference_short.clone(), annotation.assigned_by.clone()));
+            }
+        }
+
+        let complexes_file_name = format!("{}/Complex_annotation.tsv", output_dir);
+        let complexes_file = File::create(complexes_file_name).expect("Unable to open file");
+        let mut complexes_writer = BufWriter::new(&complexes_file);
+
+        let header = "acc\tGO_name\tsystematic_id\tsymbol\tgene_product_description\tevidence_code\tsource\tassigned_by";
+
+        complexes_writer.write_all(header.as_bytes())?;
+        complexes_writer.write_all(b"\n")?;
+
+        let mut lines = vec![];
+
+        for (key, values) in complex_data.drain() {
+            let (term_short, gene_short, evidence) = key;
+            let mut refs = vec![];
+            let mut assigned_bys = HashSet::new();
+            for (maybe_ref_short, maybe_assigned_by) in values {
+                if let Some(ref_short) = maybe_ref_short {
+                    refs.push(ref_short.uniquename);
+                }
+                if let Some(assigned_by) = maybe_assigned_by {
+                    assigned_bys.insert(assigned_by);
+                }
+            }
+
+            let refs_string = refs.join(",");
+            let assigned_by_string = assigned_bys.into_iter().collect::<Vec<_>>().join(",");
+
+            let line_bits = vec![term_short.termid, term_short.name,
+                                 gene_short.uniquename,
+                                 gene_short.name.unwrap_or_else(|| "".to_owned()),
+                                 gene_short.product.unwrap_or_else(|| "".to_owned()),
+                                 evidence, refs_string, assigned_by_string];
+
+            lines.push(line_bits.join("\t"));
+        }
+
+        lines.sort();
+
+        for line in lines.drain(0..) {
+            complexes_writer.write_all(line.as_bytes())?;
+            complexes_writer.write_all(b"\n")?
+        }
+
+        Ok(())
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
@@ -1836,6 +1947,7 @@ impl WebData {
         self.write_gene_id_table(&config, &misc_path)?;
         self.write_protein_features(&config, &misc_path)?;
         self.write_feature_coords(&config, &misc_path)?;
+        self.write_macromolecular_complexes(&config, &misc_path)?;
 
         let gff_path = self.create_dir(output_dir, "gff");
         self.write_gff(&config, &gff_path)?;

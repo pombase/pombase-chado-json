@@ -74,6 +74,8 @@ pub struct WebDataBuild<'a> {
     gene_subsets: IdGeneSubsetMap,
 
     annotation_details: IdOntAnnotationDetailMap,
+
+    ont_annotations: Vec<OntAnnotation>,
 }
 
 fn get_maps() ->
@@ -967,6 +969,8 @@ impl <'a> WebDataBuild<'a> {
             gene_subsets: HashMap::new(),
  
             annotation_details: HashMap::new(),
+
+            ont_annotations: vec![],
        }
     }
 
@@ -2761,6 +2765,8 @@ impl <'a> WebDataBuild<'a> {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
 
+            let termid = cvterm.termid();
+
             let mut extension = vec![];
 
             if cvterm.cv.name == "PomBase gene characterisation status" ||
@@ -2772,9 +2778,10 @@ impl <'a> WebDataBuild<'a> {
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<String, String> = HashMap::new();
             let mut conditions: HashSet<TermId> = HashSet::new();
-            let mut withs: Vec<WithFromValue> = vec![];
-            let mut froms: Vec<WithFromValue> = vec![];
+            let mut withs: HashSet<WithFromValue> = HashSet::new();
+            let mut froms: HashSet<WithFromValue> = HashSet::new();
             let mut qualifiers: Vec<Qualifier> = vec![];
+            let mut assigned_by: Option<String> = None;
             let mut evidence: Option<String> = None;
             let mut genotype_background: Option<String> = None;
 
@@ -2812,18 +2819,22 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(value) = prop.value.clone() {
                             qualifiers.push(value);
                         },
+                    "assigned_by" =>
+                        if let Some(value) = prop.value.clone() {
+                            assigned_by = Some(value);
+                        },
                     "with" => {
                         if let Some(with_value) = prop.value.clone() {
                             if let Some(with_gene_short) =
-                                self.make_with_extension(&cvterm.termid(), evidence.clone(),
+                                self.make_with_extension(&termid, evidence.clone(),
                                                          &mut extension, with_value) {
-                                    withs.push(with_gene_short);
+                                    withs.insert(with_gene_short);
                                 }
                         }
                     },
                     "from" => {
                         if let Some(value) = prop.value.clone() {
-                            froms.push(self.make_with_or_from_value(value));
+                            froms.insert(self.make_with_or_from_value(value));
                         }
                     },
                     "gene_product_form_id" => {
@@ -2918,24 +2929,25 @@ impl <'a> WebDataBuild<'a> {
                 panic!("non-genotype annotation has more than one gene");
             }
 
-            let annotation = OntAnnotationDetail {
+            let annotation_detail = OntAnnotationDetail {
                 id: feature_cvterm.feature_cvterm_id,
                 genes: gene_uniquenames_vec,
-                reference: reference_uniquename.clone(),
-                genotype: maybe_genotype_uniquename.clone(),
+                reference: reference_uniquename,
+                genotype: maybe_genotype_uniquename,
                 genotype_background,
-                withs: withs.clone(),
-                froms: froms.clone(),
+                withs,
+                froms,
                 residue: extra_props_clone.remove("residue"),
                 gene_ex_props,
-                qualifiers: qualifiers.clone(),
-                evidence: evidence.clone(),
-                conditions: conditions.clone(),
-                extension: extension.clone(),
+                qualifiers,
+                evidence,
+                conditions,
+                extension,
+                assigned_by,
             };
 
             self.add_annotation(cvterm.borrow(), feature_cvterm.is_not,
-                                annotation);
+                                annotation_detail);
         }
     }
 
@@ -3057,7 +3069,7 @@ impl <'a> WebDataBuild<'a> {
     // store the OntTermAnnotations in the TermDetails, GeneDetails,
     // GenotypeDetails and ReferenceDetails
     fn store_ont_annotations(&mut self, is_not: bool) {
-        let ont_annotations = if is_not {
+        let ont_annotation_map = if is_not {
             &self.all_not_ont_annotations
         } else {
             &self.all_ont_annotations
@@ -3070,7 +3082,9 @@ impl <'a> WebDataBuild<'a> {
         let mut ref_annotation_by_term: HashMap<String, HashMap<TermId, Vec<OntAnnotationId>>> =
             HashMap::new();
 
-        for (termid, annotations) in ont_annotations {
+        let mut ont_annotations = vec![];
+
+        for (termid, annotations) in ont_annotation_map {
             let mut sorted_annotations = annotations.clone();
 
             if !is_not {
@@ -3217,6 +3231,46 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                 }
+
+                let gene_short_list =
+                    annotation.genes.iter().map(|uniquename: &String| {
+                        self.make_gene_short(uniquename)
+                    }).collect::<HashSet<_>>();
+
+                let reference_short =
+                    annotation.reference.as_ref().map_or(None, |uniquename: &String| {
+                        make_reference_short(&self.references, uniquename)
+                    });
+
+                let genotype_short =
+                    annotation.genotype.as_ref().map(|uniquename: &String| {
+                        self.make_genotype_short(uniquename)
+                    });
+
+                let conditions =
+                    annotation.conditions.iter().map(|termid| {
+                        self.make_term_short(termid)
+                    }).collect::<HashSet<_>>();
+
+                let ont_annotation = OntAnnotation {
+                    term_short: self.make_term_short(&termid),
+                    id: annotation.id,
+                    genes: gene_short_list,
+                    reference_short,
+                    genotype_short,
+                    genotype_background: annotation.genotype_background.clone(),
+                    withs: annotation.withs.clone(),
+                    froms: annotation.froms.clone(),
+                    residue: annotation.residue.clone(),
+                    gene_ex_props: annotation.gene_ex_props.clone(),
+                    qualifiers: annotation.qualifiers.clone(),
+                    evidence: annotation.evidence.clone(),
+                    conditions,
+                    extension: annotation.extension.clone(),
+                    assigned_by: annotation.assigned_by.clone(),
+                };
+
+                ont_annotations.push(ont_annotation);
             }
         }
 
@@ -3295,6 +3349,10 @@ impl <'a> WebDataBuild<'a> {
             for cv_annotations in ref_details.cv_annotations.values_mut() {
                 cv_annotations.sort_by(&ont_term_cmp)
             }
+        }
+
+        for ont_annotation in ont_annotations.drain(0..) {
+            self.ont_annotations.push(ont_annotation);
         }
     }
 
@@ -4509,6 +4567,7 @@ impl <'a> WebDataBuild<'a> {
         let gene_subsets = self.gene_subsets.clone();
         let recent_references = self.recent_references.clone();
         let all_community_curated = self.all_community_curated.clone();
+        let ont_annotations = self.ont_annotations.clone();
 
         WebData {
             metadata,
@@ -4521,6 +4580,7 @@ impl <'a> WebDataBuild<'a> {
             term_subsets,
             gene_subsets,
             solr_data,
+            ont_annotations,
         }
     }
 }
