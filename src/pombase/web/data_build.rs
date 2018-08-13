@@ -2568,19 +2568,27 @@ impl <'a> WebDataBuild<'a> {
             if subject_term.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
                 let subject_termid = subject_term.termid();
                 if rel_type.name != "is_a" {
+                    let object_termid = object_term.termid();
                     if let Some(base_termid) =
                         self.base_term_of_extensions.get(&subject_term.termid()) {
                             let rel_type_display_name =
                                 self.get_ext_rel_display_name(base_termid, &rel_type.name);
 
+                            let ext_range =
+                                if object_termid.starts_with("PR:") {
+                                    ExtRange::GeneProduct(object_termid)
+                                } else {
+                                    ExtRange::Term(object_termid)
+                                };
+
                             self.parts_of_extensions.entry(subject_termid)
                                 .or_insert_with(Vec::new).push(ExtPart {
                                     rel_type_name: rel_type.name.clone(),
                                     rel_type_display_name,
-                                    ext_range: ExtRange::Term(object_term.termid().clone()),
+                                    ext_range,
                                 });
                         } else {
-                            panic!("can't find details for {}\n", object_term.termid());
+                            panic!("can't find details for {}\n", object_termid);
                         }
                 }
             }
@@ -3780,7 +3788,8 @@ impl <'a> WebDataBuild<'a> {
                     }
                     for ext_part in &annotation_detail.extension {
                         match ext_part.ext_range {
-                            ExtRange::Term(ref range_termid) =>
+                            ExtRange::Term(ref range_termid) |
+                            ExtRange::GeneProduct(ref range_termid) =>
                                 self.add_term_to_hash(seen_terms, identifier,
                                                       range_termid),
                             ExtRange::Gene(ref allele_gene_uniquename) =>
@@ -3834,7 +3843,8 @@ impl <'a> WebDataBuild<'a> {
                         }
                         for ext_part in &annotation_detail.extension {
                             match ext_part.ext_range {
-                                ExtRange::Term(ref range_termid) =>
+                                ExtRange::Term(ref range_termid) |
+                                ExtRange::GeneProduct(ref range_termid) =>
                                     self.add_term_to_hash(&mut seen_terms, termid,
                                                           range_termid),
                                 ExtRange::Gene(ref ext_gene_uniquename) =>
@@ -4012,7 +4022,8 @@ impl <'a> WebDataBuild<'a> {
                             }
                             for ext_part in &annotation_detail.extension {
                                 match ext_part.ext_range {
-                                    ExtRange::Term(ref range_termid) =>
+                                    ExtRange::Term(ref range_termid) |
+                                    ExtRange::GeneProduct(ref range_termid) =>
                                         self.add_term_to_hash(&mut seen_terms, 
                                                               reference_uniquename,
                                                               range_termid),

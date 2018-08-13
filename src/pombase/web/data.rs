@@ -87,7 +87,7 @@ pub enum ExtRange {
 #[serde(rename = "domain")]
     Domain(String),
 #[serde(rename = "gene_product")]
-    GeneProduct(String),
+    GeneProduct(TermId),  // eg.  PR:000027705
 }
 
 impl ExtRange {
