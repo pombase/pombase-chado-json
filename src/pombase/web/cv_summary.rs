@@ -66,7 +66,7 @@ to merge_ext_part_ranges(): {:?} {:?}", ext_part1, ext_part2);
     }
 }
 
-// turn "has_substrate(gene1),has_substrate(gene2)" into "has_substrate(gene1,gene2)"
+// turn "has_substrate(gene1)" "has_substrate(gene2)" into "has_substrate(gene1,gene2)"
 pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
                                  genes: &IdGeneShortMap) {
 
@@ -103,12 +103,9 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                 if let (Some(prev_ext_part), Some(current_ext_part)) =
                     (prev_matching_ext_part, current_matching_ext_part) {
 
-                        if mem::discriminant(&prev_ext_part.ext_range) !=
-                            mem::discriminant(&current_ext_part.ext_range) {
-                                continue;
-                            }
-
-                        if current_row_extension == prev_row_extension &&
+                        if mem::discriminant(&prev_ext_part.ext_range) ==
+                            mem::discriminant(&current_ext_part.ext_range) &&
+                            current_row_extension == prev_row_extension &&
                             prev_ext_part.rel_type_name == current_ext_part.rel_type_name {
                                 let merged_ext_parts =
                                     merge_ext_part_ranges(&prev_ext_part,
@@ -117,14 +114,12 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                                 let mut new_ext = vec![merged_ext_parts];
                                 new_ext.extend_from_slice(&prev_row_extension);
                                 prev_row.extension = new_ext;
-                            } else {
-                                ret_rows.push(prev_row);
-                                prev_row = current_row;
+                                continue;
                             }
-                    } else {
-                        ret_rows.push(prev_row);
-                        prev_row = current_row
                     }
+
+                ret_rows.push(prev_row);
+                prev_row = current_row;
             }
 
             ret_rows.push(prev_row);

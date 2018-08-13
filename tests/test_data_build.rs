@@ -969,6 +969,44 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
                 ext_range: ExtRange::Term(String::from("GO:0071472")), // change during term
             }],
     });
+    rows.push(TermSummaryRow {
+        gene_uniquenames: vec![String::from("SPAC222.03")],
+        genotype_uniquenames: vec![],
+        extension: vec![
+            ExtPart {
+                rel_type_name: String::from("binds"),
+                rel_type_display_name: String::from("binds"),
+                ext_range: ExtRange::Term(String::from("PR:000027629")),
+            }],
+    });
+    rows.push(TermSummaryRow {
+        gene_uniquenames: vec![String::from("SPAC222.03")],
+        genotype_uniquenames: vec![],
+        extension: vec![
+            ExtPart {
+                rel_type_name: String::from("binds"),
+                rel_type_display_name: String::from("binds"),
+                ext_range: ExtRange::SummaryGenes(
+                    vec![vec![String::from("SPAC16.01")]]),
+            }],
+    });
+    rows.push(TermSummaryRow {
+        gene_uniquenames: vec![String::from("SPAC222.03")],
+        genotype_uniquenames: vec![],
+        extension: vec![
+            ExtPart {
+                rel_type_name: String::from("binds"),
+                rel_type_display_name: String::from("binds"),
+                ext_range: ExtRange::SummaryGenes(
+                    vec![vec![String::from("SPAC16.01")]]),
+            },
+            ExtPart {
+                rel_type_name: String::from("binds"),
+                rel_type_display_name: String::from("binds"),
+                ext_range: ExtRange::Term(String::from("PR:000027629")),
+            },
+],
+    });
 
     rows
 }
@@ -978,13 +1016,13 @@ fn test_collect_ext_summary_genes() {
     let config = get_test_config();
 
     let mut rows = get_test_summary_rows();
-    assert_eq!(rows.len(), 10);
+    assert_eq!(rows.len(), 13);
 
     let gene_short_map = get_test_gene_short_map();
 
     pombase::web::cv_summary::collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"),
                                                         &mut rows, &gene_short_map);
-    assert_eq!(rows.len(), 8);
+    assert_eq!(rows.len(), 11);
 
     let collected_ext = rows.get(6).unwrap();
     let collected_ext_ext_part_1 = collected_ext.extension.get(0).unwrap();
@@ -997,9 +1035,9 @@ fn test_collect_ext_summary_genes() {
 #[test]
 fn test_remove_redundant_summary_rows() {
     let mut rows = get_test_summary_rows();
-    assert_eq!(rows.len(), 10);
+    assert_eq!(rows.len(), 13);
 
     pombase::web::cv_summary::remove_redundant_summary_rows(&mut rows);
-    assert_eq!(rows.len(), 6);
+    assert_eq!(rows.len(), 7);
 }
 
