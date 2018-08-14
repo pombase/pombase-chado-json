@@ -1018,6 +1018,8 @@ pub struct GeneQueryData {
     pub deletion_viability: DeletionViability,
 #[serde(skip_serializing_if="Option::is_none")]
     pub go_component: Option<GeneQueryTermData>,
+#[serde(skip_serializing_if="Option::is_none")]
+    pub go_process_superslim: Option<GeneQueryTermData>,
     pub ortholog_taxonids: HashSet<u32>,
 }
 

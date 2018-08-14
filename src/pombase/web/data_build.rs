@@ -621,6 +621,15 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
+    for query_data_go_conf in &config.query_data_config.go_process_superslim {
+        for rel_name in &DESCENDANT_REL_NAMES {
+            ret.insert(InterestingParent {
+                termid: query_data_go_conf.clone(),
+                rel_name: (*rel_name).to_owned(),
+            });
+        }
+    }
+
     ret.insert(InterestingParent {
         termid: config.viability_terms.viable.clone(),
         rel_name: "is_a".into(),
@@ -3598,11 +3607,11 @@ impl <'a> WebDataBuild<'a> {
         app_genotype_annotation
     }
 
-    fn make_gene_query_go_component_data(&self, gene_details: &GeneDetails) -> Option<GeneQueryTermData> {
-        let go_components_config = &self.config.query_data_config.go_components;
-
+    fn make_gene_query_go_data(&self, gene_details: &GeneDetails, term_config: &Vec<TermId>,
+                               cv_name: &str) -> Option<GeneQueryTermData>
+    {
         let component_term_annotations =
-            gene_details.cv_annotations.get("cellular_component");
+            gene_details.cv_annotations.get(cv_name);
             if component_term_annotations.is_none() {
                 return None;
             }
@@ -3628,7 +3637,7 @@ impl <'a> WebDataBuild<'a> {
             false
         };
 
-        for go_component_termid in go_components_config {
+        for go_component_termid in term_config {
             if in_component(go_component_termid) {
                 return Some(GeneQueryTermData::Term(TermAndName {
                     termid: go_component_termid.to_owned(),
@@ -3658,10 +3667,21 @@ impl <'a> WebDataBuild<'a> {
         for gene_details in self.genes.values() {
             let ortholog_taxonids = self.get_ortholog_taxonids(gene_details);
 
+            let cc_term_config = &self.config.query_data_config.go_components;
+            let process_term_config = &self.config.query_data_config.go_process_superslim;
+
+            let go_component =
+                self.make_gene_query_go_data(gene_details, cc_term_config,
+                                             "cellular_component");
+            let go_process_superslim =
+                self.make_gene_query_go_data(gene_details, process_term_config,
+                                             "biological_process");
+
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
                 deletion_viability: gene_details.deletion_viability.clone(),
-                go_component: self.make_gene_query_go_component_data(gene_details),
+                go_component,
+                go_process_superslim,
                 ortholog_taxonids,
             };
 

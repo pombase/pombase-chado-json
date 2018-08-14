@@ -145,6 +145,7 @@ pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 #[derive(Deserialize, Clone, Debug)]
 pub struct QueryDataConfig {
     pub go_components: Vec<String>,
+    pub go_process_superslim: Vec<String>,
     pub ortholog_presence_taxonids: HashSet<u32>,
 }
 

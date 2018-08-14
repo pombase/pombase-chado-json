@@ -11,6 +11,8 @@ pub struct ResultRow {
     pub deletion_viability: Option<DeletionViability>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub go_component: Option<GeneQueryTermData>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub go_process_superslim: Option<GeneQueryTermData>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,
     #[serde(skip_serializing_if="Option::is_none")]

@@ -392,6 +392,7 @@ impl Query {
            .map(|gene_uniquename| {
                let mut deletion_viability = None;
                let mut go_component = None;
+               let mut go_process_superslim = None;
                let mut ortholog_taxonids = HashSet::new();
 
                let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
@@ -405,6 +406,8 @@ impl Query {
                                 ortholog_taxonids = gene_data.ortholog_taxonids.clone(),
                            "go_component" =>
                                 go_component = gene_data.go_component.clone(),
+                           "go_process_superslim" =>
+                                go_process_superslim = gene_data.go_process_superslim.clone(),
                            "gene_uniquename" => (),
                            _ => eprintln!("warning - no such option field: {}", field_name),
                        }
@@ -416,6 +419,7 @@ impl Query {
                    sequence,
                    deletion_viability,
                    go_component,
+                   go_process_superslim,
                    ortholog_taxonids,
                    gene_uniquename,
                }
