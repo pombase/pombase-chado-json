@@ -176,12 +176,11 @@ pub fn compare_ext_part_with_config(config: &Config, ep1: &ExtPart, ep2: &ExtPar
 fn string_from_ext_range(ext_range: &ExtRange,
                          genes: &UniquenameGeneMap, terms: &TermIdDetailsMap) -> String {
     match *ext_range {
-        ExtRange::Gene(ref gene_uniquename) => {
+        ExtRange::Gene(ref gene_uniquename) | ExtRange::Promoter(ref gene_uniquename) => {
             let gene = genes.get(gene_uniquename)
                 .unwrap_or_else(|| panic!("can't find gene: {}", gene_uniquename));
             gene_display_name(gene)
         },
-        ExtRange::Promoter(ref promoter_uniquename) => promoter_uniquename.clone(),
         ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::Term(ref termid) => terms.get(termid).unwrap().name.clone(),
         ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
@@ -490,9 +489,9 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
     gene_short_vec1.cmp(&gene_short_vec2)
 }
 
-lazy_static
-! {
+lazy_static! {
     static ref MODIFICATION_RE: Regex = Regex::new(r"^(?P<aa>[A-Z])(?P<pos>\d+)$").unwrap();
+    static ref PROMOTER_RE: Regex = Regex::new(r"^(?P<gene>.*)-promoter$").unwrap();
 }
 
 fn cmp_residues(residue1: &Option<Residue>, residue2: &Option<Residue>) -> Ordering {
@@ -2506,10 +2505,11 @@ impl <'a> WebDataBuild<'a> {
                         let ext_rel_name = String::from(ext_rel_name_str);
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with("SP") {
-                            if ext_range.ends_with("-promoter") {
-                                ExtRange::Promoter(ext_range)
+                            if let Some(captures) = PROMOTER_RE.captures(&ext_range) {
+                                let gene_uniquename = String::from(&captures["gene"]);
+                                ExtRange::Promoter(gene_uniquename)
                             } else {
-                                ExtRange::Gene(ext_range)
+                                ExtRange::Gene(ext_range.clone())
                             }
                         } else {
                             ExtRange::Misc(ext_range)
@@ -3792,9 +3792,10 @@ impl <'a> WebDataBuild<'a> {
                             ExtRange::GeneProduct(ref range_termid) =>
                                 self.add_term_to_hash(seen_terms, identifier,
                                                       range_termid),
-                            ExtRange::Gene(ref allele_gene_uniquename) =>
+                            ExtRange::Gene(ref gene_uniquename) |
+                            ExtRange::Promoter(ref gene_uniquename) =>
                                 self.add_gene_to_hash(seen_genes, identifier,
-                                                      allele_gene_uniquename),
+                                                      gene_uniquename),
                             _ => {},
                         }
                     }
@@ -3847,9 +3848,10 @@ impl <'a> WebDataBuild<'a> {
                                 ExtRange::GeneProduct(ref range_termid) =>
                                     self.add_term_to_hash(&mut seen_terms, termid,
                                                           range_termid),
-                                ExtRange::Gene(ref ext_gene_uniquename) =>
+                                ExtRange::Gene(ref gene_uniquename) |
+                                ExtRange::Promoter(ref gene_uniquename) =>
                                     self.add_gene_to_hash(&mut seen_genes, termid,
-                                                          ext_gene_uniquename),
+                                                          gene_uniquename),
                                 _ => {},
                             }
                         }
@@ -4024,13 +4026,14 @@ impl <'a> WebDataBuild<'a> {
                                 match ext_part.ext_range {
                                     ExtRange::Term(ref range_termid) |
                                     ExtRange::GeneProduct(ref range_termid) =>
-                                        self.add_term_to_hash(&mut seen_terms, 
+                                        self.add_term_to_hash(&mut seen_terms,
                                                               reference_uniquename,
                                                               range_termid),
-                                    ExtRange::Gene(ref allele_gene_uniquename) =>
+                                    ExtRange::Gene(ref gene_uniquename) |
+                                    ExtRange::Promoter(ref gene_uniquename) =>
                                         self.add_gene_to_hash(&mut seen_genes,
                                                               reference_uniquename,
-                                                              allele_gene_uniquename),
+                                                              gene_uniquename),
                                     _ => {},
                                 }
                             }
