@@ -573,6 +573,7 @@ fn get_test_config() -> Config {
                 "GO:0005575".to_owned(),
             ],
             go_process_superslim: vec![],
+            go_function: vec![],
             ortholog_presence_taxonids: HashSet::from_iter(vec![9606, 4932]),
         },
         file_exports: FileExportConfig {

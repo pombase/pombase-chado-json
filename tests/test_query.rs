@@ -120,6 +120,7 @@ fn test_output_options() {
                 deletion_viability: Some(DeletionViability::Inviable),
                 go_component: None,
                 go_process_superslim: None,
+                go_function: None,
                 ortholog_taxonids: HashSet::new(),
                 sequence: None,
             },
@@ -128,6 +129,7 @@ fn test_output_options() {
                 deletion_viability: Some(DeletionViability::Viable),
                 go_component: Some(GeneQueryTermData::Other),
                 go_process_superslim: None,
+                go_function: None,
                 ortholog_taxonids: HashSet::new(),
                 sequence: None,
             },
@@ -139,6 +141,7 @@ fn test_output_options() {
                     name: "nucleus".to_owned(),
                 })),
                 go_process_superslim: None,
+                go_function: None,
                 ortholog_taxonids: HashSet::new(),
                 sequence: None,
             }];

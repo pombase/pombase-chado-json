@@ -603,31 +603,29 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
+    let add_to_set = |set: &mut HashSet<_>, termid: String| {
+        for rel_name in &DESCENDANT_REL_NAMES {
+            set.insert(InterestingParent {
+                termid: termid.to_owned(),
+                rel_name: (*rel_name).to_owned(),
+            });
+        }
+    };
+
     for go_slim_conf in &config.go_slim_terms {
-        for rel_name in &DESCENDANT_REL_NAMES {
-            ret.insert(InterestingParent {
-                termid: go_slim_conf.termid.clone(),
-                rel_name: (*rel_name).to_owned(),
-            });
-        }
+        add_to_set(&mut ret, go_slim_conf.termid.clone());
     }
 
-    for query_data_go_conf in &config.query_data_config.go_components {
-        for rel_name in &DESCENDANT_REL_NAMES {
-            ret.insert(InterestingParent {
-                termid: query_data_go_conf.clone(),
-                rel_name: (*rel_name).to_owned(),
-            });
-        }
+    for go_termid in &config.query_data_config.go_components {
+        add_to_set(&mut ret, go_termid.clone());
     }
 
-    for query_data_go_conf in &config.query_data_config.go_process_superslim {
-        for rel_name in &DESCENDANT_REL_NAMES {
-            ret.insert(InterestingParent {
-                termid: query_data_go_conf.clone(),
-                rel_name: (*rel_name).to_owned(),
-            });
-        }
+    for go_termid in &config.query_data_config.go_process_superslim {
+        add_to_set(&mut ret, go_termid.clone());
+    }
+
+    for go_termid in &config.query_data_config.go_function {
+        add_to_set(&mut ret, go_termid.clone());
     }
 
     ret.insert(InterestingParent {
@@ -3669,6 +3667,7 @@ impl <'a> WebDataBuild<'a> {
 
             let cc_term_config = &self.config.query_data_config.go_components;
             let process_term_config = &self.config.query_data_config.go_process_superslim;
+            let function_term_config = &self.config.query_data_config.go_function;
 
             let go_component =
                 self.make_gene_query_go_data(gene_details, cc_term_config,
@@ -3676,12 +3675,16 @@ impl <'a> WebDataBuild<'a> {
             let go_process_superslim =
                 self.make_gene_query_go_data(gene_details, process_term_config,
                                              "biological_process");
+            let go_function =
+                self.make_gene_query_go_data(gene_details, function_term_config,
+                                             "molecular_function");
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
                 deletion_viability: gene_details.deletion_viability.clone(),
                 go_component,
                 go_process_superslim,
+                go_function,
                 ortholog_taxonids,
             };
 
