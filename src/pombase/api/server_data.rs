@@ -281,9 +281,13 @@ impl ServerData {
     fn fill_term_map(&self, term_map: &TermShortOptionMap) -> TermShortOptionMap {
         let mut ret = term_map.clone();
         for termid in term_map.keys() {
-            let term_details = &self.maps.terms[termid];
-            let term_short = TermShort::from_term_details(&term_details);
-            ret.insert(termid.clone(), Some(term_short));
+            if let Some(term_details) = self.maps.terms.get(termid) {
+                let term_short = TermShort::from_term_details(term_details);
+                ret.insert(termid.clone(), Some(term_short));
+            } else {
+                eprint!("WARNING missing short info for: {}\n", termid);
+                ret.insert(termid.clone(), None);
+            }
         }
         ret
     }
