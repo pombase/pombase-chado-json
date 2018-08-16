@@ -56,6 +56,18 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     return ret_ext_part
                 }
             },
+            ExtRange::SummaryModifiedResidues(ref part1_summ_residues) => {
+                if let ExtRange::SummaryModifiedResidues(ref part2_summ_residues) = ext_part2.ext_range
+                {
+                    let mut ret_ext_part = ext_part1.clone();
+                    let mut new_terms =
+                        [part1_summ_residues.clone(), part2_summ_residues.clone()].concat();
+                    new_terms.sort();
+                    new_terms.dedup();
+                    ret_ext_part.ext_range = ExtRange::SummaryModifiedResidues(new_terms);
+                    return ret_ext_part
+                }
+            },
             _ => () // fall through and panic
         }
         panic!("passed ExtPart objects that have ranges that aren't genes or terms
@@ -76,6 +88,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
             match ext_part.ext_range {
                 ExtRange::SummaryGenes(_) | ExtRange::SummaryTerms(_) =>
                     conf_rel_ranges.contains(&ext_part.rel_type_name),
+                ExtRange::SummaryModifiedResidues(_) => true,
                 _ =>false
             }
         };
@@ -395,6 +408,15 @@ fn make_cv_summary(cv_config: &CvConfig,
                     }
                     ext_part })
                 .collect::<Vec<ExtPart>>();
+
+            if let Some(ref residue) = annotation.residue {
+                let residue_range_part = ExtPart {
+                    rel_type_name: "modifies".to_owned(),
+                    rel_type_display_name: "modifies".to_owned(),
+                    ext_range: ExtRange::SummaryModifiedResidues(vec![residue.clone()]),
+                };
+                summary_extension.push(residue_range_part);
+            }
 
             if gene_uniquenames.is_empty() &&
                 genotype_uniquenames.is_empty() &&
