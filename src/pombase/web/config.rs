@@ -10,7 +10,7 @@ use serde_json;
 pub struct ExtensionDisplayNames {
     pub rel_name: String, // name of extension relation
     pub display_name: String, // text to display
-    pub if_descendent_of: Option<String>, // None if applies to any extension
+    pub if_descendant_of: Option<String>, // None if applies to any extension
     pub reciprocal_display: Option<String>, // None if reciprocal shouldn't be displayed
 }
 

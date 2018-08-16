@@ -595,7 +595,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
     }
 
     for ext_conf in &config.extension_display_names {
-        if let Some(ref conf_termid) = ext_conf.if_descendent_of {
+        if let Some(ref conf_termid) = ext_conf.if_descendant_of {
             ret.insert(InterestingParent {
                 termid: conf_termid.clone(),
                 rel_name: "is_a".into(),
@@ -2208,8 +2208,8 @@ impl <'a> WebDataBuild<'a> {
         if let Some(annotation_term_details) = self.terms.get(annotation_termid) {
             for ext_config in ext_configs {
                 if ext_config.rel_name == rel_type_name {
-                    if let Some(if_descendent_of) = ext_config.if_descendent_of.clone() {
-                        if annotation_term_details.interesting_parents.contains(&if_descendent_of) {
+                    if let Some(if_descendant_of) = ext_config.if_descendant_of.clone() {
+                        if annotation_term_details.interesting_parents.contains(&if_descendant_of) {
                             return Some((*ext_config).clone());
                         }
                     } else {
