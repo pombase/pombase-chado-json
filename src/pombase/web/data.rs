@@ -1890,19 +1890,24 @@ impl WebData {
 
         for (key, values) in complex_data.drain() {
             let (term_short, gene_short, evidence) = key;
-            let mut refs = vec![];
+            let mut refs = HashSet::new();
             let mut assigned_bys = HashSet::new();
             for (maybe_ref_short, maybe_assigned_by) in values {
                 if let Some(ref_short) = maybe_ref_short {
-                    refs.push(ref_short.uniquename);
+                    refs.insert(ref_short.uniquename);
                 }
                 if let Some(assigned_by) = maybe_assigned_by {
                     assigned_bys.insert(assigned_by);
                 }
             }
 
-            let refs_string = refs.join(",");
-            let assigned_by_string = assigned_bys.into_iter().collect::<Vec<_>>().join(",");
+            let mut refs_vec = refs.into_iter().collect::<Vec<_>>();
+            refs_vec.sort();
+            let mut assigned_bys_vec = assigned_bys.into_iter().collect::<Vec<_>>();
+            assigned_bys_vec.sort();
+
+            let refs_string = refs_vec.join(",");
+            let assigned_by_string = assigned_bys_vec.join(",");
 
             let line_bits = vec![term_short.termid, term_short.name,
                                  gene_short.uniquename,
