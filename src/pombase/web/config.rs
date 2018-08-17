@@ -32,7 +32,7 @@ pub struct RelationOrder {
 
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct TermFilterCategory {
+pub struct AncestorFilterCategory {
     pub display_name: String,
     // this category matches these terms and their descendants
     pub ancestors: Vec<String>,
@@ -43,7 +43,9 @@ pub struct FilterConfig {
     pub filter_name: String,
     pub display_name: String,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub term_categories: Vec<TermFilterCategory>
+    pub term_categories: Vec<AncestorFilterCategory>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub extension_categories: Vec<AncestorFilterCategory>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

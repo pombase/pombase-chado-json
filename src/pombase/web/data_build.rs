@@ -638,21 +638,29 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         rel_name: "is_a".into(),
     });
 
+    let add_filter_ancestor =
+        |set: &mut HashSet<_>, category: &AncestorFilterCategory, cv_name: &str| {
+            for ancestor in &category.ancestors {
+                for config_rel_name in &DESCENDANT_REL_NAMES {
+                    if *config_rel_name == "has_part" &&
+                        !HAS_PART_CV_NAMES.contains(&cv_name) {
+                            continue;
+                        }
+                    set.insert(InterestingParent {
+                        termid: ancestor.clone(),
+                        rel_name: String::from(*config_rel_name),
+                    });
+                }
+            }
+        };
+
     for (cv_name, conf) in &config.cv_config {
         for filter in &conf.filters {
             for category in &filter.term_categories {
-                for ancestor in &category.ancestors {
-                    for config_rel_name in &DESCENDANT_REL_NAMES {
-                        if *config_rel_name == "has_part" &&
-                            !HAS_PART_CV_NAMES.contains(&cv_name.as_str()) {
-                                continue;
-                            }
-                        ret.insert(InterestingParent {
-                            termid: ancestor.clone(),
-                            rel_name: String::from(*config_rel_name),
-                        });
-                    }
-                }
+                add_filter_ancestor(&mut ret, category, cv_name);
+            }
+            for category in &filter.extension_categories {
+                add_filter_ancestor(&mut ret, category, cv_name);
             }
         }
 

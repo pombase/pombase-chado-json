@@ -80,7 +80,7 @@
           "detailed_view_only": "false",
           "term_categories": [
             {
-       "ancestors": [
+              "ancestors": [
                 "FYPO:0000257"
               ],
               "display_name": "Normal phenotype"
