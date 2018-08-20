@@ -156,7 +156,7 @@ impl Search {
         let id_re = Regex::new(id_re_string).unwrap();
 
         if let Some(captures) = id_re.captures(q) {
-            let mut prefix =
+            let prefix =
                 if let Some(prefix_capture) = captures.name("prefix") {
                     prefix_capture.as_str()
                 } else {
