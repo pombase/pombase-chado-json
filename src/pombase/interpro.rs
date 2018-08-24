@@ -6,6 +6,8 @@ use serde_json;
 
 use web::config::Config;
 
+use pombase_rc_string::RcString;
+
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Location {
     pub start: usize,
@@ -15,14 +17,14 @@ pub struct Location {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct InterProMatch {
-    pub id: String,
-    pub dbname: String,
-    pub name: String,
-    pub model: Option<String>,
-    pub evidence: String,
-    pub interpro_id: String,
-    pub interpro_name: String,
-    pub interpro_type: String,
+    pub id: RcString,
+    pub dbname: RcString,
+    pub name: RcString,
+    pub model: Option<RcString>,
+    pub evidence: RcString,
+    pub interpro_id: RcString,
+    pub interpro_name: RcString,
+    pub interpro_type: RcString,
     pub locations: Vec<Location>,
 }
 
@@ -38,7 +40,7 @@ pub struct UniprotResult {
     pub tmhmm_matches: Vec<TMMatch>,
 }
 
-pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<String, UniprotResult> {
+pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<RcString, UniprotResult> {
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {
@@ -48,7 +50,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<String, Unipr
     };
     let reader = BufReader::new(file);
 
-    let uniprot_results: HashMap<String, UniprotResult> =
+    let uniprot_results: HashMap<RcString, UniprotResult> =
         match serde_json::from_reader(reader) {
             Ok(uniprot_results) => uniprot_results,
             Err(err) => {

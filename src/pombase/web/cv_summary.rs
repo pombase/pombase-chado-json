@@ -8,6 +8,7 @@ use web::config::*;
 use web::vec_set::*;
 use web::util::*;
 
+use pombase_rc_string::RcString;
 
 pub fn make_cv_summaries<T: AnnotationContainer>
     (container: &mut T,
@@ -34,7 +35,7 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     let mut ret_ext_part = ext_part1.clone();
                     let mut new_gene_uniquenames = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
                     let cmp =
-                        |vec1: &Vec<String>, vec2: &Vec<String>| {
+                        |vec1: &Vec<RcString>, vec2: &Vec<RcString>| {
                             let gene1 = &genes[&vec1[0]];
                             let gene2 = &genes[&vec2[0]];
                             gene1.cmp(gene2)
@@ -162,13 +163,13 @@ pub fn collect_summary_rows(genes: &IdGeneShortMap, rows: &mut Vec<TermSummaryRo
             }
     }
 
-    let mut gene_uniquenames: Vec<String> =
+    let mut gene_uniquenames: Vec<RcString> =
         no_ext_rows.iter().filter(|row| !row.gene_uniquenames.is_empty())
         .map(|row| row.gene_uniquenames[0].clone())
         .collect();
 
     let gene_cmp =
-        |uniquename1: &String, uniquename2: &String| {
+        |uniquename1: &RcString, uniquename2: &RcString| {
             let gene1 = genes.get(uniquename1).unwrap();
             let gene2 = genes.get(uniquename2).unwrap();
             gene1.cmp(gene2)
@@ -176,7 +177,7 @@ pub fn collect_summary_rows(genes: &IdGeneShortMap, rows: &mut Vec<TermSummaryRo
     gene_uniquenames.sort_by(gene_cmp);
     gene_uniquenames.dedup();
 
-    let genotype_uniquenames: Vec<String> =
+    let genotype_uniquenames: Vec<RcString> =
         no_ext_rows.iter().filter(|row| !row.genotype_uniquenames.is_empty())
         .map(|row| row.genotype_uniquenames[0].clone())
         .collect();
@@ -410,9 +411,10 @@ fn make_cv_summary(cv_config: &CvConfig,
                 .collect::<Vec<ExtPart>>();
 
             if let Some(ref residue) = annotation.residue {
+                let display_name = RcString::new("modifies");
                 let residue_range_part = ExtPart {
-                    rel_type_name: "modifies".to_owned(),
-                    rel_type_display_name: "modifies".to_owned(),
+                    rel_type_name: display_name.clone(),
+                    rel_type_display_name: display_name,
                     ext_range: ExtRange::SummaryModifiedResidues(vec![residue.clone()]),
                 };
                 summary_extension.push(residue_range_part);

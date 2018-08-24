@@ -19,6 +19,8 @@ use flate2::read::GzDecoder;
 
 use types::GeneUniquename;
 
+use pombase_rc_string::RcString;
+
 pub struct ServerData {
     config_file_name: String,
     maps: APIMaps,
@@ -82,7 +84,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
         for prefix in &prefixes_to_remove {
             if subset_name.starts_with(prefix) {
                 let new_subset_name = &subset_name[prefix.len()..];
-                new_entries.insert(String::from(new_subset_name), subset_details.clone());
+                new_entries.insert(RcString::from(new_subset_name), subset_details.clone());
             }
         }
     }
@@ -110,9 +112,9 @@ impl ServerData {
         }
     }
 
-    pub fn gene_uniquename_of_id(&self, id: &str) -> Option<GeneUniquename> {
+    pub fn gene_uniquename_of_id(&self, id: &RcString) -> Option<GeneUniquename> {
         if self.maps.gene_summaries.contains_key(id) {
-            Some(id.to_owned())
+            Some(id.clone())
         } else {
             if let Some(gene_uniquename) =
                 self.maps.gene_name_gene_map.get(id) {

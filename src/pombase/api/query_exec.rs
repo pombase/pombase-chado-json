@@ -2,6 +2,8 @@ use api::result::*;
 use api::query::*;
 use api::server_data::ServerData;
 
+use pombase_rc_string::RcString;
+
 pub struct QueryExec {
     server_data: ServerData,
 }
@@ -26,7 +28,7 @@ impl QueryExec {
         match rows_result {
             Ok(rows) => QueryAPIResult {
                 query: filled_query,
-                status: "ok".to_owned(),
+                status: RcString::from("ok"),
                 rows,
             },
             Err(mess) => QueryAPIResult {

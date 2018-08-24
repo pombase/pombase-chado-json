@@ -4,11 +4,15 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 extern crate pombase;
+extern crate pombase_rc_string;
 
 use self::pombase::db::*;
 use self::pombase::web::config::*;
 use self::pombase::web::data::*;
 use self::pombase::web::data_build::*;
+
+use self::pombase_rc_string::RcString;
+
 
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
                            cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str, accession: &str)
@@ -17,16 +21,12 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
         accession: String::from(accession),
         db: db.clone(),
     });
-    let cvterm = Rc::new(Cvterm {
-        name: String::from(cvterm_name),
-        definition: None,
-        cv: cv.clone(),
-        dbxref: dbxref.clone(),
-        is_obsolete: false,
-        is_relationshiptype: false,
-        cvtermsynonyms: RefCell::new(vec![]),
-        cvtermprops: RefCell::new(vec![]),
-    });
+    let cvterm = Rc::new(Cvterm::new(
+        cv.clone(),
+        dbxref.clone(),
+        RcString::from(cvterm_name),
+        false, false,
+        None));
     cvterms.push(cvterm.clone());
     dbxrefs.push(dbxref.clone());
     cvterm
@@ -34,7 +34,7 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
 
 fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
     let cv = Rc::new(Cv {
-        name: String::from(cv_name),
+        name: RcString::from(cv_name),
         cvprops: RefCell::new(vec![]),
     });
     cvs.push(cv.clone());
@@ -43,7 +43,7 @@ fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
 
 fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
     let db = Rc::new(Db {
-        name: String::from(db_name),
+        name: RcString::from(db_name),
     });
     dbs.push(db.clone());
     db
@@ -62,7 +62,7 @@ ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
         };
     let feature = Rc::new(Feature {
         organism: organism.clone(),
-        uniquename: String::from(uniquename),
+        uniquename: RcString::from(uniquename),
         name: name,
         feat_type: type_cvterm.clone(),
         residues: Some(residues.into()),
@@ -295,22 +295,22 @@ fn get_test_raw() -> Raw {
     pombe_organism.organismprops.borrow_mut().push(pombe_organismprop.clone());
 
     let publication = Rc::new(Publication {
-        uniquename: String::from("PMID:11707284"),
-        title: Some(String::from("The protein phosphatase 2A B'-regulatory subunit par1p is implicated in regulation of the S. pombe septation initiation network.")),
+        uniquename: RcString::from("PMID:11707284"),
+        title: Some(RcString::from("The protein phosphatase 2A B'-regulatory subunit par1p is implicated in regulation of the S. pombe septation initiation network.")),
         pub_type: paper_cvterm,
-        miniref: Some(String::from("FEBS Lett. 2001 Nov 9;508(1):136-42")),
+        miniref: Some(RcString::from("FEBS Lett. 2001 Nov 9;508(1):136-42")),
         publicationprops: RefCell::new(vec![]),
     });
 
     let publication_pub_date = Rc::new(Publicationprop {
         publication: publication.clone(),
         prop_type: pubmed_publication_date_cvterm,
-        value: String::from("9 Nov 2001"),
+        value: RcString::from("9 Nov 2001"),
     });
     let publication_authors = Rc::new(Publicationprop {
         publication: publication.clone(),
         prop_type: pubmed_authors_cvterm,
-        value: String::from("Le Goff X, Buvelot S, Salimova E, Guerry F, Schmidt S, Cueille N, Cano E, Simanis V"),
+        value: RcString::from("Le Goff X, Buvelot S, Salimova E, Guerry F, Schmidt S, Cueille N, Cano E, Simanis V"),
     });
 
     publication.publicationprops.borrow_mut().push(publication_pub_date);
@@ -319,7 +319,7 @@ fn get_test_raw() -> Raw {
     let triage_status = Rc::new(Publicationprop {
         publication: publication.clone(),
         prop_type: canto_triage_status_cvterm,
-        value: String::from("Curatable"),
+        value: RcString::from("Curatable"),
     });
 
     publication.publicationprops.borrow_mut().push(triage_status);
@@ -351,45 +351,45 @@ fn get_test_raw() -> Raw {
 
     let chadoprops = vec![Rc::new(Chadoprop {
         prop_type: db_creation_datetime_cvterm,
-        value: Some(String::from("2016-10-17 03:41:56")),
+        value: Some(RcString::from("2016-10-17 03:41:56")),
     })];
 
     let chr_1 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_1", None);
     make_test_featureprop(&mut featureprops, &chr_1, &ena_identifier_cvterm,
-                          Some(String::from("CU329670.1")));
+                          Some(RcString::from("CU329670.1")));
     let chr_3 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_3", None);
     make_test_featureprop(&mut featureprops, &chr_3, &ena_identifier_cvterm,
-                          Some(String::from("CU329672.1")));
+                          Some(RcString::from("CU329672.1")));
 
     let pom1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
-                                      "SPAC2F7.03c", Some(String::from("pom1")));
+                                      "SPAC2F7.03c", Some(RcString::from("pom1")));
 
     let cdc16_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
-                                      "SPAC6F6.08c", Some(String::from("cdc16")));
+                                      "SPAC6F6.08c", Some(RcString::from("cdc16")));
     let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
-                                          "SPAC6F6.08c-allele1", Some(String::from("cdc16::ura4+")));
+                                          "SPAC6F6.08c-allele1", Some(RcString::from("cdc16::ura4+")));
     make_test_featureprop(&mut featureprops, &cdc16_allele1, &allele_type_cvterm,
-                          Some(String::from("disruption")));
+                          Some(RcString::from("disruption")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_allele1, &instance_of_cvterm, &cdc16_gene);
 
     let cdc16_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
-                                               "SPAC6F6.08c-allele2", Some(String::from("cdc16delta")));
+                                               "SPAC6F6.08c-allele2", Some(RcString::from("cdc16delta")));
     make_test_featureprop(&mut featureprops, &cdc16_delta_allele, &allele_type_cvterm,
-                          Some(String::from("deletion")));
+                          Some(RcString::from("deletion")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_delta_allele, &instance_of_cvterm, &cdc16_gene);
 
     let par1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
-                                      "SPCC188.02", Some(String::from("par1")));
+                                      "SPCC188.02", Some(RcString::from("par1")));
     let par1_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
-                                              "SPCC188.02-allele1", Some(String::from("par1delta")));
+                                              "SPCC188.02-allele1", Some(RcString::from("par1delta")));
     make_test_featureprop(&mut featureprops, &par1_delta_allele, &allele_type_cvterm,
-                          Some(String::from("deletion")));
+                          Some(RcString::from("deletion")));
     make_test_featureprop(&mut featureprops, &par1_delta_allele, &description_cvterm,
-                          Some(String::from("deletion")));
+                          Some(RcString::from("deletion")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_delta_allele, &instance_of_cvterm, &par1_gene);
 
@@ -581,7 +581,7 @@ fn get_test_config() -> Config {
         },
     };
 
-    config.cv_config.insert(String::from("molecular_function"),
+    config.cv_config.insert(RcString::from("molecular_function"),
                             CvConfig {
                                 feature_type: String::from("Gene"),
                                 filters: vec![],
@@ -704,26 +704,26 @@ fn test_remove_first_u32() {
 fn test_collect_duplicated_relations() {
     let mut ext = vec![
         ExtPart {
-            rel_type_name: String::from("some_rel"),
-            rel_type_display_name: String::from("some rel"),
-            ext_range: ExtRange::Term(String::from("GO:12345")),
+            rel_type_name: RcString::from("some_rel"),
+            rel_type_display_name: RcString::from("some rel"),
+            ext_range: ExtRange::Term(RcString::from("GO:12345")),
         },
         ExtPart {
-            rel_type_name: String::from("has_input"),
-            rel_type_display_name: String::from("binds"),
+            rel_type_name: RcString::from("has_input"),
+            rel_type_display_name: RcString::from("binds"),
             ext_range: ExtRange::SummaryGenes(
-                vec![vec![String::from("SPAC3G9.09c")]]),
+                vec![vec![RcString::from("SPAC3G9.09c")]]),
         },
         ExtPart {
-            rel_type_name: String::from("has_input"),
-            rel_type_display_name: String::from("binds"),
+            rel_type_name: RcString::from("has_input"),
+            rel_type_display_name: RcString::from("binds"),
             ext_range: ExtRange::SummaryGenes(
-                vec![vec![String::from("SPAC16.01")]]),
+                vec![vec![RcString::from("SPAC16.01")]]),
         },
         ExtPart {
-            rel_type_name: String::from("during"),
-            rel_type_display_name: String::from("during"),
-            ext_range: ExtRange::Term(String::from("GO:0070301")),
+            rel_type_name: RcString::from("during"),
+            rel_type_display_name: RcString::from("during"),
+            ext_range: ExtRange::Term(RcString::from("GO:0070301")),
         }];
 
     pombase::web::cv_summary::collect_duplicated_relations(&mut ext);
@@ -734,8 +734,8 @@ fn test_collect_duplicated_relations() {
     assert_eq!(ext_part_1.rel_type_name, "has_input");
     if let ExtRange::SummaryGenes(summary_genes) = ext_part_1.ext_range.clone() {
         assert_eq!(summary_genes.get(0).unwrap(),
-                   &vec![String::from("SPAC3G9.09c"),
-                         String::from("SPAC16.01")]);
+                   &vec![RcString::from("SPAC3G9.09c"),
+                         RcString::from("SPAC16.01")]);
     } else {
         panic!();
     }

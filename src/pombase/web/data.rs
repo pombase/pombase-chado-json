@@ -8,6 +8,7 @@ use std::io;
 use std::collections::{BTreeMap, HashMap};
 use std::fmt::Display;
 use std::fmt;
+use pombase_rc_string::RcString;
 
 use bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
@@ -16,7 +17,7 @@ use flate2::write::GzEncoder;
 
 use self::postgres::Connection;
 
-type CvName = String;
+type CvName = RcString;
 
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
@@ -31,7 +32,7 @@ pub type UniquenameReferenceMap =
 
 pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
-pub type UniquenameFeatureShortMap = HashMap<String, FeatureShort>;
+pub type UniquenameFeatureShortMap = HashMap<RcString, FeatureShort>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
 pub type ChrNameDetailsMap = BTreeMap<ChromosomeName, ChromosomeDetails>;
 
@@ -73,19 +74,19 @@ pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
 #[serde(rename = "promoter_gene_uniquename")]
-    Promoter(String),
+    Promoter(RcString),
 #[serde(rename = "summary_gene_uniquenames")]
     // the inner Vec length will be > 1 for cases like "binds abc1 and def2, cdc2"
-    SummaryGenes(Vec<Vec<String>>),
+    SummaryGenes(Vec<Vec<RcString>>),
 #[serde(rename = "termid")]
     Term(TermId),
 #[serde(rename = "summary_termids")]
     // See: merge_ext_part_ranges()
     SummaryTerms(Vec<TermId>),
 #[serde(rename = "misc")]
-    Misc(String),
+    Misc(RcString),
 #[serde(rename = "domain")]
-    Domain(String),
+    Domain(RcString),
 #[serde(rename = "gene_product")]
     GeneProduct(TermId),  // eg.  PR:000027705
 #[serde(rename = "summary_residues")]
@@ -104,8 +105,8 @@ impl ExtRange {
 // A single part of an extension.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExtPart {
-    pub rel_type_name: String,
-    pub rel_type_display_name: String,
+    pub rel_type_name: RcString,
+    pub rel_type_display_name: RcString,
     pub ext_range: ExtRange,
 }
 impl PartialEq for ExtPart {
@@ -176,7 +177,7 @@ impl Hash for GeneShort {
 // a gene uniquename and an organism ID
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IdAndOrganism {
-    pub identifier: String,
+    pub identifier: RcString,
     pub taxonid: u32,
 }
 
@@ -189,21 +190,21 @@ pub struct GeneSummary {
     pub taxonid: OrganismTaxonId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
-    pub uniprot_identifier: Option<String>,
-    pub synonyms: Vec<String>,
+    pub uniprot_identifier: Option<RcString>,
+    pub synonyms: Vec<RcString>,
     pub orthologs: Vec<IdAndOrganism>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
-    pub feature_type: String,
+    pub feature_type: RcString,
 }
 
 // minimal information about a terms used in other objects
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermShort {
     pub name: TermName,
-    pub cv_name: String,
+    pub cv_name: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub interesting_parents: HashSet<String>,
+    pub interesting_parents: HashSet<RcString>,
     pub termid: TermId,
     pub is_obsolete: bool,
     pub gene_count: usize,
@@ -253,10 +254,10 @@ impl Hash for TermShort {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeDetails {
-    pub name: String,
-    pub residues: String,
-    pub ena_identifier: String,
-    pub gene_uniquenames: Vec<String>,
+    pub name: RcString,
+    pub residues: RcString,
+    pub ena_identifier: RcString,
+    pub gene_uniquenames: Vec<RcString>,
     pub taxonid: OrganismTaxonId,
 }
 
@@ -272,17 +273,17 @@ impl ChromosomeDetails {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceShort {
-    pub uniquename: String,
+    pub uniquename: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub title: Option<String>,
+    pub title: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub citation: Option<String>,
+    pub citation: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub authors_abbrev: Option<String>,
+    pub authors_abbrev: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub publication_year: Option<String>,
+    pub publication_year: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub approved_date: Option<String>,
+    pub approved_date: Option<RcString>,
     pub gene_count: usize,
     pub genotype_count: usize,
 }
@@ -308,41 +309,41 @@ pub trait AnnotationContainer {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceDetails {
-    pub uniquename: String,
+    pub uniquename: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub title: Option<String>,
+    pub title: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub citation: Option<String>,
+    pub citation: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none", rename = "abstract")]
-    pub pubmed_abstract: Option<String>,
+    pub pubmed_abstract: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub authors: Option<String>,
+    pub authors: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub authors_abbrev: Option<String>,
+    pub authors_abbrev: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub pubmed_publication_date: Option<String>,
+    pub pubmed_publication_date: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub publication_year: Option<String>,
+    pub publication_year: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_triage_status: Option<String>,
+    pub canto_triage_status: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_curator_role: Option<String>,
+    pub canto_curator_role: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_curator_name: Option<String>,
+    pub canto_curator_name: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_first_approved_date: Option<String>,
+    pub canto_first_approved_date: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_approved_date: Option<String>,
+    pub canto_approved_date: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_session_submitted_date: Option<String>,
+    pub canto_session_submitted_date: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_added_date: Option<String>,
+    pub canto_added_date: Option<RcString>,
 
     // This is set to the year part of canto_first_approved_date if it is
     // not None, otherwise set to the year part of canto_approved_date, otherwise
     // canto_session_submitted_date
     #[serde(skip_serializing_if="Option::is_none")]
-    pub approved_date: Option<String>,
+    pub approved_date: Option<RcString>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
     pub genetic_interactions: Vec<InteractionAnnotation>,
@@ -369,7 +370,7 @@ pub enum WithFromValue {
 #[serde(rename = "term")]
     Term(TermShort),
 #[serde(rename = "identifier")]
-    Identifier(String)
+    Identifier(RcString)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -393,11 +394,11 @@ pub struct OntAnnotationDetail {
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype: Option<GenotypeUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_background: Option<String>,
+    pub genotype_background: Option<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermId>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub assigned_by: Option<String>,
+    pub assigned_by: Option<RcString>,
 }
 
 impl PartialEq for OntAnnotationDetail {
@@ -452,11 +453,11 @@ pub struct OntAnnotation {
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype_short: Option<GenotypeShort>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_background: Option<String>,
+    pub genotype_background: Option<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermShort>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub assigned_by: Option<String>,
+    pub assigned_by: Option<RcString>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -487,8 +488,8 @@ impl Hash for TermSummaryRow {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TargetOfAnnotation {
-    pub ontology_name: String,
-    pub ext_rel_display_name: String,
+    pub ontology_name: RcString,
+    pub ext_rel_display_name: RcString,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub genes: Vec<GeneUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -498,9 +499,9 @@ pub struct TargetOfAnnotation {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SynonymDetails {
-    pub name: String,
+    pub name: RcString,
     #[serde(rename = "type")]
-    pub synonym_type: String
+    pub synonym_type: RcString
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -525,9 +526,9 @@ impl Strand {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeShort {
-    pub name: String,
+    pub name: RcString,
     pub length: usize,
-    pub ena_identifier: String,
+    pub ena_identifier: RcString,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
@@ -550,7 +551,7 @@ impl Phase {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeLocation {
-    pub chromosome_name: String,
+    pub chromosome_name: RcString,
     pub start_pos: u32,
     pub end_pos: u32,
     pub strand: Strand,
@@ -574,25 +575,25 @@ pub enum DeletionViability {
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<RcString>,
     pub taxonid: u32,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub product: Option<String>,
+    pub product: Option<RcString>,
     pub deletion_viability: DeletionViability,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub uniprot_identifier: Option<String>,
+    pub uniprot_identifier: Option<RcString>,
     pub interpro_matches: Vec<InterProMatch>,
     // non-InterPro domains:
     pub tm_domain_coords: Vec<(usize, usize) >,
     pub orfeome_identifier: Option<String>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub name_descriptions: Vec<String>,
+    pub name_descriptions: Vec<RcString>,
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub dbxrefs: HashSet<String>,
-    pub feature_type: String,
+    pub dbxrefs: HashSet<RcString>,
+    pub feature_type: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub characterisation_status: Option<String>,
+    pub characterisation_status: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     pub gene_neighbourhood: Vec<GeneShort>,
@@ -632,7 +633,7 @@ impl AnnotationContainer for GeneDetails {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinDetails {
     pub uniquename: TranscriptUniquename,
-    pub sequence: String,
+    pub sequence: RcString,
     pub molecular_weight: f32,
     pub average_residue_weight: f32,
     pub charge_at_ph7: f32,
@@ -640,7 +641,7 @@ pub struct ProteinDetails {
     pub codon_adaptation_index: f32,
 }
 
-pub type Residues = String;
+pub type Residues = RcString;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub enum FeatureType {
@@ -734,7 +735,7 @@ impl Display for FeatureType {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FeatureShort {
     pub feature_type: FeatureType,
-    pub uniquename: String,
+    pub uniquename: RcString,
     pub location: ChromosomeLocation,
     pub residues: Residues,
 }
@@ -745,7 +746,7 @@ pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
     pub location: ChromosomeLocation,
     pub parts: Vec<FeatureShort>,
-    pub transcript_type: String,
+    pub transcript_type: RcString,
     pub protein: Option<ProteinDetails>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
@@ -755,7 +756,7 @@ pub struct TranscriptDetails {
 pub struct GenotypeShort {
     pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<RcString>,
     pub expressed_alleles: Vec<ExpressedAllele>,
 }
 
@@ -763,7 +764,7 @@ pub struct GenotypeShort {
 pub struct GenotypeDetails {
     pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<RcString>,
     pub expressed_alleles: Vec<ExpressedAllele>,
     pub cv_annotations: OntAnnotationMap,
     pub references_by_uniquename: ReferenceShortOptionMap,
@@ -782,34 +783,34 @@ impl AnnotationContainer for GenotypeDetails {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
-    pub expression: Option<String>,
+    pub expression: Option<RcString>,
     pub allele_uniquename: AlleleUniquename,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AlleleShort {
-    pub uniquename: String,
+    pub uniquename: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<String>,
-    pub allele_type: String,
+    pub name: Option<RcString>,
+    pub allele_type: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub description: Option<String>,
+    pub description: Option<RcString>,
     pub gene_uniquename: GeneUniquename,
 }
 
-pub type RelName = String;
+pub type RelName = RcString;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneExProps {
     #[serde(skip_serializing_if="Option::is_none")]
-    pub copies_per_cell: Option<String>,
+    pub copies_per_cell: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub avg_copies_per_cell: Option<String>,
+    pub avg_copies_per_cell: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub scale: Option<String>,
+    pub scale: Option<RcString>,
 }
 
-pub type OntName = String;
+pub type OntName = RcString;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -823,11 +824,11 @@ pub struct TermAndRelation {
 pub struct TermDetails {
     pub name: TermName,
     pub cv_name: CvName,
-    pub annotation_feature_type: String,
+    pub annotation_feature_type: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub interesting_parents: HashSet<String>,
+    pub interesting_parents: HashSet<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub subsets: Vec<String>,
+    pub subsets: Vec<RcString>,
     pub termid: TermId,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
@@ -839,7 +840,7 @@ pub struct TermDetails {
     pub genes_annotated_with: HashSet<GeneUniquename>,
     pub is_obsolete: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub single_allele_genotype_uniquenames: HashSet<String>,
+    pub single_allele_genotype_uniquenames: HashSet<RcString>,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub cv_annotations: OntAnnotationMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
@@ -964,20 +965,20 @@ impl PartialOrd for ParalogAnnotation {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Metadata {
-    pub db_creation_datetime: String,
-    pub export_prog_name: String,
-    pub export_prog_version: String,
+    pub db_creation_datetime: RcString,
+    pub export_prog_name: RcString,
+    pub export_prog_version: RcString,
     pub gene_count: usize,
     pub term_count: usize,
-    pub cv_versions: HashMap<String, String>,
+    pub cv_versions: HashMap<RcString, RcString>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIAlleleDetails {
     pub gene: GeneUniquename,
-    pub allele_type: String,
+    pub allele_type: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub expression: Option<String>,
+    pub expression: Option<RcString>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -990,15 +991,15 @@ pub struct APIGenotypeAnnotation {
 pub struct APIGeneSummary {
     pub uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<String>,
+    pub name: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub product: Option<String>,
+    pub product: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub uniprot_identifier: Option<String>,
+    pub uniprot_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub exact_synonyms: Vec<String>,
+    pub exact_synonyms: Vec<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub dbxrefs: HashSet<String>,
+    pub dbxrefs: HashSet<RcString>,
     pub location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
@@ -1049,7 +1050,7 @@ pub struct APIMaps {
     pub gene_query_data_map: HashMap<GeneUniquename, GeneQueryData>,
     pub term_summaries: HashSet<TermShort>,
     pub genes: UniquenameGeneMap,
-    pub gene_name_gene_map: HashMap<String, GeneUniquename>,
+    pub gene_name_gene_map: HashMap<RcString, GeneUniquename>,
     pub genotypes: IdGenotypeMap,
     pub terms: HashMap<TermId, TermDetails>,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
@@ -1066,36 +1067,36 @@ pub struct SolrTermSummary {
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub close_synonyms: Vec<String>,   // exact and narrow
+    pub close_synonyms: Vec<RcString>,   // exact and narrow
     // a uniquified list of the words in all close synonyms
-    pub close_synonym_words: String,
+    pub close_synonym_words: RcString,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub distant_synonyms: Vec<String>, // broad and related
+    pub distant_synonyms: Vec<RcString>, // broad and related
     // a uniquified list of the words in all distant synonyms
-    pub distant_synonym_words: String,
+    pub distant_synonym_words: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub interesting_parents: HashSet<String>,
+    pub interesting_parents: HashSet<RcString>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SolrReferenceSummary {
-    pub id: String,
+    pub id: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub title: Option<String>,
+    pub title: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub citation: Option<String>,
+    pub citation: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub pubmed_abstract: Option<String>,
+    pub pubmed_abstract: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub authors: Option<String>,
+    pub authors: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub authors_abbrev: Option<String>,
+    pub authors_abbrev: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub pubmed_publication_date: Option<String>,
+    pub pubmed_publication_date: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<u32>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub approved_date: Option<String>,
+    pub approved_date: Option<RcString>,
     pub gene_count: usize,
     pub genotype_count: usize,
 }
@@ -1146,27 +1147,27 @@ pub struct RecentReferences {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TermSubsetElement {
-    pub name: String,
+    pub name: RcString,
     pub termid: TermId,
     pub gene_count: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermSubsetDetails {
-    pub name: String,
+    pub name: RcString,
     pub total_gene_count: usize, // total unique genes in all subsets
     pub elements: HashSet<TermSubsetElement>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneSubsetDetails {
-    pub name: String,
-    pub display_name: String,
+    pub name: RcString,
+    pub display_name: RcString,
     pub elements: HashSet<GeneUniquename>,
 }
 
-pub type IdTermSubsetMap = HashMap<String, TermSubsetDetails>;
-pub type IdGeneSubsetMap = HashMap<String, GeneSubsetDetails>;
+pub type IdTermSubsetMap = HashMap<RcString, TermSubsetDetails>;
+pub type IdGeneSubsetMap = HashMap<RcString, GeneSubsetDetails>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -1452,25 +1453,25 @@ impl WebData {
                 gene_details.synonyms.iter().filter(|synonym| {
                     synonym.synonym_type == "exact"
                 })
-                .map(|synonym| synonym.name.clone())
-                .collect::<Vec<_>>()
+                .map(|synonym| synonym.name.to_string())
+                .collect::<Vec<String>>()
                 .join(",");
 
             let line = format!("{}\t{}\t{}\n",
                                gene_details.uniquename,
-                               gene_details.name.clone().unwrap_or_else(|| "".to_owned()),
+                               gene_details.name.clone().unwrap_or_else(|| RcString::new("")),
                                synonyms);
 
             let gene_name = if let Some(ref gene_details_name) = gene_details.name {
                 gene_details_name.clone()
             } else {
-                String::new()
+                RcString::new("")
             };
 
             let gene_product = if let Some(ref gene_details_product) = gene_details.product {
                 gene_details_product.clone()
             } else {
-                String::new()
+                RcString::new("")
             };
 
             let line_with_product = format!("{}\t{}\t{}\t{}\n",
@@ -1595,7 +1596,7 @@ impl WebData {
                                        protein.codon_adaptation_index);
                     peptide_stats_writer.write_all(line.as_bytes())?;
 
-                    let gene_name = gene_details.name.clone().unwrap_or_else(|| "".to_owned());
+                    let gene_name = gene_details.name.clone().unwrap_or_else(|| RcString::new(""));
                     for interpro_match in &gene_details.interpro_matches {
                         let line_start = format!("{}\t{}\t{}\t{}\t{}",
                                                  gene_uniquename, gene_name,
@@ -1635,8 +1636,8 @@ impl WebData {
             &all_composition_string + "\n";
         aa_composition_writer.write_all(composition_header.as_bytes())?;
 
-        let composition_line = |first_col_string: String, comp: &AAComposition| {
-            let mut line = first_col_string;
+        let composition_line = |first_col_string: RcString, comp: &AAComposition| {
+            let mut line = String::from(first_col_string);
 
             for ch in &all_composition_aa {
                 line.push_str("\t");
@@ -1656,7 +1657,7 @@ impl WebData {
         }
 
         let composition_total_line =
-            composition_line("total".to_owned(), &total_composition);
+            composition_line(RcString::new("total"), &total_composition);
         aa_composition_writer.write_all(composition_total_line.as_bytes())?;
 
         peptide_stats_writer.flush()?;
@@ -1847,30 +1848,32 @@ impl WebData {
     pub fn write_macromolecular_complexes(&self, config: &Config, output_dir: &str)
                                           -> Result<(), io::Error>
     {
-        let mut complex_data: HashMap<(TermShort, GeneShort, String), _> = HashMap::new();
+        let mut complex_data: HashMap<(TermShort, GeneShort, RcString), _> = HashMap::new();
+
+        let no_evidence = RcString::new("NO_EVIDENCE");
 
         let make_key = |annotation: &OntAnnotation| {
-            let evidence = annotation.evidence.clone().unwrap_or_else(|| "NO_EVIDENCE".to_owned());
+            let evidence = annotation.evidence.clone().unwrap_or_else(|| no_evidence.clone());
             (annotation.term_short.clone(), annotation.genes.iter().next().unwrap().clone(),
              evidence)
         };
 
         if let Some(ref complexes_config) = config.file_exports.macromolecular_complexes {
-            let check_parent_term = |el: &String| {
+            let check_parent_term = |el: &RcString| {
                 *el == complexes_config.parent_complex_termid
             };
             'TERM: for annotation in &self.ont_annotations {
                 let term_short = &annotation.term_short;
                 let termid = &term_short.termid;
 
-                if complexes_config.excluded_terms.contains(termid) {
+                if complexes_config.excluded_terms.contains(termid.as_ref()) {
                     continue 'TERM;
                 }
                 if !term_short.interesting_parents.iter().any(check_parent_term) {
                     continue 'TERM;
                 }
 
-                let key: (TermShort, GeneShort, String) = make_key(annotation);
+                let key: (TermShort, GeneShort, RcString) = make_key(annotation);
                 complex_data.entry(key)
                     .or_insert_with(Vec::new)
                     .push((annotation.reference_short.clone(), annotation.assigned_by.clone()));
@@ -1909,11 +1912,12 @@ impl WebData {
             let refs_string = refs_vec.join(",");
             let assigned_by_string = assigned_bys_vec.join(",");
 
-            let line_bits = vec![term_short.termid, term_short.name,
-                                 gene_short.uniquename,
-                                 gene_short.name.unwrap_or_else(|| "".to_owned()),
-                                 gene_short.product.unwrap_or_else(|| "".to_owned()),
-                                 evidence, refs_string, assigned_by_string];
+            let line_bits = vec![term_short.termid.as_str(), &term_short.name.as_str(),
+                                 gene_short.uniquename.as_str(),
+                                 gene_short.name.as_ref().map(RcString::as_str).unwrap_or_else(|| ""),
+                                 gene_short.product.as_ref().map(RcString::as_str).unwrap_or_else(|| ""),
+                                 evidence.as_str(), refs_string.as_str(),
+                                 assigned_by_string.as_str()];
 
             lines.push(line_bits.join("\t"));
         }
@@ -1972,17 +1976,17 @@ impl WebData {
         for (uniquename, gene_details) in &self.api_maps.genes {
             let serde_value = serde_json::value::to_value(&gene_details).unwrap();
             trans.execute("INSERT INTO web_json.gene (uniquename, data) values ($1, $2)",
-                          &[&uniquename, &serde_value]).unwrap();
+                          &[&uniquename.as_str(), &serde_value]).unwrap();
         }
         for (uniquename, ref_details) in &self.api_maps.references {
             let serde_value = serde_json::value::to_value(&ref_details).unwrap();
             trans.execute("INSERT INTO web_json.reference (uniquename, data) values ($1, $2)",
-                          &[&uniquename, &serde_value]).unwrap();
+                          &[&uniquename.as_str(), &serde_value]).unwrap();
         }
         for (termid, term_details) in &self.api_maps.terms {
             let serde_value = serde_json::value::to_value(&term_details).unwrap();
             trans.execute("INSERT INTO web_json.term (termid, data) values ($1, $2)",
-                          &[&termid, &serde_value]).unwrap();
+                          &[&termid.as_str(), &serde_value]).unwrap();
         }
 
         trans.execute("CREATE INDEX gene_jsonb_idx ON web_json.gene USING gin (data jsonb_path_ops)", &[]).unwrap();

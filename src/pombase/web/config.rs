@@ -5,20 +5,22 @@ use std::fs::File;
 use types::*;
 use serde_json;
 
+use pombase_rc_string::RcString;
+
 // configuration for extension display names and for the "Target of" section
 #[derive(Deserialize, Clone, Debug)]
 pub struct ExtensionDisplayNames {
-    pub rel_name: String, // name of extension relation
-    pub display_name: String, // text to display
-    pub if_descendant_of: Option<String>, // None if applies to any extension
-    pub reciprocal_display: Option<String>, // None if reciprocal shouldn't be displayed
+    pub rel_name: RcString, // name of extension relation
+    pub display_name: RcString, // text to display
+    pub if_descendant_of: Option<RcString>, // None if applies to any extension
+    pub reciprocal_display: Option<RcString>, // None if reciprocal shouldn't be displayed
 }
 
 // "interesting parents" are those stored in the JSON in the TermShort structs
 #[derive(Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct InterestingParent {
-    pub termid: String,
-    pub rel_name: String,
+    pub termid: RcString,
+    pub rel_name: RcString,
 }
 
 // the order of relations within an extension:
@@ -33,9 +35,9 @@ pub struct RelationOrder {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct AncestorFilterCategory {
-    pub display_name: String,
+    pub display_name: RcString,
     // this category matches these terms and their descendants
-    pub ancestors: Vec<String>,
+    pub ancestors: Vec<RcString>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -50,8 +52,8 @@ pub struct FilterConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct SplitByParentsConfig {
-    pub termids: Vec<String>,
-    pub display_name: String,
+    pub termids: Vec<RcString>,
+    pub display_name: RcString,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -69,7 +71,7 @@ pub struct ChromosomeConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
-    pub feature_type: String,
+    pub feature_type: RcString,
     // filtering configured per CV
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub filters: Vec<FilterConfig>,
@@ -79,18 +81,18 @@ pub struct CvConfig {
     pub split_by_parents: Vec<SplitByParentsConfig>,
     // relations to not show in the summary
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub summary_relations_to_hide: Vec<String>,
+    pub summary_relations_to_hide: Vec<RcString>,
     // relations where the range is a gene ID to display like:
     //   has substrate pom1, cdc1 involved in negative regulation of ...
     // rather than as two lines
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub summary_relation_ranges_to_collect: Vec<String>,
+    pub summary_relation_ranges_to_collect: Vec<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub sort_details_by: Option<Vec<String>>,
+    pub sort_details_by: Option<Vec<RcString>>,
 }
 
-pub type ShortEvidenceCode = String;
-pub type LongEvidenceCode = String;
+pub type ShortEvidenceCode = RcString;
+pub type LongEvidenceCode = RcString;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ConfigOrganism {
@@ -107,14 +109,14 @@ impl ConfigOrganism {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ViabilityTerms {
-    pub viable: String,
-    pub inviable: String,
+    pub viable: RcString,
+    pub inviable: RcString,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 pub struct TermAndName {
-    pub termid: String,
-    pub name: String,
+    pub termid: RcString,
+    pub name: RcString,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -138,7 +140,7 @@ pub struct ServerConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct EvidenceDetails {
     pub long: LongEvidenceCode,
-    pub link: Option<String>,
+    pub link: Option<RcString>,
 }
 
 pub type DatabaseName = String;
@@ -146,9 +148,9 @@ pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct QueryDataConfig {
-    pub go_components: Vec<String>,
-    pub go_process_superslim: Vec<String>,
-    pub go_function: Vec<String>,
+    pub go_components: Vec<RcString>,
+    pub go_process_superslim: Vec<RcString>,
+    pub go_function: Vec<RcString>,
     pub ortholog_presence_taxonids: HashSet<u32>,
 }
 

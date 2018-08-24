@@ -1,27 +1,29 @@
-pub type CvName = String;
+use pombase_rc_string::RcString;
+
+pub type CvName = RcString;
 pub type MiscExtRange = String;
 
-pub type GeneUniquename = String;
-pub type TermUniquename = String;
-pub type ReferenceUniquename = String;
-pub type GeneName = String;
-pub type TypeName = String;
-pub type GeneProduct = String;
+pub type GeneUniquename = RcString;
+pub type TermUniquename = RcString;
+pub type ReferenceUniquename = RcString;
+pub type GeneName = RcString;
+pub type TypeName = RcString;
+pub type GeneProduct = RcString;
 
-pub type TermName = String;
-pub type TermId = String;
+pub type TermName = RcString;
+pub type TermId = RcString;
 pub type TermDef = String;
-pub type ChromosomeName = String;
+pub type ChromosomeName = RcString;
 
-pub type Evidence = String;
-pub type Residue = String;
+pub type Evidence = RcString;
+pub type Residue = RcString;
 pub type Condition = String;
-pub type Qualifier = String;
+pub type Qualifier = RcString;
 
-pub type TranscriptUniquename = String;
-pub type ProteinUniquename = String;
+pub type TranscriptUniquename = RcString;
+pub type ProteinUniquename = RcString;
 
-pub type GenotypeUniquename = String;
-pub type AlleleUniquename = String;
+pub type GenotypeUniquename = RcString;
+pub type AlleleUniquename = RcString;
 
 pub type OrganismTaxonId = u32;

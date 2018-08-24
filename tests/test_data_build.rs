@@ -4,11 +4,14 @@ use std::iter::FromIterator;
 use std::cmp::Ordering;
 
 extern crate pombase;
+extern crate pombase_rc_string;
 
 use self::pombase::types::*;
 use self::pombase::web::data::*;
 use self::pombase::web::config::*;
 use self::pombase::web::cv_summary::*;
+
+use pombase_rc_string::RcString;
 
 #[allow(dead_code)]
 fn get_test_config() -> Config {
@@ -18,18 +21,18 @@ fn get_test_config() -> Config {
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,
-                genus: "Schizosaccharomyces".into(),
-                species: "pombe".into(),
+                genus: String::from("Schizosaccharomyces"),
+                species: String::from("pombe"),
             },
             ConfigOrganism {
                 taxonid: 9606,
-                genus: "Homo".into(),
-                species: "sapiens".into(),
+                genus: String::from("Homo"),
+                species: String::from("sapiens"),
             },
             ConfigOrganism {
                 taxonid: 4932,
-                genus: "Saccharomyces".into(),
-                species: "cerevisiae".into(),
+                genus: String::from("Saccharomyces"),
+                species: String::from("cerevisiae"),
             }
         ],
         api_seq_chunk_sizes: vec![10_000, 200_000],
@@ -52,8 +55,8 @@ fn get_test_config() -> Config {
         cv_config: HashMap::new(),
         interesting_parents: vec![],
         viability_terms: ViabilityTerms {
-            viable: "FYPO:0002058".into(),
-            inviable: "FYPO:0002059".into(),
+            viable: RcString::from("FYPO:0002058"),
+            inviable: RcString::from("FYPO:0002059"),
         },
         go_slim_terms: vec![],
         interpro: InterPro {
@@ -63,7 +66,7 @@ fn get_test_config() -> Config {
             subsets: ServerSubsetConfig {
                 prefixes_to_remove: vec![],
             },
-            solr_url: "http://localhost:8983/solr".to_owned(),
+            solr_url: RcString::from("http://localhost:8983/solr"),
             close_synonym_boost: 0.6,
             distant_synonym_boost: 0.3,
         },
@@ -71,9 +74,9 @@ fn get_test_config() -> Config {
         chromosomes: HashMap::new(),
         query_data_config: QueryDataConfig {
             go_components: vec![
-                "GO:0005634".to_owned(), "GO:0005783".to_owned(),
-                "GO:0005739".to_owned(), "GO:0005737".to_owned(),
-                "GO:0005575".to_owned()
+                RcString::from("GO:0005634".to_owned(), "GO:0005783"),
+                RcString::from("GO:0005739".to_owned(), "GO:0005737"),
+                RcString::from("GO:0005575")
             ],
             go_process_superslim: vec![],
             go_function: vec![],
@@ -114,58 +117,58 @@ fn test_compare_ext_part_with_config() {
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Equal);
 
-    ext_part1.rel_type_name = "directly_positively_regulates".into();
+    ext_part1.rel_type_name = RcString::from("directly_positively_regulates");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "has_direct_input".into();
-    ext_part2.rel_type_name = "directly_positively_regulates".into();
+    ext_part1.rel_type_name = RcString::from("has_direct_input");
+    ext_part2.rel_type_name = RcString::from("directly_positively_regulates");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part2.rel_type_name = "absent_during".into();
+    ext_part2.rel_type_name = RcString::from("absent_during");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part2.rel_type_name = "misc_rel".into();
+    ext_part2.rel_type_name = RcString::from("misc_rel");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "other_misc_rel".into();
+    ext_part1.rel_type_name = RcString::from("other_misc_rel");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = "other_misc_rel".into();
-    ext_part2.rel_type_name = "other_misc_rel".into();
+    ext_part1.rel_type_name = RcString::from("other_misc_rel");
+    ext_part2.rel_type_name = RcString::from("other_misc_rel");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Equal);
 
-    ext_part2.rel_type_name = "happens_during".into();
+    ext_part2.rel_type_name = RcString::from("happens_during");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "happens_during".into();
-    ext_part2.rel_type_name = "misc_rel".into();
+    ext_part1.rel_type_name = RcString::from("happens_during");
+    ext_part2.rel_type_name = RcString::from("misc_rel");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = "has_direct_input".into();
-    ext_part2.rel_type_name = "happens_during".into();
+    ext_part1.rel_type_name = RcString::from("has_direct_input");
+    ext_part2.rel_type_name = RcString::from("happens_during");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "happens_during".into();
-    ext_part2.rel_type_name = "has_direct_input".into();
+    ext_part1.rel_type_name = RcString::from("happens_during");
+    ext_part2.rel_type_name = RcString::from("has_direct_input");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = "happens_during".into();
-    ext_part2.rel_type_name = "exists_during".into();
+    ext_part1.rel_type_name = RcString::from("happens_during");
+    ext_part2.rel_type_name = RcString::from("exists_during");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "happens_during".into();
-    ext_part2.rel_type_name = "happens_during".into();
+    ext_part1.rel_type_name = RcString::from("happens_during");
+    ext_part2.rel_type_name = RcString::from("happens_during");
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
                Ordering::Equal);
 }
@@ -192,58 +195,58 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 
 
     let mut test_conditions = HashSet::new();
-    test_conditions.insert("PECO:0000103".into());
-    test_conditions.insert("PECO:0000137".into());
+    test_conditions.insert(RcString::from("PECO:0000103"));
+    test_conditions.insert(RcString::from("PECO:0000137"));
 
     let mut fypo_details = vec![
         make_one_detail(41_717, "SPBC11B10.09", "PMID:9242669", None,
                         "IDA",vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC646.13".into())), //  sds23
+                                               ExtRange::Gene(RcString::from("SPBC646.13"))), //  sds23
                         ], HashSet::new()),
         make_one_detail(41_718, "SPBC11B10.09", "PMID:11937031", None,
                         "IDA", vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC32F12.09".into())), // no name
+                                               ExtRange::Gene(RcString::from("SPBC32F12.09"))), // no name
                         ], HashSet::new()),
         make_one_detail(187_893, "SPBC11B10.09", "PMID:19523829", None, "IMP",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC6B1.04".into())), //  mde4
+                                               ExtRange::Gene(RcString::from("SPBC6B1.04"))), //  mde4
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1902845".into())),
+                                               ExtRange::Term(RcString::from("GO:1902845"))),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term("GO:0000089".into())),
+                                               ExtRange::Term(RcString::from("GO:0000089"))),
                         ],
                         HashSet::new()),
         make_one_detail(193_221, "SPBC11B10.09", "PMID:10921876", None, "IMP",
                         vec![
                             make_test_ext_part("directly_negatively_regulates", "directly inhibits",
-                                               ExtRange::Gene("SPAC144.13c".into())), //  srw1
+                                               ExtRange::Gene(RcString::from("SPAC144.13c"))), //  srw1
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1903693".into())),
+                                               ExtRange::Term(RcString::from("GO:1903693"))),
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1905785".into())),
+                                               ExtRange::Term(RcString::from("GO:1905785"))),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term("GO:0000080".into())),
+                                               ExtRange::Term(RcString::from("GO:0000080"))),
                         ],
                         HashSet::new()),
         make_one_detail(194_213, "SPBC11B10.09", "PMID:7957097", None, "IDA",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC776.02c".into())),  // dis2
+                                               ExtRange::Gene(RcString::from("SPBC776.02c"))),  // dis2
                         ],
                         HashSet::new()),
         make_one_detail(194_661, "SPBC11B10.09", "PMID:10485849", None, "IMP",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC146.03c".into())), //  cut3
+                                               ExtRange::Gene(RcString::from("SPBC146.03c"))), //  cut3
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1903380".into())),
+                                               ExtRange::Term(RcString::from("GO:1903380"))),
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:0042307".into())),
+                                               ExtRange::Term(RcString::from("GO:0042307"))),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term("GO:0000089".into())),
+                                               ExtRange::Term(RcString::from("GO:0000089"))),
                         ],
                         HashSet::new()),
         make_one_detail(223_656,
@@ -307,7 +310,7 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 fn get_test_annotations() -> Vec<OntTermAnnotations> {
     let annotations1 = vec![188_448, 202_017];
     let ont_term1 = OntTermAnnotations {
-        term: "GO:0097472".into(),
+        term: RcString::from("GO:0097472"),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations1,
@@ -318,7 +321,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
         vec![41_717, 41_718, 187_893, 193_221, 194_213, 194_661];
 
     let ont_term2 = OntTermAnnotations {
-        term: "GO:0004693".into(),
+        term: RcString::from("GO:0004693"),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations2,
@@ -347,7 +350,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         extension: extension,
         gene_ex_props: None,
         conditions: conditions,
-        assigned_by: Some("PomBase".to_owned()),
+        assigned_by: Some(RcString::from("PomBase")),
     }
 }
 
@@ -387,7 +390,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
-        feature_type: "gene".into(),
+        feature_type: RcString::from("gene"),
         characterisation_status: None,
         location: None,
         gene_neighbourhood: vec![],
@@ -438,8 +441,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    Some("test genotype name"),
                    vec![
                        ExpressedAllele {
-                           expression: Some("Not assayed".into()),
-                           allele_uniquename: "SPBC16A3.11:allele-7".into(),
+                           expression: Some(RcString::from("Not assayed")),
+                           allele_uniquename: RcString::from("SPBC16A3.11:allele-7"),
                        }
                    ]
                ));
@@ -450,8 +453,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    None,
                    vec![
                        ExpressedAllele {
-                           expression: Some("Not assayed".into()),
-                           allele_uniquename: "SPCC1919.10c:allele-5".into(),
+                           expression: Some(RcString::from("Not assayed")),
+                           allele_uniquename: RcString::from("SPCC1919.10c:allele-5"),
                        }
                    ]
                ));
@@ -462,8 +465,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    None,
                    vec![
                        ExpressedAllele {
-                           expression: Some("Not assayed".into()),
-                           allele_uniquename: "SPAC24H6.05:allele-3".into(),
+                           expression: Some(RcString::from("Not assayed")),
+                           allele_uniquename: RcString::from("SPAC24H6.05:allele-3"),
                        }
                    ]
                ));
@@ -474,8 +477,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    Some("ZZ-name"),
                    vec![
                        ExpressedAllele {
-                           expression: Some("Not assayed".into()),
-                           allele_uniquename: "SPCC1919.10c:allele-4".into(),
+                           expression: Some(RcString::from("Not assayed")),
+                           allele_uniquename: RcString::from("SPCC1919.10c:allele-4"),
                        }
                    ]
                ));
@@ -486,8 +489,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    None,
                    vec![
                        ExpressedAllele {
-                           expression: Some("Not assayed".into()),
-                           allele_uniquename: "SPCC1919.10c:allele-6".into(),
+                           expression: Some(RcString::from("Not assayed")),
+                           allele_uniquename: RcString::from("SPCC1919.10c:allele-6"),
                        }
                    ]
                ));
@@ -498,8 +501,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    None,
                    vec![
                        ExpressedAllele {
-                           expression: Some("Wild type product level".into()),
-                           allele_uniquename: "SPAC25A8.01c:allele-5".into(),
+                           expression: Some(RcString::from("Wild type product level")),
+                           allele_uniquename: RcString::from("SPAC25A8.01c:allele-5"),
                        }
                    ]
                ));
@@ -510,8 +513,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    None,
                    vec![
                        ExpressedAllele {
-                           expression: Some("Not assayed".into()),
-                           allele_uniquename: "SPAC3G6.02:allele-7".into(),
+                           expression: Some(RcString::from("Not assayed")),
+                           allele_uniquename: RcString::from("SPAC3G6.02:allele-7"),
                        }
                    ]
                ));
@@ -568,9 +571,9 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         termid: id.into(),
         name: name.into(),
         cv_name: cv_name.into(),
-        annotation_feature_type: "gene".into(),
+        annotation_feature_type: RcString::from("gene"),
         interesting_parents: HashSet::new(),
-        subsets: vec!["goslim_pombe".into()],
+        subsets: vec![RcString::from("goslim_pombe")],
         synonyms: vec![],
         definition: None,
         direct_ancestors: vec![],
@@ -702,12 +705,12 @@ fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermAnnotati
 #[test]
 fn test_summary_row_equals() {
     let r1 = TermSummaryRow {
-        gene_uniquenames: vec!["SPAPB1A10.09".into()],
+        gene_uniquenames: vec![RcString::from("SPAPB1A10.09")],
         genotype_uniquenames: vec![],
         extension: vec![],
     };
     let r2 = TermSummaryRow {
-        gene_uniquenames: vec!["SPAPB1A10.09".into()],
+        gene_uniquenames: vec![RcString::from("SPAPB1A10.09")],
         genotype_uniquenames: vec![],
         extension: vec![],
     };
@@ -719,9 +722,9 @@ fn get_test_summaries() -> Vec<OntTermAnnotations> {
     let mut summaries = vec![];
 
     let ext = make_test_ext_part("part_of", "involved in",
-                                 ExtRange::Term("GO:1905785".into()));
+                                 ExtRange::Term(RcString::from("GO:1905785")));
     let ext2 = make_test_ext_part("some_rel", "some_rel_display_name",
-                                  ExtRange::Term("GO:1234567".into()));
+                                  ExtRange::Term(RcString::from("GO:1234567")));
 
     summaries.push(make_test_summary("GO:0022403", vec![]));
     summaries.push(make_test_summary("GO:0051318",
@@ -756,28 +759,28 @@ fn get_test_children_by_termid() -> HashMap<TermId, HashSet<TermId>> {
     let mut children_by_termid = HashMap::new();
 
     let mut children_of_0022403 = HashSet::new();
-    children_of_0022403.insert("GO:0051318".into());
-    children_of_0022403.insert("GO:0000080".into());
-    children_of_0022403.insert("GO:0088888".into());
-    children_of_0022403.insert("GO:0000089".into());
-    children_of_0022403.insert("GO:0099999".into());
+    children_of_0022403.insert(RcString::from("GO:0051318"));
+    children_of_0022403.insert(RcString::from("GO:0000080"));
+    children_of_0022403.insert(RcString::from("GO:0088888"));
+    children_of_0022403.insert(RcString::from("GO:0000089"));
+    children_of_0022403.insert(RcString::from("GO:0099999"));
 
     let mut children_of_0051318 = HashSet::new();
-    children_of_0051318.insert("GO:0000080".into());
-    children_of_0051318.insert("GO:0088888".into());
-    children_of_0051318.insert("GO:0000089".into());
-    children_of_0051318.insert("GO:0099999".into());
+    children_of_0051318.insert(RcString::from("GO:0000080"));
+    children_of_0051318.insert(RcString::from("GO:0088888"));
+    children_of_0051318.insert(RcString::from("GO:0000089"));
+    children_of_0051318.insert(RcString::from("GO:0099999"));
 
     let mut children_of_0000080 = HashSet::new();
-    children_of_0000080.insert("GO:0088888".into());
+    children_of_0000080.insert(RcString::from("GO:0088888"));
 
     let mut children_of_0000089 = HashSet::new();
-    children_of_0000089.insert("GO:0099999".into());
+    children_of_0000089.insert(RcString::from("GO:0099999"));
 
-    children_by_termid.insert("GO:0022403".into(), children_of_0022403);
-    children_by_termid.insert("GO:0051318".into(), children_of_0051318);
-    children_by_termid.insert("GO:0000080".into(), children_of_0000080);
-    children_by_termid.insert("GO:0000089".into(), children_of_0000089);
+    children_by_termid.insert(RcString::from("GO:0022403"), children_of_0022403);
+    children_by_termid.insert(RcString::from("GO:0051318"), children_of_0051318);
+    children_by_termid.insert(RcString::from("GO:0000080"), children_of_0000080);
+    children_by_termid.insert(RcString::from("GO:0000089"), children_of_0000089);
 
     children_by_termid
 }
@@ -800,29 +803,29 @@ fn test_remove_redundant_summaries() {
 fn get_test_gene_short_map() -> IdGeneShortMap {
     let mut ret_map = HashMap::new();
 
-    ret_map.insert("SPAC977.09c".into(),
+    ret_map.insert(RcString::from("SPAC977.09c"),
                    GeneShort {
-                       uniquename: "SPAC977.09c".into(),
+                       uniquename: RcString::from("SPAC977.09c"),
                        name: None,
-                       product: Some("phospholipase (predicted)".into()),
+                       product: Some(RcString::from("phospholipase (predicted)")),
                    });
-    ret_map.insert("SPAC3G9.09c".into(),
+    ret_map.insert(RcString::from("SPAC3G9.09c"),
                    GeneShort {
-                       uniquename: "SPAC3G9.09c".into(),
-                       name: Some("tif211".into()),
-                       product: Some("translation initiation factor eIF2 alpha subunit".into()),
+                       uniquename: RcString::from("SPAC3G9.09c"),
+                       name: Some(RcString::from("tif211")),
+                       product: Some(RcString::from("translation initiation factor eIF2 alpha subunit")),
                    });
-    ret_map.insert("SPAC16.01".into(),
+    ret_map.insert(RcString::from("SPAC16.01"),
                    GeneShort {
-                       uniquename: "SPAC16.01".into(),
-                       name: Some("rho2".into()),
-                       product: Some("Rho family GTPase Rho2".into()),
+                       uniquename: RcString::from("SPAC16.01"),
+                       name: Some(RcString::from("rho2")),
+                       product: Some(RcString::from("Rho family GTPase Rho2")),
                    });
-    ret_map.insert("SPAC24C9.02c".into(),
+    ret_map.insert(RcString::from("SPAC24C9.02c"),
                    GeneShort { 
-                       uniquename: "SPAC24C9.02c".into(),
-                       name: Some("cyt2".into()),
-                       product: Some("cytochrome c1 heme lyase Cyt2 (predicted)".into()),
+                       uniquename: RcString::from("SPAC24C9.02c"),
+                       name: Some(RcString::from("cyt2")),
+                       product: Some(RcString::from("cytochrome c1 heme lyase Cyt2 (predicted)")),
                    });
 
     ret_map
@@ -834,22 +837,22 @@ fn get_test_gene_short_map() -> IdGeneShortMap {
 #[test]
 fn test_merge_ext_part_ranges() {
     let ext_part1 = ExtPart {
-        rel_type_name: "has_substrate".into(),
-        rel_type_display_name: "has substrate".into(),
-        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC977.09c".into()]]),
+        rel_type_name: RcString::from("has_substrate"),
+        rel_type_display_name: RcString::from("has substrate"),
+        ext_range: ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC977.09c")]]),
     };
     let ext_part2 = ExtPart {
-        rel_type_name: "has_substrate".into(),
-        rel_type_display_name: "has substrate".into(),
-        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()]]),
+        rel_type_name: RcString::from("has_substrate"),
+        rel_type_display_name: RcString::from("has substrate"),
+        ext_range: ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC24C9.02c")]]),
     };
 
     let gene_short_map = get_test_gene_short_map();
     let res = merge_ext_part_ranges(&ext_part1, &ext_part2, &gene_short_map);
 
     assert_eq!(res.ext_range,
-               ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".into()],
-                                           vec!["SPAC977.09c".into()]]));
+               ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC24C9.02c")],
+                                           vec![RcString::from("SPAC977.09c")]]));
 }
 
 fn get_test_summary_rows() -> Vec<TermSummaryRow> {

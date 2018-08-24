@@ -7,6 +7,8 @@ use web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, Inter
 
 use types::GeneUniquename;
 
+use pombase_rc_string::RcString;
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum IntRangeType {
 #[serde(rename = "protein_length")]
@@ -44,8 +46,8 @@ pub enum QueryExpressionFilter {
 }
 
 type TermName = String;
-type QueryRowsResult = Result<Vec<ResultRow>, String>;
-type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, String>;
+type QueryRowsResult = Result<Vec<ResultRow>, RcString>;
+type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, RcString>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum QueryNode {
@@ -78,7 +80,7 @@ pub enum QueryNode {
 
 fn exec_or(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
-        return Err("illegal query: OR operator has no nodes".into());
+        return Err(RcString::from("illegal query: OR operator has no nodes"));
     }
 
     let mut seen_genes = HashSet::new();
@@ -294,8 +296,8 @@ impl QueryNode {
                     "genetic" =>
                         exec_interactors_of_gene(server_data, gene_uniquename,
                                                  InteractionType::Genetic),
-                    _ => Err(format!("No such interaction type: {}",
-                                    interaction_type))
+                    _ => Err(RcString::from(&format!("No such interaction type: {}",
+                                                     interaction_type)))
                 }
             },
             IntRange { ref range_type, start, end } =>
@@ -344,7 +346,7 @@ impl Query {
     }
 
     fn make_nucleotide_sequence(&self, transcript: &TranscriptDetails,
-                                options: &NucleotideDownloadOptions) -> String {
+                                options: &NucleotideDownloadOptions) -> RcString {
         let mut seq = String::from("");
 
         for part in &transcript.parts {
@@ -360,11 +362,11 @@ impl Query {
                 }
         }
 
-        seq
+        RcString::from(&seq)
     }
 
     fn make_sequence(&self, server_data: &ServerData,
-                     gene_uniquename: &str) -> Option<String> {
+                     gene_uniquename: &RcString) -> Option<RcString> {
         let maybe_gene_summary = server_data.get_gene_summary(gene_uniquename);
 
         if let Some(gene_summary) = maybe_gene_summary {
@@ -387,7 +389,7 @@ impl Query {
     }
 
     fn make_result_rows(&self, server_data: &ServerData,
-                        genes: Vec<String>) -> QueryRowsResult {
+                        genes: Vec<RcString>) -> QueryRowsResult {
         Ok(genes.into_iter()
            .map(|gene_uniquename| {
                let mut deletion_viability = None;

@@ -1,4 +1,5 @@
 extern crate pombase;
+extern crate pombase_rc_string;
 
 use std::collections::hash_set::HashSet;
 use std::iter::Iterator;
@@ -9,6 +10,8 @@ use self::pombase::api::server_data::*;
 use self::pombase::api::query_exec::*;
 use self::pombase::web::config::TermAndName;
 use self::pombase::web::data::{GeneShort, DeletionViability, GeneQueryTermData};
+
+use RcString;
 
 fn get_server_data() -> ServerData {
     use std::path::PathBuf;
@@ -33,7 +36,7 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
         .collect::<HashSet<_>>();
     let expect_genes_iter =
         genes.iter().cloned()
-        .map(|s: &str| String::from(s))
+        .map(|s: &str| RcString::from(s))
         .collect::<HashSet<_>>();
     assert_eq!(result_genes_iter,
                expect_genes_iter);
