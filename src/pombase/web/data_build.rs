@@ -256,7 +256,7 @@ fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails) -> Or
 
 
 fn allele_display_name(allele: &AlleleShort) -> RcString {
-    let name = allele.name.clone().unwrap_or_else(|| RcString::new("unnamed"));
+    let name = allele.name.clone().unwrap_or_else(|| RcString::from("unnamed"));
     let allele_type = allele.allele_type.clone();
     let description = allele.description.clone().unwrap_or_else(|| allele_type.clone());
 
@@ -265,7 +265,7 @@ fn allele_display_name(allele: &AlleleShort) -> RcString {
             let normalised_description = description.replace("[\\s_]+", "");
             let normalised_allele_type = allele_type.replace("[\\s_]+", "");
             if normalised_description != normalised_allele_type {
-                return RcString::new(&(name + "(" + description.as_str() + ")"));
+                return RcString::from(&(name + "(" + description.as_str() + ")"));
             } else {
                 return name;
             }
@@ -277,7 +277,7 @@ fn allele_display_name(allele: &AlleleShort) -> RcString {
         } else {
             name + "-" + description.as_str() + "-" + &allele.allele_type
         };
-    RcString::new(&display_name)
+    RcString::from(&display_name)
 }
 
 
@@ -311,7 +311,7 @@ pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele]
 
     let joined_alleles = allele_display_names.join("  ");
 
-    RcString::new(&str::replace(&joined_alleles, " ", "_"))
+    RcString::from(&str::replace(&joined_alleles, " ", "_"))
 }
 
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
@@ -380,7 +380,7 @@ fn rev_comp(residues: &str) -> Residues {
     let residues: String = residues.chars()
         .rev().map(complement_char)
         .collect();
-    RcString::new(&residues)
+    RcString::from(&residues)
 }
 
 fn get_loc_residues(chr: &ChromosomeDetails,
@@ -603,7 +603,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         if let Some(ref conf_termid) = ext_conf.if_descendant_of {
             ret.insert(InterestingParent {
                 termid: conf_termid.clone(),
-                rel_name: RcString::new("is_a"),
+                rel_name: RcString::from("is_a"),
             });
         }
     }
@@ -612,7 +612,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         for rel_name in &DESCENDANT_REL_NAMES {
             set.insert(InterestingParent {
                 termid: termid.to_owned(),
-                rel_name: RcString::new(rel_name),
+                rel_name: RcString::from(rel_name),
             });
         }
     };
@@ -635,11 +635,11 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
 
     ret.insert(InterestingParent {
         termid: config.viability_terms.viable.clone(),
-        rel_name: RcString::new("is_a"),
+        rel_name: RcString::from("is_a"),
     });
     ret.insert(InterestingParent {
         termid: config.viability_terms.inviable.clone(),
-        rel_name: RcString::new("is_a"),
+        rel_name: RcString::from("is_a"),
     });
 
     let add_filter_ancestor =
@@ -672,7 +672,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
             for ancestor in &split_by_parent_config.termids {
                 let ancestor_termid =
                     if ancestor.starts_with("NOT ") {
-                        RcString::new(&ancestor[4..])
+                        RcString::from(&ancestor[4..])
                     } else {
                         ancestor.clone()
                     };
@@ -846,7 +846,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     };
                 maybe_new_intron = Some(FeatureShort {
                     feature_type: intron_type,
-                    uniquename: RcString::new(&intron_uniquename),
+                    uniquename: RcString::from(&intron_uniquename),
                     location: new_intron_loc,
                     residues: intron_residues,
                 });
@@ -1109,7 +1109,7 @@ impl <'a> WebDataBuild<'a> {
                 self.genes.get(orth_uniquename) {
                     if let Some(ref orth_name) = orth_gene.name {
                         let id_and_org = IdAndOrganism {
-                            identifier: RcString::new(&orth_name),
+                            identifier: RcString::from(&orth_name),
                             taxonid: ortholog_annotation.ortholog_taxonid,
                         };
                         ortholog_ids.push(id_and_org);
@@ -1299,7 +1299,7 @@ impl <'a> WebDataBuild<'a> {
                     let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
                     let replaced: String =
                         author_re.replace_all(&authors, "$f et al.").into();
-                    authors_abbrev = Some(RcString::new(&replaced));
+                    authors_abbrev = Some(RcString::from(&replaced));
                 } else {
                     authors_abbrev = Some(authors.clone());
                 }
@@ -1307,7 +1307,7 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(publication_date) = pubmed_publication_date.clone() {
                 let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
-                publication_year = Some(RcString::new(&date_re.replace_all(&publication_date, "$y")));
+                publication_year = Some(RcString::from(&date_re.replace_all(&publication_date, "$y")));
             }
 
             let mut approved_date = canto_first_approved_date.clone();
@@ -1323,7 +1323,7 @@ impl <'a> WebDataBuild<'a> {
             approved_date =
                 if let Some(date) = approved_date {
                     let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
-                    Some(RcString::new(&re.replace_all(&date, "$date")))
+                    Some(RcString::from(&re.replace_all(&date, "$date")))
                 } else {
                     None
                 };
@@ -1624,7 +1624,7 @@ impl <'a> WebDataBuild<'a> {
                 if gene_details.feature_type != "pseudogene" {
                     let feature_type =
                         transcript.transcript_type.clone() + " " + &gene_details.feature_type;
-                    gene_details.feature_type = RcString::new(&feature_type);
+                    gene_details.feature_type = RcString::from(&feature_type);
                 }
                 gene_details.transcripts.push(transcript);
             } else {
@@ -1685,7 +1685,7 @@ impl <'a> WebDataBuild<'a> {
 
             let protein = ProteinDetails {
                 uniquename: feat.uniquename.clone(),
-                sequence: RcString::new(&residues),
+                sequence: RcString::from(&residues),
                 molecular_weight: molecular_weight.unwrap(),
                 average_residue_weight: average_residue_weight.unwrap(),
                 charge_at_ph7: charge_at_ph7.unwrap(),
@@ -1738,8 +1738,8 @@ impl <'a> WebDataBuild<'a> {
 
         let chr = ChromosomeDetails {
             name: feat.uniquename.clone(),
-            residues: RcString::new(&residues),
-            ena_identifier: RcString::new(&ena_identifier.unwrap()),
+            residues: RcString::from(&residues),
+            ena_identifier: RcString::from(&ena_identifier.unwrap()),
             gene_uniquenames: vec![],
             taxonid: org.taxonid,
         };
@@ -1774,12 +1774,12 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let rc_display_name = RcString::new(&genotype_display_uniquename);
+        let rc_display_name = RcString::from(&genotype_display_uniquename);
 
         self.genotypes.insert(rc_display_name.clone(),
                               GenotypeDetails {
                                   display_uniquename: rc_display_name,
-                                  name: feat.name.as_ref().map(|s| RcString::new(s)),
+                                  name: feat.name.as_ref().map(|s| RcString::from(s)),
                                   expressed_alleles,
                                   cv_annotations: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
@@ -2323,7 +2323,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_deletion_viability(&mut self) {
-        let some_null = Some(RcString::new("Null"));
+        let some_null = Some(RcString::from("Null"));
 
         let mut gene_statuses = HashMap::new();
 
@@ -2331,7 +2331,7 @@ impl <'a> WebDataBuild<'a> {
             |condition_ids: HashSet<RcString>| {
                 let mut ids_vec: Vec<RcString> = condition_ids.iter().cloned().collect();
                 ids_vec.sort();
-                RcString::new(&ids_vec.join(" "))
+                RcString::from(&ids_vec.join(" "))
             };
 
         let viable_termid = &self.config.viability_terms.viable;
@@ -2516,7 +2516,7 @@ impl <'a> WebDataBuild<'a> {
         if let Some(ext_conf) = self.matching_ext_config(annotation_termid, ext_rel_name) {
             ext_conf.display_name.clone()
         } else {
-            RcString::new(&str::replace(&ext_rel_name, "_", " "))
+            RcString::from(&str::replace(&ext_rel_name, "_", " "))
         }
     }
 
@@ -2752,7 +2752,7 @@ impl <'a> WebDataBuild<'a> {
     fn make_with_or_from_value(&self, with_or_from_value: &RcString) -> WithFromValue {
         let db_prefix_patt = RcString::from("^") + DB_NAME + ":";
         let re = Regex::new(&db_prefix_patt).unwrap();
-        let gene_uniquename = RcString::new(&re.replace_all(&with_or_from_value, ""));
+        let gene_uniquename = RcString::from(&re.replace_all(&with_or_from_value, ""));
         if self.genes.contains_key(&gene_uniquename) {
             let gene_short = self.make_gene_short(&gene_uniquename);
             WithFromValue::Gene(gene_short)
@@ -3245,7 +3245,7 @@ impl <'a> WebDataBuild<'a> {
                                 };
 
                             part_term_details.cv_annotations
-                                .entry(RcString::new(&extension_cv_name))
+                                .entry(RcString::from(&extension_cv_name))
                                 .or_insert({
                                     let mut new_vec = Vec::new();
                                     let new_term_annotation =
@@ -4265,7 +4265,7 @@ impl <'a> WebDataBuild<'a> {
         return_map.insert("non_go_slim_with_bp_annotation".into(),
                           GeneSubsetDetails {
                               name: "non_go_slim_with_bp_annotation".into(),
-                              display_name: RcString::new(&with_annotation_display_name),
+                              display_name: RcString::from(&with_annotation_display_name),
                               elements: non_slim_with_bp_annotation,
                           });
         let without_annotation_display_name =
@@ -4274,7 +4274,7 @@ impl <'a> WebDataBuild<'a> {
         return_map.insert("non_go_slim_without_bp_annotation".into(),
                           GeneSubsetDetails {
                               name: "non_go_slim_without_bp_annotation".into(),
-                              display_name: RcString::new(&without_annotation_display_name),
+                              display_name: RcString::from(&without_annotation_display_name),
                               elements: non_slim_without_bp_annotation,
                           });
         return_map
@@ -4316,11 +4316,11 @@ impl <'a> WebDataBuild<'a> {
             let subset_name =
                 RcString::from("feature_type:") + &gene_details.feature_type;
             let re = Regex::new(r"[\s,:]+").unwrap();
-            let subset_name_no_spaces = RcString::new(&re.replace_all(&subset_name, "_"));
+            let subset_name_no_spaces = RcString::from(&re.replace_all(&subset_name, "_"));
             subsets.entry(subset_name_no_spaces.clone())
                 .or_insert(GeneSubsetDetails {
                     name: subset_name_no_spaces,
-                    display_name: RcString::new(&subset_name),
+                    display_name: RcString::from(&subset_name),
                     elements: HashSet::new()
                 })
                 .elements.insert(gene_details.uniquename.clone());
@@ -4342,11 +4342,11 @@ impl <'a> WebDataBuild<'a> {
                 let subset_name =
                     RcString::from("characterisation_status:") + &characterisation_status;
                 let re = Regex::new(r"[\s,:]+").unwrap();
-                let subset_name_no_spaces = RcString::new(&re.replace_all(&subset_name, "_"));
+                let subset_name_no_spaces = RcString::from(&re.replace_all(&subset_name, "_"));
                 subsets.entry(subset_name_no_spaces.clone())
                     .or_insert(GeneSubsetDetails {
                         name: subset_name_no_spaces,
-                        display_name: RcString::new(&subset_name),
+                        display_name: RcString::from(&subset_name),
                         elements: HashSet::new()
                     })
                     .elements.insert(gene_details.uniquename.clone());
@@ -4364,13 +4364,13 @@ impl <'a> WebDataBuild<'a> {
                 if !interpro_match.interpro_id.is_empty() {
                     let subset_name =
                         String::from("interpro:") + &interpro_match.interpro_id;
-                    new_subset_names.push((RcString::new(&subset_name),
+                    new_subset_names.push((RcString::from(&subset_name),
                                            interpro_match.interpro_name.clone()));
                 }
 
                 let subset_name = String::from("interpro:") +
                      &interpro_match.dbname.clone() + ":" + &interpro_match.id;
-                new_subset_names.push((RcString::new(&subset_name), interpro_match.name.clone()));
+                new_subset_names.push((RcString::from(&subset_name), interpro_match.name.clone()));
 
                 for (subset_name, display_name) in new_subset_names {
                     subsets.entry(subset_name.clone())
@@ -4509,7 +4509,7 @@ impl <'a> WebDataBuild<'a> {
             let add_to_words_vec = |synonym: &str, words_vec: &mut Vec<RcString>| {
                 let synonym_words = term_name_split_re.split(&synonym);
                 for word in synonym_words {
-                    let word_string = RcString::new(word.trim_matches(&trimmable_p));
+                    let word_string = RcString::from(word.trim_matches(&trimmable_p));
                     if !words_vec.contains(&word_string) &&
                         !term_name_words.contains(&word_string) {
                             words_vec.push(word_string);
@@ -4541,9 +4541,9 @@ impl <'a> WebDataBuild<'a> {
                 name: term_details.name.clone(),
                 definition: term_details.definition.clone(),
                 close_synonyms,
-                close_synonym_words: RcString::new(&close_synonym_words_vec.join(" ")),
+                close_synonym_words: RcString::from(&close_synonym_words_vec.join(" ")),
                 distant_synonyms,
-                distant_synonym_words: RcString::new(&distant_synonym_words_vec.join(" ")),
+                distant_synonym_words: RcString::from(&distant_synonym_words_vec.join(" ")),
                 interesting_parents: interesting_parents_for_solr,
             };
             return_summaries.push(term_summ);

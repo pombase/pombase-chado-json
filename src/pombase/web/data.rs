@@ -1459,19 +1459,19 @@ impl WebData {
 
             let line = format!("{}\t{}\t{}\n",
                                gene_details.uniquename,
-                               gene_details.name.clone().unwrap_or_else(|| RcString::new("")),
+                               gene_details.name.clone().unwrap_or_else(|| RcString::new()),
                                synonyms);
 
             let gene_name = if let Some(ref gene_details_name) = gene_details.name {
                 gene_details_name.clone()
             } else {
-                RcString::new("")
+                RcString::new()
             };
 
             let gene_product = if let Some(ref gene_details_product) = gene_details.product {
                 gene_details_product.clone()
             } else {
-                RcString::new("")
+                RcString::new()
             };
 
             let line_with_product = format!("{}\t{}\t{}\t{}\n",
@@ -1596,7 +1596,7 @@ impl WebData {
                                        protein.codon_adaptation_index);
                     peptide_stats_writer.write_all(line.as_bytes())?;
 
-                    let gene_name = gene_details.name.clone().unwrap_or_else(|| RcString::new(""));
+                    let gene_name = gene_details.name.clone().unwrap_or_else(|| RcString::new());
                     for interpro_match in &gene_details.interpro_matches {
                         let line_start = format!("{}\t{}\t{}\t{}\t{}",
                                                  gene_uniquename, gene_name,
@@ -1657,7 +1657,7 @@ impl WebData {
         }
 
         let composition_total_line =
-            composition_line(RcString::new("total"), &total_composition);
+            composition_line(RcString::from("total"), &total_composition);
         aa_composition_writer.write_all(composition_total_line.as_bytes())?;
 
         peptide_stats_writer.flush()?;
@@ -1850,7 +1850,7 @@ impl WebData {
     {
         let mut complex_data: HashMap<(TermShort, GeneShort, RcString), _> = HashMap::new();
 
-        let no_evidence = RcString::new("NO_EVIDENCE");
+        let no_evidence = RcString::from("NO_EVIDENCE");
 
         let make_key = |annotation: &OntAnnotation| {
             let evidence = annotation.evidence.clone().unwrap_or_else(|| no_evidence.clone());

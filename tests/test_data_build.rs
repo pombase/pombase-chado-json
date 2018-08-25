@@ -74,8 +74,8 @@ fn get_test_config() -> Config {
         chromosomes: HashMap::new(),
         query_data_config: QueryDataConfig {
             go_components: vec![
-                RcString::from("GO:0005634"), RcString::new("GO:0005783"),
-                RcString::from("GO:0005739"), RcString::new("GO:0005737"),
+                RcString::from("GO:0005634"), RcString::from("GO:0005783"),
+                RcString::from("GO:0005739"), RcString::from("GO:0005737"),
                 RcString::from("GO:0005575")
             ],
             go_process_superslim: vec![],
