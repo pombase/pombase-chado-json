@@ -46,10 +46,10 @@ pub struct Chadoprop {
 }
 
 pub struct Organism {
-    pub genus: String,
-    pub species: String,
-    pub abbreviation: String,
-    pub common_name: String,
+    pub genus: RcString,
+    pub species: RcString,
+    pub abbreviation: RcString,
+    pub common_name: RcString,
     pub organismprops: RefCell<Vec<Rc<Organismprop>>>,
 }
 pub struct Organismprop {
@@ -70,12 +70,12 @@ pub struct Db {
     pub name: RcString,
 }
 pub struct Dbxref {
-    pub accession: String,
+    pub accession: RcString,
     pub db: Rc<Db>,
     _identifier: RcString,
 }
 impl Dbxref {
-    pub fn new(db: Rc<Db>, accession: String) -> Dbxref {
+    pub fn new(db: Rc<Db>, accession: RcString) -> Dbxref {
         let identifier = String::new() + &db.name + ":" + &accession;
         let rc_identifier = RcString::from(&identifier);
         Dbxref {
@@ -92,7 +92,7 @@ pub struct Cvterm {
     pub name: RcString,
     pub cv: Rc<Cv>,
     pub dbxref: Rc<Dbxref>,
-    pub definition: Option<String>,
+    pub definition: Option<RcString>,
     pub is_obsolete: bool,
     pub is_relationshiptype: bool,
     pub cvtermsynonyms: RefCell<Vec<Rc<Cvtermsynonym>>>,
@@ -103,7 +103,7 @@ pub struct Cvterm {
 impl Cvterm {
     pub fn new(cv: Rc<Cv>, dbxref: Rc<Dbxref>, name: RcString,
                is_obsolete: bool, is_relationshiptype: bool,
-               definition: Option<String>) -> Cvterm {
+               definition: Option<RcString>) -> Cvterm {
         let termid = String::new() + &dbxref.db.name + ":" + &dbxref.accession;
         let rc_termid = RcString::from(&termid);
 
@@ -285,11 +285,16 @@ impl Raw {
         };
 
         for row in &conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).unwrap() {
+            let genus: String = row.get(1);
+            let species: String = row.get(2);
+            let abbreviation: String = row.get(3);
+            let common_name: String = row.get(4);
+
             let organism = Organism {
-                genus: row.get(1),
-                species: row.get(2),
-                abbreviation: row.get(3),
-                common_name: row.get(4),
+                genus: RcString::from(&genus),
+                species: RcString::from(&species),
+                abbreviation: RcString::from(&abbreviation),
+                common_name: RcString::from(&common_name),
                 organismprops: RefCell::new(vec![]),
             };
             let rc_organism = Rc::new(organism);
@@ -323,7 +328,7 @@ impl Raw {
             let dbxref_id: i32 = row.get(0);
             let db_id: i32 = row.get(1);
             let accession: String = row.get(2);
-            let dbxref = Dbxref::new(get_db(&mut db_map, db_id), accession);
+            let dbxref = Dbxref::new(get_db(&mut db_map, db_id), RcString::from(&accession));
             let rc_dbxref = Rc::new(dbxref);
             ret.dbxrefs.push(rc_dbxref.clone());
             dbxref_map.insert(dbxref_id, rc_dbxref);
@@ -343,7 +348,7 @@ impl Raw {
                                      rc_name,
                                      is_obsolete != 0,
                                      is_relationshiptype != 0,
-                                     definition);
+                                     definition.map(|s| RcString::from(&s)));
             let rc_cvterm = Rc::new(cvterm);
             ret.cvterms.push(rc_cvterm.clone());
             cvterm_map.insert(cvterm_id, rc_cvterm);

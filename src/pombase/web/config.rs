@@ -27,9 +27,9 @@ pub struct InterestingParent {
 #[derive(Deserialize, Clone, Debug)]
 pub struct RelationOrder {
     // put the relations in this order in the displayed extensions:
-    pub relation_order: Vec<String>,
+    pub relation_order: Vec<RcString>,
     // except for these reactions which should always come last:
-    pub always_last: Vec<String>,
+    pub always_last: Vec<RcString>,
 }
 
 
@@ -97,8 +97,8 @@ pub type LongEvidenceCode = RcString;
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ConfigOrganism {
     pub taxonid: OrganismTaxonId,
-    pub genus: String,
-    pub species: String,
+    pub genus: RcString,
+    pub species: RcString,
 }
 
 impl ConfigOrganism {
@@ -121,12 +121,12 @@ pub struct TermAndName {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct InterPro {
-    pub dbnames_to_filter: Vec<String>,
+    pub dbnames_to_filter: Vec<RcString>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ServerSubsetConfig {
-    pub prefixes_to_remove: Vec<String>,
+    pub prefixes_to_remove: Vec<RcString>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -143,7 +143,7 @@ pub struct EvidenceDetails {
     pub link: Option<RcString>,
 }
 
-pub type DatabaseName = String;
+pub type DatabaseName = RcString;
 pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
@@ -156,8 +156,8 @@ pub struct QueryDataConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct MacromolecularComplexesConfig {
-    pub parent_complex_termid: String,
-    pub excluded_terms: HashSet<String>,
+    pub parent_complex_termid: RcString,
+    pub excluded_terms: HashSet<RcString>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -167,7 +167,7 @@ pub struct FileExportConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
-    pub database_name: String,
+    pub database_name: RcString,
     pub load_organism_taxonid: OrganismTaxonId,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
@@ -184,7 +184,7 @@ pub struct Config {
     pub interpro: InterPro,
     pub server: ServerConfig,
     pub extra_database_aliases: DatabaseAliases,
-    pub chromosomes: HashMap<String, ChromosomeConfig>,
+    pub chromosomes: HashMap<RcString, ChromosomeConfig>,
     pub query_data_config: QueryDataConfig,
     pub file_exports: FileExportConfig,
 }

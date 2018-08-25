@@ -17,7 +17,7 @@ use self::pombase_rc_string::RcString;
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
                            cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str,
                            accession: &str) -> Rc<Cvterm> {
-    let dbxref = Rc::new(Dbxref::new(db.clone(), accession.to_owned()));
+    let dbxref = Rc::new(Dbxref::new(db.clone(), RcString::from(accession)));
     let cvterm = Rc::new(Cvterm::new(
         cv.clone(),
         dbxref.clone(),
@@ -164,10 +164,10 @@ fn get_test_raw() -> Raw {
 
     let pombe_organism =
         Rc::new(Organism{
-            genus: String::from("Schizosaccharomyces"),
-            species: String::from("pombe"),
-            abbreviation: String::from("Spombe"),
-            common_name: String::from("pombe"),
+            genus: RcString::from("Schizosaccharomyces"),
+            species: RcString::from("pombe"),
+            abbreviation: RcString::from("Spombe"),
+            common_name: RcString::from("pombe"),
             organismprops: RefCell::new(vec![]),
         });
 

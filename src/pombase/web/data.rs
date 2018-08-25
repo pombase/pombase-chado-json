@@ -585,7 +585,7 @@ pub struct GeneDetails {
     pub interpro_matches: Vec<InterProMatch>,
     // non-InterPro domains:
     pub tm_domain_coords: Vec<(usize, usize) >,
-    pub orfeome_identifier: Option<String>,
+    pub orfeome_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<RcString>,
     pub synonyms: Vec<SynonymDetails>,
@@ -1562,7 +1562,7 @@ impl WebData {
             if let Some(name) = config.extra_database_aliases.get(&db_alias.to_lowercase()) {
                 name.clone()
             } else {
-                db_alias.to_owned()
+                RcString::from(db_alias)
             }
         };
 

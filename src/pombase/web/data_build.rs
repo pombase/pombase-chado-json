@@ -1452,7 +1452,7 @@ impl <'a> WebDataBuild<'a> {
         let mut orfeome_identifier = None;
         for dbxref in &dbxrefs {
             if dbxref.starts_with("SPD:") {
-                orfeome_identifier = Some(String::from(&dbxref[4..]));
+                orfeome_identifier = Some(RcString::from(&dbxref[4..]));
             }
         }
 
