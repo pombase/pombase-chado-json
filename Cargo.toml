@@ -20,8 +20,7 @@ rocket_contrib = "0.3"
 reqwest = "0.8"
 flate2 = "1.0"
 lazy_static = "1.0"
-pombase_rc_string = { path = "../pombase_rc_string" }
-#pombase_rc_string = { git = "https://github.com/kimrutherford/pombase_rc_string.git" }
+pombase_rc_string = { git = "https://github.com/kimrutherford/pombase_rc_string.git" }
 
 [dependencies.serde]
 version = "1.0"
