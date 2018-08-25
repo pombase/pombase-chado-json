@@ -15,12 +15,9 @@ use self::pombase_rc_string::RcString;
 
 
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
-                           cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str, accession: &str)
-                           -> Rc<Cvterm> {
-    let dbxref = Rc::new(Dbxref {
-        accession: String::from(accession),
-        db: db.clone(),
-    });
+                           cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str,
+                           accession: &str) -> Rc<Cvterm> {
+    let dbxref = Rc::new(Dbxref::new(db.clone(), accession.to_owned()));
     let cvterm = Rc::new(Cvterm::new(
         cv.clone(),
         dbxref.clone(),
@@ -50,7 +47,7 @@ fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
 }
 
 fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
-                     type_cvterm: &Rc<Cvterm>, uniquename: &str, name: Option<String>)
+                     type_cvterm: &Rc<Cvterm>, uniquename: &str, name: Option<RcString>)
                      -> Rc<Feature> {
     let residues =
         if type_cvterm.name == "chromosome" {
@@ -74,7 +71,7 @@ ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
 }
 
 fn make_test_featureprop(featureprops: &mut Vec<Rc<Featureprop>>, feature: &Rc<Feature>,
-                         type_cvterm: &Rc<Cvterm>, value: Option<String>) -> Rc<Featureprop> {
+                         type_cvterm: &Rc<Cvterm>, value: Option<RcString>) -> Rc<Featureprop> {
     let featureprop = Rc::new(Featureprop {
         feature: feature.clone(),
         prop_type: type_cvterm.clone(),
@@ -568,9 +565,9 @@ fn get_test_config() -> Config {
         chromosomes: HashMap::new(),
         query_data_config: QueryDataConfig {
             go_components: vec![
-                "GO:0005634".to_owned(), "GO:0005783".to_owned(),
-                "GO:0005739".to_owned(), "GO:0005737".to_owned(),
-                "GO:0005575".to_owned(),
+                RcString::from("GO:0005634"), RcString::from("GO:0005783"),
+                RcString::from("GO:0005739"), RcString::from("GO:0005737"),
+                RcString::from("GO:0005575"),
             ],
             go_process_superslim: vec![],
             go_function: vec![],
@@ -583,11 +580,11 @@ fn get_test_config() -> Config {
 
     config.cv_config.insert(RcString::from("molecular_function"),
                             CvConfig {
-                                feature_type: String::from("Gene"),
+                                feature_type: RcString::from("Gene"),
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
-                                summary_relation_ranges_to_collect: vec![String::from("has_substrate")],
+                                summary_relation_ranges_to_collect: vec![RcString::from("has_substrate")],
                                 sort_details_by: None,
                             });
 
@@ -748,11 +745,11 @@ fn test_terms() {
 
     let go0031030_cvterm = web_data.api_maps.terms.get("GO:0031030").unwrap();
     assert_eq!("negative regulation of septation initiation signaling",
-               go0031030_cvterm.name);
+               go0031030_cvterm.name.as_str());
     assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 
     let bp_cvterm = web_data.api_maps.terms.get("GO:0008150").unwrap();
-    assert_eq!("biological_process", bp_cvterm.name);
+    assert_eq!("biological_process", bp_cvterm.name.as_str());
     assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 }
 

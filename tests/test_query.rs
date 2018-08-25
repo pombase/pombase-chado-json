@@ -11,7 +11,7 @@ use self::pombase::api::query_exec::*;
 use self::pombase::web::config::TermAndName;
 use self::pombase::web::data::{GeneShort, DeletionViability, GeneQueryTermData};
 
-use RcString;
+use self::pombase_rc_string::RcString;
 
 fn get_server_data() -> ServerData {
     use std::path::PathBuf;
@@ -119,7 +119,7 @@ fn test_output_options() {
     let expected_results =
         vec![
             ResultRow {
-                gene_uniquename: "SPAC19G12.04".to_owned(),
+                gene_uniquename: RcString::from("SPAC19G12.04"),
                 deletion_viability: Some(DeletionViability::Inviable),
                 go_component: None,
                 go_process_superslim: None,
@@ -128,7 +128,7 @@ fn test_output_options() {
                 sequence: None,
             },
             ResultRow {
-                gene_uniquename: "SPAC1805.15c".to_owned(),
+                gene_uniquename: RcString::from("SPAC1805.15c"),
                 deletion_viability: Some(DeletionViability::Viable),
                 go_component: Some(GeneQueryTermData::Other),
                 go_process_superslim: None,
@@ -137,11 +137,11 @@ fn test_output_options() {
                 sequence: None,
             },
             ResultRow {
-                gene_uniquename: "SPAC27E2.05".to_owned(),
+                gene_uniquename: RcString::from("SPAC27E2.05"),
                 deletion_viability: Some(DeletionViability::DependsOnConditions),
                 go_component: Some(GeneQueryTermData::Term(TermAndName {
-                    termid: "GO:0005634".to_owned(),
-                    name: "nucleus".to_owned(),
+                    termid: RcString::from("GO:0005634"),
+                    name: RcString::from("nucleus"),
                 })),
                 go_process_superslim: None,
                 go_function: None,

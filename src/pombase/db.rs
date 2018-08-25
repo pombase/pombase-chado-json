@@ -67,7 +67,7 @@ pub struct Cvprop {
     pub cv: Rc<Cv>,
 }
 pub struct Db {
-    pub name: String,
+    pub name: RcString,
 }
 pub struct Dbxref {
     pub accession: String,
@@ -310,8 +310,9 @@ impl Raw {
 
         for row in &conn.query("SELECT db_id, name FROM db", &[]).unwrap() {
             let db_id = row.get(0);
+            let name: String = row.get(1);
             let db = Db {
-                name: row.get(1),
+                name: RcString::from(&name),
             };
             let rc_db = Rc::new(db);
             ret.dbs.push(rc_db.clone());
