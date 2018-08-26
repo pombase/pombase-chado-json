@@ -3785,7 +3785,7 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            terms_for_api.insert(termid.clone(), term_details.clone());
+            terms_for_api.insert(termid.clone(), term_details);
         }
 
         APIMaps {
@@ -3794,14 +3794,14 @@ impl <'a> WebDataBuild<'a> {
             termid_genes,
             termid_genotype_annotation,
             term_summaries,
-            genes: self.genes.clone(),
+            genes: self.genes,
             gene_name_gene_map,
-            genotypes: self.genotypes.clone(),
-            terms: terms_for_api.clone(),
+            genotypes: self.genotypes,
+            terms: terms_for_api,
             interactors_of_genes,
-            references: self.references.clone(),
-            other_features: self.other_features.clone(),
-            annotation_details: self.annotation_details.clone(),
+            references: self.references,
+            other_features: self.other_features,
+            annotation_details: self.annotation_details,
        }
     }
 
