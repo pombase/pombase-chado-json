@@ -998,10 +998,12 @@ impl <'a> WebDataBuild<'a> {
                        identifier: &str,
                        maybe_reference_uniquename: &Option<ReferenceUniquename>) {
         if let Some(reference_uniquename) = maybe_reference_uniquename {
-            seen_references
-                .entry(identifier.into())
-                .or_insert_with(HashMap::new)
-                .insert(reference_uniquename.clone(), None);
+            if reference_uniquename != "null" {
+                seen_references
+                    .entry(identifier.into())
+                    .or_insert_with(HashMap::new)
+                    .insert(reference_uniquename.clone(), None);
+            }
         }
     }
 
@@ -1253,6 +1255,10 @@ impl <'a> WebDataBuild<'a> {
 
         for rc_publication in &self.raw.publications {
             let reference_uniquename = &rc_publication.uniquename;
+
+            if reference_uniquename.to_lowercase() == "null" {
+                continue;
+            }
 
             let mut pubmed_authors: Option<RcString> = None;
             let mut pubmed_publication_date: Option<RcString> = None;
@@ -2015,7 +2021,12 @@ impl <'a> WebDataBuild<'a> {
                         let maybe_publication = borrowed_publications.get(0);
                         let maybe_reference_uniquename =
                             match maybe_publication {
-                                Some(publication) => Some(publication.uniquename.clone()),
+                                Some(publication) =>
+                                    if publication.uniquename == "null" {
+                                        None
+                                    } else {
+                                        Some(publication.uniquename.clone())
+                                    },
                                 None => None,
                             };
 
