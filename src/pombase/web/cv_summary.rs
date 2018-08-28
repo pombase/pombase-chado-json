@@ -411,7 +411,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                 .collect::<Vec<ExtPart>>();
 
             if let Some(ref residue) = annotation.residue {
-                let display_name = RcString::from("modifies");
+                let display_name = RcString::from("modified residue");
                 let residue_range_part = ExtPart {
                     rel_type_name: display_name.clone(),
                     rel_type_display_name: display_name,
