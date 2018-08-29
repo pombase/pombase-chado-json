@@ -1,6 +1,8 @@
 {
   "load_organism_taxonid": 4896,
   "database_name": "PomBase",
+  "database_citation": "PMID:22039153",
+  "base_url": "https://www.pombase.org",
   "organisms": [
     {
       "taxonid": 4896,

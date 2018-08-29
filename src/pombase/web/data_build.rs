@@ -1498,6 +1498,7 @@ impl <'a> WebDataBuild<'a> {
             synonyms: vec![],
             dbxrefs,
             feature_type: feat.feat_type.name.clone(),
+            transcript_so_termid: feat.feat_type.termid(),
             characterisation_status: None,
             location: maybe_location,
             gene_neighbourhood: vec![],
@@ -1633,6 +1634,7 @@ impl <'a> WebDataBuild<'a> {
                     gene_details.feature_type = RcString::from(&feature_type);
                 }
                 gene_details.transcripts.push(transcript);
+                gene_details.transcript_so_termid = feat.feat_type.termid();
             } else {
                 panic!("can't find gene for transcript: {}", transcript_uniquename);
             }

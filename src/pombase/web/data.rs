@@ -60,6 +60,7 @@ use std::collections::HashSet;
 
 use web::config::*;
 use types::*;
+use rnacentral::*;
 use interpro::InterProMatch;
 
 const FASTA_SEQ_COLUMNS: usize = 60;
@@ -592,6 +593,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<RcString>,
     pub feature_type: RcString,
+    pub transcript_so_termid: TermId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub characterisation_status: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -622,6 +624,28 @@ pub struct GeneDetails {
     pub terms_by_termid: TermShortOptionMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub annotation_details: IdOntAnnotationDetailMap,
+}
+
+impl GeneDetails {
+    pub fn spliced_transcript_sequence(&self) -> Option<RcString> {
+        if self.transcripts.len() > 1 {
+            panic!("no support for multi-transcript genes");
+        }
+
+        if let Some(transcript) = self.transcripts.get(0) {
+            let mut seq = String::new();
+
+            for part in &transcript.parts {
+                if part.feature_type == FeatureType::Exon {
+                    seq += &part.residues;
+                }
+            }
+
+            Some(RcString::from(&seq))
+        } else {
+            None
+        }
+    }
 }
 
 impl AnnotationContainer for GeneDetails {
@@ -1932,6 +1956,23 @@ impl WebData {
         Ok(())
     }
 
+    fn write_rnacentral(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+        if config.file_exports.rnacentral.is_some() {
+            let rnacentral_file_name = format!("{}/rnacentral.json", output_dir);
+            let rnacentral_file = File::create(rnacentral_file_name).expect("Unable to open file");
+            let mut rnacentral_writer = BufWriter::new(&rnacentral_file);
+            let rnacentral_struct = make_rnacentral_struct(&config, &self.api_maps.genes);
+            let s = serde_json::to_string(&rnacentral_struct).unwrap();
+
+            rnacentral_writer.write_all(s.as_bytes())?;
+            rnacentral_writer.write_all(b"\n")?;
+
+            Ok(())
+        } else {
+            Ok(())
+        }
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
@@ -1963,6 +2004,7 @@ impl WebData {
         self.write_protein_features(&config, &misc_path)?;
         self.write_feature_coords(&config, &misc_path)?;
         self.write_macromolecular_complexes(&config, &misc_path)?;
+        self.write_rnacentral(&config, &misc_path)?;
 
         let gff_path = self.create_dir(output_dir, "gff");
         self.write_gff(&config, &gff_path)?;
@@ -1999,3 +2041,4 @@ impl WebData {
         trans.commit().unwrap();
     }
 }
+

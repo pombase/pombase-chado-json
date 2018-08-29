@@ -169,6 +169,7 @@ fn make_test_gene() -> GeneDetails {
         synonyms: vec![],
         dbxrefs: HashSet::new(),
         feature_type: RcString::from("mRNA gene"),
+        transcript_so_termid: RcString::from("SO:0001217"),
         characterisation_status: Some(RcString::from("published")),
         location: Some(ChromosomeLocation {
             chromosome_name: RcString::from("chromosome_3"),

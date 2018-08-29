@@ -17,7 +17,9 @@ use pombase_rc_string::RcString;
 fn get_test_config() -> Config {
     let mut config = Config {
         database_name: "PomBase".into(),
+        database_citation: RcString::from("PMID:22039153"),
         load_organism_taxonid: 4896,
+        base_url: RcString::from("https://www.pombase.org"),
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,
@@ -84,6 +86,7 @@ fn get_test_config() -> Config {
         },
         file_exports: FileExportConfig {
             macromolecular_complexes: None,
+            rnacentral: None,
         },
     };
 
@@ -391,6 +394,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         synonyms: vec![],
         dbxrefs: HashSet::new(),
         feature_type: RcString::from("gene"),
+        transcript_so_termid: RcString::from("SO:0001217"),
         characterisation_status: None,
         location: None,
         gene_neighbourhood: vec![],

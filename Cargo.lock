@@ -820,7 +820,7 @@ dependencies = [
 [[package]]
 name = "pombase_rc_string"
 version = "0.1.0"
-source = "git+https://github.com/kimrutherford/pombase_rc_string.git#4b6cedec7dbeca73f72ec2a8a026a29933894c99"
+source = "git+https://github.com/kimrutherford/pombase_rc_string.git#03fb35b6653848ff898f5e81dd2d8837b19b20a5"
 dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.75 (registry+https://github.com/rust-lang/crates.io-index)",

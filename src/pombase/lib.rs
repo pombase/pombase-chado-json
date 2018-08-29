@@ -14,3 +14,4 @@ pub mod types;
 pub mod interpro;
 pub mod api;
 pub mod bio;
+pub mod rnacentral;

@@ -518,6 +518,8 @@ fn get_test_config() -> Config {
     let mut config = Config {
         load_organism_taxonid: 4896,
         database_name: "PomBase".into(),
+        database_citation: RcString::from("PMID:22039153"),
+        base_url: RcString::from("https://www.pombase.org"),
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,
@@ -575,6 +577,7 @@ fn get_test_config() -> Config {
         },
         file_exports: FileExportConfig {
             macromolecular_complexes: None,
+            rnacentral: None,
         },
     };
 

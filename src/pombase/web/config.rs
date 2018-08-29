@@ -161,14 +161,25 @@ pub struct MacromolecularComplexesConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct RNAcentralConfig {
+    // SO termids of RNA features to export
+    pub export_so_ids: HashSet<RcString>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct FileExportConfig {
+    #[serde(skip_serializing_if="Option::is_none")]
     pub macromolecular_complexes: Option<MacromolecularComplexesConfig>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub rnacentral: Option<RNAcentralConfig>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: RcString,
+    pub database_citation: RcString,
     pub load_organism_taxonid: OrganismTaxonId,
+    pub base_url: RcString,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
