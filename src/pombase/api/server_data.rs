@@ -36,7 +36,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     let file = match File::open(search_maps_file_name) {
         Ok(file) => file,
         Err(err) => {
-            print!("Failed to read {}: {}\n", search_maps_file_name, err);
+            eprint!("Failed to read {}: {}\n", search_maps_file_name, err);
             process::exit(1);
         }
     };
@@ -50,7 +50,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
         match serde_json::from_str(&decoded_json) {
             Ok(results) => results,
             Err(err) => {
-                print!("failed to parse {}: {}", search_maps_file_name, err);
+                eprint!("failed to parse {}: {}", search_maps_file_name, err);
                 process::exit(1);
             },
         };
@@ -58,7 +58,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     let file = match File::open(gene_subsets_file_name) {
         Ok(file) => file,
         Err(err) => {
-            print!("Failed to read {}: {}\n", gene_subsets_file_name, err);
+            eprint!("Failed to read {}: {}\n", gene_subsets_file_name, err);
             process::exit(1);
         }
     };
@@ -68,7 +68,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
         match serde_json::from_reader(reader) {
             Ok(results) => results,
             Err(err) => {
-                print!("failed to parse {}: {}", gene_subsets_file_name, err);
+                eprint!("failed to parse {}: {}", gene_subsets_file_name, err);
                 process::exit(1);
             },
         };

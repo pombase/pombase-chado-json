@@ -21,8 +21,9 @@ fn get_server_data() -> ServerData {
     gene_subsets_path.push("tests/test_gene_subsets.json");
     let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     config_path.push("tests/test_config.json");
-    ServerData::new(config_path.to_str().unwrap(), search_maps_path.to_str().unwrap(),
-                    gene_subsets_path.to_str().unwrap())
+    ServerData::new(config_path.to_str().expect("config"),
+                    search_maps_path.to_str().expect("search maps"),
+                    gene_subsets_path.to_str().expect("subsets"))
 }
 
 fn check_gene_result(query: &Query, genes: Vec<&str>) {
