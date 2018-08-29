@@ -28,6 +28,7 @@ fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
         taxonid: maybe_taxonid.unwrap(),
         genus: rc_organism.genus.clone(),
         species: rc_organism.species.clone(),
+        assembly_version: None,
     }
 }
 

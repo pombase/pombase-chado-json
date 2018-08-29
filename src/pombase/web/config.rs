@@ -99,6 +99,7 @@ pub struct ConfigOrganism {
     pub taxonid: OrganismTaxonId,
     pub genus: RcString,
     pub species: RcString,
+    pub assembly_version: Option<RcString>,
 }
 
 impl ConfigOrganism {

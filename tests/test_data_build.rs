@@ -25,16 +25,19 @@ fn get_test_config() -> Config {
                 taxonid: 4896,
                 genus: RcString::from("Schizosaccharomyces"),
                 species: RcString::from("pombe"),
+                assembly_version: Some(RcString::from("ASM294v2")),
             },
             ConfigOrganism {
                 taxonid: 9606,
                 genus: RcString::from("Homo"),
                 species: RcString::from("sapiens"),
+                assembly_version: None,
             },
             ConfigOrganism {
                 taxonid: 4932,
                 genus: RcString::from("Saccharomyces"),
                 species: RcString::from("cerevisiae"),
+                assembly_version: None,
             }
         ],
         api_seq_chunk_sizes: vec![10_000, 200_000],
