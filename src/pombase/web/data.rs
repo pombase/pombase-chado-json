@@ -624,6 +624,8 @@ pub struct GeneDetails {
     pub terms_by_termid: TermShortOptionMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub annotation_details: IdOntAnnotationDetailMap,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub feature_publications: HashSet<ReferenceUniquename>,
 }
 
 impl GeneDetails {

@@ -411,6 +411,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         alleles_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
         annotation_details: HashMap::new(),
+        feature_publications: HashSet::new(),
     }
 }
 

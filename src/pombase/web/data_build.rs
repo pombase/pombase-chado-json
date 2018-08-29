@@ -1515,6 +1515,7 @@ impl <'a> WebDataBuild<'a> {
             references_by_uniquename: HashMap::new(),
             terms_by_termid: HashMap::new(),
             annotation_details: HashMap::new(),
+            feature_publications: HashSet::new(),
         };
 
         self.genes.insert(feat.uniquename.clone(), gene_feature);
@@ -2643,6 +2644,17 @@ impl <'a> WebDataBuild<'a> {
                     name: synonym.name.clone(),
                     synonym_type: synonym.synonym_type.name.clone()
                 });
+            }
+        }
+    }
+
+    fn process_feature_publications(&mut self) {
+        for feature_pub in &self.raw.feature_pubs {
+            let feature = &feature_pub.feature;
+            let publication = &feature_pub.publication;
+
+            if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
+                gene_details.feature_publications.insert(publication.uniquename.clone());
             }
         }
     }
@@ -3995,6 +4007,11 @@ impl <'a> WebDataBuild<'a> {
                     self.add_ref_to_hash(&mut seen_references, gene_uniquename,
                                          &target_of_annotation.reference_uniquename);
                 }
+
+                for publication in &gene_details.feature_publications {
+                    self.add_ref_to_hash(&mut seen_references, gene_uniquename,
+                                         &Some(publication.clone()));
+                }
             }
         }
 
@@ -4590,6 +4607,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_cvterm_rels();
         self.process_extension_cvterms();
         self.process_feature_synonyms();
+        self.process_feature_publications();
         self.process_feature_cvterms();
         self.store_ont_annotations(false);
         self.store_ont_annotations(true);

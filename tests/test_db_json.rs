@@ -65,6 +65,7 @@ ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
         residues: Some(residues.into()),
         featurelocs: RefCell::new(vec![]),
         featureprops: RefCell::new(vec![]),
+        featurepubs: RefCell::new(vec![]),
     });
     features.push(feature.clone());
     feature
@@ -504,6 +505,7 @@ fn get_test_raw() -> Raw {
         synonyms: vec![],
         features: features,
         feature_synonyms: vec![],
+        feature_pubs: vec![],
         feature_dbxrefs: vec![],
         featureprops: featureprops,
         featurelocs: vec![],
