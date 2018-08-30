@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 use chrono::prelude::{Local, DateTime};
 
 use web::config::Config;
@@ -51,6 +53,8 @@ pub struct RNAcentralNcRNA {
     pub sequence: Option<RcString>,
     pub url: RcString,
     pub gene: RNAcentralGene,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub publications: HashSet<RcString>,
 }
 
 #[derive(Serialize, Debug)]
@@ -116,6 +120,7 @@ fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA>
                     .map(|s| RcString::from(&s.to_uppercase())),
                 url: make_url(config, gene_details),
                 gene: rnacentral_gene,
+                publications: gene_details.feature_publications.clone(),
             }
         }).collect()
 }
