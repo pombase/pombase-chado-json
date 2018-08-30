@@ -4,7 +4,7 @@ use chrono::prelude::{Local, DateTime};
 
 use web::config::Config;
 
-use web::data::{UniquenameGeneMap, GeneDetails};
+use web::data::{UniquenameGeneMap, GeneDetails, FeatureType};
 
 use pombase_rc_string::RcString;
 
@@ -39,6 +39,21 @@ pub struct RNAcentralGenomeLocationExon {
 }
 
 #[derive(Serialize, Debug)]
+pub struct RNAcentralNcRNALocationExon {
+#[serde(rename = "startPosition")]
+    pub start_position: u32,
+#[serde(rename = "endPosition")]
+    pub end_position: u32,
+    pub strand: RcString,
+}
+
+#[derive(Serialize, Debug)]
+pub struct RNAcentralNcRNALocation {
+    pub assembly: RcString,
+    pub exons: Vec<RNAcentralNcRNALocationExon>,
+}
+
+#[derive(Serialize, Debug)]
 pub struct RNAcentralNcRNA {
 #[serde(rename = "primaryId")]
     pub primary_id: RcString,
@@ -53,6 +68,8 @@ pub struct RNAcentralNcRNA {
     pub sequence: Option<RcString>,
     pub url: RcString,
     pub gene: RNAcentralGene,
+#[serde(rename = "genomeLocations")]
+    pub genome_locations: Vec<RNAcentralNcRNALocation>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub publications: HashSet<RcString>,
 }
@@ -97,6 +114,46 @@ fn make_gene_struct(config: &Config, gene_details: &GeneDetails) -> RNAcentralGe
     }
 }
 
+fn make_genome_locations(config: &Config, gene_details: &GeneDetails)
+                         -> Vec<RNAcentralNcRNALocation>
+{
+    let assembly_version =
+        config.organisms.iter()
+        .filter(|org| org.taxonid == gene_details.taxonid)
+        .collect::<Vec<_>>().get(0)
+        .expect(&format!("organism not found in configuration: {}", gene_details.taxonid))
+        .assembly_version.clone()
+        .expect(&format!("no assembly_version for: {}", gene_details.taxonid));
+
+    let mut ret = vec![];
+
+    for transcript in &gene_details.transcripts {
+        let mut exons = vec![];
+        for part in &transcript.parts {
+            if part.feature_type == FeatureType::Exon {
+                let mut start_position = part.location.start_pos - 1;
+                let mut end_position = part.location.end_pos;
+                if start_position > end_position {
+                    use std::mem;
+                    mem::swap(&mut start_position, &mut end_position);
+                }
+                exons.push(RNAcentralNcRNALocationExon {
+                    start_position,
+                    end_position,
+                    strand: RcString::from(part.location.strand.to_gff_str()),
+                });
+            }
+        }
+
+        ret.push(RNAcentralNcRNALocation {
+            assembly: assembly_version.clone(),
+            exons,
+        })
+    }
+
+    ret
+}
+
 fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA> {
     genes.values()
         .filter(|gene_details| {
@@ -110,6 +167,7 @@ fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA>
             let rnacentral_gene = make_gene_struct(config, &gene_details);
             let primary_id = db_uniquename(config, gene_details);
             let symbol_synonyms = gene_synonyms(gene_details);
+            let locations = make_genome_locations(config, gene_details);
             RNAcentralNcRNA {
                 primary_id,
                 taxon_id: RcString::from(&format!("NCBITaxon:{}", gene_details.taxonid)),
@@ -120,6 +178,7 @@ fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA>
                     .map(|s| RcString::from(&s.to_uppercase())),
                 url: make_url(config, gene_details),
                 gene: rnacentral_gene,
+                genome_locations: locations,
                 publications: gene_details.feature_publications.clone(),
             }
         }).collect()
