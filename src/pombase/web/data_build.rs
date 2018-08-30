@@ -2654,8 +2654,10 @@ impl <'a> WebDataBuild<'a> {
             let feature = &feature_pub.feature;
             let publication = &feature_pub.publication;
 
-            if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
-                gene_details.feature_publications.insert(publication.uniquename.clone());
+            if publication.uniquename.starts_with("PMID:") {
+                if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
+                    gene_details.feature_publications.insert(publication.uniquename.clone());
+                }
             }
         }
     }
