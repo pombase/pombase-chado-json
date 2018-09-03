@@ -525,6 +525,12 @@ impl Strand {
     }
 }
 
+impl Display for Strand {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_str(self.to_gff_str())
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeShort {
     pub name: RcString,
