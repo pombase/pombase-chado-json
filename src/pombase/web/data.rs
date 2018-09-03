@@ -1362,6 +1362,7 @@ impl WebData {
         let mut cds_writer = make_seq_writer("cds.fa");
         let mut cds_introns_writer = make_seq_writer("cds+introns.fa");
         let mut cds_introns_utrs_writer = make_seq_writer("cds+introns+utrs.fa");
+        let mut introns_writer = make_seq_writer("introns.fa");
         let mut five_prime_utrs_writer = make_seq_writer("five_prime_utrs.fa");
         let mut three_prime_utrs_writer = make_seq_writer("three_prime_utrs.fa");
         let mut peptide_writer = make_seq_writer("peptide.fa");
@@ -1381,6 +1382,13 @@ impl WebData {
                     if part.feature_type == FeatureType::CdsIntron {
                         cds_introns_seq += &part.residues;
                     }
+                    if part.feature_type == FeatureType::ThreePrimeUtrIntron ||
+                        part.feature_type == FeatureType::FivePrimeUtrIntron ||
+                        part.feature_type == FeatureType::CdsIntron {
+                            write_as_fasta(&mut introns_writer, &part.uniquename,
+                                           Some(String::from(gene_uniquename)),
+                                           &part.residues);
+                        }
                     cds_introns_utrs_seq += &part.residues;
                     if part.feature_type == FeatureType::FivePrimeUtr {
                         five_prime_utr_seq += &part.residues;
@@ -1410,8 +1418,12 @@ impl WebData {
         }
 
         cds_writer.flush().unwrap();
+        cds_introns_writer.flush().unwrap();
         cds_introns_utrs_writer.flush().unwrap();
+        introns_writer.flush().unwrap();
         peptide_writer.flush().unwrap();
+        five_prime_utrs_writer.flush().unwrap();
+        three_prime_utrs_writer.flush().unwrap();
     }
 
     pub fn write_chromosome_sequences(&self, config: &Config, output_dir: &str) {
