@@ -1746,6 +1746,11 @@ impl <'a> WebDataBuild<'a> {
 
         let residues = feat.residues.clone().unwrap();
 
+        if !residues.is_ascii() {
+            panic!("sequence for chromosome {} contains non-ascii characters",
+                   feat.uniquename);
+        }
+
         let chr = ChromosomeDetails {
             name: feat.uniquename.clone(),
             residues: RcString::from(&residues),
