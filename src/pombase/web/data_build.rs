@@ -3835,6 +3835,7 @@ impl <'a> WebDataBuild<'a> {
             references: self.references,
             other_features: self.other_features,
             annotation_details: self.annotation_details,
+            chromosomes: self.chromosomes,
        }
     }
 

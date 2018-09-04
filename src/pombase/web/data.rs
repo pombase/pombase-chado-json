@@ -1089,6 +1089,7 @@ pub struct APIMaps {
     pub references: UniquenameReferenceMap,
     pub other_features: UniquenameFeatureShortMap,
     pub annotation_details: IdOntAnnotationDetailMap,
+    pub chromosomes: ChrNameDetailsMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
