@@ -4,6 +4,28 @@ use web::data::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
 
 use pombase_rc_string::RcString;
 
+fn complement_char(base: char) -> char {
+    match base {
+        'a' => 't',
+        'A' => 'T',
+        't' => 'a',
+        'T' => 'A',
+        'g' => 'c',
+        'G' => 'C',
+        'c' => 'g',
+        'C' => 'G',
+        _ => 'n',
+    }
+}
+
+pub fn rev_comp(residues: &str) -> RcString {
+    let residues: String = residues.chars()
+        .rev().map(complement_char)
+        .collect();
+    RcString::from(&residues)
+}
+
+
 pub fn format_fasta(id: &str, maybe_desc: Option<String>,
                     seq: &str, width: usize) -> String {
     let mut ret = ">".to_owned() + id;

@@ -13,6 +13,9 @@ use web::data::*;
 use web::config::*;
 use web::cv_summary::make_cv_summaries;
 use web::util::cmp_str_dates;
+
+use bio::util::rev_comp;
+
 use pombase_rc_string::RcString;
 
 use interpro::UniprotResult;
@@ -361,27 +364,6 @@ fn make_location(chromosome_map: &ChrNameDetailsMap,
         },
         None => None,
     }
-}
-
-fn complement_char(base: char) -> char {
-    match base {
-        'a' => 't',
-        'A' => 'T',
-        't' => 'a',
-        'T' => 'A',
-        'g' => 'c',
-        'G' => 'C',
-        'c' => 'g',
-        'C' => 'G',
-        _ => 'n',
-    }
-}
-
-fn rev_comp(residues: &str) -> Residues {
-    let residues: String = residues.chars()
-        .rev().map(complement_char)
-        .collect();
-    RcString::from(&residues)
 }
 
 fn get_loc_residues(chr: &ChromosomeDetails,
