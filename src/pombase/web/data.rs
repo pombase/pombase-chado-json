@@ -1809,19 +1809,24 @@ impl WebData {
     pub fn write_gff(&self, config: &Config, output_dir: &str)
                          -> Result<(), io::Error>
     {
-        let all_gff_name = format!("{}/all_chromosomes.gff3", output_dir);
+        let load_org_name = config.load_organism().full_name();
+
+        let all_gff_name = format!("{}/{}_all_chromosomes.gff3", output_dir, load_org_name);
         let all_gff_file = File::create(all_gff_name).expect("Unable to open file");
         let mut all_gff_writer = BufWriter::new(&all_gff_file);
 
-        let forward_features_gff_name = format!("{}/all_chromosomes_forward_strand.gff3", output_dir);
+        let forward_features_gff_name =
+            format!("{}/{}_all_chromosomes_forward_strand.gff3", output_dir, load_org_name);
         let forward_features_gff_file = File::create(forward_features_gff_name).expect("Unable to open file");
         let mut forward_features_gff_writer = BufWriter::new(&forward_features_gff_file);
 
-        let reverse_features_gff_name = format!("{}/all_chromosomes_reverse_strand.gff3", output_dir);
+        let reverse_features_gff_name =
+            format!("{}/{}_all_chromosomes_reverse_strand.gff3", output_dir, load_org_name);
         let reverse_features_gff_file = File::create(reverse_features_gff_name).expect("Unable to open file");
         let mut reverse_features_gff_writer = BufWriter::new(&reverse_features_gff_file);
 
-        let unstranded_features_gff_name = format!("{}/all_chromosomes_unstranded.gff3", output_dir);
+        let unstranded_features_gff_name =
+            format!("{}/{}_all_chromosomes_unstranded.gff3", output_dir, load_org_name);
         let unstranded_features_gff_file = File::create(unstranded_features_gff_name).expect("Unable to open file");
         let mut unstranded_features_gff_writer = BufWriter::new(&unstranded_features_gff_file);
 
@@ -1831,8 +1836,6 @@ impl WebData {
         unstranded_features_gff_writer.write_all(b"##gff-version 3\n")?;
 
         let mut chr_writers = HashMap::new();
-
-        let load_org_name = config.load_organism().full_name();
 
         let make_chr_gff_writer = |export_name: &str| {
             let file_name = String::new() +
