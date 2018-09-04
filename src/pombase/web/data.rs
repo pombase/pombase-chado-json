@@ -1830,6 +1830,22 @@ impl WebData {
         reverse_features_gff_writer.write_all(b"##gff-version 3\n")?;
         unstranded_features_gff_writer.write_all(b"##gff-version 3\n")?;
 
+        let mut chr_writers = HashMap::new();
+
+        let load_org_name = config.load_organism().full_name();
+
+        let make_chr_gff_writer = |export_name: &str| {
+            let file_name = String::new() +
+                output_dir + "/" + &load_org_name + "_" + export_name + ".gff3";
+            let file = File::create(file_name).expect("Unable to open file");
+            BufWriter::new(file)
+        };
+
+        for uniquename in self.chromosomes.keys() {
+            let chr_config = config.find_chromosome_config(uniquename);
+            chr_writers.insert(uniquename, make_chr_gff_writer(&chr_config.export_file_id));
+        }
+
         for gene_details in self.api_maps.genes.values() {
             if let Some(ref gene_loc) = gene_details.location {
                 let chromosome_name = &gene_loc.chromosome_name;
@@ -1855,9 +1871,15 @@ impl WebData {
                             unstranded_features_gff_writer.write_all(b"\n")?;
                         }
                     }
+
+                    if let Some(ref mut writer) = chr_writers.get_mut(chromosome_name) {
+                        writer.write_all(gff_line.as_bytes())?;
+                        writer.write_all(b"\n")?;
+                    }
                 }
             }
         }
+
         for feature_short in self.api_maps.other_features.values() {
             let chromosome_name = &feature_short.location.chromosome_name;
             let chromosome_export_id =
@@ -1883,8 +1905,18 @@ impl WebData {
                         unstranded_features_gff_writer.write_all(b"\n")?;
                     }
                 }
+
+                if let Some(ref mut writer) = chr_writers.get_mut(chromosome_name) {
+                    writer.write_all(gff_line.as_bytes())?;
+                    writer.write_all(b"\n")?;
+                }
             }
         }
+
+        for writer in chr_writers.values_mut() {
+            writer.flush().unwrap();
+        }
+
         Ok(())
     }
 
