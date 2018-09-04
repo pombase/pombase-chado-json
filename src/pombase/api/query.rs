@@ -313,6 +313,8 @@ pub struct NucleotideDownloadOptions {
     include_introns: bool,
     include_5_prime_utr: bool,
     include_3_prime_utr: bool,
+    upstream_bases: Option<u32>,
+    downstream_bases: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
