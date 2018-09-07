@@ -9,7 +9,7 @@ use std::collections::HashSet;
 use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
                 InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
-                TermShort, TermShortOptionMap,
+                TermShort, TermShortOptionMap, ChromosomeDetails,
                 ReferenceShort, ReferenceShortOptionMap,
                 GeneShort, GeneShortOptionMap, GeneQueryData};
 use web::config::Config;
@@ -386,6 +386,10 @@ impl ServerData {
         } else {
             vec![]
         }
+    }
+
+    pub fn get_chr_details(&self, chr_name: &str) -> Option<&ChromosomeDetails> {
+        self.maps.chromosomes.get(chr_name)
     }
 
     pub fn reload(&mut self) {
