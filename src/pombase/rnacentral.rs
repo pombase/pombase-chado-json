@@ -32,18 +32,18 @@ pub struct RNAcentralGenomeLocation {
 pub struct RNAcentralGenomeLocationExon {
     pub chromosome: RcString,
 #[serde(rename = "startPosition")]
-    pub start_position: u32,
+    pub start_position: usize,
 #[serde(rename = "endPosition")]
-    pub end_position: u32,
+    pub end_position: usize,
     pub strand: RcString,
 }
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralNcRNALocationExon {
 #[serde(rename = "startPosition")]
-    pub start_position: u32,
+    pub start_position: usize,
 #[serde(rename = "endPosition")]
-    pub end_position: u32,
+    pub end_position: usize,
     pub strand: RcString,
 }
 

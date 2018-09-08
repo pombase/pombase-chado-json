@@ -505,7 +505,7 @@ pub struct SynonymDetails {
     pub synonym_type: RcString
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
 pub enum Strand {
     #[serde(rename="forward")]
     Forward = 1,
@@ -559,8 +559,8 @@ impl Phase {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeLocation {
     pub chromosome_name: RcString,
-    pub start_pos: u32,
-    pub end_pos: u32,
+    pub start_pos: usize,
+    pub end_pos: usize,
     pub strand: Strand,
     #[serde(skip_serializing_if="Option::is_none")]
     pub phase: Option<Phase>,

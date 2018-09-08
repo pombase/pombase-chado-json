@@ -1,9 +1,13 @@
 use std::collections::hash_set::HashSet;
 use std::iter::FromIterator;
+use std::cmp;
 
 use api::server_data::ServerData;
 use api::result::*;
-use web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType};
+use web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
+                ChromosomeDetails, Strand};
+
+use bio::util::rev_comp;
 
 use types::GeneUniquename;
 
@@ -69,11 +73,11 @@ pub enum QueryNode {
 #[serde(rename = "gene_list")]
     GeneList { genes: Vec<GeneShort> },
 #[serde(rename = "int_range")]
-    IntRange { range_type: IntRangeType, start: Option<u64>, end: Option<u64> },
+    IntRange { range_type: IntRangeType, start: Option<usize>, end: Option<usize> },
 #[serde(rename = "float_range")]
     FloatRange { range_type: FloatRangeType, start: Option<f64>, end: Option<f64> },
 #[serde(rename = "genome_range")]
-    GenomeRange { start: Option<u64>, end: Option<u64>, chromosome_name: String, },
+    GenomeRange { start: Option<usize>, end: Option<usize>, chromosome_name: String, },
 #[serde(rename = "interactors")]
     Interactors { gene_uniquename: GeneUniquename, interaction_type: String },
 }
@@ -170,13 +174,13 @@ fn exec_gene_list(genes: &[GeneShort])
     Ok(ret)
 }
 
-fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<u64>, end: Option<u64>,
+fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<usize>, end: Option<usize>,
                               chromosome_name: &str) -> GeneUniquenameVecResult {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             if let Some(ref location) = gene.location {
-                (end.is_none() || u64::from(location.start_pos) <= end.unwrap()) &&
-                    (start.is_none() || u64::from(location.end_pos) >= start.unwrap()) &&
+                (end.is_none() || usize::from(location.start_pos) <= end.unwrap()) &&
+                    (start.is_none() || usize::from(location.end_pos) >= start.unwrap()) &&
                     location.chromosome_name == chromosome_name
             } else {
                 false
@@ -186,15 +190,15 @@ fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<u64>, end:
 }
 
 fn exec_protein_length_range(server_data: &ServerData,
-                             range_start: Option<u64>, range_end: Option<u64>)
+                             range_start: Option<usize>, range_end: Option<usize>)
                               -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
             if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
-                    (range_start.is_none() || protein.sequence.len() as u64 >= range_start.unwrap()) &&
-                    (range_end.is_none() || protein.sequence.len() as u64 <= range_end.unwrap())
+                    (range_start.is_none() || protein.sequence.len() >= range_start.unwrap()) &&
+                    (range_end.is_none() || protein.sequence.len() <= range_end.unwrap())
                 } else {
                     false
                 }
@@ -206,31 +210,31 @@ fn exec_protein_length_range(server_data: &ServerData,
 }
 
 fn exec_tm_domain_count_range(server_data: &ServerData,
-                              range_start: Option<u64>, range_end: Option<u64>)
+                              range_start: Option<usize>, range_end: Option<usize>)
                                -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
-            (range_start.is_none() || gene.tm_domain_count as u64 >= range_start.unwrap()) &&
-            (range_end.is_none() || gene.tm_domain_count as u64 <= range_end.unwrap())
+            (range_start.is_none() || gene.tm_domain_count >= range_start.unwrap()) &&
+            (range_end.is_none() || gene.tm_domain_count <= range_end.unwrap())
         });
     Ok(gene_uniquenames)
 }
 
 fn exec_exon_count_range(server_data: &ServerData,
-                         range_start: Option<u64>, range_end: Option<u64>)
+                         range_start: Option<usize>, range_end: Option<usize>)
                          -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
         server_data.filter_genes(&|gene: &APIGeneSummary| {
-            (range_start.is_none() || gene.exon_count as u64 >= range_start.unwrap()) &&
-            (range_end.is_none() || gene.exon_count as u64 <= range_end.unwrap())
+            (range_start.is_none() || gene.exon_count >= range_start.unwrap()) &&
+            (range_end.is_none() || gene.exon_count <= range_end.unwrap())
         });
     Ok(gene_uniquenames)
 }
 
 fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
-                  start: Option<u64>, end: Option<u64>) -> GeneUniquenameVecResult {
+                  start: Option<usize>, end: Option<usize>) -> GeneUniquenameVecResult {
     match *range_type {
         IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
         IntRangeType::TMDomainCount => exec_tm_domain_count_range(server_data, start, end),
@@ -313,8 +317,8 @@ pub struct NucleotideDownloadOptions {
     include_introns: bool,
     include_5_prime_utr: bool,
     include_3_prime_utr: bool,
-    upstream_bases: Option<u32>,
-    downstream_bases: Option<u32>,
+    upstream_bases: Option<usize>,
+    downstream_bases: Option<usize>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -339,6 +343,43 @@ pub struct Query {
     constraints: QueryNode,
 }
 
+#[derive(PartialEq)]
+enum BeforeOrAfter {
+    Before,
+    After,
+}
+
+fn get_chr_range(chr_residues: &RcString, feature_edge: usize, base_count: usize,
+                 before_or_after: BeforeOrAfter) -> RcString
+{
+    print!("{:?} {:?}\n", feature_edge, base_count);
+
+    let (start_pos, end_pos) =
+        if before_or_after == BeforeOrAfter::Before {
+            let start_pos =
+                if feature_edge < 1 + base_count {
+                    // prevent addition underflowing
+                    0
+                } else {
+                    cmp::max(0, feature_edge - 1 - base_count)
+                };
+            (start_pos, feature_edge - 1)
+        } else {
+            let end_pos =
+                if base_count > chr_residues.len() {
+                    // prevent addition overflowing
+                    chr_residues.len()
+                } else {
+                    cmp::min(chr_residues.len(), feature_edge + base_count)
+                };
+            (feature_edge, end_pos)
+        };
+
+    print!("{:?} {:?}\n", start_pos, end_pos);
+
+    RcString::from(&chr_residues.as_str()[start_pos..end_pos])
+}
+
 impl Query {
     pub fn new(constraints: QueryNode, output_options: QueryOutputOptions) -> Query {
         Query {
@@ -347,9 +388,40 @@ impl Query {
         }
     }
 
-    fn make_nucleotide_sequence(&self, transcript: &TranscriptDetails,
-                                options: &NucleotideDownloadOptions) -> RcString {
+    fn make_nucl_seq(&self, transcript: &TranscriptDetails,
+                     maybe_chr_details: Option<&ChromosomeDetails>,
+                     options: &NucleotideDownloadOptions) -> RcString {
         let mut seq = String::from("");
+
+        let loc = &transcript.location;
+        let cds_loc = &transcript.cds_location;
+
+        if let (Some(chr_details), Some(upstream_bases)) =
+            (maybe_chr_details, options.upstream_bases) {
+                let (before_or_after, feature_edge) =
+                    if options.include_5_prime_utr || cds_loc.is_none() {
+                        if loc.strand == Strand::Forward {
+                            (BeforeOrAfter::Before, loc.start_pos)
+                        } else {
+                            (BeforeOrAfter::After, loc.end_pos)
+                        }
+                    } else {
+                        if loc.strand == Strand::Forward {
+                            (BeforeOrAfter::Before, cds_loc.as_ref().unwrap().start_pos)
+                        } else {
+                            (BeforeOrAfter::After, cds_loc.as_ref().unwrap().end_pos)
+                        }
+                    };
+
+                let range_seq = get_chr_range(&chr_details.residues, feature_edge,
+                                              upstream_bases, before_or_after);
+
+                if loc.strand == Strand::Forward {
+                    seq += range_seq.as_str();
+                } else {
+                    seq += rev_comp(range_seq.as_str()).as_str();
+                }
+            }
 
         for part in &transcript.parts {
             if part.feature_type == FeatureType::Exon ||
@@ -363,6 +435,33 @@ impl Query {
                     seq += &part.residues;
                 }
         }
+
+        if let (Some(chr_details), Some(downstream_bases)) =
+            (maybe_chr_details, options.downstream_bases) {
+                let (before_or_after, feature_edge) =
+                    if options.include_3_prime_utr || cds_loc.is_none() {
+                        if loc.strand == Strand::Forward {
+                            (BeforeOrAfter::After, loc.end_pos)
+                        } else {
+                            (BeforeOrAfter::Before, loc.start_pos)
+                        }
+                    } else {
+                        if loc.strand == Strand::Forward {
+                            (BeforeOrAfter::After, cds_loc.as_ref().unwrap().end_pos)
+                        } else {
+                            (BeforeOrAfter::Before, cds_loc.as_ref().unwrap().start_pos)
+                        }
+                    };
+
+                let range_seq = get_chr_range(&chr_details.residues, feature_edge,
+                                              downstream_bases, before_or_after);
+
+                if loc.strand == Strand::Forward {
+                    seq += range_seq.as_str();
+                } else {
+                    seq += rev_comp(range_seq.as_str()).as_str();
+                }
+            }
 
         RcString::from(&seq)
     }
@@ -380,7 +479,11 @@ impl Query {
                             return Some(protein.sequence.clone());
                         }
                     SeqType::Nucleotide(ref options) => {
-                        return Some(self.make_nucleotide_sequence(transcript, options))
+                        let chr = gene_summary.location.as_ref()
+                            .map(|ref l| -> &RcString { &l.chromosome_name } )
+                            .map_or(None, |ref name| server_data.get_chr_details(name.as_str()));
+                        let seq = self.make_nucl_seq(transcript, chr, options);
+                        return Some(seq)
                     }
                     SeqType::None => (),
                 }

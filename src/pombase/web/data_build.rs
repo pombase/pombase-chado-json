@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, HashMap};
 use std::collections::HashSet;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
-use std::u32;
+use std::usize;
 
 use regex::Regex;
 
@@ -338,13 +338,13 @@ fn make_location(chromosome_map: &ChrNameDetailsMap,
         Some(feature_loc) => {
             let start_pos =
                 if feature_loc.fmin + 1 >= 1 {
-                    (feature_loc.fmin + 1) as u32
+                    (feature_loc.fmin + 1) as usize
                 } else {
                     panic!("start_pos less than 1");
                 };
             let end_pos =
                 if feature_loc.fmax >= 1 {
-                    feature_loc.fmax as u32
+                    feature_loc.fmax as usize
                 } else {
                     panic!("start_end less than 1");
                 };
@@ -1543,7 +1543,7 @@ impl <'a> WebDataBuild<'a> {
             panic!("transcript has no parts");
         }
 
-        let mut transcript_start = u32::MAX;
+        let mut transcript_start = usize::MAX;
         let mut transcript_end = 0;
 
         for part in &parts {
@@ -1566,7 +1566,7 @@ impl <'a> WebDataBuild<'a> {
 
         let maybe_cds_location =
             if feat.feat_type.name == "mRNA" {
-                let mut cds_start = u32::MAX;
+                let mut cds_start = usize::MAX;
                 let mut cds_end = 0;
 
                 for part in &parts {
