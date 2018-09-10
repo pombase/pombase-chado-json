@@ -546,7 +546,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
             let ord = cmp_gene_vec(genes, &detail1.genes, &detail2.genes);
 
             if ord == Ordering::Equal {
-                                if let Some(ref sort_details_by) = cv_config.sort_details_by {
+                if let Some(ref sort_details_by) = cv_config.sort_details_by {
                     for sort_type in sort_details_by {
                         if sort_type == "modification" {
                             let res = cmp_residues(&detail1.residue, &detail2.residue);
