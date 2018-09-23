@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use api::query::Query;
+use crate::api::query::Query;
 
-use web::data::{DeletionViability, GeneQueryTermData};
+use crate::web::data::{DeletionViability, GeneQueryTermData};
 
 use pombase_rc_string::RcString;
 

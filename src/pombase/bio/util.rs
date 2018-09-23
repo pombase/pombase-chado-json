@@ -1,5 +1,5 @@
 use std::collections::{HashSet, HashMap};
-use web::data::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
+use crate::web::data::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
                 TranscriptDetails, FeatureShort, ProteinDetails, FeatureType};
 
 use pombase_rc_string::RcString;

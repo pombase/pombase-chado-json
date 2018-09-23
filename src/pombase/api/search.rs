@@ -2,8 +2,8 @@ use regex::Regex;
 use reqwest;
 use serde_json;
 
-use web::data::{SolrTermSummary, SolrReferenceSummary};
-use web::config::Config;
+use crate::web::data::{SolrTermSummary, SolrReferenceSummary};
+use crate::web::config::Config;
 
 pub struct Search {
     solr_url: String,

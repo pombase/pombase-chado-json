@@ -2,9 +2,9 @@ use std::collections::HashSet;
 
 use chrono::prelude::{Local, DateTime};
 
-use web::config::Config;
+use crate::web::config::Config;
 
-use web::data::{UniquenameGeneMap, GeneDetails, FeatureType};
+use crate::web::data::{UniquenameGeneMap, GeneDetails, FeatureType};
 
 use pombase_rc_string::RcString;
 

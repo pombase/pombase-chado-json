@@ -2,14 +2,14 @@ use std::collections::hash_set::HashSet;
 use std::iter::FromIterator;
 use std::cmp;
 
-use api::server_data::ServerData;
-use api::result::*;
-use web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
+use crate::api::server_data::ServerData;
+use crate::api::result::*;
+use crate::web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                 ChromosomeDetails, Strand};
 
-use bio::util::rev_comp;
+use crate::bio::util::rev_comp;
 
-use types::GeneUniquename;
+use crate::types::GeneUniquename;
 
 use pombase_rc_string::RcString;
 

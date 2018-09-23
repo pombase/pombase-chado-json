@@ -2,11 +2,11 @@ use std::mem;
 use std::cmp::Ordering;
 use std::collections::{HashSet, HashMap};
 
-use types::*;
-use web::data::*;
-use web::config::*;
-use web::vec_set::*;
-use web::util::*;
+use crate::types::*;
+use crate::web::data::*;
+use crate::web::config::*;
+use crate::web::vec_set::*;
+use crate::web::util::*;
 
 use pombase_rc_string::RcString;
 

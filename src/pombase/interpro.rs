@@ -4,7 +4,7 @@ use std::io::BufReader;
 use std::process;
 use serde_json;
 
-use web::config::Config;
+use crate::web::config::Config;
 
 use pombase_rc_string::RcString;
 

@@ -7,18 +7,18 @@ use std::usize;
 
 use regex::Regex;
 
-use db::*;
-use types::*;
-use web::data::*;
-use web::config::*;
-use web::cv_summary::make_cv_summaries;
-use web::util::cmp_str_dates;
+use crate::db::*;
+use crate::types::*;
+use crate::web::data::*;
+use crate::web::config::*;
+use crate::web::cv_summary::make_cv_summaries;
+use crate::web::util::cmp_str_dates;
 
-use bio::util::rev_comp;
+use crate::bio::util::rev_comp;
 
 use pombase_rc_string::RcString;
 
-use interpro::UniprotResult;
+use crate::interpro::UniprotResult;
 
 fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
     let mut maybe_taxonid: Option<u32> = None;

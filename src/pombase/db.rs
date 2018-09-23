@@ -7,7 +7,7 @@ use self::postgres::Connection;
 
 use pombase_rc_string::RcString;
 
-use types::*;
+use crate::types::*;
 
 pub struct Raw {
     pub organisms: Vec<Rc<Organism>>,

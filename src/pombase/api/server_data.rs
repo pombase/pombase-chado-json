@@ -6,18 +6,18 @@ use serde_json;
 use std::collections::HashMap;
 use std::collections::HashSet;
 
-use web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
+use crate::web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
                 InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
                 TermShort, TermShortOptionMap, ChromosomeDetails,
                 ReferenceShort, ReferenceShortOptionMap,
                 GeneShort, GeneShortOptionMap, GeneQueryData};
-use web::config::Config;
-use api::query::{SingleOrMultiAllele, QueryExpressionFilter};
+use crate::web::config::Config;
+use crate::api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
 use flate2::read::GzDecoder;
 
-use types::GeneUniquename;
+use crate::types::GeneUniquename;
 
 use pombase_rc_string::RcString;
 

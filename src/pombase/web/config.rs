@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 use std::io::BufReader;
 use std::fs::File;
 
-use types::*;
+use crate::types::*;
 use serde_json;
 
 use pombase_rc_string::RcString;

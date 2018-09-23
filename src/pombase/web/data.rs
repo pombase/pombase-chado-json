@@ -10,7 +10,7 @@ use std::fmt::Display;
 use std::fmt;
 use pombase_rc_string::RcString;
 
-use bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
+use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
@@ -58,10 +58,10 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 use std::collections::HashSet;
 
-use web::config::*;
-use types::*;
-use rnacentral::*;
-use interpro::InterProMatch;
+use crate::web::config::*;
+use crate::types::*;
+use crate::rnacentral::*;
+use crate::interpro::InterProMatch;
 
 const FASTA_SEQ_COLUMNS: usize = 60;
 
