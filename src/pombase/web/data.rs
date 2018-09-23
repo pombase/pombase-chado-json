@@ -365,12 +365,10 @@ impl AnnotationContainer for ReferenceDetails {
 
 // the GO with/from
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
 pub enum WithFromValue {
-#[serde(rename = "gene")]
     Gene(GeneShort),
-#[serde(rename = "term")]
     Term(TermShort),
-#[serde(rename = "identifier")]
     Identifier(RcString)
 }
 
@@ -506,12 +504,10 @@ pub struct SynonymDetails {
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum Strand {
-    #[serde(rename="forward")]
     Forward = 1,
-    #[serde(rename="reverse")]
     Reverse = -1,
-    #[serde(rename="unstranded")]
     Unstranded = 0,
 }
 
@@ -567,14 +563,11 @@ pub struct ChromosomeLocation {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum DeletionViability {
-    #[serde(rename="viable")]
     Viable,
-    #[serde(rename="inviable")]
     Inviable,
-    #[serde(rename="depends_on_conditions")]
     DependsOnConditions,
-    #[serde(rename="unknown")]
     Unknown,
 }
 
@@ -1040,10 +1033,9 @@ pub struct APIGeneSummary {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum GeneQueryTermData {
-#[serde(rename = "term")]
     Term(TermAndName),
-#[serde(rename = "other")]
     Other,
 }
 
@@ -1061,10 +1053,9 @@ pub struct GeneQueryData {
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
 pub enum InteractionType {
-#[serde(rename = "physical")]
     Physical,
-#[serde(rename = "genetic")]
     Genetic
 }
 
