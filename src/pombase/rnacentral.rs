@@ -40,6 +40,7 @@ pub struct RNAcentralGenomeLocationExon {
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralNcRNALocationExon {
+    pub chromosome: RcString,
 #[serde(rename = "startPosition")]
     pub start_position: usize,
 #[serde(rename = "endPosition")]
@@ -137,7 +138,11 @@ fn make_genome_locations(config: &Config, gene_details: &GeneDetails)
                     use std::mem;
                     mem::swap(&mut start_position, &mut end_position);
                 }
+                let chromosome_name = &part.location.chromosome_name;
+                let chromosome =
+                    config.find_chromosome_config(chromosome_name).export_id.clone();
                 exons.push(RNAcentralNcRNALocationExon {
+                    chromosome,
                     start_position,
                     end_position,
                     strand: RcString::from(part.location.strand.to_gff_str()),

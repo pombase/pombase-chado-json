@@ -60,13 +60,13 @@ pub struct SplitByParentsConfig {
 pub struct ChromosomeConfig {
     // string to use for this chromosome in a file name, eg. "chromosome_II"
     // or "mitochondrial_chromosome"
-    pub export_file_id: String,
+    pub export_file_id: RcString,
     // string to use within files, eg. "II" or "mitochondrial"
-    pub export_id: String,
+    pub export_id: RcString,
     // eg. "Chromosome II" or "Mitochondrial chromosome"
-    pub long_display_name: String,
+    pub long_display_name: RcString,
     // eg. "II" or "Mitochondrial"
-    pub short_display_name: String,
+    pub short_display_name: RcString,
 }
 
 #[derive(Deserialize, Clone, Debug)]
