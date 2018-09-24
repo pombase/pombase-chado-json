@@ -816,7 +816,7 @@ dependencies = [
  "serde 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_codegen 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -827,7 +827,7 @@ dependencies = [
  "lazy_static 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_derive 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "weak-table 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
@@ -871,7 +871,7 @@ dependencies = [
  "hex 0.2.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "phf 0.7.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "postgres-protocol 0.3.2 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1007,7 +1007,7 @@ dependencies = [
  "mime_guess 2.0.0-alpha.6 (registry+https://github.com/rust-lang/crates.io-index)",
  "native-tls 0.1.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde_urlencoded 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-core 0.1.17 (registry+https://github.com/rust-lang/crates.io-index)",
  "tokio-io 0.1.8 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1071,7 +1071,7 @@ dependencies = [
  "log 0.3.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "rocket 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "serde 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)",
- "serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde_json 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1191,7 +1191,7 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.27"
+version = "1.0.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 dependencies = [
  "itoa 0.4.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -1884,7 +1884,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum serde_codegen 0.9.0 (registry+https://github.com/rust-lang/crates.io-index)" = "1f94de585a73dfc312ca77194209278a587bf90d3edc6c2d0fc479b0ed71d1f0"
 "checksum serde_codegen_internals 0.11.3 (registry+https://github.com/rust-lang/crates.io-index)" = "afad7924a009f859f380e4a2e3a509a845c2ac66435fcead74a4d983b21ae806"
 "checksum serde_derive 1.0.79 (registry+https://github.com/rust-lang/crates.io-index)" = "31569d901045afbff7a9479f793177fe9259819aff10ab4f89ef69bbc5f567fe"
-"checksum serde_json 1.0.27 (registry+https://github.com/rust-lang/crates.io-index)" = "59790990c5115d16027f00913e2e66de23a51f70422e549d2ad68c8c5f268f1c"
+"checksum serde_json 1.0.30 (registry+https://github.com/rust-lang/crates.io-index)" = "7f60a296fed15c3edbbe9aa83b646531459e565c525b0ab628deb1a4b28e4180"
 "checksum serde_urlencoded 0.5.3 (registry+https://github.com/rust-lang/crates.io-index)" = "aaed41d9fb1e2f587201b863356590c90c1157495d811430a0c0325fe8169650"
 "checksum sha2 0.7.1 (registry+https://github.com/rust-lang/crates.io-index)" = "9eb6be24e4c23a84d7184280d2722f7f2731fcdd4a9d886efbfe4413e4847ea0"
 "checksum siphasher 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)" = "0b8de496cf83d4ed58b6be86c3a275b8602f6ffe98d3024a869e124147a9a3ac"
