@@ -2018,6 +2018,39 @@ impl WebData {
         }
     }
 
+    pub fn write_deletion_viability(&self, config: &Config, output_dir: &str)
+                                    -> Result<(), io::Error>
+    {
+        let deletion_viability_file_name = output_dir.to_owned() + "/FYPOviability.tsv";
+        let deletion_viability_file =
+            File::create(deletion_viability_file_name).expect("Unable to open file");
+        let mut deletion_viability_writer = BufWriter::new(&deletion_viability_file);
+
+        let load_org_taxonid = config.load_organism_taxonid;
+
+        for gene_details in self.api_maps.genes.values() {
+            if gene_details.taxonid != load_org_taxonid {
+                continue;
+            }
+
+            let line = format!("{}\t{}\n",
+                               gene_details.uniquename,
+                               match gene_details.deletion_viability {
+                                   DeletionViability::Viable => "viable",
+                                   DeletionViability::Inviable => "inviable",
+                                   DeletionViability::DependsOnConditions =>
+                                       "condition-dependent",
+                                   DeletionViability::Unknown => "unknown",
+                               });
+
+            deletion_viability_writer.write_all(line.as_bytes())?;
+        }
+
+        deletion_viability_writer.flush()?;
+
+        Ok(())
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
@@ -2050,6 +2083,7 @@ impl WebData {
         self.write_feature_coords(&config, &misc_path)?;
         self.write_macromolecular_complexes(&config, &misc_path)?;
         self.write_rnacentral(&config, &misc_path)?;
+        self.write_deletion_viability(&config, &misc_path)?;
 
         let gff_path = self.create_dir(output_dir, "gff");
         self.write_gff(&config, &gff_path)?;
