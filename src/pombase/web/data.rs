@@ -1194,6 +1194,11 @@ pub type IdTermSubsetMap = HashMap<RcString, TermSubsetDetails>;
 pub type IdGeneSubsetMap = HashMap<RcString, GeneSubsetDetails>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Stats {
+    pub gene_counts_by_taxonid: HashMap<OrganismTaxonId, usize>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
     pub metadata: Metadata,
     pub chromosomes: ChrNameDetailsMap,
@@ -1206,6 +1211,7 @@ pub struct WebData {
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
     pub ont_annotations: Vec<OntAnnotation>,
+    pub stats: Stats,
 }
 
 impl WebData {
@@ -2051,6 +2057,16 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
+        let s = serde_json::to_string(&self.stats).unwrap();
+        let file_name = String::new() + output_dir + "/stats.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write stats.json");
+
+        Ok(())
+    }
+
     pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
@@ -2076,6 +2092,7 @@ impl WebData {
         self.write_feature_sequences(&feature_sequences_path);
         let chromosomes_path = self.create_dir(&fasta_path, "chromosomes");
         self.write_chromosome_sequences(config, &chromosomes_path);
+        println!("wrote fasta");
 
         let misc_path = self.create_dir(output_dir, "misc");
         self.write_gene_id_table(&config, &misc_path)?;
@@ -2084,6 +2101,8 @@ impl WebData {
         self.write_macromolecular_complexes(&config, &misc_path)?;
         self.write_rnacentral(&config, &misc_path)?;
         self.write_deletion_viability(&config, &misc_path)?;
+
+        self.write_stats(&web_json_path)?;
 
         let gff_path = self.create_dir(output_dir, "gff");
         self.write_gff(&config, &gff_path)?;

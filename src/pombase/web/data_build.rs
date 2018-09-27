@@ -4583,6 +4583,21 @@ impl <'a> WebDataBuild<'a> {
         return_summaries
     }
 
+    fn get_stats(&mut self) -> Stats {
+        let mut gene_counts_by_taxonid = HashMap::new();
+
+        for gene_details in self.genes.values() {
+            let taxonid = gene_details.taxonid;
+
+            *gene_counts_by_taxonid.entry(taxonid)
+                .or_insert(0) += 1;
+        }
+
+        Stats {
+            gene_counts_by_taxonid,
+        }
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -4616,6 +4631,8 @@ impl <'a> WebDataBuild<'a> {
         self.set_counts();
         self.make_subsets();
         self.sort_chromosome_genes();
+
+        let stats = self.get_stats();
 
         let metadata = self.make_metadata();
 
@@ -4662,6 +4679,7 @@ impl <'a> WebDataBuild<'a> {
             gene_subsets,
             solr_data,
             ont_annotations,
+            stats,
         }
     }
 }
