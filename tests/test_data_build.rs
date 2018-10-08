@@ -390,6 +390,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         product: None,
         deletion_viability: DeletionViability::Unknown,
         uniprot_identifier: None,
+        biogrid_interactor_id: None,
         interpro_matches: vec![],
         tm_domain_coords: vec![],
         orfeome_identifier: None,

@@ -1446,10 +1446,21 @@ impl <'a> WebDataBuild<'a> {
         }
 
         let mut uniprot_identifier = None;
+        let mut biogrid_interactor_id: Option<u32> = None;
+
         for prop in feat.featureprops.borrow().iter() {
             if prop.prop_type.name == "uniprot_identifier" {
                 uniprot_identifier = prop.value.clone();
-                break;
+            } else {
+                if prop.prop_type.name == "biogrid_interactor_id" {
+                    if let Some(ref chado_biogrid_id) = prop.value {
+                        biogrid_interactor_id = match chado_biogrid_id.parse::<u32>() {
+                            Ok(val) => Some(val),
+                            Err(err) =>
+                                panic!("error parsing BioGRID interactor ID from Chado: {}", err),
+                        }
+                    }
+                }
             }
         }
 
@@ -1474,6 +1485,7 @@ impl <'a> WebDataBuild<'a> {
             product: None,
             deletion_viability: DeletionViability::Unknown,
             uniprot_identifier,
+            biogrid_interactor_id,
             interpro_matches,
             tm_domain_coords,
             orfeome_identifier,
