@@ -149,9 +149,6 @@ pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct QueryDataConfig {
-    pub go_components: Vec<RcString>,
-    pub go_process_superslim: Vec<RcString>,
-    pub go_function: Vec<RcString>,
     pub ortholog_presence_taxonids: HashSet<u32>,
 }
 
@@ -176,6 +173,28 @@ pub struct FileExportConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct GeneResultVisAttrValueConfig {
+    pub termid: Option<RcString>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct GeneResultVisColumnConfig {
+    pub name: RcString,
+    pub attr_values: Vec<GeneResultVisAttrValueConfig>,
+}
+
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct GeneResultVisConfig {
+    pub columns: Vec<GeneResultVisColumnConfig>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct GeneResultsConfig {
+    pub visualisation: GeneResultVisConfig,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: RcString,
     pub database_citation: RcString,
@@ -197,6 +216,7 @@ pub struct Config {
     pub server: ServerConfig,
     pub extra_database_aliases: DatabaseAliases,
     pub chromosomes: HashMap<RcString, ChromosomeConfig>,
+    pub gene_results: GeneResultsConfig,
     pub query_data_config: QueryDataConfig,
     pub file_exports: FileExportConfig,
 }

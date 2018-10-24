@@ -570,14 +570,12 @@ fn get_test_config() -> Config {
         },
         extra_database_aliases: HashMap::new(),
         chromosomes: HashMap::new(),
+        gene_results: GeneResultsConfig {
+            visualisation: GeneResultVisConfig {
+                columns: vec![],
+            }
+        },
         query_data_config: QueryDataConfig {
-            go_components: vec![
-                RcString::from("GO:0005634"), RcString::from("GO:0005783"),
-                RcString::from("GO:0005739"), RcString::from("GO:0005737"),
-                RcString::from("GO:0005575"),
-            ],
-            go_process_superslim: vec![],
-            go_function: vec![],
             ortholog_presence_taxonids: HashSet::from_iter(vec![9606, 4932]),
         },
         file_exports: FileExportConfig {

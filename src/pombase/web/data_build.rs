@@ -604,16 +604,12 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         add_to_set(&mut ret, go_slim_conf.termid.clone());
     }
 
-    for go_termid in &config.query_data_config.go_components {
-        add_to_set(&mut ret, go_termid.clone());
-    }
-
-    for go_termid in &config.query_data_config.go_process_superslim {
-        add_to_set(&mut ret, go_termid.clone());
-    }
-
-    for go_termid in &config.query_data_config.go_function {
-        add_to_set(&mut ret, go_termid.clone());
+    for column_conf in &config.gene_results.visualisation.columns {
+        for attr_value_conf in &column_conf.attr_values {
+            if let Some(ref termid) = attr_value_conf.termid {
+                add_to_set(&mut ret, termid.clone());
+            }
+        }
     }
 
     ret.insert(InterestingParent {
@@ -3711,18 +3707,32 @@ impl <'a> WebDataBuild<'a> {
         for gene_details in self.genes.values() {
             let ortholog_taxonids = self.get_ortholog_taxonids(gene_details);
 
-            let cc_term_config = &self.config.query_data_config.go_components;
-            let process_term_config = &self.config.query_data_config.go_process_superslim;
-            let function_term_config = &self.config.query_data_config.go_function;
+            let mut cc_terms = vec![];
+            let mut process_terms = vec![];
+            let mut function_terms = vec![];
+
+            for column_conf in &self.config.gene_results.visualisation.columns {
+                for attr_value_conf in &column_conf.attr_values {
+                    if let Some(ref termid) = attr_value_conf.termid {
+                        match column_conf.name.as_ref() {
+                            "go_component" => cc_terms.push(termid.clone()),
+                            "go_process_superslim" => process_terms.push(termid.clone()),
+                            "go_function" => function_terms.push(termid.clone()),
+                            _ => (),
+                        }
+                    }
+                }
+            }
+
 
             let go_component =
-                self.make_gene_query_go_data(gene_details, cc_term_config,
+                self.make_gene_query_go_data(gene_details, &cc_terms,
                                              "cellular_component");
             let go_process_superslim =
-                self.make_gene_query_go_data(gene_details, process_term_config,
+                self.make_gene_query_go_data(gene_details, &process_terms,
                                              "biological_process");
             let go_function =
-                self.make_gene_query_go_data(gene_details, function_term_config,
+                self.make_gene_query_go_data(gene_details, &function_terms,
                                              "molecular_function");
 
             let gene_query_data = GeneQueryData {

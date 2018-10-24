@@ -388,12 +388,12 @@
   },
   "extra_database_aliases": {
   },
+  "gene_results": {
+    "visualisation": {
+      "columns": []
+    }
+  },
   "query_data_config": {
-    "go_components": [
-      "GO:0005634", "GO:0005783", "GO:0005739", "GO:0005737", "GO:0005575"
-    ],
-    "go_process_superslim": [],
-    "go_function": [],
     "ortholog_presence_taxonids": [9606, 4932]
   },
   "file_exports": {
