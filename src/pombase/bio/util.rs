@@ -1,4 +1,4 @@
-use std::collections::{HashSet, HashMap};
+use hashbrown::{HashSet, HashMap};
 use crate::web::data::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
                 TranscriptDetails, FeatureShort, ProteinDetails, FeatureType};
 

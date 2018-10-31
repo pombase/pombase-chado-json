@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use hashbrown::HashSet;
 
 use chrono::prelude::{Local, DateTime};
 

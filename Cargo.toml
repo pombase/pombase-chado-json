@@ -25,6 +25,10 @@ lazy_static = "1.0"
 git = "https://github.com/pombase/pombase_rc_string.git"
 tag = "v0.1.0"
 
+[dependencies.hashbrown]
+version = "0.1.4"
+features = ["serde"]
+
 [dependencies.serde]
 version = "1.0"
 

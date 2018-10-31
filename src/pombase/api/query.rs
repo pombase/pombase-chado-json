@@ -1,6 +1,7 @@
-use std::collections::hash_set::HashSet;
 use std::iter::FromIterator;
 use std::cmp;
+
+use hashbrown::hash_set::HashSet;
 
 use crate::api::server_data::ServerData;
 use crate::api::result::*;

@@ -5,9 +5,12 @@ use std::cmp::min;
 use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
 use std::io;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt;
+
+use hashbrown::HashMap;
+
 use pombase_rc_string::RcString;
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
@@ -56,7 +59,7 @@ pub type ReferenceShortOptionMap = HashMap<ReferenceUniquename, Option<Reference
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use std::collections::HashSet;
+use hashbrown::HashSet;
 
 use crate::web::config::*;
 use crate::types::*;

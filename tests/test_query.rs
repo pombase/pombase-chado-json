@@ -1,8 +1,9 @@
 extern crate pombase;
 extern crate pombase_rc_string;
 
-use std::collections::hash_set::HashSet;
 use std::iter::Iterator;
+
+use hashbrown::HashSet;
 
 use self::pombase::api::query::*;
 use self::pombase::api::result::*;

@@ -3,8 +3,7 @@ use std::fs::File;
 use std::io::{Read, BufReader};
 
 use serde_json;
-use std::collections::HashMap;
-use std::collections::HashSet;
+use hashbrown::{HashMap, HashSet};
 
 use crate::web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,

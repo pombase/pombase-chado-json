@@ -1,11 +1,12 @@
 use std::rc::Rc;
-use std::collections::{BTreeMap, HashMap};
-use std::collections::HashSet;
+use std::collections::BTreeMap;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::usize;
 
 use regex::Regex;
+
+use hashbrown::{HashMap, HashSet};
 
 use crate::db::*;
 use crate::types::*;
