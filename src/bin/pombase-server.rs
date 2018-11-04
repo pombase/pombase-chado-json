@@ -1,8 +1,8 @@
-#![feature(plugin)]
-#![plugin(rocket_codegen)]
+#![feature(proc_macro_hygiene, decl_macro)]
 
 extern crate getopts;
-extern crate rocket;
+
+#[macro_use] extern crate rocket;
 #[macro_use] extern crate rocket_contrib;
 
 #[macro_use] extern crate serde_derive;
@@ -15,11 +15,10 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 use getopts::Options;
-
-use rocket_contrib::{Json, Value};
+use rocket_contrib::json::{Json, JsonValue};
 use rocket::response::NamedFile;
 
-use pombase::api::query::Query;
+use pombase::api::query::Query as PomBaseQuery;
 use pombase::api::result::QueryAPIResult;
 use pombase::api::search::Search;
 use pombase::api::query_exec::QueryExec;
@@ -112,7 +111,7 @@ fn get_index(state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> 
 }
 
 #[post("/api/v1/dataset/latest/query", rank=1, data="<q>", format = "application/json")]
-fn query_post(q: Json<Query>, state: rocket::State<Mutex<QueryExec>>)
+fn query_post(q: Json<PomBaseQuery>, state: rocket::State<Mutex<QueryExec>>)
               -> Option<Json<QueryAPIResult>>
 {
     let query_exec = state.lock().expect("failed to lock");
@@ -199,11 +198,11 @@ fn ping() -> Option<String> {
 }
 
 #[catch(404)]
-fn not_found() -> Json<Value> {
-    Json(json!({
+fn not_found() -> JsonValue {
+    json!({
         "status": "error",
         "reason": "Resource was not found."
-    }))
+    })
 }
 
 fn print_usage(program: &str, opts: Options) {
@@ -277,7 +276,7 @@ fn main() {
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
                             reload, term_complete, ref_complete, ping])
-        .catch(catchers![not_found])
+        .register(catchers![not_found])
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))
         .manage(Mutex::new(static_file_state))
