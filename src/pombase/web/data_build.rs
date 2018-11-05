@@ -4332,7 +4332,7 @@ impl <'a> WebDataBuild<'a> {
         return_map
     }
 
-    fn make_bp_go_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
+    fn make_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
         let mut slim_subset: HashSet<TermSubsetElement> = HashSet::new();
         let slim_terms_and_names = self.config.slim_terms.get(slim_name)
@@ -4441,11 +4441,14 @@ impl <'a> WebDataBuild<'a> {
 
     // populated the subsets HashMap
     fn make_subsets(&mut self) {
-        let bp_go_slim_subset = self.make_bp_go_slim_subset("bp_goslim_pombe");
-        let mut gene_subsets =
-            self.make_non_bp_slim_gene_subset(&bp_go_slim_subset);
+        for slim_name in self.config.slim_terms.keys() {
+            let slim_subset = self.make_slim_subset(slim_name);
+            self.term_subsets.insert(slim_name.clone(), slim_subset);
+        }
 
-        self.term_subsets.insert("bp_goslim_pombe".into(), bp_go_slim_subset);
+        let bp_go_slim_subset = self.term_subsets.get("bp_goslim_pombe").unwrap();
+ 
+        let mut gene_subsets = self.make_non_bp_slim_gene_subset(bp_go_slim_subset);
 
         self.make_feature_type_subsets(&mut gene_subsets);
         self.make_characterisation_status_subsets(&mut gene_subsets);
