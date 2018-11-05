@@ -853,8 +853,8 @@ pub struct TermDetails {
     pub annotation_feature_type: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parents: HashSet<RcString>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub subsets: Vec<RcString>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub in_subsets: HashSet<RcString>,
     pub termid: TermId,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,

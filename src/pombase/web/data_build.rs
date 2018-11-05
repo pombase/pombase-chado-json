@@ -600,8 +600,10 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     };
 
-    for go_slim_conf in &config.go_slim_terms {
-        add_to_set(&mut ret, go_slim_conf.termid.clone());
+    for slim_term_vec in config.slim_terms.values() {
+        for go_slim_conf in slim_term_vec {
+            add_to_set(&mut ret, go_slim_conf.termid.clone());
+        }
     }
 
     for column_conf in &config.gene_results.visualisation.columns {
@@ -2433,13 +2435,20 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_term_details_subsets(&mut self) {
-        'TERM: for go_slim_conf in self.config.go_slim_terms.clone() {
-            let slim_termid = &go_slim_conf.termid;
-            for term_details in self.terms.values_mut() {
-                if term_details.termid == *slim_termid {
-                    term_details.subsets.push("goslim_pombe".into());
-                    break 'TERM;
-                }
+        let mut subsets_by_termid = HashMap::new();
+        for (slim_name, terms_and_names) in self.config.slim_terms.iter() {
+            for term_and_name in terms_and_names {
+                subsets_by_termid
+                    .entry(term_and_name.termid.clone())
+                    .or_insert_with(HashSet::new)
+                    .insert(slim_name.clone());
+            }
+        }
+
+
+        for term_details in self.terms.values_mut() {
+            if let Some(subsets) = subsets_by_termid.remove(&term_details.termid) {
+                term_details.in_subsets = subsets;
             }
         }
     }
@@ -2499,7 +2508,7 @@ impl <'a> WebDataBuild<'a> {
                                       cv_name: cvterm.cv.name.clone(),
                                       annotation_feature_type,
                                       interesting_parents: HashSet::new(),
-                                      subsets: vec![],
+                                      in_subsets: HashSet::new(),
                                       termid: cvterm.termid(),
                                       synonyms,
                                       definition: cvterm.definition.clone(),
@@ -4323,11 +4332,13 @@ impl <'a> WebDataBuild<'a> {
         return_map
     }
 
-    fn make_bp_go_slim_subset(&self) -> TermSubsetDetails {
+    fn make_bp_go_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
-        let mut go_slim_subset: HashSet<TermSubsetElement> = HashSet::new();
-        for go_slim_conf in self.config.go_slim_terms.clone() {
-            let slim_termid = go_slim_conf.termid;
+        let mut slim_subset: HashSet<TermSubsetElement> = HashSet::new();
+        let slim_terms_and_names = self.config.slim_terms.get(slim_name)
+            .expect(&format!("no slim config for {}", slim_name));
+        for slim_conf in slim_terms_and_names.clone() {
+            let slim_termid = slim_conf.termid;
             let term_details = self.terms.get(&slim_termid)
                 .unwrap_or_else(|| panic!("can't find TermDetails for {}", &slim_termid));
 
@@ -4340,13 +4351,13 @@ impl <'a> WebDataBuild<'a> {
             for gene in &term_details.genes_annotated_with {
                 all_genes.insert(gene);
             }
-            go_slim_subset.insert(subset_element);
+            slim_subset.insert(subset_element);
         }
 
         TermSubsetDetails {
-            name: "goslim_pombe".into(),
+            name: "bp_goslim_pombe".into(),
             total_gene_count: all_genes.len(),
-            elements: go_slim_subset,
+            elements: slim_subset,
         }
     }
 
@@ -4430,7 +4441,7 @@ impl <'a> WebDataBuild<'a> {
 
     // populated the subsets HashMap
     fn make_subsets(&mut self) {
-        let bp_go_slim_subset = self.make_bp_go_slim_subset();
+        let bp_go_slim_subset = self.make_bp_go_slim_subset("bp_goslim_pombe");
         let mut gene_subsets =
             self.make_non_bp_slim_gene_subset(&bp_go_slim_subset);
 

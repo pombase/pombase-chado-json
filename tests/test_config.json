@@ -355,20 +355,22 @@
     "viable": "FYPO:0002060",
     "inviable": "FYPO:0002061"
   },
-  "go_slim_terms": [
-    {
-      "name": "DNA recombination",
-      "termid": "GO:0006310"
-    },
-    {
-      "name": "DNA repair",
-      "termid": "GO:0006281"
-    },
-    {
-      "name": "DNA replication",
-      "termid": "GO:0006260"
-    }
-  ],
+  "slim_terms": {
+    "bp_goslim_pombe": [
+      {
+        "name": "DNA recombination",
+        "termid": "GO:0006310"
+      },
+      {
+        "name": "DNA repair",
+        "termid": "GO:0006281"
+      },
+      {
+        "name": "DNA replication",
+        "termid": "GO:0006260"
+      }
+    ]
+  },
   "interpro": {
     "dbnames_to_filter": ["GENE3D"]
   },

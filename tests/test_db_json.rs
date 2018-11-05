@@ -556,7 +556,7 @@ fn get_test_config() -> Config {
             viable: "FYPO:0002058".into(),
             inviable: "FYPO:0002059".into(),
         },
-        go_slim_terms: vec![],
+        slim_terms: HashMap::new(),
         interpro: InterPro {
             dbnames_to_filter: vec![],
         },
@@ -583,6 +583,8 @@ fn get_test_config() -> Config {
             rnacentral: None,
         },
     };
+
+    config.slim_terms.insert(RcString::from("bp_goslim_pombe"), vec![]);
 
     config.cv_config.insert(RcString::from("molecular_function"),
                             CvConfig {

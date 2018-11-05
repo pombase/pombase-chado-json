@@ -211,7 +211,8 @@ pub struct Config {
 // interesting_parents field of the TermShort
     pub interesting_parents: Vec<InterestingParent>,
     pub viability_terms: ViabilityTerms,
-    pub go_slim_terms: Vec<TermAndName>,
+    // slim sets by slim name:
+    pub slim_terms: HashMap<RcString, Vec<TermAndName>>,
     pub interpro: InterPro,
     pub server: ServerConfig,
     pub extra_database_aliases: DatabaseAliases,
