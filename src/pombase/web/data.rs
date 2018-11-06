@@ -210,6 +210,10 @@ pub struct TermShort {
     pub is_obsolete: bool,
     pub gene_count: usize,
     pub genotype_count: usize,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub xref: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub xref_display_name: Option<RcString>,
 }
 
 impl TermShort {
@@ -222,6 +226,8 @@ impl TermShort {
             is_obsolete: term_details.is_obsolete,
             gene_count: term_details.gene_count,
             genotype_count: term_details.genotype_count,
+            xref: term_details.xref.clone(),
+            xref_display_name: term_details.xref_display_name.clone(),
         }
     }
 }
@@ -883,6 +889,10 @@ pub struct TermDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
     pub gene_count: usize,
     pub genotype_count: usize,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub xref: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub xref_display_name: Option<RcString>,
 }
 
 impl AnnotationContainer for TermDetails {

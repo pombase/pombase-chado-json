@@ -99,6 +99,8 @@ fn get_test_config() -> Config {
                                 summary_relations_to_hide: vec![],
                                 summary_relation_ranges_to_collect: vec![RcString::from("has_substrate")],
                                 sort_details_by: None,
+                                term_xref_id_prop: None,
+                                term_xref_display_name_prop: None,
                             });
 
     config
@@ -596,6 +598,8 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         annotation_details: HashMap::new(),
         gene_count: 0,
         genotype_count: 0,
+        xref: None,
+        xref_display_name: None,
     }
 }
 

@@ -2495,6 +2495,23 @@ impl <'a> WebDataBuild<'a> {
                     self.config.cv_config_by_name(&cvterm.cv.name);
                 let annotation_feature_type =
                     cv_config.feature_type.clone();
+                let mut maybe_xref = None;
+                if let Some(term_xref_id_prop) = cv_config.term_xref_id_prop {
+                    for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                        if cvtermprop.prop_type.name == term_xref_id_prop {
+                            maybe_xref = Some(cvtermprop.value.clone());
+                        }
+                    }
+                }
+                let mut maybe_xref_display_name = None;
+                if let Some(term_xref_display_name_prop) = cv_config.term_xref_display_name_prop {
+                    for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                        if cvtermprop.prop_type.name == term_xref_display_name_prop {
+                            maybe_xref_display_name = Some(cvtermprop.value.clone());
+                        }
+                    }
+                }
+
                 let synonyms =
                     cvterm.cvtermsynonyms.borrow().iter().map(|syn| {
                         SynonymDetails {
@@ -2525,6 +2542,8 @@ impl <'a> WebDataBuild<'a> {
                                       annotation_details: HashMap::new(),
                                       gene_count: 0,
                                       genotype_count: 0,
+                                      xref: maybe_xref,
+                                      xref_display_name: maybe_xref_display_name,
                                   });
             }
         }
