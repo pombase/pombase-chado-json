@@ -202,7 +202,7 @@ pub struct GeneResultsConfig {
 pub struct Config {
     pub database_name: RcString,
     pub database_citation: RcString,
-    pub load_organism_taxonid: OrganismTaxonId,
+    pub load_organism_taxonid: Option<OrganismTaxonId>,
     pub base_url: RcString,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
@@ -282,15 +282,19 @@ impl Config {
         }
     }
 
-    pub fn load_organism(&self) -> ConfigOrganism {
-        for org in &self.organisms {
-            if org.taxonid == self.load_organism_taxonid {
-                return org.clone();
+    pub fn load_organism(&self) -> Option<ConfigOrganism> {
+        if let Some(load_organism_taxonid) = self.load_organism_taxonid {
+            for org in &self.organisms {
+                if org.taxonid == load_organism_taxonid {
+                    return Some(org.clone());
+                }
             }
-        }
 
-        panic!("can't find configuration for load_organism_taxonid: {}",
-               self.load_organism_taxonid);
+            panic!("can't find configuration for load_organism_taxonid: {}",
+                   load_organism_taxonid);
+        } else {
+            None
+        }
     }
 
     pub fn find_chromosome_config<'a>(&'a self, chromosome_name: &str)
@@ -349,8 +353,9 @@ pub const HAS_PART_CV_NAMES: [&str; 1] = ["fission_yeast_phenotype"];
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
 
-pub const TRANSCRIPT_FEATURE_TYPES: [&str; 7] =
-    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA", "pseudogenic_transcript"];
+pub const TRANSCRIPT_FEATURE_TYPES: [&str; 8] =
+    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA", "pseudogenic_transcript",
+     "transcript"];
 pub const TRANSCRIPT_PART_TYPES: [&str; 4] =
     ["five_prime_UTR", "exon", "pseudogenic_exon", "three_prime_UTR"];
 // any feature with a type not in this list or in the two TRANSCRIPT lists above

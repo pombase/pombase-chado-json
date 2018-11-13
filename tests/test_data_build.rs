@@ -18,7 +18,7 @@ fn get_test_config() -> Config {
     let mut config = Config {
         database_name: "PomBase".into(),
         database_citation: RcString::from("PMID:22039153"),
-        load_organism_taxonid: 4896,
+        load_organism_taxonid: Some(4896),
         base_url: RcString::from("https://www.pombase.org"),
         organisms: vec![
             ConfigOrganism {

@@ -1440,24 +1440,26 @@ impl WebData {
             BufWriter::new(file)
         };
 
-        let load_org_name = config.load_organism().full_name();
-        let chromosomes_file_name = load_org_name.clone() + "_all_chromosomes.fa";
-        let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name);
+        if let Some(load_org) = config.load_organism() {
+            let load_org_name = load_org.full_name();
+            let chromosomes_file_name = load_org_name.clone() + "_all_chromosomes.fa";
+            let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name);
 
-        for (uniquename, details) in &self.chromosomes {
-            let chr_config = config.find_chromosome_config(uniquename);
-            write_as_fasta(&mut chromosomes_writer, &chr_config.export_id,
-                           Some(load_org_name.clone()), &details.residues);
-            let this_chr_file_name =
-                load_org_name.clone() + "_" + &chr_config.export_file_id + ".fa";
-            let mut this_chr_writer = make_seq_writer(&this_chr_file_name);
-            write_as_fasta(&mut this_chr_writer, &chr_config.export_id,
-                           Some(load_org_name.clone()), &details.residues);
-            this_chr_writer.flush().unwrap();
+            for (uniquename, details) in &self.chromosomes {
+                let chr_config = config.find_chromosome_config(uniquename);
+                write_as_fasta(&mut chromosomes_writer, &chr_config.export_id,
+                               Some(load_org_name.clone()), &details.residues);
+                let this_chr_file_name =
+                    load_org_name.clone() + "_" + &chr_config.export_file_id + ".fa";
+                let mut this_chr_writer = make_seq_writer(&this_chr_file_name);
+                write_as_fasta(&mut this_chr_writer, &chr_config.export_id,
+                               Some(load_org_name.clone()), &details.residues);
+                this_chr_writer.flush().unwrap();
 
+            }
+
+            chromosomes_writer.flush().unwrap();
         }
-
-        chromosomes_writer.flush().unwrap();
     }
 
     fn write_chromosome_summaries(&self, output_dir: &str) {
@@ -1469,8 +1471,6 @@ impl WebData {
     }
 
     fn write_gene_id_table(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
-        let load_org_taxonid = config.load_organism_taxonid;
-
         let gene_file_name = output_dir.to_owned() + "/sysID2product.tsv";
         let rna_file_name = output_dir.to_owned() + "/sysID2product.rna.tsv";
         let pseudogenes_file_name = output_dir.to_owned() + "/pseudogeneIDs.tsv";
@@ -1496,8 +1496,10 @@ impl WebData {
         all_names_writer.write_all(db_version.as_bytes())?;
 
         for gene_details in self.api_maps.genes.values() {
-            if gene_details.taxonid != load_org_taxonid {
-                continue;
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                if gene_details.taxonid != load_org_taxonid {
+                    continue;
+                }
             }
 
             let synonyms =
@@ -1719,8 +1721,6 @@ impl WebData {
     fn write_feature_coords(&self, config: &Config, output_dir: &str)
                             -> Result<(), io::Error>
     {
-        let load_org_taxonid = config.load_organism_taxonid;
-
         let write_line =
             |uniquename: &str, location: &ChromosomeLocation,
              writer: &mut BufWriter<&File>| {
@@ -1733,9 +1733,10 @@ impl WebData {
         };
 
         for (chr_uniquename, chr_details) in &self.chromosomes {
-
-            if chr_details.taxonid != load_org_taxonid {
-                continue;
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                if chr_details.taxonid != load_org_taxonid {
+                    continue;
+                }
             }
 
             let gene_file_name = format!("{}/{}.gene.coords.tsv", output_dir, chr_uniquename);
@@ -1817,58 +1818,93 @@ impl WebData {
     pub fn write_gff(&self, config: &Config, output_dir: &str)
                          -> Result<(), io::Error>
     {
-        let load_org_name = config.load_organism().full_name();
+        if let Some(load_org) = config.load_organism() {
+            let load_org_name = load_org.full_name();
 
-        let all_gff_name = format!("{}/{}_all_chromosomes.gff3", output_dir, load_org_name);
-        let all_gff_file = File::create(all_gff_name).expect("Unable to open file");
-        let mut all_gff_writer = BufWriter::new(&all_gff_file);
+            let all_gff_name = format!("{}/{}_all_chromosomes.gff3", output_dir, load_org_name);
+            let all_gff_file = File::create(all_gff_name).expect("Unable to open file");
+            let mut all_gff_writer = BufWriter::new(&all_gff_file);
 
-        let forward_features_gff_name =
-            format!("{}/{}_all_chromosomes_forward_strand.gff3", output_dir, load_org_name);
-        let forward_features_gff_file = File::create(forward_features_gff_name).expect("Unable to open file");
-        let mut forward_features_gff_writer = BufWriter::new(&forward_features_gff_file);
+            let forward_features_gff_name =
+                format!("{}/{}_all_chromosomes_forward_strand.gff3", output_dir, load_org_name);
+            let forward_features_gff_file = File::create(forward_features_gff_name).expect("Unable to open file");
+            let mut forward_features_gff_writer = BufWriter::new(&forward_features_gff_file);
 
-        let reverse_features_gff_name =
-            format!("{}/{}_all_chromosomes_reverse_strand.gff3", output_dir, load_org_name);
-        let reverse_features_gff_file = File::create(reverse_features_gff_name).expect("Unable to open file");
-        let mut reverse_features_gff_writer = BufWriter::new(&reverse_features_gff_file);
+            let reverse_features_gff_name =
+                format!("{}/{}_all_chromosomes_reverse_strand.gff3", output_dir, load_org_name);
+            let reverse_features_gff_file = File::create(reverse_features_gff_name).expect("Unable to open file");
+            let mut reverse_features_gff_writer = BufWriter::new(&reverse_features_gff_file);
 
-        let unstranded_features_gff_name =
-            format!("{}/{}_all_chromosomes_unstranded.gff3", output_dir, load_org_name);
-        let unstranded_features_gff_file = File::create(unstranded_features_gff_name).expect("Unable to open file");
-        let mut unstranded_features_gff_writer = BufWriter::new(&unstranded_features_gff_file);
+            let unstranded_features_gff_name =
+                format!("{}/{}_all_chromosomes_unstranded.gff3", output_dir, load_org_name);
+            let unstranded_features_gff_file = File::create(unstranded_features_gff_name).expect("Unable to open file");
+            let mut unstranded_features_gff_writer = BufWriter::new(&unstranded_features_gff_file);
 
-        all_gff_writer.write_all(b"##gff-version 3\n")?;
-        forward_features_gff_writer.write_all(b"##gff-version 3\n")?;
-        reverse_features_gff_writer.write_all(b"##gff-version 3\n")?;
-        unstranded_features_gff_writer.write_all(b"##gff-version 3\n")?;
+            all_gff_writer.write_all(b"##gff-version 3\n")?;
+            forward_features_gff_writer.write_all(b"##gff-version 3\n")?;
+            reverse_features_gff_writer.write_all(b"##gff-version 3\n")?;
+            unstranded_features_gff_writer.write_all(b"##gff-version 3\n")?;
 
-        let mut chr_writers = HashMap::new();
+            let mut chr_writers = HashMap::new();
 
-        let make_chr_gff_writer = |export_name: &str| {
-            let file_name = String::new() +
-                output_dir + "/" + &load_org_name + "_" + export_name + ".gff3";
-            let file = File::create(file_name).expect("Unable to open file");
-            BufWriter::new(file)
-        };
+            let make_chr_gff_writer = |export_name: &str| {
+                let file_name = String::new() +
+                    output_dir + "/" + &load_org_name + "_" + export_name + ".gff3";
+                let file = File::create(file_name).expect("Unable to open file");
+                BufWriter::new(file)
+            };
 
-        for uniquename in self.chromosomes.keys() {
-            let chr_config = config.find_chromosome_config(uniquename);
-            chr_writers.insert(uniquename, make_chr_gff_writer(&chr_config.export_file_id));
-        }
+            for uniquename in self.chromosomes.keys() {
+                let chr_config = config.find_chromosome_config(uniquename);
+                chr_writers.insert(uniquename, make_chr_gff_writer(&chr_config.export_file_id));
+            }
 
-        for gene_details in self.api_maps.genes.values() {
-            if let Some(ref gene_loc) = gene_details.location {
-                let chromosome_name = &gene_loc.chromosome_name;
+            for gene_details in self.api_maps.genes.values() {
+                if let Some(ref gene_loc) = gene_details.location {
+                    let chromosome_name = &gene_loc.chromosome_name;
+                    let chromosome_export_id =
+                        &config.find_chromosome_config(chromosome_name).export_id;
+                    let gene_gff_lines =
+                        format_gene_gff(chromosome_export_id, &config.database_name, &gene_details);
+                    for gff_line in gene_gff_lines {
+                        all_gff_writer.write_all(gff_line.as_bytes())?;
+                        all_gff_writer.write_all(b"\n")?;
+
+                        match gene_loc.strand {
+                            Strand::Forward => {
+                                forward_features_gff_writer.write_all(gff_line.as_bytes())?;
+                                forward_features_gff_writer.write_all(b"\n")?;
+                            },
+                            Strand::Reverse => {
+                                reverse_features_gff_writer.write_all(gff_line.as_bytes())?;
+                                reverse_features_gff_writer.write_all(b"\n")?;
+                            }
+                            Strand::Unstranded => {
+                                unstranded_features_gff_writer.write_all(gff_line.as_bytes())?;
+                                unstranded_features_gff_writer.write_all(b"\n")?;
+                            }
+                        }
+
+                        if let Some(ref mut writer) = chr_writers.get_mut(chromosome_name) {
+                            writer.write_all(gff_line.as_bytes())?;
+                            writer.write_all(b"\n")?;
+                        }
+                    }
+                }
+            }
+
+            for feature_short in self.api_maps.other_features.values() {
+                let chromosome_name = &feature_short.location.chromosome_name;
                 let chromosome_export_id =
                     &config.find_chromosome_config(chromosome_name).export_id;
-                let gene_gff_lines =
-                    format_gene_gff(chromosome_export_id, &config.database_name, &gene_details);
-                for gff_line in gene_gff_lines {
+                let gff_lines =
+                    format_misc_feature_gff(&chromosome_export_id, &config.database_name,
+                                            &feature_short);
+                for gff_line in gff_lines {
                     all_gff_writer.write_all(gff_line.as_bytes())?;
                     all_gff_writer.write_all(b"\n")?;
 
-                    match gene_loc.strand {
+                    match feature_short.location.strand {
                         Strand::Forward => {
                             forward_features_gff_writer.write_all(gff_line.as_bytes())?;
                             forward_features_gff_writer.write_all(b"\n")?;
@@ -1889,43 +1925,10 @@ impl WebData {
                     }
                 }
             }
-        }
 
-        for feature_short in self.api_maps.other_features.values() {
-            let chromosome_name = &feature_short.location.chromosome_name;
-            let chromosome_export_id =
-                &config.find_chromosome_config(chromosome_name).export_id;
-            let gff_lines =
-                format_misc_feature_gff(&chromosome_export_id, &config.database_name,
-                                        &feature_short);
-            for gff_line in gff_lines {
-                all_gff_writer.write_all(gff_line.as_bytes())?;
-                all_gff_writer.write_all(b"\n")?;
-
-                match feature_short.location.strand {
-                    Strand::Forward => {
-                        forward_features_gff_writer.write_all(gff_line.as_bytes())?;
-                        forward_features_gff_writer.write_all(b"\n")?;
-                    },
-                    Strand::Reverse => {
-                        reverse_features_gff_writer.write_all(gff_line.as_bytes())?;
-                        reverse_features_gff_writer.write_all(b"\n")?;
-                    }
-                    Strand::Unstranded => {
-                        unstranded_features_gff_writer.write_all(gff_line.as_bytes())?;
-                        unstranded_features_gff_writer.write_all(b"\n")?;
-                    }
-                }
-
-                if let Some(ref mut writer) = chr_writers.get_mut(chromosome_name) {
-                    writer.write_all(gff_line.as_bytes())?;
-                    writer.write_all(b"\n")?;
-                }
+            for writer in chr_writers.values_mut() {
+                writer.flush().unwrap();
             }
-        }
-
-        for writer in chr_writers.values_mut() {
-            writer.flush().unwrap();
         }
 
         Ok(())
@@ -2043,11 +2046,11 @@ impl WebData {
             File::create(deletion_viability_file_name).expect("Unable to open file");
         let mut deletion_viability_writer = BufWriter::new(&deletion_viability_file);
 
-        let load_org_taxonid = config.load_organism_taxonid;
-
         for gene_details in self.api_maps.genes.values() {
-            if gene_details.taxonid != load_org_taxonid {
-                continue;
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                if gene_details.taxonid != load_org_taxonid {
+                    continue;
+                }
             }
 
             let line = format!("{}\t{}\n",

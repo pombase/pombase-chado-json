@@ -1515,33 +1515,34 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn get_transcript_parts(&mut self, transcript_uniquename: &str) -> Vec<FeatureShort> {
-        let mut parts = self.parts_of_transcripts.remove(transcript_uniquename)
-            .expect("can't find transcript");
+        if let Some(mut parts) = self.parts_of_transcripts.remove(transcript_uniquename) {
+            if parts.is_empty() {
+                panic!("transcript has no parts: {}", transcript_uniquename);
+            }
 
-        if parts.is_empty() {
-            panic!("transcript has no parts: {}", transcript_uniquename);
-        }
+            let part_cmp = |a: &FeatureShort, b: &FeatureShort| {
+                a.location.start_pos.cmp(&b.location.start_pos)
+            };
 
-        let part_cmp = |a: &FeatureShort, b: &FeatureShort| {
-            a.location.start_pos.cmp(&b.location.start_pos)
-        };
+            parts.sort_by(&part_cmp);
 
-        parts.sort_by(&part_cmp);
+            validate_transcript_parts(transcript_uniquename, &parts);
 
-        validate_transcript_parts(transcript_uniquename, &parts);
+            let chr_name = &parts[0].location.chromosome_name.clone();
+            if let Some(chromosome) = self.chromosomes.get(chr_name) {
+                add_introns_to_transcript(chromosome, transcript_uniquename, &mut parts);
+            } else {
+                panic!("can't find chromosome details for: {}", chr_name);
+            }
 
-        let chr_name = &parts[0].location.chromosome_name.clone();
-        if let Some(chromosome) = self.chromosomes.get(chr_name) {
-            add_introns_to_transcript(chromosome, transcript_uniquename, &mut parts);
+            if parts[0].location.strand == Strand::Reverse {
+                parts.reverse();
+            }
+
+            parts
         } else {
-            panic!("can't find chromosome details for: {}", chr_name);
+            vec![]
         }
-
-        if parts[0].location.strand == Strand::Reverse {
-            parts.reverse();
-        }
-
-        parts
     }
 
     fn store_transcript_details(&mut self, feat: &Feature) {
@@ -1550,7 +1551,7 @@ impl <'a> WebDataBuild<'a> {
         let parts = self.get_transcript_parts(&transcript_uniquename);
 
         if parts.is_empty() {
-            panic!("transcript has no parts");
+            return;
         }
 
         let mut transcript_start = usize::MAX;
@@ -2134,7 +2135,11 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism_taxonid == gene_details.taxonid {
+                                    // avoid duplicates in the reference pages
+                                    if self.config.load_organism_taxonid.is_some() &&
+                                        self.config.load_organism_taxonid.unwrap() == gene_details.taxonid ||
+                                        gene_organism_taxonid < other_gene_organism_taxonid
+                                    {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
                                 }
@@ -2156,7 +2161,10 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism_taxonid == gene_details.taxonid {
+                                    if self.config.load_organism_taxonid.is_some() &&
+                                        self.config.load_organism_taxonid.unwrap() == gene_details.taxonid ||
+                                        gene_organism_taxonid < other_gene_organism_taxonid
+                                    {
                                         ref_details.paralog_annotations.push(paralog_annotation);
                                     }
                                 }
@@ -2184,7 +2192,10 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism_taxonid == other_gene_details.taxonid {
+                                    if self.config.load_organism_taxonid.is_some() &&
+                                        self.config.load_organism_taxonid.unwrap() == other_gene_details.taxonid ||
+                                        gene_organism_taxonid > other_gene_organism_taxonid
+                                    {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
                                 }
@@ -2205,7 +2216,10 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism_taxonid == other_gene_details.taxonid {
+                                    if self.config.load_organism_taxonid.is_some() &&
+                                        self.config.load_organism_taxonid.unwrap() == other_gene_details.taxonid ||
+                                        gene_organism_taxonid > other_gene_organism_taxonid
+                                    {
                                         ref_details.paralog_annotations.push(paralog_annotation);
                                     }
                                 }
@@ -3784,7 +3798,8 @@ impl <'a> WebDataBuild<'a> {
         let mut interactors_of_genes = HashMap::new();
 
         for (gene_uniquename, gene_details) in &self.genes {
-            if self.config.load_organism_taxonid == gene_details.taxonid {
+            if self.config.load_organism_taxonid.is_none() ||
+                self.config.load_organism_taxonid.unwrap() == gene_details.taxonid {
                 let gene_summary = self.make_api_gene_summary(&gene_uniquename);
                 if let Some(ref gene_name) = gene_summary.name {
                     gene_name_gene_map.insert(gene_name.clone(), gene_uniquename.clone());
@@ -4297,8 +4312,10 @@ impl <'a> WebDataBuild<'a> {
         };
 
         for gene_details in self.genes.values() {
-            if self.config.load_organism_taxonid != gene_details.taxonid {
-                continue;
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
+                if load_organism_taxonid != gene_details.taxonid {
+                    continue;
+                }
             }
 
             if gene_details.feature_type != "mRNA gene" {
@@ -4382,8 +4399,10 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_feature_type_subsets(&self, subsets: &mut IdGeneSubsetMap) {
         for gene_details in self.genes.values() {
-            if self.config.load_organism_taxonid != gene_details.taxonid {
-                continue;
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
+                if load_organism_taxonid != gene_details.taxonid {
+                    continue;
+                }
             }
 
             let subset_name =
@@ -4403,8 +4422,10 @@ impl <'a> WebDataBuild<'a> {
     // make subsets using the characterisation_status field of GeneDetails
     fn make_characterisation_status_subsets(&self, subsets: &mut IdGeneSubsetMap) {
         for gene_details in self.genes.values() {
-            if self.config.load_organism_taxonid != gene_details.taxonid {
-                continue;
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
+                if load_organism_taxonid != gene_details.taxonid {
+                    continue;
+                }
             }
 
             if gene_details.feature_type != "mRNA gene" {
@@ -4694,9 +4715,10 @@ impl <'a> WebDataBuild<'a> {
         let mut gene_summaries: Vec<GeneSummary> = vec![];
 
         for (gene_uniquename, gene_details) in &self.genes {
-            if self.config.load_organism_taxonid == gene_details.taxonid {
-                gene_summaries.push(self.make_gene_summary(&gene_uniquename));
-            }
+            if self.config.load_organism_taxonid.is_none() ||
+                self.config.load_organism_taxonid.unwrap() == gene_details.taxonid {
+                    gene_summaries.push(self.make_gene_summary(&gene_uniquename));
+                }
         }
 
         let solr_term_summaries = self.make_solr_term_summaries();
