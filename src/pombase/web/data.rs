@@ -191,8 +191,11 @@ pub struct GeneSummary {
     pub taxonid: OrganismTaxonId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<RcString>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<RcString>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub orthologs: Vec<IdAndOrganism>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
