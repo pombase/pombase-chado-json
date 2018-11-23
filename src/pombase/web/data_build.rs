@@ -3777,15 +3777,15 @@ impl <'a> WebDataBuild<'a> {
                 self.make_gene_query_go_data(gene_details, &function_terms,
                                              "molecular_function");
 
-            let has_tmm =
+            let tmm =
                 if gene_details.feature_type == "mRNA gene" {
                     if gene_details.tm_domain_coords.len() == 0 {
-                        Some(false)
+                        Some(PresentAbsent::Absent)
                     } else {
-                        Some(true)
+                        Some(PresentAbsent::Present)
                     }
                 } else {
-                    None
+                    Some(PresentAbsent::NotApplicable)
                 };
 
             let gene_query_data = GeneQueryData {
@@ -3794,7 +3794,7 @@ impl <'a> WebDataBuild<'a> {
                 go_component,
                 go_process_superslim,
                 go_function,
-                has_tmm,
+                tmm,
                 ortholog_taxonids,
             };
 

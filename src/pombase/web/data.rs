@@ -585,6 +585,7 @@ pub enum DeletionViability {
 pub enum PresentAbsent {
     Present,
     Absent,
+    NotApplicable,
     Unknown,
 }
 
@@ -1072,7 +1073,7 @@ pub struct GeneQueryData {
 #[serde(skip_serializing_if="Option::is_none")]
     pub go_function: Option<GeneQueryTermData>,
 #[serde(skip_serializing_if="Option::is_none")]
-    pub has_tmm: Option<bool>,
+    pub tmm: Option<PresentAbsent>,
     pub ortholog_taxonids: HashSet<u32>,
 }
 
