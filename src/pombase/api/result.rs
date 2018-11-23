@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::api::query::Query;
 
-use crate::web::data::{DeletionViability, GeneQueryTermData};
+use crate::web::data::{DeletionViability, PresentAbsent, GeneQueryTermData};
 
 use pombase_rc_string::RcString;
 
@@ -19,6 +19,7 @@ pub struct ResultRow {
     pub go_function: Option<GeneQueryTermData>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,
+    pub has_tmm: Option<PresentAbsent>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub sequence: Option<RcString>,
 }

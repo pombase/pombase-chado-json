@@ -3777,12 +3777,24 @@ impl <'a> WebDataBuild<'a> {
                 self.make_gene_query_go_data(gene_details, &function_terms,
                                              "molecular_function");
 
+            let has_tmm =
+                if gene_details.feature_type == "mRNA gene" {
+                    if gene_details.tm_domain_coords.len() == 0 {
+                        Some(false)
+                    } else {
+                        Some(true)
+                    }
+                } else {
+                    None
+                };
+
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
                 deletion_viability: gene_details.deletion_viability.clone(),
                 go_component,
                 go_process_superslim,
                 go_function,
+                has_tmm,
                 ortholog_taxonids,
             };
 

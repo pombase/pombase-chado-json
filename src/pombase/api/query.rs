@@ -5,7 +5,7 @@ use std::cmp;
 use crate::api::server_data::ServerData;
 use crate::api::result::*;
 use crate::web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
-                ChromosomeDetails, Strand};
+                       PresentAbsent, ChromosomeDetails, Strand};
 
 use crate::bio::util::rev_comp;
 
@@ -502,6 +502,7 @@ impl Query {
                let mut go_process_superslim = None;
                let mut go_function = None;
                let mut ortholog_taxonids = HashSet::new();
+               let mut has_tmm = None;
 
                let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
 
@@ -518,6 +519,14 @@ impl Query {
                                 go_process_superslim = gene_data.go_process_superslim.clone(),
                            "go_function" =>
                                 go_function = gene_data.go_function.clone(),
+                           "has_tmm" => has_tmm =
+                               gene_data.has_tmm.map(|val| {
+                                   if val {
+                                       PresentAbsent::Present
+                                   } else {
+                                       PresentAbsent::Absent
+                                   }
+                               }),
                            "gene_uniquename" => (),
                            _ => eprintln!("warning - no such option field: {}", field_name),
                        }
@@ -532,6 +541,7 @@ impl Query {
                    go_process_superslim,
                    go_function,
                    ortholog_taxonids,
+                   has_tmm,
                    gene_uniquename,
                }
            }).collect::<Vec<_>>())

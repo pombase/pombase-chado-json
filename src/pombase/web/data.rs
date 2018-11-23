@@ -580,6 +580,14 @@ pub enum DeletionViability {
     Unknown,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum PresentAbsent {
+    Present,
+    Absent,
+    Unknown,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
@@ -1063,6 +1071,8 @@ pub struct GeneQueryData {
     pub go_process_superslim: Option<GeneQueryTermData>,
 #[serde(skip_serializing_if="Option::is_none")]
     pub go_function: Option<GeneQueryTermData>,
+#[serde(skip_serializing_if="Option::is_none")]
+    pub has_tmm: Option<bool>,
     pub ortholog_taxonids: HashSet<u32>,
 }
 

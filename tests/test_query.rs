@@ -126,6 +126,7 @@ fn test_output_options() {
                 go_process_superslim: None,
                 go_function: None,
                 ortholog_taxonids: HashSet::new(),
+                has_tmm: None,
                 sequence: None,
             },
             ResultRow {
@@ -135,6 +136,7 @@ fn test_output_options() {
                 go_process_superslim: None,
                 go_function: None,
                 ortholog_taxonids: HashSet::new(),
+                has_tmm: None,
                 sequence: None,
             },
             ResultRow {
@@ -147,6 +149,7 @@ fn test_output_options() {
                 go_process_superslim: None,
                 go_function: None,
                 ortholog_taxonids: HashSet::new(),
+                has_tmm: None,
                 sequence: None,
             }];
 
