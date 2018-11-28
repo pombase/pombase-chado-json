@@ -2017,7 +2017,8 @@ impl WebData {
 
             let line_bits = vec![term_short.termid.as_str(), &term_short.name.as_str(),
                                  gene_short.uniquename.as_str(),
-                                 gene_short.name.as_ref().map(RcString::as_str).unwrap_or_else(|| ""),
+                                 gene_short.name.as_ref().map(RcString::as_str)
+                                   .unwrap_or_else(|| gene_short.uniquename.as_str()),
                                  gene_short.product.as_ref().map(RcString::as_str).unwrap_or_else(|| ""),
                                  evidence.as_str(), refs_string.as_str(),
                                  assigned_by_string.as_str()];
