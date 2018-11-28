@@ -321,7 +321,7 @@ pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele]
     let joined_alleles = allele_display_names.join("  ");
 
     let clean_display_name =
-        BAD_GENOTYPE_NAME_CHARS_RE.replace_all(&joined_alleles, "-");
+        BAD_GENOTYPE_NAME_CHARS_RE.replace_all(&joined_alleles, "_");
     RcString::from(&clean_display_name)
 }
 

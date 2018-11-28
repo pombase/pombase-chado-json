@@ -657,7 +657,7 @@ fn test_cmp_ont_annotation_detail() {
         "cdc25-22-c532y-amino_acid_mutation-expression-not_assayed",
         "g799d-g799d-amino_acid_mutation-expression-not_assayed",
         "k418r-k418r-amino_acid_mutation-expression-wild_type_product_level",
-        "ubs-i&ii-f18a,f21a,w26a,l40a,w41a,w45a-amino_acid_mutation-expression-not_assayed"]
+        "ubs-i_ii-f18a,f21a,w26a,l40a,w41a,w45a-amino_acid_mutation-expression-not_assayed"]
         .iter().map(|s| str::to_string(s)).collect();
 
     let mut result_genotype_display_names =
