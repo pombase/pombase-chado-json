@@ -293,6 +293,11 @@ fn gene_display_name(gene: &GeneDetails) -> RcString {
     }
 }
 
+lazy_static! {
+    static ref BAD_GENOTYPE_NAME_CHARS_RE: Regex =
+        Regex::new(r"[ /&;]").unwrap();
+}
+
 pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele],
                                   allele_map: &UniquenameAlleleMap) -> RcString {
     let mut allele_display_names: Vec<String> =
@@ -315,7 +320,9 @@ pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele]
 
     let joined_alleles = allele_display_names.join("  ");
 
-    RcString::from(&str::replace(&joined_alleles, " ", "_"))
+    let clean_display_name =
+        BAD_GENOTYPE_NAME_CHARS_RE.replace_all(&joined_alleles, "-");
+    RcString::from(&clean_display_name)
 }
 
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
