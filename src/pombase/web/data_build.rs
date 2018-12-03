@@ -3801,6 +3801,7 @@ impl <'a> WebDataBuild<'a> {
                 go_component,
                 go_process_superslim,
                 go_function,
+                characterisation_status: gene_details.characterisation_status.clone(),
                 tmm,
                 ortholog_taxonids,
             };
