@@ -55,6 +55,9 @@ pub struct WebDataBuild<'a> {
     all_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
     all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
 
+    // map from term name to term ID (ie "nucleus" -> "GO:0005634")
+    term_ids_by_name: HashMap<RcString, TermId>,
+
     genes_of_transcripts: HashMap<RcString, RcString>,
     transcripts_of_polypeptides: HashMap<RcString, RcString>,
     parts_of_transcripts: HashMap<RcString, Vec<FeatureShort>>,
@@ -957,6 +960,8 @@ impl <'a> WebDataBuild<'a> {
             },
             all_community_curated: vec![],
 
+            term_ids_by_name: HashMap::new(),
+
             genes_of_transcripts: HashMap::new(),
             transcripts_of_polypeptides: HashMap::new(),
             parts_of_transcripts: HashMap::new(),
@@ -974,7 +979,7 @@ impl <'a> WebDataBuild<'a> {
 
             term_subsets: HashMap::new(),
             gene_subsets: HashMap::new(),
- 
+
             annotation_details: HashMap::new(),
 
             ont_annotations: vec![],
@@ -1500,6 +1505,7 @@ impl <'a> WebDataBuild<'a> {
             feature_type: feat.feat_type.name.clone(),
             transcript_so_termid: feat.feat_type.termid(),
             characterisation_status: None,
+            taxonomic_distribution: None,
             location: maybe_location,
             gene_neighbourhood: vec![],
             cv_annotations: HashMap::new(),
@@ -2474,6 +2480,95 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn set_taxonomic_distributions(&mut self) {
+        let mut term_name_map = HashMap::new();
+
+        let in_archaea = "conserved in archaea";
+        let in_bacteria = "conserved in bacteria";
+        let in_fungi_only = "conserved in fungi only";
+        let in_metazoa = "conserved in metazoa";
+        let pombe_specific = "Schizosaccharomyces pombe specific";
+        let schizo_specific = "Schizosaccharomyces specific";
+
+        term_name_map.insert(self.term_ids_by_name[in_archaea].clone(),
+                             in_archaea.clone());
+        term_name_map.insert(self.term_ids_by_name[in_bacteria].clone(),
+                             in_bacteria.clone());
+        term_name_map.insert(self.term_ids_by_name[in_fungi_only].clone(),
+                             in_fungi_only.clone());
+        term_name_map.insert(self.term_ids_by_name[in_metazoa].clone(),
+                             in_metazoa.clone());
+        term_name_map.insert(self.term_ids_by_name[pombe_specific].clone(),
+                             pombe_specific.clone());
+        term_name_map.insert(self.term_ids_by_name[schizo_specific].clone(),
+                             schizo_specific.clone());
+
+        'GENE:
+        for gene_details in self.genes.values_mut() {
+            let mut dist_names = HashSet::new();
+
+            if let Some(species_dists) = gene_details.cv_annotations.get("species_dist") {
+                for ont_term_annotations in species_dists {
+                    let ref term = ont_term_annotations.term;
+                    if let Some(term_name) = term_name_map.get(term) {
+                        dist_names.insert(term_name.clone());
+                    }
+                }
+            }
+
+            if (dist_names.contains(in_archaea) || dist_names.contains(in_bacteria))
+                && !dist_names.contains(in_metazoa) {
+                    gene_details.taxonomic_distribution =
+                        Some(RcString::from("Fungi and Prokaryotes"));
+                    continue 'GENE;
+                }
+            if dist_names.contains(in_metazoa) &&
+                !((dist_names.contains(in_archaea) || dist_names.contains(in_bacteria))
+                  && dist_names.contains(in_metazoa)) {
+                    gene_details.taxonomic_distribution =
+                        Some(RcString::from("Eukaryotes only, Fungi and Metazoa"));
+                    continue 'GENE;
+                }
+
+
+            if (dist_names.contains(in_archaea) || dist_names.contains(in_bacteria)) &&
+                dist_names.contains(in_metazoa) {
+                    gene_details.taxonomic_distribution =
+                        Some(RcString::from("Eukaryotes and prokaryotes"));
+                    continue 'GENE;
+                }
+
+            if dist_names.contains(in_fungi_only) {
+                gene_details.taxonomic_distribution = Some(RcString::from("Fungi only"));
+                continue 'GENE;
+            }
+
+            if dist_names.contains(pombe_specific) {
+                gene_details.taxonomic_distribution = Some(RcString::from("S. pombe specific"));
+                continue 'GENE;
+            }
+
+            if dist_names.contains(schizo_specific) {
+                gene_details.taxonomic_distribution = Some(RcString::from("Schizos. specific"));
+                continue 'GENE;
+            }
+
+            if let Some(ref characterisation_status) = gene_details.characterisation_status {
+                if characterisation_status == "dubious" {
+                    gene_details.taxonomic_distribution = Some(RcString::from("Dubious"));
+                    continue 'GENE;
+                }
+            }
+
+            if gene_details.feature_type != "mRNA gene" {
+                gene_details.taxonomic_distribution = Some(RcString::from("Not curated"));
+                continue 'GENE;
+            }
+
+            gene_details.taxonomic_distribution = Some(RcString::from("Other"));
+        }
+    }
+
     fn make_gene_short_map(&self) -> IdGeneShortMap {
         let mut ret_map = HashMap::new();
 
@@ -2566,6 +2661,7 @@ impl <'a> WebDataBuild<'a> {
                                       xref: maybe_xref,
                                       xref_display_name: maybe_xref_display_name,
                                   });
+                self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
         }
     }
@@ -4507,7 +4603,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         let bp_go_slim_subset = self.term_subsets.get("bp_goslim_pombe").unwrap();
- 
+
         let mut gene_subsets = self.make_non_bp_slim_gene_subset(bp_go_slim_subset);
 
         self.make_feature_type_subsets(&mut gene_subsets);
@@ -4665,7 +4761,7 @@ impl <'a> WebDataBuild<'a> {
             };
             return_summaries.push(term_summ);
         }
-  
+
         return_summaries
     }
 
@@ -4718,6 +4814,7 @@ impl <'a> WebDataBuild<'a> {
         self.add_target_of_annotations();
         self.set_deletion_viability();
         self.set_term_details_subsets();
+        self.set_taxonomic_distributions();
         self.make_all_cv_summaries();
         self.remove_non_curatable_refs();
         self.set_term_details_maps();

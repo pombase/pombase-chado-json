@@ -615,6 +615,8 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub characterisation_status: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub taxonomic_distribution: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     pub gene_neighbourhood: Vec<GeneShort>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

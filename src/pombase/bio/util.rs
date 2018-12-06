@@ -194,6 +194,7 @@ fn make_test_gene() -> GeneDetails {
         feature_type: RcString::from("mRNA gene"),
         transcript_so_termid: RcString::from("SO:0001217"),
         characterisation_status: Some(RcString::from("published")),
+        taxonomic_distribution: Some(RcString::from("dubious")),
         location: Some(ChromosomeLocation {
             chromosome_name: RcString::from("chromosome_3"),
             start_pos: 729_054,
