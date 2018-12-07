@@ -502,6 +502,7 @@ impl Query {
                let mut go_process_superslim = None;
                let mut go_function = None;
                let mut characterisation_status = None;
+               let mut taxonomic_distribution = None;
                let mut ortholog_taxonids = HashSet::new();
                let mut tmm = None;
 
@@ -520,6 +521,8 @@ impl Query {
                                 go_process_superslim = gene_data.go_process_superslim.clone(),
                            "characterisation_status" =>
                                characterisation_status = gene_data.characterisation_status.clone(),
+                           "taxonomic_distribution" =>
+                               taxonomic_distribution = gene_data.taxonomic_distribution.clone(),
                            "go_function" =>
                                 go_function = gene_data.go_function.clone(),
                            "tmm" => tmm = gene_data.tmm.clone(),
@@ -537,6 +540,7 @@ impl Query {
                    go_process_superslim,
                    go_function,
                    characterisation_status,
+                   taxonomic_distribution,
                    ortholog_taxonids,
                    tmm,
                    gene_uniquename,

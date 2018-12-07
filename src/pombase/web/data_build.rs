@@ -2490,18 +2490,18 @@ impl <'a> WebDataBuild<'a> {
         let pombe_specific = "Schizosaccharomyces pombe specific";
         let schizo_specific = "Schizosaccharomyces specific";
 
-        term_name_map.insert(self.term_ids_by_name[in_archaea].clone(),
-                             in_archaea.clone());
-        term_name_map.insert(self.term_ids_by_name[in_bacteria].clone(),
-                             in_bacteria.clone());
-        term_name_map.insert(self.term_ids_by_name[in_fungi_only].clone(),
-                             in_fungi_only.clone());
-        term_name_map.insert(self.term_ids_by_name[in_metazoa].clone(),
-                             in_metazoa.clone());
-        term_name_map.insert(self.term_ids_by_name[pombe_specific].clone(),
-                             pombe_specific.clone());
-        term_name_map.insert(self.term_ids_by_name[schizo_specific].clone(),
-                             schizo_specific.clone());
+        let names = vec![in_archaea, in_bacteria, in_fungi_only, in_metazoa,
+                         pombe_specific, schizo_specific];
+
+        for name in names {
+            if let Some(termid) = self.term_ids_by_name.get(name) {
+                term_name_map.insert(termid.clone(), name.clone());
+            } else {
+                eprintln!("configuration error: can't find {} in term_ids_by_name map", name);
+                eprintln!("skipping taxonomic distribution");
+                return;
+            }
+        }
 
         'GENE:
         for gene_details in self.genes.values_mut() {
@@ -2519,14 +2519,14 @@ impl <'a> WebDataBuild<'a> {
             if (dist_names.contains(in_archaea) || dist_names.contains(in_bacteria))
                 && !dist_names.contains(in_metazoa) {
                     gene_details.taxonomic_distribution =
-                        Some(RcString::from("Fungi and Prokaryotes"));
+                        Some(RcString::from("fungi and prokaryotes"));
                     continue 'GENE;
                 }
             if dist_names.contains(in_metazoa) &&
                 !((dist_names.contains(in_archaea) || dist_names.contains(in_bacteria))
                   && dist_names.contains(in_metazoa)) {
                     gene_details.taxonomic_distribution =
-                        Some(RcString::from("Eukaryotes only, Fungi and Metazoa"));
+                        Some(RcString::from("eukaryotes only, fungi and metazoa"));
                     continue 'GENE;
                 }
 
@@ -2534,12 +2534,12 @@ impl <'a> WebDataBuild<'a> {
             if (dist_names.contains(in_archaea) || dist_names.contains(in_bacteria)) &&
                 dist_names.contains(in_metazoa) {
                     gene_details.taxonomic_distribution =
-                        Some(RcString::from("Eukaryotes and prokaryotes"));
+                        Some(RcString::from("eukaryotes and prokaryotes"));
                     continue 'GENE;
                 }
 
             if dist_names.contains(in_fungi_only) {
-                gene_details.taxonomic_distribution = Some(RcString::from("Fungi only"));
+                gene_details.taxonomic_distribution = Some(RcString::from("fungi only"));
                 continue 'GENE;
             }
 
@@ -2555,17 +2555,17 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(ref characterisation_status) = gene_details.characterisation_status {
                 if characterisation_status == "dubious" {
-                    gene_details.taxonomic_distribution = Some(RcString::from("Dubious"));
+                    gene_details.taxonomic_distribution = Some(RcString::from("dubious"));
                     continue 'GENE;
                 }
             }
 
             if gene_details.feature_type != "mRNA gene" {
-                gene_details.taxonomic_distribution = Some(RcString::from("Not curated"));
+                gene_details.taxonomic_distribution = Some(RcString::from("not curated"));
                 continue 'GENE;
             }
 
-            gene_details.taxonomic_distribution = Some(RcString::from("Other"));
+            gene_details.taxonomic_distribution = Some(RcString::from("other"));
         }
     }
 
@@ -3898,6 +3898,7 @@ impl <'a> WebDataBuild<'a> {
                 go_process_superslim,
                 go_function,
                 characterisation_status: gene_details.characterisation_status.clone(),
+                taxonomic_distribution: gene_details.taxonomic_distribution.clone(),
                 tmm,
                 ortholog_taxonids,
             };

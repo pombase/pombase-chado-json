@@ -19,6 +19,8 @@ pub struct ResultRow {
     pub go_function: Option<GeneQueryTermData>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub characterisation_status: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub taxonomic_distribution: Option<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,
     pub tmm: Option<PresentAbsent>,

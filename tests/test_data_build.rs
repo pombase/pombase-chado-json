@@ -400,6 +400,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         feature_type: RcString::from("gene"),
         transcript_so_termid: RcString::from("SO:0001217"),
         characterisation_status: None,
+        taxonomic_distribution: None,
         location: None,
         gene_neighbourhood: vec![],
         transcripts: vec![],
