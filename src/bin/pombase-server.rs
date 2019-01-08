@@ -193,6 +193,24 @@ fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
     Some(Json(completion_response))
 }
 
+#[get ("/api/v1/dataset/latest/motif_search/<q>", rank=1)]
+fn motif_search(q: String, state: rocket::State<Mutex<Search>>)
+                -> Option<String>
+{
+    let search = state.lock().expect("failed to lock");
+    let res = search.motif_search(&q);
+
+    match res {
+        Ok(search_result) => {
+            Some(search_result)
+        },
+        Err(err) => {
+            println!("{:?}", err);
+            None
+        },
+    }
+}
+
 #[get ("/ping", rank=1)]
 fn ping() -> Option<String> {
     Some(String::from("OK") + " " + PKG_NAME + " " + VERSION)
@@ -276,7 +294,8 @@ fn main() {
     rocket::ignite()
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
-                            reload, term_complete, ref_complete, ping])
+                            reload, term_complete, ref_complete,
+                            motif_search, ping])
         .register(catchers![not_found])
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))

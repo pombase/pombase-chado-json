@@ -9,6 +9,7 @@ pub struct Search {
     solr_url: String,
     close_synonym_boost: f32,
     distant_synonym_boost: f32,
+    django_url: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -37,6 +38,7 @@ impl Search {
             solr_url: config.server.solr_url.clone(),
             close_synonym_boost: config.server.close_synonym_boost,
             distant_synonym_boost: config.server.distant_synonym_boost,
+            django_url: config.server.django_url.clone(),
         }
     }
 
@@ -238,4 +240,20 @@ impl Search {
         }
     }
 
+    pub fn motif_search(&self, motif: &str) -> Result<String, String> {
+        let search_url = self.django_url.to_owned() + "/motifsearch/query/" + motif;
+
+        match reqwest::get(&search_url) {
+            Ok(mut res) => {
+                println!("Status: {}", res.status());
+                match res.text() {
+                    Ok(text) => Ok(text),
+                    Err(err) => Err(format!("Error getting text from motif search: {:?}", err)),
+                }
+            },
+            Err(err) => {
+                Err(format!("Motif search error: {:?}", err))
+            }
+        }
+    }
 }

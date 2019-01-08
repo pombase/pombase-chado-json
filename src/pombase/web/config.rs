@@ -151,6 +151,7 @@ pub struct ServerConfig {
     pub solr_url: String,
     pub close_synonym_boost: f32,
     pub distant_synonym_boost: f32,
+    pub django_url: String,
 }
 
 #[derive(Deserialize, Clone, Debug)]
