@@ -911,6 +911,7 @@ pub struct TermDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
     pub gene_count: usize,
     pub genotype_count: usize,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub xrefs: HashMap<RcString, TermXref>,
 }
 
