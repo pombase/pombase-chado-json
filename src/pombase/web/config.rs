@@ -70,6 +70,14 @@ pub struct ChromosomeConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct CvSourceConfig {
+    // a type name for the cvtermprop to display to the user
+    pub display_name_prop: Option<RcString>,
+    // the cvtermprop type name for the ID used for linking
+    pub id_prop: Option<RcString>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: RcString,
     // filtering configured per CV
@@ -89,10 +97,13 @@ pub struct CvConfig {
     pub summary_relation_ranges_to_collect: Vec<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub sort_details_by: Option<Vec<RcString>>,
-    // a type name for the cvtermprop to display to the user
-    pub term_xref_display_name_prop: Option<String>,
-    // the cvtermprop type name for the extra ID
-    pub term_xref_id_prop: Option<String>,
+
+    // This is the configuration for the "Source" column, a map from
+    // source name to config
+    // See Disease association for an example.  If there is no config
+    // there will be no Source column will be displayed
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub source_config: HashMap<RcString, CvSourceConfig>,
 }
 
 pub type ShortEvidenceCode = RcString;
@@ -257,8 +268,7 @@ impl Config {
                     summary_relations_to_hide: vec![],
                     summary_relation_ranges_to_collect: vec![],
                     sort_details_by: None,
-                    term_xref_display_name_prop: None,
-                    term_xref_id_prop: None,
+                    source_config: HashMap::new(),
                 };
 
             if cv_name.starts_with("extension:") {

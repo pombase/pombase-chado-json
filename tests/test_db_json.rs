@@ -595,8 +595,7 @@ fn get_test_config() -> Config {
                                 summary_relations_to_hide: vec![],
                                 summary_relation_ranges_to_collect: vec![RcString::from("has_substrate")],
                                 sort_details_by: None,
-                                term_xref_id_prop: None,
-                                term_xref_display_name_prop: None,
+                                source_config: HashMap::new(),
                             });
 
     config

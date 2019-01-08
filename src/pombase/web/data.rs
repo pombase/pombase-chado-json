@@ -205,6 +205,14 @@ pub struct GeneSummary {
     pub feature_type: RcString,
 }
 
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct TermXref {
+    pub xref_id: RcString,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub xref_display_name: Option<RcString>,
+}
+
 // minimal information about a terms used in other objects
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermShort {
@@ -216,10 +224,8 @@ pub struct TermShort {
     pub is_obsolete: bool,
     pub gene_count: usize,
     pub genotype_count: usize,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub xref: Option<RcString>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub xref_display_name: Option<RcString>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub xrefs: HashMap<RcString, TermXref>,
 }
 
 impl TermShort {
@@ -232,8 +238,7 @@ impl TermShort {
             is_obsolete: term_details.is_obsolete,
             gene_count: term_details.gene_count,
             genotype_count: term_details.genotype_count,
-            xref: term_details.xref.clone(),
-            xref_display_name: term_details.xref_display_name.clone(),
+            xrefs: term_details.xrefs.clone(),
         }
     }
 }
@@ -906,10 +911,7 @@ pub struct TermDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
     pub gene_count: usize,
     pub genotype_count: usize,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub xref: Option<RcString>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub xref_display_name: Option<RcString>,
+    pub xrefs: HashMap<RcString, TermXref>,
 }
 
 impl AnnotationContainer for TermDetails {

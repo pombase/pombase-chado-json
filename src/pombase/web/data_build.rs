@@ -2608,24 +2608,35 @@ impl <'a> WebDataBuild<'a> {
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
-                let cv_config =
-                    self.config.cv_config_by_name(&cvterm.cv.name);
-                let annotation_feature_type =
-                    cv_config.feature_type.clone();
-                let mut maybe_xref = None;
-                if let Some(term_xref_id_prop) = cv_config.term_xref_id_prop {
-                    for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                        if cvtermprop.prop_type.name == term_xref_id_prop {
-                            maybe_xref = Some(cvtermprop.value.clone());
+                let cv_config = self.config.cv_config_by_name(&cvterm.cv.name);
+                let annotation_feature_type = cv_config.feature_type.clone();
+
+                let mut xrefs = HashMap::new();
+
+                for (source_name, source_config) in cv_config.source_config {
+                    let mut maybe_xref_id = None;
+                    if let Some(ref term_xref_id_prop) = source_config.id_prop {
+                        for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                            if cvtermprop.prop_type.name == *term_xref_id_prop {
+                                maybe_xref_id = Some(cvtermprop.value.clone());
+                            }
                         }
                     }
-                }
-                let mut maybe_xref_display_name = None;
-                if let Some(term_xref_display_name_prop) = cv_config.term_xref_display_name_prop {
-                    for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                        if cvtermprop.prop_type.name == term_xref_display_name_prop {
-                            maybe_xref_display_name = Some(cvtermprop.value.clone());
+                    let mut maybe_xref_display_name = None;
+                    if let Some(ref xref_display_name_prop) = source_config.display_name_prop {
+                        for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                            if cvtermprop.prop_type.name == *xref_display_name_prop {
+                                maybe_xref_display_name = Some(cvtermprop.value.clone());
+                            }
                         }
+                    }
+                    if let Some(xref_id) = maybe_xref_id {
+                        let term_xref = TermXref {
+                            xref_id,
+                            xref_display_name: maybe_xref_display_name,
+                        };
+
+                        xrefs.insert(source_name.clone(), term_xref);
                     }
                 }
 
@@ -2659,8 +2670,7 @@ impl <'a> WebDataBuild<'a> {
                                       annotation_details: HashMap::new(),
                                       gene_count: 0,
                                       genotype_count: 0,
-                                      xref: maybe_xref,
-                                      xref_display_name: maybe_xref_display_name,
+                                      xrefs,
                                   });
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
