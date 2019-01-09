@@ -205,7 +205,7 @@ fn motif_search(q: String, state: rocket::State<Mutex<Search>>)
             Some(search_result)
         },
         Err(err) => {
-            println!("{:?}", err);
+            println!("Motif search error: {:?}", err);
             None
         },
     }
