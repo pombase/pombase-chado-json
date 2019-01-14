@@ -558,6 +558,9 @@ fn get_test_config() -> Config {
             inviable: "FYPO:0002059".into(),
         },
         slim_terms: HashMap::new(),
+        reference_page_config: ReferencePageConfig {
+            triage_status_to_ignore: vec![],
+        },
         interpro: InterPro {
             dbnames_to_filter: vec![],
         },

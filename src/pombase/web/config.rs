@@ -136,6 +136,11 @@ pub struct TermAndName {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ReferencePageConfig {
+    pub triage_status_to_ignore: Vec<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct InterPro {
     pub dbnames_to_filter: Vec<RcString>,
 }
@@ -229,6 +234,7 @@ pub struct Config {
     pub viability_terms: ViabilityTerms,
     // slim sets by slim name:
     pub slim_terms: HashMap<RcString, Vec<TermAndName>>,
+    pub reference_page_config: ReferencePageConfig,
     pub interpro: InterPro,
     pub server: ServerConfig,
     pub extra_database_aliases: DatabaseAliases,

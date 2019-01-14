@@ -64,6 +64,9 @@ fn get_test_config() -> Config {
             viable: RcString::from("FYPO:0002058"),
             inviable: RcString::from("FYPO:0002059"),
         },
+        reference_page_config: ReferencePageConfig {
+            triage_status_to_ignore: vec![],
+        },
         slim_terms: HashMap::new(),
         interpro: InterPro {
             dbnames_to_filter: vec![],

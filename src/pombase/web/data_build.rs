@@ -1291,6 +1291,14 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
+            if let Some(ref canto_triage_status) = canto_triage_status {
+                let triage_status_to_ignore =
+                    &self.config.reference_page_config.triage_status_to_ignore;
+                if triage_status_to_ignore.contains(canto_triage_status) {
+                    continue;
+                }
+            }
+
             let mut authors_abbrev = None;
             let mut publication_year = None;
 

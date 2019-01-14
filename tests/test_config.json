@@ -371,6 +371,9 @@
       }
     ]
   },
+  "reference_page_config": {
+    "triage_status_to_ignore": []
+  },
   "interpro": {
     "dbnames_to_filter": ["GENE3D"]
   },
