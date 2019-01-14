@@ -130,6 +130,7 @@ fn test_output_options() {
                 taxonomic_distribution: None,
                 ortholog_taxonids: HashSet::new(),
                 tmm: None,
+                protein_length_bin: None,
                 sequence: None,
             },
             ResultRow {
@@ -141,6 +142,7 @@ fn test_output_options() {
                 characterisation_status: None,
                 taxonomic_distribution: None,
                 ortholog_taxonids: HashSet::new(),
+                protein_length_bin: None,
                 tmm: None,
                 sequence: None,
             },
@@ -156,6 +158,7 @@ fn test_output_options() {
                 characterisation_status: None,
                 taxonomic_distribution: None,
                 ortholog_taxonids: HashSet::new(),
+                protein_length_bin: None,
                 tmm: None,
                 sequence: None,
             }];
