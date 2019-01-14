@@ -2,7 +2,7 @@ use hashbrown::HashSet;
 
 use crate::api::query::Query;
 
-use crate::web::data::{DeletionViability, PresentAbsent, GeneQueryTermData};
+use crate::web::data::{DeletionViability, PresentAbsent, GeneQueryTermData, GeneQueryAttrName};
 
 use pombase_rc_string::RcString;
 
@@ -23,7 +23,10 @@ pub struct ResultRow {
     pub taxonomic_distribution: Option<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub tmm: Option<PresentAbsent>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub protein_length_bin: Option<GeneQueryAttrName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub sequence: Option<RcString>,
 }

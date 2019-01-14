@@ -3811,6 +3811,30 @@ impl <'a> WebDataBuild<'a> {
         app_genotype_annotation
     }
 
+    fn make_protein_length_data_bin(&self, gene_details: &GeneDetails)
+                                    -> Option<GeneQueryAttrName>
+    {
+        for column_conf in &self.config.gene_results.visualisation.columns {
+            for attr_value_conf in &column_conf.attr_values {
+                if let (Some(ref bin_start), Some(ref bin_end)) =
+                    (attr_value_conf.bin_start, attr_value_conf.bin_end) {
+                        for transcript in &gene_details.transcripts {
+                            if let Some(ref protein) = transcript.protein {
+                                let prot_len = protein.sequence.len();
+
+                                if *bin_start <= prot_len && *bin_end >= prot_len {
+                                    return Some(attr_value_conf.name.clone());
+                                }
+                            }
+
+                        }
+                    }
+            }
+        }
+
+        None
+    }
+
     fn make_gene_query_go_data(&self, gene_details: &GeneDetails, term_config: &Vec<TermId>,
                                cv_name: &str) -> Option<GeneQueryTermData>
     {
@@ -3911,6 +3935,8 @@ impl <'a> WebDataBuild<'a> {
                     Some(PresentAbsent::NotApplicable)
                 };
 
+            let protein_length_bin = self.make_protein_length_data_bin(gene_details);
+
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
                 deletion_viability: gene_details.deletion_viability.clone(),
@@ -3921,6 +3947,7 @@ impl <'a> WebDataBuild<'a> {
                 taxonomic_distribution: gene_details.taxonomic_distribution.clone(),
                 tmm,
                 ortholog_taxonids,
+                protein_length_bin,
             };
 
             gene_query_data_map.insert(gene_details.uniquename.clone(), gene_query_data);

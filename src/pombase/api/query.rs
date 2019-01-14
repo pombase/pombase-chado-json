@@ -506,6 +506,7 @@ impl Query {
                let mut taxonomic_distribution = None;
                let mut ortholog_taxonids = HashSet::new();
                let mut tmm = None;
+               let mut protein_length_bin = None;
 
                let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
 
@@ -527,6 +528,8 @@ impl Query {
                            "go_function" =>
                                 go_function = gene_data.go_function.clone(),
                            "tmm" => tmm = gene_data.tmm.clone(),
+                           "protein_length_bin" =>
+                               protein_length_bin = gene_data.protein_length_bin.clone(),
                            "gene_uniquename" => (),
                            _ => eprintln!("warning - no such option field: {}", field_name),
                        }
@@ -545,6 +548,7 @@ impl Query {
                    ortholog_taxonids,
                    tmm,
                    gene_uniquename,
+                   protein_length_bin,
                }
            }).collect::<Vec<_>>())
     }

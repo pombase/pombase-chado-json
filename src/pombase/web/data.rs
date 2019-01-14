@@ -1070,6 +1070,8 @@ pub enum GeneQueryTermData {
     Other,
 }
 
+pub type GeneQueryAttrName = RcString;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneQueryData {
     pub gene_uniquename: GeneUniquename,
@@ -1087,6 +1089,8 @@ pub struct GeneQueryData {
 #[serde(skip_serializing_if="Option::is_none")]
     pub tmm: Option<PresentAbsent>,
     pub ortholog_taxonids: HashSet<u32>,
+    // bin is None for RNA genes:
+    pub protein_length_bin: Option<GeneQueryAttrName>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]

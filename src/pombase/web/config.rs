@@ -196,6 +196,9 @@ pub struct FileExportConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct GeneResultVisAttrValueConfig {
     pub termid: Option<RcString>,
+    pub name: RcString,
+    pub bin_start: Option<usize>,
+    pub bin_end: Option<usize>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
