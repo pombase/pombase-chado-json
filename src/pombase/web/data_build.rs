@@ -3816,9 +3816,10 @@ impl <'a> WebDataBuild<'a> {
     {
         let component_term_annotations =
             gene_details.cv_annotations.get(cv_name);
-            if component_term_annotations.is_none() {
-                return None;
-            }
+
+        if component_term_annotations.is_none() {
+            return None;
+        }
 
         let in_component = |check_termid: &str| {
             for term_annotation in component_term_annotations.unwrap() {
