@@ -2102,6 +2102,24 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_slim_ids_and_names(&self, config: &Config, output_dir: &str)
+                                       -> Result<(), io::Error> {
+        for (slim_name, terms_and_names) in &config.slim_terms {
+            let slim_file_name = format!("{}/{}_ids_and_names.tsv", output_dir, slim_name);
+
+            let slim_file = File::create(slim_file_name).expect("Unable to open file");
+            let mut slim_writer = BufWriter::new(&slim_file);
+
+            for term_and_name in terms_and_names {
+                let line = format!("{}\t{}\n", term_and_name.termid, term_and_name.name);
+
+                slim_writer.write(line.as_bytes())?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
         let file_name = String::new() + output_dir + "/stats.json";
@@ -2146,6 +2164,7 @@ impl WebData {
         self.write_macromolecular_complexes(&config, &misc_path)?;
         self.write_rnacentral(&config, &misc_path)?;
         self.write_deletion_viability(&config, &misc_path)?;
+        self.write_slim_ids_and_names(&config, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 
