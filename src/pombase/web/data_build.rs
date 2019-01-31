@@ -3410,6 +3410,10 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
 
+                /*
+
+                disable for now:
+
                 // Add annotations to terms referred to in extensions.  They
                 // are added to fake CV that have a name starting with
                 // "extension:".  The CV name will end with ":genotype" if the
@@ -3452,6 +3456,7 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                 }
+                */
 
                 let gene_short_list =
                     annotation.genes.iter().map(|uniquename: &RcString| {
@@ -4115,7 +4120,7 @@ impl <'a> WebDataBuild<'a> {
                             self.add_gene_to_hash(&mut seen_genes, termid,
                                                   gene_uniquename);
                             if !cv_name.starts_with("extension:") {
-                                // prevent extension annotations from appears
+                                // prevent extension annotations from appearing
                                 // in the normal query builder searches
                                 genes_annotated_with_map
                                     .entry(termid.clone()).or_insert_with(HashSet::new)
