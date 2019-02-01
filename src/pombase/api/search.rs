@@ -1,5 +1,4 @@
 use regex::Regex;
-use reqwest;
 use serde_json;
 
 use crate::web::data::{SolrTermSummary, SolrReferenceSummary};
@@ -240,10 +239,14 @@ impl Search {
         }
     }
 
-    pub fn motif_search(&self, motif: &str) -> Result<String, String> {
-        let search_url = self.django_url.to_owned() + "/motifsearch/query/" + motif;
+    pub fn motif_search(&self, pattern: &str) -> Result<String, String> {
+        let search_url = self.django_url.to_owned() + "/motifsearch/query/";
+        let params = [("pattern", pattern)];
+        let client = reqwest::Client::new();
+        let request = client.get(&search_url).query(&params);
+        let result = request.send();
 
-        match reqwest::get(&search_url) {
+        match result {
             Ok(mut res) => {
                 println!("Status: {}", res.status());
                 match res.text() {
