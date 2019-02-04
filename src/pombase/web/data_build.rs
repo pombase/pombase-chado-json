@@ -4537,7 +4537,7 @@ impl <'a> WebDataBuild<'a> {
         return_map
     }
 
-    fn make_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
+    fn make_slim_subset(&self, slim_name: &RcString) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
         let mut slim_subset: HashSet<TermSubsetElement> = HashSet::new();
         let slim_terms_and_names = self.config.slim_terms.get(slim_name)
@@ -4560,7 +4560,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         TermSubsetDetails {
-            name: "bp_goslim_pombe".into(),
+            name: slim_name.clone(),
             total_gene_count: all_genes.len(),
             elements: slim_subset,
         }
