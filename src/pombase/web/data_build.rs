@@ -2502,25 +2502,19 @@ impl <'a> WebDataBuild<'a> {
         let mut subsets_by_gene = HashMap::new();
         for terms_and_names in self.config.slim_terms.values() {
             for term_and_name in terms_and_names {
-                print!("1: {:?}\n", term_and_name);
                 for gene_details in self.genes.values() {
                     for gene_termid in gene_details.terms_by_termid.keys() {
                         if is_subset_member(&term_and_name.termid, gene_termid)
                         {
-                            print!("here: {:?} {:?}\n", gene_details.uniquename, gene_termid);
                             subsets_by_gene
                                 .entry(gene_details.uniquename.clone())
                                 .or_insert_with(HashSet::new)
                                 .insert(term_and_name.termid.clone());
-                            print!("{:?}\n", subsets_by_gene
-                                   .get(&gene_details.uniquename).unwrap());
                         }
                     }
                 }
             }
         }
-
-        print!("done {:?}\n", subsets_by_gene);
 
         for gene_details in self.genes.values_mut() {
             if let Some(subset_termids) = subsets_by_gene.remove(&gene_details.uniquename) {
