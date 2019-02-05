@@ -749,14 +749,9 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
 
                 let ref1_date =
                     ref1.canto_first_approved_date.as_ref()
-                    .unwrap_or_else(|| ref1.canto_approved_date.as_ref()
-                               .unwrap_or_else(|| ref1.canto_session_submitted_date.
-                                          as_ref().unwrap()));
-                let ref2_date =
-                    ref2.canto_first_approved_date.as_ref()
-                    .unwrap_or_else(|| ref2.canto_approved_date.as_ref()
-                               .unwrap_or_else(|| ref2.canto_session_submitted_date.
-                                          as_ref().unwrap()));
+                    .unwrap_or_else(|| ref1.canto_session_submitted_date.as_ref().unwrap());
+                let ref2_date = ref2.canto_first_approved_date.as_ref()
+                    .unwrap_or_else(|| ref2.canto_session_submitted_date.as_ref().unwrap());
 
                 cmp_str_dates(ref2_date, ref1_date)
             };
