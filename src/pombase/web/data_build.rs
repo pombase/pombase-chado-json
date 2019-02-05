@@ -71,6 +71,7 @@ pub struct WebDataBuild<'a> {
 
     base_term_of_extensions: HashMap<TermId, TermId>,
 
+    // a set of child terms for each term from the cvtermpath table
     children_by_termid: HashMap<TermId, HashSet<TermId>>,
     dbxrefs_of_features: HashMap<RcString, HashSet<RcString>>,
 
@@ -1531,6 +1532,7 @@ impl <'a> WebDataBuild<'a> {
             terms_by_termid: HashMap::new(),
             annotation_details: HashMap::new(),
             feature_publications: HashSet::new(),
+            subset_termids: HashSet::new(),
         };
 
         self.genes.insert(feat.uniquename.clone(), gene_feature);
@@ -2485,6 +2487,49 @@ impl <'a> WebDataBuild<'a> {
         for term_details in self.terms.values_mut() {
             if let Some(subsets) = subsets_by_termid.remove(&term_details.termid) {
                 term_details.in_subsets = subsets;
+            }
+        }
+    }
+
+    // On each GeneDetails, add a set of the term IDs of subsets for
+    // this gene.  Any useful subset that contains any term for any
+    // annotation in the gene is included.  "useful" means that the
+    // front end might need it, eg. slim term IDs
+    fn set_gene_details_subset_termids(&mut self) {
+        let is_subset_member =
+            |subset_termid: &str, test_termid: &str| {
+                subset_termid == test_termid ||
+                self.children_by_termid.contains_key(subset_termid) &&
+                    self.children_by_termid.get(subset_termid).unwrap()
+                    .contains(test_termid)
+            };
+
+        let mut subsets_by_gene = HashMap::new();
+        for terms_and_names in self.config.slim_terms.values() {
+            for term_and_name in terms_and_names {
+                print!("1: {:?}\n", term_and_name);
+                for gene_details in self.genes.values() {
+                    for gene_termid in gene_details.terms_by_termid.keys() {
+                        if is_subset_member(&term_and_name.termid, gene_termid)
+                        {
+                            print!("here: {:?} {:?}\n", gene_details.uniquename, gene_termid);
+                            subsets_by_gene
+                                .entry(gene_details.uniquename.clone())
+                                .or_insert_with(HashSet::new)
+                                .insert(term_and_name.termid.clone());
+                            print!("{:?}\n", subsets_by_gene
+                                   .get(&gene_details.uniquename).unwrap());
+                        }
+                    }
+                }
+            }
+        }
+
+        print!("done {:?}\n", subsets_by_gene);
+
+        for gene_details in self.genes.values_mut() {
+            if let Some(subset_termids) = subsets_by_gene.remove(&gene_details.uniquename) {
+                gene_details.subset_termids = subset_termids;
             }
         }
     }
@@ -3953,6 +3998,7 @@ impl <'a> WebDataBuild<'a> {
                 tmm,
                 ortholog_taxonids,
                 protein_length_bin,
+                subset_termids: gene_details.subset_termids.clone(),
             };
 
             gene_query_data_map.insert(gene_details.uniquename.clone(), gene_query_data);
@@ -4037,6 +4083,9 @@ impl <'a> WebDataBuild<'a> {
             terms_for_api.insert(termid.clone(), term_details);
         }
 
+        let term_subsets = self.term_subsets.clone();
+        let gene_subsets = self.gene_subsets.clone();
+
         APIMaps {
             gene_summaries,
             gene_query_data_map,
@@ -4052,6 +4101,8 @@ impl <'a> WebDataBuild<'a> {
             other_features: self.other_features,
             annotation_details: self.annotation_details,
             chromosomes: self.chromosomes,
+            term_subsets,
+            gene_subsets,
        }
     }
 
@@ -4872,6 +4923,7 @@ impl <'a> WebDataBuild<'a> {
         self.remove_non_curatable_refs();
         self.set_term_details_maps();
         self.set_gene_details_maps();
+        self.set_gene_details_subset_termids();
         self.set_genotype_details_maps();
         self.set_reference_details_maps();
         self.set_counts();
@@ -4908,8 +4960,6 @@ impl <'a> WebDataBuild<'a> {
             chromosome_summaries.push(chr_details.make_chromosome_short());
         }
 
-        let term_subsets = self.term_subsets.clone();
-        let gene_subsets = self.gene_subsets.clone();
         let recent_references = self.recent_references.clone();
         let all_community_curated = self.all_community_curated.clone();
         let ont_annotations = self.ont_annotations.clone();
@@ -4922,8 +4972,6 @@ impl <'a> WebDataBuild<'a> {
             all_community_curated,
             api_maps: self.make_api_maps(),
             search_gene_summaries: gene_summaries,
-            term_subsets,
-            gene_subsets,
             solr_data,
             ont_annotations,
             stats,

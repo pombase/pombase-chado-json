@@ -1,7 +1,7 @@
 use std::iter::FromIterator;
 use std::cmp;
 
-use hashbrown::hash_set::HashSet;
+use hashbrown::HashSet;
 
 use crate::api::server_data::ServerData;
 use crate::api::result::*;
@@ -336,6 +336,8 @@ pub enum SeqType {
 pub struct QueryOutputOptions {
     pub sequence: SeqType,
     pub field_names: Vec<String>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub flags: HashSet<String>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -507,6 +509,7 @@ impl Query {
                let mut ortholog_taxonids = HashSet::new();
                let mut tmm = None;
                let mut protein_length_bin = None;
+               let mut subsets = HashSet::new();
 
                let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
 
@@ -534,6 +537,14 @@ impl Query {
                            _ => eprintln!("warning - no such option field: {}", field_name),
                        }
                    }
+
+
+                   subsets =
+                       if self.output_options.flags.contains("include_gene_subsets") {
+                           gene_data.subset_termids.clone()
+                       } else {
+                           HashSet::new()
+                       };
                }
 
                let sequence = self.make_sequence(server_data, &gene_uniquename);
@@ -549,6 +560,7 @@ impl Query {
                    tmm,
                    gene_uniquename,
                    protein_length_bin,
+                   subsets,
                }
            }).collect::<Vec<_>>())
     }

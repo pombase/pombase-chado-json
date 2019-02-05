@@ -379,5 +379,6 @@ fn make_test_gene() -> GeneDetails {
         terms_by_termid: HashMap::new(),
         annotation_details: HashMap::new(),
         feature_publications: HashSet::new(),
+        subset_termids: HashSet::new(),
     }
 }

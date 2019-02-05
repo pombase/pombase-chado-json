@@ -73,7 +73,8 @@ fn write_as_fasta(writer: &mut Write, id: &str, desc: Option<String>, seq: &str)
     writer.write_all(fasta.as_bytes()).unwrap();
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash
+)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
@@ -654,6 +655,11 @@ pub struct GeneDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub feature_publications: HashSet<ReferenceUniquename>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    // A Vec of the term IDs of subsets for this gene.  Any useful subset
+    // that contains any term for any annotation in the gene is included.
+    // "useful" means that the front end might need it, eg. slim term IDs
+    pub subset_termids: HashSet<TermId>,
 }
 
 impl GeneDetails {
@@ -1091,6 +1097,8 @@ pub struct GeneQueryData {
     pub ortholog_taxonids: HashSet<u32>,
     // bin is None for RNA genes:
     pub protein_length_bin: Option<GeneQueryAttrName>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub subset_termids: HashSet<TermId>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
@@ -1122,6 +1130,8 @@ pub struct APIMaps {
     pub other_features: UniquenameFeatureShortMap,
     pub annotation_details: IdOntAnnotationDetailMap,
     pub chromosomes: ChrNameDetailsMap,
+    pub term_subsets: IdTermSubsetMap,
+    pub gene_subsets: IdGeneSubsetMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1249,8 +1259,6 @@ pub struct WebData {
     pub api_maps: APIMaps,
     pub solr_data: SolrData,
     pub search_gene_summaries: Vec<GeneSummary>,
-    pub term_subsets: IdTermSubsetMap,
-    pub gene_subsets: IdGeneSubsetMap,
     pub ont_annotations: Vec<OntAnnotation>,
     pub stats: Stats,
 }
@@ -1378,13 +1386,13 @@ impl WebData {
     }
 
     fn write_subsets(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.term_subsets).unwrap();
+        let s = serde_json::to_string(&self.api_maps.term_subsets).unwrap();
         let file_name = String::new() + output_dir + "/term_subsets.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write");
 
-        let s = serde_json::to_string(&self.gene_subsets).unwrap();
+        let s = serde_json::to_string(&self.api_maps.gene_subsets).unwrap();
         let file_name = String::new() + output_dir + "/gene_subsets.json";
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);

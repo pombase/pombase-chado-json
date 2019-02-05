@@ -24,13 +24,10 @@ pub struct ServerData {
     config_file_name: String,
     maps: APIMaps,
     search_maps_file_name: String,
-    gene_subsets: IdGeneSubsetMap,
-    gene_subsets_file_name: String,
 }
 
 
-fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &str)
-        -> (APIMaps, IdGeneSubsetMap)
+fn load(config: &Config, search_maps_file_name: &str) -> APIMaps
 {
     let file = match File::open(search_maps_file_name) {
         Ok(file) => file,
@@ -45,29 +42,11 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
     let mut decoded_json = String::new();
     decoder.read_to_string(&mut decoded_json).unwrap();
 
-    let query_api_maps: APIMaps =
+    let mut query_api_maps: APIMaps =
         match serde_json::from_str(&decoded_json) {
             Ok(results) => results,
             Err(err) => {
                 eprint!("failed to parse {}: {}", search_maps_file_name, err);
-                process::exit(1);
-            },
-        };
-
-    let file = match File::open(gene_subsets_file_name) {
-        Ok(file) => file,
-        Err(err) => {
-            eprint!("Failed to read {}: {}\n", gene_subsets_file_name, err);
-            process::exit(1);
-        }
-    };
-    let reader = BufReader::new(file);
-
-    let mut gene_subsets: IdGeneSubsetMap =
-        match serde_json::from_reader(reader) {
-            Ok(results) => results,
-            Err(err) => {
-                eprint!("failed to parse {}: {}", gene_subsets_file_name, err);
                 process::exit(1);
             },
         };
@@ -79,7 +58,7 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
         .iter().map(|prefix| prefix.clone() + ":").collect();
 
     // strip prefixes and add to map
-    for (subset_name, subset_details) in &gene_subsets {
+    for (subset_name, subset_details) in &query_api_maps.gene_subsets {
         for prefix in &prefixes_to_remove {
             if subset_name.starts_with(prefix) {
                 let new_subset_name = &subset_name[prefix.len()..];
@@ -88,26 +67,23 @@ fn load(config: &Config, search_maps_file_name: &str, gene_subsets_file_name: &s
         }
     }
 
-    gene_subsets.extend(new_entries);
+    query_api_maps.gene_subsets.extend(new_entries);
 
-    (query_api_maps, gene_subsets)
+    query_api_maps
 }
 
 impl ServerData {
-    pub fn new(config_file_name: &str, search_maps_file_name: &str,
-               gene_subsets_file_name: &str)
+    pub fn new(config_file_name: &str, search_maps_file_name: &str)
                -> ServerData
     {
         let config = Config::read(config_file_name);
 
-        let (maps, gene_subsets) =
-            load(&config, search_maps_file_name, gene_subsets_file_name);
+        let maps = load(&config, search_maps_file_name);
+
         ServerData {
             config_file_name: config_file_name.into(),
             search_maps_file_name: search_maps_file_name.into(),
-            maps,
-            gene_subsets_file_name: gene_subsets_file_name.into(),
-            gene_subsets,
+            maps
         }
     }
 
@@ -163,7 +139,7 @@ impl ServerData {
                 trimmed_search_name.pop();
             }
             let mut genes = HashSet::new();
-            for (subset_name, subset_details) in &self.gene_subsets {
+            for (subset_name, subset_details) in &self.maps.gene_subsets {
                 let name_matches =
                     wildcard && subset_name.starts_with(&trimmed_search_name) ||
                     trimmed_search_name.eq(subset_name);
@@ -174,7 +150,7 @@ impl ServerData {
             }
             genes.iter().cloned().collect::<Vec<_>>()
         } else {
-            match self.gene_subsets.get(search_name) {
+            match self.maps.gene_subsets.get(search_name) {
                 Some(subset_details) => {
                     subset_details.elements.iter().cloned().collect::<Vec<_>>()
                 },
@@ -393,10 +369,6 @@ impl ServerData {
 
     pub fn reload(&mut self) {
         let config = Config::read(&self.config_file_name);
-        let (maps, gene_subsets) =
-            load(&config, &self.search_maps_file_name,
-                 &self.gene_subsets_file_name);
-        self.maps = maps;
-        self.gene_subsets = gene_subsets;
+        self.maps = load(&config, &self.search_maps_file_name);
     }
 }

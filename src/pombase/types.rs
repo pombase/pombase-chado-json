@@ -27,3 +27,6 @@ pub type GenotypeUniquename = RcString;
 pub type AlleleUniquename = RcString;
 
 pub type OrganismTaxonId = u32;
+
+pub type SubSetName = RcString;
+

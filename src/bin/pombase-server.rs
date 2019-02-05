@@ -238,7 +238,6 @@ fn main() {
     opts.optflag("h", "help", "print this help message");
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
-    opts.optopt("s", "gene-subsets", "Gene subset data", "SUBSETS_JSON_FILE");
     opts.optopt("w", "web-root-dir", "Root web data directory", "WEB_ROOT_DIR");
 
     let matches = match opts.parse(&args[1..]) {
@@ -263,11 +262,6 @@ fn main() {
         print_usage(&program, opts);
         process::exit(1);
     }
-    if !matches.opt_present("gene-subsets") {
-        print!("no --gene-subsets|-s option\n");
-        print_usage(&program, opts);
-        process::exit(1);
-    }
     if !matches.opt_present("web-root-dir") {
         print!("no --web-root-dir|-w option\n");
         print_usage(&program, opts);
@@ -275,12 +269,10 @@ fn main() {
     }
 
     let search_maps_filename = matches.opt_str("m").unwrap();
-    let gene_subsets_filename = matches.opt_str("s").unwrap();
     println!("Reading data files ...");
 
     let config_file_name = matches.opt_str("c").unwrap();
-    let server_data = ServerData::new(&config_file_name, &search_maps_filename,
-                                      &gene_subsets_filename);
+    let server_data = ServerData::new(&config_file_name, &search_maps_filename);
     let query_exec = QueryExec::new(server_data);
     let config = Config::read(&config_file_name);
     let searcher = Search::new(&config);

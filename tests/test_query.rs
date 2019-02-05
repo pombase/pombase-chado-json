@@ -18,13 +18,10 @@ fn get_server_data() -> ServerData {
     use std::path::PathBuf;
     let mut search_maps_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     search_maps_path.push("tests/test_search_data.json.gz");
-    let mut gene_subsets_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    gene_subsets_path.push("tests/test_gene_subsets.json");
     let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     config_path.push("tests/test_config.json");
     ServerData::new(config_path.to_str().expect("config"),
-                    search_maps_path.to_str().expect("search maps"),
-                    gene_subsets_path.to_str().expect("subsets"))
+                    search_maps_path.to_str().expect("search maps"))
 }
 
 fn check_gene_result(query: &Query, genes: Vec<&str>) {
@@ -84,6 +81,7 @@ fn test_and_or_not() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        flags: HashSet::new(),
     };
 
     let and_query =
@@ -116,6 +114,7 @@ fn test_output_options() {
                           "deletion_viability".to_owned(),
                           "go_component".to_owned()],
         sequence: SeqType::None,
+        flags: HashSet::new(),
     };
 
     let expected_results =
@@ -132,6 +131,7 @@ fn test_output_options() {
                 tmm: None,
                 protein_length_bin: None,
                 sequence: None,
+                subsets: HashSet::new(),
             },
             ResultRow {
                 gene_uniquename: RcString::from("SPAC1805.15c"),
@@ -145,6 +145,7 @@ fn test_output_options() {
                 protein_length_bin: None,
                 tmm: None,
                 sequence: None,
+                subsets: HashSet::new(),
             },
             ResultRow {
                 gene_uniquename: RcString::from("SPAC27E2.05"),
@@ -161,6 +162,7 @@ fn test_output_options() {
                 protein_length_bin: None,
                 tmm: None,
                 sequence: None,
+                subsets: HashSet::new(),
             }];
 
     let qp1 = QueryNode::GeneList {
@@ -179,6 +181,7 @@ fn test_termid() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
 
@@ -191,6 +194,7 @@ fn test_gene_subset() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
 
@@ -203,6 +207,7 @@ fn test_gene_subset_invert() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
 
@@ -220,6 +225,7 @@ fn test_gene_subset_wildcard() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
 
@@ -233,6 +239,7 @@ fn test_gene_subset_not_wildcard() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
 

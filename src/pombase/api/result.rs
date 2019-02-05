@@ -1,8 +1,8 @@
 use hashbrown::HashSet;
 
 use crate::api::query::Query;
-
 use crate::web::data::{DeletionViability, PresentAbsent, GeneQueryTermData, GeneQueryAttrName};
+use crate::types::TermId;
 
 use pombase_rc_string::RcString;
 
@@ -29,6 +29,8 @@ pub struct ResultRow {
     pub protein_length_bin: Option<GeneQueryAttrName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub sequence: Option<RcString>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub subsets: HashSet<TermId>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
