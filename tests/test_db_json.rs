@@ -557,7 +557,7 @@ fn get_test_config() -> Config {
             viable: "FYPO:0002058".into(),
             inviable: "FYPO:0002059".into(),
         },
-        slim_terms: HashMap::new(),
+        slims: HashMap::new(),
         reference_page_config: ReferencePageConfig {
             triage_status_to_ignore: vec![],
         },
@@ -589,7 +589,11 @@ fn get_test_config() -> Config {
         },
     };
 
-    config.slim_terms.insert(RcString::from("bp_goslim_pombe"), vec![]);
+    config.slims.insert(RcString::from("bp_goslim_pombe"),
+                        SlimConfig {
+                            slim_display_name: RcString::from("GO BP slim"),
+                            terms: vec![],
+                        });
 
     config.cv_config.insert(RcString::from("molecular_function"),
                             CvConfig {

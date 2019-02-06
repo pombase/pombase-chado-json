@@ -2112,13 +2112,13 @@ impl WebData {
 
     pub fn write_slim_ids_and_names(&self, config: &Config, output_dir: &str)
                                        -> Result<(), io::Error> {
-        for (slim_name, terms_and_names) in &config.slim_terms {
+        for (slim_name, slim_config) in &config.slims {
             let slim_file_name = format!("{}/{}_ids_and_names.tsv", output_dir, slim_name);
 
             let slim_file = File::create(slim_file_name).expect("Unable to open file");
             let mut slim_writer = BufWriter::new(&slim_file);
 
-            for term_and_name in terms_and_names {
+            for term_and_name in &slim_config.terms {
                 let line = format!("{}\t{}\n", term_and_name.termid, term_and_name.name);
 
                 slim_writer.write(line.as_bytes())?;

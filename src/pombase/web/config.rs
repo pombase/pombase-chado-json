@@ -219,6 +219,12 @@ pub struct GeneResultsConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct SlimConfig {
+    pub slim_display_name: RcString,
+    pub terms: Vec<TermAndName>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: RcString,
     pub database_citation: RcString,
@@ -236,7 +242,7 @@ pub struct Config {
     pub interesting_parents: Vec<InterestingParent>,
     pub viability_terms: ViabilityTerms,
     // slim sets by slim name:
-    pub slim_terms: HashMap<RcString, Vec<TermAndName>>,
+    pub slims: HashMap<RcString, SlimConfig>,
     pub reference_page_config: ReferencePageConfig,
     pub interpro: InterPro,
     pub server: ServerConfig,

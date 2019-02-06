@@ -67,7 +67,7 @@ fn get_test_config() -> Config {
         reference_page_config: ReferencePageConfig {
             triage_status_to_ignore: vec![],
         },
-        slim_terms: HashMap::new(),
+        slims: HashMap::new(),
         interpro: InterPro {
             dbnames_to_filter: vec![],
         },

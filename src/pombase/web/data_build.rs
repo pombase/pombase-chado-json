@@ -612,8 +612,8 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     };
 
-    for slim_term_vec in config.slim_terms.values() {
-        for go_slim_conf in slim_term_vec {
+    for slim_config in config.slims.values() {
+        for go_slim_conf in &slim_config.terms {
             add_to_set(&mut ret, go_slim_conf.termid.clone());
         }
     }
@@ -2469,8 +2469,8 @@ impl <'a> WebDataBuild<'a> {
 
     fn set_term_details_subsets(&mut self) {
         let mut subsets_by_termid = HashMap::new();
-        for (slim_name, terms_and_names) in self.config.slim_terms.iter() {
-            for term_and_name in terms_and_names {
+        for (slim_name, slim_config) in self.config.slims.iter() {
+            for term_and_name in &slim_config.terms {
                 subsets_by_termid
                     .entry(term_and_name.termid.clone())
                     .or_insert_with(HashSet::new)
@@ -2500,8 +2500,8 @@ impl <'a> WebDataBuild<'a> {
             };
 
         let mut subsets_by_gene = HashMap::new();
-        for terms_and_names in self.config.slim_terms.values() {
-            for term_and_name in terms_and_names {
+        for slim_config in self.config.slims.values() {
+            for term_and_name in &slim_config.terms {
                 for gene_details in self.genes.values() {
                     for gene_termid in gene_details.terms_by_termid.keys() {
                         if is_subset_member(&term_and_name.termid, gene_termid)
@@ -4580,9 +4580,9 @@ impl <'a> WebDataBuild<'a> {
     fn make_slim_subset(&self, slim_name: &RcString) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
         let mut slim_subset: HashSet<TermSubsetElement> = HashSet::new();
-        let slim_terms_and_names = self.config.slim_terms.get(slim_name)
+        let slim_config = self.config.slims.get(slim_name)
             .expect(&format!("no slim config for {}", slim_name));
-        for slim_conf in slim_terms_and_names.clone() {
+        for slim_conf in slim_config.terms.clone() {
             let slim_termid = slim_conf.termid;
             let term_details = self.terms.get(&slim_termid)
                 .unwrap_or_else(|| panic!("can't find TermDetails for {}", &slim_termid));
@@ -4690,7 +4690,7 @@ impl <'a> WebDataBuild<'a> {
 
     // populated the subsets HashMap
     fn make_subsets(&mut self) {
-        for slim_name in self.config.slim_terms.keys() {
+        for slim_name in self.config.slims.keys() {
             let slim_subset = self.make_slim_subset(slim_name);
             self.term_subsets.insert(slim_name.clone(), slim_subset);
         }
