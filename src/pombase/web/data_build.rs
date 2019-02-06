@@ -2503,13 +2503,15 @@ impl <'a> WebDataBuild<'a> {
         for slim_config in self.config.slims.values() {
             for term_and_name in &slim_config.terms {
                 for gene_details in self.genes.values() {
-                    for gene_termid in gene_details.terms_by_termid.keys() {
-                        if is_subset_member(&term_and_name.termid, gene_termid)
-                        {
-                            subsets_by_gene
-                                .entry(gene_details.uniquename.clone())
-                                .or_insert_with(HashSet::new)
-                                .insert(term_and_name.termid.clone());
+                    for term_annotations in gene_details.cv_annotations.values() {
+                        for term_annotation in term_annotations {
+                            let gene_termid = &term_annotation.term;
+                            if is_subset_member(&term_and_name.termid, gene_termid) {
+                                subsets_by_gene
+                                    .entry(gene_details.uniquename.clone())
+                                    .or_insert_with(HashSet::new)
+                                    .insert(term_and_name.termid.clone());
+                            }
                         }
                     }
                 }
