@@ -1317,10 +1317,6 @@ impl <'a> WebDataBuild<'a> {
             let mut approved_date = canto_first_approved_date.clone();
 
             if approved_date.is_none() {
-                approved_date = canto_approved_date.clone();
-            }
-
-            if approved_date.is_none() {
                 approved_date = canto_session_submitted_date.clone();
             }
 
