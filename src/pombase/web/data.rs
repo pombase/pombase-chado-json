@@ -1256,6 +1256,7 @@ pub struct WebData {
     pub chromosome_summaries: Vec<ChromosomeShort>,
     pub recent_references: RecentReferences,
     pub all_community_curated: Vec<ReferenceShort>,
+    pub all_admin_curated: Vec<ReferenceShort>,
     pub api_maps: APIMaps,
     pub solr_data: SolrData,
     pub search_gene_summaries: Vec<GeneSummary>,
@@ -1339,6 +1340,14 @@ impl WebData {
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write recent references JSON");
+    }
+
+    fn write_all_admin_curated(&self, output_dir: &str) {
+        let s = serde_json::to_string(&self.all_admin_curated).unwrap();
+        let file_name = String::new() + output_dir + "/admin_curated_references.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write admin curated refs JSON");
     }
 
     fn write_api_maps(&self, output_dir: &str) {
@@ -2149,9 +2158,9 @@ impl WebData {
         self.write_metadata(&web_json_path);
         println!("wrote metadata");
         self.write_recent_references(&web_json_path);
-        println!("wrote recent references");
         self.write_all_community_curated(&web_json_path);
-        println!("wrote community curated references");
+        self.write_all_admin_curated(&web_json_path);
+        println!("wrote references");
         self.write_api_maps(&web_json_path);
         self.write_solr_data(&web_json_path);
         println!("wrote search data");
