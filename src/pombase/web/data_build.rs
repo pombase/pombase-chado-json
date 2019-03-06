@@ -1333,6 +1333,14 @@ impl <'a> WebDataBuild<'a> {
                     None
                 };
 
+            if let Some(ref canto_annotation_status) = canto_annotation_status {
+                if canto_annotation_status != "APPROVED" {
+                    canto_curator_name = None;
+                    canto_curator_role = None;
+                    approved_date = None;
+                }
+            }
+
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
                                        uniquename: reference_uniquename.clone(),
