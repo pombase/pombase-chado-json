@@ -4,7 +4,7 @@
 
 slim_file_name=/tmp/slim_ids_$$.txt
 
-jq -r '.go_slim_terms | .[] | .name' /var/pomcur/sources/pombe-embl/website/pombase_v2_config.json > $slim_file_name
+jq -r '.slims | .bp_goslim_pombe | .terms | .[] | .name' $2 > $slim_file_name
 
 ids="'SPAC19G12.04','SPAC27E2.05','SPBC1D7.02c','SPBC11G11.01','SPBC18H10.02','SPBC18H10.20c',\
 'SPBC9B6.04c','SPAC2F3.09','SPAC11G7.02','SPAC27E2.06c','SPAC19G12.03', 'SPACUNK4.17-antisense-1',\
