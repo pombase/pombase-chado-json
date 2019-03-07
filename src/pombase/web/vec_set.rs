@@ -1,6 +1,6 @@
 use std::hash::Hash;
-use hashbrown::hash_map::Entry::{Occupied, Vacant};
-use hashbrown::HashMap;
+use std::collections::hash_map::Entry::{Occupied, Vacant};
+use std::collections::HashMap;
 use bit_set::BitSet;
 
 // A data structure for quick(-ish) lookup to find supersets of sets.

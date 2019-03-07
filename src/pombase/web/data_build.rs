@@ -6,7 +6,7 @@ use std::usize;
 
 use regex::Regex;
 
-use hashbrown::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 use crate::db::*;
 use crate::types::*;

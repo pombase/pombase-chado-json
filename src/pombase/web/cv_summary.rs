@@ -1,7 +1,7 @@
 use std::mem;
 use std::cmp::Ordering;
 
-use hashbrown::{HashSet, HashMap};
+use std::collections::{HashSet, HashMap};
 
 use crate::types::*;
 use crate::web::data::*;

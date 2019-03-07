@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt;
 
-use hashbrown::HashMap;
+use std::collections::HashMap;
 
 use pombase_rc_string::RcString;
 
@@ -59,7 +59,7 @@ pub type ReferenceShortOptionMap = HashMap<ReferenceUniquename, Option<Reference
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
-use hashbrown::HashSet;
+use std::collections::HashSet;
 
 use crate::web::config::*;
 use crate::types::*;

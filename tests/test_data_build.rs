@@ -1,5 +1,5 @@
 use std::collections::BTreeMap;
-use hashbrown::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
 use std::cmp::Ordering;

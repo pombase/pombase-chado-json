@@ -3,7 +3,7 @@ extern crate pombase_rc_string;
 
 use std::iter::Iterator;
 
-use hashbrown::HashSet;
+use std::collections::HashSet;
 
 use self::pombase::api::query::*;
 use self::pombase::api::result::*;
