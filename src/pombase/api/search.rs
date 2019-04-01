@@ -48,9 +48,9 @@ impl Search {
 
         for (i, word) in words.iter().enumerate() {
             if i == words_length - 1 {
-                ret += &format!("{} {}~0.8 {}*", word, word, word);
+                ret += &format!("{} {}*", word, word);
             } else {
-                ret += &format!("{} {}~0.8 ", word, word);
+                ret += &format!("{} ", word);
             }
         }
 
@@ -77,8 +77,7 @@ impl Search {
             terms_url += &format!("(interesting_parents:{}\\:{} OR id:{}\\:{})",
                                   prefix, accession, prefix, accession);
         } else {
-            terms_url += "cv_name:";
-            terms_url += cv_name;
+            terms_url += &format!("cv_name:+{}^=1", cv_name);
         }
 
         if let Some(captures) = termid_re.captures(q) {
@@ -102,20 +101,10 @@ impl Search {
                 return Ok(vec![]);
             }
 
-            let clean_words_length = clean_words.len();
-
-            for (i, word) in clean_words.iter().enumerate() {
-                if i == clean_words_length - 1 {
-                    terms_url += &format!("{} {}*", word, word);
-                } else {
-                    terms_url += &format!("{} ", word);
-                }
-            }
-
             let query_part = self.get_query_part(&clean_words);
 
-            terms_url += &format!(") OR close_synonym_words:({})^{} OR distant_synonym_words:({})^{})",
-                                  query_part, self.close_synonym_boost,
+            terms_url += &format!("{}) OR close_synonym_words:({})^{} OR distant_synonym_words:({})^{})",
+                                  query_part, query_part, self.close_synonym_boost,
                                   query_part, self.distant_synonym_boost);
         }
         print!("Solr URL: {:?}\n", terms_url);
