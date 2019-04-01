@@ -2508,7 +2508,6 @@ impl <'a> WebDataBuild<'a> {
         let is_subset_member =
             |subset_termid: &str, test_termid: &str| {
                 subset_termid == test_termid ||
-                self.children_by_termid.contains_key(subset_termid) &&
                     self.children_by_termid.get(subset_termid).unwrap()
                     .contains(test_termid)
             };
@@ -3676,14 +3675,10 @@ impl <'a> WebDataBuild<'a> {
                 }
 
                 if subject_term_details.cv_annotations.keys().len() > 0 {
-                    if let Some(object_term_details) = self.terms.get(&object_termid) {
-                        if object_term_details.cv_annotations.keys().len() > 0 {
-                            children_by_termid
-                                .entry(object_termid.clone())
-                                .or_insert_with(HashSet::new)
-                                .insert(subject_termid.clone());
-                        }
-                    }
+                    children_by_termid
+                        .entry(object_termid.clone())
+                        .or_insert_with(HashSet::new)
+                        .insert(subject_termid.clone());
                 }
 
                 for (cv_name, term_annotations) in &subject_term_details.cv_annotations {
