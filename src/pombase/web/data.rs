@@ -8,8 +8,8 @@ use std::io;
 use std::collections::BTreeMap;
 use std::fmt::Display;
 use std::fmt;
-
 use std::collections::HashMap;
+use regex::Regex;
 
 use pombase_rc_string::RcString;
 
@@ -2139,6 +2139,63 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_transmembrane_domains(&self, config: &Config, output_dir: &str)
+                                       -> Result<(), io::Error> {
+        let tm_domain_file_name =
+            output_dir.to_owned() + "/transmembrane_domain_coords_and_seqs.tsv";
+        let tm_domain_file =
+            File::create(tm_domain_file_name).expect("Unable to open file");
+        let mut tm_domain_writer = BufWriter::new(&tm_domain_file);
+
+        let coords_and_seqs = |coords: &[(usize, usize)], prot_seq: &str| {
+            let mut coords_strings = vec![];
+            let mut seqs = vec![];
+            for (start, end) in coords {
+                coords_strings.push(format!("{}..{}", start, end));
+                let seq = &prot_seq[start-1..*end];
+                seqs.push(seq.clone());
+            }
+            (coords_strings.join(","), seqs.join(","))
+        };
+
+        let star_re = Regex::new(r"\*$").unwrap();
+
+        let format_one_gene = |gene_details: &GeneDetails, prot_seq: &str| {
+            let prot_seq = star_re.replace_all(prot_seq, "");
+            let (coords, seqs) =
+                coords_and_seqs(&gene_details.tm_domain_coords, &prot_seq);
+            format!("{}\t{}\t{}\t{}\t{}\n",
+                    gene_details.uniquename,
+                    gene_details.name.as_ref().map(|n| n.as_str()).unwrap_or(""),
+                    prot_seq,
+                    coords, seqs)
+        };
+
+        for gene_details in self.api_maps.genes.values() {
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                if gene_details.taxonid != load_org_taxonid {
+                    continue;
+                }
+            }
+
+            if gene_details.tm_domain_coords.len() == 0 {
+                continue;
+            }
+
+            if let Some(transcript) = gene_details.transcripts.get(0) {
+                if let Some(ref protein) = transcript.protein {
+                    let line = format_one_gene(gene_details, &protein.sequence);
+
+                    tm_domain_writer.write_all(line.as_bytes())?;
+                }
+            }
+        }
+
+        tm_domain_writer.flush()?;
+
+        Ok(())
+    }
+
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
         let file_name = String::new() + output_dir + "/stats.json";
@@ -2184,6 +2241,7 @@ impl WebData {
         self.write_rnacentral(&config, &misc_path)?;
         self.write_deletion_viability(&config, &misc_path)?;
         self.write_slim_ids_and_names(&config, &misc_path)?;
+        self.write_transmembrane_domains(&config, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 
