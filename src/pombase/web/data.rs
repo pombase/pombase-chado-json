@@ -1467,8 +1467,22 @@ impl WebData {
                                    gene_uniquename, None, &three_prime_utr_seq);
                 }
                 if let Some(ref protein) = transcript.protein {
+                    let name_and_product =
+                        if gene_details.name.is_some() || gene_details.product.is_some() {
+                            let mut buf = String::new();
+                            if let Some(ref name) = gene_details.name {
+                                buf.push_str(name);
+                            }
+                            buf.push_str("|");
+                            if let Some(ref product) = gene_details.product {
+                                buf.push_str(product);
+                            }
+                            Some(buf.to_owned())
+                        } else {
+                            None
+                        };
                     write_as_fasta(&mut peptide_writer, &(gene_uniquename.to_owned() + ":pep"),
-                                   None, &protein.sequence);
+                                   name_and_product, &protein.sequence);
                 }
             }
         }
