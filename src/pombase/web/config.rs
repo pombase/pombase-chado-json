@@ -169,11 +169,6 @@ pub type DatabaseName = RcString;
 pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
-pub struct QueryDataConfig {
-    pub ortholog_presence_taxonids: HashSet<u32>,
-}
-
-#[derive(Deserialize, Clone, Debug)]
 pub struct MacromolecularComplexesConfig {
     pub parent_complex_termid: RcString,
     pub excluded_terms: HashSet<RcString>,
@@ -249,7 +244,7 @@ pub struct Config {
     pub extra_database_aliases: DatabaseAliases,
     pub chromosomes: HashMap<RcString, ChromosomeConfig>,
     pub gene_results: GeneResultsConfig,
-    pub query_data_config: QueryDataConfig,
+    pub ortholog_taxonids: HashSet<u32>,
     pub file_exports: FileExportConfig,
 }
 
