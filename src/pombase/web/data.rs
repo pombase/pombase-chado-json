@@ -186,6 +186,13 @@ pub struct IdAndOrganism {
     pub taxonid: u32,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct IdNameAndOrganism {
+    pub identifier: RcString,
+    pub name: Option<RcString>,
+    pub taxonid: u32,
+}
+
 // identifiers used for autocomplete in the search box
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneSummary {
@@ -200,7 +207,7 @@ pub struct GeneSummary {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub orthologs: Vec<IdAndOrganism>,
+    pub orthologs: Vec<IdNameAndOrganism>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     pub feature_type: RcString,

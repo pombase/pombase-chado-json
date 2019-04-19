@@ -1090,31 +1090,21 @@ impl <'a> WebDataBuild<'a> {
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
             .collect::<Vec<RcString>>();
-        let mut ortholog_ids =
+        let ortholog_ids =
             gene_details.ortholog_annotations.iter()
             .map(|ortholog_annotation| {
-                IdAndOrganism {
-                    identifier: ortholog_annotation.ortholog_uniquename.clone(),
+                let ortholog_uniquename = ortholog_annotation.ortholog_uniquename.clone();
+                let maybe_ortholog_name =
+                    self.genes.get(&ortholog_uniquename).unwrap().name.clone();
+
+                IdNameAndOrganism {
+                    identifier: ortholog_uniquename,
+                    name: maybe_ortholog_name,
                     taxonid: ortholog_annotation.ortholog_taxonid,
                 }
             })
-            .collect::<Vec<IdAndOrganism>>();
+            .collect::<Vec<IdNameAndOrganism>>();
 
-        for ortholog_annotation in &gene_details.ortholog_annotations {
-            let orth_uniquename = &ortholog_annotation.ortholog_uniquename;
-            if let Some(orth_gene) =
-                self.genes.get(orth_uniquename) {
-                    if let Some(ref orth_name) = orth_gene.name {
-                        let id_and_org = IdAndOrganism {
-                            identifier: RcString::from(&orth_name),
-                            taxonid: ortholog_annotation.ortholog_taxonid,
-                        };
-                        ortholog_ids.push(id_and_org);
-                    }
-                } else {
-                    panic!("missing GeneShort for: {:?}", orth_uniquename);
-                }
-        }
         GeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),

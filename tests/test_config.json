@@ -402,9 +402,7 @@
       "columns": []
     }
   },
-  "query_data_config": {
-    "ortholog_presence_taxonids": [9606, 4932]
-  },
+  "ortholog_taxonids": [9606, 4932],
   "file_exports": {
     "macromolecular_complexes": null
   }

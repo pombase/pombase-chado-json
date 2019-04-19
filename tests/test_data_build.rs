@@ -87,9 +87,7 @@ fn get_test_config() -> Config {
                 columns: vec![],
             }
         },
-        query_data_config: QueryDataConfig {
-            ortholog_presence_taxonids: HashSet::from_iter(vec![9606, 4932]),
-        },
+        ortholog_taxonids: HashSet::from_iter(vec![9606, 4932]),
         file_exports: FileExportConfig {
             macromolecular_complexes: None,
             rnacentral: None,
