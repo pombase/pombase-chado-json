@@ -73,8 +73,17 @@ fn write_as_fasta(writer: &mut Write, id: &str, desc: Option<String>, seq: &str)
     writer.write_all(fasta.as_bytes()).unwrap();
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash
-)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum Throughput {
+#[serde(rename = "high")]
+    HighThroughput,
+#[serde(rename = "low")]
+    LowThroughput,
+#[serde(rename = "non-experimental")]
+    NonExperimental,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
@@ -944,6 +953,8 @@ pub struct InteractionAnnotation {
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference_uniquename: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub throughput: Option<Throughput>,
 }
 impl PartialEq for InteractionAnnotation {
     fn eq(&self, other: &Self) -> bool {

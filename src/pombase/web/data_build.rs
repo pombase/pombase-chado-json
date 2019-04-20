@@ -2040,6 +2040,7 @@ impl <'a> WebDataBuild<'a> {
                     is_gene_type(&feature_rel.subject.feat_type.name) &&
                     is_gene_type(&feature_rel.object.feat_type.name) {
                         let mut evidence: Option<Evidence> = None;
+                        let mut throughput: Option<Throughput> = None;
                         let mut is_inferred_interaction: bool = false;
 
                         let borrowed_publications = feature_rel.publications.borrow();
@@ -2075,6 +2076,19 @@ impl <'a> WebDataBuild<'a> {
                                     }
                                 }
                             }
+                            if prop.prop_type.name == "annotation_throughput_type" {
+                                if let Some(throughput_type) = prop.value.clone() {
+                                    throughput = Some(match throughput_type.as_ref() {
+                                        "low throughput" => Throughput::LowThroughput,
+                                        "high throughput" => Throughput::HighThroughput,
+                                        "non-experimental" => Throughput::NonExperimental,
+                                        _ => {
+                                            panic!("unknown throughput type: {}",
+                                                   throughput_type);
+                                        }
+                                    });
+                                }
+                            }
                         }
 
                         let evidence_clone = evidence.clone();
@@ -2096,6 +2110,7 @@ impl <'a> WebDataBuild<'a> {
                                             interactor_uniquename: other_gene_uniquename.clone(),
                                             evidence,
                                             reference_uniquename: maybe_reference_uniquename.clone(),
+                                            throughput,
                                         };
                                     {
                                         let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
