@@ -359,6 +359,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         gene_ex_props: None,
         conditions: conditions,
         assigned_by: Some(RcString::from("PomBase")),
+        throughput: Some(Throughput::HighThroughput),
     }
 }
 

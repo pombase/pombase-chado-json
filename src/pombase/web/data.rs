@@ -434,6 +434,8 @@ pub struct OntAnnotationDetail {
     pub conditions: HashSet<TermId>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub throughput: Option<Throughput>,
 }
 
 impl PartialEq for OntAnnotationDetail {

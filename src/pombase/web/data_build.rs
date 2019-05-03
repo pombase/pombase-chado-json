@@ -3058,6 +3058,7 @@ impl <'a> WebDataBuild<'a> {
             let mut assigned_by: Option<RcString> = None;
             let mut evidence: Option<RcString> = None;
             let mut genotype_background: Option<RcString> = None;
+            let mut throughput: Option<Throughput> = None;
 
             // need to get evidence first as it's used later
             // See: https://github.com/pombase/website/issues/455
@@ -3114,6 +3115,19 @@ impl <'a> WebDataBuild<'a> {
                     "gene_product_form_id" => {
                         if let Some(value) = prop.value.clone() {
                             extension.push(self.get_gene_prod_extension(value));
+                        }
+                    },
+                    "annotation_throughput_type" => {
+                        if let Some(throughput_type) = prop.value.clone() {
+                            throughput = Some(match throughput_type.as_ref() {
+                                "low throughput" => Throughput::LowThroughput,
+                                "high throughput" => Throughput::HighThroughput,
+                                "non-experimental" => Throughput::NonExperimental,
+                                _ => {
+                                    panic!("unknown throughput type: {}",
+                                           throughput_type);
+                                }
+                            });
                         }
                     },
                     _ => ()
@@ -3219,6 +3233,7 @@ impl <'a> WebDataBuild<'a> {
                 conditions,
                 extension,
                 assigned_by,
+                throughput,
             };
 
             self.add_annotation(cvterm.borrow(), feature_cvterm.is_not,
