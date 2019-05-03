@@ -193,12 +193,12 @@ fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
     Some(Json(completion_response))
 }
 
-#[get ("/api/v1/dataset/latest/motif_search/<q>", rank=1)]
-fn motif_search(q: String, state: rocket::State<Mutex<Search>>)
+#[get ("/api/v1/dataset/latest/motif_search/<scope>/<q>", rank=1)]
+fn motif_search(scope: String, q: String, state: rocket::State<Mutex<Search>>)
                 -> Option<String>
 {
     let search = state.lock().expect("failed to lock");
-    let res = search.motif_search(&q);
+    let res = search.motif_search(&scope, &q);
 
     match res {
         Ok(search_result) => {

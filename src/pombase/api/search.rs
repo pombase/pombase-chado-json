@@ -228,9 +228,9 @@ impl Search {
         }
     }
 
-    pub fn motif_search(&self, pattern: &str) -> Result<String, String> {
+    pub fn motif_search(&self, scope: &str, pattern: &str) -> Result<String, String> {
         let search_url = self.django_url.to_owned() + "/motifsearch/query/";
-        let params = [("pattern", pattern)];
+        let params = [("scope", scope), ("pattern", pattern)];
         let client = reqwest::Client::new();
         let request = client.get(&search_url).query(&params);
         let result = request.send();
