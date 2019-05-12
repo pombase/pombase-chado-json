@@ -44,12 +44,16 @@ fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Opti
     let root_dir_path = Path::new("/").join(web_root_dir);
     let full_path = root_dir_path.join(path);
 
+    print!("attempting to serve this path: {}\n", full_path.display());
+
     if full_path.is_dir() {
         let index_path = full_path.join("index.html");
+        print!("found directory for {}, returning index.html\n", full_path.display());
         return NamedFile::open(index_path).ok();
     }
 
     if full_path.exists() {
+        print!("found file for {}, returning index.html\n", full_path.display());
         return NamedFile::open(full_path).ok();
     }
 
@@ -58,8 +62,11 @@ fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Opti
     let json_path: PathBuf = json_path_str.into();
 
     if json_path.exists() {
+        print!("found JSON file for {}, returning index.html\n", full_path.display());
         return NamedFile::open(json_path).ok();
     }
+
+    print!("for {}, /index.html\n", full_path.display());
 
     NamedFile::open(root_dir_path.join("index.html")).ok()
 }
