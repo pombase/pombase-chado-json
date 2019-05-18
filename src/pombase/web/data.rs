@@ -1196,6 +1196,7 @@ pub struct SolrReferenceSummary {
     pub approved_date: Option<RcString>,
     pub gene_count: usize,
     pub genotype_count: usize,
+    pub annotation_count: usize,
 }
 
 impl SolrReferenceSummary {
@@ -1206,6 +1207,12 @@ impl SolrReferenceSummary {
             } else {
                 None
             };
+
+        let annotation_count = reference_details.annotation_details.len() +
+            reference_details.genetic_interactions.len() +
+            reference_details.physical_interactions.len() +
+            reference_details.ortholog_annotations.len() +
+            reference_details.paralog_annotations.len();
 
         SolrReferenceSummary {
             id: reference_details.uniquename.clone(),
@@ -1219,6 +1226,7 @@ impl SolrReferenceSummary {
             approved_date: reference_details.approved_date.clone(),
             gene_count: reference_details.genes_by_uniquename.keys().len(),
             genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
+            annotation_count,
         }
     }
 }
