@@ -1197,6 +1197,12 @@ pub struct SolrReferenceSummary {
     pub gene_count: usize,
     pub genotype_count: usize,
     pub annotation_count: usize,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_annotation_status: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_curator_name: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_curator_role: Option<RcString>,
 }
 
 impl SolrReferenceSummary {
@@ -1227,6 +1233,9 @@ impl SolrReferenceSummary {
             gene_count: reference_details.genes_by_uniquename.keys().len(),
             genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
             annotation_count,
+            canto_annotation_status: reference_details.canto_annotation_status.clone(),
+            canto_curator_name: reference_details.canto_curator_name.clone(),
+            canto_curator_role: reference_details.canto_curator_role.clone(),
         }
     }
 }
