@@ -2513,7 +2513,10 @@ impl <'a> WebDataBuild<'a> {
         let is_subset_member =
             |subset_termid: &str, test_termid: &str| {
                 subset_termid == test_termid ||
-                    self.children_by_termid.get(subset_termid).unwrap()
+                    self.children_by_termid.get(subset_termid)
+                    .unwrap_or_else(|| {
+                        panic!("failed to get subset: {}", subset_termid)
+                    })
                     .contains(test_termid)
             };
 
@@ -3661,6 +3664,13 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_cvtermpath(&mut self) {
+        let mut slim_termids = HashSet::new();
+        for slim_config in self.config.slims.values() {
+            for term_and_name in &slim_config.terms {
+                slim_termids.insert(term_and_name.termid.clone());
+            }
+        }
+
         let mut new_annotations: HashMap<(CvName, TermId), HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
             HashMap::new();
 
@@ -3694,7 +3704,9 @@ impl <'a> WebDataBuild<'a> {
                     continue;
                 }
 
-                if subject_term_details.cv_annotations.keys().len() > 0 {
+                if subject_term_details.cv_annotations.keys().len() > 0 ||
+                    slim_termids.contains(&object_termid)
+                {
                     children_by_termid
                         .entry(object_termid.clone())
                         .or_insert_with(HashSet::new)
