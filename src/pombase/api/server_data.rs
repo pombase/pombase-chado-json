@@ -228,7 +228,7 @@ impl ServerData {
         }
     }
 
-    pub fn filter_genes(&self, p: &Fn(&APIGeneSummary) -> bool)
+    pub fn filter_genes(&self, p: & dyn Fn(&APIGeneSummary) -> bool)
                         -> Vec<GeneUniquename>
     {
         self.maps.gene_summaries.values()

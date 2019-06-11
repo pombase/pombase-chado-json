@@ -68,7 +68,7 @@ use crate::interpro::InterProMatch;
 
 const FASTA_SEQ_COLUMNS: usize = 60;
 
-fn write_as_fasta(writer: &mut Write, id: &str, desc: Option<String>, seq: &str) {
+fn write_as_fasta(writer: &mut dyn Write, id: &str, desc: Option<String>, seq: &str) {
     let fasta = format_fasta(id, desc, &seq, FASTA_SEQ_COLUMNS);
     writer.write_all(fasta.as_bytes()).unwrap();
 }
