@@ -156,6 +156,14 @@ impl GeneShort {
             product: gene_details.product.clone(),
         }
     }
+
+    pub fn display_name(&self) -> String {
+        if let Some(ref name) = self.name {
+            format!("{} ({})", name, self.uniquename)
+        } else {
+            String::from(&self.uniquename)
+        }
+    }
 }
 
 impl PartialEq for GeneShort {

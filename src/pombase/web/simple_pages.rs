@@ -166,6 +166,36 @@ fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
     annotation_html
 }
 
+fn orthologs(config: &Config, gene_details: &GeneDetails) -> String {
+    let mut orth_html = String::new();
+
+    if gene_details.ortholog_annotations.is_empty() {
+        return orth_html;
+    }
+
+    orth_html += "<sect><h2>Orthologs</h2>\n<ul>\n";
+
+    for orth_annotation in &gene_details.ortholog_annotations {
+        let maybe_orth_org = config.organism_by_taxonid(orth_annotation.ortholog_taxonid);
+        let orth_org_scientific_name =
+            if let Some(orth_org) = maybe_orth_org {
+                orth_org.scientific_name()
+            } else {
+                String::from("Unknown organism")
+            };
+        if let Some(maybe_orth_gene_short) =
+            gene_details.genes_by_uniquename.get(&orth_annotation.ortholog_uniquename) {
+                if let Some(orth_gene_short) = maybe_orth_gene_short {
+                    orth_html += &format!("<li>{} {}</li>\n", orth_gene_short.display_name(),
+                                          orth_org_scientific_name);
+                }
+            }
+    }
+
+    orth_html += "</ul></sect>\n";
+
+    orth_html
+}
 
 fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String {
     let mut body = String::new();
@@ -180,6 +210,9 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 
     body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
                      gene_annotation(config, gene_details));
+
+    body += &orthologs(config, gene_details);
+
     body
 }
 
