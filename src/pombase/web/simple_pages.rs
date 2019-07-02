@@ -55,10 +55,11 @@ fn header(config: &Config, title: &str) -> String  {
   <meta name="description" content="{}">
   <meta name="google-site-verification" content="H8vhCdG7XsSbh-8f20VSipvu2PnZ22YSGZm81jE0-Pk" />
   <link rel="shortcut icon" href="/assets/favicon.ico">
-  <meta name="apple-mobile-web-app-title" content="PomBase">
-  <meta name="application-name" content="PomBase">
+  <meta name="apple-mobile-web-app-title" content="{}">
+  <meta name="application-name" content="{}">
 "##,
-            title, title, config.database_name, title
+            title, title, config.database_name, title, config.database_name,
+            config.database_name
     )
 }
 
@@ -240,8 +241,8 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<sect><h2>Welcome to PomBase</h2>\n<p>{}</p></sect>\n",
-                     config.site_description);
+    body += &format!("<sect><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></sect>\n",
+                     config.database_name, config.site_description);
 
     body += &format!("<sect><h2>Gene summary</h2>\n{}</sect>\n",
                      gene_summary(config, gene_details));
@@ -301,8 +302,8 @@ fn reference_body(config: &Config, title: &str, reference_details: &ReferenceDet
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<sect><h2>Welcome to PomBase</h2>\n<p>{}</p></sect>\n",
-                     config.site_description);
+    body += &format!("<sect><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></sect>\n",
+                     config.database_name, config.site_description);
 
     body += &format!("<sect><h2>Reference summary</h2>\n{}</sect>\n",
                      reference_summary(reference_details));
@@ -352,8 +353,8 @@ fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<sect><h2>Welcome to PomBase</h2>\n<p>{}</p></sect>\n",
-                     config.site_description);
+    body += &format!("<sect><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></sect>\n",
+                     config.database_name, config.site_description);
 
     body += &format!("<sect><h2>Term summary</h2>\n{}</sect>\n",
                      term_summary(config, term_details));
