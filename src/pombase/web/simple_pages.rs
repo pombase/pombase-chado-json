@@ -12,10 +12,19 @@ fn make_title(config: &Config, gene_details: &GeneDetails) -> String {
             format!("{}", gene_details.uniquename)
         };
 
+    let feature_type =
+        if gene_details.feature_type.ends_with(" gene") {
+            String::from(gene_details.feature_type.as_str())
+        } else {
+            format!("{} gene", gene_details.feature_type)
+        };
+
     if let Some(ref product) = gene_details.product {
-        format!("{} - {} - {}", config.database_name, name_and_uniquename, product)
+        format!("{} - {} {} - {}", config.database_name, name_and_uniquename,
+                feature_type, product)
     } else {
-        format!("{} - {}", config.database_name, name_and_uniquename)
+        format!("{} - {} {}", config.database_name, name_and_uniquename,
+                feature_type)
     }
 }
 
@@ -80,7 +89,7 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
     ret
 }
 
-fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
+fn gene_annotation(gene_details: &GeneDetails) -> String {
     let mut annotation_html = String::new();
 
     for (cv_name, term_annotations) in &gene_details.cv_annotations {
@@ -122,7 +131,7 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
                      gene_summary(config, gene_details));
 
     body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
-                     gene_annotation(config, gene_details));
+                     gene_annotation(gene_details));
     body
 }
 
