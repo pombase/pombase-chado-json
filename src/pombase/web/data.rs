@@ -346,8 +346,28 @@ impl ReferenceShort {
     }
 }
 
-pub trait AnnotationContainer {
-    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap;
+#[derive(PartialEq)]
+pub enum ContainerType {
+    Gene,
+    Term,
+    Reference,
+    Genotype,
+}
+
+pub trait Container {
+    fn container_type(&self) -> ContainerType;
+}
+
+pub trait AnnotationContainer: Container {
+    fn cv_annotations(&self) -> &OntAnnotationMap;
+    fn cv_annotations_mut(&mut self) -> &mut OntAnnotationMap;
+    fn annotation_details(&self) -> &IdOntAnnotationDetailMap;
+    fn terms_by_termid(&self) -> &TermShortOptionMap;
+    fn genes_by_uniquename(&self) -> &GeneShortOptionMap;
+}
+
+pub trait OrthologAnnotationContainer: AnnotationContainer {
+    fn ortholog_annotations(&self) -> &Vec<OrthologAnnotation>;
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -401,9 +421,33 @@ pub struct ReferenceDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
+impl Container for ReferenceDetails {
+    fn container_type(&self) -> ContainerType {
+        ContainerType::Reference
+    }
+}
+
 impl AnnotationContainer for ReferenceDetails {
-    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+    fn cv_annotations(&self) -> &OntAnnotationMap {
+        &self.cv_annotations
+    }
+    fn cv_annotations_mut(&mut self) -> &mut OntAnnotationMap {
         &mut self.cv_annotations
+    }
+    fn annotation_details(&self) -> &IdOntAnnotationDetailMap {
+        &self.annotation_details
+    }
+    fn terms_by_termid(&self) -> &TermShortOptionMap {
+        &self.terms_by_termid
+    }
+    fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
+        &self.genes_by_uniquename
+    }
+}
+
+impl OrthologAnnotationContainer for ReferenceDetails {
+    fn ortholog_annotations(&self) -> &Vec<OrthologAnnotation> {
+        &self.ortholog_annotations
     }
 }
 
@@ -712,9 +756,33 @@ impl GeneDetails {
     }
 }
 
+impl Container for GeneDetails {
+    fn container_type(&self) -> ContainerType {
+        ContainerType::Gene
+    }
+}
+
 impl AnnotationContainer for GeneDetails {
-    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+    fn cv_annotations(&self) -> &OntAnnotationMap {
+        &self.cv_annotations
+    }
+    fn cv_annotations_mut(&mut self) -> &mut OntAnnotationMap {
         &mut self.cv_annotations
+    }
+    fn annotation_details(&self) -> &IdOntAnnotationDetailMap {
+        &self.annotation_details
+    }
+    fn terms_by_termid(&self) -> &TermShortOptionMap {
+        &self.terms_by_termid
+    }
+    fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
+        &self.genes_by_uniquename
+    }
+}
+
+impl OrthologAnnotationContainer for GeneDetails {
+    fn ortholog_annotations(&self) -> &Vec<OrthologAnnotation> {
+        &self.ortholog_annotations
     }
 }
 
@@ -862,9 +930,27 @@ pub struct GenotypeDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
+impl Container for GenotypeDetails {
+    fn container_type(&self) -> ContainerType {
+        ContainerType::Genotype
+    }
+}
+
 impl AnnotationContainer for GenotypeDetails {
-    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+    fn cv_annotations(&self) -> &OntAnnotationMap {
+        &self.cv_annotations
+    }
+    fn cv_annotations_mut(&mut self) -> &mut OntAnnotationMap {
         &mut self.cv_annotations
+    }
+    fn annotation_details(&self) -> &IdOntAnnotationDetailMap {
+        &self.annotation_details
+    }
+    fn terms_by_termid(&self) -> &TermShortOptionMap {
+        &self.terms_by_termid
+    }
+    fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
+        &self.genes_by_uniquename
     }
 }
 
@@ -949,9 +1035,27 @@ pub struct TermDetails {
     pub xrefs: HashMap<RcString, TermXref>,
 }
 
+impl Container for TermDetails {
+    fn container_type(&self) -> ContainerType {
+        ContainerType::Term
+    }
+}
+
 impl AnnotationContainer for TermDetails {
-    fn borrow_cv_annotations(&mut self) -> &mut OntAnnotationMap {
+    fn cv_annotations(&self) -> &OntAnnotationMap {
+        &self.cv_annotations
+    }
+    fn cv_annotations_mut(&mut self) -> &mut OntAnnotationMap {
         &mut self.cv_annotations
+    }
+    fn annotation_details(&self) -> &IdOntAnnotationDetailMap {
+        &self.annotation_details
+    }
+    fn terms_by_termid(&self) -> &TermShortOptionMap {
+        &self.terms_by_termid
+    }
+    fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
+        &self.genes_by_uniquename
     }
 }
 

@@ -1,10 +1,26 @@
 use pombase_rc_string::RcString;
 
 use crate::web::config::Config;
-use crate::web::data::{GeneDetails, OntAnnotationId};
+use crate::web::data::{GeneDetails, ReferenceDetails, TermDetails,
+                       ContainerType,
+                       OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer};
 
 
-fn make_title(config: &Config, gene_details: &GeneDetails) -> String {
+fn format_page(header: &str, body: &str) -> String {
+    format! ("
+<!DOCTYPE html>
+<html>
+  <head>
+    {}
+  </head>
+  <body>
+    {}
+  </body>
+</html>",
+             header, body)
+}
+
+fn make_gene_title(config: &Config, gene_details: &GeneDetails) -> String {
     let name_and_uniquename =
         if let Some(ref name) = gene_details.name {
             format!("{} ({})", name, gene_details.uniquename)
@@ -27,7 +43,7 @@ fn make_title(config: &Config, gene_details: &GeneDetails) -> String {
     }
 }
 
-fn gene_header(config: &Config, title: &str) -> String  {
+fn header(config: &Config, title: &str) -> String  {
     format!(r##"
   <meta charset="utf-8">
   <title>{}</title>
@@ -89,18 +105,29 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 }
 
 fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
-                   gene_details: &GeneDetails) -> String {
+                   container: &dyn AnnotationContainer) -> String {
     let mut ret = String::new();
     let mut references = vec![];
+    let mut genes = vec![];
+
     for ont_annotation_id in ont_annotation_ids {
-        if let Some(annotation_details) = gene_details.annotation_details.get(ont_annotation_id) {
+        if let Some(annotation_details) = container.annotation_details().get(ont_annotation_id) {
             if let Some(ref reference) = annotation_details.reference {
                 references.push(reference);
+            }
+
+            for gene_uniquename in &annotation_details.genes {
+                if let Some(maybe_gene_short) =
+                    container.genes_by_uniquename().get(gene_uniquename.as_str()) {
+                        if let Some(gene_short) = maybe_gene_short {
+                            genes.push(gene_short)
+                        }
+                    }
             }
         }
     }
 
-    if references.len() > 0 {
+    if container.container_type() != ContainerType::Reference && references.len() > 0 {
         references.sort();
         references.dedup();
         ret += "<p>References:</p>\n<ul>";
@@ -110,15 +137,26 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
         ret += "</ul>\n";
     }
 
+    if container.container_type() != ContainerType::Gene && genes.len() > 0 {
+        genes.sort();
+        genes.dedup();
+        ret += "<p>Genes:</p>\n<ul>";
+        for gene in genes {
+            ret += &format!("<li><a href='/gene/{}'>{}</a></li>\n", gene.uniquename,
+                            gene.display_name());
+        }
+        ret += "</ul>\n";
+    }
+
     ret
 }
 
-fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
+fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> String {
     let mut annotation_html = String::new();
 
     let mut cv_names: Vec<RcString> = vec![];
 
-    for cv_name in gene_details.cv_annotations.keys() {
+    for cv_name in container.cv_annotations().keys() {
         cv_names.push(cv_name.clone());
     }
 
@@ -135,14 +173,14 @@ fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
     cv_names.sort_by(cmp_display_names);
 
     for cv_name in cv_names {
-        let term_annotations = gene_details.cv_annotations.get(&cv_name).unwrap();
+        let term_annotations = container.cv_annotations().get(&cv_name).unwrap();
         let cv_config = config.cv_config_by_name(&cv_name);
         let cv_display_name = cv_config.display_name;
         annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_display_name);
         for term_annotation in term_annotations {
             let term_name =
                 if let Some(term_short_opt) =
-                    gene_details.terms_by_termid.get(&term_annotation.term) {
+                    container.terms_by_termid().get(&term_annotation.term) {
                         if let Some(term_short) = term_short_opt {
                             String::from(term_short.name.as_str())
                         } else {
@@ -158,7 +196,7 @@ fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
                                         term_annotation.term,
                                         term_name,
                                         get_annotations(&term_annotation.annotations,
-                                                        gene_details));
+                                                        container));
         }
         annotation_html += "</sect>\n";
     }
@@ -166,16 +204,16 @@ fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
     annotation_html
 }
 
-fn orthologs(config: &Config, gene_details: &GeneDetails) -> String {
+fn orthologs(config: &Config, container: &dyn OrthologAnnotationContainer) -> String {
     let mut orth_html = String::new();
 
-    if gene_details.ortholog_annotations.is_empty() {
+    if container.ortholog_annotations().is_empty() {
         return orth_html;
     }
 
     orth_html += "<sect><h2>Orthologs</h2>\n<ul>\n";
 
-    for orth_annotation in &gene_details.ortholog_annotations {
+    for orth_annotation in container.ortholog_annotations().iter() {
         let maybe_orth_org = config.organism_by_taxonid(orth_annotation.ortholog_taxonid);
         let orth_org_scientific_name =
             if let Some(orth_org) = maybe_orth_org {
@@ -184,7 +222,7 @@ fn orthologs(config: &Config, gene_details: &GeneDetails) -> String {
                 String::from("Unknown organism")
             };
         if let Some(maybe_orth_gene_short) =
-            gene_details.genes_by_uniquename.get(&orth_annotation.ortholog_uniquename) {
+            container.genes_by_uniquename().get(&orth_annotation.ortholog_uniquename) {
                 if let Some(orth_gene_short) = maybe_orth_gene_short {
                     orth_html += &format!("<li>{} {}</li>\n", orth_gene_short.display_name(),
                                           orth_org_scientific_name);
@@ -209,7 +247,7 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
                      gene_summary(config, gene_details));
 
     body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
-                     gene_annotation(config, gene_details));
+                     annotation_section(config, gene_details));
 
     body += &orthologs(config, gene_details);
 
@@ -217,18 +255,117 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 }
 
 pub fn render_simple_gene_page(config: &Config, gene_details: &GeneDetails) -> String  {
-    let title = make_title(config, gene_details);
+    let title = make_gene_title(config, gene_details);
 
-    format! ("
-<!DOCTYPE html>
-<html>
-  <head>
-    {}
-  </head>
-  <body>
-    {}
-  </body>
-</html>",
-          gene_header(config, &title),
-          gene_body(config, &title, gene_details))
+    format_page(&header(config, &title), &gene_body(config, &title, gene_details))
+}
+
+fn make_reference_title(config: &Config, reference_details: &ReferenceDetails) -> String {
+    if let Some(ref title) = reference_details.title {
+        format!("{} - {} - {}", config.database_name, reference_details.uniquename, title)
+    } else {
+        format!("{} - {}", config.database_name, reference_details.uniquename)
+    }
+}
+
+fn reference_summary(reference_details: &ReferenceDetails) -> String {
+    let mut summ = String::new();
+
+    summ += "<dl>\n";
+
+    summ += &format!("<dt>PubMed ID</dt> <dd>{}</dd>\n", reference_details.uniquename);
+
+    if let Some(ref title) = reference_details.title {
+        summ += &format!("<dt>Title</dt> <dd>{}</dd>\n", title);
+    }
+
+    if let Some(ref authors) = reference_details.authors {
+        summ += &format!("<dt>Authors</dt> <dd>{}</dd>\n", authors);
+    }
+
+    if let Some(ref citation) = reference_details.citation {
+        summ += &format!("<dt>Citation</dt> <dd>{}</dd>\n", citation);
+    }
+
+    if let Some(ref publication_year) = reference_details.publication_year {
+        summ += &format!("<dt>Publication year</dt> <dd>{}</dd>\n", publication_year);
+    }
+
+    summ += "</dl>\n";
+
+    summ
+}
+
+fn reference_body(config: &Config, title: &str, reference_details: &ReferenceDetails) -> String {
+    let mut body = String::new();
+
+    body += &format!("<h1>{}</h1>\n", title);
+
+    body += &format!("<sect><h2>Welcome to PomBase</h2>\n<p>{}</p></sect>\n",
+                     config.site_description);
+
+    body += &format!("<sect><h2>Reference summary</h2>\n{}</sect>\n",
+                     reference_summary(reference_details));
+
+    body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
+                     annotation_section(config, reference_details));
+
+    body += &orthologs(config, reference_details);
+
+    body
+}
+
+pub fn render_simple_reference_page(config: &Config, reference_details: &ReferenceDetails) -> String  {
+    let title = make_reference_title(config, reference_details);
+
+    format_page(&header(config, &title), &reference_body(config, &title, reference_details))
+}
+
+fn make_term_title(config: &Config, term_details: &TermDetails) -> String {
+    let cv_config = config.cv_config_by_name(&term_details.cv_name);
+    let cv_display_name = cv_config.display_name;
+
+    format!("{} - {} - {} - {}", config.database_name, term_details.termid,
+            term_details.name, cv_display_name)
+}
+
+fn term_summary(config: &Config, term_details: &TermDetails) -> String {
+    let mut summ = String::new();
+
+    summ += "<dl>\n";
+
+    summ += &format!("<dt>Term ID</dt> <dd>{}</dd>\n", term_details.termid);
+    summ += &format!("<dt>Term name</dt> <dd>{}</dd>\n", term_details.name);
+
+    let cv_config = config.cv_config_by_name(&term_details.cv_name);
+    let cv_display_name = cv_config.display_name;
+
+    summ += &format!("<dt>CV name</dt> <dd>{}</dd>\n", cv_display_name);
+
+    summ += "</dl>\n";
+
+    summ
+}
+
+fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String {
+    let mut body = String::new();
+
+    body += &format!("<h1>{}</h1>\n", title);
+
+    body += &format!("<sect><h2>Welcome to PomBase</h2>\n<p>{}</p></sect>\n",
+                     config.site_description);
+
+    body += &format!("<sect><h2>Term summary</h2>\n{}</sect>\n",
+                     term_summary(config, term_details));
+
+    body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
+                     annotation_section(config, term_details));
+
+    body
+}
+
+pub fn render_simple_term_page(config: &Config, term_details: &TermDetails) -> String  {
+    let title = make_term_title(config, term_details);
+
+    format_page(&header(config, &title), &term_body(config, &title, term_details))
 }

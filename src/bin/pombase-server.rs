@@ -27,7 +27,8 @@ use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
 use pombase::web::data::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
                          TermDetails, ReferenceDetails};
-use pombase::web::simple_pages::{render_simple_gene_page};
+use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
+                                 render_simple_term_page};
 use pombase::web::config::Config;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -127,6 +128,32 @@ fn get_simple_gene(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>
     }
 }
 
+/*
+Return a simple HTML version a reference page for search engines
+*/
+#[get("/simple/reference/<id>", rank=1)]
+fn get_simple_reference(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
+                        config: rocket::State<Config>) -> Option<content::Html<String>> {
+    let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
+    if let Some(reference) = query_exec.get_server_data().get_reference_details(&id) {
+        Some(content::Html(render_simple_reference_page(&config, &reference)))
+    } else {
+        None
+    }
+}
+/*
+Return a simple HTML version a term page for search engines
+*/
+#[get("/simple/term/<id>", rank=1)]
+fn get_simple_term(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
+                   config: rocket::State<Config>) -> Option<content::Html<String>> {
+    let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
+    if let Some(term) = query_exec.get_server_data().get_term_details(&id) {
+        Some(content::Html(render_simple_term_page(&config, &term)))
+    } else {
+        None
+    }
+}
 
 #[post("/api/v1/dataset/latest/query", rank=1, data="<q>", format = "application/json")]
 fn query_post(q: Json<PomBaseQuery>, state: rocket::State<Mutex<QueryExec>>)
@@ -303,7 +330,7 @@ fn main() {
     rocket::ignite()
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
-                            get_simple_gene,
+                            get_simple_gene, get_simple_reference, get_simple_term,
                             reload, term_complete, ref_complete,
                             motif_search, ping])
         .register(catchers![not_found])

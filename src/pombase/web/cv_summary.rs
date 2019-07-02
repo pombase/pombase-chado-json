@@ -18,7 +18,7 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      include_gene: bool, include_genotype: bool,
      gene_short_map: &IdGeneShortMap,
      annotation_details: &IdOntAnnotationDetailMap) {
-    for (cv_name, mut term_annotations) in container.borrow_cv_annotations() {
+    for (cv_name, mut term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name(cv_name);
         make_cv_summary(&cv_config, children_by_termid,
                         include_gene, include_genotype, &mut term_annotations,
