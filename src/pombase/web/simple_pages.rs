@@ -81,8 +81,12 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
         }
     }
 
-    for reference in references {
-        ret += &format!("<sect>{}</sect>\n", reference);
+    if references.len() > 0 {
+        ret += "<p>References:</p>\n<ul>";
+        for reference in references {
+            ret += &format!("<li><a href='/reference/{}'>{}</a></li>\n", reference, reference);
+        }
+        ret += "</ul>\n";
     }
 
     ret
@@ -107,7 +111,10 @@ fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
                     } else {
                         String::from("(unknown term name)")
                     };
-            annotation_html += &format!("<sect><h4>{} - {}</h4>\n{}</sect>\n",
+            annotation_html += &format!("<sect><h4><a href='/term/{}'>{}</a> - \
+<a href='/term/{}'>{}</a></h4>\n{}</sect>\n",
+                                        term_annotation.term,
+                                        term_annotation.term,
                                         term_annotation.term,
                                         term_name,
                                         get_annotations(&term_annotation.annotations,
