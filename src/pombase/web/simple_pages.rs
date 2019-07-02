@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use pombase_rc_string::RcString;
 
 use crate::web::config::Config;
 use crate::web::data::{GeneDetails, OntAnnotationId};
@@ -72,16 +72,18 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
                    gene_details: &GeneDetails) -> String {
     let mut ret = String::new();
-    let mut references = HashSet::new();
+    let mut references = vec![];
     for ont_annotation_id in ont_annotation_ids {
         if let Some(annotation_details) = gene_details.annotation_details.get(ont_annotation_id) {
             if let Some(ref reference) = annotation_details.reference {
-                references.insert(reference);
+                references.push(reference);
             }
         }
     }
 
     if references.len() > 0 {
+        references.sort();
+        references.dedup();
         ret += "<p>References:</p>\n<ul>";
         for reference in references {
             ret += &format!("<li><a href='/reference/{}'>{}</a></li>\n", reference, reference);
@@ -95,8 +97,27 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
 fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
     let mut annotation_html = String::new();
 
-    for (cv_name, term_annotations) in &gene_details.cv_annotations {
-        let cv_config = config.cv_config_by_name(cv_name);
+    let mut cv_names: Vec<RcString> = vec![];
+
+    for cv_name in gene_details.cv_annotations.keys() {
+        cv_names.push(cv_name.clone());
+    }
+
+    let cmp_display_names =
+        |cv_name_a: &RcString, cv_name_b: &RcString| {
+            let cv_config_a = config.cv_config_by_name(&cv_name_a);
+            let cv_display_name_a = cv_config_a.display_name;
+            let cv_config_b = config.cv_config_by_name(&cv_name_b);
+            let cv_display_name_b = cv_config_b.display_name;
+
+            cv_display_name_a.cmp(&cv_display_name_b)
+        };
+
+    cv_names.sort_by(cmp_display_names);
+
+    for cv_name in cv_names {
+        let term_annotations = gene_details.cv_annotations.get(&cv_name).unwrap();
+        let cv_config = config.cv_config_by_name(&cv_name);
         let cv_display_name = cv_config.display_name;
         annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_display_name);
         for term_annotation in term_annotations {
