@@ -521,6 +521,8 @@ fn get_test_config() -> Config {
     let mut config = Config {
         load_organism_taxonid: Some(4896),
         database_name: "PomBase".into(),
+        database_long_name: RcString::from("PomBase"),
+        site_description: RcString::from("PomBase"),
         database_citation: RcString::from("PMID:22039153"),
         base_url: RcString::from("https://www.pombase.org"),
         organisms: vec![
@@ -528,18 +530,21 @@ fn get_test_config() -> Config {
                 taxonid: 4896,
                 genus: "Schizosaccharomyces".into(),
                 species: "pombe".into(),
+                alternative_names: vec![],
                 assembly_version: Some(RcString::from("ASM294v2")),
             },
             ConfigOrganism {
                 taxonid: 9606,
                 genus: "Homo".into(),
                 species: "sapiens".into(),
+                alternative_names: vec![],
                 assembly_version: None,
             },
             ConfigOrganism {
                 taxonid: 4932,
                 genus: "Saccharomyces".into(),
                 species: "cerevisiae".into(),
+                alternative_names: vec![],
                 assembly_version: None,
             },
         ],

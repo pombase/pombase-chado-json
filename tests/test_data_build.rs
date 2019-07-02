@@ -18,7 +18,9 @@ use pombase_rc_string::RcString;
 fn get_test_config() -> Config {
     let mut config = Config {
         database_name: "PomBase".into(),
+        database_long_name: RcString::from("PomBase"),
         database_citation: RcString::from("PMID:22039153"),
+        site_description: RcString::from("PomBase"),
         load_organism_taxonid: Some(4896),
         base_url: RcString::from("https://www.pombase.org"),
         organisms: vec![
@@ -26,18 +28,21 @@ fn get_test_config() -> Config {
                 taxonid: 4896,
                 genus: RcString::from("Schizosaccharomyces"),
                 species: RcString::from("pombe"),
+                alternative_names: vec![],
                 assembly_version: Some(RcString::from("ASM294v2")),
             },
             ConfigOrganism {
                 taxonid: 9606,
                 genus: RcString::from("Homo"),
                 species: RcString::from("sapiens"),
+                alternative_names: vec![],
                 assembly_version: None,
             },
             ConfigOrganism {
                 taxonid: 4932,
                 genus: RcString::from("Saccharomyces"),
                 species: RcString::from("cerevisiae"),
+                alternative_names: vec![],
                 assembly_version: None,
             }
         ],

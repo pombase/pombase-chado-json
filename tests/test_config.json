@@ -1,23 +1,28 @@
 {
   "load_organism_taxonid": 4896,
   "database_name": "PomBase",
+  "database_long_name": "PomBase",
   "database_citation": "PMID:22039153",
+  "site_description": "PomBase",
   "base_url": "https://www.pombase.org",
   "organisms": [
     {
       "taxonid": 4896,
       "genus": "Schizosaccharomyces",
-      "species": "pombe"
+      "species": "pombe",
+      "alternative_names": ["fission yeast"]
     },
     {
       "taxonid": 9606,
       "genus": "Homo",
-      "species": "sapiens"
+      "species": "sapiens",
+      "alternative_names": []
     },
     {
       "taxonid": 4932,
       "genus": "Saccharomyces",
-      "species": "cerevisiae"
+      "species": "cerevisiae",
+      "alternative_names": ["brewer's yeast", "baker's yeast", "budding yeast"]
     }
   ],
   "api_seq_chunk_sizes": [10000, 200000],

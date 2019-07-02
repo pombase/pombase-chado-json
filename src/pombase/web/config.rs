@@ -114,12 +114,17 @@ pub struct ConfigOrganism {
     pub taxonid: OrganismTaxonId,
     pub genus: RcString,
     pub species: RcString,
+    pub alternative_names: Vec<RcString>,
     pub assembly_version: Option<RcString>,
 }
 
 impl ConfigOrganism {
     pub fn full_name(&self) -> String {
         self.genus.clone() + "_" + self.species.as_str()
+    }
+
+    pub fn scientific_name(&self) -> String {
+        self.genus.clone() + " " + self.species.as_str()
     }
 }
 
@@ -222,7 +227,9 @@ pub struct SlimConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: RcString,
+    pub database_long_name: RcString,
     pub database_citation: RcString,
+    pub site_description: RcString,
     pub load_organism_taxonid: Option<OrganismTaxonId>,
     pub base_url: RcString,
     pub organisms: Vec<ConfigOrganism>,
@@ -303,16 +310,24 @@ impl Config {
         }
     }
 
+    pub fn organism_by_taxonid(&self, lookup_taxonid: u32) -> Option<ConfigOrganism> {
+        for org in &self.organisms {
+            if org.taxonid == lookup_taxonid {
+                return Some(org.clone());
+            }
+        }
+
+        None
+    }
+
     pub fn load_organism(&self) -> Option<ConfigOrganism> {
         if let Some(load_organism_taxonid) = self.load_organism_taxonid {
-            for org in &self.organisms {
-                if org.taxonid == load_organism_taxonid {
-                    return Some(org.clone());
-                }
+            let org = self.organism_by_taxonid(load_organism_taxonid);
+            if org.is_none() {
+                panic!("can't find configuration for load_organism_taxonid: {}",
+                       load_organism_taxonid);
             }
-
-            panic!("can't find configuration for load_organism_taxonid: {}",
-                   load_organism_taxonid);
+            org
         } else {
             None
         }
