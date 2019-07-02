@@ -80,6 +80,7 @@ pub struct CvSourceConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: RcString,
+    pub display_name: RcString,
     // filtering configured per CV
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub filters: Vec<FilterConfig>,
@@ -281,6 +282,7 @@ impl Config {
             let empty_cv_config = 
                 CvConfig {
                     feature_type: "".into(),
+                    display_name: "".into(),
                     filters: vec![],
                     split_by_parents: vec![],
                     summary_relations_to_hide: vec![],

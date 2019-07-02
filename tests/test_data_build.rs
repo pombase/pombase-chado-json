@@ -102,6 +102,7 @@ fn get_test_config() -> Config {
     config.cv_config.insert(RcString::from("molecular_function"),
                             CvConfig {
                                 feature_type: RcString::from("Gene"),
+                                display_name: RcString::from("molecular function"),
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],

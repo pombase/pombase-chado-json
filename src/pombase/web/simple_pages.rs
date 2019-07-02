@@ -20,11 +20,10 @@ fn make_title(config: &Config, gene_details: &GeneDetails) -> String {
         };
 
     if let Some(ref product) = gene_details.product {
-        format!("{} - {} {} - {}", config.database_name, name_and_uniquename,
-                feature_type, product)
+        format!("{} - {} {} - {}", config.database_name, feature_type,
+                name_and_uniquename, product)
     } else {
-        format!("{} - {} {}", config.database_name, name_and_uniquename,
-                feature_type)
+        format!("{} - {} {}", config.database_name, feature_type, name_and_uniquename)
     }
 }
 
@@ -73,27 +72,29 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
                    gene_details: &GeneDetails) -> String {
     let mut ret = String::new();
+    let mut references = HashSet::new();
     for ont_annotation_id in ont_annotation_ids {
         if let Some(annotation_details) = gene_details.annotation_details.get(ont_annotation_id) {
-            let mut references = HashSet::new();
             if let Some(ref reference) = annotation_details.reference {
                 references.insert(reference);
             }
-
-            for reference in references {
-                ret += &format!("<sect>{}</sect>\n", reference);
-            }
         }
+    }
+
+    for reference in references {
+        ret += &format!("<sect>{}</sect>\n", reference);
     }
 
     ret
 }
 
-fn gene_annotation(gene_details: &GeneDetails) -> String {
+fn gene_annotation(config: &Config, gene_details: &GeneDetails) -> String {
     let mut annotation_html = String::new();
 
     for (cv_name, term_annotations) in &gene_details.cv_annotations {
-        annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_name);
+        let cv_config = config.cv_config_by_name(cv_name);
+        let cv_display_name = cv_config.display_name;
+        annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_display_name);
         for term_annotation in term_annotations {
             let term_name =
                 if let Some(term_short_opt) =
@@ -131,7 +132,7 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
                      gene_summary(config, gene_details));
 
     body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
-                     gene_annotation(gene_details));
+                     gene_annotation(config, gene_details));
     body
 }
 

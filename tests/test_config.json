@@ -347,7 +347,8 @@
       ]
     },
     "PomBase gene characterisation status": {
-      "feature_type": "gene"
+      "feature_type": "gene",
+      "display_name": "gene characterisation status"
     }
   },
   "interesting_parents": [
