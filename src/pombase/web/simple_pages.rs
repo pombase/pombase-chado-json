@@ -29,7 +29,7 @@ fn make_gene_title(config: &Config, gene_details: &GeneDetails) -> String {
         };
 
     let feature_type =
-        if gene_details.feature_type.ends_with(" gene") {
+        if gene_details.feature_type.ends_with("gene") {
             String::from(gene_details.feature_type.as_str())
         } else {
             format!("{} gene", gene_details.feature_type)
