@@ -364,6 +364,7 @@ pub trait AnnotationContainer: Container {
     fn annotation_details(&self) -> &IdOntAnnotationDetailMap;
     fn terms_by_termid(&self) -> &TermShortOptionMap;
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap;
+    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>>;
 }
 
 pub trait OrthologAnnotationContainer: AnnotationContainer {
@@ -442,6 +443,9 @@ impl AnnotationContainer for ReferenceDetails {
     }
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
+    }
+    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
+        Some(&self.genotypes_by_uniquename)
     }
 }
 
@@ -778,6 +782,9 @@ impl AnnotationContainer for GeneDetails {
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
     }
+    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
+        Some(&self.genotypes_by_uniquename)
+    }
 }
 
 impl OrthologAnnotationContainer for GeneDetails {
@@ -952,6 +959,9 @@ impl AnnotationContainer for GenotypeDetails {
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
     }
+    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
+        None
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1056,6 +1066,9 @@ impl AnnotationContainer for TermDetails {
     }
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
+    }
+    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
+        Some(&self.genotypes_by_uniquename)
     }
 }
 

@@ -2,7 +2,7 @@ use pombase_rc_string::RcString;
 
 use crate::web::config::Config;
 use crate::web::data::{GeneDetails, ReferenceDetails, TermDetails,
-                       ContainerType,
+                       ContainerType, GenotypeShort,
                        OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer};
 
 
@@ -105,16 +105,27 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
     summ
 }
 
+fn genotype_display_name(genotype_short: &GenotypeShort) -> String {
+    let mut bits: Vec<_> = genotype_short.display_uniquename.split("-").collect();
+    bits.dedup();
+    bits.join(" ")
+}
+
 fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
                    container: &dyn AnnotationContainer) -> String {
     let mut ret = String::new();
     let mut references = vec![];
     let mut genes = vec![];
+    let mut genotypes = vec![];
 
     for ont_annotation_id in ont_annotation_ids {
         if let Some(annotation_details) = container.annotation_details().get(ont_annotation_id) {
             if let Some(ref reference) = annotation_details.reference {
                 references.push(reference);
+            }
+
+            if let Some(ref genotype) = annotation_details.genotype {
+                genotypes.push(genotype);
             }
 
             for gene_uniquename in &annotation_details.genes {
@@ -147,6 +158,22 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
                             gene.display_name());
         }
         ret += "</ul>\n";
+    }
+
+    if container.container_type() != ContainerType::Genotype && genotypes.len() > 0 {
+        genotypes.sort();
+        genotypes.dedup();
+        if let Some(genotypes_by_uniquename) = container.genotypes_by_uniquename() {
+            ret += "<p>Genotypes:</p>\n<ul>";
+            for uniquename in genotypes {
+                if let Some(genotype_short) = genotypes_by_uniquename.get(uniquename.as_str()) {
+                    ret += &format!("<li><a href='/genotype/{}'>{}</a></li>\n",
+                                    uniquename,
+                                    genotype_display_name(genotype_short));
+                }
+            }
+            ret += "</ul>\n";
+        }
     }
 
     ret
