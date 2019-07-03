@@ -72,6 +72,15 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
     }
     summ += &format!("  <dt>Systematic ID</dt> <dd>{}</dd>\n", gene_details.uniquename);
 
+    if let Some(gene_organism) = config.organism_by_taxonid(gene_details.taxonid) {
+        summ += &format!("  <dt>Organism</dt> <dd>{}\n", gene_organism.scientific_name());
+
+        if gene_organism.alternative_names.len() > 0 {
+            summ += &format!(" ({})", gene_organism.alternative_names.join(", "));
+        }
+        summ += "</dd>\n";
+    }
+
     if gene_details.synonyms.len() > 0 {
         let synonyms: Vec<RcString> =
             gene_details.synonyms.iter().map(|s| s.name.clone()).collect();
@@ -84,15 +93,6 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 
     if let Some(ref orfeome_identifier) = gene_details.orfeome_identifier {
         summ += &format!("  <dt>ORFeome ID</dt> <dd>{}</dd>\n", orfeome_identifier);
-    }
-
-    if let Some(gene_organism) = config.organism_by_taxonid(gene_details.taxonid) {
-        summ += &format!("  <dt>Organism</dt> <dd>{}\n", gene_organism.scientific_name());
-
-        if gene_organism.alternative_names.len() > 0 {
-            summ += &format!(" ({})", gene_organism.alternative_names.join(", "));
-        }
-        summ += "</dd>\n";
     }
 
     if let Some(ref characterisation_status) = gene_details.characterisation_status {
