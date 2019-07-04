@@ -203,11 +203,12 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
     for cv_name in cv_names {
         let term_annotations = container.cv_annotations().get(&cv_name).unwrap();
         let cv_config = config.cv_config_by_name(&cv_name);
-        let cv_display_name = cv_config.display_name;
-        annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_display_name);
-        for term_annotation in term_annotations {
-            let term_name =
-                if let Some(term_short_opt) =
+
+        if let Some(cv_display_name) = cv_config.display_name {
+            annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_display_name);
+            for term_annotation in term_annotations {
+                let term_name =
+                    if let Some(term_short_opt) =
                     container.terms_by_termid().get(&term_annotation.term) {
                         if let Some(term_short) = term_short_opt {
                             String::from(term_short.name.as_str())
@@ -217,16 +218,17 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
                     } else {
                         String::from("(unknown term name)")
                     };
-            annotation_html += &format!("<sect><h4><a href='/term/{}'>{}</a> - \
-<a href='/term/{}'>{}</a></h4>\n{}</sect>\n",
-                                        term_annotation.term,
-                                        term_annotation.term,
-                                        term_annotation.term,
-                                        term_name,
-                                        get_annotations(&term_annotation.annotations,
-                                                        container));
+                annotation_html += &format!("<sect><h4><a href='/term/{}'>{}</a> - \
+                                             <a href='/term/{}'>{}</a></h4>\n{}</sect>\n",
+                                            term_annotation.term,
+                                            term_annotation.term,
+                                            term_annotation.term,
+                                            term_name,
+                                            get_annotations(&term_annotation.annotations,
+                                                            container));
+            }
+            annotation_html += "</sect>\n";
         }
-        annotation_html += "</sect>\n";
     }
 
     annotation_html
@@ -351,7 +353,7 @@ pub fn render_simple_reference_page(config: &Config, reference_details: &Referen
 
 fn make_term_title(config: &Config, term_details: &TermDetails) -> String {
     let cv_config = config.cv_config_by_name(&term_details.cv_name);
-    let cv_display_name = cv_config.display_name;
+    let cv_display_name = cv_config.display_name.unwrap_or_else(|| RcString::from("DEFAULT"));
 
     format!("{} - {} - {} - {}", config.database_name, term_details.termid,
             term_details.name, cv_display_name)
@@ -366,7 +368,7 @@ fn term_summary(config: &Config, term_details: &TermDetails) -> String {
     summ += &format!("<dt>Term name</dt> <dd>{}</dd>\n", term_details.name);
 
     let cv_config = config.cv_config_by_name(&term_details.cv_name);
-    let cv_display_name = cv_config.display_name;
+    let cv_display_name = cv_config.display_name.unwrap_or_else(|| RcString::from("DEFAULT"));
 
     summ += &format!("<dt>CV name</dt> <dd>{}</dd>\n", cv_display_name);
 
