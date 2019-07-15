@@ -36,10 +36,10 @@ fn make_gene_title(config: &Config, gene_details: &GeneDetails) -> String {
         };
 
     if let Some(ref product) = gene_details.product {
-        format!("{} - {} {} - {}", config.database_name, feature_type,
+        format!("{} - {} - {} - {}", config.database_name, feature_type,
                 name_and_uniquename, product)
     } else {
-        format!("{} - {} {}", config.database_name, feature_type, name_and_uniquename)
+        format!("{} - {} - {}", config.database_name, feature_type, name_and_uniquename)
     }
 }
 
