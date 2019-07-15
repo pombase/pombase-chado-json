@@ -104,6 +104,8 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
                          characterisation_status);
     }
 
+    summ += &format!("  <dt>Feature type</dt> <dd>{}\n", gene_details.feature_type);
+
     summ += "</dl>\n";
 
     summ
