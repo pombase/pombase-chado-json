@@ -29,10 +29,14 @@ fn make_gene_title(config: &Config, gene_details: &GeneDetails) -> String {
         };
 
     let feature_type =
-        if gene_details.feature_type.ends_with("gene") {
-            String::from(gene_details.feature_type.as_str())
+        if gene_details.feature_type == "mRNA gene" {
+            String::from("protein coding gene")
         } else {
-            format!("{} gene", gene_details.feature_type)
+            if gene_details.feature_type.ends_with("gene") {
+                String::from(gene_details.feature_type.as_str())
+            } else {
+                format!("{} gene", gene_details.feature_type)
+            }
         };
 
     if let Some(ref product) = gene_details.product {
