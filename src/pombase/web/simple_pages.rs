@@ -292,9 +292,9 @@ pub fn render_simple_gene_page(config: &Config, gene_details: &GeneDetails) -> S
 
 fn make_reference_title(config: &Config, reference_details: &ReferenceDetails) -> String {
     if let Some(ref title) = reference_details.title {
-        format!("{} - {} - {}", config.database_name, reference_details.uniquename, title)
+        format!("{} - Reference - {} - {}", config.database_name, reference_details.uniquename, title)
     } else {
-        format!("{} - {}", config.database_name, reference_details.uniquename)
+        format!("{} - Reference - {}", config.database_name, reference_details.uniquename)
     }
 }
 
@@ -355,7 +355,7 @@ fn make_term_title(config: &Config, term_details: &TermDetails) -> String {
     let cv_config = config.cv_config_by_name(&term_details.cv_name);
     let cv_display_name = cv_config.display_name.unwrap_or_else(|| RcString::from("DEFAULT"));
 
-    format!("{} - {} - {} - {}", config.database_name, term_details.termid,
+    format!("{} - Term - {} - {} - {}", config.database_name, term_details.termid,
             term_details.name, cv_display_name)
 }
 
