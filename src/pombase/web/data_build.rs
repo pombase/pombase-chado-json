@@ -13,6 +13,7 @@ use crate::types::*;
 use crate::web::data::*;
 use crate::web::config::*;
 use crate::web::cv_summary::make_cv_summaries;
+use crate::web::cmp_utils::cmp_residues;
 use crate::web::util::cmp_str_dates;
 
 use crate::bio::util::rev_comp;
@@ -195,7 +196,7 @@ fn string_from_ext_range(ext_range: &ExtRange,
         },
         ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::Term(ref termid) => RcString::from(&terms.get(termid).unwrap().name),
-        ExtRange::SummaryModifiedResidues(_) => panic!("can't handle ModifiedResidues\n"),
+        ExtRange::SummaryModifiedResidues(ref residue) => RcString::from(&residue.join(",")),
         ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::Misc(ref misc) => misc.clone(),
         ExtRange::Domain(ref domain) => domain.clone(),
@@ -492,41 +493,7 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
 }
 
 lazy_static! {
-    static ref MODIFICATION_RE: Regex = Regex::new(r"^(?P<aa>[A-Z])(?P<pos>\d+)$").unwrap();
     static ref PROMOTER_RE: Regex = Regex::new(r"^(?P<gene>.*)-promoter$").unwrap();
-}
-
-fn cmp_residues(residue1: &Option<Residue>, residue2: &Option<Residue>) -> Ordering {
-    if let Some(ref res1) = *residue1 {
-        if let Some(ref res2) = *residue2 {
-            if let (Some(res1_captures), Some(res2_captures)) =
-                (MODIFICATION_RE.captures(res1), MODIFICATION_RE.captures(res2))
-            {
-                let res1_aa = res1_captures.name("aa").unwrap().as_str();
-                let res2_aa = res2_captures.name("aa").unwrap().as_str();
-                let aa_order = res1_aa.cmp(&res2_aa);
-                if aa_order == Ordering::Equal {
-                    let res1_pos =
-                        res1_captures.name("pos").unwrap().as_str().parse::<i32>().unwrap();
-                    let res2_pos =
-                        res2_captures.name("pos").unwrap().as_str().parse::<i32>().unwrap();
-                    res1_pos.cmp(&res2_pos)
-                } else {
-                    aa_order
-                }
-            } else {
-                res1.cmp(&res2)
-            }
-        } else {
-            Ordering::Less
-        }
-    } else {
-        if residue2.is_some() {
-            Ordering::Greater
-        } else {
-            Ordering::Equal
-        }
-    }
 }
 
 pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
@@ -2645,6 +2612,20 @@ impl <'a> WebDataBuild<'a> {
         }
 
         ret_map
+    }
+
+    fn make_residue_extensions(&mut self) {
+        for annotation in self.annotation_details.values_mut() {
+            if let Some(ref residue) = annotation.residue {
+                let display_name = RcString::from("modified residue");
+                let residue_range_part = ExtPart {
+                    rel_type_name: display_name.clone(),
+                    rel_type_display_name: display_name,
+                    ext_range: ExtRange::SummaryModifiedResidues(vec![residue.clone()]),
+                };
+                annotation.extension.insert(0, residue_range_part);
+            }
+        }
     }
 
     fn make_all_cv_summaries(&mut self) {
@@ -4952,6 +4933,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_deletion_viability();
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
+        self.make_residue_extensions();
         self.make_all_cv_summaries();
         self.remove_non_curatable_refs();
         self.set_term_details_maps();

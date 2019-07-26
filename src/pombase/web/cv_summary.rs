@@ -88,9 +88,9 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
     let merge_range_rel_p =
         |ext_part: &ExtPart| {
             match ext_part.ext_range {
-                ExtRange::SummaryGenes(_) | ExtRange::SummaryTerms(_) =>
+                ExtRange::SummaryGenes(_) | ExtRange::SummaryTerms(_) |
+                ExtRange::SummaryModifiedResidues(_) =>
                     conf_rel_ranges.contains(&ext_part.rel_type_name),
-                ExtRange::SummaryModifiedResidues(_) => true,
                 _ =>false
             }
         };
@@ -350,7 +350,7 @@ fn make_cv_summary(cv_config: &CvConfig,
 
         // in the summary, sort by extension type and length to fix:
         // https://github.com/pombase/website/issues/228
-        let length_comp = |id1: &i32, id2: &i32| {
+        let ext_comp = |id1: &i32, id2: &i32| {
             let a1: &OntAnnotationDetail =
                 annotation_details.get(&id1).expect("can't find OntAnnotationDetail");
             let a2: &OntAnnotationDetail =
@@ -367,7 +367,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                 }
             }
         };
-        summary_sorted_annotations.sort_by(length_comp);
+        summary_sorted_annotations.sort_by(ext_comp);
 
         for annotation_id in &summary_sorted_annotations {
             let annotation =
@@ -410,16 +410,6 @@ fn make_cv_summary(cv_config: &CvConfig,
                     }
                     ext_part })
                 .collect::<Vec<ExtPart>>();
-
-            if let Some(ref residue) = annotation.residue {
-                let display_name = RcString::from("modified residue");
-                let residue_range_part = ExtPart {
-                    rel_type_name: display_name.clone(),
-                    rel_type_display_name: display_name,
-                    ext_range: ExtRange::SummaryModifiedResidues(vec![residue.clone()]),
-                };
-                summary_extension.push(residue_range_part);
-            }
 
             if gene_uniquenames.is_empty() &&
                 genotype_uniquenames.is_empty() &&
