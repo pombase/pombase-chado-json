@@ -209,9 +209,9 @@ fn get_test_raw() -> Raw {
     let derives_from_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &relations_cv, &obo_rel_db,
                                 "derives_from", "0001000");
-    let has_expressivity_cvterm =
+    let has_severity_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &pombase_relations_cv, &pbo_db,
-                                "has_expressivity", "999990001");
+                                "has_severity", "999990001");
     let medium_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &fypo_ext_relations_cv, &fypo_ext_db,
                                 "medium", "0000002");
@@ -337,10 +337,10 @@ fn get_test_raw() -> Raw {
 
     let pbo0022440_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &extension_cv, &pbo_db,
-                                "decreased cell population growth at high temperature [has_expressivity] medium",
+                                "decreased cell population growth at high temperature [has_severity] medium",
                                 "0000082");
     make_test_cvterm_rel(&mut cvterm_relationships,
-                         &pbo0022440_cvterm, &has_expressivity_cvterm, &medium_cvterm);
+                         &pbo0022440_cvterm, &has_severity_cvterm, &medium_cvterm);
 
     let fypo0000082_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &fypo_cv, &fypo_db,

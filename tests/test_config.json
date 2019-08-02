@@ -285,7 +285,7 @@
       ],
       "summary_relations_to_hide": [
         "has_penetrance",
-        "has_expressivity"
+        "has_severity"
       ],
       "summary_relation_ranges_to_collect": [
         "assayed_enzyme",
