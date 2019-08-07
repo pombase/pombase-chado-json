@@ -2372,6 +2372,72 @@ impl WebData {
         Ok(())
     }
 
+    fn write_site_map_txt(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+        let base_url = &config.base_url;
+
+        let mut s = format!("{}\n", base_url);
+
+        for gene_details in self.api_maps.genes.values() {
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                if gene_details.taxonid != load_org_taxonid {
+                    continue;
+                }
+            }
+            s += &format!("{}/gene/{}\n", base_url, gene_details.uniquename);
+        }
+
+        for term_details in self.api_maps.terms.values() {
+            if term_details.gene_count == 0 && term_details.genotype_count == 0 {
+                continue;
+            }
+
+            let mut found = false;
+
+            for prefix in &config.file_exports.site_map_term_prefixes {
+                if term_details.termid.starts_with(prefix.as_ref()) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if !found {
+                continue;
+            }
+
+            s += &format!("{}/term/{}\n", base_url, term_details.termid);
+        }
+
+        for ref_details in self.api_maps.references.values() {
+            if ref_details.cv_annotations.is_empty() {
+                continue;
+            }
+
+            let mut found = false;
+
+            for prefix in &config.file_exports.site_map_reference_prefixes {
+                if ref_details.uniquename.starts_with(prefix.as_ref()) {
+                    found = true;
+                    break;
+                }
+            }
+
+            if !found {
+                continue;
+            }
+
+
+            s += &format!("{}/reference/{}\n", base_url, ref_details.uniquename);
+        }
+
+        let file_name = format!("{}/sitemap.txt", output_dir);
+        let f = File::create(file_name).expect("Unable to open file");
+
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write sitemap.xml");
+
+        Ok(())
+    }
+
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
         let file_name = String::new() + output_dir + "/stats.json";
@@ -2418,6 +2484,7 @@ impl WebData {
         self.write_deletion_viability(&config, &misc_path)?;
         self.write_slim_ids_and_names(&config, &misc_path)?;
         self.write_transmembrane_domains(&config, &misc_path)?;
+        self.write_site_map_txt(&config, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 

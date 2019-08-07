@@ -188,6 +188,8 @@ pub struct RNAcentralConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct FileExportConfig {
+    pub site_map_term_prefixes: Vec<RcString>,
+    pub site_map_reference_prefixes: Vec<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub macromolecular_complexes: Option<MacromolecularComplexesConfig>,
     #[serde(skip_serializing_if="Option::is_none")]
