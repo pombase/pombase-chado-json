@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, BTreeMap};
 use std::io::BufReader;
 use std::fs::File;
 
@@ -403,3 +403,28 @@ pub const TRANSCRIPT_PART_TYPES: [&str; 4] =
 pub const HANDLED_FEATURE_TYPES: [&str; 7] =
     ["gene", "pseudogene", "intron", "genotype", "allele", "chromosome", "polypeptide"];
 
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct DocConfig {
+    pub pages: BTreeMap<RcString, RcString>,
+}
+
+impl DocConfig {
+
+    pub fn read(doc_config_file_name: &str) -> DocConfig {
+        let file = match File::open(doc_config_file_name) {
+            Ok(file) => file,
+            Err(err) => {
+                panic!("Failed to read {}: {}\n", doc_config_file_name, err)
+            }
+        };
+        let reader = BufReader::new(file);
+
+        match serde_json::from_reader(reader) {
+            Ok(config) => config,
+            Err(err) => {
+                panic!("failed to parse {}: {}", doc_config_file_name, err)
+            },
+        }
+    }
+}

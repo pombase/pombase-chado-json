@@ -32,6 +32,8 @@ fn main() -> Result<(), std::io::Error> {
 
     opts.optflag("h", "help", "print this help message");
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
+    opts.optopt("C", "doc-config-file",
+                "Documentation configuration file name", "DOC_CONFIG");
     opts.optopt("p", "postgresql-connection-string",
                 "PostgresSQL connection string like: postgres://user:pass@host/db_name",
                 "CONN_STR");
@@ -59,6 +61,11 @@ fn main() -> Result<(), std::io::Error> {
         print_usage(&program, opts);
         process::exit(1);
     }
+    if !matches.opt_present("doc-config-file") {
+        print!("no --doc-config-file option\n");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
     if !matches.opt_present("postgresql-connection-string") {
         print!("no -p|--postgresql-connection-string option\n");
         print_usage(&program, opts);
@@ -71,6 +78,7 @@ fn main() -> Result<(), std::io::Error> {
     }
 
     let config = Config::read(&matches.opt_str("c").unwrap());
+    let doc_config = DocConfig::read(&matches.opt_str("C").unwrap());
     let connection_string = matches.opt_str("p").unwrap();
     let interpro_json = matches.opt_str("i").unwrap();
     let output_dir = matches.opt_str("d").unwrap();
@@ -85,7 +93,7 @@ fn main() -> Result<(), std::io::Error> {
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &config);
     let web_data = web_data_build.get_web_data();
 
-    match web_data.write(&config, &output_dir) {
+    match web_data.write(&config, &doc_config, &output_dir) {
         Ok(_) => (),
         Err(e) => {
             panic!("error while writing: {}", e);

@@ -2372,10 +2372,18 @@ impl WebData {
         Ok(())
     }
 
-    fn write_site_map_txt(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+    fn write_site_map_txt(&self, config: &Config, doc_config: &DocConfig, output_dir: &str)
+                          -> Result<(), io::Error>
+    {
         let base_url = &config.base_url;
 
         let mut s = format!("{}\n", base_url);
+
+        for page_name in doc_config.pages.keys() {
+            if !page_name.ends_with("/index") {
+                s += &format!("{}/{}\n", base_url, page_name);
+            }
+        }
 
         for gene_details in self.api_maps.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid {
@@ -2448,7 +2456,9 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+    pub fn write(&self, config: &Config, doc_config: &DocConfig, output_dir: &str)
+                 -> Result<(), io::Error>
+    {
         let web_json_path = self.create_dir(output_dir, "web-json");
 
         self.write_chromosome_json(config, &web_json_path);
@@ -2484,7 +2494,7 @@ impl WebData {
         self.write_deletion_viability(&config, &misc_path)?;
         self.write_slim_ids_and_names(&config, &misc_path)?;
         self.write_transmembrane_domains(&config, &misc_path)?;
-        self.write_site_map_txt(&config, &misc_path)?;
+        self.write_site_map_txt(config, doc_config, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 
