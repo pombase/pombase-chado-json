@@ -410,6 +410,8 @@
   },
   "ortholog_taxonids": [9606, 4932],
   "file_exports": {
+    "site_map_reference_prefixes": [],
+    "site_map_term_prefixes": [],
     "macromolecular_complexes": null
   }
 }

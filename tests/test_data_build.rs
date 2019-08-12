@@ -94,6 +94,8 @@ fn get_test_config() -> Config {
         },
         ortholog_taxonids: HashSet::from_iter(vec![9606, 4932]),
         file_exports: FileExportConfig {
+            site_map_reference_prefixes: vec![],
+            site_map_term_prefixes: vec![],
             macromolecular_complexes: None,
             rnacentral: None,
         },
