@@ -20,6 +20,7 @@ rocket_contrib = "0.4.0-rc.1"
 reqwest = "0.9"
 flate2 = "1.0"
 lazy_static = "1.0"
+uuid = "0.7"
 
 [dependencies.pombase_rc_string]
 git = "https://github.com/pombase/pombase_rc_string.git"

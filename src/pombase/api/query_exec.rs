@@ -1,3 +1,5 @@
+use uuid::Uuid;
+
 use crate::api::result::*;
 use crate::api::query::*;
 use crate::api::server_data::ServerData;
@@ -28,11 +30,13 @@ impl QueryExec {
         match rows_result {
             Ok(rows) => QueryAPIResult {
                 query: filled_query,
+                id: RcString::from(&Uuid::new_v4().to_hyphenated().to_string()),
                 status: RcString::from("ok"),
                 rows,
             },
             Err(mess) => QueryAPIResult {
                 query: filled_query,
+                id: RcString::from("error"),
                 status: mess,
                 rows: vec![],
             },

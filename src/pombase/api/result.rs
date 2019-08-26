@@ -36,6 +36,7 @@ pub struct ResultRow {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QueryAPIResult {
     pub query: Query,
+    pub id: RcString,
     pub status: RcString,
     pub rows: Vec<ResultRow>,
 }
