@@ -40,3 +40,14 @@ pub struct QueryAPIResult {
     pub status: RcString,
     pub rows: Vec<ResultRow>,
 }
+
+impl QueryAPIResult {
+    pub fn new_error(query: &Query, error_message: &str) -> QueryAPIResult {
+        QueryAPIResult {
+            query: query.clone(),
+            id: RcString::from("error"),
+            status: RcString::from(error_message),
+            rows: vec![],
+        }
+    }
+}

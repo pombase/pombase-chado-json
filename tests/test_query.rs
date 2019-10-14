@@ -26,7 +26,7 @@ fn get_server_data() -> ServerData {
 
 fn check_gene_result(query: &Query, genes: Vec<&str>) {
     let server_data = get_server_data();
-    let query_exec = QueryExec::new(server_data);
+    let query_exec = QueryExec::new(server_data, None);
     let result = query_exec.exec(&query);
 
     let result_genes_iter =
@@ -44,7 +44,7 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
 fn check_gene_result_with_viability(query: &Query,
                                     expected_results: &Vec<ResultRow>) {
     let server_data = get_server_data();
-    let query_exec = QueryExec::new(server_data);
+    let query_exec = QueryExec::new(server_data, None);
     let results = query_exec.exec(&query);
 
     assert_eq!(expected_results, &results.rows);

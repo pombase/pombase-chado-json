@@ -23,9 +23,6 @@ fn get_test_config() -> Config {
         site_description: RcString::from("PomBase"),
         load_organism_taxonid: Some(4896),
         base_url: RcString::from("https://www.pombase.org"),
-        site_db: SiteDBConfig {
-            connection_string: RcString::from(""),
-        },
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,

@@ -285,6 +285,7 @@ fn main() {
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
     opts.optopt("w", "web-root-dir", "Root web data directory", "WEB_ROOT_DIR");
+    opts.optopt("s", "site-db", "Connection string for the site local databae", "SITE_DB");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -314,12 +315,15 @@ fn main() {
         process::exit(1);
     }
 
+    let site_db_conn_string = matches.opt_str("s");
+
     let search_maps_filename = matches.opt_str("m").unwrap();
     println!("Reading data files ...");
 
     let config_file_name = matches.opt_str("c").unwrap();
     let server_data = ServerData::new(&config_file_name, &search_maps_filename);
-    let query_exec = QueryExec::new(server_data);
+    let site_db = site_db_conn_string.map(|conn_str| SiteDB::new(&conn_str));
+    let query_exec = QueryExec::new(server_data, site_db);
     let config = Config::read(&config_file_name);
     let searcher = Search::new(&config);
 
@@ -327,8 +331,6 @@ fn main() {
     let static_file_state = StaticFileState {
         web_root_dir: web_root_dir,
     };
-
-    let site_db = SiteDB::new(&config.site_db);
 
     println!("Starting server ...");
     rocket::ignite()
@@ -341,7 +343,6 @@ fn main() {
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))
         .manage(Mutex::new(static_file_state))
-        .manage(Mutex::new(site_db))
         .manage(config)
         .launch();
 }

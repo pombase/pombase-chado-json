@@ -3,6 +3,8 @@ use std::cmp;
 
 use std::collections::HashSet;
 
+use uuid::Uuid;
+
 use crate::api::server_data::ServerData;
 use crate::api::result::*;
 use crate::web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
@@ -81,6 +83,8 @@ pub enum QueryNode {
     GenomeRange { start: Option<usize>, end: Option<usize>, chromosome_name: String, },
 #[serde(rename = "interactors")]
     Interactors { gene_uniquename: GeneUniquename, interaction_type: String },
+#[serde(rename = "query_id")]
+    QueryId { id: Uuid },
 }
 
 fn exec_or(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecResult {
@@ -309,7 +313,8 @@ impl QueryNode {
                 exec_int_range(server_data, range_type, start, end),
             FloatRange { ref range_type, start, end } =>
                 exec_float_range(server_data, range_type, start, end),
-        }
+            QueryId { id } => panic!("This case shouldn't be reached - id: {}", id),
+       }
     }
 }
 
