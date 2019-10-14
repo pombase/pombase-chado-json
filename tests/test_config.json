@@ -5,6 +5,9 @@
   "database_citation": "PMID:22039153",
   "site_description": "PomBase",
   "base_url": "https://www.pombase.org",
+  "site_db": {
+    "connection_string": ""
+  },
   "organisms": [
     {
       "taxonid": 4896,

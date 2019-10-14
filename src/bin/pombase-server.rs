@@ -25,6 +25,8 @@ use pombase::api::result::QueryAPIResult;
 use pombase::api::search::Search;
 use pombase::api::query_exec::QueryExec;
 use pombase::api::server_data::ServerData;
+use pombase::api::site_db::SiteDB;
+
 use pombase::web::data::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
                          TermDetails, ReferenceDetails};
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
@@ -326,6 +328,8 @@ fn main() {
         web_root_dir: web_root_dir,
     };
 
+    let site_db = SiteDB::new(&config.site_db);
+
     println!("Starting server ...");
     rocket::ignite()
         .mount("/", routes![get_index, get_misc, query_post,
@@ -337,6 +341,7 @@ fn main() {
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))
         .manage(Mutex::new(static_file_state))
+        .manage(Mutex::new(site_db))
         .manage(config)
         .launch();
 }

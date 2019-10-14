@@ -228,6 +228,11 @@ pub struct SlimConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct SiteDBConfig {
+    pub connection_string: RcString,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: RcString,
     pub database_long_name: RcString,
@@ -235,6 +240,7 @@ pub struct Config {
     pub site_description: RcString,
     pub load_organism_taxonid: Option<OrganismTaxonId>,
     pub base_url: RcString,
+    pub site_db: SiteDBConfig,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
