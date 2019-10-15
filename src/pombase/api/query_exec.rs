@@ -32,16 +32,23 @@ impl QueryExec {
 
         match rows_result {
             Ok(rows) => {
-                let uuid = &Uuid::new_v4();
-                let id = RcString::from(&uuid.hyphenated().to_string());
-
-                if let Some(site_db) = &self.site_db {
-                    match site_db.save_query(uuid, &filled_query) {
-                        Ok(_) => (),
-                        Err(mess) =>
-                            return QueryAPIResult::new_error(&filled_query, &mess),
+                let uuid = if let Some(site_db) = &self.site_db {
+                    if let Some(existing_uuid) = site_db.id_from_query(query) {
+                        existing_uuid
+                    } else {
+                        let new_uuid = Uuid::new_v4();
+                        match site_db.save_query(&new_uuid, &filled_query) {
+                            Ok(_) => (),
+                            Err(mess) =>
+                                return QueryAPIResult::new_error(&filled_query, &mess),
+                        }
+                        new_uuid
                     }
-                }
+                } else {
+                    Uuid::new_v4()
+                };
+
+                let id = RcString::from(&uuid.hyphenated().to_string());
 
                 QueryAPIResult {
                     query: filled_query,
