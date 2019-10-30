@@ -6,6 +6,7 @@ use std::collections::HashSet;
 use uuid::Uuid;
 
 use crate::api::server_data::ServerData;
+use crate::api::site_db::SiteDB;
 use crate::api::result::*;
 use crate::web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand};
@@ -87,7 +88,8 @@ pub enum QueryNode {
     QueryId { id: Uuid },
 }
 
-fn exec_or(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecResult {
+fn exec_or(server_data: &ServerData, site_db: &Option<SiteDB>,
+           nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
         return Err(RcString::from("illegal query: OR operator has no nodes"));
     }
@@ -96,7 +98,7 @@ fn exec_or(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecRe
     let mut or_rows = vec![];
 
     for node in nodes {
-        let exec_rows = node.exec(server_data)?;
+        let exec_rows = node.exec(server_data, site_db)?;
 
         for row_gene_uniquename in &exec_rows {
             if !seen_genes.contains(row_gene_uniquename) {
@@ -109,19 +111,20 @@ fn exec_or(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecRe
     Ok(or_rows)
 }
 
-fn exec_and(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecResult {
+fn exec_and(server_data: &ServerData, site_db: &Option<SiteDB>,
+            nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
         return Err("illegal query: AND operator has no nodes".into());
     }
 
-    let first_node_genes = nodes[0].exec(server_data)?;
+    let first_node_genes = nodes[0].exec(server_data, site_db)?;
 
     let current_genes = first_node_genes;
 
     let mut current_gene_set = HashSet::from_iter(current_genes);
 
     for node in nodes[1..].iter() {
-        let node_result_rows = node.exec(server_data)?;
+        let node_result_rows = node.exec(server_data, site_db)?;
         let node_genes = node_result_rows.into_iter().collect::<HashSet<_>>();
 
         current_gene_set = current_gene_set.intersection(&node_genes).cloned().collect();
@@ -130,15 +133,16 @@ fn exec_and(server_data: &ServerData, nodes: &[QueryNode]) -> GeneUniquenameVecR
     Ok(current_gene_set.into_iter().collect())
 }
 
-fn exec_not(server_data: &ServerData, node_a: &QueryNode, node_b: &QueryNode)
+fn exec_not(server_data: &ServerData, site_db: &Option<SiteDB>,
+            node_a: &QueryNode, node_b: &QueryNode)
              -> GeneUniquenameVecResult
 {
-    let node_b_result = node_b.exec(server_data)?;
+    let node_b_result = node_b.exec(server_data, site_db)?;
 
     let node_b_gene_set: HashSet<GeneUniquename> =
         HashSet::from_iter(node_b_result.into_iter());
 
-    let node_a_result = node_a.exec(server_data)?;
+    let node_a_result = node_a.exec(server_data, site_db)?;
 
     let mut not_rows = vec![];
 
@@ -280,13 +284,34 @@ fn exec_interactors_of_gene(server_data: &ServerData, gene_uniquename: &GeneUniq
     Ok(server_data.interactors_of_genes(gene_uniquename, interaction_type))
 }
 
+fn exec_query_id(server_data: &ServerData,
+                 maybe_site_db: &Option<SiteDB>, id: &Uuid) -> GeneUniquenameVecResult {
+    if let Some(site_db) = maybe_site_db {
+        if let Some(query) = site_db.query_by_id(id) {
+            match query.exec(server_data, maybe_site_db) {
+                Ok(res) => {
+                    Ok(res.iter().map(|row| { row.gene_uniquename.clone() }).collect())
+                },
+                Err(err) => {
+                    Err(err)
+                }
+            }
+        } else {
+            Err(RcString::from(&format!("can't find query for ID {}", id)))
+        }
+    } else {
+        Err(RcString::from(&format!("can't find query for ID {} - no database", id)))
+    }
+}
+
 impl QueryNode {
-    pub fn exec(&self, server_data: &ServerData) -> GeneUniquenameVecResult {
+    pub fn exec(&self, server_data: &ServerData,
+                site_db: &Option<SiteDB>) -> GeneUniquenameVecResult {
         use self::QueryNode::*;
         match *self {
-            Or(ref nodes) => exec_or(server_data, nodes),
-            And(ref nodes) => exec_and(server_data, nodes),
-            Not { ref node_a, ref node_b } => exec_not(server_data, node_a, node_b),
+            Or(ref nodes) => exec_or(server_data, site_db, nodes),
+            And(ref nodes) => exec_and(server_data, site_db, nodes),
+            Not { ref node_a, ref node_b } => exec_not(server_data, site_db, node_a, node_b),
             Term {
                 ref termid,
                 ref single_or_multi_allele,
@@ -313,7 +338,7 @@ impl QueryNode {
                 exec_int_range(server_data, range_type, start, end),
             FloatRange { ref range_type, start, end } =>
                 exec_float_range(server_data, range_type, start, end),
-            QueryId { id } => panic!("This case shouldn't be reached - id: {}", id),
+            QueryId { ref id } => exec_query_id(server_data, site_db, id),
        }
     }
 }
@@ -570,12 +595,16 @@ impl Query {
            }).collect::<Vec<_>>())
     }
 
-    pub fn exec(&self, server_data: &ServerData) -> QueryRowsResult {
-        let genes_result = self.constraints.exec(server_data);
+    pub fn exec(&self, server_data: &ServerData, site_db: &Option<SiteDB>) -> QueryRowsResult {
+        let genes_result = self.constraints.exec(server_data, site_db);
 
         match genes_result {
             Ok(genes) => self.make_result_rows(server_data, genes),
             Err(err) => Err(err)
         }
+    }
+
+    pub fn get_constraints(&self) -> &QueryNode {
+        &self.constraints
     }
 }
