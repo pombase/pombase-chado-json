@@ -385,8 +385,6 @@ enum BeforeOrAfter {
 fn get_chr_range(chr_residues: &RcString, feature_edge: usize, base_count: usize,
                  before_or_after: BeforeOrAfter) -> RcString
 {
-    print!("{:?} {:?}\n", feature_edge, base_count);
-
     let (start_pos, end_pos) =
         if before_or_after == BeforeOrAfter::Before {
             let start_pos =
@@ -407,8 +405,6 @@ fn get_chr_range(chr_residues: &RcString, feature_edge: usize, base_count: usize
                 };
             (feature_edge, end_pos)
         };
-
-    print!("{:?} {:?}\n", start_pos, end_pos);
 
     RcString::from(&chr_residues.as_str()[start_pos..end_pos])
 }
