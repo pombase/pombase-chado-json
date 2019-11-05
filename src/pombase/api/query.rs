@@ -372,6 +372,7 @@ pub struct QueryOutputOptions {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Query {
+    name: Option<RcString>,
     output_options: QueryOutputOptions,
     constraints: QueryNode,
 }
@@ -410,8 +411,10 @@ fn get_chr_range(chr_residues: &RcString, feature_edge: usize, base_count: usize
 }
 
 impl Query {
-    pub fn new(constraints: QueryNode, output_options: QueryOutputOptions) -> Query {
+    pub fn new(name: Option<RcString>, constraints: QueryNode,
+               output_options: QueryOutputOptions) -> Query {
         Query {
+            name,
             output_options,
             constraints
         }
