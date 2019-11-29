@@ -4893,18 +4893,38 @@ impl <'a> WebDataBuild<'a> {
         return_summaries
     }
 
-    fn get_stats(&mut self) -> Stats {
-        let mut gene_counts_by_taxonid = HashMap::new();
+    fn get_stats(&self) -> Stats {
+        let mut by_taxon = HashMap::new();
+
+        let community_pubs_count: usize = 0;
+        let non_community_pubs_count: usize = 0;
 
         for gene_details in self.genes.values() {
             let taxonid = gene_details.taxonid;
 
-            *gene_counts_by_taxonid.entry(taxonid)
-                .or_insert(0) += 1;
+            by_taxon
+                .entry(taxonid)
+                .or_insert_with(StatCountsByTaxon::empty)
+                .genes += 1;
+
+            let mut annotation_count = 0;
+
+            for term_annotations in gene_details.cv_annotations.values() {
+                for term_annotation in term_annotations {
+                    annotation_count += term_annotation.annotations.len();
+                }
+            }
+
+            by_taxon
+                .entry(taxonid)
+                .or_insert_with(StatCountsByTaxon::empty)
+                .annotations += annotation_count;
         }
 
         Stats {
-            gene_counts_by_taxonid,
+            by_taxon,
+            community_pubs_count,
+            non_community_pubs_count,
         }
     }
 

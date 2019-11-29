@@ -1409,8 +1409,25 @@ pub type IdTermSubsetMap = HashMap<RcString, TermSubsetDetails>;
 pub type IdGeneSubsetMap = HashMap<RcString, GeneSubsetDetails>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StatCountsByTaxon {
+    pub genes: usize,
+    pub annotations: usize,
+}
+
+impl StatCountsByTaxon {
+    pub fn empty() -> Self {
+        StatCountsByTaxon {
+            genes: 0,
+            annotations: 0,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Stats {
-    pub gene_counts_by_taxonid: HashMap<OrganismTaxonId, usize>,
+    pub by_taxon: HashMap<OrganismTaxonId, StatCountsByTaxon>,
+    pub community_pubs_count: usize,
+    pub non_community_pubs_count: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
