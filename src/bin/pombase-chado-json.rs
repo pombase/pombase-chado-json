@@ -105,8 +105,11 @@ fn main() -> Result<(), std::io::Error> {
         conn.execute("CREATE SCHEMA web_json", &[])?;
         conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;", &[])?;
         conn.execute("CREATE TABLE web_json.gene (uniquename TEXT, data JSONB)", &[])?;
+        conn.execute("CREATE INDEX gene_uniquename_idx ON web_json.gene(uniquename)", &[])?;
         conn.execute("CREATE TABLE web_json.term (termid TEXT, data JSONB)", &[])?;
+        conn.execute("CREATE INDEX term_termid_idx ON web_json.term(termid)", &[])?;
         conn.execute("CREATE TABLE web_json.reference (uniquename TEXT, data JSONB)", &[])?;
+        conn.execute("CREATE INDEX reference_uniquename_idx on web_json.reference(uniquename)", &[])?;
 
         web_data.store_jsonb(&conn);
 
