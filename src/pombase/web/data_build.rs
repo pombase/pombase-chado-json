@@ -4896,9 +4896,6 @@ impl <'a> WebDataBuild<'a> {
     fn get_stats(&self) -> Stats {
         let mut by_taxon = HashMap::new();
 
-        let community_pubs_count: usize = 0;
-        let non_community_pubs_count: usize = 0;
-
         for gene_details in self.genes.values() {
             let taxonid = gene_details.taxonid;
 
@@ -4923,8 +4920,8 @@ impl <'a> WebDataBuild<'a> {
 
         Stats {
             by_taxon,
-            community_pubs_count,
-            non_community_pubs_count,
+            community_pubs_count: self.all_community_curated.len(),
+            non_community_pubs_count: self.all_admin_curated.len(),
         }
     }
 
