@@ -2298,6 +2298,7 @@ impl <'a> WebDataBuild<'a> {
                                 };
                             ret_vec.push(((*target_gene_uniquename).clone(),
                                           TargetOfAnnotation {
+                                              show_in_summary: true,  // set this later
                                               ontology_name: cv_name.into(),
                                               ext_rel_display_name: reciprocal_display_name,
                                               genes: annotation_gene_uniquenames.to_vec(),

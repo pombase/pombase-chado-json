@@ -581,6 +581,7 @@ impl Hash for TermSummaryRow {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TargetOfAnnotation {
+    pub show_in_summary: bool,
     pub ontology_name: RcString,
     pub ext_rel_display_name: RcString,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

@@ -111,6 +111,7 @@ fn get_test_config() -> Config {
                                 summary_relation_ranges_to_collect: vec![RcString::from("has_substrate")],
                                 sort_details_by: None,
                                 source_config: HashMap::new(),
+                                misc_config: MiscCvConfig::None,
                             });
 
     config
