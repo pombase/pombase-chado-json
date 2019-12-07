@@ -2313,6 +2313,41 @@ impl <'a> WebDataBuild<'a> {
         ret_vec
     }
 
+    fn process_target_of_annotations(&self, gene_details: &GeneDetails,
+                                     annotations: &mut HashSet<TargetOfAnnotation>)
+                                     -> Vec<TargetOfAnnotation>
+    {
+        let mut processed_annotations = annotations.drain().collect::<Vec<_>>();
+
+        let target_of_cv_config = self.config.cv_config_by_name("target_of");
+
+        let target_of_config = match target_of_cv_config.misc_config {
+            MiscCvConfig::TargetOf(target_of_config) => target_of_config,
+            MiscCvConfig::None =>
+                panic!("No configuration for 'relation_priority' of 'target_of'"),
+        };
+
+        let priority_config = target_of_config.relation_priority;
+
+        for annotation in &processed_annotations {
+            if priority_config.get(annotation.ext_rel_display_name.as_ref()).is_none() {
+                eprintln!(r#"No priority configured for "{}" (from {})"#,
+                          annotation.ext_rel_display_name, gene_details.uniquename);
+            }
+        }
+
+        let cmp_fn = |a: &TargetOfAnnotation, b: &TargetOfAnnotation| {
+            let a_pri = priority_config.get(a.ext_rel_display_name.as_ref()).unwrap_or(&0);
+            let b_pri = priority_config.get(b.ext_rel_display_name.as_ref()).unwrap_or(&0);
+
+            b_pri.cmp(a_pri)
+        };
+
+        processed_annotations.sort_by(cmp_fn);
+
+        processed_annotations
+    }
+
     fn add_target_of_annotations(&mut self) {
         let mut target_of_annotations: HashMap<GeneUniquename, HashSet<TargetOfAnnotation>> =
             HashMap::new();
@@ -2350,8 +2385,11 @@ impl <'a> WebDataBuild<'a> {
         }
 
         for (gene_uniquename, mut target_of_annotations) in target_of_annotations {
+            let gene_details = self.genes.get(&gene_uniquename).unwrap();
+            let processed_target_of_annotations =
+                self.process_target_of_annotations(gene_details, &mut target_of_annotations);
             let gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
-            gene_details.target_of_annotations = target_of_annotations.drain().collect();
+            gene_details.target_of_annotations = processed_target_of_annotations;
         }
     }
 
