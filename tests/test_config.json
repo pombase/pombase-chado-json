@@ -354,6 +354,19 @@
       "display_name": "gene characterisation status"
     }
   },
+  "target_of_config": {
+    "relation_priority": {
+      "directly activated by": 10,
+      "directly inhibited by": 10,
+      "substrate of": 9,
+      "binds": 8,
+      "transported by": 7,
+      "localized by": 6,
+      "regulated by": 6,
+      "activity affected by mutation in": 5,
+      "affected by mutation in": 4
+    }
+  },
   "interesting_parents": [
     {
       "termid": "GO:0005515",

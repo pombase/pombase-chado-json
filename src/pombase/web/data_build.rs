@@ -2281,6 +2281,10 @@ impl <'a> WebDataBuild<'a> {
                               reference_uniquename: &Option<RcString>,
                               annotation_termid: &str,
                               extension: &[ExtPart]) -> Vec<(GeneUniquename, TargetOfAnnotation)> {
+        if genes.len() != 1 {
+            panic!("expected an annotation with one gene, got: {:?}", genes);
+        }
+        let gene = &genes[0];
         let mut ret_vec = vec![];
 
         for ext_part in extension {
@@ -2290,18 +2294,18 @@ impl <'a> WebDataBuild<'a> {
                 if let Some(ext_config) = maybe_ext_config {
                     if let Some(reciprocal_display_name) =
                         ext_config.reciprocal_display {
-                            let (annotation_gene_uniquenames, annotation_genotype_uniquename) =
+                            let (annotation_gene_uniquename, annotation_genotype_uniquename) =
                                 if maybe_genotype_uniquename.is_some() {
-                                    (genes.clone(), maybe_genotype_uniquename.clone())
+                                    (gene.clone(), maybe_genotype_uniquename.clone())
                                 } else {
-                                    (genes.clone(), None)
+                                    (gene.clone(), None)
                                 };
                             ret_vec.push(((*target_gene_uniquename).clone(),
                                           TargetOfAnnotation {
                                               show_in_summary: true,  // set this later
                                               ontology_name: cv_name.into(),
                                               ext_rel_display_name: reciprocal_display_name,
-                                              genes: annotation_gene_uniquenames.to_vec(),
+                                              gene: annotation_gene_uniquename,
                                               genotype_uniquename: annotation_genotype_uniquename,
                                               reference_uniquename: reference_uniquename.clone(),
                                           }));
@@ -2313,21 +2317,16 @@ impl <'a> WebDataBuild<'a> {
         ret_vec
     }
 
+    // return an ordered vector of annotations, setting the show_in_summary flag
+    // see: https://github.com/pombase/website/issues/299
     fn process_target_of_annotations(&self, gene_details: &GeneDetails,
                                      annotations: &mut HashSet<TargetOfAnnotation>)
                                      -> Vec<TargetOfAnnotation>
     {
         let mut processed_annotations = annotations.drain().collect::<Vec<_>>();
 
-        let target_of_cv_config = self.config.cv_config_by_name("target_of");
-
-        let target_of_config = match target_of_cv_config.misc_config {
-            MiscCvConfig::TargetOf(target_of_config) => target_of_config,
-            MiscCvConfig::None =>
-                panic!("No configuration for 'relation_priority' of 'target_of'"),
-        };
-
-        let priority_config = target_of_config.relation_priority;
+        let target_of_config = &self.config.target_of_config;
+        let priority_config = &target_of_config.relation_priority;
 
         for annotation in &processed_annotations {
             if priority_config.get(annotation.ext_rel_display_name.as_ref()).is_none() {
@@ -2337,10 +2336,32 @@ impl <'a> WebDataBuild<'a> {
         }
 
         let cmp_fn = |a: &TargetOfAnnotation, b: &TargetOfAnnotation| {
-            let a_pri = priority_config.get(a.ext_rel_display_name.as_ref()).unwrap_or(&0);
-            let b_pri = priority_config.get(b.ext_rel_display_name.as_ref()).unwrap_or(&0);
+            let a_rel_name = a.ext_rel_display_name.as_ref();
+            let a_pri = priority_config.get(a_rel_name).unwrap_or(&0);
+            let b_rel_name = b.ext_rel_display_name.as_ref();
+            let b_pri = priority_config.get(b_rel_name).unwrap_or(&0);
 
-            b_pri.cmp(a_pri)
+            let pri_order = b_pri.cmp(a_pri);
+
+            if pri_order == Ordering::Equal {
+                let rel_name_order = a_rel_name.cmp(b_rel_name);
+                if rel_name_order == Ordering::Equal {
+                    let a_gene_details = self.genes.get(&a.gene).unwrap();
+                    let b_gene_details = self.genes.get(&b.gene).unwrap();
+
+                    if let (Some(a_name), Some(b_name)) =
+                        (&a_gene_details.name, &b_gene_details.name)
+                    {
+                        a_name.cmp(b_name)
+                    } else {
+                        a_gene_details.uniquename.cmp(&b_gene_details.uniquename)
+                    }
+                } else {
+                    rel_name_order
+                }
+            } else {
+                pri_order
+            }
         };
 
         processed_annotations.sort_by(cmp_fn);
@@ -4324,10 +4345,8 @@ impl <'a> WebDataBuild<'a> {
                                           &paralog_annotation.paralog_uniquename);
                 }
                 for target_of_annotation in &gene_details.target_of_annotations {
-                    for annotation_gene_uniquename in &target_of_annotation.genes {
-                        self.add_gene_to_hash(&mut seen_genes, gene_uniquename,
-                                              annotation_gene_uniquename);
-                    }
+                    let ref target_of_gene = target_of_annotation.gene;
+                    self.add_gene_to_hash(&mut seen_genes, gene_uniquename, target_of_gene);
                     if let Some(ref annotation_genotype_uniquename) = target_of_annotation.genotype_uniquename {
                         self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                   gene_uniquename,

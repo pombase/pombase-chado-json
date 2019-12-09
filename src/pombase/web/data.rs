@@ -584,9 +584,8 @@ pub struct TargetOfAnnotation {
     pub show_in_summary: bool,
     pub ontology_name: RcString,
     pub ext_rel_display_name: RcString,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub genes: Vec<GeneUniquename>,
-    #[serde(skip_serializing_if="Option::is_none")]
+    pub gene: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none", default)]
     pub genotype_uniquename: Option<GenotypeUniquename>,
     pub reference_uniquename: Option<ReferenceUniquename>,
 }

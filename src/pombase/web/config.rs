@@ -88,29 +88,6 @@ pub struct TargetOfConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
-#[serde(rename_all = "snake_case")]
-pub enum MiscCvConfig {
-    // this isn't a CV but it's convenient to configure it in the same way
-    TargetOf(TargetOfConfig),
-    None,
-}
-
-impl Default for MiscCvConfig {
-    fn default() -> Self {
-        MiscCvConfig::None
-    }
-}
-
-impl MiscCvConfig {
-    pub fn is_none(&self) -> bool {
-        match *self {
-            MiscCvConfig::None => true,
-            _ => false,
-        }
-    }
-}
-
-#[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: RcString,
     pub display_name: Option<RcString>,
@@ -133,10 +110,6 @@ pub struct CvConfig {
     // the field to sort by
     #[serde(skip_serializing_if="Option::is_none")]
     pub sort_details_by: Option<Vec<RcString>>,
-
-    // annotation type specific configuration
-    #[serde(skip_serializing_if="MiscCvConfig::is_none", default)]
-    pub misc_config: MiscCvConfig,
 
     // This is the configuration for the "Source" column, a map from
     // source name to config
@@ -280,6 +253,7 @@ pub struct Config {
     pub extension_relation_order: RelationOrder,
     pub evidence_types: HashMap<ShortEvidenceCode, EvidenceDetails>,
     pub cv_config: HashMap<CvName, CvConfig>,
+    pub target_of_config: TargetOfConfig,
 // when creating a TermShort struct, for each of these termids if the term has
 // an "interesting parent" using the given rel_name, we store it in the
 // interesting_parents field of the TermShort
@@ -330,7 +304,6 @@ impl Config {
                     summary_relation_ranges_to_collect: vec![],
                     sort_details_by: None,
                     source_config: HashMap::new(),
-                    misc_config: MiscCvConfig::None,
                 };
 
             if cv_name.starts_with("extension:") {
