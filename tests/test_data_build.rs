@@ -64,6 +64,9 @@ fn get_test_config() -> Config {
         },
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
+        target_of_config: TargetOfConfig {
+            relation_priority: HashMap::new(),
+        },
         interesting_parents: vec![],
         viability_terms: ViabilityTerms {
             viable: RcString::from("FYPO:0002058"),
@@ -111,7 +114,6 @@ fn get_test_config() -> Config {
                                 summary_relation_ranges_to_collect: vec![RcString::from("has_substrate")],
                                 sort_details_by: None,
                                 source_config: HashMap::new(),
-                                misc_config: MiscCvConfig::None,
                             });
 
     config
