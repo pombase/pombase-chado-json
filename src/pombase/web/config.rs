@@ -84,7 +84,7 @@ pub struct TargetOfConfig {
     // these priorities are used to order the list in the "Target of" section
     // and to filter the "Target of" summary
     // https://github.com/pombase/website/issues/299
-    pub relation_priority: HashMap<TargetRelationName, usize>,
+    pub relation_priority: HashMap<TargetRelationName, u32>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

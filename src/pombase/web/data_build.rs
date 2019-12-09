@@ -2366,6 +2366,23 @@ impl <'a> WebDataBuild<'a> {
 
         processed_annotations.sort_by(cmp_fn);
 
+        let mut seen_gene_rels = HashMap::new();
+
+        for annotation in processed_annotations.iter_mut() {
+            let rel_priority = priority_config.get(annotation.ext_rel_display_name.as_str())
+                .unwrap_or(&0);
+
+            let existing_rel = seen_gene_rels.get(&annotation.gene);
+
+            if let Some(existing_rel) = existing_rel {
+                if *existing_rel > rel_priority {
+                    annotation.show_in_summary = false;
+                    continue;
+                }
+            }
+            seen_gene_rels.insert(annotation.gene.clone(), rel_priority);
+        }
+
         processed_annotations
     }
 
