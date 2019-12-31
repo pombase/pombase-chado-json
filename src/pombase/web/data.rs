@@ -380,6 +380,8 @@ pub struct ReferenceDetails {
     pub citation: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none", rename = "abstract")]
     pub pubmed_abstract: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none", rename = "doi")]
+    pub pubmed_doi: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub authors: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
