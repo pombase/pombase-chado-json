@@ -327,6 +327,10 @@ fn reference_summary(reference_details: &ReferenceDetails) -> String {
         summ += &format!("<dt>Publication year</dt> <dd>{}</dd>\n", publication_year);
     }
 
+    if let Some(ref pubmed_abstract) = reference_details.pubmed_abstract {
+        summ += &format!("<dt>Abstract</dt> <dd>{}</dd>\n", pubmed_abstract);
+    }
+
     summ += "</dl>\n";
 
     summ
