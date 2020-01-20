@@ -1195,6 +1195,7 @@ pub struct APIAlleleDetails {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIGenotypeAnnotation {
     pub is_multi: bool,
+    pub conditions: HashSet<TermAndName>,
     pub alleles: Vec<APIAlleleDetails>,
 }
 

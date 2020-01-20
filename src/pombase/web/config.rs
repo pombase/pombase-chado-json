@@ -147,7 +147,7 @@ pub struct ViabilityTerms {
     pub inviable: RcString,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TermAndName {
     pub termid: RcString,
     pub name: RcString,

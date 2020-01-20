@@ -11,7 +11,7 @@ use crate::web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetail
                 TermShort, TermShortOptionMap, ChromosomeDetails,
                 ReferenceShort, ReferenceShortOptionMap,
                 GeneShort, GeneShortOptionMap, GeneQueryData};
-use crate::web::config::Config;
+use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
 use flate2::read::GzDecoder;
@@ -161,7 +161,8 @@ impl ServerData {
 
     pub fn genes_of_genotypes(&self, term_id: &str,
                               single_or_multi_allele: &SingleOrMultiAllele,
-                              expression_filter: &Option<QueryExpressionFilter>)
+                              expression_filter: &Option<QueryExpressionFilter>,
+                              conditions_filter: &HashSet<TermAndName>)
                               -> Vec<GeneUniquename>
     {
         if let Some(annotations) = self.maps.termid_genotype_annotation.get(term_id) {
@@ -214,9 +215,30 @@ impl ServerData {
                         }
                     };
 
+                let condition_matches =
+                    |conditions: &HashSet<TermAndName>| {
+                        if conditions_filter.len() == 0 {
+                            // don't filter in this case
+                            return true;
+                        }
+
+                        for filter_condition in conditions_filter {
+                            if conditions.iter().find(
+                                |cond| {
+                                    filter_condition.termid == cond.termid
+                                })
+                                .is_some() {
+                                return true
+                            }
+                        }
+
+                        false
+                    };
+
                 if annotation.is_multi && add_multi ||
                     !annotation.is_multi && add_single &&
-                    expression_matches(&annotation.alleles[0]) {
+                    expression_matches(&annotation.alleles[0]) &&
+                    condition_matches(&annotation.conditions) {
                         for allele_details in &annotation.alleles {
                             genes.insert(allele_details.gene.clone());
                         }

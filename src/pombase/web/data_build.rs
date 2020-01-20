@@ -3927,8 +3927,19 @@ impl <'a> WebDataBuild<'a> {
                         let genotype_uniquename = annotation_details.genotype.clone().unwrap();
                         let genotype =
                             &term_details.genotypes_by_uniquename[&genotype_uniquename];
+                        let conditions =
+                            annotation_details.conditions.iter()
+                            .map(|cond_termid| {
+                                let cond_term = self.terms.get(cond_termid).unwrap();
+                                TermAndName {
+                                    termid: cond_term.termid.clone(),
+                                    name: cond_term.name.clone(),
+                                }
+                            })
+                            .collect::<HashSet<_>>();
                         let mut api_annotation = APIGenotypeAnnotation {
                             is_multi: genotype.expressed_alleles.len() > 1,
+                            conditions,
                             alleles: vec![],
                         };
                         for allele in &genotype.expressed_alleles {

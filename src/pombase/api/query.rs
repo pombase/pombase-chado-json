@@ -10,6 +10,7 @@ use crate::api::site_db::SiteDB;
 use crate::api::result::*;
 use crate::web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand};
+use crate::web::config::TermAndName;
 
 use crate::bio::util::rev_comp;
 
@@ -71,6 +72,8 @@ pub enum QueryNode {
         name: Option<TermName>,
         single_or_multi_allele: Option<SingleOrMultiAllele>,
         expression: Option<QueryExpressionFilter>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
+        conditions: HashSet<TermAndName>,
     },
 #[serde(rename = "subset")]
     Subset { subset_name: String },
@@ -157,10 +160,11 @@ fn exec_not(server_data: &ServerData, site_db: &Option<SiteDB>,
 
 fn exec_termid(server_data: &ServerData, term_id: &str,
                maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
-               expression: &Option<QueryExpressionFilter>)  -> GeneUniquenameVecResult {
+               expression: &Option<QueryExpressionFilter>,
+               conditions: &HashSet<TermAndName>)  -> GeneUniquenameVecResult {
     if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
         let genes = server_data.genes_of_genotypes(term_id, single_or_multi_allele,
-                                                   expression);
+                                                   expression, conditions);
         Ok(genes)
     } else {
         Ok(server_data.genes_of_termid(term_id))
@@ -316,8 +320,10 @@ impl QueryNode {
                 ref termid,
                 ref single_or_multi_allele,
                 ref expression,
+                ref conditions,
                 ..
-            } => exec_termid(server_data, termid, single_or_multi_allele, expression),
+            } => exec_termid(server_data, termid, single_or_multi_allele, expression,
+                             conditions),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
             GeneList { ref genes } => exec_gene_list(genes),
             GenomeRange { start, end, ref chromosome_name } =>
