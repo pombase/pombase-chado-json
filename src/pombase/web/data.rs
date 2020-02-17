@@ -246,6 +246,8 @@ pub struct TermShort {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parents: HashSet<RcString>,
     pub termid: TermId,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub secondary_identifiers: HashSet<TermId>,
     pub is_obsolete: bool,
     pub gene_count: usize,
     pub genotype_count: usize,
@@ -264,6 +266,7 @@ impl TermShort {
             gene_count: term_details.gene_count,
             genotype_count: term_details.genotype_count,
             xrefs: term_details.xrefs.clone(),
+            secondary_identifiers: term_details.secondary_identifiers.clone(),
         }
     }
 }
@@ -1023,6 +1026,8 @@ pub struct TermDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub direct_ancestors: Vec<TermAndRelation>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub secondary_identifiers: HashSet<TermId>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub genes_annotated_with: HashSet<GeneUniquename>,
     pub is_obsolete: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
@@ -1301,6 +1306,8 @@ pub struct SolrTermSummary {
     pub distant_synonym_words: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parents: HashSet<RcString>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub secondary_identifiers: HashSet<TermId>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

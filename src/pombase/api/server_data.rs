@@ -16,14 +16,32 @@ use crate::api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 
 use flate2::read::GzDecoder;
 
-use crate::types::GeneUniquename;
+use crate::types::{TermId, GeneUniquename};
 
 use pombase_rc_string::RcString;
 
 pub struct ServerData {
     config_file_name: String,
     maps: APIMaps,
+    secondary_identifiers_map: HashMap<TermId, TermId>,
     search_maps_file_name: String,
+}
+
+
+
+fn make_secondary_identifiers_map(terms: &HashMap<TermId, TermDetails>)
+                                  -> HashMap<TermId, TermId>
+{
+    let mut ret_map = HashMap::new();
+
+    for term_details in terms.values() {
+        for secondary_identifier in &term_details.secondary_identifiers {
+            ret_map.insert(secondary_identifier.clone(),
+                           term_details.termid.clone());
+        }
+    }
+
+    ret_map
 }
 
 
@@ -80,9 +98,13 @@ impl ServerData {
 
         let maps = load(&config, search_maps_file_name);
 
+        let secondary_identifiers_map =
+            make_secondary_identifiers_map(&maps.terms);
+
         ServerData {
             config_file_name: config_file_name.into(),
             search_maps_file_name: search_maps_file_name.into(),
+            secondary_identifiers_map,
             maps
         }
     }
@@ -342,16 +364,26 @@ impl ServerData {
         }
     }
 
+    fn term_details_helper(&self, term_ref: &TermDetails) -> Option<TermDetails> {
+        let mut term = term_ref.clone();
+        let details_map = self.detail_map_of_cv_annotations(&term.cv_annotations);
+        term.annotation_details = details_map;
+        term.terms_by_termid = self.fill_term_map(&term.terms_by_termid);
+        term.genes_by_uniquename = self.fill_gene_map(&term.genes_by_uniquename);
+        term.references_by_uniquename =
+            self.fill_reference_map(&term.references_by_uniquename);
+        Some(term)
+    }
+
     pub fn get_term_details(&self, termid: &str) -> Option<TermDetails> {
+        let termid =
+            if let Some(real_termid) = self.secondary_identifiers_map.get(termid) {
+                real_termid
+            } else {
+                termid
+            };
         if let Some(term_ref) = self.maps.terms.get(termid) {
-            let mut term = term_ref.clone();
-            let details_map = self.detail_map_of_cv_annotations(&term.cv_annotations);
-            term.annotation_details = details_map;
-            term.terms_by_termid = self.fill_term_map(&term.terms_by_termid);
-            term.genes_by_uniquename = self.fill_gene_map(&term.genes_by_uniquename);
-            term.references_by_uniquename =
-                self.fill_reference_map(&term.references_by_uniquename);
-            Some(term)
+            self.term_details_helper(term_ref)
         } else {
             None
         }

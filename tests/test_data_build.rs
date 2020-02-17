@@ -602,6 +602,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         synonyms: vec![],
         definition: None,
         direct_ancestors: vec![],
+        secondary_identifiers: HashSet::new(),
         genes_annotated_with: HashSet::new(),
         is_obsolete: false,
         single_allele_genotype_uniquenames: HashSet::new(),

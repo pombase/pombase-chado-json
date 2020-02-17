@@ -93,6 +93,7 @@ pub struct Cvterm {
     pub name: RcString,
     pub cv: Rc<Cv>,
     pub dbxref: Rc<Dbxref>,
+    pub other_dbxrefs: RefCell<Vec<Rc<Dbxref>>>,
     pub definition: Option<RcString>,
     pub is_obsolete: bool,
     pub is_relationshiptype: bool,
@@ -117,6 +118,7 @@ impl Cvterm {
             is_relationshiptype,
             cvtermsynonyms: RefCell::new(vec![]),
             cvtermprops: RefCell::new(vec![]),
+            other_dbxrefs: RefCell::new(vec![]),
             _termid: rc_termid
         }
     }
@@ -151,6 +153,10 @@ pub struct CvtermRelationship {
     pub subject: Rc<Cvterm>,
     pub object: Rc<Cvterm>,
     pub rel_type: Rc<Cvterm>,
+}
+pub struct CvtermDbxref {
+    pub cvterm: Rc<Cvterm>,
+    pub dbxref: Rc<Dbxref>,
 }
 pub struct Cvtermpath {
     pub subject: Rc<Cvterm>,
@@ -688,6 +694,16 @@ impl Raw {
             organism.organismprops.borrow_mut().push(rc_organismprop.clone());
         }
 
-       ret
+        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref", &[]).unwrap() {
+            let cvterm_id: i32 = row.get(0);
+            let dbxref_id: i32 = row.get(1);
+
+            let cvterm = cvterm_map[&cvterm_id].clone();
+            let dbxref = dbxref_map[&dbxref_id].clone();
+
+            cvterm.other_dbxrefs.borrow_mut().push(dbxref);
+        }
+
+        ret
     }
 }

@@ -2775,6 +2775,13 @@ impl <'a> WebDataBuild<'a> {
                             name: syn.name.clone(),
                         }
                     }).collect::<Vec<_>>();
+
+                let secondary_identifiers =
+                    cvterm.other_dbxrefs.borrow().iter()
+                    .map(|dbxref| {
+                        dbxref.identifier()
+                    }).collect::<HashSet<_>>();
+
                 self.terms.insert(cvterm.termid(),
                                   TermDetails {
                                       name: cvterm.name.clone(),
@@ -2786,6 +2793,7 @@ impl <'a> WebDataBuild<'a> {
                                       synonyms,
                                       definition: cvterm.definition.clone(),
                                       direct_ancestors: vec![],
+                                      secondary_identifiers,
                                       genes_annotated_with: HashSet::new(),
                                       is_obsolete: cvterm.is_obsolete,
                                       single_allele_genotype_uniquenames: HashSet::new(),
@@ -4966,6 +4974,7 @@ impl <'a> WebDataBuild<'a> {
                 distant_synonyms,
                 distant_synonym_words: RcString::from(&distant_synonym_words_vec.join(" ")),
                 interesting_parents: interesting_parents_for_solr,
+                secondary_identifiers: term_details.secondary_identifiers.clone(),
             };
             return_summaries.push(term_summ);
         }
