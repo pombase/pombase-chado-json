@@ -694,7 +694,7 @@ impl Raw {
             organism.organismprops.borrow_mut().push(rc_organismprop.clone());
         }
 
-        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref", &[]).unwrap() {
+        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref WHERE is_for_definition = 0", &[]).unwrap() {
             let cvterm_id: i32 = row.get(0);
             let dbxref_id: i32 = row.get(1);
 
