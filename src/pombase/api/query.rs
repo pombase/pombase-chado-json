@@ -74,6 +74,8 @@ pub enum QueryNode {
         expression: Option<QueryExpressionFilter>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
         conditions: HashSet<TermAndName>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
+        not_conditions: HashSet<TermAndName>,
     },
 #[serde(rename = "subset")]
     Subset { subset_name: String },
@@ -161,10 +163,11 @@ fn exec_not(server_data: &ServerData, site_db: &Option<SiteDB>,
 fn exec_termid(server_data: &ServerData, term_id: &str,
                maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
                expression: &Option<QueryExpressionFilter>,
-               conditions: &HashSet<TermAndName>)  -> GeneUniquenameVecResult {
+               conditions: &HashSet<TermAndName>,
+               not_conditions: &HashSet<TermAndName>)  -> GeneUniquenameVecResult {
     if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
         let genes = server_data.genes_of_genotypes(term_id, single_or_multi_allele,
-                                                   expression, conditions);
+                                                   expression, conditions, not_conditions);
         Ok(genes)
     } else {
         Ok(server_data.genes_of_termid(term_id))
@@ -321,9 +324,10 @@ impl QueryNode {
                 ref single_or_multi_allele,
                 ref expression,
                 ref conditions,
+                ref not_conditions,
                 ..
             } => exec_termid(server_data, termid, single_or_multi_allele, expression,
-                             conditions),
+                             conditions, not_conditions),
             Subset { ref subset_name } => exec_subset(server_data, subset_name),
             GeneList { ref genes } => exec_gene_list(genes),
             GenomeRange { start, end, ref chromosome_name } =>
