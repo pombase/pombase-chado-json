@@ -83,10 +83,8 @@ impl Search {
         if let Some(captures) = termid_re.captures(q) {
             let prefix = captures.name("prefix").unwrap().as_str();
             let accession = captures.name("accession").unwrap().as_str();
-            terms_url += " AND id:";
-            terms_url += prefix;
-            terms_url += r"\:";
-            terms_url += accession;
+            terms_url = format!(r"{} AND (id:{}\:{} OR secondary_identifiers:{}\:{})",
+                                terms_url, prefix, accession, prefix, accession);
         } else {
             let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
             let lower_q = substring(&q.to_lowercase(), 200);
