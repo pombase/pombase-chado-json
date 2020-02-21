@@ -1299,8 +1299,6 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(ref canto_annotation_status) = canto_annotation_status {
                 if canto_annotation_status != "APPROVED" {
-                    canto_curator_name = None;
-                    canto_curator_role = None;
                     approved_date = None;
                 }
             }
