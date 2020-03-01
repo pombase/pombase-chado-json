@@ -702,8 +702,7 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         all_ref_uniquenames.iter()
         .filter(|ref_uniquename| {
             let reference = references_map.get(*ref_uniquename).unwrap();
-            (reference.canto_first_approved_date.is_some() ||
-             reference.canto_session_submitted_date.is_some()) &&
+            reference.canto_approved_date.is_some() &&
                 reference.canto_curator_role.is_some()
         })
         .cloned()
