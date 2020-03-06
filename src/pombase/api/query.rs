@@ -546,6 +546,7 @@ impl Query {
                let mut characterisation_status = None;
                let mut taxonomic_distribution = None;
                let mut ortholog_taxonids = HashSet::new();
+               let mut physical_interactors = HashSet::new();
                let mut tmm = None;
                let mut protein_length_bin = None;
                let mut subsets = HashSet::new();
@@ -559,6 +560,8 @@ impl Query {
                                 deletion_viability = Some(gene_data.deletion_viability.clone()),
                            "ortholog_taxonids" =>
                                 ortholog_taxonids = gene_data.ortholog_taxonids.clone(),
+                           "physical_interactors" =>
+                                physical_interactors = gene_data.physical_interactors.clone(),
                            "go_component" =>
                                 go_component = gene_data.go_component.clone(),
                            "go_process_superslim" =>
@@ -596,6 +599,7 @@ impl Query {
                    characterisation_status,
                    taxonomic_distribution,
                    ortholog_taxonids,
+                   physical_interactors,
                    tmm,
                    gene_uniquename,
                    protein_length_bin,

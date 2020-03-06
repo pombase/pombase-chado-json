@@ -4051,11 +4051,24 @@ impl <'a> WebDataBuild<'a> {
         return_set
     }
 
+    fn get_physical_interactors(&self, gene_details: &GeneDetails)
+                                -> HashSet<GeneUniquename>
+    {
+        let mut return_set = HashSet::new();
+
+        for physical_interaction in &gene_details.physical_interactions {
+            return_set.insert(physical_interaction.interactor_uniquename.clone());
+        }
+
+        return_set
+    }
+
     fn make_gene_query_data_map(&self) -> HashMap<GeneUniquename, GeneQueryData> {
         let mut gene_query_data_map = HashMap::new();
 
         for gene_details in self.genes.values() {
             let ortholog_taxonids = self.get_ortholog_taxonids(gene_details);
+            let physical_interactors = self.get_physical_interactors(gene_details);
 
             let mut cc_terms = vec![];
             let mut process_terms = vec![];
@@ -4108,6 +4121,7 @@ impl <'a> WebDataBuild<'a> {
                 taxonomic_distribution: gene_details.taxonomic_distribution.clone(),
                 tmm,
                 ortholog_taxonids,
+                physical_interactors,
                 protein_length_bin,
                 subset_termids: gene_details.subset_termids.clone(),
             };
