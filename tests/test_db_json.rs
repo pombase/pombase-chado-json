@@ -584,9 +584,8 @@ fn get_test_config() -> Config {
         extra_database_aliases: HashMap::new(),
         chromosomes: HashMap::new(),
         gene_results: GeneResultsConfig {
-            visualisation: GeneResultVisConfig {
-                columns: vec![],
-            }
+            field_config: HashMap::new(),
+            visualisation_field_names: vec![]
         },
         ortholog_taxonids: HashSet::from_iter(vec![9606, 4932]),
         file_exports: FileExportConfig {

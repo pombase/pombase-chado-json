@@ -91,9 +91,8 @@ fn get_test_config() -> Config {
         extra_database_aliases: HashMap::new(),
         chromosomes: HashMap::new(),
         gene_results: GeneResultsConfig {
-            visualisation: GeneResultVisConfig {
-                columns: vec![],
-            }
+            field_config: HashMap::new(),
+            visualisation_field_names: vec![]
         },
         ortholog_taxonids: HashSet::from_iter(vec![9606, 4932]),
         file_exports: FileExportConfig {
@@ -849,7 +848,7 @@ fn get_test_gene_short_map() -> IdGeneShortMap {
                        product: Some(RcString::from("Rho family GTPase Rho2")),
                    });
     ret_map.insert(RcString::from("SPAC24C9.02c"),
-                   GeneShort { 
+                   GeneShort {
                        uniquename: RcString::from("SPAC24C9.02c"),
                        name: Some(RcString::from("cyt2")),
                        product: Some(RcString::from("cytochrome c1 heme lyase Cyt2 (predicted)")),

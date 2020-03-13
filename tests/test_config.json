@@ -420,9 +420,8 @@
   "extra_database_aliases": {
   },
   "gene_results": {
-    "visualisation": {
-      "columns": []
-    }
+    "field_config": {},
+    "visualisation_field_names": []
   },
   "ortholog_taxonids": [9606, 4932],
   "file_exports": {

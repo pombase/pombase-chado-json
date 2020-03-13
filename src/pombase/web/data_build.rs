@@ -587,7 +587,9 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
-    for column_conf in &config.gene_results.visualisation.columns {
+    for field_name in &config.gene_results.visualisation_field_names {
+        let column_conf = &config.gene_results.field_config[field_name];
+
         for attr_value_conf in &column_conf.attr_values {
             if let Some(ref termid) = attr_value_conf.termid {
                 add_to_set(&mut ret, termid.clone());
@@ -3975,7 +3977,8 @@ impl <'a> WebDataBuild<'a> {
     fn make_protein_length_data_bin(&self, gene_details: &GeneDetails)
                                     -> Option<GeneQueryAttrName>
     {
-        for column_conf in &self.config.gene_results.visualisation.columns {
+        for field_name in &self.config.gene_results.visualisation_field_names {
+            let column_conf = &self.config.gene_results.field_config[field_name];
             for attr_value_conf in &column_conf.attr_values {
                 if let (Some(ref bin_start), Some(ref bin_end)) =
                     (attr_value_conf.bin_start, attr_value_conf.bin_end) {
@@ -4074,10 +4077,12 @@ impl <'a> WebDataBuild<'a> {
             let mut process_terms = vec![];
             let mut function_terms = vec![];
 
-            for column_conf in &self.config.gene_results.visualisation.columns {
+            for field_name in &self.config.gene_results.visualisation_field_names {
+                let column_conf = &self.config.gene_results.field_config[field_name];
+
                 for attr_value_conf in &column_conf.attr_values {
                     if let Some(ref termid) = attr_value_conf.termid {
-                        match column_conf.name.as_ref() {
+                        match field_name.as_ref() {
                             "go_component" => cc_terms.push(termid.clone()),
                             "go_process_superslim" => process_terms.push(termid.clone()),
                             "go_function" => function_terms.push(termid.clone()),

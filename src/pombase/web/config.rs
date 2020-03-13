@@ -218,19 +218,14 @@ pub struct GeneResultVisAttrValueConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct GeneResultVisColumnConfig {
-    pub name: RcString,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub attr_values: Vec<GeneResultVisAttrValueConfig>,
-}
-
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct GeneResultVisConfig {
-    pub columns: Vec<GeneResultVisColumnConfig>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct GeneResultsConfig {
-    pub visualisation: GeneResultVisConfig,
+    pub field_config: HashMap<RcString, GeneResultVisColumnConfig>,
+    pub visualisation_field_names: Vec<RcString>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
