@@ -548,6 +548,7 @@ impl Query {
                let mut ortholog_taxonids = HashSet::new();
                let mut physical_interactors = HashSet::new();
                let mut tmm = None;
+               let mut protein_length = None;
                let mut protein_length_bin = None;
                let mut subsets = HashSet::new();
 
@@ -573,6 +574,8 @@ impl Query {
                            "go_function" =>
                                 go_function = gene_data.go_function.clone(),
                            "tmm" => tmm = gene_data.tmm.clone(),
+                           "protein_length" =>
+                               protein_length = gene_data.protein_length.clone(),
                            "protein_length_bin" =>
                                protein_length_bin = gene_data.protein_length_bin.clone(),
                            "gene_uniquename" => (),
@@ -602,6 +605,7 @@ impl Query {
                    physical_interactors,
                    tmm,
                    gene_uniquename,
+                   protein_length,
                    protein_length_bin,
                    subsets,
                }

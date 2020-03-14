@@ -1251,6 +1251,8 @@ pub struct GeneQueryData {
     pub tmm: Option<PresentAbsent>,
     pub ortholog_taxonids: HashSet<u32>,
     pub physical_interactors: HashSet<GeneUniquename>,
+    // None for RNA genes:
+    pub protein_length: Option<usize>,
     // bin is None for RNA genes:
     pub protein_length_bin: Option<GeneQueryAttrName>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
