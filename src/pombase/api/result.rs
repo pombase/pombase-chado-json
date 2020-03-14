@@ -28,6 +28,8 @@ pub struct ResultRow {
     #[serde(skip_serializing_if="Option::is_none")]
     pub tmm: Option<PresentAbsent>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub molecular_weight: Option<f32>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub protein_length: Option<usize>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub protein_length_bin: Option<GeneQueryAttrName>,

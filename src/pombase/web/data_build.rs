@@ -3974,13 +3974,15 @@ impl <'a> WebDataBuild<'a> {
         app_genotype_annotation
     }
 
-    fn make_protein_length_data(&self, gene_details: &GeneDetails)
-                                -> (Option<usize>, Option<GeneQueryAttrName>)
+    fn make_protein_data(&self, gene_details: &GeneDetails)
+                         -> (Option<f32>, Option<usize>, Option<GeneQueryAttrName>)
     {
+        let mut molecular_weight = None;
         let mut protein_length = None;
 
         for transcript in &gene_details.transcripts {
             if let Some(ref protein) = transcript.protein {
+                molecular_weight = Some(protein.molecular_weight);
                 protein_length = Some(protein.sequence.len());
                 break;
             }
@@ -3993,14 +3995,16 @@ impl <'a> WebDataBuild<'a> {
                     (attr_value_conf.bin_start, attr_value_conf.bin_end) {
                         if let Some(prot_len) = protein_length {
                             if *bin_start <= prot_len && *bin_end >= prot_len {
-                                return (Some(prot_len), Some(attr_value_conf.name.clone()));
+                                return (molecular_weight,
+                                        Some(prot_len),
+                                        Some(attr_value_conf.name.clone()));
                             }
                         }
                     }
             }
         }
 
-        (None, None)
+        (None, None, None)
     }
 
     fn make_gene_query_go_data(&self, gene_details: &GeneDetails, term_config: &Vec<TermId>,
@@ -4118,8 +4122,8 @@ impl <'a> WebDataBuild<'a> {
                     Some(PresentAbsent::NotApplicable)
                 };
 
-            let (protein_length, protein_length_bin) =
-                self.make_protein_length_data(gene_details);
+            let (molecular_weight, protein_length, protein_length_bin) =
+                self.make_protein_data(gene_details);
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
@@ -4132,6 +4136,7 @@ impl <'a> WebDataBuild<'a> {
                 tmm,
                 ortholog_taxonids,
                 physical_interactors,
+                molecular_weight,
                 protein_length,
                 protein_length_bin,
                 subset_termids: gene_details.subset_termids.clone(),
