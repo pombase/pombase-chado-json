@@ -3982,7 +3982,7 @@ impl <'a> WebDataBuild<'a> {
 
         for transcript in &gene_details.transcripts {
             if let Some(ref protein) = transcript.protein {
-                molecular_weight = Some(protein.molecular_weight);
+                molecular_weight = Some((100.0 * protein.molecular_weight).round() / 100.0);
                 if protein.sequence.ends_with("*") {
                     protein_length = Some(protein.sequence.len() - 1);
                 } else {
