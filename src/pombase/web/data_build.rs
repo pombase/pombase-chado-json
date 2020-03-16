@@ -4072,7 +4072,12 @@ impl <'a> WebDataBuild<'a> {
         let mut return_set = HashSet::new();
 
         for physical_interaction in &gene_details.physical_interactions {
-            return_set.insert(physical_interaction.interactor_uniquename.clone());
+            if gene_details.uniquename == physical_interaction.gene_uniquename {
+                return_set.insert(physical_interaction.interactor_uniquename.clone());
+            } else {
+                // gene is the prey for this interaction
+                return_set.insert(physical_interaction.gene_uniquename.clone());
+            }
         }
 
         return_set
