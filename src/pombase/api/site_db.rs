@@ -43,21 +43,29 @@ impl SiteDB {
     }
 
     pub fn id_from_query(&self, query: &Query) -> Option<Uuid> {
-        let query_value = match serde_json::value::to_value(query) {
-            Ok(v) => v,
-            Err(_) => return None,
+        let query_value: String = match serde_json::value::to_value(query) {
+            Ok(v) => v.to_string(),
+            Err(err) => {
+                eprint!("error converting query to string: {:?}\n", err);
+                return None;
+            }
         };
 
-        let rs = match self.conn.query("SELECT id FROM query WHERE query_json = $1",
+        let rs = match self.conn.query("SELECT id::uuid FROM query WHERE digest(query_json, 'sha256') = digest($1, 'sha256');",
                                        &[&query_value])
         {
             Ok(rs) => rs,
-            Err(_) => return None,
+            Err(err) => {
+                eprint!("error querying in id_from_query(): {:?}\n", err);
+                return None;
+            }
         };
 
         if rs.len() > 0 {
-            Some(rs.get(0).get(0))
+            let id: Uuid = rs.get(0).get("id");
+            Some(id)
         } else {
+            eprint!("query not in DB: {}\n", query_value);
             None
         }
     }
@@ -68,8 +76,8 @@ impl SiteDB {
             Err(e) => return Err(format!("couldn't begin transaction: {}", e)),
         };
 
-        let serde_value = match serde_json::value::to_value(&query) {
-            Ok(v) => v,
+        let serde_value: String = match serde_json::value::to_value(&query) {
+            Ok(v) => v.to_string(),
             Err(e) => return Err(format!("serde error: {}", e)),
         };
 
