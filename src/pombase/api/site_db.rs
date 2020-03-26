@@ -29,9 +29,9 @@ impl SiteDB {
         };
 
         if rs.len() > 0 {
-            let query_value: Option<serde_json::Value> = rs.get(0).get(0);
+            let query_value: Option<String> = rs.get(0).get(0);
 
-            let query: Query = match serde_json::value::from_value(query_value.unwrap()) {
+            let query: Query = match serde_json::from_str(&query_value.unwrap()) {
                 Ok(v) => v,
                 Err(_) => return None,
             };
