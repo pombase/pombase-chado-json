@@ -188,7 +188,7 @@ fn test_termid() {
     let qp1 = QueryNode::Term { termid: "GO:0044237".into(), name: None,
                                 single_or_multi_allele: None, expression: None,
                                 conditions: HashSet::new(),
-                                not_conditions: HashSet::new(), };
+                                excluded_conditions: HashSet::new(), };
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,

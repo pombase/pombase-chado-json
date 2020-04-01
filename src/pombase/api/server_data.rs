@@ -185,7 +185,7 @@ impl ServerData {
                               single_or_multi_allele: &SingleOrMultiAllele,
                               expression_filter: &Option<QueryExpressionFilter>,
                               conditions_filter: &HashSet<TermAndName>,
-                              not_conditions_filter: &HashSet<TermAndName>)
+                              excluded_conditions_filter: &HashSet<TermAndName>)
                               -> Vec<GeneUniquename>
     {
         if let Some(annotations) = self.maps.termid_genotype_annotation.get(term_id) {
@@ -239,13 +239,13 @@ impl ServerData {
                     };
 
                 let condition_matches =
-                    |conditions: &HashSet<TermAndName>| {
-                        if conditions_filter.len() == 0 {
+                    |conditions: &HashSet<TermAndName>, test_conditions_filter: &HashSet<TermAndName>| {
+                        if test_conditions_filter.len() == 0 {
                             // don't filter in this case
                             return true;
                         }
 
-                        for filter_condition in conditions_filter {
+                        for filter_condition in test_conditions_filter {
                             if conditions.iter().find(
                                 |cond| {
                                     filter_condition.termid == cond.termid
@@ -258,31 +258,11 @@ impl ServerData {
                         false
                     };
 
-                let not_condition_matches =
-                    |conditions: &HashSet<TermAndName>| {
-                        if not_conditions_filter.len() == 0 {
-                            // don't filter in this case
-                            return true;
-                        }
-
-                        for filter_condition in not_conditions_filter {
-                            if conditions.iter().find(
-                                |cond| {
-                                    filter_condition.termid == cond.termid
-                                })
-                                .is_none() {
-                                return true
-                            }
-                        }
-
-                        false
-                    };
-
                 if annotation.is_multi && add_multi ||
                     !annotation.is_multi && add_single &&
                     expression_matches(&annotation.alleles[0]) &&
-                    condition_matches(&annotation.conditions) &&
-                    not_condition_matches(&annotation.conditions) {
+                    condition_matches(&annotation.conditions, conditions_filter) &&
+                    !condition_matches(&annotation.conditions, excluded_conditions_filter) {
                         for allele_details in &annotation.alleles {
                             genes.insert(allele_details.gene.clone());
                         }
