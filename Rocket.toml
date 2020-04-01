@@ -2,7 +2,7 @@
 address = "localhost"
 port = 8400
 workers = 1
-log = "debug"
+log = "normal"
 
 [staging]
 address = "0.0.0.0"
