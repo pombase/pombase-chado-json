@@ -262,7 +262,8 @@ impl ServerData {
                     !annotation.is_multi && add_single &&
                     expression_matches(&annotation.alleles[0]) &&
                     condition_matches(&annotation.conditions, conditions_filter) &&
-                    !condition_matches(&annotation.conditions, excluded_conditions_filter) {
+                    (excluded_conditions_filter.len() == 0 ||
+                     !condition_matches(&annotation.conditions, excluded_conditions_filter)) {
                         for allele_details in &annotation.alleles {
                             genes.insert(allele_details.gene.clone());
                         }
