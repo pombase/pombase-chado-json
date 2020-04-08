@@ -1,7 +1,7 @@
 use regex::Regex;
 use serde_json;
 
-use crate::web::data::{SolrTermSummary, SolrReferenceSummary};
+use crate::data_types::{SolrTermSummary, SolrReferenceSummary};
 use crate::web::config::Config;
 
 pub struct Search {

@@ -8,9 +8,10 @@ extern crate pombase;
 extern crate pombase_rc_string;
 
 use self::pombase::db::*;
+use self::pombase::data_types::*;
 use self::pombase::web::config::*;
-use self::pombase::web::data::*;
 use self::pombase::web::data_build::*;
+use self::pombase::web::data::*;
 
 use self::pombase_rc_string::RcString;
 
@@ -593,6 +594,7 @@ fn get_test_config() -> Config {
             site_map_term_prefixes: vec![],
             macromolecular_complexes: None,
             rnacentral: None,
+            annotation_subsets: vec![],
         },
     };
 

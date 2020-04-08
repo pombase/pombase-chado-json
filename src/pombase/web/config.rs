@@ -199,6 +199,37 @@ pub struct RNAcentralConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub enum SingleOrMultiAlleleConfig {
+#[serde(rename = "single")]
+    Single,
+#[serde(rename = "multi")]
+    Multi,
+#[serde(rename = "na")]
+    NotApplicable
+}
+
+impl SingleOrMultiAlleleConfig {
+    pub fn not_applicable() -> SingleOrMultiAlleleConfig {
+        SingleOrMultiAlleleConfig::NotApplicable
+    }
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct ExportColumnConfig {
+    pub name: RcString,
+    pub display_name: RcString
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct AnnotationSubsetConfig {
+    pub term_ids: Vec<TermId>,
+    pub file_name: RcString,
+    pub columns: Vec<ExportColumnConfig>,
+    #[serde(default="SingleOrMultiAlleleConfig::not_applicable")]
+    pub single_or_multi_allele: SingleOrMultiAlleleConfig,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct FileExportConfig {
     pub site_map_term_prefixes: Vec<RcString>,
     pub site_map_reference_prefixes: Vec<RcString>,
@@ -206,6 +237,7 @@ pub struct FileExportConfig {
     pub macromolecular_complexes: Option<MacromolecularComplexesConfig>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub rnacentral: Option<RNAcentralConfig>,
+    pub annotation_subsets: Vec<AnnotationSubsetConfig>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

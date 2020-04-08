@@ -7,26 +7,26 @@ use std::collections::HashSet;
 
 use self::pombase::api::query::*;
 use self::pombase::api::result::*;
-use self::pombase::api::server_data::*;
 use self::pombase::api::query_exec::*;
-use self::pombase::web::config::TermAndName;
-use self::pombase::web::data::{GeneShort, DeletionViability, GeneQueryTermData};
+use self::pombase::web::config::{Config, TermAndName};
+use self::pombase::data_types::{GeneShort, DeletionViability, GeneQueryTermData};
+use self::pombase::api_data::*;
 
 use self::pombase_rc_string::RcString;
 
-fn get_server_data() -> ServerData {
+fn get_api_data() -> APIData {
     use std::path::PathBuf;
     let mut search_maps_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     search_maps_path.push("tests/test_search_data.json.gz");
     let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     config_path.push("tests/test_config.json");
-    ServerData::new(config_path.to_str().expect("config"),
-                    search_maps_path.to_str().expect("search maps"))
+    let config = Config::read(&config_path.to_str().expect("config"));
+    APIData::new_from_file(&config, search_maps_path.to_str().expect("search maps"))
 }
 
 fn check_gene_result(query: &Query, genes: Vec<&str>) {
-    let server_data = get_server_data();
-    let query_exec = QueryExec::new(server_data, None);
+    let api_data = get_api_data();
+    let query_exec = QueryExec::new(api_data, None);
     let result = query_exec.exec(&query);
 
     let result_genes_iter =
@@ -43,8 +43,8 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
 
 fn check_gene_result_with_viability(query: &Query,
                                     expected_results: &Vec<ResultRow>) {
-    let server_data = get_server_data();
-    let query_exec = QueryExec::new(server_data, None);
+    let api_data = get_api_data();
+    let query_exec = QueryExec::new(api_data, None);
     let results = query_exec.exec(&query);
 
     assert_eq!(expected_results, &results.rows);

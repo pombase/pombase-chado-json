@@ -427,6 +427,34 @@
   "file_exports": {
     "site_map_reference_prefixes": [],
     "site_map_term_prefixes": [],
-    "macromolecular_complexes": null
+    "macromolecular_complexes": null,
+    "annotation_subsets": [
+      {
+        "term_ids": ["FYPO:0000257"],
+        "file_name": "normal_phenotype.tsv",
+        "columns": [
+          {
+            "name": "gene_uniquename",
+            "display_name": "Systematic ID"
+          },
+          {
+            "name": "gene_name",
+            "display_name": "Gene name"
+          },
+          {
+            "name": "allele",
+            "display_name": "Allele"
+          },
+          {
+            "name": "termid",
+            "display_name": "Term ID"
+          },
+          {
+            "name": "term_name",
+            "display_name": "Term name"
+          }
+        ]
+      }
+    ]
   }
 }

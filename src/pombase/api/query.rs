@@ -5,10 +5,10 @@ use std::collections::HashSet;
 
 use uuid::Uuid;
 
-use crate::api::server_data::ServerData;
+use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
-use crate::web::data::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
+use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand};
 use crate::web::config::TermAndName;
 
@@ -93,7 +93,7 @@ pub enum QueryNode {
     QueryId { id: Uuid },
 }
 
-fn exec_or(server_data: &ServerData, site_db: &Option<SiteDB>,
+fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
            nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
         return Err(RcString::from("illegal query: OR operator has no nodes"));
@@ -103,7 +103,7 @@ fn exec_or(server_data: &ServerData, site_db: &Option<SiteDB>,
     let mut or_rows = vec![];
 
     for node in nodes {
-        let exec_rows = node.exec(server_data, site_db)?;
+        let exec_rows = node.exec(api_data, site_db)?;
 
         for row_gene_uniquename in &exec_rows {
             if !seen_genes.contains(row_gene_uniquename) {
@@ -116,20 +116,20 @@ fn exec_or(server_data: &ServerData, site_db: &Option<SiteDB>,
     Ok(or_rows)
 }
 
-fn exec_and(server_data: &ServerData, site_db: &Option<SiteDB>,
+fn exec_and(api_data: &APIData, site_db: &Option<SiteDB>,
             nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
         return Err("illegal query: AND operator has no nodes".into());
     }
 
-    let first_node_genes = nodes[0].exec(server_data, site_db)?;
+    let first_node_genes = nodes[0].exec(api_data, site_db)?;
 
     let current_genes = first_node_genes;
 
     let mut current_gene_set = HashSet::from_iter(current_genes);
 
     for node in nodes[1..].iter() {
-        let node_result_rows = node.exec(server_data, site_db)?;
+        let node_result_rows = node.exec(api_data, site_db)?;
         let node_genes = node_result_rows.into_iter().collect::<HashSet<_>>();
 
         current_gene_set = current_gene_set.intersection(&node_genes).cloned().collect();
@@ -138,16 +138,16 @@ fn exec_and(server_data: &ServerData, site_db: &Option<SiteDB>,
     Ok(current_gene_set.into_iter().collect())
 }
 
-fn exec_not(server_data: &ServerData, site_db: &Option<SiteDB>,
+fn exec_not(api_data: &APIData, site_db: &Option<SiteDB>,
             node_a: &QueryNode, node_b: &QueryNode)
              -> GeneUniquenameVecResult
 {
-    let node_b_result = node_b.exec(server_data, site_db)?;
+    let node_b_result = node_b.exec(api_data, site_db)?;
 
     let node_b_gene_set: HashSet<GeneUniquename> =
         HashSet::from_iter(node_b_result.into_iter());
 
-    let node_a_result = node_a.exec(server_data, site_db)?;
+    let node_a_result = node_a.exec(api_data, site_db)?;
 
     let mut not_rows = vec![];
 
@@ -160,22 +160,22 @@ fn exec_not(server_data: &ServerData, site_db: &Option<SiteDB>,
     Ok(not_rows)
 }
 
-fn exec_termid(server_data: &ServerData, term_id: &str,
+fn exec_termid(api_data: &APIData, term_id: &str,
                maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
                expression: &Option<QueryExpressionFilter>,
                conditions: &HashSet<TermAndName>,
                excluded_conditions: &HashSet<TermAndName>)  -> GeneUniquenameVecResult {
     if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
-        let genes = server_data.genes_of_genotypes(term_id, single_or_multi_allele,
+        let genes = api_data.genes_of_genotypes(term_id, single_or_multi_allele,
                                                    expression, conditions, excluded_conditions);
         Ok(genes)
     } else {
-        Ok(server_data.genes_of_termid(term_id))
+        Ok(api_data.genes_of_termid(term_id))
     }
 }
 
-fn exec_subset(server_data: &ServerData, subset_name: &str)  -> GeneUniquenameVecResult {
-    Ok(server_data.genes_of_subset(subset_name))
+fn exec_subset(api_data: &APIData, subset_name: &str)  -> GeneUniquenameVecResult {
+    Ok(api_data.genes_of_subset(subset_name))
 }
 
 fn exec_gene_list(genes: &[GeneShort])
@@ -190,10 +190,10 @@ fn exec_gene_list(genes: &[GeneShort])
     Ok(ret)
 }
 
-fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<usize>, end: Option<usize>,
+fn exec_genome_range_overlaps(api_data: &APIData, start: Option<usize>, end: Option<usize>,
                               chromosome_name: &str) -> GeneUniquenameVecResult {
     let gene_uniquenames =
-        server_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
             if let Some(ref location) = gene.location {
                 (end.is_none() || usize::from(location.start_pos) <= end.unwrap()) &&
                     (start.is_none() || usize::from(location.end_pos) >= start.unwrap()) &&
@@ -205,12 +205,12 @@ fn exec_genome_range_overlaps(server_data: &ServerData, start: Option<usize>, en
     Ok(gene_uniquenames)
 }
 
-fn exec_protein_length_range(server_data: &ServerData,
+fn exec_protein_length_range(api_data: &APIData,
                              range_start: Option<usize>, range_end: Option<usize>)
                               -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        server_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
             if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
                     (range_start.is_none() || protein.sequence.len() >= range_start.unwrap()) &&
@@ -225,44 +225,44 @@ fn exec_protein_length_range(server_data: &ServerData,
     Ok(gene_uniquenames)
 }
 
-fn exec_tm_domain_count_range(server_data: &ServerData,
+fn exec_tm_domain_count_range(api_data: &APIData,
                               range_start: Option<usize>, range_end: Option<usize>)
                                -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        server_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.tm_domain_count >= range_start.unwrap()) &&
             (range_end.is_none() || gene.tm_domain_count <= range_end.unwrap())
         });
     Ok(gene_uniquenames)
 }
 
-fn exec_exon_count_range(server_data: &ServerData,
+fn exec_exon_count_range(api_data: &APIData,
                          range_start: Option<usize>, range_end: Option<usize>)
                          -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        server_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.exon_count >= range_start.unwrap()) &&
             (range_end.is_none() || gene.exon_count <= range_end.unwrap())
         });
     Ok(gene_uniquenames)
 }
 
-fn exec_int_range(server_data: &ServerData, range_type: &IntRangeType,
+fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
                   start: Option<usize>, end: Option<usize>) -> GeneUniquenameVecResult {
     match *range_type {
-        IntRangeType::ProteinLength => exec_protein_length_range(server_data, start, end),
-        IntRangeType::TMDomainCount => exec_tm_domain_count_range(server_data, start, end),
-        IntRangeType::ExonCount => exec_exon_count_range(server_data, start, end),
+        IntRangeType::ProteinLength => exec_protein_length_range(api_data, start, end),
+        IntRangeType::TMDomainCount => exec_tm_domain_count_range(api_data, start, end),
+        IntRangeType::ExonCount => exec_exon_count_range(api_data, start, end),
     }
 }
 
-fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, range_end: Option<f64>)
+fn exec_mol_weight_range(api_data: &APIData, range_start: Option<f64>, range_end: Option<f64>)
                          -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        server_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
             if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
                     (range_start.is_none() ||
@@ -279,23 +279,23 @@ fn exec_mol_weight_range(server_data: &ServerData, range_start: Option<f64>, ran
     Ok(gene_uniquenames)
 }
 
-fn exec_float_range(server_data: &ServerData, range_type: &FloatRangeType,
+fn exec_float_range(api_data: &APIData, range_type: &FloatRangeType,
                     start: Option<f64>, end: Option<f64>) -> GeneUniquenameVecResult {
     match *range_type {
-        FloatRangeType::ProteinMolWeight => exec_mol_weight_range(server_data, start, end)
+        FloatRangeType::ProteinMolWeight => exec_mol_weight_range(api_data, start, end)
     }
 }
 
-fn exec_interactors_of_gene(server_data: &ServerData, gene_uniquename: &GeneUniquename,
+fn exec_interactors_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
                             interaction_type: InteractionType) -> GeneUniquenameVecResult {
-    Ok(server_data.interactors_of_genes(gene_uniquename, interaction_type))
+    Ok(api_data.interactors_of_genes(gene_uniquename, interaction_type))
 }
 
-fn exec_query_id(server_data: &ServerData,
+fn exec_query_id(api_data: &APIData,
                  maybe_site_db: &Option<SiteDB>, id: &Uuid) -> GeneUniquenameVecResult {
     if let Some(site_db) = maybe_site_db {
         if let Some(query) = site_db.query_by_id(id) {
-            match query.exec(server_data, maybe_site_db) {
+            match query.exec(api_data, maybe_site_db) {
                 Ok(res) => {
                     Ok(res.iter().map(|row| { row.gene_uniquename.clone() }).collect())
                 },
@@ -312,13 +312,13 @@ fn exec_query_id(server_data: &ServerData,
 }
 
 impl QueryNode {
-    pub fn exec(&self, server_data: &ServerData,
+    pub fn exec(&self, api_data: &APIData,
                 site_db: &Option<SiteDB>) -> GeneUniquenameVecResult {
         use self::QueryNode::*;
         match *self {
-            Or(ref nodes) => exec_or(server_data, site_db, nodes),
-            And(ref nodes) => exec_and(server_data, site_db, nodes),
-            Not { ref node_a, ref node_b } => exec_not(server_data, site_db, node_a, node_b),
+            Or(ref nodes) => exec_or(api_data, site_db, nodes),
+            And(ref nodes) => exec_and(api_data, site_db, nodes),
+            Not { ref node_a, ref node_b } => exec_not(api_data, site_db, node_a, node_b),
             Term {
                 ref termid,
                 ref single_or_multi_allele,
@@ -326,29 +326,29 @@ impl QueryNode {
                 ref conditions,
                 ref excluded_conditions,
                 ..
-            } => exec_termid(server_data, termid, single_or_multi_allele, expression,
+            } => exec_termid(api_data, termid, single_or_multi_allele, expression,
                              conditions, excluded_conditions),
-            Subset { ref subset_name } => exec_subset(server_data, subset_name),
+            Subset { ref subset_name } => exec_subset(api_data, subset_name),
             GeneList { ref genes } => exec_gene_list(genes),
             GenomeRange { start, end, ref chromosome_name } =>
-                exec_genome_range_overlaps(server_data, start, end, chromosome_name),
+                exec_genome_range_overlaps(api_data, start, end, chromosome_name),
             Interactors { ref gene_uniquename, ref interaction_type } => {
                 match &interaction_type as &str {
                     "physical" =>
-                        exec_interactors_of_gene(server_data, gene_uniquename,
+                        exec_interactors_of_gene(api_data, gene_uniquename,
                                                  InteractionType::Physical),
                     "genetic" =>
-                        exec_interactors_of_gene(server_data, gene_uniquename,
+                        exec_interactors_of_gene(api_data, gene_uniquename,
                                                  InteractionType::Genetic),
                     _ => Err(RcString::from(&format!("No such interaction type: {}",
                                                      interaction_type)))
                 }
             },
             IntRange { ref range_type, start, end } =>
-                exec_int_range(server_data, range_type, start, end),
+                exec_int_range(api_data, range_type, start, end),
             FloatRange { ref range_type, start, end } =>
-                exec_float_range(server_data, range_type, start, end),
-            QueryId { ref id } => exec_query_id(server_data, site_db, id),
+                exec_float_range(api_data, range_type, start, end),
+            QueryId { ref id } => exec_query_id(api_data, site_db, id),
        }
     }
 }
@@ -508,9 +508,9 @@ impl Query {
         RcString::from(&seq)
     }
 
-    fn make_sequence(&self, server_data: &ServerData,
+    fn make_sequence(&self, api_data: &APIData,
                      gene_uniquename: &RcString) -> Option<RcString> {
-        let maybe_gene_summary = server_data.get_gene_summary(gene_uniquename);
+        let maybe_gene_summary = api_data.get_gene_summary(gene_uniquename);
 
         if let Some(gene_summary) = maybe_gene_summary {
             let maybe_transcript = gene_summary.transcripts.get(0);
@@ -523,7 +523,7 @@ impl Query {
                     SeqType::Nucleotide(ref options) => {
                         let chr = gene_summary.location.as_ref()
                             .map(|ref l| -> &RcString { &l.chromosome_name } )
-                            .map_or(None, |ref name| server_data.get_chr_details(name.as_str()));
+                            .map_or(None, |ref name| api_data.get_chr_details(name.as_str()));
                         let seq = self.make_nucl_seq(transcript, chr, options);
                         return Some(seq)
                     }
@@ -535,7 +535,7 @@ impl Query {
         None
     }
 
-    fn make_result_rows(&self, server_data: &ServerData,
+    fn make_result_rows(&self, api_data: &APIData,
                         genes: Vec<RcString>) -> QueryRowsResult {
         Ok(genes.into_iter()
            .map(|gene_uniquename| {
@@ -553,7 +553,7 @@ impl Query {
                let mut protein_length_bin = None;
                let mut subsets = HashSet::new();
 
-               let maybe_gene_data = server_data.get_gene_query_data(&gene_uniquename);
+               let maybe_gene_data = api_data.get_gene_query_data(&gene_uniquename);
 
                if let Some(gene_data) = maybe_gene_data {
                    for field_name in &self.output_options.field_names {
@@ -595,7 +595,7 @@ impl Query {
                        };
                }
 
-               let sequence = self.make_sequence(server_data, &gene_uniquename);
+               let sequence = self.make_sequence(api_data, &gene_uniquename);
                ResultRow {
                    sequence,
                    deletion_viability,
@@ -616,11 +616,11 @@ impl Query {
            }).collect::<Vec<_>>())
     }
 
-    pub fn exec(&self, server_data: &ServerData, site_db: &Option<SiteDB>) -> QueryRowsResult {
-        let genes_result = self.constraints.exec(server_data, site_db);
+    pub fn exec(&self, api_data: &APIData, site_db: &Option<SiteDB>) -> QueryRowsResult {
+        let genes_result = self.constraints.exec(api_data, site_db);
 
         match genes_result {
-            Ok(genes) => self.make_result_rows(server_data, genes),
+            Ok(genes) => self.make_result_rows(api_data, genes),
             Err(err) => Err(err)
         }
     }

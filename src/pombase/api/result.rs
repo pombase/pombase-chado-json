@@ -1,7 +1,7 @@
 use std::collections::HashSet;
 
 use crate::api::query::Query;
-use crate::web::data::{DeletionViability, PresentAbsent, GeneQueryTermData, GeneQueryAttrName};
+use crate::data_types::{DeletionViability, PresentAbsent, GeneQueryTermData, GeneQueryAttrName};
 use crate::types::{TermId, GeneUniquename};
 
 use pombase_rc_string::RcString;

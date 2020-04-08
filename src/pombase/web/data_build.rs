@@ -10,6 +10,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::db::*;
 use crate::types::*;
+use crate::data_types::*;
 use crate::web::data::*;
 use crate::web::config::*;
 use crate::web::cv_summary::make_cv_summaries;

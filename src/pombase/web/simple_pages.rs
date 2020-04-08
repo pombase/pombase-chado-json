@@ -1,7 +1,7 @@
 use pombase_rc_string::RcString;
 
 use crate::web::config::Config;
-use crate::web::data::{GeneDetails, ReferenceDetails, TermDetails,
+use crate::data_types::{GeneDetails, ReferenceDetails, TermDetails,
                        ContainerType, GenotypeShort,
                        OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer};
 

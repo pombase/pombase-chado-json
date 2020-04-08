@@ -24,10 +24,10 @@ use pombase::api::query::Query as PomBaseQuery;
 use pombase::api::result::QueryAPIResult;
 use pombase::api::search::Search;
 use pombase::api::query_exec::QueryExec;
-use pombase::api::server_data::ServerData;
+use pombase::api_data::APIData;
 use pombase::api::site_db::SiteDB;
 
-use pombase::web::data::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
+use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
                          TermDetails, ReferenceDetails};
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
                                  render_simple_term_page};
@@ -72,7 +72,7 @@ fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Opti
 #[get("/api/v1/dataset/latest/data/gene/<id>", rank=2)]
 fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GeneDetails>> {
     let query_exec = state.lock().expect("failed to lock");
-    if let Some(gene) = query_exec.get_server_data().get_full_gene_details(&id) {
+    if let Some(gene) = query_exec.get_api_data().get_full_gene_details(&id) {
         Some(Json(gene))
     } else {
         None
@@ -82,7 +82,7 @@ fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<G
 #[get("/api/v1/dataset/latest/data/genotype/<id>", rank=2)]
 fn get_genotype(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GenotypeDetails>> {
     let query_exec = state.lock().expect("failed to lock");
-    if let Some(genotype) = query_exec.get_server_data().get_genotype_details(&id) {
+    if let Some(genotype) = query_exec.get_api_data().get_genotype_details(&id) {
         Some(Json(genotype))
     } else {
         None
@@ -92,7 +92,7 @@ fn get_genotype(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Js
 #[get("/api/v1/dataset/latest/data/term/<id>", rank=2)]
 fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<TermDetails>> {
     let query_exec = state.lock().expect("failed to lock");
-    if let Some(term) = query_exec.get_server_data().get_term_details(&id) {
+    if let Some(term) = query_exec.get_api_data().get_term_details(&id) {
         Some(Json(term))
     } else {
         None
@@ -102,7 +102,7 @@ fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<T
 #[get("/api/v1/dataset/latest/data/reference/<id>", rank=2)]
 fn get_reference(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<ReferenceDetails>> {
     let query_exec = state.lock().expect("failed to lock");
-    if let Some(reference) = query_exec.get_server_data().get_reference_details(&id) {
+    if let Some(reference) = query_exec.get_api_data().get_reference_details(&id) {
         Some(Json(reference))
     } else {
         None
@@ -123,7 +123,7 @@ Return a simple HTML version a gene page for search engines
 fn get_simple_gene(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
                    config: rocket::State<Config>) -> Option<content::Html<String>> {
     let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
-    if let Some(gene) = query_exec.get_server_data().get_full_gene_details(&id) {
+    if let Some(gene) = query_exec.get_api_data().get_full_gene_details(&id) {
         Some(content::Html(render_simple_gene_page(&config, &gene)))
     } else {
         None
@@ -137,7 +137,7 @@ Return a simple HTML version a reference page for search engines
 fn get_simple_reference(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
                         config: rocket::State<Config>) -> Option<content::Html<String>> {
     let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
-    if let Some(reference) = query_exec.get_server_data().get_reference_details(&id) {
+    if let Some(reference) = query_exec.get_api_data().get_reference_details(&id) {
         Some(content::Html(render_simple_reference_page(&config, &reference)))
     } else {
         None
@@ -150,7 +150,7 @@ Return a simple HTML version a term page for search engines
 fn get_simple_term(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
                    config: rocket::State<Config>) -> Option<content::Html<String>> {
     let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
-    if let Some(term) = query_exec.get_server_data().get_term_details(&id) {
+    if let Some(term) = query_exec.get_api_data().get_term_details(&id) {
         Some(content::Html(render_simple_term_page(&config, &term)))
     } else {
         None
@@ -163,14 +163,6 @@ fn query_post(q: Json<PomBaseQuery>, state: rocket::State<Mutex<QueryExec>>)
 {
     let query_exec = state.lock().expect("failed to lock");
     Some(Json(query_exec.exec(&q.into_inner())))
-}
-
-#[get ("/reload")]
-fn reload(state: rocket::State<Mutex<QueryExec>>) {
-    let mut query_exec = state.lock().expect("failed to lock");
-    print!("reloading ...\n");
-    query_exec.reload();
-    print!("... done\n");
 }
 
 #[derive(Serialize, Debug)]
@@ -321,10 +313,10 @@ fn main() {
     println!("Reading data files ...");
 
     let config_file_name = matches.opt_str("c").unwrap();
-    let server_data = ServerData::new(&config_file_name, &search_maps_filename);
-    let site_db = site_db_conn_string.map(|conn_str| SiteDB::new(&conn_str));
-    let query_exec = QueryExec::new(server_data, site_db);
     let config = Config::read(&config_file_name);
+    let api_data = APIData::new_from_file(&config, &search_maps_filename);
+    let site_db = site_db_conn_string.map(|conn_str| SiteDB::new(&conn_str));
+    let query_exec = QueryExec::new(api_data, site_db);
     let searcher = Search::new(&config);
 
     let web_root_dir = matches.opt_str("w").unwrap();
@@ -337,7 +329,7 @@ fn main() {
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
-                            reload, term_complete, ref_complete,
+                            term_complete, ref_complete,
                             motif_search, ping])
         .register(catchers![not_found])
         .manage(Mutex::new(query_exec))

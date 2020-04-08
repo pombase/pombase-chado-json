@@ -3,19 +3,19 @@ use uuid::Uuid;
 use crate::api::result::*;
 use crate::api::query::*;
 use crate::api::site_db::SiteDB;
-use crate::api::server_data::ServerData;
+use crate::api_data::APIData;
 
 use pombase_rc_string::RcString;
 
 pub struct QueryExec {
-    server_data: ServerData,
+    api_data: APIData,
     site_db: Option<SiteDB>,
 }
 
 impl QueryExec {
-    pub fn new(server_data: ServerData, site_db: Option<SiteDB>) -> QueryExec {
+    pub fn new(api_data: APIData, site_db: Option<SiteDB>) -> QueryExec {
         QueryExec {
-            server_data,
+            api_data,
             site_db,
         }
     }
@@ -58,7 +58,7 @@ impl QueryExec {
 
         let id = RcString::from(&uuid.hyphenated().to_string());
 
-        let rows_result = query.exec(&self.server_data, &self.site_db);
+        let rows_result = query.exec(&self.api_data, &self.site_db);
 
         match rows_result {
             Ok(rows) => {
@@ -73,11 +73,7 @@ impl QueryExec {
         }
     }
 
-    pub fn get_server_data(&self) -> &ServerData {
-        &self.server_data
-    }
-
-    pub fn reload(&mut self) {
-        self.server_data.reload();
+    pub fn get_api_data(&self) -> &APIData {
+        &self.api_data
     }
 }

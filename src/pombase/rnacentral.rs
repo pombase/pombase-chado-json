@@ -4,7 +4,7 @@ use chrono::prelude::{Local, DateTime};
 
 use crate::web::config::Config;
 
-use crate::web::data::{UniquenameGeneMap, GeneDetails, FeatureType};
+use crate::data_types::{UniquenameGeneMap, GeneDetails, FeatureType};
 
 use pombase_rc_string::RcString;
 

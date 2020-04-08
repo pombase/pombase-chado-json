@@ -5,7 +5,7 @@ use std::io::{Read, BufReader};
 use serde_json;
 use std::collections::{HashMap, HashSet};
 
-use crate::web::data::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
+use crate::data_types::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
                 InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
                 TermShort, TermShortOptionMap, ChromosomeDetails,
@@ -20,13 +20,10 @@ use crate::types::{TermId, GeneUniquename};
 
 use pombase_rc_string::RcString;
 
-pub struct ServerData {
-    config_file_name: String,
+pub struct APIData {
     maps: APIMaps,
     secondary_identifiers_map: HashMap<TermId, TermId>,
-    search_maps_file_name: String,
 }
-
 
 
 fn make_secondary_identifiers_map(terms: &HashMap<TermId, TermDetails>)
@@ -69,41 +66,43 @@ fn load(config: &Config, search_maps_file_name: &str) -> APIMaps
             },
         };
 
-    let mut new_entries: IdGeneSubsetMap = HashMap::new();
-
-    let prefixes_to_remove: Vec<String> =
-        config.server.subsets.prefixes_to_remove
-        .iter().map(|prefix| prefix.clone() + ":").collect();
-
-    // strip prefixes and add to map
-    for (subset_name, subset_details) in &query_api_maps.gene_subsets {
-        for prefix in &prefixes_to_remove {
-            if subset_name.starts_with(prefix) {
-                let new_subset_name = &subset_name[prefix.len()..];
-                new_entries.insert(RcString::from(new_subset_name), subset_details.clone());
-            }
-        }
-    }
-
-    query_api_maps.gene_subsets.extend(new_entries);
-
     query_api_maps
 }
 
-impl ServerData {
-    pub fn new(config_file_name: &str, search_maps_file_name: &str)
-               -> ServerData
+impl APIData {
+    pub fn new_from_file(config: &Config, search_maps_file_name: &str)
+               -> APIData
     {
-        let config = Config::read(config_file_name);
-
         let maps = load(&config, search_maps_file_name);
+
+        APIData::new(config, maps)
+    }
+
+    pub fn new(config: &Config, mut maps: APIMaps)
+               ->APIData
+    {
+        let mut new_entries: IdGeneSubsetMap = HashMap::new();
+
+        let prefixes_to_remove: Vec<String> =
+            config.server.subsets.prefixes_to_remove
+            .iter().map(|prefix| prefix.clone() + ":").collect();
+
+        // strip prefixes and add to map
+        for (subset_name, subset_details) in &maps.gene_subsets {
+            for prefix in &prefixes_to_remove {
+                if subset_name.starts_with(prefix) {
+                    let new_subset_name = &subset_name[prefix.len()..];
+                    new_entries.insert(RcString::from(new_subset_name), subset_details.clone());
+                }
+            }
+        }
+
+        maps.gene_subsets.extend(new_entries);
 
         let secondary_identifiers_map =
             make_secondary_identifiers_map(&maps.terms);
 
-        ServerData {
-            config_file_name: config_file_name.into(),
-            search_maps_file_name: search_maps_file_name.into(),
+        APIData {
             secondary_identifiers_map,
             maps
         }
@@ -422,10 +421,5 @@ impl ServerData {
 
     pub fn get_chr_details(&self, chr_name: &str) -> Option<&ChromosomeDetails> {
         self.maps.chromosomes.get(chr_name)
-    }
-
-    pub fn reload(&mut self) {
-        let config = Config::read(&self.config_file_name);
-        self.maps = load(&config, &self.search_maps_file_name);
     }
 }
