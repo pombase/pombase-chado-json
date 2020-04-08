@@ -42,38 +42,32 @@ fn make_secondary_identifiers_map(terms: &HashMap<TermId, TermDetails>)
 }
 
 
-fn load(config: &Config, search_maps_file_name: &str) -> APIMaps
-{
-    let file = match File::open(search_maps_file_name) {
-        Ok(file) => file,
-        Err(err) => {
-            eprint!("Failed to read {}: {}\n", search_maps_file_name, err);
-            process::exit(1);
-        }
-    };
-    let reader = BufReader::new(file);
-
-    let mut decoder = GzDecoder::new(reader);
-    let mut decoded_json = String::new();
-    decoder.read_to_string(&mut decoded_json).unwrap();
-
-    let mut query_api_maps: APIMaps =
-        match serde_json::from_str(&decoded_json) {
-            Ok(results) => results,
-            Err(err) => {
-                eprint!("failed to parse {}: {}", search_maps_file_name, err);
-                process::exit(1);
-            },
-        };
-
-    query_api_maps
-}
-
 impl APIData {
     pub fn new_from_file(config: &Config, search_maps_file_name: &str)
                -> APIData
     {
-        let maps = load(&config, search_maps_file_name);
+        let file = match File::open(search_maps_file_name) {
+            Ok(file) => file,
+            Err(err) => {
+                eprint!("Failed to read {}: {}\n", search_maps_file_name, err);
+                process::exit(1);
+            }
+        };
+        let reader = BufReader::new(file);
+
+        let mut decoder = GzDecoder::new(reader);
+        let mut decoded_json = String::new();
+        decoder.read_to_string(&mut decoded_json).unwrap();
+
+        let maps: APIMaps =
+            match serde_json::from_str(&decoded_json) {
+                Ok(results) => results,
+                Err(err) => {
+                    eprint!("failed to parse {}: {}", search_maps_file_name, err);
+                    process::exit(1);
+                },
+            };
+
 
         APIData::new(config, maps)
     }
