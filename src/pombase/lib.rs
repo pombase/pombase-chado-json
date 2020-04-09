@@ -19,5 +19,6 @@ pub mod interpro;
 pub mod api;
 pub mod bio;
 pub mod rnacentral;
+pub mod annotation_util;
 pub mod data_types;
 pub mod api_data;

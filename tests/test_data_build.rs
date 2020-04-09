@@ -108,6 +108,7 @@ fn get_test_config() -> Config {
                             CvConfig {
                                 feature_type: RcString::from("Gene"),
                                 display_name: Some(RcString::from("molecular function")),
+                                single_or_multi_allele: SingleOrMultiAlleleConfig::NotApplicable,
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],

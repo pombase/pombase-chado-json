@@ -20,7 +20,10 @@ use pombase_rc_string::RcString;
 use crate::web::config::*;
 use crate::rnacentral::*;
 
+use crate::types::CvName;
 use crate::data_types::*;
+use crate::api_data::APIData;
+use crate::annotation_util::table_for_export;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -1064,6 +1067,43 @@ impl WebData {
         Ok(())
     }
 
+    // write the subsets configured using "subset_export"
+    fn write_annotation_subsets(&self, config: &Config, output_dir: &str)
+                                -> Result<(), io::Error>
+    {
+        let api_data = APIData::new(config, &self.api_maps);
+
+        for subset_config in &config.file_exports.annotation_subsets {
+            self.write_annotation_subset(&api_data, &config.cv_config,
+                                         subset_config, output_dir)?;
+        }
+
+        Ok(())
+    }
+
+    fn write_annotation_subset(&self, api_data: &APIData,
+                               cv_config_map: &HashMap<CvName, CvConfig>,
+                               subset_config: &AnnotationSubsetConfig,
+                               output_dir: &str)
+                               -> Result<(), io::Error>
+    {
+        let file_name = format!("{}/{}", output_dir, subset_config.file_name);
+
+        let file = File::create(file_name).expect("Unable to open file for writing");
+
+        let mut writer = BufWriter::new(&file);
+
+        let table = table_for_export(api_data, cv_config_map, subset_config);
+
+        for row in table {
+            let line = row.join("\t") + "\n";
+            writer.write(line.as_bytes())?;
+        }
+
+        Ok(())
+    }
+
+
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
         let file_name = String::new() + output_dir + "/stats.json";
@@ -1113,6 +1153,8 @@ impl WebData {
         self.write_slim_ids_and_names(&config, &misc_path)?;
         self.write_transmembrane_domains(&config, &misc_path)?;
         self.write_site_map_txt(config, doc_config, &misc_path)?;
+
+        self.write_annotation_subsets(config, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 

@@ -69,12 +69,13 @@ impl APIData {
             };
 
 
-        APIData::new(config, maps)
+        APIData::new(config, &maps)
     }
 
-    pub fn new(config: &Config, mut maps: APIMaps)
+    pub fn new(config: &Config, maps: &APIMaps)
                ->APIData
     {
+        let mut maps = maps.clone();
         let mut new_entries: IdGeneSubsetMap = HashMap::new();
 
         let prefixes_to_remove: Vec<String> =

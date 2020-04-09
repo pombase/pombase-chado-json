@@ -107,6 +107,9 @@ pub struct CvConfig {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub summary_relation_ranges_to_collect: Vec<RcString>,
 
+    #[serde(default="SingleOrMultiAlleleConfig::not_applicable")]
+    pub single_or_multi_allele: SingleOrMultiAlleleConfig,
+
     // the field to sort by
     #[serde(skip_serializing_if="Option::is_none")]
     pub sort_details_by: Option<Vec<RcString>>,
@@ -198,7 +201,7 @@ pub struct RNAcentralConfig {
     pub export_so_ids: HashSet<RcString>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Debug, PartialEq)]
 pub enum SingleOrMultiAlleleConfig {
 #[serde(rename = "single")]
     Single,
@@ -325,6 +328,7 @@ impl Config {
                 CvConfig {
                     feature_type: "".into(),
                     display_name: Some("".into()),
+                    single_or_multi_allele: SingleOrMultiAlleleConfig::NotApplicable,
                     filters: vec![],
                     split_by_parents: vec![],
                     summary_relations_to_hide: vec![],

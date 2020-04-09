@@ -5,8 +5,6 @@ use std::fmt;
 
 use pombase_rc_string::RcString;
 
-type CvName = RcString;
-
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
 pub type UniquenameGeneMap =
