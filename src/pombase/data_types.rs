@@ -1063,6 +1063,8 @@ pub struct InteractionAnnotation {
     pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub throughput: Option<Throughput>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub interaction_note: Option<RcString>,
 }
 impl PartialEq for InteractionAnnotation {
     fn eq(&self, other: &Self) -> bool {

@@ -2014,6 +2014,7 @@ impl <'a> WebDataBuild<'a> {
                         let mut evidence: Option<Evidence> = None;
                         let mut throughput: Option<Throughput> = None;
                         let mut is_inferred_interaction: bool = false;
+                        let mut interaction_note: Option<RcString> = None;
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0);
@@ -2061,6 +2062,11 @@ impl <'a> WebDataBuild<'a> {
                                     });
                                 }
                             }
+                            if prop.prop_type.name == "interaction_note" {
+                                if let Some(interaction_note_value) = prop.value.clone() {
+                                    interaction_note = Some(interaction_note_value);
+                                }
+                            }
                         }
 
                         let evidence_clone = evidence.clone();
@@ -2083,6 +2089,7 @@ impl <'a> WebDataBuild<'a> {
                                             evidence,
                                             reference_uniquename: maybe_reference_uniquename.clone(),
                                             throughput,
+                                            interaction_note,
                                         };
                                     {
                                         let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
