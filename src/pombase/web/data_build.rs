@@ -5110,21 +5110,33 @@ impl <'a> WebDataBuild<'a> {
         let metadata = self.make_metadata();
 
         let mut gene_summaries: Vec<GeneSummary> = vec![];
+        let mut solr_gene_summaries: Vec<SolrGeneSummary> = vec![];
 
         for (gene_uniquename, gene_details) in &self.genes {
             if self.config.load_organism_taxonid.is_none() ||
                 self.config.load_organism_taxonid.unwrap() == gene_details.taxonid {
-                    gene_summaries.push(self.make_gene_summary(&gene_uniquename));
+                    let gene_summary = self.make_gene_summary(&gene_uniquename);
+                    let solr_gene_summary =
+                        SolrGeneSummary {
+                            id: gene_summary.uniquename.clone(),
+                            name: gene_summary.name.clone(),
+                            taxonid: gene_summary.taxonid,
+                            product: gene_summary.product.clone(),
+                            uniprot_identifier: gene_summary.uniprot_identifier.clone(),
+                            synonyms: gene_summary.synonyms.clone(),
+                            feature_type: gene_summary.feature_type.clone(),
+                        };
+                    gene_summaries.push(gene_summary);
+                    solr_gene_summaries.push(solr_gene_summary);
                 }
         }
 
         let solr_term_summaries = self.make_solr_term_summaries();
-
         let solr_reference_summaries = self.make_solr_reference_summaries();
 
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,
-            gene_summaries: gene_summaries.clone(),
+            gene_summaries: solr_gene_summaries,
             reference_summaries: solr_reference_summaries,
         };
 

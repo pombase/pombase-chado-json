@@ -1270,6 +1270,21 @@ pub struct APIMaps {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SolrGeneSummary {
+    pub id: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<GeneName>,
+    pub taxonid: OrganismTaxonId,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub product: Option<GeneProduct>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub uniprot_identifier: Option<RcString>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<RcString>,
+    pub feature_type: RcString,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SolrTermSummary {
     pub id: TermId,
     pub name: TermName,
@@ -1360,7 +1375,7 @@ impl SolrReferenceSummary {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SolrData {
     pub term_summaries: Vec<SolrTermSummary>,
-    pub gene_summaries: Vec<GeneSummary>,
+    pub gene_summaries: Vec<SolrGeneSummary>,
     pub reference_summaries: Vec<SolrReferenceSummary>,
 }
 
