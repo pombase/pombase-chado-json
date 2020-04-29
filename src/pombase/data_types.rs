@@ -609,8 +609,11 @@ pub struct ChromosomeShort {
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
 pub enum Phase {
+#[serde(rename = "0")]
     Zero,
+#[serde(rename = "1")]
     One,
+#[serde(rename = "2")]
     Two,
 }
 
