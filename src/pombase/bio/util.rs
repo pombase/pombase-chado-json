@@ -173,11 +173,11 @@ fn test_format_gff() {
     assert_eq!(gene_gff_lines[2],
                "chromosome_3\tPomBase\tfive_prime_UTR\t729054\t729132\t.\t+\t.\tID=SPCC18B5.06.1:five_prime_UTR:1;Parent=SPCC18B5.06.1");
     assert_eq!(gene_gff_lines[3],
-               "chromosome_3\tPomBase\tCDS\t729133\t729212\t.\t+\t.\tID=SPCC18B5.06.1:exon:1;Parent=SPCC18B5.06.1");
+               "chromosome_3\tPomBase\tCDS\t729133\t729212\t.\t+\t0\tID=SPCC18B5.06.1:exon:1;Parent=SPCC18B5.06.1");
     assert_eq!(gene_gff_lines[4],
                "chromosome_3\tPomBase\tintron\t729213\t729265\t.\t+\t.\tID=SPCC18B5.06.1:intron:1;Parent=SPCC18B5.06.1");
     assert_eq!(gene_gff_lines[5],
-               "chromosome_3\tPomBase\tCDS\t729266\t729319\t.\t+\t.\tID=SPCC18B5.06.1:exon:2;Parent=SPCC18B5.06.1")
+               "chromosome_3\tPomBase\tCDS\t729266\t729319\t.\t+\t0\tID=SPCC18B5.06.1:exon:2;Parent=SPCC18B5.06.1")
 }
 
 #[allow(dead_code)]
