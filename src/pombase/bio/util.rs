@@ -64,7 +64,12 @@ fn to_gff(chromosome_export_id: &str,
         if let Some(ref phase) = location.phase {
             phase.to_gff_str()
         } else {
-            "."
+            if feat_type == "CDS" {
+                // phase is required for CDS features
+                "0"
+            } else {
+                "."
+            }
         };
     let start_pos_str = format!("{}", location.start_pos);
     let end_pos_str = format!("{}", location.end_pos);
