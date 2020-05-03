@@ -948,9 +948,14 @@ impl WebData {
             let mut coords_strings = vec![];
             let mut seqs = vec![];
             for (start, end) in coords {
-                coords_strings.push(format!("{}..{}", start, end));
-                let seq = &prot_seq[start-1..*end];
-                seqs.push(seq.clone());
+                if prot_seq.len() >= *end {
+                    coords_strings.push(format!("{}..{}", start, end));
+                    let seq = &prot_seq[start-1..*end];
+                    seqs.push(seq.clone());
+                } else {
+                    eprintln!("TM domain coord is outside of protein sequence, {}..{} for {}",
+                             start, end, prot_seq);
+                }
             }
             (coords_strings.join(","), seqs.join(","))
         };
