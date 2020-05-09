@@ -2293,7 +2293,8 @@ impl <'a> WebDataBuild<'a> {
                               annotation_termid: &str,
                               extension: &[ExtPart]) -> Vec<(GeneUniquename, TargetOfAnnotation)> {
         if genes.len() != 1 {
-            panic!("expected an annotation with one gene, got: {:?}", genes);
+            panic!("expected an annotation with one gene for {}, got: {:?}",
+                   annotation_termid, genes);
         }
         let gene = &genes[0];
         let mut ret_vec = vec![];
