@@ -3251,22 +3251,21 @@ impl <'a> WebDataBuild<'a> {
                             })
                             .collect()
                     },
-                    _ => {
-                        if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
-                            vec![feature.uniquename.clone()]
+                    "gene" | "pseudogene" => {
+                        vec![feature.uniquename.clone()]
+                    },
+                    _ =>
+                        if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
+                            if let Some(gene_uniquename) =
+                                self.genes_of_transcripts.get(&feature.uniquename) {
+                                    vec![gene_uniquename.clone()]
+                                } else {
+                                    vec![]
+                                }
                         } else {
-                            if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
-                                if let Some(gene_uniquename) =
-                                    self.genes_of_transcripts.get(&feature.uniquename) {
-                                        vec![gene_uniquename.clone()]
-                                    } else {
-                                        vec![]
-                                    }
-                            } else {
-                                vec![]
-                            }
+                            panic!("can't handle annotation on feature type: {:?} {}",
+                                   &feature.feat_type.name, &feature.uniquename);
                         }
-                    }
                 };
 
             gene_uniquenames_vec.dedup();
@@ -3630,6 +3629,10 @@ impl <'a> WebDataBuild<'a> {
                     annotation.conditions.iter().map(|termid| {
                         self.make_term_short(termid)
                     }).collect::<HashSet<_>>();
+
+                if gene_short_list.len() == 0 {
+                    panic!("no genes for {:?}", &annotation);
+                }
 
                 let ont_annotation = OntAnnotation {
                     term_short: self.make_term_short(&termid),
