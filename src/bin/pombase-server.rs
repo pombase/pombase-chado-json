@@ -47,6 +47,8 @@ struct StaticFileState {
 fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> {
     let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
     let root_dir_path = Path::new("/").join(web_root_dir);
+    let is_jbrowse_path = path.starts_with("jbrowse/");
+
     let full_path = root_dir_path.join(path);
 
     if full_path.is_dir() {
@@ -64,6 +66,11 @@ fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Opti
 
     if json_path.exists() {
         return NamedFile::open(json_path).ok();
+    }
+
+    // special case for missing JBrowse files - return 4044
+    if is_jbrowse_path {
+        return None;
     }
 
     NamedFile::open(root_dir_path.join("index.html")).ok()
