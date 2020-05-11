@@ -2569,12 +2569,14 @@ impl <'a> WebDataBuild<'a> {
     fn set_gene_details_subset_termids(&mut self) {
         let is_subset_member =
             |subset_termid: &str, test_termid: &str| {
-                subset_termid == test_termid ||
-                    self.children_by_termid.get(subset_termid)
-                    .unwrap_or_else(|| {
-                        panic!("failed to get subset: {}", subset_termid)
-                    })
-                    .contains(test_termid)
+                if subset_termid == test_termid {
+                    return true;
+                }
+                if let Some(children) = self.children_by_termid.get(subset_termid) {
+                    children.contains(test_termid)
+                } else {
+                    false
+                }
             };
 
         let mut subsets_by_gene = HashMap::new();
