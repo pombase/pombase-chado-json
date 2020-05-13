@@ -380,6 +380,8 @@
   "slims": {
     "bp_goslim_pombe": {
       "slim_display_name": "GO BP slim",
+      "description": "GO BP slim",
+      "cv_name": "biological_process",
       "terms": [
         {
           "name": "DNA recombination",

@@ -266,6 +266,7 @@ pub struct GeneResultsConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct SlimConfig {
     pub slim_display_name: RcString,
+    pub cv_name: RcString,
     pub terms: Vec<TermAndName>,
 }
 

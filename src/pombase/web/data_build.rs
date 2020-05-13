@@ -4669,11 +4669,12 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_non_bp_slim_gene_subset(&self, go_slim_subset: &TermSubsetDetails)
-                                    -> IdGeneSubsetMap
+    // make gene subsets for genes the are not in a slim category
+    fn make_non_slim_subset(&self, cv_name: &str, slim_subset: &TermSubsetDetails)
+                            -> IdGeneSubsetMap
     {
         let slim_termid_set: HashSet<RcString> =
-            go_slim_subset.elements
+            slim_subset.elements
             .iter().map(|element| element.termid.clone()).collect();
 
         let mut non_slim_with_bp_annotation = HashSet::new();
@@ -4713,7 +4714,7 @@ impl <'a> WebDataBuild<'a> {
             let mut bp_count = 0;
 
             if let Some(annotations) =
-                gene_details.cv_annotations.get("biological_process") {
+                gene_details.cv_annotations.get(cv_name) {
                     if has_parent_in_slim(&annotations) {
                         continue
                     }
@@ -4729,28 +4730,32 @@ impl <'a> WebDataBuild<'a> {
 
         let mut return_map = HashMap::new();
 
+        let cv_display_name = str::replace(cv_name, "_", " ");
+
         let with_annotation_display_name =
-            String::from("Proteins with biological process ") +
-            "annotation that are not in a slim category";
-        return_map.insert("non_go_slim_with_bp_annotation".into(),
+            String::from("Gene products with ") + &cv_display_name +
+            " annotation that are not in a slim category";
+        let name = RcString::from(&format!("non_slim_with_{}_annotation", cv_name));
+        return_map.insert(name.clone(),
                           GeneSubsetDetails {
-                              name: "non_go_slim_with_bp_annotation".into(),
+                              name,
                               display_name: RcString::from(&with_annotation_display_name),
                               elements: non_slim_with_bp_annotation,
                           });
         let without_annotation_display_name =
-            String::from("Proteins with no biological process ") +
-            "annotation and are not in a slim category";
-        return_map.insert("non_go_slim_without_bp_annotation".into(),
+            String::from("Gene products with no ") + &cv_display_name +
+            " annotation and are not in a slim category";
+        let name = RcString::from(&format!("non_slim_without_{}_annotation", cv_name));
+        return_map.insert(name.clone(),
                           GeneSubsetDetails {
-                              name: "non_go_slim_without_bp_annotation".into(),
+                              name,
                               display_name: RcString::from(&without_annotation_display_name),
                               elements: non_slim_without_bp_annotation,
                           });
         return_map
     }
 
-    fn make_slim_subset(&self, slim_name: &RcString) -> TermSubsetDetails {
+    fn make_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
         let mut slim_subset: HashSet<TermSubsetElement> = HashSet::new();
         let slim_config = self.config.slims.get(slim_name)
@@ -4773,7 +4778,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         TermSubsetDetails {
-            name: slim_name.clone(),
+            name: RcString::from(slim_name),
             total_gene_count: all_genes.len(),
             elements: slim_subset,
         }
@@ -4863,14 +4868,14 @@ impl <'a> WebDataBuild<'a> {
 
     // populated the subsets HashMap
     fn make_subsets(&mut self) {
-        for slim_name in self.config.slims.keys() {
-            let slim_subset = self.make_slim_subset(slim_name);
+        let mut gene_subsets: IdGeneSubsetMap = HashMap::new();
+
+        for (slim_name, slim_config) in &self.config.slims {
+            let slim_subset = self.make_slim_subset(&slim_name);
+            let gene_subset = self.make_non_slim_subset(&slim_config.cv_name, &slim_subset);
+            gene_subsets.extend(gene_subset);
             self.term_subsets.insert(slim_name.clone(), slim_subset);
         }
-
-        let bp_go_slim_subset = self.term_subsets.get("bp_goslim_pombe").unwrap();
-
-        let mut gene_subsets = self.make_non_bp_slim_gene_subset(bp_go_slim_subset);
 
         self.make_feature_type_subsets(&mut gene_subsets);
         self.make_characterisation_status_subsets(&mut gene_subsets);

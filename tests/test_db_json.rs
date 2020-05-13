@@ -601,6 +601,7 @@ fn get_test_config() -> Config {
     config.slims.insert(RcString::from("bp_goslim_pombe"),
                         SlimConfig {
                             slim_display_name: RcString::from("GO BP slim"),
+                            cv_name: RcString::from("biological_process"),
                             terms: vec![],
                         });
 
