@@ -44,10 +44,20 @@ struct StaticFileState {
 // try the path, then try path + ".json", then default to loading the
 // Angular app from /index.html
 #[get("/<path..>", rank=3)]
-fn get_misc(path: PathBuf, state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> {
+fn get_misc(mut path: PathBuf, state: rocket::State<Mutex<StaticFileState>>,
+            config: rocket::State<Config>)
+            -> Option<NamedFile>
+{
     let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
     let root_dir_path = Path::new("/").join(web_root_dir);
     let is_jbrowse_path = path.starts_with("jbrowse/");
+
+    if let Some(path_str) = path.to_str() {
+        if let Some(new_path_str) =
+            config.doc_page_aliases.get(&format!("/{}", path_str)) {
+                path = PathBuf::from(new_path_str);
+            }
+    }
 
     let full_path = root_dir_path.join(path);
 

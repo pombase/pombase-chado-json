@@ -526,6 +526,7 @@ fn get_test_config() -> Config {
         site_description: RcString::from("PomBase"),
         database_citation: RcString::from("PMID:22039153"),
         base_url: RcString::from("https://www.pombase.org"),
+        doc_page_aliases: HashMap::new(),
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,

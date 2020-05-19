@@ -278,6 +278,7 @@ pub struct Config {
     pub site_description: RcString,
     pub load_organism_taxonid: Option<OrganismTaxonId>,
     pub base_url: RcString,
+    pub doc_page_aliases: HashMap<String, String>,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
     pub extension_display_names: Vec<ExtensionDisplayNames>,

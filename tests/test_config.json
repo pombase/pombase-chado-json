@@ -5,6 +5,7 @@
   "database_citation": "PMID:22039153",
   "site_description": "PomBase",
   "base_url": "https://www.pombase.org",
+  "doc_page_aliases": {},
   "site_db": {
     "connection_string": ""
   },
