@@ -178,6 +178,7 @@ pub struct ServerConfig {
     pub close_synonym_boost: f32,
     pub distant_synonym_boost: f32,
     pub django_url: String,
+    pub cv_name_for_terms_search: String,
 }
 
 #[derive(Deserialize, Clone, Debug)]

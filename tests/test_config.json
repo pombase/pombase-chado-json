@@ -418,7 +418,9 @@
     "solr_url": "http://localhost:8983/solr",
     "close_synonym_boost": 0.6,
     "distant_synonym_boost": 0.3,
-    "django_url": "http://localhost:8999"
+    "django_url": "http://localhost:8999",
+    "cv_name_for_terms_search": ""
+
   },
   "extra_database_aliases": {
   },

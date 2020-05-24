@@ -22,7 +22,7 @@ use rocket::response::NamedFile;
 
 use pombase::api::query::Query as PomBaseQuery;
 use pombase::api::result::QueryAPIResult;
-use pombase::api::search::Search;
+use pombase::api::search::{Search, TermSearchMatch, RefSearchMatch, DocSearchMatch};
 use pombase::api::query_exec::QueryExec;
 use pombase::api_data::APIData;
 use pombase::api::site_db::SiteDB;
@@ -194,6 +194,14 @@ struct RefCompletionResponse {
     matches: Vec<SolrReferenceSummary>,
 }
 
+#[derive(Serialize, Debug)]
+struct SearchAllResponse  {
+    status: String,
+    term_matches: Vec<TermSearchMatch>,
+    ref_matches: Vec<RefSearchMatch>,
+    doc_matches: Vec<DocSearchMatch>,
+}
+
 #[get ("/api/v1/dataset/latest/complete/term/<cv_name>/<q>", rank=1)]
 fn term_complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
               -> Option<Json<TermCompletionResponse>>
@@ -246,6 +254,38 @@ fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
         };
 
     Some(Json(completion_response))
+}
+
+// search for terms, refs and docs that match the query
+#[get ("/api/v1/dataset/latest/search/all/<q>", rank=1)]
+fn search_all(q: String, state: rocket::State<Mutex<Search>>)
+    -> Option<Json<SearchAllResponse>>
+{
+    let search = state.lock().expect("failed to lock");
+    let search_result = search.search_all(&q);
+
+    let response =
+        match search_result {
+            Ok(search_all_result) => {
+                SearchAllResponse {
+                    status: "Ok".to_owned(),
+                    term_matches: search_all_result.term_matches,
+                    ref_matches: search_all_result.ref_matches,
+                    doc_matches: search_all_result.doc_matches,
+                }
+            },
+            Err(err) => {
+                println!("{:?}", err);
+                SearchAllResponse {
+                    status: err,
+                    term_matches: vec![],
+                    ref_matches: vec![],
+                    doc_matches: vec![],
+                }
+            },
+        };
+
+    Some(Json(response))
 }
 
 #[get ("/api/v1/dataset/latest/motif_search/<scope>/<q>", rank=1)]
@@ -347,6 +387,7 @@ fn main() {
                             get_gene, get_genotype, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
                             term_complete, ref_complete,
+                            search_all,
                             motif_search, ping])
         .register(catchers![not_found])
         .manage(Mutex::new(query_exec))
