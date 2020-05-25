@@ -423,7 +423,7 @@ impl Search {
             let prefix =
                 self.solr_url.to_owned() + "/docs/select?wt=json&q=";
 
-            Some(format!("{}heading:({}*) or content:({}*)^0.5", prefix, q, q))
+            Some(format!("{}heading:({}*) OR content:({}*)^0.5", prefix, q, q))
         } else {
             None
         }
