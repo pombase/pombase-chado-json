@@ -129,6 +129,15 @@ pub struct SearchAllResult {
     pub doc_matches: Vec<DocSearchMatch>,
 }
 
+// removed non-alphanumeric chars and then split on spaces
+fn clean_words(q: &str) -> Vec<String> {
+    let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
+    let lower_q = substring(&q.to_lowercase(), 200);
+
+    Regex::new(r"([\w\d\-]+)").unwrap().captures_iter(&lower_q)
+        .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect()
+}
+
 impl Search {
     pub fn new(config: &Config) -> Search {
         Search {
@@ -183,18 +192,13 @@ impl Search {
             terms_url = format!(r"{} AND (id:{}\:{} OR secondary_identifiers:{}\:{})",
                                 terms_url, prefix, accession, prefix, accession);
         } else {
-            let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
-            let lower_q = substring(&q.to_lowercase(), 200);
-
-            terms_url += " AND (name:(";
-
-            let clean_words: Vec<String> =
-                Regex::new(r"([\w\d\-]+)").unwrap().captures_iter(&lower_q)
-                .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
+            let clean_words = clean_words(q);
 
             if clean_words.is_empty() {
                 return None;
             }
+
+            terms_url += " AND (name:(";
 
             let query_part = self.get_query_part(&clean_words);
 
@@ -303,7 +307,14 @@ impl Search {
             let url_parts =
                 query_field_names
                 .iter()
-                .map(|field_name| format!("{}:({})", field_name, clean_words_for_url))
+                .map(|field_name| {
+                    let weight = if *field_name == "title" {
+                        2.0
+                    } else {
+                        0.5
+                    };
+                    format!("{}:({})^{}", field_name, clean_words_for_url, weight)
+                })
                 .collect::<Vec<String>>();
 
             refs_url += &url_parts.join(" OR ");
@@ -321,6 +332,7 @@ impl Search {
     }
 
     fn do_solr_request(&self, url: &str) -> Result<Response, String> {
+        print!("do_solr_request({:?})\n", url);
         match reqwest::get(url) {
             Ok(res) => {
                 if res.status().is_success() {
@@ -391,10 +403,11 @@ impl Search {
     }
 
     fn search_refs(&self, q: &str) -> Result<Vec<RefSearchMatch>, String> {
-        let maybe_url =
-            self.make_refs_url(q, &["title", "citation", "authors", "pubmed_abstract"]);
+        let hl_field_names = ["title", "citation", "authors", "pubmed_abstract"];
+        let maybe_url = self.make_refs_url(q, &hl_field_names);
         if let Some(mut url) = maybe_url {
-            url += "&hl=on&hl.fl=title,citation,authors,pubmed_abstract,publication_year&fl=id,authors_abbrev,title,publication_year";
+            url += &format!("&hl=on&hl.fl={},publication_year&fl=id,authors_abbrev,title,publication_year",
+                            hl_field_names.join(","));
             let res = self.do_solr_request(&url)?;
 
             match serde_json::from_reader(res) {
@@ -425,10 +438,18 @@ impl Search {
 
     fn make_docs_url(&self, q: &str) -> Option<String> {
         if q.len() > 0 {
-            let prefix =
-                self.solr_url.to_owned() + "/docs/select?wt=json&q=";
+            let clean_words = clean_words(q);
 
-            Some(format!("{}heading:({}*) OR content:({}*)^0.5", prefix, q, q))
+            if clean_words.is_empty() {
+                return None;
+            }
+
+            let clean_q = clean_words.join(" ");
+
+            let prefix = format!("{}/docs/select?wt=json&q=", &self.solr_url);
+
+            Some(format!("{}heading:({}*) OR content:({}*)^0.5", prefix,
+                         clean_q, clean_q))
         } else {
             None
         }
