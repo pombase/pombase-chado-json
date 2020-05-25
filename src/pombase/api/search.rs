@@ -33,6 +33,7 @@ struct TermSearchRes {
 struct RefSearchRes {
     pub id: String,
     pub authors_abbrev: Option<String>,
+    pub citation: Option<String>,
     pub title: Option<String>,
     pub publication_year: Option<u32>,
 }
@@ -109,6 +110,7 @@ pub struct RefSearchMatch {
     pub id: String,
     pub authors_abbrev: Option<String>,
     pub title: Option<String>,
+    pub citation: Option<String>,
     pub publication_year: Option<u32>,
     pub hl: SolrMatchHighlight,
 }
@@ -238,7 +240,7 @@ impl Search {
     }
 
     pub fn ref_complete(&self, q: &str) -> Result<Vec<SolrReferenceSummary>, String> {
-        if let Some(refs_url) = self.make_refs_url(q) {
+        if let Some(refs_url) = self.make_refs_url(q, &["title", "citation", "authors"]) {
             let res = self.do_solr_request(&refs_url)?;
 
             match serde_json::from_reader(res) {
@@ -256,7 +258,7 @@ impl Search {
         }
     }
 
-    fn make_refs_url(&self, q: &str) -> Option<String> {
+    fn make_refs_url(&self, q: &str, query_field_names: &[&str]) -> Option<String> {
         let mut refs_url =
             self.solr_url.to_owned() + "/refs/select?wt=json&q=";
 
@@ -299,7 +301,7 @@ impl Search {
             }
 
             let url_parts =
-                vec!["title", "citation", "authors"]
+                query_field_names
                 .iter()
                 .map(|field_name| format!("{}:({})", field_name, clean_words_for_url))
                 .collect::<Vec<String>>();
@@ -389,8 +391,10 @@ impl Search {
     }
 
     fn search_refs(&self, q: &str) -> Result<Vec<RefSearchMatch>, String> {
-        if let Some(mut url) = self.make_refs_url(q) {
-            url += "&hl=on&hl.fl=title,authors,citation&fl=id,authors_abbrev,title,publication_year";
+        let maybe_url =
+            self.make_refs_url(q, &["title", "citation", "authors", "pubmed_abstract"]);
+        if let Some(mut url) = maybe_url {
+            url += "&hl=on&hl.fl=title,citation,authors,pubmed_abstract,publication_year&fl=id,authors_abbrev,title,publication_year";
             let res = self.do_solr_request(&url)?;
 
             match serde_json::from_reader(res) {
@@ -401,6 +405,7 @@ impl Search {
                     let matches: Vec<RefSearchMatch> = response_container.response.docs
                         .iter().map(|doc| RefSearchMatch {
                             id: String::from(&doc.id),
+                            citation: doc.citation.as_ref().map(str_from),
                             authors_abbrev: doc.authors_abbrev.as_ref().map(str_from),
                             title: doc.title.as_ref().map(str_from),
                             publication_year: doc.publication_year,
@@ -431,7 +436,7 @@ impl Search {
 
     fn search_docs(&self, q: &str) -> Result<Vec<DocSearchMatch>, String> {
         if let Some(mut url) = self.make_docs_url(q) {
-            url += "&hl=on&hl.fl=heading,content&fl=id,heading";
+            url += "&hl=on&hl.fl=heading,content&fl=id,heading,authors_abbrev";
             let res = self.do_solr_request(&url)?;
 
             match serde_json::from_reader(res) {
