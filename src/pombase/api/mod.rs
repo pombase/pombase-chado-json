@@ -1,5 +1,10 @@
 pub mod query;
+pub mod search_types;
+pub mod term_search;
+pub mod ref_search;
+pub mod doc_search;
 pub mod search;
+pub mod search_utils;
 pub mod result;
 pub mod query_exec;
 pub mod site_db;
