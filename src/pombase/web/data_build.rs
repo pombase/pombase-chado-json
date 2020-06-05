@@ -304,7 +304,7 @@ fn gene_display_name(gene: &GeneDetails) -> RcString {
 
 lazy_static! {
     static ref BAD_GENOTYPE_NAME_CHARS_RE: Regex =
-        Regex::new(r"[ /&;]").unwrap();
+        Regex::new(r"[% /&;]").unwrap();
 }
 
 pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele],
