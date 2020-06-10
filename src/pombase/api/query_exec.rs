@@ -24,11 +24,12 @@ impl QueryExec {
     pub fn exec(&self, query: &Query) -> QueryAPIResult {
         let query =
             if let Some(ref site_db) = self.site_db {
-                if let QueryNode::QueryId { id } = query.get_constraints() {
-                    if let Some(existing_query) = site_db.query_by_id(id) {
+                if let Some(ref query_id) = query.get_constraints().get_query_id() {
+                    if let Some(existing_query) = site_db.query_by_id(query_id) {
                         existing_query
                     } else {
-                        let message = RcString::from(&format!("can't find query for ID {}", id));
+                        let message = RcString::from(&format!("can't find query for ID {}",
+                                                              query_id));
                         return QueryAPIResult::new_error(&query, &message);
 
                     }

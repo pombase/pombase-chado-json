@@ -60,23 +60,44 @@ fn make_genes(ids: Vec<&str>) -> Vec<GeneShort> {
 
 #[test]
 fn test_and_or_not() {
-    let qp1 = QueryNode::GeneList {
-        genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
+    let qp1 = QueryNode {
+        gene_list: Some(GeneListNode {
+            genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
+        }),
+        .. QueryNode::template_node()
     };
-    let qp2 = QueryNode::GeneList {
-        genes: make_genes(vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"])
+    let qp2 = QueryNode {
+        gene_list: Some(GeneListNode {
+            genes: make_genes(vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"])
+        }),
+        .. QueryNode::template_node()
     };
-    let qp3 = QueryNode::GeneList {
-        genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"])
+    let qp3 = QueryNode {
+        gene_list: Some(GeneListNode {
+            genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"]),
+        }),
+        .. QueryNode::template_node()
     };
-    let qp4 = QueryNode::GeneList {
-        genes: make_genes(vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09", "SPRRNA.26"])
+    let qp4 = QueryNode {
+        gene_list: Some(GeneListNode {
+            genes: make_genes(vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09", "SPRRNA.26"]),
+        }),
+        .. QueryNode::template_node()
     };
-    let qp5 = QueryNode::GeneList {
-        genes: make_genes(vec!["SPAC27E2.05", "SPAC27E2.05", "SPRRNA.26"])
+    let qp5 = QueryNode {
+        gene_list: Some(GeneListNode {
+            genes: make_genes(vec!["SPAC27E2.05", "SPAC27E2.05", "SPRRNA.26"])
+        }),
+        .. QueryNode::template_node()
     };
-    let and_query_node_1 = QueryNode::And(vec![qp1.clone(), qp2.clone()]);
-    let and_query_node_2 = QueryNode::And(vec![qp3.clone(), qp4.clone()]);
+    let and_query_node_1 = QueryNode {
+        and: Some(vec![qp1.clone(), qp2.clone()]),
+        .. QueryNode::template_node()
+    };
+    let and_query_node_2 = QueryNode {
+        and: Some(vec![qp3.clone(), qp4.clone()]),
+        .. QueryNode::template_node()
+    };
 
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
@@ -84,24 +105,42 @@ fn test_and_or_not() {
         flags: HashSet::new(),
     };
 
-    let and_query =
-        Query::new(None, QueryNode::And(vec![and_query_node_1.clone(), and_query_node_2.clone()]),
-                   opts.clone());
+    let and_query_node =
+        QueryNode {
+            and: Some(vec![and_query_node_1.clone(), and_query_node_2.clone()]),
+            .. QueryNode::template_node()
+        };
+    let and_query = Query::new(and_query_node, opts.clone());
 
     check_gene_result(&and_query, vec!["SPAC1805.15c", "SPAC27E2.05"]);
 
-    let or_query =
-        Query::new(None, QueryNode::Or(vec![and_query_node_1, and_query_node_2]), opts.clone());
+    let or_query_node = QueryNode {
+        or: Some(vec![and_query_node_1, and_query_node_2]),
+        .. QueryNode::template_node()
+    };
+    let or_query = Query::new(or_query_node, opts.clone());
 
     check_gene_result(&or_query, vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"]);
 
     let not_query_node =
-        QueryNode::Not { node_a: Box::new(qp1.clone()), node_b: Box::new(qp2.clone()) };
-    let not_query = Query::new(None, not_query_node, opts.clone());
+        QueryNode {
+            not: Some(NotNode {
+                node_a: Box::new(qp1.clone()),
+                node_b: Box::new(qp2.clone())
+            }),
+            .. QueryNode::template_node()
+        };
+    let not_query = Query::new(not_query_node, opts.clone());
     check_gene_result(&not_query, vec!["SPAC19G12.04"]);
 
-    let not_query_2_node = QueryNode::Not { node_a: Box::new(qp1.clone()), node_b: Box::new(qp5) };
-    let not_query_2 = Query::new(None, not_query_2_node, opts.clone());
+    let not_query_2_node = QueryNode {
+        not: Some(NotNode {
+            node_a: Box::new(qp1.clone()),
+            node_b: Box::new(qp5),
+        }),
+        .. QueryNode::template_node()
+    };
+    let not_query_2 = Query::new(not_query_2_node, opts.clone());
     check_gene_result(&not_query_2, vec!["SPAC19G12.04", "SPAC1805.15c"]);
 }
 
@@ -174,53 +213,73 @@ fn test_output_options() {
                 subsets: HashSet::new(),
             }];
 
-    let qp1 = QueryNode::GeneList {
-        genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
+    let qp1 = QueryNode {
+        gene_list: Some(GeneListNode {
+            genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
+        }),
+        .. QueryNode::template_node()
     };
 
-    let query = Query::new(None, qp1, opts);
+    let query = Query::new(qp1, opts);
 
     check_gene_result_with_viability(&query, &expected_results);
 }
 
 #[test]
 fn test_termid() {
-    let qp1 = QueryNode::Term { termid: "GO:0044237".into(), name: None,
-                                single_or_multi_allele: None, expression: None,
-                                conditions: HashSet::new(),
-                                excluded_conditions: HashSet::new(), };
+    let qp1 = QueryNode {
+        term: Some(TermNode {
+            termid: "GO:0044237".into(),
+            name: None,
+            single_or_multi_allele: None,
+            expression: None,
+            conditions: HashSet::new(),
+            excluded_conditions: HashSet::new(),
+        }),
+        .. QueryNode::template_node()
+    };
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         flags: HashSet::new(),
     };
-    let q1 = Query::new(None, qp1, opts);
+    let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1, vec!["SPAC24B11.06c", "SPAC19G12.03", "SPAC2F3.09", "SPAC27E2.05"]);
 }
 
 #[test]
 fn test_gene_subset() {
-    let qp1 = QueryNode::Subset { subset_name: "PTHR17490:SF9".into() };
+    let qp1 = QueryNode {
+        subset: Some(SubsetNode {
+            subset_name: "PTHR17490:SF9".into(),
+        }),
+        .. QueryNode::template_node()
+    };
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         flags: HashSet::new(),
     };
-    let q1 = Query::new(None, qp1, opts);
+    let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1, vec!["SPCC895.03c"]);
 }
 
 #[test]
 fn test_gene_subset_invert() {
-    let qp1 = QueryNode::Subset { subset_name: "!interpro:IPR002906".into() };
+    let qp1 = QueryNode {
+        subset: Some(SubsetNode {
+            subset_name: "!interpro:IPR002906".into(),
+        }),
+        .. QueryNode::template_node()
+    };
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         flags: HashSet::new(),
     };
-    let q1 = Query::new(None, qp1, opts);
+    let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1,
                       vec!["SPAC589.10c", "SPAC17H9.16",
@@ -232,13 +291,18 @@ fn test_gene_subset_invert() {
 
 #[test]
 fn test_gene_subset_wildcard() {
-    let qp1 = QueryNode::Subset { subset_name: "interpro:IPR*".into() };
+    let qp1 = QueryNode {
+        subset: Some(SubsetNode {
+            subset_name: "interpro:IPR*".into(),
+        }),
+        .. QueryNode::template_node()
+    };
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         flags: HashSet::new(),
     };
-    let q1 = Query::new(None, qp1, opts);
+    let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1,
                       vec!["SPAC589.10c", "SPCC736.11", "SPAC6G10.11c"]);
@@ -246,13 +310,18 @@ fn test_gene_subset_wildcard() {
 
 #[test]
 fn test_gene_subset_not_wildcard() {
-    let qp1 = QueryNode::Subset { subset_name: "!interpro:IPR*".into() };
+    let qp1 = QueryNode {
+        subset: Some(SubsetNode {
+            subset_name: "!interpro:IPR*".into(),
+        }),
+        .. QueryNode::template_node()
+    };
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         flags: HashSet::new(),
     };
-    let q1 = Query::new(None, qp1, opts);
+    let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1,
                       vec!["SPAC589.10c", "SPAC7D4.10",

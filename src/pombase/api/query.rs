@@ -58,39 +58,118 @@ type TermName = String;
 type QueryRowsResult = Result<Vec<ResultRow>, RcString>;
 type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, RcString>;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub enum QueryNode {
-#[serde(rename = "or")]
-    Or(Vec<QueryNode>),
-#[serde(rename = "and")]
-    And(Vec<QueryNode>),
-#[serde(rename = "not")]
-    Not { node_a: Box<QueryNode>, node_b: Box<QueryNode> },
-#[serde(rename = "term")]
-    Term {
-        termid: String,
-        name: Option<TermName>,
-        single_or_multi_allele: Option<SingleOrMultiAllele>,
-        expression: Option<QueryExpressionFilter>,
-#[serde(skip_serializing_if="HashSet::is_empty", default)]
-        conditions: HashSet<TermAndName>,
-#[serde(skip_serializing_if="HashSet::is_empty", default)]
-        excluded_conditions: HashSet<TermAndName>,
-    },
-#[serde(rename = "subset")]
-    Subset { subset_name: String },
-#[serde(rename = "gene_list")]
-    GeneList { genes: Vec<GeneShort> },
-#[serde(rename = "int_range")]
-    IntRange { range_type: IntRangeType, start: Option<usize>, end: Option<usize> },
-#[serde(rename = "float_range")]
-    FloatRange { range_type: FloatRangeType, start: Option<f64>, end: Option<f64> },
-#[serde(rename = "genome_range")]
-    GenomeRange { start: Option<usize>, end: Option<usize>, chromosome_name: String, },
-#[serde(rename = "interactors")]
-    Interactors { gene_uniquename: GeneUniquename, interaction_type: String },
-#[serde(rename = "query_id")]
-    QueryId { id: Uuid },
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct NotNode {
+    pub node_a: Box<QueryNode>,
+    pub node_b: Box<QueryNode>,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct TermNode {
+    pub termid: String,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<TermName>,
+    pub single_or_multi_allele: Option<SingleOrMultiAllele>,
+    pub expression: Option<QueryExpressionFilter>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub conditions: HashSet<TermAndName>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub excluded_conditions: HashSet<TermAndName>,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct SubsetNode {
+    pub subset_name: String,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct GeneListNode {
+    pub genes: Vec<GeneShort>,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct IntRangeNode {
+    pub range_type: IntRangeType,
+    pub start: Option<usize>,
+    pub end: Option<usize>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct FloatRangeNode {
+    pub range_type: FloatRangeType,
+    pub start: Option<f64>,
+    pub end: Option<f64>,
+}
+
+impl Eq for FloatRangeNode {
+}
+impl PartialEq for FloatRangeNode {
+    fn eq(&self, other: &Self) -> bool {
+        if self.range_type != other.range_type {
+            return false;
+        }
+        if self.start.is_none() != other.start.is_none() {
+            return false;
+        }
+        if self.start.is_some() &&
+            (self.start.unwrap() - other.start.unwrap()).abs() > 1e-8 {
+                return false;
+            }
+        if self.end.is_some() &&
+            (self.end.unwrap() - other.end.unwrap()).abs() > 1e-8 {
+                return false;
+            }
+
+        true
+    }
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct GenomeRangeNode {
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub start: Option<usize>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub end: Option<usize>,
+    pub chromosome_name: String,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct InteractorsNode {
+    pub gene_uniquename: GeneUniquename,
+    pub interaction_type: String
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct QueryIdNode {
+    pub id: Uuid,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct QueryNode {
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub node_name: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub or: Option<Vec<QueryNode>>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub and: Option<Vec<QueryNode>>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub not: Option<NotNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub term: Option<TermNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub subset: Option<SubsetNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub gene_list: Option<GeneListNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub int_range: Option<IntRangeNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub float_range: Option<FloatRangeNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genome_range: Option<GenomeRangeNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub interactors: Option<InteractorsNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub query_id: Option<QueryIdNode>,
 }
 
 fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
@@ -312,44 +391,84 @@ fn exec_query_id(api_data: &APIData,
 }
 
 impl QueryNode {
+    pub fn template_node() -> QueryNode {
+        QueryNode {
+            node_name: None,
+            or: None,
+            and: None,
+            not: None,
+            term: None,
+            subset: None,
+            gene_list: None,
+            int_range: None,
+            float_range: None,
+            genome_range: None,
+            interactors: None,
+            query_id: None,
+        }
+    }
+
+    pub fn get_query_id(&self) -> Option<Uuid> {
+        if let Some(ref query_id_node) = self.query_id {
+            Some(query_id_node.id.clone())
+        } else {
+            None
+        }
+    }
+
     pub fn exec(&self, api_data: &APIData,
                 site_db: &Option<SiteDB>) -> GeneUniquenameVecResult {
-        use self::QueryNode::*;
-        match *self {
-            Or(ref nodes) => exec_or(api_data, site_db, nodes),
-            And(ref nodes) => exec_and(api_data, site_db, nodes),
-            Not { ref node_a, ref node_b } => exec_not(api_data, site_db, node_a, node_b),
-            Term {
-                ref termid,
-                ref single_or_multi_allele,
-                ref expression,
-                ref conditions,
-                ref excluded_conditions,
-                ..
-            } => exec_termid(api_data, termid, single_or_multi_allele, expression,
-                             conditions, excluded_conditions),
-            Subset { ref subset_name } => exec_subset(api_data, subset_name),
-            GeneList { ref genes } => exec_gene_list(genes),
-            GenomeRange { start, end, ref chromosome_name } =>
-                exec_genome_range_overlaps(api_data, start, end, chromosome_name),
-            Interactors { ref gene_uniquename, ref interaction_type } => {
-                match &interaction_type as &str {
-                    "physical" =>
-                        exec_interactors_of_gene(api_data, gene_uniquename,
-                                                 InteractionType::Physical),
-                    "genetic" =>
-                        exec_interactors_of_gene(api_data, gene_uniquename,
-                                                 InteractionType::Genetic),
-                    _ => Err(RcString::from(&format!("No such interaction type: {}",
-                                                     interaction_type)))
-                }
-            },
-            IntRange { ref range_type, start, end } =>
-                exec_int_range(api_data, range_type, start, end),
-            FloatRange { ref range_type, start, end } =>
-                exec_float_range(api_data, range_type, start, end),
-            QueryId { ref id } => exec_query_id(api_data, site_db, id),
-       }
+        if let Some(ref nodes) = self.or {
+            return exec_or(api_data, site_db, nodes);
+        }
+        if let Some(ref nodes) = self.and {
+            return exec_and(api_data, site_db, nodes);
+        }
+        if let Some(ref not_node) = self.not {
+            return exec_not(api_data, site_db, &not_node.node_a, &not_node.node_b);
+        }
+        if let Some(ref term) = self.term {
+            return exec_termid(api_data, &term.termid, &term.single_or_multi_allele,
+                               &term.expression, &term.conditions,
+                               &term.excluded_conditions);
+        }
+        if let Some(ref subset_node) = self.subset {
+            return exec_subset(api_data, &subset_node.subset_name);
+        }
+        if let Some(ref gene_list_node) = self.gene_list {
+            return exec_gene_list(&gene_list_node.genes);
+        }
+        if let Some(ref genome_range_node) = self.genome_range {
+            return exec_genome_range_overlaps(api_data, genome_range_node.start,
+                                              genome_range_node.end,
+                                              &genome_range_node.chromosome_name);
+        }
+        if let Some(ref interactors_node) = self.interactors {
+            return match &interactors_node.interaction_type as &str {
+                "physical" =>
+                    exec_interactors_of_gene(api_data, &interactors_node.gene_uniquename,
+                                             InteractionType::Physical),
+                "genetic" =>
+                    exec_interactors_of_gene(api_data, &interactors_node.gene_uniquename,
+                                             InteractionType::Genetic),
+                _ => Err(RcString::from(&format!("No such interaction type: {}",
+                                                 interactors_node.interaction_type)))
+            };
+        }
+        if let Some(ref int_range_node) = self.int_range {
+            return exec_int_range(api_data, &int_range_node.range_type,
+                                  int_range_node.start, int_range_node.end);
+        }
+        if let Some(ref float_range_node) = self.float_range {
+            return exec_float_range(api_data, &float_range_node.range_type,
+                                    float_range_node.start, float_range_node.end);
+        }
+        if let Some(ref query_id_node) = self.query_id {
+            return exec_query_id(api_data, site_db, &query_id_node.id);
+        }
+
+        // fall through:
+        panic!("unsupported query node: {:?}", self);
     }
 }
 
@@ -382,7 +501,6 @@ pub struct QueryOutputOptions {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Query {
-    name: Option<RcString>,
     output_options: QueryOutputOptions,
     constraints: QueryNode,
 }
@@ -421,10 +539,9 @@ fn get_chr_range(chr_residues: &RcString, feature_edge: usize, base_count: usize
 }
 
 impl Query {
-    pub fn new(name: Option<RcString>, constraints: QueryNode,
+    pub fn new(constraints: QueryNode,
                output_options: QueryOutputOptions) -> Query {
         Query {
-            name,
             output_options,
             constraints
         }
