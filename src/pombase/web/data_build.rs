@@ -3172,7 +3172,12 @@ impl <'a> WebDataBuild<'a> {
                     },
                     "condition" =>
                         if let Some(value) = prop.value.clone() {
-                            conditions.insert(value.clone());
+                            if value.contains(":") {
+                                conditions.insert(value.clone());
+                            } else {
+                                eprintln!(r#"ignoring condition that isn't a term ID "{}" (from annotation of {} with {})"#,
+                                          value, feature.uniquename, termid);
+                            }
                         },
                     "qualifier" =>
                         if let Some(value) = prop.value.clone() {
