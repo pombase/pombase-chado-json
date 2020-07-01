@@ -1395,7 +1395,6 @@ pub struct RecentReferences {
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TermSubsetElement {
     pub name: RcString,
-    pub termid: TermId,
     pub gene_count: usize,
 }
 
@@ -1403,7 +1402,7 @@ pub struct TermSubsetElement {
 pub struct TermSubsetDetails {
     pub name: RcString,
     pub total_gene_count: usize, // total unique genes in all subsets
-    pub elements: HashSet<TermSubsetElement>,
+    pub elements: HashMap<TermId, TermSubsetElement>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

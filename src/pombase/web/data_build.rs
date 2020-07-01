@@ -4679,8 +4679,7 @@ impl <'a> WebDataBuild<'a> {
                             -> IdGeneSubsetMap
     {
         let slim_termid_set: HashSet<RcString> =
-            slim_subset.elements
-            .iter().map(|element| element.termid.clone()).collect();
+            slim_subset.elements.keys().map(|termid| termid.clone()).collect();
 
         let mut non_slim_with_bp_annotation = HashSet::new();
         let mut non_slim_without_bp_annotation = HashSet::new();
@@ -4762,7 +4761,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
-        let mut slim_subset: HashSet<TermSubsetElement> = HashSet::new();
+        let mut slim_subset: HashMap<TermId, TermSubsetElement> = HashMap::new();
         let slim_config = self.config.slims.get(slim_name)
             .expect(&format!("no slim config for {}", slim_name));
         for slim_conf in slim_config.terms.clone() {
@@ -4772,14 +4771,13 @@ impl <'a> WebDataBuild<'a> {
 
             let subset_element = TermSubsetElement {
                 name: term_details.name.clone(),
-                termid: slim_termid.clone(),
                 gene_count: term_details.genes_annotated_with.len(),
             };
 
             for gene in &term_details.genes_annotated_with {
                 all_genes.insert(gene);
             }
-            slim_subset.insert(subset_element);
+            slim_subset.insert(slim_termid.clone(), subset_element);
         }
 
         TermSubsetDetails {
