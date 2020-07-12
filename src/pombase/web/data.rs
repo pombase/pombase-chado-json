@@ -136,12 +136,12 @@ impl WebData {
     }
 
     fn write_api_maps(&self, output_dir: &str) {
-        let s = serde_json::to_string(&self.api_maps).unwrap();
         let file_name = String::new() + output_dir + "/api_maps.json.gz";
         let f = File::create(file_name).expect("Unable to open file");
 
         let mut compressor = GzEncoder::new(f, Compression::default());
-        compressor.write_all(s.as_bytes()).unwrap();
+        serde_json::ser::to_writer(&mut compressor, &self.api_maps).unwrap();
+
         compressor.finish().unwrap();
     }
 
