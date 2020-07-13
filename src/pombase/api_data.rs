@@ -53,14 +53,20 @@ impl APIData {
                 process::exit(1);
             }
         };
-        let reader = BufReader::new(file);
 
+        let reader = BufReader::new(file);
         let mut decoder = GzDecoder::new(reader);
+
+//  this uses less peak memory but is 4X slower
+//  See: https://github.com/serde-rs/json/issues/160
+//        let serde_result = serde_json::de::from_reader(&mut decoder);
+
         let mut decoded_json = String::new();
         decoder.read_to_string(&mut decoded_json).unwrap();
+        let serde_result = serde_json::from_str(&decoded_json);
 
         let maps: APIMaps =
-            match serde_json::from_str(&decoded_json) {
+            match serde_result {
                 Ok(results) => results,
                 Err(err) => {
                     eprint!("failed to parse {}: {}", search_maps_file_name, err);
