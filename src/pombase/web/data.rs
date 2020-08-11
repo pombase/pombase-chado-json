@@ -316,6 +316,68 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write chromosome_summaries.json");
     }
 
+    fn write_go_annotation_files(&self, config: &Config, output_dir: &str)
+                                 -> Result<(), io::Error>
+    {
+        let load_org_taxonid =
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                load_org_taxonid
+            } else {
+                return Ok(())
+            };
+
+        let database_name = &config.database_name;
+
+        let gpi_file_name =
+            format!("{}/gene_product_information_taxonid_{}.tsv", output_dir.to_owned(),
+                    load_org_taxonid);
+
+        let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
+        let mut gpi_writer = BufWriter::new(&gpi_file);
+
+        gpi_writer.write_all("!gpi-version: 2.0\n".as_bytes())?;
+        gpi_writer.write_all(&format!("!namespace: {}\n", database_name).as_bytes())?;
+        gpi_writer.write_all(&format!("!generated-by: {}\n", database_name).as_bytes())?;
+
+        let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
+        gpi_writer.write_all(&format!("!date-generated: {}\n", &iso_date).as_bytes())?;
+
+
+        for gene_details in self.api_maps.genes.values() {
+            if gene_details.taxonid != load_org_taxonid {
+                continue;
+            }
+
+            let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
+            let db_object_symbol =
+                gene_details.product.clone().unwrap_or_else(|| RcString::new());
+            let db_object_name =
+                gene_details.name.clone().unwrap_or_else(|| RcString::new());
+
+            let db_object_synonyms =
+                gene_details.synonyms.iter().filter(|synonym| {
+                    synonym.synonym_type == "exact"
+                })
+                .map(|synonym| synonym.name.to_string())
+                .collect::<Vec<String>>()
+                .join("|");
+
+            let db_object_type = "SO:0000704";  // gene
+            let db_object_taxon = format!("NCBITaxon:{}", load_org_taxonid);
+
+            let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t\t\n",
+                                   db_object_id,
+                                   db_object_symbol,
+                                   db_object_name,
+                                   db_object_synonyms,
+                                   db_object_type,
+                                   db_object_taxon);
+            gpi_writer.write_all(gpi_line.as_bytes())?;
+        }
+
+        Ok(())
+    }
+
     fn write_gene_id_table(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let gene_file_name = output_dir.to_owned() + "/sysID2product.tsv";
         let rna_file_name = output_dir.to_owned() + "/sysID2product.rna.tsv";
@@ -1149,6 +1211,9 @@ impl WebData {
         println!("wrote fasta");
 
         let misc_path = self.create_dir(output_dir, "misc");
+
+        self.write_go_annotation_files(&config, &misc_path)?;
+
         self.write_gene_id_table(&config, &misc_path)?;
         self.write_protein_features(&config, &misc_path)?;
         self.write_feature_coords(&config, &misc_path)?;
