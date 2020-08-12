@@ -1,5 +1,6 @@
 use std::collections::{HashMap, HashSet, BTreeMap};
 use std::io::BufReader;
+use std::io::BufRead;
 use std::fs::File;
 
 use crate::types::*;
@@ -234,6 +235,13 @@ pub struct AnnotationSubsetConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct GpadGpiConfig {
+    // Map a relation term name to a term ID, unless the term ID is None in
+    // which case we skip writing this extension part
+    pub extension_relation_mappings: HashMap<String, Option<TermId>>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct FileExportConfig {
     pub site_map_term_prefixes: Vec<RcString>,
     pub site_map_reference_prefixes: Vec<RcString>,
@@ -242,6 +250,7 @@ pub struct FileExportConfig {
     #[serde(skip_serializing_if="Option::is_none")]
     pub rnacentral: Option<RNAcentralConfig>,
     pub annotation_subsets: Vec<AnnotationSubsetConfig>,
+    pub gpad_gpi: GpadGpiConfig,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -473,5 +482,54 @@ impl DocConfig {
                 panic!("failed to parse {}: {}", doc_config_file_name, err)
             },
         }
+    }
+}
+
+
+pub struct GoEcoMapping {
+    mapping: HashMap<(String, String), String>,
+}
+
+impl GoEcoMapping {
+    pub fn read(file_name: &str) -> Result<GoEcoMapping, std::io::Error> {
+        let file = match File::open(file_name) {
+            Ok(file) => file,
+            Err(err) => {
+                panic!("Failed to read {}: {}\n", file_name, err)
+            }
+        };
+        let reader = BufReader::new(file);
+
+        let mut mapping = HashMap::new();
+
+        for line_result in reader.lines() {
+            match line_result {
+                Ok(line) => {
+                    if line.starts_with("#") {
+                        continue;
+                    }
+                    let parts: Vec<&str> = line.split('\t').collect();
+                    mapping.insert((String::from(parts[0]), String::from(parts[1])),
+                                   String::from(parts[2]));
+                },
+                Err(err) => return Err(err)
+            };
+        }
+
+        Ok(GoEcoMapping {
+            mapping
+        })
+    }
+
+    pub fn lookup_default(&self, go_evidence_code: &str) -> Option<String> {
+        self.mapping.get(&(String::from(go_evidence_code), String::from("Default")))
+            .map(|s| String::from(s))
+    }
+
+    pub fn lookup_with_go_ref(&self, go_evidence_code: &str, go_ref: &str)
+                              -> Option<String>
+    {
+        self.mapping.get(&(String::from(go_evidence_code), String::from(go_ref)))
+            .map(|s| String::from(s))
     }
 }

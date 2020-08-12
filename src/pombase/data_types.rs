@@ -90,11 +90,29 @@ impl ExtRange {
     }
 }
 
+impl fmt::Display for ExtRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ExtRange::Gene(ref gene_uniquename) | ExtRange::Promoter(ref gene_uniquename) =>
+                write!(f, "{}", gene_uniquename),
+            ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
+            ExtRange::Term(ref termid) => write!(f, "{}", termid),
+            ExtRange::SummaryModifiedResidues(ref residue) =>
+                write!(f, "{}", &residue.join(",")),
+            ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
+            ExtRange::Misc(ref misc) => write!(f, "{}", misc),
+            ExtRange::Domain(ref domain) => write!(f, "{}", domain),
+            ExtRange::GeneProduct(ref gene_product) => write!(f, "{}", gene_product),
+        }
+    }
+}
+
 // A single part of an extension.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ExtPart {
     pub rel_type_name: RcString,
     pub rel_type_display_name: RcString,
+    pub rel_type_id: Option<TermId>,
     pub ext_range: ExtRange,
 }
 impl PartialEq for ExtPart {
@@ -443,6 +461,16 @@ pub enum WithFromValue {
     Identifier(RcString)
 }
 
+impl From<WithFromValue> for RcString {
+    fn from(with_from: WithFromValue) -> Self {
+        match with_from {
+            WithFromValue::Gene(gene) => gene.uniquename,
+            WithFromValue::Term(term) => term.termid,
+            WithFromValue::Identifier(id) => id,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
@@ -467,6 +495,8 @@ pub struct OntAnnotationDetail {
     pub genotype_background: Option<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermId>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub date: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]

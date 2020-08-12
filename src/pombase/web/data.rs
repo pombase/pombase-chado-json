@@ -42,6 +42,9 @@ pub struct WebData {
 
 const FASTA_SEQ_COLUMNS: usize = 60;
 
+const GO_ASPECT_NAMES: [&str; 3] =
+    ["cellular_component", "biological_process", "molecular_function"];
+
 fn write_as_fasta(writer: &mut dyn Write, id: &str, desc: Option<String>,
                   seq: &str)
 {
@@ -316,7 +319,108 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write chromosome_summaries.json");
     }
 
-    fn write_go_annotation_files(&self, config: &Config, output_dir: &str)
+    fn eco_evidence_from_annotation(&self, mapping: &GoEcoMapping,
+                                    annotation: &OntAnnotationDetail)
+                                    -> String
+    {
+        if let Some(ref go_evidence) = annotation.evidence {
+            if let Some(ref reference) = annotation.reference {
+                mapping.lookup_with_go_ref(go_evidence, reference)
+                    .unwrap_or_else(|| mapping.lookup_default(go_evidence)
+                                    .unwrap_or_else(|| panic!("failed to find {} for {} in GO mapping",
+                                                              go_evidence, reference)))
+            } else {
+                mapping.lookup_default(go_evidence)
+                    .unwrap_or_else(|| panic!("failed to find {} in GO mapping",
+                                              go_evidence))
+            }
+        } else {
+            String::from("")
+        }
+    }
+
+    fn make_extension_string(&self, config: &Config, extension: &Vec<ExtPart>) -> String {
+        let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
+        let get_rel_termid = |ext_part: &ExtPart| {
+            if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_ref()) {
+                map_termid.clone().unwrap()
+            } else {
+                ext_part.rel_type_id.clone().unwrap()
+            }
+        };
+
+        extension.iter()
+            .filter(|ext_part| {
+                if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_ref()) {
+                    map_termid.is_some()
+                } else {
+                    ext_part.rel_type_id.is_some()
+                }
+            })
+            .map(|ext_part| format!("{}({})", get_rel_termid(ext_part),
+                                    ext_part.ext_range))
+            .collect::<Vec<_>>().join(",")
+    }
+
+    fn write_gene_product_annotation(&self, gpad_writer: &mut BufWriter<&File>,
+                                     go_eco_mappping: &GoEcoMapping, config: &Config,
+                                     db_object_id: &str, gene_details: &GeneDetails)
+                                     -> Result<(), io::Error>
+    {
+        for (cv_name, term_annotations) in &gene_details.cv_annotations {
+            if !GO_ASPECT_NAMES.contains(&cv_name.as_ref()) {
+                continue;
+            }
+
+            for term_annotation in term_annotations {
+                for annotation_id in &term_annotation.annotations {
+                    let annotation_detail = self.api_maps.annotation_details
+                        .get(&annotation_id)
+                        .expect(&format!("can't find annotation {}", annotation_id));
+                    let not = if term_annotation.is_not {
+                        "NOT"
+                    } else {
+                        ""
+                    };
+                    let relation = "dunno";
+                    let ontology_class_id = &term_annotation.term;
+                    let reference_uniquename =
+                        annotation_detail.reference.clone()
+                        .unwrap_or_else(|| RcString::from(""));
+                    let evidence_type =
+                        self.eco_evidence_from_annotation(go_eco_mappping,
+                                                          annotation_detail);
+                    let assigned_by = &config.database_name;
+                    let with_or_from =
+                        annotation_detail.withs.iter().map(|s| {
+                            let s: RcString = s.clone().into();
+                            if s.contains(":") {
+                                s
+                            } else {
+                                RcString::from(&format!("{}:{}", assigned_by, s))
+                            }
+                        })
+                        .collect::<Vec<RcString>>().join(",");
+                    let date = annotation_detail.date.clone()
+                        .unwrap_or_else(|| RcString::from("dunno"));
+                    let annotation_extensions =
+                        self.make_extension_string(config, &annotation_detail.extension);
+                    let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t\n",
+                                       db_object_id,
+                                       not, relation, ontology_class_id,
+                                       reference_uniquename, evidence_type,
+                                       with_or_from, date, assigned_by,
+                                       annotation_extensions);
+                    gpad_writer.write_all(line.as_bytes())?;
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn write_go_annotation_files(&self, config: &Config, go_eco_mappping: &GoEcoMapping,
+                                 output_dir: &str)
                                  -> Result<(), io::Error>
     {
         let load_org_taxonid =
@@ -331,17 +435,28 @@ impl WebData {
         let gpi_file_name =
             format!("{}/gene_product_information_taxonid_{}.tsv", output_dir.to_owned(),
                     load_org_taxonid);
+        let gpad_file_name =
+            format!("{}/gene_product_annotation_data_taxonid_{}.tsv", output_dir.to_owned(),
+                    load_org_taxonid);
 
         let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
+        let gpad_file = File::create(gpad_file_name).expect("Unable to open file");
         let mut gpi_writer = BufWriter::new(&gpi_file);
+        let mut gpad_writer = BufWriter::new(&gpad_file);
+
+        let generated_by = format!("!generated-by: {}\n", database_name);
+        let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
+        let date_generated = format!("!date-generated: {}\n", &iso_date);
+
 
         gpi_writer.write_all("!gpi-version: 2.0\n".as_bytes())?;
         gpi_writer.write_all(&format!("!namespace: {}\n", database_name).as_bytes())?;
-        gpi_writer.write_all(&format!("!generated-by: {}\n", database_name).as_bytes())?;
+        gpi_writer.write_all(&generated_by.as_bytes())?;
 
-        let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
-        gpi_writer.write_all(&format!("!date-generated: {}\n", &iso_date).as_bytes())?;
+        gpad_writer.write_all("!gpa-version: 2.0\n".as_bytes())?;
+        gpad_writer.write_all(&generated_by.as_bytes())?;
 
+        gpi_writer.write_all(&date_generated.as_bytes())?;
 
         for gene_details in self.api_maps.genes.values() {
             if gene_details.taxonid != load_org_taxonid {
@@ -373,7 +488,10 @@ impl WebData {
                                    db_object_type,
                                    db_object_taxon);
             gpi_writer.write_all(gpi_line.as_bytes())?;
-        }
+
+            self.write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,
+                                               &db_object_id, gene_details)?;
+       }
 
         Ok(())
     }
@@ -1181,7 +1299,8 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write(&self, config: &Config, doc_config: &DocConfig, output_dir: &str)
+    pub fn write(&self, config: &Config, go_eco_mappping: &GoEcoMapping,
+                 doc_config: &DocConfig, output_dir: &str)
                  -> Result<(), io::Error>
     {
         let web_json_path = self.create_dir(output_dir, "web-json");
@@ -1212,7 +1331,7 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc");
 
-        self.write_go_annotation_files(&config, &misc_path)?;
+        self.write_go_annotation_files(&config, go_eco_mappping, &misc_path)?;
 
         self.write_gene_id_table(&config, &misc_path)?;
         self.write_protein_features(&config, &misc_path)?;

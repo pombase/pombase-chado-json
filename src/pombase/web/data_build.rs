@@ -2710,6 +2710,7 @@ impl <'a> WebDataBuild<'a> {
             if let Some(ref residue) = annotation.residue {
                 let display_name = RcString::from("modified residue");
                 let residue_range_part = ExtPart {
+                    rel_type_id: None,
                     rel_type_name: display_name.clone(),
                     rel_type_display_name: display_name,
                     ext_range: ExtRange::SummaryModifiedResidues(vec![residue.clone()]),
@@ -2857,8 +2858,13 @@ impl <'a> WebDataBuild<'a> {
                                 let rel_type_display_name =
                                     self.get_ext_rel_display_name(&base_termid, &ext_rel_name);
 
+                                let rel_type_id =
+                                    self.term_ids_by_name.get(&ext_rel_name)
+                                    .map(|t| t.clone());
+
                                 self.parts_of_extensions.entry(cvterm.termid())
                                     .or_insert_with(Vec::new).push(ExtPart {
+                                        rel_type_id,
                                         rel_type_name: ext_rel_name,
                                         rel_type_display_name,
                                         ext_range: range,
@@ -2920,6 +2926,7 @@ impl <'a> WebDataBuild<'a> {
 
                             self.parts_of_extensions.entry(subject_termid)
                                 .or_insert_with(Vec::new).push(ExtPart {
+                                    rel_type_id: Some(rel_type.termid()),
                                     rel_type_name: rel_type.name.clone(),
                                     rel_type_display_name,
                                     ext_range,
@@ -3038,8 +3045,11 @@ impl <'a> WebDataBuild<'a> {
                 ExtRange::Misc(prod_value)
             };
 
+        let active_form = "active_form";
+
         ExtPart {
-            rel_type_name: "active_form".into(),
+            rel_type_id: None,
+            rel_type_name: active_form.into(),
             rel_type_display_name: "active form".into(),
             ext_range,
         }
@@ -3068,6 +3078,7 @@ impl <'a> WebDataBuild<'a> {
         // displayed as a binds extension
         // https://github.com/pombase/website/issues/108
         ExtPart {
+            rel_type_id: None,
             rel_type_name: "binds".into(),
             rel_type_display_name: "binds".into(),
             ext_range,
@@ -3139,6 +3150,7 @@ impl <'a> WebDataBuild<'a> {
             let mut withs: HashSet<WithFromValue> = HashSet::new();
             let mut froms: HashSet<WithFromValue> = HashSet::new();
             let mut qualifiers: Vec<Qualifier> = vec![];
+            let mut date: Option<RcString> = None;
             let mut assigned_by: Option<RcString> = None;
             let mut evidence: Option<RcString> = None;
             let mut genotype_background: Option<RcString> = None;
@@ -3187,6 +3199,11 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(value) = prop.value.clone() {
                             assigned_by = Some(value);
                         },
+                    "date" => {
+                        if let Some(value) = prop.value.clone() {
+                            date = Some(value);
+                        }
+                    },
                     "with" => {
                         if let Some(ref with_value) = prop.value.clone() {
                             if let Some(with_gene_short) =
@@ -3320,6 +3337,7 @@ impl <'a> WebDataBuild<'a> {
                 evidence,
                 conditions,
                 extension,
+                date,
                 assigned_by,
                 throughput,
             };
