@@ -597,6 +597,9 @@ fn get_test_config() -> Config {
             macromolecular_complexes: None,
             rnacentral: None,
             annotation_subsets: vec![],
+            gpad_gpi: GpadGpiConfig {
+                extension_relation_mappings: HashMap::new(),
+            }
         },
     };
 
@@ -733,23 +736,27 @@ fn test_remove_first_u32() {
 fn test_collect_duplicated_relations() {
     let mut ext = vec![
         ExtPart {
+            rel_type_id: Some(RcString::from("RO:0000000")),
             rel_type_name: RcString::from("some_rel"),
             rel_type_display_name: RcString::from("some rel"),
             ext_range: ExtRange::Term(RcString::from("GO:12345")),
         },
         ExtPart {
+            rel_type_id: Some(RcString::from("RO:0000000")),
             rel_type_name: RcString::from("has_input"),
             rel_type_display_name: RcString::from("binds"),
             ext_range: ExtRange::SummaryGenes(
                 vec![vec![RcString::from("SPAC3G9.09c")]]),
         },
         ExtPart {
+            rel_type_id: Some(RcString::from("RO:0000000")),
             rel_type_name: RcString::from("has_input"),
             rel_type_display_name: RcString::from("binds"),
             ext_range: ExtRange::SummaryGenes(
                 vec![vec![RcString::from("SPAC16.01")]]),
         },
         ExtPart {
+            rel_type_id: Some(RcString::from("RO:0000000")),
             rel_type_name: RcString::from("during"),
             rel_type_display_name: RcString::from("during"),
             ext_range: ExtRange::Term(RcString::from("GO:0070301")),

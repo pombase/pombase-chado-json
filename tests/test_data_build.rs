@@ -103,6 +103,9 @@ fn get_test_config() -> Config {
             macromolecular_complexes: None,
             rnacentral: None,
             annotation_subsets: vec![],
+            gpad_gpi: GpadGpiConfig {
+                extension_relation_mappings: HashMap::new(),
+            }
         },
     };
 
@@ -127,11 +130,13 @@ fn get_test_config() -> Config {
 fn test_compare_ext_part_with_config() {
     let config = get_test_config();
     let mut ext_part1 = ExtPart {
+        rel_type_id: Some(RcString::from("RO:0002400")),
         rel_type_name: RcString::from("has_direct_input"),
         rel_type_display_name: RcString::from("NA"),
         ext_range: ExtRange::Misc(RcString::from("misc_ext_part_1")),
     };
     let mut ext_part2 = ExtPart {
+        rel_type_id: Some(RcString::from("RO:0002400")),
         rel_type_name: RcString::from("has_direct_input"),
         rel_type_display_name: RcString::from("NA"),
         ext_range: ExtRange::Misc(RcString::from("misc_ext_part_2")),
@@ -199,6 +204,7 @@ fn test_compare_ext_part_with_config() {
 fn make_test_ext_part(rel_type_name: &str, rel_type_display_name: &str,
                       ext_range: ExtRange) -> ExtPart {
     ExtPart {
+        rel_type_id: Some(RcString::from("RO:0000000")),
         rel_type_name: rel_type_name.into(),
         rel_type_display_name: rel_type_display_name.into(),
         ext_range: ext_range,
@@ -367,6 +373,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         evidence: Some(evidence.into()),
         withs: HashSet::new(),
         froms: HashSet::new(),
+        date: None,
         residue: None,
         qualifiers: vec![],
         extension: extension,
@@ -415,6 +422,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         synonyms: vec![],
         dbxrefs: HashSet::new(),
         feature_type: RcString::from("gene"),
+        feature_so_termid: RcString::from("SO:0000704"),
         transcript_so_termid: RcString::from("SO:0001217"),
         characterisation_status: None,
         taxonomic_distribution: None,
@@ -867,11 +875,13 @@ fn get_test_gene_short_map() -> IdGeneShortMap {
 #[test]
 fn test_merge_ext_part_ranges() {
     let ext_part1 = ExtPart {
+        rel_type_id: Some(RcString::from("RO:0000000")),
         rel_type_name: RcString::from("has_substrate"),
         rel_type_display_name: RcString::from("has substrate"),
         ext_range: ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC977.09c")]]),
     };
     let ext_part2 = ExtPart {
+        rel_type_id: Some(RcString::from("RO:0000000")),
         rel_type_name: RcString::from("has_substrate"),
         rel_type_display_name: RcString::from("has substrate"),
         ext_range: ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC24C9.02c")]]),
@@ -908,6 +918,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("some_good_rel"),
                 rel_type_display_name: RcString::from("some rel"),
                 ext_range: ExtRange::Term(RcString::from("GO:0070301")),
@@ -918,6 +929,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("has_substrate"),
                 rel_type_display_name: RcString::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
@@ -929,12 +941,14 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("has_substrate"),
                 rel_type_display_name: RcString::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
                     vec![vec![RcString::from("SPAC3G9.09c")]]),
             },
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("during"),
                 rel_type_display_name: RcString::from("during"),
                 ext_range: ExtRange::Term(RcString::from("GO:0070301")),
@@ -945,12 +959,14 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("has_substrate"),
                 rel_type_display_name: RcString::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
                     vec![vec![RcString::from("SPAC3G9.09c")]]),
             },
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("during"),
                 rel_type_display_name: RcString::from("during"),
                 ext_range: ExtRange::Term(RcString::from("GO:0070301")),
@@ -961,12 +977,14 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("has_substrate"),
                 rel_type_display_name: RcString::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
                     vec![vec![RcString::from("SPAC3G9.09c")]]),
             },
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("during"),
                 rel_type_display_name: RcString::from("during"),
                 ext_range: ExtRange::Term(RcString::from("GO:0070301")),
@@ -977,12 +995,14 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("has_substrate"),
                 rel_type_display_name: RcString::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
                     vec![vec![RcString::from("SPAC16.01")]]),   // change substrate
             },
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("during"),
                 rel_type_display_name: RcString::from("during"),
                 ext_range: ExtRange::Term(RcString::from("GO:0070301")),
@@ -993,12 +1013,14 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("has_substrate"),
                 rel_type_display_name: RcString::from("has substrate"),
                 ext_range: ExtRange::SummaryGenes(
                     vec![vec![RcString::from("SPAC16.01")]]),
             },
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("during"),
                 rel_type_display_name: RcString::from("during"),
                 ext_range: ExtRange::Term(RcString::from("GO:0071472")), // change during term
@@ -1009,6 +1031,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("binds"),
                 rel_type_display_name: RcString::from("binds"),
                 ext_range: ExtRange::Term(RcString::from("PR:000027629")),
@@ -1019,6 +1042,7 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("binds"),
                 rel_type_display_name: RcString::from("binds"),
                 ext_range: ExtRange::SummaryGenes(
@@ -1030,12 +1054,14 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("binds"),
                 rel_type_display_name: RcString::from("binds"),
                 ext_range: ExtRange::SummaryGenes(
                     vec![vec![RcString::from("SPAC16.01")]]),
             },
             ExtPart {
+                rel_type_id: Some(RcString::from("RO:0000000")),
                 rel_type_name: RcString::from("binds"),
                 rel_type_display_name: RcString::from("binds"),
                 ext_range: ExtRange::Term(RcString::from("PR:000027629")),

@@ -460,6 +460,10 @@
           }
         ]
       }
-    ]
+    ],
+    "gpad_gpi": {
+      "extension_relation_mappings": {
+      }
+    }
   }
 }
