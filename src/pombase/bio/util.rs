@@ -197,6 +197,7 @@ fn make_test_gene() -> GeneDetails {
         synonyms: vec![],
         dbxrefs: HashSet::new(),
         feature_type: RcString::from("mRNA gene"),
+        feature_so_termid: RcString::from("SO:0000704"),
         transcript_so_termid: RcString::from("SO:0001217"),
         characterisation_status: Some(RcString::from("published")),
         taxonomic_distribution: Some(RcString::from("dubious")),

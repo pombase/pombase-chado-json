@@ -491,16 +491,21 @@ impl WebData {
                 .collect::<Vec<String>>()
                 .join("|");
 
-            let db_object_type = "SO:0000704";  // gene
+            let db_object_type = &gene_details.feature_so_termid;
             let db_object_taxon = format!("NCBITaxon:{}", load_org_taxonid);
+            let db_xrefs =
+                gene_details.uniprot_identifier.clone()
+                .unwrap_or_else(|| RcString::from(""));
 
-            let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t\t\n",
+            let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\tgo-annotation-summary={}\n",
                                    db_object_id,
-                                   db_object_symbol,
+                                   db_object_name,
                                    db_object_name,
                                    db_object_synonyms,
                                    db_object_type,
-                                   db_object_taxon);
+                                   db_object_taxon,
+                                   db_xrefs,
+                                   db_object_symbol);
             gpi_writer.write_all(gpi_line.as_bytes())?;
 
             self.write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,

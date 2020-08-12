@@ -708,6 +708,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<RcString>,
     pub feature_type: RcString,
+    pub feature_so_termid: RcString,
     pub transcript_so_termid: TermId,
     #[serde(skip_serializing_if="Option::is_none")]
     pub characterisation_status: Option<RcString>,

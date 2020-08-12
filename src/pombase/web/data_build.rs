@@ -1484,6 +1484,7 @@ impl <'a> WebDataBuild<'a> {
             synonyms: vec![],
             dbxrefs,
             feature_type: feat.feat_type.name.clone(),
+            feature_so_termid: feat.feat_type.termid(),
             transcript_so_termid: feat.feat_type.termid(),
             characterisation_status: None,
             taxonomic_distribution: None,
