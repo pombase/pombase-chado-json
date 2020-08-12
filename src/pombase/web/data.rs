@@ -349,6 +349,20 @@ impl WebData {
             }
         };
 
+        let get_range = |ext_part: &ExtPart| {
+            let mut range_copy = ext_part.ext_range.clone();
+
+            if let ExtRange::Gene(ref mut gene_uniquename) = range_copy {
+                if !gene_uniquename.contains(":") {
+                    let new_uniquename =
+                        RcString::from(&format!("{}:{}", config.database_name,
+                                                gene_uniquename));
+                    *gene_uniquename = new_uniquename;
+                }
+            }
+            range_copy
+        };
+
         extension.iter()
             .filter(|ext_part| {
                 if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_ref()) {
@@ -358,7 +372,7 @@ impl WebData {
                 }
             })
             .map(|ext_part| format!("{}({})", get_rel_termid(ext_part),
-                                    ext_part.ext_range))
+                                    get_range(ext_part)))
             .collect::<Vec<_>>().join(",")
     }
 
