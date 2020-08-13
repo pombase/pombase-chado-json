@@ -376,6 +376,30 @@ impl WebData {
             .collect::<Vec<_>>().join(",")
     }
 
+    fn get_gpad_relation_of(&self, term_details: &TermDetails,
+                            annotation_detail: &OntAnnotationDetail) -> String {
+        match term_details.cv_name.as_str() {
+            "molecular_function" => {
+                if annotation_detail.qualifiers.iter()
+                    .find(|q| q.as_str() == "contributes_to").is_some()
+                {
+                    String::from("RO:0002326")
+                } else {
+                    String::from("RO:0002327")
+                }
+            },
+            "biological_process" => String::from("RO:0002331"),
+            "cellular_component" => {
+                if term_details.interesting_parents.contains(&RcString::from("GO:0032991")) {
+                    String::from("BFO:0000050")
+                } else {
+                    String::from("RO:0001025")
+                }
+            },
+            _ => panic!("unknown cv_name in GPAD export: {}", term_details.cv_name)
+        }
+    }
+
     fn write_gene_product_annotation(&self, gpad_writer: &mut BufWriter<&File>,
                                      go_eco_mappping: &GoEcoMapping, config: &Config,
                                      db_object_id: &str, gene_details: &GeneDetails)
@@ -387,6 +411,10 @@ impl WebData {
             }
 
             for term_annotation in term_annotations {
+                let term = self.api_maps.terms.get(&term_annotation.term)
+                    .expect(&format!("failed to find term summary for {}",
+                                     term_annotation.term));
+
                 for annotation_id in &term_annotation.annotations {
                     let annotation_detail = self.api_maps.annotation_details
                         .get(&annotation_id)
@@ -396,7 +424,9 @@ impl WebData {
                     } else {
                         ""
                     };
-                    let relation = "dunno";
+
+                    let relation = self.get_gpad_relation_of(term, annotation_detail);
+
                     let ontology_class_id = &term_annotation.term;
                     let reference_uniquename =
                         annotation_detail.reference.clone()
