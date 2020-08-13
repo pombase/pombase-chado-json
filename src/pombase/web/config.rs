@@ -239,6 +239,9 @@ pub struct GpadGpiConfig {
     // Map a relation term name to a term ID, unless the term ID is None in
     // which case we skip writing this extension part
     pub extension_relation_mappings: HashMap<String, Option<TermId>>,
+    // A map from the SO type of a transcript to the SO type of the gene is
+    // derives from
+    pub transcript_gene_so_term_map: HashMap<String, String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

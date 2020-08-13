@@ -522,7 +522,13 @@ impl WebData {
                 .collect::<Vec<String>>()
                 .join("|");
 
-            let db_object_type = &gene_details.feature_so_termid;
+            let db_object_type = config.file_exports.gpad_gpi.transcript_gene_so_term_map
+                .get(gene_details.transcript_so_termid.as_str())
+                .unwrap_or_else(|| {
+                    panic!("failed for find configuration for {} in transcript_gene_so_term_map",
+                           &gene_details.transcript_so_termid);
+                });
+
             let db_object_taxon = format!("NCBITaxon:{}", load_org_taxonid);
             let db_xrefs =
                 gene_details.uniprot_identifier.clone()
