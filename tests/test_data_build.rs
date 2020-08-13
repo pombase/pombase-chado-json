@@ -105,6 +105,7 @@ fn get_test_config() -> Config {
             annotation_subsets: vec![],
             gpad_gpi: GpadGpiConfig {
                 extension_relation_mappings: HashMap::new(),
+                transcript_gene_so_term_map: HashMap::new(),
             }
         },
     };

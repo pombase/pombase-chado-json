@@ -463,6 +463,8 @@
     ],
     "gpad_gpi": {
       "extension_relation_mappings": {
+      },
+      "transcript_gene_so_term_map": {
       }
     }
   }
