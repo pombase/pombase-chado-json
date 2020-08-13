@@ -435,7 +435,8 @@ impl WebData {
                         self.eco_evidence_from_annotation(go_eco_mappping,
                                                           annotation_detail);
                     let assigned_by = &config.database_name;
-                    let with_or_from =
+
+                    let mut with_or_from_parts =
                         annotation_detail.withs.iter().map(|s| {
                             let s: RcString = s.clone().into();
                             if s.contains(":") {
@@ -444,7 +445,10 @@ impl WebData {
                                 RcString::from(&format!("{}:{}", assigned_by, s))
                             }
                         })
-                        .collect::<Vec<RcString>>().join(",");
+                        .collect::<Vec<RcString>>();
+                    with_or_from_parts.sort_unstable();
+                    let with_or_from = with_or_from_parts.join(",");
+
                     let date = annotation_detail.date.clone()
                         .expect(&format!("date missing from annotation with ID {}",
                                         annotation_id));
