@@ -446,7 +446,8 @@ impl WebData {
                         })
                         .collect::<Vec<RcString>>().join(",");
                     let date = annotation_detail.date.clone()
-                        .unwrap_or_else(|| RcString::from("dunno"));
+                        .expect(&format!("date missing from annotation with ID {}",
+                                        annotation_id));
                     let annotation_extensions =
                         self.make_extension_string(config, &annotation_detail.extension);
                     let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t\n",
