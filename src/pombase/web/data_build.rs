@@ -1869,7 +1869,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_interesting_parents(&mut self) {
-        let mut interesting_parents_by_termid: HashMap<RcString, HashSet<RcString>> =
+        let mut interesting_parents_by_termid: HashMap<RcString, HashSet<InterestingParent>> =
             HashMap::new();
 
         for cvtermpath in &self.raw.cvtermpaths {
@@ -1893,13 +1893,21 @@ impl <'a> WebDataBuild<'a> {
                 interesting_parents_by_termid
                     .entry(subject_termid.clone())
                     .or_insert_with(HashSet::new)
-                    .insert(object_termid);
+                    .insert(InterestingParent {
+                        termid: object_termid,
+                        rel_name: rel_term_name,
+                    });
             };
         }
 
         for (termid, interesting_parents) in interesting_parents_by_termid {
             let term_details = self.terms.get_mut(&termid).unwrap();
-            term_details.interesting_parents = interesting_parents;
+            let isa_parents = interesting_parents.iter()
+                .filter(|p| p.rel_name == "is_a")
+                .map(|p| p.termid.clone())
+                .collect::<HashSet<_>>();
+            term_details.interesting_isa_parents = isa_parents;
+            term_details.all_interesting_parents = interesting_parents;
         }
     }
 
@@ -2271,7 +2279,7 @@ impl <'a> WebDataBuild<'a> {
             for ext_config in ext_configs {
                 if ext_config.rel_name == rel_type_name {
                     if let Some(if_descendant_of) = ext_config.if_descendant_of.clone() {
-                        if annotation_term_details.interesting_parents.contains(&if_descendant_of) {
+                        if annotation_term_details.interesting_isa_parents.contains(&if_descendant_of) {
                             return Some((*ext_config).clone());
                         }
                     } else {
@@ -2483,15 +2491,15 @@ impl <'a> WebDataBuild<'a> {
                             }
 
                             let term = &self.terms[&term_annotation.term];
-                            let interesting_parents = &term.interesting_parents;
+                            let interesting_isa_parents = &term.interesting_isa_parents;
                             let conditions_as_string =
                                 condition_string(annotation.conditions.clone());
-                            if interesting_parents.contains(viable_termid) ||
+                            if interesting_isa_parents.contains(viable_termid) ||
                                 *viable_termid == term_annotation.term {
                                     viable_conditions.insert(conditions_as_string,
                                                              term_annotation.term.clone());
                                 } else {
-                                    if interesting_parents.contains(inviable_termid) ||
+                                    if interesting_isa_parents.contains(inviable_termid) ||
                                         *inviable_termid == term_annotation.term {
                                             inviable_conditions.insert(conditions_as_string,
                                                                        term_annotation.term.clone());
@@ -2799,7 +2807,8 @@ impl <'a> WebDataBuild<'a> {
                                       name: cvterm.name.clone(),
                                       cv_name: cvterm.cv.name.clone(),
                                       annotation_feature_type,
-                                      interesting_parents: HashSet::new(),
+                                      interesting_isa_parents: HashSet::new(),
+                                      all_interesting_parents: HashSet::new(),
                                       in_subsets: HashSet::new(),
                                       termid: cvterm.termid(),
                                       synonyms,
@@ -3117,11 +3126,10 @@ impl <'a> WebDataBuild<'a> {
 
         if evidence_code.is_some() &&
             evidence_code.unwrap() == "IPI" &&
-            // add new IDs to the interesting_parents config
             (base_term_short.termid == "GO:0005515" ||
-             base_term_short.interesting_parents.contains("GO:0005515") ||
+             base_term_short.interesting_isa_parents.contains("GO:0005515") ||
              base_term_short.termid == "GO:0003723" ||
-             base_term_short.interesting_parents.contains("GO:0003723")) {
+             base_term_short.interesting_isa_parents.contains("GO:0003723")) {
                 extension.push(self.get_with_extension(with_value));
             } else {
                 return Some(self.make_with_or_from_value(with_value));
@@ -3762,7 +3770,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    // return true if the term could or should appear in the interesting_parents
+    // return true if the term could or should appear in the all_interesting_parents
     // field of the TermDetails and TermShort structs
     fn is_interesting_parent(&self, termid: &str, rel_name: &str) -> bool {
         self.possible_interesting_parents.contains(&InterestingParent {
@@ -4068,11 +4076,11 @@ impl <'a> WebDataBuild<'a> {
                         panic!("can't find TermDetails for {}", &term_annotation.term)
                     });
 
-                let interesting_parents = &term_details.interesting_parents;
+                let interesting_isa_parents = &term_details.interesting_isa_parents;
 
                 if !term_annotation.is_not &&
                     (term_annotation.term == check_termid ||
-                     interesting_parents.contains(check_termid))
+                     interesting_isa_parents.contains(check_termid))
                 {
                     return true;
                 }
@@ -4705,11 +4713,11 @@ impl <'a> WebDataBuild<'a> {
 
         let has_parent_in_slim = |term_annotations: &Vec<OntTermAnnotations>| {
             for term_annotation in term_annotations {
-                let interesting_parents =
-                    &self.terms[&term_annotation.term].interesting_parents;
+                let interesting_isa_parents =
+                    &self.terms[&term_annotation.term].interesting_isa_parents;
                 if !term_annotation.is_not &&
                     (slim_termid_set.contains(&term_annotation.term) ||
-                     interesting_parents.intersection(&slim_termid_set).count() > 0)
+                     interesting_isa_parents.intersection(&slim_termid_set).count() > 0)
                 {
                     return true;
                 }
@@ -5039,8 +5047,8 @@ impl <'a> WebDataBuild<'a> {
                 })
                 .collect::<Vec<_>>();
 
-            let interesting_parents_for_solr =
-                term_details.interesting_parents.clone();
+            let interesting_isa_parents_for_solr =
+                term_details.interesting_isa_parents.clone();
             let term_summ = SolrTermSummary {
                 id: termid.clone(),
                 cv_name: term_details.cv_name.clone(),
@@ -5050,7 +5058,7 @@ impl <'a> WebDataBuild<'a> {
                 close_synonym_words: RcString::from(&close_synonym_words_vec.join(" ")),
                 distant_synonyms,
                 distant_synonym_words: RcString::from(&distant_synonym_words_vec.join(" ")),
-                interesting_parents: interesting_parents_for_solr,
+                interesting_isa_parents: interesting_isa_parents_for_solr,
                 secondary_identifiers: term_details.secondary_identifiers.clone(),
             };
             return_summaries.push(term_summ);

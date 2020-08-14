@@ -91,7 +91,7 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
     if let Some(captures) = maybe_captures {
         let prefix = captures.name("prefix").unwrap().as_str();
         let accession = captures.name("accession").unwrap().as_str();
-        terms_url += &format!("(interesting_parents:{}\\:{} OR id:{}\\:{})",
+        terms_url += &format!("(interesting_isa_parents:{}\\:{} OR id:{}\\:{})",
                               prefix, accession, prefix, accession);
     } else {
         terms_url += &format!("cv_name:+{}^=1", cv_name);

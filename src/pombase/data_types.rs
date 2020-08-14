@@ -236,7 +236,7 @@ pub struct TermShort {
     pub name: TermName,
     pub cv_name: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub interesting_parents: HashSet<RcString>,
+    pub interesting_isa_parents: HashSet<RcString>,
     pub termid: TermId,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
@@ -252,7 +252,7 @@ impl TermShort {
         TermShort {
             name: term_details.name.clone(),
             cv_name: term_details.cv_name.clone(),
-            interesting_parents: term_details.interesting_parents.clone(),
+            interesting_isa_parents: term_details.interesting_isa_parents.clone(),
             termid: term_details.termid.clone(),
             is_obsolete: term_details.is_obsolete,
             gene_count: term_details.gene_count,
@@ -1023,7 +1023,9 @@ pub struct TermDetails {
     pub cv_name: CvName,
     pub annotation_feature_type: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub interesting_parents: HashSet<RcString>,
+    pub interesting_isa_parents: HashSet<RcString>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub all_interesting_parents: HashSet<InterestingParent>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub in_subsets: HashSet<RcString>,
     pub termid: TermId,
@@ -1334,7 +1336,7 @@ pub struct SolrTermSummary {
     // a uniquified list of the words in all distant synonyms
     pub distant_synonym_words: RcString,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub interesting_parents: HashSet<RcString>,
+    pub interesting_isa_parents: HashSet<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
 }

@@ -68,7 +68,7 @@ fn get_test_config() -> Config {
         target_of_config: TargetOfConfig {
             relation_priority: HashMap::new(),
         },
-        interesting_parents: vec![],
+        interesting_isa_parents: vec![],
         viability_terms: ViabilityTerms {
             viable: RcString::from("FYPO:0002058"),
             inviable: RcString::from("FYPO:0002059"),
@@ -609,7 +609,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         name: name.into(),
         cv_name: cv_name.into(),
         annotation_feature_type: RcString::from("gene"),
-        interesting_parents: HashSet::new(),
+        interesting_isa_parents: HashSet::new(),
         in_subsets: HashSet::from_iter(vec![RcString::from("goslim_pombe")]),
         synonyms: vec![],
         definition: None,

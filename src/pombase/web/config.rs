@@ -18,7 +18,7 @@ pub struct ExtensionDisplayNames {
 }
 
 // "interesting parents" are those stored in the JSON in the TermShort structs
-#[derive(Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct InterestingParent {
     pub termid: RcString,
     pub rel_name: RcString,

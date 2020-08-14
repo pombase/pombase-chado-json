@@ -562,7 +562,7 @@ fn get_test_config() -> Config {
         target_of_config: TargetOfConfig {
             relation_priority: HashMap::new(),
         },
-        interesting_parents: vec![],
+        interesting_isa_parents: vec![],
         viability_terms: ViabilityTerms {
             viable: "FYPO:0002058".into(),
             inviable: "FYPO:0002059".into(),
