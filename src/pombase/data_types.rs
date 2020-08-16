@@ -485,6 +485,8 @@ pub struct OntAnnotationDetail {
     pub froms: HashSet<WithFromValue>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub residue: Option<Residue>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub gene_product_form_id: Option<RcString>,
     pub qualifiers: Vec<Qualifier>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub gene_ex_props: Option<GeneExProps>,

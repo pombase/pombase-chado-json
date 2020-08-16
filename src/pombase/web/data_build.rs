@@ -3340,6 +3340,7 @@ impl <'a> WebDataBuild<'a> {
                 withs,
                 froms,
                 residue: extra_props_clone.remove("residue"),
+                gene_product_form_id: extra_props_clone.remove("gene_product_form_id"),
                 gene_ex_props,
                 qualifiers,
                 evidence,

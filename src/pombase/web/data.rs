@@ -26,6 +26,7 @@ use crate::api_data::APIData;
 use crate::annotation_util::table_for_export;
 
 use crate::web::go_format_writer::write_gene_product_annotation;
+use crate::web::go_format_writer::write_go_annotation_format;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -333,16 +334,19 @@ impl WebData {
         let database_name = &config.database_name;
 
         let gpi_file_name =
-            format!("{}/gene_product_information_taxonid_{}.tsv", output_dir.to_owned(),
+            format!("{}/gene_product_information_taxonid_{}.tsv", output_dir,
                     load_org_taxonid);
         let gpad_file_name =
-            format!("{}/gene_product_annotation_data_taxonid_{}.tsv", output_dir.to_owned(),
+            format!("{}/gene_product_annotation_data_taxonid_{}.tsv", output_dir,
                     load_org_taxonid);
+        let gaf_file_name = format!("{}/pombase_style_gaf.tsv", output_dir);
 
         let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
         let gpad_file = File::create(gpad_file_name).expect("Unable to open file");
+        let gaf_file = File::create(gaf_file_name).expect("Unable to open file");
         let mut gpi_writer = BufWriter::new(&gpi_file);
         let mut gpad_writer = BufWriter::new(&gpad_file);
+        let mut gaf_writer = BufWriter::new(&gaf_file);
 
         let generated_by = format!("!generated-by: {}\n", database_name);
         let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
@@ -402,6 +406,8 @@ impl WebData {
 
             write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,
                                           &self.api_maps, gene_details)?;
+            write_go_annotation_format(&mut gaf_writer, config,
+                                       &self.api_maps, gene_details)?;
        }
 
         Ok(())
