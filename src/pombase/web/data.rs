@@ -390,7 +390,7 @@ impl WebData {
             },
             "biological_process" => String::from("RO:0002331"),
             "cellular_component" => {
-                if term_details.all_interesting_parents.iter()
+                if term_details.interesting_parent_details.iter()
                     .any(|p| p.termid == RcString::from("GO:0032991"))
                 {
                     String::from("BFO:0000050")
@@ -1046,7 +1046,7 @@ impl WebData {
                 if complexes_config.excluded_terms.contains(termid.as_ref()) {
                     continue 'TERM;
                 }
-                if !term_short.interesting_isa_parents.iter().any(check_parent_term) {
+                if !term_short.interesting_parent_ids.iter().any(check_parent_term) {
                     continue 'TERM;
                 }
 
