@@ -4791,10 +4791,10 @@ impl <'a> WebDataBuild<'a> {
         let mut slim_subset: HashMap<TermId, TermSubsetElement> = HashMap::new();
         let slim_config = self.config.slims.get(slim_name)
             .expect(&format!("no slim config for {}", slim_name));
-        for slim_conf in slim_config.terms.clone() {
-            let slim_termid = slim_conf.termid;
-            let term_details = self.terms.get(&slim_termid)
-                .unwrap_or_else(|| panic!("can't find TermDetails for {}", &slim_termid));
+        for slim_conf in &slim_config.terms {
+            let slim_termid = &slim_conf.termid;
+            let term_details = self.terms.get(slim_termid)
+                .unwrap_or_else(|| panic!("can't find TermDetails for {}", slim_termid));
 
             let subset_element = TermSubsetElement {
                 name: term_details.name.clone(),
