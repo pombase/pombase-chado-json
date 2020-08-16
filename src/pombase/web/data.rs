@@ -402,7 +402,8 @@ impl WebData {
         }
     }
 
-    fn write_gene_product_annotation(&self, gpad_writer: &mut BufWriter<&File>,
+    fn write_gene_product_annotation(&self,
+                                     gpad_writer: &mut dyn Write,
                                      go_eco_mappping: &GoEcoMapping, config: &Config,
                                      db_object_id: &str, gene_details: &GeneDetails)
                                      -> Result<(), io::Error>
