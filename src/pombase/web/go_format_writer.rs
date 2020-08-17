@@ -8,7 +8,7 @@ use pombase_rc_string::RcString;
 use crate::web::config::*;
 use crate::data_types::*;
 
-const GO_ASPECT_NAMES: [&str; 3] =
+pub const GO_ASPECT_NAMES: [&str; 3] =
     ["cellular_component", "biological_process", "molecular_function"];
 
 
@@ -192,9 +192,15 @@ fn make_gaf_extension_string(config: &Config, extension: &Vec<ExtPart>) -> Strin
 
 
 pub fn write_go_annotation_format(writer: &mut dyn Write, config: &Config,
-                                  api_maps: &APIMaps, gene_details: &GeneDetails)
+                                  api_maps: &APIMaps, gene_details: &GeneDetails,
+                                  cv_name: &str)
                                   -> Result<(), io::Error>
 {
+    if !GO_ASPECT_NAMES.contains(&cv_name) {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                  format!("unknown CV: {}", cv_name)));
+    }
+
     let database_name = &config.database_name;
     let db_object_id = &gene_details.uniquename;
     let db_object_symbol =
@@ -213,18 +219,14 @@ pub fn write_go_annotation_format(writer: &mut dyn Write, config: &Config,
 
     let single_letter_re = Regex::new(r"\w+_(?P<letter>\w)\w+").unwrap();
 
-    for (cv_name, term_annotations) in &gene_details.cv_annotations {
-        if !GO_ASPECT_NAMES.contains(&cv_name.as_ref()) {
-            continue;
-        }
+    let single_letter_aspect =
+        if let Some(captures) = single_letter_re.captures(&cv_name) {
+            captures["letter"].to_uppercase()
+        } else {
+            panic!("{} doesn't look like a GO aspect name", cv_name);
+        };
 
-        let single_letter_aspect =
-            if let Some(captures) = single_letter_re.captures(&cv_name) {
-                captures["letter"].to_uppercase()
-            } else {
-                panic!("{} doesn't look like a GO aspect name", cv_name);
-            };
-
+    if let Some(term_annotations) = gene_details.cv_annotations.get(cv_name) {
         for term_annotation in term_annotations {
             for annotation_id in &term_annotation.annotations {
                 let annotation_detail = api_maps.annotation_details

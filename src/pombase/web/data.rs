@@ -25,8 +25,7 @@ use crate::data_types::*;
 use crate::api_data::APIData;
 use crate::annotation_util::table_for_export;
 
-use crate::web::go_format_writer::write_gene_product_annotation;
-use crate::web::go_format_writer::write_go_annotation_format;
+use crate::web::go_format_writer::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -406,8 +405,12 @@ impl WebData {
 
             write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,
                                           &self.api_maps, gene_details)?;
-            write_go_annotation_format(&mut gaf_writer, config,
-                                       &self.api_maps, gene_details)?;
+
+            for aspect_name in &GO_ASPECT_NAMES {
+                write_go_annotation_format(&mut gaf_writer, config,
+                                           &self.api_maps, gene_details,
+                                           aspect_name)?;
+            }
        }
 
         Ok(())
