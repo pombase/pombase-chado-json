@@ -6,4 +6,3 @@ pub mod cv_summary;
 pub mod cmp_utils;
 pub mod util;
 pub mod simple_pages;
-pub mod go_format_writer;

@@ -1,5 +1,6 @@
 use std::iter::FromIterator;
 use std::cmp;
+use std::str;
 
 use std::collections::HashSet;
 
@@ -13,6 +14,8 @@ use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShor
 use crate::web::config::TermAndName;
 
 use crate::bio::util::rev_comp;
+use crate::bio::go_format_writer::write_go_annotation_format;
+
 
 use crate::types::GeneUniquename;
 
@@ -492,8 +495,16 @@ pub enum SeqType {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GAFOptions {
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub aspects: HashSet<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct QueryOutputOptions {
     pub sequence: SeqType,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub gaf_options: Option<GAFOptions>,
     pub field_names: Vec<String>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub flags: HashSet<String>,
@@ -549,7 +560,7 @@ impl Query {
 
     fn make_nucl_seq(&self, transcript: &TranscriptDetails,
                      maybe_chr_details: Option<&ChromosomeDetails>,
-                     options: &NucleotideDownloadOptions) -> RcString {
+                     options: &NucleotideDownloadOptions) -> String {
         let mut seq = String::from("");
 
         let loc = &transcript.location;
@@ -622,11 +633,11 @@ impl Query {
                 }
             }
 
-        RcString::from(&seq)
+        seq.to_owned()
     }
 
     fn make_sequence(&self, api_data: &APIData,
-                     gene_uniquename: &RcString) -> Option<RcString> {
+                     gene_uniquename: &RcString) -> Option<String> {
         let maybe_gene_summary = api_data.get_gene_summary(gene_uniquename);
 
         if let Some(gene_summary) = maybe_gene_summary {
@@ -635,7 +646,7 @@ impl Query {
                 match self.output_options.sequence {
                     SeqType::Protein =>
                         if let Some(ref protein) = transcript.protein {
-                            return Some(protein.sequence.clone());
+                            return Some(protein.sequence.to_string());
                         }
                     SeqType::Nucleotide(ref options) => {
                         let chr = gene_summary.location.as_ref()
@@ -650,6 +661,41 @@ impl Query {
         }
 
         None
+    }
+
+    fn make_gaf_lines(&self, api_data: &APIData,
+                      gene_uniquename: &RcString) -> Option<String> {
+
+        let gaf_options = &self.output_options.gaf_options;
+
+        if gaf_options.is_none() {
+            return None;
+        }
+
+        let aspects = &gaf_options.as_ref().unwrap().aspects;
+
+        let maybe_gene_details = api_data.get_gene_details(gene_uniquename);
+
+        let mut gaf_bytes: Vec<u8> = vec![];
+
+        if let Some(gene_details) = maybe_gene_details {
+            for aspect in aspects.iter() {
+                let result = write_go_annotation_format(&mut gaf_bytes,
+                                                        api_data.get_config(),
+                                                        api_data.get_maps(), gene_details,
+                                                        aspect);
+
+                if result.is_err() {
+                    return None;
+                }
+            }
+        }
+
+        if let Ok(gaf_str) = str::from_utf8(&gaf_bytes) {
+            Some(gaf_str.to_owned())
+        } else {
+            None
+        }
     }
 
     fn make_result_rows(&self, api_data: &APIData,
@@ -713,8 +759,11 @@ impl Query {
                }
 
                let sequence = self.make_sequence(api_data, &gene_uniquename);
+               let gaf_lines = self.make_gaf_lines(api_data, &gene_uniquename);
+
                ResultRow {
                    sequence,
+                   gaf_lines,
                    deletion_viability,
                    go_component,
                    go_process_superslim,

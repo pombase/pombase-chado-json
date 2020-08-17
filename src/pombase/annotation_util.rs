@@ -3,11 +3,11 @@ use std::collections::{HashSet, HashMap};
 use pombase_rc_string::RcString;
 
 use crate::web::config::{CvConfig, AnnotationSubsetConfig};
-use crate::api_data::{APIData};
 use crate::types::{CvName};
+use crate::data_types::APIMaps;
 
 
-pub fn table_for_export(api_data: &APIData, cv_config_map: &HashMap<CvName, CvConfig>,
+pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvConfig>,
                         subset_config: &AnnotationSubsetConfig)
     -> Vec<Vec<RcString>>
 {
@@ -16,7 +16,7 @@ pub fn table_for_export(api_data: &APIData, cv_config_map: &HashMap<CvName, CvCo
     let mut result: Vec<Vec<RcString>> = vec![];
 
     for termid in &subset_config.term_ids {
-        let term_details = api_data.get_term_details(&termid)
+        let term_details = api_maps.terms.get(termid.as_str())
             .expect(&format!("no term details found for {} for config file", termid));
 
         for (cv_name, term_annotations) in &term_details.cv_annotations {
@@ -31,8 +31,7 @@ pub fn table_for_export(api_data: &APIData, cv_config_map: &HashMap<CvName, CvCo
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
 
-                let annotation_term_details =
-                    term_details.terms_by_termid.get(termid).unwrap().as_ref().unwrap();
+                let annotation_term_details = api_maps.terms.get(termid).unwrap();
 
                 if term_annotation.is_not {
                     continue;
@@ -40,14 +39,14 @@ pub fn table_for_export(api_data: &APIData, cv_config_map: &HashMap<CvName, CvCo
 
                 for annotation_id in &term_annotation.annotations {
                     let mut row = vec![];
-                    let annotation_details = term_details.annotation_details
+                    let annotation_details = api_maps.annotation_details
                         .get(&annotation_id).expect("can't find OntAnnotationDetail");
 
                     let gene_uniquenames = &annotation_details.genes;
 
                     let maybe_genotype_short =
                         if let Some(ref genotype_uniquename) = annotation_details.genotype {
-                            term_details.genotypes_by_uniquename.get(genotype_uniquename)
+                            api_maps.genotypes.get(genotype_uniquename)
                         } else {
                             None
                         };
@@ -75,8 +74,7 @@ pub fn table_for_export(api_data: &APIData, cv_config_map: &HashMap<CvName, CvCo
                         if column_config.name == "gene_name" {
                             let gene_names_string =
                                 gene_uniquenames.iter().filter_map(|uniquename| {
-                                    term_details.genes_by_uniquename.get(uniquename)
-                                        .unwrap().as_ref().unwrap().name.clone()
+                                    api_maps.genes.get(uniquename).unwrap().name.clone()
                                 }).collect::<Vec<_>>().join(",");
                             row.push(RcString::from(&gene_names_string));
                         }

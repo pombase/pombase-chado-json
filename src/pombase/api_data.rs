@@ -21,6 +21,7 @@ use crate::types::{TermId, GeneUniquename};
 use pombase_rc_string::RcString;
 
 pub struct APIData {
+    config: Config,
     maps: APIMaps,
     secondary_identifiers_map: HashMap<TermId, TermId>,
 }
@@ -42,42 +43,37 @@ fn make_secondary_identifiers_map(terms: &HashMap<TermId, TermDetails>)
 }
 
 
-impl APIData {
-    pub fn new_from_file(config: &Config, search_maps_file_name: &str)
-               -> APIData
-    {
-        let file = match File::open(search_maps_file_name) {
-            Ok(file) => file,
-            Err(err) => {
-                eprint!("Failed to read {}: {}\n", search_maps_file_name, err);
-                process::exit(1);
-            }
-        };
+pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
+{
+    let file = match File::open(search_maps_file_name) {
+        Ok(file) => file,
+        Err(err) => {
+            eprint!("Failed to read {}: {}\n", search_maps_file_name, err);
+            process::exit(1);
+        }
+    };
 
-        let reader = BufReader::new(file);
-        let mut decoder = GzDecoder::new(reader);
+    let reader = BufReader::new(file);
+    let mut decoder = GzDecoder::new(reader);
 
-//  this uses less peak memory but is 4X slower
-//  See: https://github.com/serde-rs/json/issues/160
-//        let serde_result = serde_json::de::from_reader(&mut decoder);
+    //  this uses less peak memory but is 4X slower
+    //  See: https://github.com/serde-rs/json/issues/160
+    //        let serde_result = serde_json::de::from_reader(&mut decoder);
 
-        let mut decoded_json = String::new();
-        decoder.read_to_string(&mut decoded_json).unwrap();
-        let serde_result = serde_json::from_str(&decoded_json);
+    let mut decoded_json = String::new();
+    decoder.read_to_string(&mut decoded_json).unwrap();
+    let serde_result = serde_json::from_str(&decoded_json);
 
-        let maps: APIMaps =
-            match serde_result {
-                Ok(results) => results,
-                Err(err) => {
-                    eprint!("failed to parse {}: {}", search_maps_file_name, err);
-                    process::exit(1);
-                },
-            };
-
-
-        APIData::new(config, &maps)
+    match serde_result {
+        Ok(results) => results,
+        Err(err) => {
+            eprint!("failed to parse {}: {}", search_maps_file_name, err);
+            process::exit(1);
+        },
     }
+}
 
+impl APIData {
     pub fn new(config: &Config, maps: &APIMaps)
                ->APIData
     {
@@ -104,9 +100,18 @@ impl APIData {
             make_secondary_identifiers_map(&maps.terms);
 
         APIData {
+            config: config.clone(),
             secondary_identifiers_map,
             maps
         }
+    }
+
+    pub fn get_config(&self) -> &Config {
+        &self.config
+    }
+
+    pub fn get_maps(&self) -> &APIMaps {
+        &self.maps
     }
 
     pub fn gene_uniquename_of_id(&self, id: &RcString) -> Option<GeneUniquename> {

@@ -11,6 +11,7 @@ use self::pombase::api::query_exec::*;
 use self::pombase::web::config::{Config, TermAndName};
 use self::pombase::data_types::{GeneShort, DeletionViability, GeneQueryTermData};
 use self::pombase::api_data::*;
+use self::pombase::bio::go_format_writer::GO_ASPECT_NAMES;
 
 use self::pombase_rc_string::RcString;
 
@@ -21,7 +22,8 @@ fn get_api_data() -> APIData {
     let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     config_path.push("tests/test_config.json");
     let config = Config::read(&config_path.to_str().expect("config"));
-    APIData::new_from_file(&config, search_maps_path.to_str().expect("search maps"))
+    let api_maps = api_maps_from_file(search_maps_path.to_str().expect("search maps"));
+    APIData::new(&config, &api_maps)
 }
 
 fn check_gene_result(query: &Query, genes: Vec<&str>) {
@@ -102,6 +104,7 @@ fn test_and_or_not() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        gaf_options: None,
         flags: HashSet::new(),
     };
 
@@ -153,6 +156,7 @@ fn test_output_options() {
                           "deletion_viability".to_owned(),
                           "go_component".to_owned()],
         sequence: SeqType::None,
+        gaf_options: None,
         flags: HashSet::new(),
     };
 
@@ -173,6 +177,7 @@ fn test_output_options() {
                 protein_length: None,
                 protein_length_bin: None,
                 sequence: None,
+                gaf_lines: None,
                 subsets: HashSet::new(),
             },
             ResultRow {
@@ -190,6 +195,7 @@ fn test_output_options() {
                 protein_length_bin: None,
                 tmm: None,
                 sequence: None,
+                gaf_lines: None,
                 subsets: HashSet::new(),
             },
             ResultRow {
@@ -210,6 +216,7 @@ fn test_output_options() {
                 protein_length_bin: None,
                 tmm: None,
                 sequence: None,
+                gaf_lines: None,
                 subsets: HashSet::new(),
             }];
 
@@ -241,6 +248,7 @@ fn test_termid() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        gaf_options: None,
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -259,6 +267,7 @@ fn test_gene_subset() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        gaf_options: None,
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -277,6 +286,7 @@ fn test_gene_subset_invert() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        gaf_options: None,
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -300,6 +310,7 @@ fn test_gene_subset_wildcard() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        gaf_options: None,
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -319,6 +330,7 @@ fn test_gene_subset_not_wildcard() {
     let opts = QueryOutputOptions {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
+        gaf_options: None,
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -329,4 +341,47 @@ fn test_gene_subset_not_wildcard() {
                            "SPBC359.03c", "SPCC736.11", "SPBC1652.02",
                            "SPBC460.01c", "SPAC6G10.11c", "SPCC895.03c",
                            "SPBC19F8.06c"]);
+}
+
+#[test]
+fn test_gene_gaf() {
+    let qp1 = QueryNode {
+        term: Some(TermNode {
+            termid: "GO:0044237".into(),
+            name: None,
+            single_or_multi_allele: None,
+            expression: None,
+            conditions: HashSet::new(),
+            excluded_conditions: HashSet::new(),
+        }),
+        .. QueryNode::template_node()
+    };
+    let mut aspects = HashSet::new();
+    for aspect in GO_ASPECT_NAMES.iter() {
+        aspects.insert(String::from(*aspect));
+    }
+
+    let opts = QueryOutputOptions {
+        field_names: vec!["gene_uniquename".to_owned()],
+        sequence: SeqType::None,
+        gaf_options: Some(GAFOptions {
+            aspects,
+        }),
+        flags: HashSet::new(),
+    };
+    let query = Query::new(qp1, opts);
+
+    let api_data = get_api_data();
+    let query_exec = QueryExec::new(api_data, None);
+    let result = query_exec.exec(&query);
+
+    let mut gaf_lines = String::new();
+
+    for row in result.rows.into_iter() {
+        if let Some(ref lines) = row.gaf_lines {
+            gaf_lines += lines;
+        }
+    }
+
+    assert_eq!(gaf_lines, "PomBase\tSPAC27E2.05\tSPAC27E2.05\t\tGO:0044237\tPB_REF:0000001\tISS\t\tP\t\t\tprotein\ttaxon:4893\t20090213\tPomBase\t\t\n");
 }

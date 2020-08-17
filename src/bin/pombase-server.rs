@@ -24,7 +24,7 @@ use pombase::api::query::Query as PomBaseQuery;
 use pombase::api::result::QueryAPIResult;
 use pombase::api::search::{Search, TermSearchMatch, RefSearchMatch, DocSearchMatch};
 use pombase::api::query_exec::QueryExec;
-use pombase::api_data::APIData;
+use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
 
 use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
@@ -371,7 +371,8 @@ fn main() {
 
     let config_file_name = matches.opt_str("c").unwrap();
     let config = Config::read(&config_file_name);
-    let api_data = APIData::new_from_file(&config, &search_maps_filename);
+    let api_maps = api_maps_from_file(&search_maps_filename);
+    let api_data = APIData::new(&config, &api_maps);
     let site_db = site_db_conn_string.map(|conn_str| SiteDB::new(&conn_str));
     let query_exec = QueryExec::new(api_data, site_db);
     let searcher = Search::new(&config);

@@ -22,10 +22,9 @@ use crate::rnacentral::*;
 
 use crate::types::CvName;
 use crate::data_types::*;
-use crate::api_data::APIData;
 use crate::annotation_util::table_for_export;
 
-use crate::web::go_format_writer::*;
+use crate::bio::go_format_writer::*;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -1176,17 +1175,15 @@ impl WebData {
     fn write_annotation_subsets(&self, config: &Config, output_dir: &str)
                                 -> Result<(), io::Error>
     {
-        let api_data = APIData::new(config, &self.api_maps);
-
         for subset_config in &config.file_exports.annotation_subsets {
-            self.write_annotation_subset(&api_data, &config.cv_config,
+            self.write_annotation_subset(&config.cv_config,
                                          subset_config, output_dir)?;
         }
 
         Ok(())
     }
 
-    fn write_annotation_subset(&self, api_data: &APIData,
+    fn write_annotation_subset(&self,
                                cv_config_map: &HashMap<CvName, CvConfig>,
                                subset_config: &AnnotationSubsetConfig,
                                output_dir: &str)
@@ -1194,11 +1191,13 @@ impl WebData {
     {
         let file_name = format!("{}/{}", output_dir, subset_config.file_name);
 
+        print!("WRITE: {:?}\n", file_name);
+
         let file = File::create(file_name).expect("Unable to open file for writing");
 
         let mut writer = BufWriter::new(&file);
 
-        let table = table_for_export(api_data, cv_config_map, subset_config);
+        let table = table_for_export(&self.api_maps, cv_config_map, subset_config);
 
         for row in table {
             let line = row.join("\t") + "\n";

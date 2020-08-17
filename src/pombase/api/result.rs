@@ -34,7 +34,9 @@ pub struct ResultRow {
     #[serde(skip_serializing_if="Option::is_none")]
     pub protein_length_bin: Option<GeneQueryAttrName>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub sequence: Option<RcString>,
+    pub sequence: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub gaf_lines: Option<String>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subsets: HashSet<TermId>,
 }
