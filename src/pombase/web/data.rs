@@ -1191,8 +1191,6 @@ impl WebData {
     {
         let file_name = format!("{}/{}", output_dir, subset_config.file_name);
 
-        print!("WRITE: {:?}\n", file_name);
-
         let file = File::create(file_name).expect("Unable to open file for writing");
 
         let mut writer = BufWriter::new(&file);
