@@ -1,7 +1,6 @@
-use std::io::Write;
 use std::io;
 
-use regex::Regex;
+use std::fmt::Write;
 
 use pombase_rc_string::RcString;
 
@@ -96,7 +95,7 @@ fn make_gpad_extension_string(config: &Config, extension: &Vec<ExtPart>) -> Stri
 }
 
 
-pub fn write_gene_product_annotation(gpad_writer: &mut dyn Write,
+pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                      go_eco_mappping: &GoEcoMapping, config: &Config,
                                      api_maps: &APIMaps, gene_details: &GeneDetails)
                                      -> Result<(), io::Error>
@@ -170,28 +169,35 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn Write,
 
 
 fn make_gaf_extension_string(config: &Config, extension: &Vec<ExtPart>) -> String {
-    let get_range = |ext_part: &ExtPart| {
-        let mut range_copy = ext_part.ext_range.clone();
+    let mut ret_string = String::new();
 
-        if let ExtRange::Gene(ref mut gene_uniquename) = range_copy {
-            if !gene_uniquename.contains(":") {
-                let new_uniquename =
-                    RcString::from(&format!("{}:{}", config.database_name,
-                                            gene_uniquename));
-                *gene_uniquename = new_uniquename;
+    for (idx, ext_part) in extension.iter().enumerate() {
+        ret_string += &ext_part.rel_type_name;
+        ret_string.push('(');
+
+        if let ExtRange::Gene(ref gene_uniquename) = ext_part.ext_range {
+            if gene_uniquename.contains(":") {
+                ret_string += gene_uniquename;
+            } else {
+                ret_string += &config.database_name;
+                ret_string.push(':');
+                ret_string += &gene_uniquename;
             }
+        } else {
+            write!(ret_string, "{}", &ext_part.ext_range).unwrap();
         }
-        range_copy
-    };
+        ret_string.push(')');
 
-    extension.iter()
-        .map(|ext_part| format!("{}({})", ext_part.rel_type_name,
-                                get_range(ext_part)))
-        .collect::<Vec<_>>().join(",")
+        if idx < extension.len() - 1 {
+            ret_string.push(',');
+        }
+    }
+
+    ret_string
 }
 
 
-pub fn write_go_annotation_format(writer: &mut dyn Write, config: &Config,
+pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                   api_maps: &APIMaps, gene_details: &GeneDetails,
                                   cv_name: &str)
                                   -> Result<(), io::Error>
@@ -217,13 +223,15 @@ pub fn write_go_annotation_format(writer: &mut dyn Write, config: &Config,
         .collect::<Vec<String>>()
         .join("|");
 
-    let single_letter_re = Regex::new(r"\w+_(?P<letter>\w)\w+").unwrap();
-
     let single_letter_aspect =
-        if let Some(captures) = single_letter_re.captures(&cv_name) {
-            captures["letter"].to_uppercase()
+        if cv_name.starts_with("b") {
+            "P"
         } else {
-            panic!("{} doesn't look like a GO aspect name", cv_name);
+            if cv_name.starts_with("c") {
+                "C"
+            } else {
+                "F"
+            }
         };
 
     if let Some(term_annotations) = gene_details.cv_annotations.get(cv_name) {
