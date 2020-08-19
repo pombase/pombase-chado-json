@@ -15,8 +15,54 @@ pub struct Search {
     config: ServerConfig,
 }
 
+#[derive(Deserialize, Debug)]
+pub enum SolrSearchScope {
+#[serde(rename = "term")]
+    Term,
+#[serde(rename = "reference")]
+    Reference,
+#[serde(rename = "doc")]
+    Documentation,
+}
+
+impl SolrSearchScope {
+    pub fn new_from_str(scope_str: &str) -> Option<SolrSearchScope> {
+        match scope_str {
+            "term" => Some(SolrSearchScope::Term),
+            "ref" => Some(SolrSearchScope::Reference),
+            "doc" => Some(SolrSearchScope::Documentation),
+            _ => None,
+        }
+    }
+
+    pub fn is_term(&self) -> bool {
+        if let SolrSearchScope::Term = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_reference(&self) -> bool {
+        if let SolrSearchScope::Reference = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_documentation(&self) -> bool {
+        if let SolrSearchScope::Documentation = self {
+            true
+        } else {
+            false
+        }
+    }
+}
+
+
 #[derive(Serialize, Debug)]
-pub struct SearchAllResult {
+pub struct SolrSearchResult {
     pub term_matches: Vec<TermSearchMatch>,
     pub ref_matches: Vec<RefSearchMatch>,
     pub doc_matches: Vec<DocSearchMatch>,
@@ -61,14 +107,31 @@ impl Search {
         ref_complete(&self.config, q)
     }
 
-    pub fn search_all(&self, q: &str) -> Result<SearchAllResult, String> {
+    pub fn solr_search(&self, scope: &SolrSearchScope, q: &str)
+                       -> Result<SolrSearchResult, String>
+    {
         let trimmed_query = q.trim();
 
-        let term_matches = search_terms(&self.config, trimmed_query)?;
-        let ref_matches = search_refs(&self.config, trimmed_query)?;
-        let doc_matches = search_docs(&self.config, trimmed_query)?;
+        let term_matches =
+            if scope.is_term() {
+                search_terms(&self.config, trimmed_query)?
+            } else {
+                vec![]
+            };
+        let ref_matches =
+            if scope.is_reference() {
+                search_refs(&self.config, trimmed_query)?
+            } else {
+                vec![]
+            };
+        let doc_matches =
+            if scope.is_documentation() {
+                search_docs(&self.config, trimmed_query)?
+            } else {
+                vec![]
+            };
 
-        Ok(SearchAllResult {
+        Ok(SolrSearchResult {
             term_matches,
             ref_matches,
             doc_matches,
