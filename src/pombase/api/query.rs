@@ -478,6 +478,7 @@ impl QueryNode {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct NucleotideDownloadOptions {
     include_introns: bool,
+    include_exons: bool,
     include_5_prime_utr: bool,
     include_3_prime_utr: bool,
     upstream_bases: Option<usize>,
@@ -594,7 +595,7 @@ impl Query {
             }
 
         for part in &transcript.parts {
-            if part.feature_type == FeatureType::Exon ||
+            if options.include_exons && part.feature_type == FeatureType::Exon ||
                 options.include_introns && part.feature_type == FeatureType::CdsIntron ||
                 options.include_5_prime_utr &&
                 (part.feature_type == FeatureType::FivePrimeUtr ||
