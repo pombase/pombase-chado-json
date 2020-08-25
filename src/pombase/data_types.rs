@@ -775,6 +775,36 @@ impl GeneDetails {
     }
 }
 
+impl PartialEq for GeneDetails {
+    fn eq(&self, other: &GeneDetails) -> bool {
+        self.uniquename == other.uniquename
+    }
+}
+impl Eq for GeneDetails { }
+impl Ord for GeneDetails {
+    fn cmp(&self, other: &GeneDetails) -> Ordering {
+        if self.name.is_some() {
+            if other.name.is_some() {
+                self.name.cmp(&other.name)
+            } else { Ordering::Less }
+        } else {
+            if other.name.is_some() {
+                Ordering::Greater
+            } else { self.uniquename.cmp(&other.uniquename) }
+        }
+    }
+}
+impl PartialOrd for GeneDetails {
+    fn partial_cmp(&self, other: &GeneDetails) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Hash for GeneDetails {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.uniquename.hash(state);
+    }
+}
+
 impl Container for GeneDetails {
     fn container_type(&self) -> ContainerType {
         ContainerType::Gene
@@ -1305,6 +1335,7 @@ pub struct APIMaps {
     pub chromosomes: ChrNameDetailsMap,
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
+    pub children_by_termid: HashMap<TermId, HashSet<TermId>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

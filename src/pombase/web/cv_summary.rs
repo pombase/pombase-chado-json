@@ -16,19 +16,19 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      config: &Config,
      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
      include_gene: bool, include_genotype: bool,
-     gene_short_map: &IdGeneShortMap,
+     gene_map: &UniquenameGeneMap,
      annotation_details: &IdOntAnnotationDetailMap) {
     for (cv_name, mut term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name(cv_name);
         make_cv_summary(&cv_config, children_by_termid,
                         include_gene, include_genotype, &mut term_annotations,
-                        gene_short_map, annotation_details);
+                        gene_map, annotation_details);
     }
 }
 
 // merge two ExtPart objects into one by merging ranges
-pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
-                             genes: &IdGeneShortMap) -> ExtPart {
+fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
+                         genes: &UniquenameGeneMap) -> ExtPart {
     if ext_part1.rel_type_name == ext_part2.rel_type_name {
         match ext_part1.ext_range {
             ExtRange::SummaryGenes(ref part1_summ_genes) => {
@@ -81,8 +81,8 @@ to merge_ext_part_ranges(): {:?} {:?}", ext_part1, ext_part2);
 }
 
 // turn "has_substrate(gene1)" "has_substrate(gene2)" into "has_substrate(gene1,gene2)"
-pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
-                                 genes: &IdGeneShortMap) {
+fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
+                             genes: &UniquenameGeneMap) {
 
     let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
     let merge_range_rel_p =
@@ -145,7 +145,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
 }
 
 // combine rows that have a gene or genotype but no extension into one row
-pub fn collect_summary_rows(genes: &IdGeneShortMap, rows: &mut Vec<TermSummaryRow>) {
+fn collect_summary_rows(genes: &UniquenameGeneMap, rows: &mut Vec<TermSummaryRow>) {
     let mut no_ext_rows = vec![];
     let mut other_rows = vec![];
 
@@ -201,7 +201,7 @@ pub fn collect_summary_rows(genes: &IdGeneShortMap, rows: &mut Vec<TermSummaryRo
 // specific annotation.  ie. the same annotation but with extra part(s) in the
 // extension.
 // See: https://github.com/pombase/website/issues/185
-pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
+fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     let mut results = vec![];
 
     if rows.len() <= 1 {
@@ -244,7 +244,7 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 }
 
 // Remove annotation from the summary if there is a more specific annotation
-pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
+fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                                   term_annotations: &mut Vec<OntTermAnnotations>) {
     let mut term_annotations_by_termid = HashMap::new();
 
@@ -302,7 +302,7 @@ pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<T
 
 // turns binds([[gene1]]),binds([[gene2]]),other_rel(...) into:
 // binds([[gene1, gene2]]),other_rel(...)
-pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
+fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
     let mut result: Vec<ExtPart> = vec![];
 
     {
@@ -341,7 +341,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                    children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                    include_gene: bool, include_genotype: bool,
                    term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
-                   genes: &IdGeneShortMap,
+                   genes: &UniquenameGeneMap,
                    annotation_details: &IdOntAnnotationDetailMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let mut rows = vec![];

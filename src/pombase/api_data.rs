@@ -8,11 +8,14 @@ use std::collections::{HashMap, HashSet};
 use crate::data_types::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
                 GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
                 InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
+                OntAnnotationDetail,
                 TermShort, TermShortOptionMap, ChromosomeDetails,
                 ReferenceShort, ReferenceShortOptionMap,
-                GeneShort, GeneShortOptionMap, GeneQueryData};
+                GeneShort, GeneShortOptionMap, GeneQueryData,
+                ExtPart, ExtRange, WithFromValue};
 use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiAllele, QueryExpressionFilter};
+use crate::web::cv_summary::make_cv_summaries;
 
 use flate2::read::GzDecoder;
 
@@ -256,8 +259,8 @@ impl APIData {
                                     filter_condition.termid == cond.termid
                                 })
                                 .is_some() {
-                                return true
-                            }
+                                    return true
+                                }
                         }
 
                         false
@@ -272,7 +275,7 @@ impl APIData {
                         for allele_details in &annotation.alleles {
                             genes.insert(allele_details.gene.clone());
                         }
-                }
+                    }
             }
             genes.into_iter().collect::<Vec<_>>()
         } else {
@@ -289,6 +292,54 @@ impl APIData {
             .collect()
     }
 
+
+    // return a fake extension for "with" properties on protein binding annotations
+    fn get_with_extension(&self, with_value: WithFromValue) -> ExtPart {
+        let ext_range =
+            match with_value {
+                WithFromValue::Gene(gene_short) => {
+                    let uniquename = &gene_short.uniquename;
+                    if uniquename.starts_with("PomBase:SP") {
+                        let gene_uniquename =
+                            RcString::from(&uniquename[8..]);
+                        ExtRange::Gene(gene_uniquename)
+                    } else {
+                        ExtRange::Gene(uniquename.clone())
+                    }
+                },
+                _ => panic!("unexpected WithFromValue varient: {:#?}", with_value),
+            };
+
+        // a with property on a protein binding (GO:0005515) is
+        // displayed as a binds extension
+        // https://github.com/pombase/website/issues/108
+        ExtPart {
+            rel_type_id: None,
+            rel_type_name: "binds".into(),
+            rel_type_display_name: "binds".into(),
+            ext_range,
+        }
+    }
+
+    // add the with value as a fake extension if the cvterm is_a protein binding and
+    // remove the with value
+    fn maybe_move_with(&self, term_details: &TermDetails,
+                       annotation: &mut OntAnnotationDetail) {
+        if let Some(ref evidence_code) = annotation.evidence {
+            if evidence_code == "IPI" &&
+                (term_details.termid == "GO:0005515" ||
+                 term_details.interesting_parent_ids.contains("GO:0005515") ||
+                 term_details.termid == "GO:0003723" ||
+                 term_details.interesting_parent_ids.contains("GO:0003723"))
+            {
+                for with_value in annotation.withs.drain() {
+                    annotation.extension.push(self.get_with_extension(with_value));
+                }
+            }
+        }
+    }
+
+
     fn detail_map_of_cv_annotations(&self, ont_annotation_map: &OntAnnotationMap)
                                     -> IdOntAnnotationDetailMap
     {
@@ -296,10 +347,16 @@ impl APIData {
 
         for term_annotations in ont_annotation_map.values() {
             for term_annotation in term_annotations {
-                for annotation_detail_id in &term_annotation.annotations {
-                    let details =
-                        &self.maps.annotation_details[annotation_detail_id];
-                    details_map.insert(*annotation_detail_id, details.clone());
+                let termid = &term_annotation.term;
+                if let Some(ref term_details) = self.maps.terms.get(termid) {
+                    for annotation_detail_id in &term_annotation.annotations {
+                        let mut annotation =
+                            self.maps.annotation_details[annotation_detail_id].clone();
+                        self.maybe_move_with(term_details, &mut annotation);
+                        details_map.insert(*annotation_detail_id, annotation);
+                    }
+                } else {
+                    panic!("failed to find TermDetails for {}", termid);
                 }
             }
         }
@@ -346,11 +403,14 @@ impl APIData {
         if let Some(gene_ref) = self.maps.genes.get(gene_uniquename) {
             let mut gene = gene_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
-            gene.annotation_details = details_map;
             gene.terms_by_termid = self.fill_term_map(&gene.terms_by_termid);
             gene.genes_by_uniquename = self.fill_gene_map(&gene.genes_by_uniquename);
             gene.references_by_uniquename =
                 self.fill_reference_map(&gene.references_by_uniquename);
+            make_cv_summaries(&mut gene, &self.config, &self.maps.children_by_termid,
+                              false, true, &self.maps.genes, &details_map);
+
+            gene.annotation_details = details_map;
             Some(gene)
         } else {
             None
@@ -361,11 +421,13 @@ impl APIData {
         if let Some(genotype_ref) = self.maps.genotypes.get(genotype_uniquename) {
             let mut genotype = genotype_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
-            genotype.annotation_details = details_map;
             genotype.terms_by_termid = self.fill_term_map(&genotype.terms_by_termid);
             genotype.genes_by_uniquename = self.fill_gene_map(&genotype.genes_by_uniquename);
             genotype.references_by_uniquename =
                 self.fill_reference_map(&genotype.references_by_uniquename);
+            make_cv_summaries(&mut genotype, &self.config, &self.maps.children_by_termid,
+                              false, false, &self.maps.genes, &details_map);
+            genotype.annotation_details = details_map;
             Some(genotype)
         } else {
             None
@@ -375,11 +437,13 @@ impl APIData {
     fn term_details_helper(&self, term_ref: &TermDetails) -> Option<TermDetails> {
         let mut term = term_ref.clone();
         let details_map = self.detail_map_of_cv_annotations(&term.cv_annotations);
-        term.annotation_details = details_map;
         term.terms_by_termid = self.fill_term_map(&term.terms_by_termid);
         term.genes_by_uniquename = self.fill_gene_map(&term.genes_by_uniquename);
         term.references_by_uniquename =
             self.fill_reference_map(&term.references_by_uniquename);
+        make_cv_summaries(&mut term, &self.config, &self.maps.children_by_termid,
+                          true, true, &self.maps.genes, &details_map);
+        term.annotation_details = details_map;
         Some(term)
     }
 
@@ -401,9 +465,11 @@ impl APIData {
         if let Some(reference_ref) = self.maps.references.get(reference_uniquename) {
             let mut reference = reference_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);
-            reference.annotation_details = details_map;
             reference.terms_by_termid = self.fill_term_map(&reference.terms_by_termid);
             reference.genes_by_uniquename = self.fill_gene_map(&reference.genes_by_uniquename);
+            make_cv_summaries(&mut reference, &self.config, &self.maps.children_by_termid,
+                              true, true, &self.maps.genes, &details_map);
+            reference.annotation_details = details_map;
             Some(reference)
         } else {
             None

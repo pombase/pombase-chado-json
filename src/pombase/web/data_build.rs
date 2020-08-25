@@ -13,7 +13,6 @@ use crate::types::*;
 use crate::data_types::*;
 use crate::web::data::*;
 use crate::web::config::*;
-use crate::web::cv_summary::make_cv_summaries;
 use crate::web::cmp_utils::cmp_residues;
 use crate::web::util::cmp_str_dates;
 
@@ -2702,17 +2701,6 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_gene_short_map(&self) -> IdGeneShortMap {
-        let mut ret_map = HashMap::new();
-
-        for gene_uniquename in self.genes.keys() {
-            ret_map.insert(gene_uniquename.clone(),
-                           make_gene_short(&self.genes, &gene_uniquename));
-        }
-
-        ret_map
-    }
-
     fn make_residue_extensions(&mut self) {
         for annotation in self.annotation_details.values_mut() {
             if let Some(ref residue) = annotation.residue {
@@ -2725,30 +2713,6 @@ impl <'a> WebDataBuild<'a> {
                 };
                 annotation.extension.insert(0, residue_range_part);
             }
-        }
-    }
-
-    fn make_all_cv_summaries(&mut self) {
-        let gene_short_map = self.make_gene_short_map();
-
-        for term_details in self.terms.values_mut() {
-            make_cv_summaries(term_details, self.config, &self.children_by_termid,
-                              true, true, &gene_short_map, &self.annotation_details);
-        }
-
-        for gene_details in self.genes.values_mut() {
-            make_cv_summaries(gene_details, &self.config, &self.children_by_termid,
-                              false, true, &gene_short_map, &self.annotation_details);
-        }
-
-        for genotype_details in self.genotypes.values_mut() {
-            make_cv_summaries(genotype_details, &self.config, &self.children_by_termid,
-                              false, false, &gene_short_map, &self.annotation_details);
-        }
-
-        for reference_details in self.references.values_mut() {
-            make_cv_summaries( reference_details, &self.config, &self.children_by_termid,
-                              true, true, &gene_short_map, &self.annotation_details);
         }
     }
 
@@ -3064,36 +3028,6 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    // return a fake extension for "with" properties on protein binding annotations
-    fn get_with_extension(&self, with_value: &RcString) -> ExtPart {
-        let ext_range =
-            if with_value.starts_with("SP%") {
-                ExtRange::Gene(with_value.clone())
-            } else {
-                if with_value.starts_with("PomBase:SP") {
-                    let gene_uniquename =
-                        RcString::from(&with_value[8..]);
-                    ExtRange::Gene(gene_uniquename)
-                } else {
-                    if with_value.to_lowercase().starts_with("pfam:") {
-                        ExtRange::Domain(with_value.clone())
-                    } else {
-                        ExtRange::Misc(with_value.clone())
-                    }
-                }
-            };
-
-        // a with property on a protein binding (GO:0005515) is
-        // displayed as a binds extension
-        // https://github.com/pombase/website/issues/108
-        ExtPart {
-            rel_type_id: None,
-            rel_type_name: "binds".into(),
-            rel_type_display_name: "binds".into(),
-            ext_range,
-        }
-    }
-
     fn make_with_or_from_value(&self, with_or_from_value: &RcString) -> WithFromValue {
         let db_prefix_patt = RcString::from("^") + DB_NAME + ":";
         let re = Regex::new(&db_prefix_patt).unwrap();
@@ -3108,32 +3042,6 @@ impl <'a> WebDataBuild<'a> {
                 WithFromValue::Identifier(with_or_from_value.clone())
             }
         }
-    }
-
-    // add the with value as a fake extension if the cvterm is_a protein binding,
-    // otherwise return the value
-    fn make_with_extension(&self, termid: &RcString, evidence_code: Option<RcString>,
-                           extension: &mut Vec<ExtPart>,
-                           with_value: &RcString) -> Option<WithFromValue> {
-        let base_termid =
-            match self.base_term_of_extensions.get(termid) {
-                Some(base_termid) => base_termid.clone(),
-                None => termid.clone(),
-            };
-
-        let base_term_short = self.make_term_short(&base_termid);
-
-        if evidence_code.is_some() &&
-            evidence_code.unwrap() == "IPI" &&
-            (base_term_short.termid == "GO:0005515" ||
-             base_term_short.interesting_parent_ids.contains("GO:0005515") ||
-             base_term_short.termid == "GO:0003723" ||
-             base_term_short.interesting_parent_ids.contains("GO:0003723")) {
-                extension.push(self.get_with_extension(with_value));
-            } else {
-                return Some(self.make_with_or_from_value(with_value));
-            }
-        None
     }
 
     // process annotation
@@ -3213,12 +3121,8 @@ impl <'a> WebDataBuild<'a> {
                         }
                     },
                     "with" => {
-                        if let Some(ref with_value) = prop.value.clone() {
-                            if let Some(with_gene_short) =
-                                self.make_with_extension(&termid, evidence.clone(),
-                                                         &mut extension, with_value) {
-                                    withs.insert(with_gene_short);
-                                }
+                        if let Some(value) = prop.value.clone() {
+                            withs.insert(self.make_with_or_from_value(&value));
                         }
                     },
                     "from" => {
@@ -4279,8 +4183,15 @@ impl <'a> WebDataBuild<'a> {
             terms_for_api.insert(termid.clone(), term_details);
         }
 
-        let term_subsets = self.term_subsets.clone();
-        let gene_subsets = self.gene_subsets.clone();
+        // avoid clone()
+        let mut term_subsets = HashMap::new();
+        std::mem::swap(&mut term_subsets, &mut self.term_subsets);
+
+        let mut gene_subsets = HashMap::new();
+        std::mem::swap(&mut gene_subsets, &mut self.gene_subsets);
+
+        let mut children_by_termid = HashMap::new();
+        std::mem::swap(&mut children_by_termid, &mut self.children_by_termid);
 
         APIMaps {
             gene_summaries,
@@ -4299,6 +4210,7 @@ impl <'a> WebDataBuild<'a> {
             chromosomes: self.chromosomes,
             term_subsets,
             gene_subsets,
+            children_by_termid,
        }
     }
 
@@ -4341,6 +4253,20 @@ impl <'a> WebDataBuild<'a> {
                     if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
                                                   identifier, genotype_uniquename);
+                    }
+
+                    let with_from_iter = annotation_detail.withs
+                        .iter()
+                        .chain(annotation_detail.froms.iter());
+
+
+                    for with_from_value in with_from_iter {
+                        match with_from_value {
+                            WithFromValue::Gene(ref gene_short) =>
+                                self.add_gene_to_hash(seen_genes, identifier,
+                                                      &gene_short.uniquename),
+                            _ => (),
+                        }
                     }
                 }
             }
@@ -4397,6 +4323,19 @@ impl <'a> WebDataBuild<'a> {
                             self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
                                                       &mut seen_genes, &termid,
                                                       genotype_uniquename);
+                        }
+
+                        let with_from_iter = annotation_detail.withs
+                            .iter()
+                            .chain(annotation_detail.froms.iter());
+
+                        for with_from_value in with_from_iter {
+                            match with_from_value {
+                                WithFromValue::Gene(ref gene_short) =>
+                                    self.add_gene_to_hash(&mut seen_genes, termid,
+                                                          &gene_short.uniquename),
+                                _ => (),
+                            }
                         }
                     }
                 }
@@ -5135,7 +5074,6 @@ impl <'a> WebDataBuild<'a> {
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
         self.make_residue_extensions();
-        self.make_all_cv_summaries();
         self.remove_non_curatable_refs();
         self.set_term_details_maps();
         self.set_gene_details_maps();
