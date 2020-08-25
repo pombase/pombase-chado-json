@@ -640,7 +640,7 @@ fn test_gene_details() {
     let mut web_data = get_test_web_data();
 
     assert_eq!(web_data.api_maps.genes.len(), 3);
-    let mut par1_gene = web_data.api_maps.genes.remove("SPCC188.02").unwrap();
+    let par1_gene = web_data.api_maps.genes.remove("SPCC188.02").unwrap();
 
     assert_eq!(par1_gene.transcripts[0].parts[0].residues,
                "TAGATAGTGCATGT");
@@ -654,11 +654,6 @@ fn test_gene_details() {
     if par1_gene.cv_annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
         panic!("extension cv shouldn't be in the annotations");
     }
-
-    let mut process = par1_gene.cv_annotations.remove("biological_process").unwrap();
-    assert_eq!(process.remove(0).summary.unwrap().len(), 0);
-    let mut phenotype = par1_gene.cv_annotations.remove("multi_allele_phenotype").unwrap();
-    assert_eq!(phenotype.remove(0).summary.unwrap().len(), 1);
 }
 
 #[test]

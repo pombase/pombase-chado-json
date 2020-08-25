@@ -841,32 +841,74 @@ fn test_remove_redundant_summaries() {
 }
 
 
-fn get_test_gene_short_map() -> IdGeneShortMap {
-    let mut ret_map = HashMap::new();
+fn get_test_gene_short_map() -> UniquenameGeneMap {
+    let mut ret_map = BTreeMap::new();
+
+    let base_details = GeneDetails {
+        uniquename: RcString::from(""),
+        name: Some(RcString::from("")),
+        product: Some(RcString::from("")),
+        taxonid: 4896,
+        deletion_viability: DeletionViability::Viable,
+        uniprot_identifier: Some(RcString::from("")),
+        biogrid_interactor_id: None,
+        interpro_matches: vec![],
+        tm_domain_coords: vec![],
+        orfeome_identifier: Some(RcString::from("")),
+        name_descriptions: vec![],
+        synonyms: vec![],
+        dbxrefs: HashSet::new(),
+        feature_type: RcString::from(""),
+        feature_so_termid: RcString::from(""),
+        transcript_so_termid: RcString::from(""),
+        characterisation_status: Some(RcString::from("")),
+        taxonomic_distribution: Some(RcString::from("")),
+        location: None,
+        gene_neighbourhood: vec![],
+        transcripts: vec![],
+        cv_annotations: HashMap::new(),
+        physical_interactions: vec![],
+        genetic_interactions: vec![],
+        ortholog_annotations: vec![],
+        paralog_annotations: vec![],
+        target_of_annotations: vec![],
+        references_by_uniquename: HashMap::new(),
+        genes_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
+        alleles_by_uniquename: HashMap::new(),
+        terms_by_termid: HashMap::new(),
+        annotation_details: HashMap::new(),
+        feature_publications: HashSet::new(),
+        subset_termids: HashSet::new(),
+    };
 
     ret_map.insert(RcString::from("SPAC977.09c"),
-                   GeneShort {
+                   GeneDetails {
                        uniquename: RcString::from("SPAC977.09c"),
                        name: None,
                        product: Some(RcString::from("phospholipase (predicted)")),
+                       .. base_details.clone()
                    });
     ret_map.insert(RcString::from("SPAC3G9.09c"),
-                   GeneShort {
+                   GeneDetails {
                        uniquename: RcString::from("SPAC3G9.09c"),
                        name: Some(RcString::from("tif211")),
                        product: Some(RcString::from("translation initiation factor eIF2 alpha subunit")),
+                       .. base_details.clone()
                    });
     ret_map.insert(RcString::from("SPAC16.01"),
-                   GeneShort {
+                   GeneDetails {
                        uniquename: RcString::from("SPAC16.01"),
                        name: Some(RcString::from("rho2")),
                        product: Some(RcString::from("Rho family GTPase Rho2")),
+                       .. base_details.clone()
                    });
     ret_map.insert(RcString::from("SPAC24C9.02c"),
-                   GeneShort {
+                   GeneDetails {
                        uniquename: RcString::from("SPAC24C9.02c"),
                        name: Some(RcString::from("cyt2")),
                        product: Some(RcString::from("cytochrome c1 heme lyase Cyt2 (predicted)")),
+                       .. base_details
                    });
 
     ret_map

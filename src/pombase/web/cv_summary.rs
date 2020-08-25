@@ -27,7 +27,7 @@ pub fn make_cv_summaries<T: AnnotationContainer>
 }
 
 // merge two ExtPart objects into one by merging ranges
-fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
+pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                          genes: &UniquenameGeneMap) -> ExtPart {
     if ext_part1.rel_type_name == ext_part2.rel_type_name {
         match ext_part1.ext_range {
@@ -81,8 +81,8 @@ to merge_ext_part_ranges(): {:?} {:?}", ext_part1, ext_part2);
 }
 
 // turn "has_substrate(gene1)" "has_substrate(gene2)" into "has_substrate(gene1,gene2)"
-fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
-                             genes: &UniquenameGeneMap) {
+pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
+                                 genes: &UniquenameGeneMap) {
 
     let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
     let merge_range_rel_p =
@@ -201,7 +201,7 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, rows: &mut Vec<TermSummaryRow
 // specific annotation.  ie. the same annotation but with extra part(s) in the
 // extension.
 // See: https://github.com/pombase/website/issues/185
-fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
+pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     let mut results = vec![];
 
     if rows.len() <= 1 {
@@ -244,7 +244,7 @@ fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 }
 
 // Remove annotation from the summary if there is a more specific annotation
-fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
+pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                                   term_annotations: &mut Vec<OntTermAnnotations>) {
     let mut term_annotations_by_termid = HashMap::new();
 
@@ -302,7 +302,7 @@ fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermI
 
 // turns binds([[gene1]]),binds([[gene2]]),other_rel(...) into:
 // binds([[gene1, gene2]]),other_rel(...)
-fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
+pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
     let mut result: Vec<ExtPart> = vec![];
 
     {
