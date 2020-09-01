@@ -89,6 +89,7 @@ fn get_test_config() -> Config {
             distant_synonym_boost: 0.3,
             django_url: String::from("http://localhost:8999"),
             cv_name_for_terms_search: String::from(""),
+            gene_uniquename_re: String::from("^SP([ABCN][CTP]|RR|SN|MIT|MT)[\\d\\w]*\\.\\d\\d\\d?\\d?c?$"),
         },
         extra_database_aliases: HashMap::new(),
         chromosomes: HashMap::new(),

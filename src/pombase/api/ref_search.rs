@@ -4,6 +4,8 @@ use regex::Regex;
 
 use std::collections::HashMap;
 
+use once_cell::unsync::Lazy;
+
 use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
 use crate::api::search_utils::do_solr_request;
@@ -98,48 +100,67 @@ fn make_refs_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
         let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
         let lower_q = substring(&q.to_lowercase(), 200);
 
-        let clean_words: Vec<String> =
-            CLEAN_WORDS_RE.captures_iter(&lower_q)
-            .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
+        let gene_uniquename_re =
+            Lazy::new(|| {
+                let lower_gene_re = config.gene_uniquename_re.to_lowercase();
+                Regex::new(&lower_gene_re).unwrap()
+            });
 
-        if clean_words.is_empty() {
-            return None
-        }
+        if gene_uniquename_re.is_match(&lower_q) {
+            refs_url += & query_field_names
+                .iter()
+                .map(|field_name| {
+                    format!("{}:(\"{}\")", field_name, lower_q)
+                })
+                .collect::<Vec<String>>()
+                .join(" OR ");
+        } else {
+            let clean_words: Vec<String> =
+                CLEAN_WORDS_RE.captures_iter(&lower_q)
+                .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
 
-        let clean_words_length = clean_words.len();
-        let mut clean_words_for_url = String::new();
-
-        for (i, word) in clean_words.iter().enumerate() {
-            if i == clean_words_length - 1 {
-                clean_words_for_url += &format!("{} {}*", word, word);
-            } else {
-                clean_words_for_url += &format!("{} ", word);
+            if clean_words.is_empty() {
+                return None
             }
-        }
 
-        let url_parts =
-            query_field_names
-            .iter()
-            .map(|field_name| {
-                let weight = if *field_name == "title" {
-                    2.0
+            let clean_words_length = clean_words.len();
+
+            let mut clean_words_for_url = String::new();
+
+            for (i, word) in clean_words.iter().enumerate() {
+                if i == clean_words_length - 1 {
+                    clean_words_for_url += &format!("{} {}*", word, word);
                 } else {
-                    0.5
-                };
-                format!("{}:({})^{}", field_name, clean_words_for_url, weight)
-            })
-            .collect::<Vec<String>>();
+                    clean_words_for_url += &format!("{} ", word);
+                }
+            }
 
-        refs_url += &url_parts.join(" OR ");
+            let url_parts =
+                query_field_names
+                .iter()
+                .map(|field_name| {
+                    let weight = if *field_name == "title" {
+                        2.0
+                    } else {
+                        0.5
+                    };
+                    format!("{}:({})^{}", field_name, clean_words_for_url, weight)
+                })
+                .collect::<Vec<String>>();
 
-        for word in clean_words {
-            if word.len() == 4 && (word.starts_with("19") || word.starts_with("20")) {
-                if let Ok(num) = word.parse::<u32>() {
-                    refs_url += &format!(" OR publication_year:{}^20", num);
+            refs_url += &url_parts.join(" OR ");
+
+            for word in clean_words {
+                if word.len() == 4 && (word.starts_with("19") || word.starts_with("20")) {
+                    if let Ok(num) = word.parse::<u32>() {
+                        refs_url += &format!(" OR publication_year:{}^20", num);
+                    }
                 }
             }
         }
     }
+
+    print!("{:?}\n", refs_url);
 
     Some(refs_url)
 }

@@ -21,6 +21,7 @@ rocket_contrib = "0.4.0-rc.1"
 reqwest = "0.9"
 flate2 = "1.0"
 lazy_static = "1.0"
+once_cell = "1.2"
 uuid = { version = "0.5", features = ["v4", "serde"] }
 
 [dependencies.pombase_rc_string]
