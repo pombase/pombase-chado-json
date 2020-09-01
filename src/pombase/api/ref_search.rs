@@ -8,6 +8,10 @@ use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
 use crate::api::search_utils::do_solr_request;
 
+lazy_static! {
+    static ref CLEAN_WORDS_RE: Regex = Regex::new(r"([\w\d\-]+)").unwrap();
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RefSearchMatch {
     pub id: String,
@@ -95,7 +99,7 @@ fn make_refs_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
         let lower_q = substring(&q.to_lowercase(), 200);
 
         let clean_words: Vec<String> =
-            Regex::new(r"([\w\d\-]+)").unwrap().captures_iter(&lower_q)
+            CLEAN_WORDS_RE.captures_iter(&lower_q)
             .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
 
         if clean_words.is_empty() {
