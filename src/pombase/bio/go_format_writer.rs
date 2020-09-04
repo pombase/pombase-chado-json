@@ -296,8 +296,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     } else {
                         transcript_type_str
                     };
-                let date = annotation_detail.date.clone()
-                    .map(|d| d.replace("-", ""))
+                let date = annotation_detail.date.as_ref()
+                    .map(|ref d| d.replace("-", ""))
                     .expect(&format!("date missing from annotation with ID {}",
                                      annotation_id));
                 let annotation_extensions =
