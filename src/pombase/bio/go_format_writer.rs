@@ -148,18 +148,20 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                 with_or_from_parts.sort_unstable();
                 let with_or_from = with_or_from_parts.join(",");
 
-                let date = annotation_detail.date.clone()
-                    .expect(&format!("date missing from annotation with ID {}",
-                                     annotation_id));
-                let annotation_extensions =
-                    make_gpad_extension_string(config, &annotation_detail.extension);
-                let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t\n",
-                                   db_object_id,
-                                   not, relation, ontology_class_id,
-                                   reference_uniquename, evidence_type,
-                                   with_or_from, date, assigned_by,
-                                   annotation_extensions);
-                gpad_writer.write_all(line.as_bytes())?;
+                if let Some(ref date) = annotation_detail.date {
+                    let annotation_extensions =
+                        make_gpad_extension_string(config, &annotation_detail.extension);
+                    let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t\n",
+                                       db_object_id,
+                                       not, relation, ontology_class_id,
+                                       reference_uniquename, evidence_type,
+                                       with_or_from, date, assigned_by,
+                                       annotation_extensions);
+                    gpad_writer.write_all(line.as_bytes())?;
+                } else {
+                    println!("WARNING while writing GAF file: \
+                              date missing from annotation {}", annotation_id);
+                }
             }
         }
     }
@@ -296,10 +298,15 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     } else {
                         transcript_type_str
                     };
-                let date = annotation_detail.date.as_ref()
-                    .map(|ref d| d.replace("-", ""))
-                    .expect(&format!("date missing from annotation with ID {}",
-                                     annotation_id));
+                let date =
+                    if let Some(ref raw_date) = annotation_detail.date {
+                        raw_date.replace("-", "")
+                    } else {
+                        println!("WARNING while writing GPAD file: \
+                                  date missing from annotation {}", annotation_id);
+                        continue;
+                    };
+
                 let annotation_extensions =
                     make_gaf_extension_string(config, &annotation_detail.extension);
 
