@@ -1696,14 +1696,14 @@ impl <'a> WebDataBuild<'a> {
                     if let Some(gene_uniquename) =
                         self.genes_of_transcripts.get(transcript_uniquename) {
                             let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
-                            if gene_details.transcripts.len() > 1 {
-                                panic!("unimplemented - can't handle multiple transcripts for: {}",
-                                       gene_uniquename);
+                            if gene_details.transcripts.is_empty() {
+                                panic!("gene has no transcript: {}", gene_uniquename);
                             } else {
-                                if gene_details.transcripts.is_empty() {
-                                    panic!("gene has no transcript: {}", gene_uniquename);
-                                } else {
-                                    gene_details.transcripts[0].protein = Some(protein);
+                                for transcript in &mut gene_details.transcripts {
+                                    if &transcript.uniquename == transcript_uniquename {
+                                        transcript.protein = Some(protein);
+                                        break;
+                                    }
                                 }
                             }
                         } else {
