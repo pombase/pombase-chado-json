@@ -1,6 +1,6 @@
 [package]
 name = "pombase-chado-json"
-version = "88.1.0"
+version = "88.2.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 edition = "2018"
 
@@ -16,8 +16,8 @@ getopts = "*"
 regex = "1.0"
 bit-set = "0.5"
 chrono = { version = "0.4", features = ["serde"] }
-rocket = "0.4.0-rc.1"
-rocket_contrib = "0.4.0-rc.1"
+rocket = "0.4.0"
+rocket_contrib = "0.4.0"
 reqwest = "0.9"
 flate2 = "1.0"
 lazy_static = "1.0"
