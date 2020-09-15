@@ -265,7 +265,7 @@ impl WebData {
                         } else {
                             None
                         };
-                    write_as_fasta(&mut peptide_writer, &(gene_uniquename.to_owned() + ":pep"),
+                    write_as_fasta(&mut peptide_writer, &protein.uniquename,
                                    name_and_product, &protein.sequence);
                 }
             }

@@ -840,7 +840,7 @@ impl OrthologAnnotationContainer for GeneDetails {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinDetails {
-    pub uniquename: TranscriptUniquename,
+    pub uniquename: ProteinUniquename,
     pub sequence: RcString,
     pub molecular_weight: f32,
     pub average_residue_weight: f32,
