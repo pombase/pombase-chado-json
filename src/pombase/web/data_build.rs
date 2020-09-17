@@ -1117,6 +1117,7 @@ impl <'a> WebDataBuild<'a> {
             transcripts: gene_details.transcripts.clone(),
             tm_domain_count: gene_details.tm_domain_coords.len(),
             exon_count,
+            transcript_count: gene_details.transcripts.len(),
         }
     }
 

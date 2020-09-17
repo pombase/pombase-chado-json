@@ -1266,6 +1266,7 @@ pub struct APIGeneSummary {
     pub transcripts: Vec<TranscriptDetails>,
     pub tm_domain_count: usize,
     pub exon_count: usize,
+    pub transcript_count: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
