@@ -46,6 +46,10 @@ use std::hash::{Hash, Hasher};
 use crate::web::config::*;
 use crate::types::*;
 use crate::interpro::InterProMatch;
+use crate::rnacentral::RfamAnnotation;
+
+
+pub type RNAcentralAnnotations = HashMap<RcString, Vec<RfamAnnotation>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Throughput {
@@ -700,9 +704,12 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<RcString>,
     pub biogrid_interactor_id: Option<u32>,
+    pub rnacentral_urs_identifier: Option<RcString>,
     pub interpro_matches: Vec<InterProMatch>,
     // non-InterPro domains:
     pub tm_domain_coords: Vec<(usize, usize) >,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub rfam_annotations: Vec<RfamAnnotation>,
     pub orfeome_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<RcString>,

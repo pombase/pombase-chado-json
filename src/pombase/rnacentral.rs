@@ -1,10 +1,12 @@
-use std::collections::HashSet;
+use std::error::Error;
+use std::collections::{HashSet, HashMap};
+use std::fs::File;
+use std::io::BufReader;
 
 use chrono::prelude::{Local, DateTime};
 
 use crate::web::config::Config;
-
-use crate::data_types::{UniquenameGeneMap, GeneDetails, FeatureType};
+use crate::data_types::{UniquenameGeneMap, GeneDetails, FeatureType, RNAcentralAnnotations};
 
 use pombase_rc_string::RcString;
 
@@ -204,4 +206,51 @@ pub fn make_rnacentral_struct(config: &Config, genes: &UniquenameGeneMap) -> RNA
             publications: vec![config.database_citation.clone()],
         }
     }
+}
+
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct RfamAnnotation {
+#[serde(rename = "URS-Id")]
+    pub urs_identifier: String,
+#[serde(rename = "Rfam-Model-Id")]
+    pub rfam_model_id: String,
+#[serde(rename = "Score")]
+    pub score: f32,
+#[serde(rename = "E-value")]
+    pub e_value: f32,
+#[serde(rename = "Sequence-Start")]
+    pub sequence_start: u32,
+#[serde(rename = "Sequence-Stop")]
+    pub sequence_stop: u32,
+#[serde(rename = "Model-Start")]
+    pub model_start: u32,
+#[serde(rename = "Model-Stop")]
+    pub model_stop: u32,
+#[serde(rename = "Rfam-Model-Description")]
+    pub rfam_model_description: String,
+}
+
+pub fn parse_annotation_json(file_name: &str)
+    -> Result<RNAcentralAnnotations, Box<dyn Error>>
+{
+    let file = match File::open(file_name) {
+        Ok(file) => file,
+        Err(err) => {
+            eprint!("Failed to read {}: {}\n", file_name, err);
+            return Err(Box::new(err));
+        }
+    };
+    let reader = BufReader::new(file);
+
+    let annotation: HashMap<RcString, Vec<RfamAnnotation>> =
+        match serde_json::from_reader(reader) {
+            Ok(annotation) => annotation,
+            Err(err) => {
+                eprint!("failed to parse {}: {}", file_name, err);
+                return Err(Box::new(err))
+            },
+        };
+
+    Ok(annotation)
 }

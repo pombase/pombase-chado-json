@@ -45,6 +45,7 @@ type UniprotIdentifier = RcString;
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
     domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+    rnacentral_data: &'a RNAcentralAnnotations,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -906,11 +907,13 @@ fn validate_transcript_parts(transcript_uniquename: &str, parts: &[FeatureShort]
 
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw, domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+               rnacentral_data: &'a RNAcentralAnnotations,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
             raw,
             domain_data,
+            rnacentral_data,
             config,
 
             genes: BTreeMap::new(),
@@ -1438,12 +1441,12 @@ impl <'a> WebDataBuild<'a> {
 
         let mut uniprot_identifier = None;
         let mut biogrid_interactor_id: Option<u32> = None;
+        let mut rnacentral_urs_identifier = None;
 
         for prop in feat.featureprops.borrow().iter() {
-            if prop.prop_type.name == "uniprot_identifier" {
-                uniprot_identifier = prop.value.clone();
-            } else {
-                if prop.prop_type.name == "biogrid_interactor_id" {
+            match prop.prop_type.name.as_str() {
+                "uniprot_identifier" => uniprot_identifier = prop.value.clone(),
+                "biogrid_interactor_id" => {
                     if let Some(ref chado_biogrid_id) = prop.value {
                         biogrid_interactor_id = match chado_biogrid_id.parse::<u32>() {
                             Ok(val) => Some(val),
@@ -1451,7 +1454,9 @@ impl <'a> WebDataBuild<'a> {
                                 panic!("error parsing BioGRID interactor ID from Chado: {}", err),
                         }
                     }
-                }
+                },
+                "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
+                _ => (),
             }
         }
 
@@ -1469,6 +1474,17 @@ impl <'a> WebDataBuild<'a> {
                 (vec![], vec![])
             };
 
+        let rfam_annotations =
+            if let Some(ref rnacentral_urs_identifier) = rnacentral_urs_identifier {
+                if let Some(result) = self.rnacentral_data.get(rnacentral_urs_identifier.as_str()) {
+                    result.clone()
+                } else {
+                    vec![]
+                }
+            } else {
+                vec![]
+            };
+
         let gene_feature = GeneDetails {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
@@ -1477,8 +1493,10 @@ impl <'a> WebDataBuild<'a> {
             deletion_viability: DeletionViability::Unknown,
             uniprot_identifier,
             biogrid_interactor_id,
+            rnacentral_urs_identifier,
             interpro_matches,
             tm_domain_coords,
+            rfam_annotations,
             orfeome_identifier,
             name_descriptions: vec![],
             synonyms: vec![],
