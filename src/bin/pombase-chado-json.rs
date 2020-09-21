@@ -79,6 +79,11 @@ fn main() -> Result<(), std::io::Error> {
         print_usage(&program, opts);
         process::exit(1);
     }
+    if !matches.opt_present("domain-data-file") {
+        print!("no -i|--domain-data-file option\n");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
     if !matches.opt_present("output-directory") {
         print!("no -d|--output-directory option\n");
         print_usage(&program, opts);
