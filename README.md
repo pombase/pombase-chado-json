@@ -15,7 +15,7 @@ queries for the PomBase website.
 Build status
 ------------
 
-[![Build Status](https://travis-ci.org/pombase/pombase-chado-json.svg?branch=master)](https://travis-ci.org/pombase/pombase-chado-json)
+![Rust](https://github.com/pombase/pombase-chado-json/workflows/Rust/badge.svg)
 
 
 Copyright 2016, 2017 and 2018 Kim Rutherford and PomBase
