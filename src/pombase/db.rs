@@ -162,7 +162,6 @@ pub struct Cvtermpath {
     pub subject: Rc<Cvterm>,
     pub object: Rc<Cvterm>,
     pub rel_type: Option<Rc<Cvterm>>,
-    pub pathdistance: Option<i32>,
 }
 pub struct Feature {
     pub uniquename: RcString,
@@ -648,7 +647,7 @@ impl Raw {
             ret.cvterm_relationships.push(rc_cvterm_relationship.clone());
         }
 
-        for row in &conn.query("SELECT subject_id, object_id, type_id, pathdistance FROM cvtermpath WHERE pathdistance > 0", &[]).unwrap() {
+        for row in &conn.query("SELECT subject_id, object_id, type_id FROM cvtermpath WHERE pathdistance > 0", &[]).unwrap() {
             let subject_id: i32 = row.get(0);
             let object_id: i32 = row.get(1);
             let type_id: Option<i32> = row.get(2);
@@ -656,12 +655,10 @@ impl Raw {
                 Some(cvterm_id) => Some(get_cvterm(&mut cvterm_map, cvterm_id)),
                 None => None
             };
-            let pathdistance: Option<i32> = row.get(3);
             let cvtermpath = Cvtermpath {
                 subject: cvterm_map[&subject_id].clone(),
                 object: cvterm_map[&object_id].clone(),
                 rel_type,
-                pathdistance,
             };
             let rc_cvtermpath = Rc::new(cvtermpath);
             ret.cvtermpaths.push(rc_cvtermpath.clone());

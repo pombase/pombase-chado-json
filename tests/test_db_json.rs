@@ -141,13 +141,11 @@ fn make_test_cvterm_rel(cvterm_relationships: &mut Vec<Rc<CvtermRelationship>>,
 }
 
 fn make_test_cvtermpath(cvtermpaths: &mut Vec<Rc<Cvtermpath>>,
-                        subject: &Rc<Cvterm>, rel_type: &Rc<Cvterm>, object: &Rc<Cvterm>,
-                        pathdistance: i32) {
+                        subject: &Rc<Cvterm>, rel_type: &Rc<Cvterm>, object: &Rc<Cvterm>) {
     let rel = Rc::new(Cvtermpath {
         subject: subject.clone(),
         rel_type: Some(rel_type.clone()),
         object: object.clone(),
-        pathdistance: Some(pathdistance),
     });
     cvtermpaths.push(rel);
 }
@@ -331,10 +329,8 @@ fn get_test_raw() -> Raw {
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &bp_cv, &go_db, "negative regulation of septation initiation signaling",
                                 "0031030");
 
-    make_test_cvtermpath(&mut cvtermpaths, &go0031030_cvterm, &is_a_cvterm, &bp_cvterm,
-                         11);
-    make_test_cvtermpath(&mut cvtermpaths, &bp_cvterm, &is_a_cvterm, &go0031030_cvterm,
-                         -11);
+    make_test_cvtermpath(&mut cvtermpaths, &go0031030_cvterm, &is_a_cvterm, &bp_cvterm);
+    make_test_cvtermpath(&mut cvtermpaths, &bp_cvterm, &is_a_cvterm, &go0031030_cvterm);
 
     let pbo0022440_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &extension_cv, &pbo_db,
