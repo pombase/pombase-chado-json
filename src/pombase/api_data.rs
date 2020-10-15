@@ -333,7 +333,7 @@ impl APIData {
                  term_details.interesting_parent_ids.contains("GO:0003723"))
             {
                 for with_value in annotation.withs.drain() {
-                    annotation.extension.push(self.get_with_extension(with_value));
+                    annotation.extension.insert(0, self.get_with_extension(with_value));
                 }
             }
         }
