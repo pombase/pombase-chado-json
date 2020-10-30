@@ -135,8 +135,9 @@ fn is_gene_type(feature_type_name: &str) -> bool {
     feature_type_name == "gene" || feature_type_name == "pseudogene"
 }
 
-pub fn compare_ext_part_with_config(config: &Config, ep1: &ExtPart, ep2: &ExtPart) -> Ordering {
-    let rel_order_conf = &config.extension_relation_order;
+pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,
+                                    ep1: &ExtPart, ep2: &ExtPart) -> Ordering {
+    let rel_order_conf = extension_relation_order;
     let order_conf = &rel_order_conf.relation_order;
     let always_last_conf = &rel_order_conf.always_last;
 
@@ -1148,7 +1149,8 @@ impl <'a> WebDataBuild<'a> {
         gene_details.name_descriptions.push(name_description.into());
     }
 
-    fn add_annotation(&mut self, cvterm: &Cvterm, is_not: bool,
+    fn add_annotation(&mut self, extension_relation_order: &RelationOrder,
+                      cvterm: &Cvterm, is_not: bool,
                       annotation_template: OntAnnotationDetail) {
         let termid =
             match self.base_term_of_extensions.get(&cvterm.termid()) {
@@ -1167,12 +1169,12 @@ impl <'a> WebDataBuild<'a> {
         let mut existing_extensions = annotation_template.extension.clone();
         new_extension.append(&mut existing_extensions);
 
-        {
-            let compare_ext_part_func =
-                |e1: &ExtPart, e2: &ExtPart| compare_ext_part_with_config(self.config, e1, e2);
+        let compare_ext_part_func =
+            |e1: &ExtPart, e2: &ExtPart| {
+                compare_ext_part_with_config(extension_relation_order, e1, e2)
+            };
 
-            new_extension.sort_by(compare_ext_part_func);
-        };
+        new_extension.sort_by(compare_ext_part_func);
 
         let ont_annotation_detail =
             OntAnnotationDetail {
@@ -3065,6 +3067,8 @@ impl <'a> WebDataBuild<'a> {
 
     // process annotation
     fn process_feature_cvterms(&mut self) {
+        let rel_order = self.config.extension_relation_order.clone();
+
         for feature_cvterm in &self.raw.feature_cvterms {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
@@ -3274,7 +3278,8 @@ impl <'a> WebDataBuild<'a> {
                 throughput,
             };
 
-            self.add_annotation(cvterm.borrow(), feature_cvterm.is_not,
+            self.add_annotation(&rel_order,
+                                cvterm.borrow(), feature_cvterm.is_not,
                                 annotation_detail);
         }
     }
