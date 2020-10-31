@@ -2722,21 +2722,6 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_residue_extensions(&mut self) {
-        for annotation in self.annotation_details.values_mut() {
-            if let Some(ref residue) = annotation.residue {
-                let display_name = RcString::from("modified residue");
-                let residue_range_part = ExtPart {
-                    rel_type_id: None,
-                    rel_type_name: display_name.clone(),
-                    rel_type_display_name: display_name,
-                    ext_range: ExtRange::SummaryModifiedResidues(vec![residue.clone()]),
-                };
-                annotation.extension.insert(0, residue_range_part);
-            }
-        }
-    }
-
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
@@ -3118,6 +3103,18 @@ impl <'a> WebDataBuild<'a> {
                     "quant_gene_ex_copies_per_cell" |
                     "quant_gene_ex_avg_copies_per_cell" => {
                         if let Some(value) = prop.value.clone() {
+                            if prop.type_name() == "residue" {
+                                let residue = value.clone();
+                                let display_name = RcString::from("modified residue");
+                                let residue_range_part = ExtPart {
+                                    rel_type_id: None,
+                                    rel_type_name: display_name.clone(),
+                                    rel_type_display_name: display_name,
+                                    ext_range: ExtRange::SummaryModifiedResidues(vec![residue]),
+                                };
+                                extension.insert(0, residue_range_part);
+                            }
+
                             extra_props.insert(prop.type_name().clone(), value);
                         }
                     },
@@ -5097,7 +5094,6 @@ impl <'a> WebDataBuild<'a> {
         self.set_deletion_viability();
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
-        self.make_residue_extensions();
         self.remove_non_curatable_refs();
         self.set_term_details_maps();
         self.set_gene_details_maps();
