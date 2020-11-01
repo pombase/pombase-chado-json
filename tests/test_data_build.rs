@@ -143,62 +143,62 @@ fn test_compare_ext_part_with_config() {
         rel_type_display_name: RcString::from("NA"),
         ext_range: ExtRange::Misc(RcString::from("misc_ext_part_2")),
     };
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
     ext_part1.rel_type_name = RcString::from("directly_positively_regulates");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = RcString::from("has_direct_input");
     ext_part2.rel_type_name = RcString::from("directly_positively_regulates");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part2.rel_type_name = RcString::from("absent_during");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part2.rel_type_name = RcString::from("misc_rel");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = RcString::from("other_misc_rel");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part1.rel_type_name = RcString::from("other_misc_rel");
     ext_part2.rel_type_name = RcString::from("other_misc_rel");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
     ext_part2.rel_type_name = RcString::from("happens_during");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = RcString::from("happens_during");
     ext_part2.rel_type_name = RcString::from("misc_rel");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part1.rel_type_name = RcString::from("has_direct_input");
     ext_part2.rel_type_name = RcString::from("happens_during");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = RcString::from("happens_during");
     ext_part2.rel_type_name = RcString::from("has_direct_input");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part1.rel_type_name = RcString::from("happens_during");
     ext_part2.rel_type_name = RcString::from("exists_during");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = RcString::from("happens_during");
     ext_part2.rel_type_name = RcString::from("happens_during");
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config, &ext_part1, &ext_part2),
+    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 }
 
