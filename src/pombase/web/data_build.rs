@@ -203,6 +203,9 @@ fn string_from_ext_range(ext_range: &ExtRange,
         ExtRange::Misc(ref misc) => misc.clone(),
         ExtRange::Domain(ref domain) => domain.clone(),
         ExtRange::GeneProduct(ref gene_product) => gene_product.clone(),
+        ExtRange::GeneAndGeneProduct(ref gene_and_gene_product) =>
+            RcString::from(&format!("{} ({})", gene_and_gene_product.gene_uniquename,
+                                    gene_and_gene_product.product)),
     }
 }
 

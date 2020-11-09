@@ -62,6 +62,12 @@ pub enum Throughput {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
+pub struct GeneAndGeneProduct {
+    pub gene_uniquename: GeneUniquename,
+    pub product: TermId, // eg.  PR:000027705
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
@@ -81,6 +87,9 @@ pub enum ExtRange {
     Domain(RcString),
 #[serde(rename = "gene_product")]
     GeneProduct(TermId),  // eg.  PR:000027705
+#[serde(rename = "gene_and_gene_product")]
+// see: https://github.com/pombase/website/issues/1625
+    GeneAndGeneProduct(GeneAndGeneProduct), 
 #[serde(rename = "summary_residues")]
     SummaryModifiedResidues(Vec<Residue>),
 }
@@ -107,6 +116,9 @@ impl fmt::Display for ExtRange {
             ExtRange::Misc(ref misc) => write!(f, "{}", misc),
             ExtRange::Domain(ref domain) => write!(f, "{}", domain),
             ExtRange::GeneProduct(ref gene_product) => write!(f, "{}", gene_product),
+            ExtRange::GeneAndGeneProduct(ref gene_and_gene_product) =>
+                write!(f, "{} ({})", gene_and_gene_product.gene_uniquename,
+                       gene_and_gene_product.product),
         }
     }
 }

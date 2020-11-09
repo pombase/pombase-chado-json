@@ -12,7 +12,7 @@ use crate::data_types::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetai
                 TermShort, TermShortOptionMap, ChromosomeDetails,
                 ReferenceShort, ReferenceShortOptionMap,
                 GeneShort, GeneShortOptionMap, GeneQueryData,
-                ExtPart, ExtRange, WithFromValue};
+                ExtPart, ExtRange, GeneAndGeneProduct, WithFromValue};
 use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiAllele, QueryExpressionFilter};
 use crate::web::cv_summary::make_cv_summaries;
@@ -293,19 +293,21 @@ impl APIData {
     }
 
 
+    fn strip_db_prefix(&self, uniquename: &RcString) -> RcString {
+        if uniquename.starts_with("PomBase:SP") {
+            RcString::from(&uniquename[8..])
+        } else {
+            uniquename.clone()
+        }
+    }
+
     // return a fake extension for "with" properties on protein binding annotations
     fn get_with_extension(&self, with_value: WithFromValue) -> ExtPart {
         let ext_range =
             match with_value {
                 WithFromValue::Gene(gene_short) => {
                     let uniquename = &gene_short.uniquename;
-                    if uniquename.starts_with("PomBase:SP") {
-                        let gene_uniquename =
-                            RcString::from(&uniquename[8..]);
-                        ExtRange::Gene(gene_uniquename)
-                    } else {
-                        ExtRange::Gene(uniquename.clone())
-                    }
+                    ExtRange::Gene(self.strip_db_prefix(&uniquename))
                 },
                 _ => panic!("unexpected WithFromValue varient: {:#?}", with_value),
             };
@@ -332,7 +334,43 @@ impl APIData {
                  term_details.termid == "GO:0003723" ||
                  term_details.interesting_parent_ids.contains("GO:0003723"))
             {
+                let mut first_with = None;
+
                 for with_value in annotation.withs.drain() {
+                    if first_with.is_none() {
+                        first_with = Some(with_value);
+                    } else {
+                        annotation.extension.insert(0, self.get_with_extension(with_value));
+                    }
+                }
+
+                // if there is an ExtRange that is a PRO ID (ExtRange::GeneProduct),
+                // and there is a with value, combine them into an
+                // ExtRange::GeneAndGeneProduct
+                if let Some(with_value) = first_with.clone() {
+                    annotation.extension.iter_mut().for_each(|mut ext_part| {
+                        match &mut ext_part.ext_range {
+                            ExtRange::GeneProduct(range_termid) => {
+                                match &with_value {
+                                    WithFromValue::Gene(gene_short) => {
+                                        let gene_uniquename =
+                                            self.strip_db_prefix(&gene_short.uniquename);
+                                        let val = GeneAndGeneProduct {
+                                            product: range_termid.clone(),
+                                            gene_uniquename,
+                                        };
+                                        ext_part.ext_range = ExtRange::GeneAndGeneProduct(val);
+                                        first_with = None;
+                                    },
+                                    _ => (),
+                                }
+                            },
+                            _ => ()
+                        }
+                    });
+                }
+
+                if let Some(with_value) = first_with {
                     annotation.extension.insert(0, self.get_with_extension(with_value));
                 }
             }
