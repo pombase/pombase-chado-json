@@ -350,24 +350,24 @@ impl APIData {
                 if let Some(with_value) = first_with.clone() {
                     annotation.extension.iter_mut().for_each(|mut ext_part| {
                         if ext_part.rel_type_name == "has_direct_input" {
-                        match &mut ext_part.ext_range {
-                            ExtRange::GeneProduct(range_termid) => {
-                                match &with_value {
-                                    WithFromValue::Gene(gene_short) => {
-                                        let gene_uniquename =
-                                            self.strip_db_prefix(&gene_short.uniquename);
-                                        let val = GeneAndGeneProduct {
-                                            product: range_termid.clone(),
-                                            gene_uniquename,
-                                        };
-                                        ext_part.ext_range = ExtRange::GeneAndGeneProduct(val);
-                                        first_with = None;
-                                    },
-                                    _ => (),
-                                }
-                            },
-                            _ => ()
-                        }
+                            match &mut ext_part.ext_range {
+                                ExtRange::GeneProduct(range_termid) => {
+                                    match &with_value {
+                                        WithFromValue::Gene(gene_short) => {
+                                            let gene_uniquename =
+                                                self.strip_db_prefix(&gene_short.uniquename);
+                                            let val = GeneAndGeneProduct {
+                                                product: range_termid.clone(),
+                                                gene_uniquename,
+                                            };
+                                            ext_part.ext_range = ExtRange::GeneAndGeneProduct(val);
+                                            first_with = None;
+                                        },
+                                        _ => (),
+                                    }
+                                },
+                                _ => ()
+                            }
                         }
                     });
                 }
