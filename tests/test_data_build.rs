@@ -108,9 +108,18 @@ fn get_test_config() -> Config {
             gpad_gpi: GpadGpiConfig {
                 extension_relation_mappings: HashMap::new(),
                 transcript_gene_so_term_map: HashMap::new(),
-            }
+                go_aspect_terms: HashMap::new(),
+            },
+            nd_reference: String::from("GO_REF:0000015"),
         },
     };
+
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("molecular_function"),
+                                                        RcString::from("GO:0003674"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("cellular_component"),
+                                                        RcString::from("GO:0005575"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("biological_process"),
+                                                        RcString::from("GO:0008150"));
 
     config.cv_config.insert(RcString::from("molecular_function"),
                             CvConfig {

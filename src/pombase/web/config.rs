@@ -237,6 +237,8 @@ pub struct AnnotationSubsetConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct GpadGpiConfig {
+    // the term IDs of the three GO aspects
+    pub go_aspect_terms: HashMap<String, TermId>,
     // Map a relation term name to a term ID, unless the term ID is None in
     // which case we skip writing this extension part
     pub extension_relation_mappings: HashMap<String, Option<TermId>>,
@@ -255,6 +257,8 @@ pub struct FileExportConfig {
     pub rnacentral: Option<RNAcentralConfig>,
     pub annotation_subsets: Vec<AnnotationSubsetConfig>,
     pub gpad_gpi: GpadGpiConfig,
+    // the reference to use for ND lines in GPAD/GAF output
+    pub nd_reference: String,
 }
 
 #[derive(Deserialize, Clone, Debug)]

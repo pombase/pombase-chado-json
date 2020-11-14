@@ -462,7 +462,13 @@
         ]
       }
     ],
+    "nd_reference": "GO_REF:0000015",
     "gpad_gpi": {
+      "go_aspect_terms": {
+        "molecular_function": "GO:0003674",
+        "cellular_component": "GO:0005575",
+        "biological_process": "GO:0008150"
+      },
       "extension_relation_mappings": {
       },
       "transcript_gene_so_term_map": {

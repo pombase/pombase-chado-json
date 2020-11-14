@@ -596,11 +596,20 @@ fn get_test_config() -> Config {
             rnacentral: None,
             annotation_subsets: vec![],
             gpad_gpi: GpadGpiConfig {
+                go_aspect_terms: HashMap::new(),
                 extension_relation_mappings: HashMap::new(),
                 transcript_gene_so_term_map: HashMap::new(),
-            }
+            },
+            nd_reference: String::from("GO_REF:0000015"),
         },
     };
+
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("molecular_function"),
+                                                        RcString::from("GO:0003674"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("cellular_component"),
+                                                        RcString::from("GO:0005575"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("biological_process"),
+                                                        RcString::from("GO:0008150"));
 
     config.slims.insert(RcString::from("bp_goslim_pombe"),
                         SlimConfig {

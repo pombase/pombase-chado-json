@@ -2,6 +2,8 @@ use std::io;
 
 use std::fmt::Write;
 
+use chrono::prelude::{Local, DateTime};
+
 use pombase_rc_string::RcString;
 
 use crate::web::config::*;
@@ -102,6 +104,24 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 {
     let database_name = &config.database_name;
     let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
+    let local: DateTime<Local> = Local::now();
+    let local_iso_date = local.format("%F");
+    let assigned_by = &config.database_name;
+
+    for aspect in GO_ASPECT_NAMES.iter() {
+        let term_annotations = gene_details.cv_annotations.get(&RcString::from(aspect));
+        if term_annotations.is_none() {
+            let go_aspect_termid =
+                config.file_exports.gpad_gpi.go_aspect_terms.get(*aspect).unwrap();
+            let nd_ref = &config.file_exports.nd_reference;
+            let line = format!("{}\t\tsome_rel\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
+                               db_object_id,
+                               &go_aspect_termid,
+                               nd_ref,
+                               local_iso_date, assigned_by);
+            gpad_writer.write_all(line.as_bytes())?;
+        }
+    }
 
     for (cv_name, term_annotations) in &gene_details.cv_annotations {
         if !GO_ASPECT_NAMES.contains(&cv_name.as_ref()) {
@@ -131,7 +151,6 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                     .unwrap_or_else(|| RcString::from(""));
                 let evidence_type =
                     eco_evidence_from_annotation(go_eco_mappping, annotation_detail);
-                let assigned_by = &config.database_name;
 
                 let with_iter = annotation_detail.withs.iter();
                 let from_iter = annotation_detail.froms.iter();
