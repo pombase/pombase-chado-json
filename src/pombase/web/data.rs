@@ -349,16 +349,21 @@ impl WebData {
         let generated_by = format!("!generated-by: {}\n", database_name);
         let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
         let date_generated = format!("!date-generated: {}\n", &iso_date);
-
+        let url_header = format!("!url: {}\n", &config.base_url);
+        let funding_header = format!("!funding: {}\n", &config.funder);
 
         gpi_writer.write_all("!gpi-version: 2.0\n".as_bytes())?;
         gpi_writer.write_all(&format!("!namespace: {}\n", database_name).as_bytes())?;
         gpi_writer.write_all(&generated_by.as_bytes())?;
+        gpi_writer.write_all(&date_generated.as_bytes())?;
+        gpi_writer.write_all(&url_header.as_bytes())?;
+        gpi_writer.write_all(&funding_header.as_bytes())?;
 
         gpad_writer.write_all("!gpa-version: 2.0\n".as_bytes())?;
         gpad_writer.write_all(&generated_by.as_bytes())?;
-
-        gpi_writer.write_all(&date_generated.as_bytes())?;
+        gpad_writer.write_all(&date_generated.as_bytes())?;
+        gpad_writer.write_all(&url_header.as_bytes())?;
+        gpad_writer.write_all(&funding_header.as_bytes())?;
 
         for gene_details in self.api_maps.genes.values() {
             if gene_details.taxonid != load_org_taxonid {

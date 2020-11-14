@@ -521,6 +521,7 @@ fn get_test_config() -> Config {
         database_long_name: RcString::from("PomBase"),
         site_description: RcString::from("PomBase"),
         database_citation: RcString::from("PMID:22039153"),
+        funder: RcString::from("Wellcome Trust"),
         base_url: RcString::from("https://www.pombase.org"),
         doc_page_aliases: HashMap::new(),
         organisms: vec![

@@ -289,6 +289,7 @@ pub struct Config {
     pub database_name: RcString,
     pub database_long_name: RcString,
     pub database_citation: RcString,
+    pub funder: RcString,
     pub site_description: RcString,
     pub load_organism_taxonid: Option<OrganismTaxonId>,
     pub base_url: RcString,

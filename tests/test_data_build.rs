@@ -20,6 +20,7 @@ fn get_test_config() -> Config {
         database_name: "PomBase".into(),
         database_long_name: RcString::from("PomBase"),
         database_citation: RcString::from("PMID:22039153"),
+        funder: RcString::from("Wellcome Trust"),
         site_description: RcString::from("PomBase"),
         load_organism_taxonid: Some(4896),
         base_url: RcString::from("https://www.pombase.org"),
