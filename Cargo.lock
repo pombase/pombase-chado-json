@@ -1380,7 +1380,7 @@ dependencies = [
 
 [[package]]
 name = "pombase-chado-json"
-version = "91.7.0"
+version = "91.8.0"
 dependencies = [
  "bit-set",
  "chrono",
@@ -1404,7 +1404,7 @@ dependencies = [
 
 [[package]]
 name = "pombase_rc_string"
-version = "0.2.0"
+version = "0.3.0"
 source = "git+https://github.com/pombase/pombase_rc_string.git?tag=v0.2.0#f5e5027ead0bcf691a54ea3a67fcb3bd43b21b04"
 dependencies = [
  "lazy_static",
