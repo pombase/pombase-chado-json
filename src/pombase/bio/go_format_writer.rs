@@ -108,6 +108,22 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     let local_iso_date = local.format("%F");
     let assigned_by = &config.database_name;
 
+    if gene_details.feature_type == "ncRNA gene" {
+        let mut found = false;
+        for aspect in GO_ASPECT_NAMES.iter() {
+            let term_annotations = gene_details.cv_annotations.get(&RcString::from(aspect));
+            if term_annotations.is_some() {
+                found = true;
+                break;
+            }
+        }
+        if !found {
+            // special case for ncRNA genes: only write ND lines for an aspect
+            // if there are some annotations for the other aspects
+            return Ok(());
+        }
+    }
+
     for aspect in GO_ASPECT_NAMES.iter() {
         let term_annotations = gene_details.cv_annotations.get(&RcString::from(aspect));
         if term_annotations.is_none() {
