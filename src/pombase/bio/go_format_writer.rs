@@ -1,6 +1,7 @@
 use std::io;
 
 use std::fmt::Write;
+use std::cmp::Ordering;
 
 use chrono::prelude::{Local, DateTime};
 
@@ -149,17 +150,42 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
         }
     }
 
-    for (cv_name, term_annotations) in &gene_details.cv_annotations {
-        if !GO_ASPECT_NAMES.contains(&cv_name.as_ref()) {
-            continue;
-        }
+    for aspect in GO_ASPECT_NAMES.iter() {
+        let mut sorted_term_annotations =
+            match gene_details.cv_annotations.get(&RcString::from(aspect)) {
+                Some(term_annotations) => term_annotations.clone(),
+                None => continue,
+            };
 
-        for term_annotation in term_annotations {
+        sorted_term_annotations.sort_by(|ta1, ta2| {
+            ta1.term.cmp(&ta2.term)
+        });
+
+        for term_annotation in sorted_term_annotations {
             let term = api_maps.terms.get(&term_annotation.term)
                 .expect(&format!("failed to find term summary for {}",
                                  term_annotation.term));
 
-            for annotation_id in &term_annotation.annotations {
+            let mut sorted_annotations = term_annotation.annotations.clone();
+
+            sorted_annotations.sort_by(|a1, a2| {
+                let detail1 =
+                    api_maps.annotation_details.get(&a1)
+                    .expect(&format!("can't find annotation {}", a1));
+                let detail2 =
+                    api_maps.annotation_details.get(&a2)
+                    .expect(&format!("can't find annotation {}", a1));
+
+                let res = detail1.evidence.cmp(&detail2.evidence);
+
+                if res == Ordering::Equal {
+                    detail1.reference.cmp(&detail2.reference)
+                } else {
+                    res
+                }
+            });
+
+            for annotation_id in &sorted_annotations {
                 let annotation_detail = api_maps.annotation_details
                     .get(&annotation_id)
                     .expect(&format!("can't find annotation {}", annotation_id));
