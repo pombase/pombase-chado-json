@@ -140,7 +140,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
             let go_aspect_termid =
                 config.file_exports.gpad_gpi.go_aspect_terms.get(*aspect).unwrap();
             let nd_ref = &config.file_exports.nd_reference;
-            let line = format!("{}\t\tsome_rel\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
+            let line = format!("{}\t\t\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
                                db_object_id,
                                &go_aspect_termid,
                                nd_ref,
