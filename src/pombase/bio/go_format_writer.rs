@@ -108,6 +108,16 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     let local_iso_date = local.format("%F");
     let assigned_by = &config.database_name;
 
+    if let Some(ref product) = gene_details.product {
+        if product == "dubious" {
+            return Ok(());
+        }
+    }
+
+    if gene_details.feature_type == "pseudogene" {
+        return Ok(());
+    }
+
     if gene_details.feature_type == "ncRNA gene" {
         let mut found = false;
         for aspect in GO_ASPECT_NAMES.iter() {
