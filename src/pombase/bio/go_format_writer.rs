@@ -2,6 +2,7 @@ use std::io;
 
 use std::fmt::Write;
 use std::cmp::Ordering;
+use std::collections::HashSet;
 
 use chrono::prelude::{Local, DateTime};
 
@@ -97,6 +98,18 @@ fn make_gpad_extension_string(config: &Config, extension: &Vec<ExtPart>) -> Stri
         .collect::<Vec<_>>().join(",")
 }
 
+fn compare_withs(withs1: &HashSet<WithFromValue>,
+                 withs2: &HashSet<WithFromValue>)
+                 -> Ordering
+{
+    let mut withs1_vec: Vec<_> = withs1.iter().collect();
+    let mut withs2_vec: Vec<_> = withs2.iter().collect();
+
+    withs1_vec.sort();
+    withs2_vec.sort();
+
+    withs1_vec.cmp(&withs2_vec)
+}
 
 pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                      go_eco_mappping: &GoEcoMapping, config: &Config,
@@ -176,13 +189,22 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                     api_maps.annotation_details.get(&a2)
                     .expect(&format!("can't find annotation {}", a1));
 
-                let res = detail1.evidence.cmp(&detail2.evidence);
-
-                if res == Ordering::Equal {
-                    detail1.reference.cmp(&detail2.reference)
-                } else {
-                    res
+                let ev_res = detail1.evidence.cmp(&detail2.evidence);
+                if ev_res != Ordering::Equal {
+                    return ev_res;
                 }
+
+                let ref_res = detail1.reference.cmp(&detail2.reference);
+                if ref_res != Ordering::Equal {
+                    return ref_res;
+                }
+
+                let date_res = detail1.date.cmp(&detail2.date);
+                if date_res != Ordering::Equal {
+                    return date_res
+                }
+
+                compare_withs(&detail1.withs, &detail2.withs)
             });
 
             for annotation_id in &sorted_annotations {

@@ -487,6 +487,30 @@ impl From<WithFromValue> for RcString {
     }
 }
 
+impl Ord for WithFromValue {
+    fn cmp(& self, other: & WithFromValue) -> Ordering {
+        let self_string =
+            match self {
+                WithFromValue::Gene(ref gene) => &gene.uniquename,
+                WithFromValue::Term(ref term) => &term.name,
+                WithFromValue::Identifier(ref id) => id,
+            };
+        let other_string =
+            match other {
+                WithFromValue::Gene(ref gene) => &gene.uniquename,
+                WithFromValue::Term(ref term) => &term.name,
+                WithFromValue::Identifier(ref id) => id,
+            };
+
+        self_string.cmp(other_string)
+    }
+}
+impl PartialOrd for WithFromValue {
+    fn partial_cmp(&self, other: &WithFromValue) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
