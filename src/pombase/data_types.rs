@@ -799,7 +799,8 @@ pub struct GeneDetails {
 impl GeneDetails {
     pub fn spliced_transcript_sequence(&self) -> Option<RcString> {
         if self.transcripts.len() > 1 {
-            panic!("no support for multi-transcript genes");
+            eprintln!("no support for multi-transcript genes, ignoring: {}",
+                      self.uniquename);
         }
 
         if let Some(transcript) = self.transcripts.get(0) {
