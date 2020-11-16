@@ -61,6 +61,15 @@ fn get_gpad_relation_of(term_details: &TermDetails,
     }
 }
 
+fn get_gpad_nd_relation_of(aspect: &str) -> String {
+    match aspect {
+        "molecular_function" => String::from("RO:0002327"),
+        "biological_process" => String::from("RO:0002331"),
+        "cellular_component" => String::from("RO:0002432"),
+        _ => panic!("unknown aspect in GPAD export: {}", aspect)
+    }
+}
+
 fn make_gpad_extension_string(config: &Config, extension: &Vec<ExtPart>) -> String {
     let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
     let get_rel_termid = |ext_part: &ExtPart| {
@@ -151,11 +160,13 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     for aspect in GO_ASPECT_NAMES.iter() {
         let term_annotations = gene_details.cv_annotations.get(&RcString::from(aspect));
         if term_annotations.is_none() {
+            let relation = get_gpad_nd_relation_of(aspect);
             let go_aspect_termid =
                 config.file_exports.gpad_gpi.go_aspect_terms.get(*aspect).unwrap();
             let nd_ref = &config.file_exports.nd_reference;
-            let line = format!("{}\t\t\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
+            let line = format!("{}\t\t{}\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
                                db_object_id,
+                               relation,
                                &go_aspect_termid,
                                nd_ref,
                                local_iso_date, assigned_by);
