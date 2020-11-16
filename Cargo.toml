@@ -27,6 +27,7 @@ uuid = { version = "0.5", features = ["v4", "serde"] }
 [dependencies.pombase_rc_string]
 git = "https://github.com/pombase/pombase_rc_string.git"
 tag = "v0.3.0"
+version = "=0.3.0"
 
 [dependencies.serde]
 version = "1.0"

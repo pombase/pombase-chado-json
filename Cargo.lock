@@ -1404,7 +1404,7 @@ dependencies = [
 
 [[package]]
 name = "pombase_rc_string"
-version = "0.4.0"
+version = "0.3.0"
 source = "git+https://github.com/pombase/pombase_rc_string.git?tag=v0.3.0#3b26858582ddd5c18209a82b004ba46385da5a4b"
 dependencies = [
  "lazy_static",
