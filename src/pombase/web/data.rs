@@ -370,6 +370,23 @@ impl WebData {
                 continue;
             }
 
+
+            if gene_details.feature_type == "ncRNA gene" {
+                let mut found = false;
+                for aspect in GO_ASPECT_NAMES.iter() {
+                    let term_annotations = gene_details.cv_annotations.get(&RcString::from(aspect));
+                    if term_annotations.is_some() {
+                        found = true;
+                        break;
+                    }
+                }
+                if !found {
+                    // special case for ncRNA genes: only write ND lines for an aspect
+                    // if there are some annotations for the other aspects
+                    continue;
+                }
+            }
+
             let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
             let db_object_symbol =
                 gene_details.product.clone().unwrap_or_else(|| RcString::new());
