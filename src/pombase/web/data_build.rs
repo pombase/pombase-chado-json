@@ -3839,21 +3839,34 @@ impl <'a> WebDataBuild<'a> {
             term_names.insert(termid.clone(), term_details.name.to_lowercase());
         }
 
-        let ont_term_cmp = |ont_term_1: &OntTermAnnotations, ont_term_2: &OntTermAnnotations| {
-            if !ont_term_1.is_not && ont_term_2.is_not {
-                return Ordering::Less;
-            }
-            if ont_term_1.is_not && !ont_term_2.is_not {
-                return Ordering::Greater;
-            }
-            let term1 = &term_names[&ont_term_1.term];
-            let term2 = &term_names[&ont_term_2.term];
-
-            term1.cmp(&term2)
-        };
-
         for term_details in self.terms.values_mut() {
+            let term_details_termid = &term_details.termid;
             for term_annotations in term_details.cv_annotations.values_mut() {
+                let ont_term_cmp = |ont_term_1: &OntTermAnnotations, ont_term_2: &OntTermAnnotations| {
+                    if ont_term_1.term == ont_term_2.term {
+                        return Ordering::Equal;
+                    }
+
+                    // put direct annotation first on page
+                    if ont_term_1.term == *term_details_termid {
+                        return Ordering::Less;
+                    }
+                    if ont_term_2.term == *term_details_termid {
+                        return Ordering::Greater;
+                    }
+
+                    if !ont_term_1.is_not && ont_term_2.is_not {
+                        return Ordering::Less;
+                    }
+                    if ont_term_1.is_not && !ont_term_2.is_not {
+                        return Ordering::Greater;
+                    }
+                    let term1 = &term_names[&ont_term_1.term];
+                    let term2 = &term_names[&ont_term_2.term];
+
+                    term1.cmp(&term2)
+                };
+
                 term_annotations.sort_by(&ont_term_cmp);
             }
         }
