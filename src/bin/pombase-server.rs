@@ -41,6 +41,15 @@ struct StaticFileState {
     web_root_dir: String,
 }
 
+
+#[derive(Serialize, Debug)]
+struct TermLookupResponse {
+    status: String,
+    summary: Option<SolrTermSummary>,
+}
+
+
+
 // If the path is a directory, return path+"/index.html".  Otherwise
 // try the path, then try path + ".json", then default to loading the
 // Angular app from /index.html
@@ -115,6 +124,33 @@ fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<T
     } else {
         None
     }
+}
+
+#[get("/api/v1/dataset/latest/summary/term/<id>", rank=2)]
+fn get_term_summary_by_id(id: String, state: rocket::State<Mutex<Search>>)
+                          -> Option<Json<TermLookupResponse>>
+{
+    let search = state.lock().expect("failed to lock");
+    let res = search.term_summary_by_id(&id);
+
+    let lookup_response =
+        match res {
+            Ok(summary) => {
+                TermLookupResponse {
+                    status: "Ok".to_owned(),
+                    summary: summary,
+                }
+            },
+            Err(err) => {
+                println!("{:?}", err);
+                TermLookupResponse {
+                    status: "Error".to_owned(),
+                    summary: None,
+                }
+            },
+        };
+
+    Some(Json(lookup_response))
 }
 
 #[get("/api/v1/dataset/latest/data/reference/<id>", rank=2)]
@@ -394,6 +430,7 @@ fn main() {
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
+                            get_term_summary_by_id,
                             term_complete, ref_complete,
                             solr_search, motif_search, ping])
         .register(catchers![not_found])

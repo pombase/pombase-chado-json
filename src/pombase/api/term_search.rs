@@ -153,3 +153,47 @@ pub fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
         Ok(vec![])
     }
 }
+
+pub fn term_summary_by_id(config: &ServerConfig, termid: &str)
+                          -> Result<Option<SolrTermSummary>, String>
+{
+    let term_url = format!("{}/terms/select?wt=json&q=id:{}",
+                           config.solr_url.to_owned(), termid.replace(":", r"\:"));
+
+    print!("url: {}", &term_url);
+
+    match reqwest::get(&term_url) {
+        Ok(res) => {
+            if res.status().is_success() {
+                match serde_json::from_reader(res) {
+                    Ok(container) => {
+                        let solr_response_container: SolrTermResponseContainer = container;
+                        let summaries = solr_response_container.response.docs;
+                        if let Some(summary) = summaries.get(0) {
+                            if summary.id == termid {
+                                Ok(Some(summary.clone()))
+                            } else {
+                                Ok(None)
+                            }
+                        } else {
+                            Ok(None)
+                        }
+                    },
+                    Err(err) => {
+                        Err(format!("Error parsing response from Solr: {:?}", err))
+                    }
+                }
+            } else {
+                if let Some(reason) = res.status().canonical_reason() {
+                    Err(format!("HTTP request to Solr failed: {} - {}", res.status(), reason))
+                } else {
+                    Err(format!("HTTP request to Solr failed with status code: {}",
+                                res.status()))
+                }
+            }
+        },
+        Err(err) => {
+            Err(format!("Error from Reqwest: {:?}", err))
+        }
+    }
+}

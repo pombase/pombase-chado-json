@@ -2,7 +2,7 @@ use crate::web::config::{Config, ServerConfig};
 
 use crate::data_types::{SolrTermSummary, SolrReferenceSummary};
 
-use crate::api::term_search::{search_terms, term_complete};
+use crate::api::term_search::{search_terms, term_complete, term_summary_by_id};
 pub use crate::api::term_search::TermSearchMatch;
 
 use crate::api::ref_search::{search_refs, ref_complete};
@@ -99,6 +99,12 @@ impl Search {
                          -> Result<Vec<SolrTermSummary>, String>
     {
         term_complete(&self.config, cv_name, q)
+    }
+
+    pub fn term_summary_by_id(&self, termid: &str)
+                             -> Result<Option<SolrTermSummary>, String>
+    {
+        term_summary_by_id(&self.config, termid)
     }
 
     pub fn ref_complete(&self, q: &str)
