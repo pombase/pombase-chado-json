@@ -6,7 +6,9 @@ use std::io::BufReader;
 use chrono::prelude::{Local, DateTime};
 
 use crate::web::config::Config;
-use crate::data_types::{UniquenameGeneMap, GeneDetails, FeatureType, RNAcentralAnnotations};
+use crate::data_types::{UniquenameGeneMap, GeneDetails,
+                        TranscriptDetails, FeatureType,
+                        RNAcentralAnnotations};
 
 use pombase_rc_string::RcString;
 
@@ -68,7 +70,7 @@ pub struct RNAcentralNcRNA {
     pub symbol_synonyms: Vec<RcString>,
 #[serde(rename = "soTermId")]
     pub so_term_id: RcString,
-    pub sequence: Option<RcString>,
+    pub sequence: RcString,
     pub url: RcString,
     pub gene: RNAcentralGene,
 #[serde(rename = "genomeLocations")]
@@ -99,8 +101,8 @@ fn gene_synonyms(gene_details: &GeneDetails) -> Vec<RcString> {
     gene_details.synonyms.iter().map(|syn| syn.name.clone()).collect::<Vec<_>>()
 }
 
-fn db_uniquename(config: &Config, gene_details: &GeneDetails) -> RcString {
-    RcString::from(&format!("{}:{}", &config.database_name, gene_details.uniquename.clone()))
+fn db_uniquename(config: &Config, uniquename: &RcString) -> RcString {
+    RcString::from(&format!("{}:{}", &config.database_name, uniquename))
 }
 
 fn make_url(config: &Config, gene_details: &GeneDetails) -> RcString {
@@ -109,7 +111,7 @@ fn make_url(config: &Config, gene_details: &GeneDetails) -> RcString {
 
 fn make_gene_struct(config: &Config, gene_details: &GeneDetails) -> RNAcentralGene {
     RNAcentralGene {
-        gene_id: db_uniquename(config, gene_details),
+        gene_id: db_uniquename(config, &gene_details.uniquename),
         symbol: gene_details.name.clone(),
         name: gene_details.product.clone(),
         url: make_url(config, gene_details),
@@ -117,8 +119,9 @@ fn make_gene_struct(config: &Config, gene_details: &GeneDetails) -> RNAcentralGe
     }
 }
 
-fn make_genome_locations(config: &Config, gene_details: &GeneDetails)
-                         -> Vec<RNAcentralNcRNALocation>
+fn make_genome_location(config: &Config, gene_details: &GeneDetails,
+                        transcript_details: &TranscriptDetails)
+                        -> RNAcentralNcRNALocation
 {
     let assembly_version =
         config.organisms.iter()
@@ -128,67 +131,70 @@ fn make_genome_locations(config: &Config, gene_details: &GeneDetails)
         .assembly_version.clone()
         .expect(&format!("no assembly_version for: {}", gene_details.taxonid));
 
-    let mut ret = vec![];
-
-    for transcript in &gene_details.transcripts {
-        let mut exons = vec![];
-        for part in &transcript.parts {
-            if part.feature_type == FeatureType::Exon {
-                let mut start_position = part.location.start_pos - 1;
-                let mut end_position = part.location.end_pos;
-                if start_position > end_position {
-                    use std::mem;
-                    mem::swap(&mut start_position, &mut end_position);
-                }
-                let chromosome_name = &part.location.chromosome_name;
-                let chromosome =
-                    config.find_chromosome_config(chromosome_name).export_id.clone();
-                exons.push(RNAcentralNcRNALocationExon {
-                    chromosome,
-                    start_position,
-                    end_position,
-                    strand: RcString::from(part.location.strand.to_gff_str()),
-                });
+    let mut exons = vec![];
+    for part in &transcript_details.parts {
+        if part.feature_type == FeatureType::Exon {
+            let mut start_position = part.location.start_pos - 1;
+            let mut end_position = part.location.end_pos;
+            if start_position > end_position {
+                use std::mem;
+                mem::swap(&mut start_position, &mut end_position);
             }
+            let chromosome_name = &part.location.chromosome_name;
+            let chromosome =
+                config.find_chromosome_config(chromosome_name).export_id.clone();
+            exons.push(RNAcentralNcRNALocationExon {
+                chromosome,
+                start_position,
+                end_position,
+                strand: RcString::from(part.location.strand.to_gff_str()),
+            });
         }
-
-        ret.push(RNAcentralNcRNALocation {
-            assembly: assembly_version.clone(),
-            exons,
-        })
     }
 
-    ret
+    RNAcentralNcRNALocation {
+        assembly: assembly_version.clone(),
+        exons,
+    }
 }
 
 fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA> {
-    genes.values()
-        .filter(|gene_details| {
-            if let Some(ref rnacentral_config) = config.file_exports.rnacentral {
-                rnacentral_config.export_so_ids.contains(&gene_details.transcript_so_termid)
-            } else {
-                panic!("no configuration for exporting RNAcentral data");
-            }
-        })
-        .map(|gene_details: &GeneDetails| {
+    let rnacentral_config = config.file_exports.rnacentral.clone().unwrap();
+
+    let mut ret = vec![];
+
+    for gene_details in genes.values() {
+        let so_term_id = &gene_details.transcript_so_termid;
+
+        if !rnacentral_config.export_so_ids.contains(so_term_id) {
+            continue;
+        }
+
+        for transcript_details in &gene_details.transcripts {
             let rnacentral_gene = make_gene_struct(config, &gene_details);
-            let primary_id = db_uniquename(config, gene_details);
-            let symbol_synonyms = gene_synonyms(gene_details);
-            let locations = make_genome_locations(config, gene_details);
-            RNAcentralNcRNA {
+
+            let primary_id = db_uniquename(config, &transcript_details.uniquename);
+            let location = make_genome_location(config, gene_details, transcript_details);
+
+            let uppercase_sequence =
+                transcript_details.spliced_transcript_sequence().to_uppercase();
+
+            ret.push(RNAcentralNcRNA {
                 primary_id,
                 taxon_id: RcString::from(&format!("NCBITaxon:{}", gene_details.taxonid)),
-                symbol: gene_details.name.clone(),
-                symbol_synonyms,
-                so_term_id: gene_details.transcript_so_termid.clone(),
-                sequence: gene_details.spliced_transcript_sequence()
-                    .map(|s| RcString::from(&s.to_uppercase())),
+                symbol: None,
+                symbol_synonyms: vec![],
+                so_term_id: so_term_id.clone(),
+                sequence: RcString::from(&uppercase_sequence),
                 url: make_url(config, gene_details),
                 gene: rnacentral_gene,
-                genome_locations: locations,
+                genome_locations: vec![location],
                 publications: gene_details.feature_publications.clone(),
-            }
-        }).collect()
+            })
+        }
+    }
+
+    ret
 }
 
 pub fn make_rnacentral_struct(config: &Config, genes: &UniquenameGeneMap) -> RNAcentral {

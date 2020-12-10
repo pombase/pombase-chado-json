@@ -796,29 +796,6 @@ pub struct GeneDetails {
     pub subset_termids: HashSet<TermId>,
 }
 
-impl GeneDetails {
-    pub fn spliced_transcript_sequence(&self) -> Option<RcString> {
-        if self.transcripts.len() > 1 {
-            eprintln!("no support for multi-transcript genes, ignoring: {}",
-                      self.uniquename);
-        }
-
-        if let Some(transcript) = self.transcripts.get(0) {
-            let mut seq = String::new();
-
-            for part in &transcript.parts {
-                if part.feature_type == FeatureType::Exon {
-                    seq += &part.residues;
-                }
-            }
-
-            Some(RcString::from(&seq))
-        } else {
-            None
-        }
-    }
-}
-
 impl PartialEq for GeneDetails {
     fn eq(&self, other: &GeneDetails) -> bool {
         self.uniquename == other.uniquename
@@ -1003,6 +980,21 @@ pub struct TranscriptDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
 }
+
+impl TranscriptDetails {
+    pub fn spliced_transcript_sequence(&self) -> RcString {
+        let mut seq = String::new();
+
+        for part in &self.parts {
+            if part.feature_type == FeatureType::Exon {
+                seq += &part.residues;
+            }
+        }
+
+        RcString::from(&seq)
+    }
+}
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeShort {
