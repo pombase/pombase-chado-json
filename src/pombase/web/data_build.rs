@@ -3106,7 +3106,8 @@ impl <'a> WebDataBuild<'a> {
                     "quant_gene_ex_copies_per_cell" |
                     "quant_gene_ex_avg_copies_per_cell" => {
                         if let Some(value) = prop.value.clone() {
-                            if prop.type_name() == "residue" {
+                            if prop.type_name() == "residue" &&
+                                &cvterm.cv.name != "sequence" {
                                 let residue = value.clone();
                                 let display_name = RcString::from("modified residue");
                                 let residue_range_part = ExtPart {
