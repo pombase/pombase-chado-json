@@ -2310,8 +2310,6 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
             }
-        } else {
-            panic!("can't find details for term: {}\n", annotation_termid);
         }
 
         None
@@ -3108,9 +3106,13 @@ impl <'a> WebDataBuild<'a> {
                     "quant_gene_ex_avg_copies_per_cell" => {
                         if let Some(value) = prop.value.clone() {
                             if prop.type_name() == "residue" &&
-                                &cvterm.cv.name != "sequence" {
+                                &cvterm.cv.name != "sequence"
+                            {
                                 let residue = value.clone();
-                                let display_name = RcString::from("modified residue");
+                                let display_name =
+                                    self.get_ext_rel_display_name(&termid,
+                                                                  "modified residue");
+
                                 let residue_range_part = ExtPart {
                                     rel_type_id: None,
                                     rel_type_name: display_name.clone(),
