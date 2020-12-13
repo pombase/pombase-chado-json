@@ -2300,8 +2300,9 @@ impl <'a> WebDataBuild<'a> {
         if let Some(annotation_term_details) = self.terms.get(annotation_termid) {
             for ext_config in ext_configs {
                 if ext_config.rel_name == rel_type_name {
-                    if let Some(if_descendant_of) = ext_config.if_descendant_of.clone() {
-                        if annotation_term_details.interesting_parent_ids.contains(&if_descendant_of) {
+                    if let Some(ref if_descendant_of) = ext_config.if_descendant_of {
+                        if annotation_termid == if_descendant_of.as_str() ||
+                            annotation_term_details.interesting_parent_ids.contains(if_descendant_of) {
                             return Some((*ext_config).clone());
                         }
                     } else {
