@@ -1090,6 +1090,7 @@ impl <'a> WebDataBuild<'a> {
             orthologs: ortholog_ids,
             feature_type: gene_details.feature_type.clone(),
             taxonid: gene_details.taxonid,
+            transcript_count: gene_details.transcripts.len(),
             location: gene_details.location.clone(),
         }
     }
