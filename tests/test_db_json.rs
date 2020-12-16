@@ -578,6 +578,7 @@ fn get_test_config() -> Config {
             solr_url: "http://localhost:8983/solr".to_owned(),
             close_synonym_boost: 0.6,
             distant_synonym_boost: 0.3,
+            term_definition_boost: 0.1,
             django_url: String::from("http://localhost:8999"),
             cv_name_for_terms_search: String::from(""),
             gene_uniquename_re: String::from("^SP([ABCN][CTP]|RR|SN|MIT|MT)[\\d\\w]*\\.\\d\\d\\d?\\d?c?$"),

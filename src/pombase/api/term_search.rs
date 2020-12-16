@@ -13,6 +13,7 @@ pub struct TermSearchMatch {
     pub id: String,
     pub cv_name: String,
     pub name: String,
+    pub definition: String,
     pub hl: SolrMatchHighlight,
 }
 
@@ -21,6 +22,7 @@ struct TermSearchRes {
     pub id: String,
     pub cv_name: String,
     pub name: String,
+    pub definition: String,
 }
 
 #[derive(Deserialize, Debug)]
@@ -50,7 +52,7 @@ pub fn search_terms(config: &ServerConfig, q: &str)
     let cv_name = &config.cv_name_for_terms_search;
 
     if let Some(mut url) = make_terms_url(config, cv_name, q) {
-        url += "&hl=on&hl.fl=name&fl=id,name,cv_name";
+        url += "&hl=on&hl.fl=name,definition&fl=id,name,cv_name,definition";
         let res = do_solr_request(&url)?;
 
         match serde_json::from_reader(res) {
@@ -62,6 +64,7 @@ pub fn search_terms(config: &ServerConfig, q: &str)
                         id: String::from(&doc.id),
                         cv_name: String::from(doc.cv_name.as_str()),
                         name: String::from(doc.name.as_str()),
+                        definition: doc.definition.clone(),
                         hl: hl_by_id.remove(doc.id.as_str())
                             .unwrap_or_else(HashMap::new),
                     }).collect();
@@ -113,9 +116,10 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
 
         let query_part = get_query_part(&clean_words);
 
-        terms_url += &format!("{}) OR close_synonym_words:({})^{} OR distant_synonym_words:({})^{})",
+        terms_url += &format!("{}) OR close_synonym_words:({})^{} OR distant_synonym_words:({})^{} OR definition:({})^{})",
                               query_part, query_part, config.close_synonym_boost,
-                              query_part, config.distant_synonym_boost);
+                              query_part, config.distant_synonym_boost,
+                              query_part, config.term_definition_boost);
     }
     Some(terms_url)
 }
