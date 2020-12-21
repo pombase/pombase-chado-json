@@ -580,7 +580,7 @@ impl WebData {
 
         let db_display_name = |db_alias: &str| {
             if let Some(name) = config.extra_database_aliases.get(&db_alias.to_lowercase()) {
-                name.clone()
+                RcString::from(&name)
             } else {
                 RcString::from(db_alias)
             }
