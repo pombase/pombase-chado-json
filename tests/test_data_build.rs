@@ -630,6 +630,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         synonyms: vec![],
         definition: None,
         direct_ancestors: vec![],
+        definition_xrefs: HashSet::new(),
         secondary_identifiers: HashSet::new(),
         genes_annotated_with: HashSet::new(),
         is_obsolete: false,

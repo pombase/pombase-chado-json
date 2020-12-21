@@ -1111,6 +1111,8 @@ pub struct TermDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub direct_ancestors: Vec<TermAndRelation>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub definition_xrefs: HashSet<TermId>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub genes_annotated_with: HashSet<GeneUniquename>,

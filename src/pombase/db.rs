@@ -93,6 +93,7 @@ pub struct Cvterm {
     pub name: RcString,
     pub cv: Rc<Cv>,
     pub dbxref: Rc<Dbxref>,
+    pub definition_xrefs: RefCell<Vec<Rc<Dbxref>>>,
     pub other_dbxrefs: RefCell<Vec<Rc<Dbxref>>>,
     pub definition: Option<RcString>,
     pub is_obsolete: bool,
@@ -118,6 +119,7 @@ impl Cvterm {
             is_relationshiptype,
             cvtermsynonyms: RefCell::new(vec![]),
             cvtermprops: RefCell::new(vec![]),
+            definition_xrefs: RefCell::new(vec![]),
             other_dbxrefs: RefCell::new(vec![]),
             _termid: rc_termid
         }
@@ -689,6 +691,16 @@ impl Raw {
             let rc_organismprop = Rc::new(organismprop);
             ret.organismprops.push(rc_organismprop.clone());
             organism.organismprops.borrow_mut().push(rc_organismprop.clone());
+        }
+
+        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref WHERE is_for_definition = 1", &[]).unwrap() {
+            let cvterm_id: i32 = row.get(0);
+            let dbxref_id: i32 = row.get(1);
+
+            let cvterm = cvterm_map[&cvterm_id].clone();
+            let dbxref = dbxref_map[&dbxref_id].clone();
+
+            cvterm.definition_xrefs.borrow_mut().push(dbxref);
         }
 
         for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref WHERE is_for_definition = 0", &[]).unwrap() {

@@ -2768,6 +2768,12 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }).collect::<Vec<_>>();
 
+                let definition_xrefs =
+                    cvterm.definition_xrefs.borrow().iter()
+                    .map(|dbxref| {
+                        dbxref.identifier()
+                    }).collect::<HashSet<_>>();
+
                 let secondary_identifiers =
                     cvterm.other_dbxrefs.borrow().iter()
                     .map(|dbxref| {
@@ -2786,6 +2792,7 @@ impl <'a> WebDataBuild<'a> {
                                       synonyms,
                                       definition: cvterm.definition.clone(),
                                       direct_ancestors: vec![],
+                                      definition_xrefs,
                                       secondary_identifiers,
                                       genes_annotated_with: HashSet::new(),
                                       is_obsolete: cvterm.is_obsolete,
@@ -4323,6 +4330,12 @@ impl <'a> WebDataBuild<'a> {
             HashMap::new();
 
         for (termid, term_details) in &self.terms {
+            for xref in &term_details.definition_xrefs {
+                if xref.starts_with("PMID:") && self.references.contains_key(xref) {
+                    self.add_ref_to_hash(&mut seen_references, termid, &Some(xref.clone()));
+                }
+            }
+
             for (cv_name, term_annotations) in &term_details.cv_annotations {
                 for term_annotation in term_annotations {
                     self.add_term_to_hash(&mut seen_terms, termid,
