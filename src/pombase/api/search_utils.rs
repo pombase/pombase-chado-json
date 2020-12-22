@@ -19,7 +19,7 @@ pub fn get_query_part(words: &[String]) -> String {
 
 lazy_static! {
     static ref WORD_RE: Regex = Regex::new(r"([\w\d\-]+)").unwrap();
-    static ref SHORT_NUMBERS_RE: Regex = Regex::new(r"^[\d]+$").unwrap();
+    static ref SHORT_NUMBERS_RE: Regex = Regex::new(r"^\d\d?\d?$").unwrap();
 }
 
 // remove non-alphanumeric chars and then split on spaces
