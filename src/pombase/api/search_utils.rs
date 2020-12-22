@@ -17,13 +17,22 @@ pub fn get_query_part(words: &[String]) -> String {
     ret
 }
 
+lazy_static! {
+    static ref WORD_RE = Regex::new(r"([\w\d\-]+)").unwrap();
+    static ref SHORT_NUMBERS_RE = Regex::new(r"^[\d]+$").unwrap();
+}
+
 // remove non-alphanumeric chars and then split on spaces
 pub fn clean_words(q: &str) -> Vec<String> {
     let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
     let lower_q = substring(&q.to_lowercase(), 200);
 
-    Regex::new(r"([\w\d\-]+)").unwrap().captures_iter(&lower_q)
-        .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect()
+    WORD_RE.captures_iter(&lower_q)
+        .map(|cap| cap.get(1).unwrap().as_str().to_owned())
+        // fixes the "02" and "2" from gene IDs like "SPCC1620.02.2" matching
+        // lots of titles and abstracts:
+        .filter(|s| !SHORT_NUMBERS_RE.is_match(s))
+        .collect()
 }
 
 pub fn do_solr_request(url: &str) -> Result<Response, String> {

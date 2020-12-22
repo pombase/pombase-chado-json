@@ -8,7 +8,7 @@ use once_cell::unsync::Lazy;
 
 use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
-use crate::api::search_utils::do_solr_request;
+use crate::api::search_utils::{do_solr_request, clean_words};
 
 lazy_static! {
     static ref CLEAN_WORDS_RE: Regex = Regex::new(r"([\w\d\-]+)").unwrap();
@@ -115,9 +115,7 @@ fn make_refs_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
                 .collect::<Vec<String>>()
                 .join(" OR ");
         } else {
-            let clean_words: Vec<String> =
-                CLEAN_WORDS_RE.captures_iter(&lower_q)
-                .map(|cap| cap.get(1).unwrap().as_str().to_owned()).collect();
+            let clean_words: Vec<String> = clean_words(&lower_q);
 
             if clean_words.is_empty() {
                 return None
