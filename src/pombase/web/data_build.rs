@@ -335,7 +335,7 @@ pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele]
 
     let clean_display_name =
         BAD_GENOTYPE_NAME_CHARS_RE.replace_all(&joined_alleles, "_");
-    RcString::from(&clean_display_name)
+    RcString::from(clean_display_name.as_ref())
 }
 
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
@@ -581,7 +581,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         for rel_name in &DESCENDANT_REL_NAMES {
             set.insert(InterestingParent {
                 termid: termid.to_owned(),
-                rel_name: RcString::from(rel_name),
+                rel_name: RcString::from(*rel_name),
             });
         }
     };
@@ -1291,7 +1291,7 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(publication_date) = pubmed_publication_date.clone() {
                 let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
-                publication_year = Some(RcString::from(&date_re.replace_all(&publication_date, "$y")));
+                publication_year = Some(RcString::from(date_re.replace_all(&publication_date, "$y").as_ref()));
             }
 
             let mut approved_date = canto_first_approved_date.clone();
@@ -1303,7 +1303,7 @@ impl <'a> WebDataBuild<'a> {
             approved_date =
                 if let Some(date) = approved_date {
                     let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
-                    Some(RcString::from(&re.replace_all(&date, "$date")))
+                    Some(RcString::from(re.replace_all(&date, "$date").as_ref()))
                 } else {
                     None
                 };
@@ -2372,16 +2372,16 @@ impl <'a> WebDataBuild<'a> {
         let priority_config = &target_of_config.relation_priority;
 
         for annotation in &processed_annotations {
-            if priority_config.get(annotation.ext_rel_display_name.as_ref()).is_none() {
+            if priority_config.get(annotation.ext_rel_display_name.as_str()).is_none() {
                 eprintln!(r#"No priority configured for "{}" (from {})"#,
                           annotation.ext_rel_display_name, gene_details.uniquename);
             }
         }
 
         let cmp_fn = |a: &TargetOfAnnotation, b: &TargetOfAnnotation| {
-            let a_rel_name = a.ext_rel_display_name.as_ref();
+            let a_rel_name = a.ext_rel_display_name.as_str();
             let a_pri = priority_config.get(a_rel_name).unwrap_or(&0);
-            let b_rel_name = b.ext_rel_display_name.as_ref();
+            let b_rel_name = b.ext_rel_display_name.as_str();
             let b_pri = priority_config.get(b_rel_name).unwrap_or(&0);
 
             let pri_order = b_pri.cmp(a_pri);
@@ -3047,7 +3047,7 @@ impl <'a> WebDataBuild<'a> {
     fn make_with_or_from_value(&self, with_or_from_value: &RcString) -> WithFromValue {
         let db_prefix_patt = RcString::from("^") + DB_NAME + ":";
         let re = Regex::new(&db_prefix_patt).unwrap();
-        let gene_uniquename = RcString::from(&re.replace_all(&with_or_from_value, ""));
+        let gene_uniquename = RcString::from(re.replace_all(&with_or_from_value, "").as_ref());
         if self.genes.contains_key(&gene_uniquename) {
             let gene_short = self.make_gene_short(&gene_uniquename);
             WithFromValue::Gene(gene_short)
@@ -3534,10 +3534,6 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
 
-                /*
-
-                disable for now:
-
                 // Add annotations to terms referred to in extensions.  They
                 // are added to fake CV that have a name starting with
                 // "extension:".  The CV name will end with ":genotype" if the
@@ -3580,7 +3576,6 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                 }
-                */
 
                 let gene_short_list =
                     annotation.genes.iter().map(|uniquename: &RcString| {
@@ -4819,7 +4814,7 @@ impl <'a> WebDataBuild<'a> {
             let subset_name =
                 RcString::from("feature_type:") + &gene_details.feature_type;
             let re = Regex::new(r"[\s,:]+").unwrap();
-            let subset_name_no_spaces = RcString::from(&re.replace_all(&subset_name, "_"));
+            let subset_name_no_spaces = RcString::from(re.replace_all(&subset_name, "_").as_ref());
             subsets.entry(subset_name_no_spaces.clone())
                 .or_insert(GeneSubsetDetails {
                     name: subset_name_no_spaces,
@@ -4847,7 +4842,7 @@ impl <'a> WebDataBuild<'a> {
                 let subset_name =
                     RcString::from("characterisation_status:") + &characterisation_status;
                 let re = Regex::new(r"[\s,:]+").unwrap();
-                let subset_name_no_spaces = RcString::from(&re.replace_all(&subset_name, "_"));
+                let subset_name_no_spaces = RcString::from(re.replace_all(&subset_name, "_").as_ref());
                 subsets.entry(subset_name_no_spaces.clone())
                     .or_insert(GeneSubsetDetails {
                         name: subset_name_no_spaces,

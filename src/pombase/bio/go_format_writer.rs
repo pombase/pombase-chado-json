@@ -73,7 +73,7 @@ fn get_gpad_nd_relation_of(aspect: &str) -> String {
 fn make_gpad_extension_string(config: &Config, extension: &Vec<ExtPart>) -> String {
     let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
     let get_rel_termid = |ext_part: &ExtPart| {
-        if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_ref()) {
+        if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
             map_termid.clone().unwrap()
         } else {
             ext_part.rel_type_id.clone().unwrap()
@@ -96,7 +96,7 @@ fn make_gpad_extension_string(config: &Config, extension: &Vec<ExtPart>) -> Stri
 
     extension.iter()
         .filter(|ext_part| {
-            if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_ref()) {
+            if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
                 map_termid.is_some()
             } else {
                 ext_part.rel_type_id.is_some()
@@ -142,7 +142,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     }
 
     for aspect in GO_ASPECT_NAMES.iter() {
-        let term_annotations = gene_details.cv_annotations.get(&RcString::from(aspect));
+        let term_annotations = gene_details.cv_annotations.get(&RcString::from(*aspect));
         if term_annotations.is_none() {
             let relation = get_gpad_nd_relation_of(aspect);
             let go_aspect_termid =
@@ -160,7 +160,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
     for aspect in GO_ASPECT_NAMES.iter() {
         let mut sorted_term_annotations =
-            match gene_details.cv_annotations.get(&RcString::from(aspect)) {
+            match gene_details.cv_annotations.get(&RcString::from(*aspect)) {
                 Some(term_annotations) => term_annotations.clone(),
                 None => continue,
             };

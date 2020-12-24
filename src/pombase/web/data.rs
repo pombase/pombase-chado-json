@@ -374,7 +374,7 @@ impl WebData {
             if gene_details.feature_type == "ncRNA gene" {
                 let mut found = false;
                 for aspect in GO_ASPECT_NAMES.iter() {
-                    let term_annotations = gene_details.cv_annotations.get(&RcString::from(aspect));
+                    let term_annotations = gene_details.cv_annotations.get(&RcString::from(*aspect));
                     if term_annotations.is_some() {
                         found = true;
                         break;
@@ -565,7 +565,7 @@ impl WebData {
 
         let peptide_stats_header = "Systematic_ID\tMass (kDa)\tpI\tCharge\tResidues\tCAI\n";
         peptide_stats_writer.write_all(peptide_stats_header.as_bytes())?;
- 
+
         let protein_features_name = format!("{}/ProteinFeatures.tsv", output_dir);
         let protein_features_file = File::create(protein_features_name).expect("Unable to open file");
         let mut protein_features_writer = BufWriter::new(&protein_features_file);
@@ -580,7 +580,7 @@ impl WebData {
 
         let db_display_name = |db_alias: &str| {
             if let Some(name) = config.extra_database_aliases.get(&db_alias.to_lowercase()) {
-                RcString::from(&name)
+                RcString::from(name)
             } else {
                 RcString::from(db_alias)
             }
@@ -745,7 +745,7 @@ impl WebData {
                             }).collect()
                         };
 
-                        // merge Exon and (Three|Five)PrimeUtrs that abut 
+                        // merge Exon and (Three|Five)PrimeUtrs that abut
                         let mut merged_locs: Vec<ChromosomeLocation> = vec![];
 
                         for part in parts {
@@ -922,7 +922,7 @@ impl WebData {
                 let term_short = &annotation.term_short;
                 let termid = &term_short.termid;
 
-                if complexes_config.excluded_terms.contains(termid.as_ref()) {
+                if complexes_config.excluded_terms.contains(termid.as_str()) {
                     continue 'TERM;
                 }
                 if !term_short.interesting_parent_ids.iter().any(check_parent_term) {
@@ -1149,7 +1149,7 @@ impl WebData {
             let mut found = false;
 
             for prefix in &config.file_exports.site_map_term_prefixes {
-                if term_details.termid.starts_with(prefix.as_ref()) {
+                if term_details.termid.starts_with(prefix.as_str()) {
                     found = true;
                     break;
                 }
@@ -1170,7 +1170,7 @@ impl WebData {
             let mut found = false;
 
             for prefix in &config.file_exports.site_map_reference_prefixes {
-                if ref_details.uniquename.starts_with(prefix.as_ref()) {
+                if ref_details.uniquename.starts_with(prefix.as_str()) {
                     found = true;
                     break;
                 }
