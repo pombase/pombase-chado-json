@@ -274,28 +274,27 @@ impl Raw {
 
         fn get_db(db_map: &mut HashMap<i32, Rc<Db>>, db_id: i32) -> Rc<Db> {
             db_map.get(&db_id).unwrap().clone()
-        };
-
+        }
         fn get_dbxref(dbxref_map: &mut HashMap<i32, Rc<Dbxref>>, dbxref_id: i32) -> Rc<Dbxref> {
             dbxref_map.get(&dbxref_id).unwrap().clone()
-        };
+        }
 
         fn get_cv(cv_map: &mut HashMap<i32, Rc<Cv>>, cv_id: i32) -> Rc<Cv> {
             cv_map.get(&cv_id).unwrap().clone()
-        };
+        }
 
         fn get_cvterm(cvterm_map: &mut HashMap<i32, Rc<Cvterm>>, cvterm_id: i32) -> Rc<Cvterm> {
             cvterm_map.get(&cvterm_id)
                 .unwrap_or_else(|| panic!("can't find {:?} in map", cvterm_id)).clone()
-        };
+        }
 
         fn get_feature(feature_map: &mut HashMap<i32, Rc<Feature>>, feature_id: i32) -> Rc<Feature> {
             feature_map.get(&feature_id).unwrap().clone()
-        };
+        }
 
         fn get_synonym(synonym_map: &mut HashMap<i32, Rc<Synonym>>, synonym_id: i32) -> Rc<Synonym> {
             synonym_map.get(&synonym_id).unwrap().clone()
-        };
+        }
 
         for row in &conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).unwrap() {
             let genus: String = row.get(1);

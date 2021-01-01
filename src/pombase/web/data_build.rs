@@ -1954,7 +1954,7 @@ impl <'a> WebDataBuild<'a> {
         struct GeneAndLoc {
             gene_uniquename: RcString,
             loc: ChromosomeLocation,
-        };
+        }
 
         let mut genes_and_locs: Vec<GeneAndLoc> = vec![];
 
