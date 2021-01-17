@@ -49,7 +49,8 @@ DELETE FROM cvterm WHERE cvterm_id IN
      WHERE type_id IN (SELECT cvterm_id FROM cvterm WHERE name LIKE 'annotation_extension_relation-%')
        AND value NOT IN ($ids) AND NOT value ~ '^[0-9]');
 
-DELETE FROM cvterm WHERE cv_id IN (SELECT cv_id FROM cv WHERE name = 'quality');
+DELETE FROM cvterm WHERE cv_id IN (SELECT cv_id FROM cv WHERE name = 'quality')
+    AND is_relationshiptype = 0;
 
 DELETE FROM feature
  WHERE type_id IN (SELECT cvterm_id FROM cvterm WHERE name = 'allele')
