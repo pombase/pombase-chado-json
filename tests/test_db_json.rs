@@ -524,6 +524,9 @@ fn get_test_config() -> Config {
         funder: RcString::from("Wellcome Trust"),
         base_url: RcString::from("https://www.pombase.org"),
         doc_page_aliases: HashMap::new(),
+        sequence_feature_page: SeqFeaturePageConfig {
+            so_types_to_show: vec![String::from("regional_centromere")],
+        },
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,

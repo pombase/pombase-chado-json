@@ -7,6 +7,9 @@
   "site_description": "PomBase",
   "base_url": "https://www.pombase.org",
   "doc_page_aliases": {},
+  "sequence_feature_page": {
+    "so_types_to_show": ["regional_centromere"]
+  },
   "site_db": {
     "connection_string": ""
   },

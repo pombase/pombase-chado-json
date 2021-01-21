@@ -29,6 +29,7 @@ use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
 
 use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
+                          FeatureShort,
                          TermDetails, ReferenceDetails};
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
                                  render_simple_term_page};
@@ -161,6 +162,12 @@ fn get_reference(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<J
     } else {
         None
     }
+}
+
+#[get("/api/v1/dataset/latest/data/seq_feature_page_features", rank=2)]
+fn seq_feature_page_features(state: rocket::State<Mutex<QueryExec>>) -> Json<Vec<FeatureShort>> {
+    let query_exec = state.lock().expect("failed to lock");
+    Json(query_exec.get_api_data().seq_feature_page_features())
 }
 
 #[get("/", rank=1)]
@@ -431,6 +438,7 @@ fn main() {
                             get_gene, get_genotype, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
                             get_term_summary_by_id,
+                            seq_feature_page_features,
                             term_complete, ref_complete,
                             solr_search, motif_search, ping])
         .register(catchers![not_found])

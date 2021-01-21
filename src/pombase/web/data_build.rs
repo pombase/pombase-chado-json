@@ -4227,6 +4227,22 @@ impl <'a> WebDataBuild<'a> {
             terms_for_api.insert(termid.clone(), term_details);
         }
 
+        let seq_feature_page_features: Vec<FeatureShort> =
+            self.other_features.values()
+            .filter(|feature_short| {
+                let so_types_to_show =
+                    &self.config.sequence_feature_page.so_types_to_show;
+                let feature_type_string =
+                    feature_short.feature_type.to_string();
+                so_types_to_show.contains(&feature_type_string)
+            })
+            .map(|feature_short| {
+                let mut new_feature = feature_short.clone();
+                // we don't need the residues for the seq feature page
+                new_feature.residues = RcString::new();
+                new_feature
+            }).collect();
+
         // avoid clone()
         let mut term_subsets = HashMap::new();
         std::mem::swap(&mut term_subsets, &mut self.term_subsets);
@@ -4250,6 +4266,7 @@ impl <'a> WebDataBuild<'a> {
             interactors_of_genes,
             references: self.references,
             other_features: self.other_features,
+            seq_feature_page_features,
             annotation_details: self.annotation_details,
             chromosomes: self.chromosomes,
             term_subsets,

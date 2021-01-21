@@ -1377,6 +1377,7 @@ pub struct APIMaps {
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
     pub references: UniquenameReferenceMap,
     pub other_features: UniquenameFeatureShortMap,
+    pub seq_feature_page_features: Vec<FeatureShort>,
     pub annotation_details: IdOntAnnotationDetailMap,
     pub chromosomes: ChrNameDetailsMap,
     pub term_subsets: IdTermSubsetMap,

@@ -11,6 +11,7 @@ use crate::data_types::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetai
                 OntAnnotationDetail,
                 TermShort, TermShortOptionMap, ChromosomeDetails,
                 ReferenceShort, ReferenceShortOptionMap,
+                FeatureShort,
                 GeneShort, GeneShortOptionMap, GeneQueryData,
                 ExtPart, ExtRange, GeneAndGeneProduct, WithFromValue};
 use crate::web::config::{Config, TermAndName};
@@ -533,5 +534,9 @@ impl APIData {
 
     pub fn get_chr_details(&self, chr_name: &str) -> Option<&ChromosomeDetails> {
         self.maps.chromosomes.get(chr_name)
+    }
+
+    pub fn seq_feature_page_features(&self) -> Vec<FeatureShort> {
+        self.maps.seq_feature_page_features.clone()
     }
 }

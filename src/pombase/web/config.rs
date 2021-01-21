@@ -290,6 +290,11 @@ pub struct SlimConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct SeqFeaturePageConfig {
+    pub so_types_to_show: Vec<String>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: RcString,
     pub database_long_name: RcString,
@@ -301,6 +306,7 @@ pub struct Config {
     pub doc_page_aliases: HashMap<String, String>,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
+    pub sequence_feature_page: SeqFeaturePageConfig,
     pub extension_display_names: Vec<ExtensionDisplayNames>,
     pub extension_relation_order: RelationOrder,
     pub evidence_types: HashMap<ShortEvidenceCode, EvidenceDetails>,
