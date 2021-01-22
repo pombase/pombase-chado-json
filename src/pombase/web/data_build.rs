@@ -432,6 +432,7 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
             FeatureShort {
                 feature_type,
                 uniquename: feat.uniquename.clone(),
+                name: feat.name.clone(),
                 location: loc,
                 residues,
             }
@@ -813,6 +814,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                 maybe_new_intron = Some(FeatureShort {
                     feature_type: intron_type,
                     uniquename: RcString::from(&intron_uniquename),
+                    name: None,
                     location: new_intron_loc,
                     residues: intron_residues,
                 });

@@ -225,6 +225,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::FivePrimeUtr,
                         uniquename: RcString::from("SPCC18B5.06.1:five_prime_UTR:1"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_054,
@@ -237,6 +238,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::Exon,
                         uniquename: RcString::from("SPCC18B5.06.1:exon:1"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_133,
@@ -249,6 +251,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: RcString::from("SPCC18B5.06.1:intron:1"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_213,
@@ -261,6 +264,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::Exon,
                         uniquename: RcString::from("SPCC18B5.06.1:exon:2"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_266,
@@ -273,6 +277,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: RcString::from("SPCC18B5.06.1:intron:2"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_320,
@@ -285,6 +290,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::Exon,
                         uniquename: RcString::from("SPCC18B5.06.1:exon:3"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_380,
@@ -297,6 +303,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: RcString::from("SPCC18B5.06.1:intron:3"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_679,
@@ -309,6 +316,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::Exon,
                         uniquename: RcString::from("SPCC18B5.06.1:exon:4"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_735,
@@ -321,6 +329,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
                         uniquename: RcString::from("SPCC18B5.06.1:intron:4"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_842,
@@ -333,6 +342,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::Exon,
                         uniquename: RcString::from("SPCC18B5.06.1:exon:5"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 729_890,
@@ -345,6 +355,7 @@ fn make_test_gene() -> GeneDetails {
                     FeatureShort {
                         feature_type: FeatureType::ThreePrimeUtr,
                         uniquename: RcString::from("SPCC18B5.06.1:three_prime_UTR:1"),
+                        name: None,
                         location: ChromosomeLocation {
                             chromosome_name: RcString::from("chromosome_3"),
                             start_pos: 730_523,

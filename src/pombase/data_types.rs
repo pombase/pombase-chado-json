@@ -972,6 +972,7 @@ impl Display for FeatureType {
 pub struct FeatureShort {
     pub feature_type: FeatureType,
     pub uniquename: RcString,
+    pub name: Option<RcString>,
     pub location: ChromosomeLocation,
     pub residues: Residues,
 }
