@@ -746,13 +746,16 @@ pub struct GeneDetails {
     pub deletion_viability: DeletionViability,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub biogrid_interactor_id: Option<u32>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub rnacentral_urs_identifier: Option<RcString>,
     pub interpro_matches: Vec<InterProMatch>,
     // non-InterPro domains:
     pub tm_domain_coords: Vec<(usize, usize) >,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub orfeome_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<RcString>,
