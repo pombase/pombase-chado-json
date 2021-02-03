@@ -410,8 +410,11 @@ impl WebData {
 
             let db_object_taxon = format!("NCBITaxon:{}", load_org_taxonid);
             let db_xrefs =
-                gene_details.uniprot_identifier.clone()
-                .unwrap_or_else(|| RcString::from(""));
+                if let Some(ref uniprot_id) = gene_details.uniprot_identifier {
+                    RcString::from(&format!("UniProtKB:{}", uniprot_id))
+                } else {
+                    RcString::from("")
+                };
 
             let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\tgo-annotation-summary={}\n",
                                    db_object_id,
