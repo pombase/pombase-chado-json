@@ -189,6 +189,7 @@ fn make_test_gene() -> GeneDetails {
         product: Some(RcString::from("Dom34-Hbs1 translation release factor complex subunit, peloto ortholog Dom34")),
         deletion_viability: DeletionViability::Viable,
         uniprot_identifier: Some(RcString::from("Q9USL5")),
+        secondary_identifier: None,
         biogrid_interactor_id: Some(275937),
         rnacentral_urs_identifier: None,
         interpro_matches: vec![],

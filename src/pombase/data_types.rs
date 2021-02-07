@@ -214,6 +214,7 @@ pub struct IdAndOrganism {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IdNameAndOrganism {
     pub identifier: RcString,
+    pub secondary_identifier: Option<RcString>,
     pub name: Option<RcString>,
     pub taxonid: u32,
 }
@@ -235,6 +236,8 @@ pub struct GeneSummary {
     pub product: Option<GeneProduct>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub secondary_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -746,6 +749,8 @@ pub struct GeneDetails {
     pub deletion_viability: DeletionViability,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub secondary_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub biogrid_interactor_id: Option<u32>,
     #[serde(skip_serializing_if="Option::is_none")]

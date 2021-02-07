@@ -1072,11 +1072,13 @@ impl <'a> WebDataBuild<'a> {
             gene_details.ortholog_annotations.iter()
             .map(|ortholog_annotation| {
                 let ortholog_uniquename = ortholog_annotation.ortholog_uniquename.clone();
-                let maybe_ortholog_name =
-                    self.genes.get(&ortholog_uniquename).unwrap().name.clone();
+                let ref ortholog_gene_summary = self.genes.get(&ortholog_uniquename).unwrap();
+                let maybe_secondary_identifier = ortholog_gene_summary.secondary_identifier.clone();
+                let maybe_ortholog_name = ortholog_gene_summary.name.clone();
 
                 IdNameAndOrganism {
                     identifier: ortholog_uniquename,
+                    secondary_identifier: maybe_secondary_identifier,
                     name: maybe_ortholog_name,
                     taxonid: ortholog_annotation.ortholog_taxonid,
                 }
@@ -1088,6 +1090,7 @@ impl <'a> WebDataBuild<'a> {
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
             uniprot_identifier: gene_details.uniprot_identifier.clone(),
+            secondary_identifier: gene_details.secondary_identifier.clone(),
             synonyms,
             orthologs: ortholog_ids,
             feature_type: gene_details.feature_type.clone(),
@@ -1448,12 +1451,14 @@ impl <'a> WebDataBuild<'a> {
         }
 
         let mut uniprot_identifier = None;
+        let mut secondary_identifier = None;
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
 
         for prop in feat.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
                 "uniprot_identifier" => uniprot_identifier = prop.value.clone(),
+                "sgd_identifier" => secondary_identifier = prop.value.clone(),
                 "biogrid_interactor_id" => {
                     if let Some(ref chado_biogrid_id) = prop.value {
                         biogrid_interactor_id = match chado_biogrid_id.parse::<u32>() {
@@ -1500,6 +1505,7 @@ impl <'a> WebDataBuild<'a> {
             product: None,
             deletion_viability: DeletionViability::Unknown,
             uniprot_identifier,
+            secondary_identifier,
             biogrid_interactor_id,
             rnacentral_urs_identifier,
             interpro_matches,
