@@ -214,7 +214,9 @@ pub struct IdAndOrganism {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct IdNameAndOrganism {
     pub identifier: RcString,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub secondary_identifier: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<RcString>,
     pub taxonid: u32,
 }
@@ -537,6 +539,7 @@ pub struct OntAnnotationDetail {
     pub residue: Option<Residue>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub gene_product_form_id: Option<RcString>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub qualifiers: Vec<Qualifier>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub gene_ex_props: Option<GeneExProps>,
@@ -600,6 +603,7 @@ pub struct OntAnnotation {
     pub froms: HashSet<WithFromValue>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub residue: Option<Residue>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub qualifiers: Vec<Qualifier>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub gene_ex_props: Option<GeneExProps>,
@@ -648,6 +652,7 @@ pub struct TargetOfAnnotation {
     pub gene: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none", default)]
     pub genotype_uniquename: Option<GenotypeUniquename>,
+    #[serde(skip_serializing_if="Option::is_none", default)]
     pub reference_uniquename: Option<ReferenceUniquename>,
 }
 
@@ -755,6 +760,7 @@ pub struct GeneDetails {
     pub biogrid_interactor_id: Option<u32>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub rnacentral_urs_identifier: Option<RcString>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub interpro_matches: Vec<InterProMatch>,
     // non-InterPro domains:
     pub tm_domain_coords: Vec<(usize, usize) >,
@@ -764,6 +770,7 @@ pub struct GeneDetails {
     pub orfeome_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<RcString>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<RcString>,
@@ -776,6 +783,7 @@ pub struct GeneDetails {
     pub taxonomic_distribution: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_neighbourhood: Vec<GeneShort>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
@@ -1315,6 +1323,7 @@ pub struct APIGeneSummary {
     pub exact_synonyms: Vec<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
