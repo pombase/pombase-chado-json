@@ -18,6 +18,7 @@ use std::path::{Path, PathBuf};
 
 use getopts::Options;
 use rocket_contrib::json::{Json, JsonValue};
+use rocket_contrib::serve::StaticFiles;
 use rocket::response::NamedFile;
 
 use pombase::api::query::Query as PomBaseQuery;
@@ -429,7 +430,7 @@ fn main() {
 
     let web_root_dir = matches.opt_str("w").unwrap();
     let static_file_state = StaticFileState {
-        web_root_dir: web_root_dir,
+        web_root_dir: web_root_dir.clone(),
     };
 
     println!("Starting server ...");
@@ -441,6 +442,10 @@ fn main() {
                             seq_feature_page_features,
                             term_complete, ref_complete,
                             solr_search, motif_search, ping])
+        .mount("/jbrowse",
+               StaticFiles::from(Path::new("/")
+                                 .join(&web_root_dir)
+                                 .join("jbrowse")))
         .register(catchers![not_found])
         .manage(Mutex::new(query_exec))
         .manage(Mutex::new(searcher))
