@@ -3312,7 +3312,7 @@ impl <'a> WebDataBuild<'a> {
         let cv_name = term_details.cv_name.clone();
 
         match cv_name.as_ref() {
-            "gene_ex" | "PomGeneExRNA" | "PomGeneExProt" => {
+            "gene_ex" | "PomGeneExRNA" | "PomGeneExProt" | "PomGeneExRD" => {
                 if is_not {
                     panic!("gene_ex annotations can't be NOT annotations");
                 }
