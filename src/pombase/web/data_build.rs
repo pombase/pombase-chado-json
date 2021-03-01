@@ -3364,7 +3364,9 @@ impl <'a> WebDataBuild<'a> {
                         if genotype_details.expressed_alleles.len() == 1 {
                             single_allele.annotations.push(*annotation_id);
                         } else {
-                            multi_allele.annotations.push(*annotation_id);
+                            if !multi_allele.annotations.contains(annotation_id) {
+                                multi_allele.annotations.push(*annotation_id);
+                            }
                         }
                     } else {
                         panic!("can't find genotype details for {}\n", genotype_uniquename);
