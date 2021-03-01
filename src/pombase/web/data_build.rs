@@ -1220,8 +1220,6 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_references(&mut self) {
-        let mut all_uniquenames = vec![];
-
         for rc_publication in &self.raw.publications {
             let reference_uniquename = &rc_publication.uniquename;
 
@@ -1350,26 +1348,7 @@ impl <'a> WebDataBuild<'a> {
                                        terms_by_termid: HashMap::new(),
                                        annotation_details: HashMap::new(),
                                    });
-
-            if pubmed_publication_date.is_some() {
-                all_uniquenames.push(reference_uniquename.clone());
-            }
         }
-
-        let (recent_admin_curated, recent_community_curated,
-             all_community_curated, all_admin_curated) =
-            make_canto_curated(&self.references, &all_uniquenames);
-
-        let recent_references = RecentReferences {
-            pubmed: make_recently_added(&self.references, &all_uniquenames),
-            admin_curated: recent_admin_curated,
-            community_curated: recent_community_curated,
-        };
-
-        self.recent_references = recent_references;
-
-        self.all_community_curated = all_community_curated;
-        self.all_admin_curated = all_admin_curated;
     }
 
     // make maps from genes to transcript, transcripts to polypeptide,
@@ -4677,6 +4656,8 @@ impl <'a> WebDataBuild<'a> {
             term_seen_single_allele_genotypes.insert(termid.clone(), seen_single_allele_genotypes);
         }
 
+        let mut all_published_uniquenames = vec![];
+
         for (reference_uniquename, reference_details) in &self.references {
             let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
             for rel_annotations in reference_details.cv_annotations.values() {
@@ -4702,7 +4683,27 @@ impl <'a> WebDataBuild<'a> {
                 seen_genes.insert(ortholog_annotation.gene_uniquename.clone());
             }
             ref_seen_genes.insert(reference_uniquename.clone(), seen_genes);
+
+            if reference_details.pubmed_publication_date.is_some() {
+                all_published_uniquenames.push(reference_uniquename.clone());
+            }
         }
+
+        let (recent_admin_curated, recent_community_curated,
+             all_community_curated, all_admin_curated) =
+            make_canto_curated(&self.references, &all_published_uniquenames);
+
+        let recent_references = RecentReferences {
+            pubmed: make_recently_added(&self.references, &all_published_uniquenames),
+            admin_curated: recent_admin_curated,
+            community_curated: recent_community_curated,
+        };
+
+        self.recent_references = recent_references;
+
+        self.all_community_curated = all_community_curated;
+        self.all_admin_curated = all_admin_curated;
+
 
         for term_details in self.terms.values_mut() {
             term_details.single_allele_genotype_uniquenames =
