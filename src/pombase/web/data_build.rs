@@ -66,7 +66,7 @@ pub struct WebDataBuild<'a> {
     transcripts_of_polypeptides: HashMap<RcString, RcString>,
     parts_of_transcripts: HashMap<RcString, Vec<FeatureShort>>,
     genes_of_alleles: HashMap<RcString, RcString>,
-    alleles_of_genotypes: HashMap<RcString, Vec<ExpressedAllele>>,
+    loci_of_genotypes: HashMap<RcString, Vec<GenotypeLocus>>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -311,27 +311,29 @@ lazy_static! {
         Regex::new(r"[% /&;]").unwrap();
 }
 
-pub fn make_genotype_display_name(genotype_expressed_alleles: &[ExpressedAllele],
+pub fn make_genotype_display_name(loci: &[GenotypeLocus],
                                   allele_map: &UniquenameAlleleMap) -> RcString {
-    let mut allele_display_names: Vec<String> =
-        genotype_expressed_alleles.iter().map(|expressed_allele| {
-            let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
-            let mut display_name = allele_display_name(allele_short).to_string();
-            if allele_short.allele_type != "deletion" {
-                if display_name == "unnamed-unrecorded-unrecorded" {
-                    display_name = format!("{}-{}", allele_short.gene_uniquename,
-                                            display_name);
-                }
-                if let Some(ref expression) = expressed_allele.expression {
-                    display_name += &format!("-expression-{}", expression.to_lowercase());
-                }
-            }
-            display_name
+    let locus_display_names: Vec<String> =
+        loci.iter().map(|locus| {
+            let allele_display_names: Vec<String> =
+                locus.expressed_alleles.iter().map(|expressed_allele| {
+                    let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
+                    let mut display_name = allele_display_name(allele_short).to_string();
+                    if allele_short.allele_type != "deletion" {
+                        if display_name == "unnamed-unrecorded-unrecorded" {
+                            display_name = format!("{}-{}", allele_short.gene_uniquename,
+                                                   display_name);
+                        }
+                        if let Some(ref expression) = expressed_allele.expression {
+                            display_name += &format!("-expression-{}", expression.to_lowercase());
+                        }
+                    }
+                    display_name
+                }).collect();
+            allele_display_names.join("/")
         }).collect();
 
-    allele_display_names.sort();
-
-    let joined_alleles = allele_display_names.join("  ");
+    let joined_alleles = locus_display_names.join("  ");
 
     let clean_display_name =
         BAD_GENOTYPE_NAME_CHARS_RE.replace_all(&joined_alleles, "_");
@@ -946,7 +948,7 @@ impl <'a> WebDataBuild<'a> {
             transcripts_of_polypeptides: HashMap::new(),
             parts_of_transcripts: HashMap::new(),
             genes_of_alleles: HashMap::new(),
-            alleles_of_genotypes: HashMap::new(),
+            loci_of_genotypes: HashMap::new(),
 
             parts_of_extensions: HashMap::new(),
 
@@ -998,9 +1000,11 @@ impl <'a> WebDataBuild<'a> {
                             identifier: &RcString,
                             genotype_uniquename: &RcString) {
         let genotype_short = self.make_genotype_short(&genotype_uniquename);
-        for expressed_allele in &genotype_short.expressed_alleles {
-            self.add_allele_to_hash(seen_alleles, seen_genes, identifier,
-                                    &expressed_allele.allele_uniquename);
+        for locus in &genotype_short.loci {
+            for expressed_allele in &locus.expressed_alleles {
+                self.add_allele_to_hash(seen_alleles, seen_genes, identifier,
+                                        &expressed_allele.allele_uniquename);
+            }
         }
 
         seen_genotypes
@@ -1389,8 +1393,11 @@ impl <'a> WebDataBuild<'a> {
                                 allele_uniquename: subject_uniquename.clone(),
                                 expression,
                             };
-                        let entry = self.alleles_of_genotypes.entry(object_uniquename.clone());
-                        entry.or_insert_with(Vec::new).push(allele_and_expression);
+                        let entry = self.loci_of_genotypes.entry(object_uniquename.clone());
+                        let locus = GenotypeLocus {
+                            expressed_alleles: vec![allele_and_expression],
+                        };
+                        entry.or_insert_with(Vec::new).push(locus);
                         continue;
                     }
             }
@@ -1603,6 +1610,10 @@ impl <'a> WebDataBuild<'a> {
                 } else {
                     if let Some(mrna_location) = feat.featurelocs.borrow().get(0) {
                         let first_part_loc = &parts[0].location;
+
+                        println!("{} {} {} {} {}", transcript_uniquename, first_part_loc.chromosome_name,
+                                 cds_start, cds_end, first_part_loc.strand);
+
                         Some(ChromosomeLocation {
                             chromosome_name: first_part_loc.chromosome_name.clone(),
                             start_pos: cds_start,
@@ -1617,6 +1628,7 @@ impl <'a> WebDataBuild<'a> {
             } else {
                 None
             };
+
 
         let transcript = TranscriptDetails {
             uniquename: transcript_uniquename.clone(),
@@ -1763,21 +1775,21 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn store_genotype_details(&mut self, feat: &Feature) {
-        let mut expressed_alleles =
-            self.alleles_of_genotypes[&feat.uniquename].clone();
+        let mut loci =
+            self.loci_of_genotypes[&feat.uniquename].clone();
         let genotype_display_uniquename =
-            make_genotype_display_name(&expressed_alleles, &self.alleles);
+            make_genotype_display_name(&loci, &self.alleles);
 
         {
-            let allele_cmp = |allele1: &ExpressedAllele, allele2: &ExpressedAllele| {
-                let allele1_display_name =
-                    allele_display_name(&self.alleles[&allele1.allele_uniquename]);
-                let allele2_display_name =
-                    allele_display_name(&self.alleles[&allele2.allele_uniquename]);
-                allele1_display_name.cmp(&allele2_display_name)
+            let loci_cmp = |locus1: &GenotypeLocus, locus2: &GenotypeLocus| {
+                let locus1_display_name =
+                    allele_display_name(&self.alleles[&locus1.expressed_alleles[0].allele_uniquename]);
+                let locus2_display_name =
+                    allele_display_name(&self.alleles[&locus2.expressed_alleles[0].allele_uniquename]);
+                locus1_display_name.cmp(&locus2_display_name)
             };
 
-            expressed_alleles.sort_by(&allele_cmp);
+            loci.sort_by(&loci_cmp);
         }
 
         for prop in feat.featureprops.borrow().iter() {
@@ -1795,7 +1807,7 @@ impl <'a> WebDataBuild<'a> {
                               GenotypeDetails {
                                   display_uniquename: rc_display_name,
                                   name: feat.name.as_ref().map(|s| RcString::from(s)),
-                                  expressed_alleles,
+                                  loci,
                                   cv_annotations: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
@@ -2429,7 +2441,8 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(ref genotype_uniquename) = annotation.genotype {
                             let genotype = &self.genotypes[genotype_uniquename];
 
-                            if genotype.expressed_alleles.len() > 1 {
+                            if genotype.loci.len() > 1 ||
+                                genotype.loci[0].expressed_alleles.len() > 1 {
                                 break 'ANNOTATION;
                             }
                         }
@@ -2492,7 +2505,11 @@ impl <'a> WebDataBuild<'a> {
                             let genotype_uniquename = annotation.genotype.as_ref().unwrap();
 
                             let genotype = &self.genotypes[genotype_uniquename];
-                            let expressed_allele = &genotype.expressed_alleles[0];
+                            if genotype.loci.len() > 1 || genotype.loci[0].expressed_alleles.len() > 1 {
+                                // this is just a double check - we shouldn't get here 
+                                panic!("failed to determine viability for multi-allele genotype");
+                            }
+                            let expressed_allele = &genotype.loci[0].expressed_alleles[0];
                             let allele = &self.alleles[&expressed_allele.allele_uniquename];
                             if allele.allele_type != "deletion" &&
                                 expressed_allele.expression != some_null {
@@ -2947,7 +2964,7 @@ impl <'a> WebDataBuild<'a> {
             GenotypeShort {
                 display_uniquename: details.display_uniquename.clone(),
                 name: details.name.clone(),
-                expressed_alleles: details.expressed_alleles.clone(),
+                loci: details.loci.clone(),
             }
         } else {
             panic!("can't find genotype {}", genotype_display_name);
@@ -3191,21 +3208,26 @@ impl <'a> WebDataBuild<'a> {
                             }
                     },
                     "genotype" => {
-                        let expressed_alleles =
-                            &self.alleles_of_genotypes[&feature.uniquename];
+                        let loci =
+                            &self.loci_of_genotypes[&feature.uniquename];
                         let genotype_display_name =
-                            make_genotype_display_name(&expressed_alleles, &self.alleles);
-                        maybe_genotype_uniquename = Some(genotype_display_name.clone());
+                            make_genotype_display_name(loci, &self.alleles);
+                        maybe_genotype_uniquename = Some(genotype_display_name);
                         genotype_background =
                             self.genotype_backgrounds.get(&feature.uniquename)
                             .map(|s| s.clone());
-                        expressed_alleles.iter()
-                            .map(|expressed_allele| {
-                                let allele_short =
-                                    self.make_allele_short(&expressed_allele.allele_uniquename);
-                                allele_short.gene_uniquename.clone()
+                        loci.iter()
+                            .map(|locus| {
+                                locus.expressed_alleles.iter()
+                                    .map(|expressed_allele| {
+                                        let allele_short =
+                                            self.make_allele_short(&expressed_allele.allele_uniquename);
+                                        allele_short.gene_uniquename.clone()
+                                    })
+                                    .collect()
                             })
-                            .collect()
+                            .collect::<Vec<Vec<_>>>()
+                            .concat()
                     },
                     "gene" | "pseudogene" => {
                         vec![feature.uniquename.clone()]
@@ -3361,7 +3383,8 @@ impl <'a> WebDataBuild<'a> {
                     let genotype_uniquename = annotation.genotype.as_ref().unwrap();
 
                     if let Some(genotype_details) = self.genotypes.get(genotype_uniquename) {
-                        if genotype_details.expressed_alleles.len() == 1 {
+                        if genotype_details.loci.len() == 1 &&
+                            genotype_details.loci[0].expressed_alleles.len() == 1 {
                             single_allele.annotations.push(*annotation_id);
                         } else {
                             if !multi_allele.annotations.contains(annotation_id) {
@@ -3928,22 +3951,25 @@ impl <'a> WebDataBuild<'a> {
                             })
                             .collect::<HashSet<_>>();
                         let mut api_annotation = APIGenotypeAnnotation {
-                            is_multi: genotype.expressed_alleles.len() > 1,
+                            is_multi: genotype.loci.len() == 1 &&
+                                genotype.loci[0].expressed_alleles.len() > 1,
                             conditions,
                             alleles: vec![],
                         };
-                        for allele in &genotype.expressed_alleles {
-                            let allele_uniquename = &allele.allele_uniquename;
-                            let allele_short =
-                                self.alleles.get(allele_uniquename).expect("Can't find allele");
-                            let allele_gene_uniquename =
-                                allele_short.gene_uniquename.clone();
-                            let allele_details = APIAlleleDetails {
-                                gene: allele_gene_uniquename,
-                                allele_type: allele_short.allele_type.clone(),
-                                expression: allele.expression.clone(),
-                            };
-                            api_annotation.alleles.push(allele_details);
+                        for locus in &genotype.loci {
+                            for allele in &locus.expressed_alleles {
+                                let allele_uniquename = &allele.allele_uniquename;
+                                let allele_short =
+                                    self.alleles.get(allele_uniquename).expect("Can't find allele");
+                                let allele_gene_uniquename =
+                                    allele_short.gene_uniquename.clone();
+                                let allele_details = APIAlleleDetails {
+                                    gene: allele_gene_uniquename,
+                                    allele_type: allele_short.allele_type.clone(),
+                                    expression: allele.expression.clone(),
+                                };
+                                api_annotation.alleles.push(allele_details);
+                            }
                         }
                         app_genotype_annotation
                             .entry(term_details.termid.clone())
@@ -4646,7 +4672,8 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                             seen_genotypes.insert(genotype_uniquename.clone());
                             let genotype = &self.genotypes[genotype_uniquename];
-                            if genotype.expressed_alleles.len() == 1 {
+                            if genotype.loci.len() == 1 &&
+                                genotype.loci[0].expressed_alleles.len() == 1 {
                                 seen_single_allele_genotypes.insert(genotype_uniquename.clone());
                             }
                         }

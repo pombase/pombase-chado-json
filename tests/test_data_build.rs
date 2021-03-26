@@ -408,11 +408,11 @@ fn get_test_fypo_term_details() -> Vec<i32> {
 
 #[allow(dead_code)]
 fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
-                     expressed_alleles: Vec<ExpressedAllele>) -> GenotypeDetails {
+                     loci: Vec<GenotypeLocus>) -> GenotypeDetails {
     GenotypeDetails {
         display_uniquename: display_uniquename.into(),
         name: name.map(RcString::from),
-        expressed_alleles: expressed_alleles,
+        loci: loci,
         cv_annotations: HashMap::new(),
         references_by_uniquename: HashMap::new(),
         genes_by_uniquename: HashMap::new(),
@@ -496,9 +496,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    "G799D(G799D)",
                    Some("test genotype name"),
                    vec![
-                       ExpressedAllele {
-                           expression: Some(RcString::from("Not assayed")),
-                           allele_uniquename: RcString::from("SPBC16A3.11:allele-7"),
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some(RcString::from("Not assayed")),
+                                   allele_uniquename: RcString::from("SPBC16A3.11:allele-7"),
+                               }
+                           ]
                        }
                    ]
                ));
@@ -508,9 +512,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    "C-terminal truncation 940-1516(940-1516)",
                    None,
                    vec![
-                       ExpressedAllele {
-                           expression: Some(RcString::from("Not assayed")),
-                           allele_uniquename: RcString::from("SPCC1919.10c:allele-5"),
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some(RcString::from("Not assayed")),
+                                   allele_uniquename: RcString::from("SPCC1919.10c:allele-5"),
+                               }
+                           ]
                        }
                    ]
                ));
@@ -520,9 +528,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    "cdc25-22(c532y)",
                    None,
                    vec![
-                       ExpressedAllele {
-                           expression: Some(RcString::from("Not assayed")),
-                           allele_uniquename: RcString::from("SPAC24H6.05:allele-3"),
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some(RcString::from("Not assayed")),
+                                   allele_uniquename: RcString::from("SPAC24H6.05:allele-3"),
+                               }
+                           ]
                        }
                    ]
                ));
@@ -532,9 +544,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    "ATPase dead mutant(unknown)",
                    Some("ZZ-name"),
                    vec![
-                       ExpressedAllele {
-                           expression: Some(RcString::from("Not assayed")),
-                           allele_uniquename: RcString::from("SPCC1919.10c:allele-4"),
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some(RcString::from("Not assayed")),
+                                   allele_uniquename: RcString::from("SPCC1919.10c:allele-4"),
+                               }
+                           ]
                        }
                    ]
                ));
@@ -544,9 +560,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    "C-terminal truncation(1320-1516)",
                    None,
                    vec![
-                       ExpressedAllele {
-                           expression: Some(RcString::from("Not assayed")),
-                           allele_uniquename: RcString::from("SPCC1919.10c:allele-6"),
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some(RcString::from("Not assayed")),
+                                   allele_uniquename: RcString::from("SPCC1919.10c:allele-6"),
+                               }
+                           ]
                        }
                    ]
                ));
@@ -556,9 +576,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    "K418R(K418R)",
                    None,
                    vec![
-                       ExpressedAllele {
-                           expression: Some(RcString::from("Wild type product level")),
-                           allele_uniquename: RcString::from("SPAC25A8.01c:allele-5"),
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some(RcString::from("Wild type product level")),
+                                   allele_uniquename: RcString::from("SPAC25A8.01c:allele-5"),
+                               }
+                           ]
                        }
                    ]
                ));
@@ -568,9 +592,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                    "UBS-I&II(F18A,F21A,W26A,L40A,W41A,W45A)",
                    None,
                    vec![
-                       ExpressedAllele {
-                           expression: Some(RcString::from("Not assayed")),
-                           allele_uniquename: RcString::from("SPAC3G6.02:allele-7"),
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some(RcString::from("Not assayed")),
+                                   allele_uniquename: RcString::from("SPAC3G6.02:allele-7"),
+                               }
+                           ]
                        }
                    ]
                ));
@@ -715,7 +743,7 @@ fn test_cmp_ont_annotation_detail() {
             let detail = annotation_details_maps.get(&detail_id).unwrap();
             let genotype_uniquename = detail.clone().genotype.unwrap();
             let genotype = genotypes.get(&genotype_uniquename).unwrap();
-            pombase::web::data_build::make_genotype_display_name(&genotype.expressed_alleles, &alleles)
+            pombase::web::data_build::make_genotype_display_name(&genotype.loci, &alleles)
                 .to_lowercase()
         }).collect::<Vec<String>>();
 

@@ -1019,13 +1019,17 @@ impl TranscriptDetails {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GenotypeLocus {
+    pub expressed_alleles: Vec<ExpressedAllele>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeShort {
     pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<RcString>,
-    pub expressed_alleles: Vec<ExpressedAllele>,
+    pub loci: Vec<GenotypeLocus>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1033,7 +1037,7 @@ pub struct GenotypeDetails {
     pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<RcString>,
-    pub expressed_alleles: Vec<ExpressedAllele>,
+    pub loci: Vec<GenotypeLocus>,
     pub cv_annotations: OntAnnotationMap,
     pub references_by_uniquename: ReferenceShortOptionMap,
     pub genes_by_uniquename: GeneShortOptionMap,
