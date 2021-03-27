@@ -66,7 +66,7 @@ pub struct WebDataBuild<'a> {
     transcripts_of_polypeptides: HashMap<RcString, RcString>,
     parts_of_transcripts: HashMap<RcString, Vec<FeatureShort>>,
     genes_of_alleles: HashMap<RcString, RcString>,
-    loci_of_genotypes: HashMap<RcString, Vec<GenotypeLocus>>,
+    loci_of_genotypes: HashMap<RcString, HashMap<String, GenotypeLocus>>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -116,6 +116,17 @@ fn get_feat_rel_expression(feature: &Feature,
 
     for rel_prop in feature_relationship.feature_relationshipprops.borrow().iter() {
         if rel_prop.prop_type.name == "expression" {
+            return rel_prop.value.clone();
+        }
+    }
+
+    None
+}
+
+fn get_feat_rel_prop_value(prop_name: &str,
+                           feature_relationship: &FeatureRelationship) -> Option<RcString> {
+    for rel_prop in feature_relationship.feature_relationshipprops.borrow().iter() {
+        if rel_prop.prop_type.name == prop_name {
             return rel_prop.value.clone();
         }
     }
@@ -1388,16 +1399,28 @@ impl <'a> WebDataBuild<'a> {
                 if feature_rel.rel_type.name == "part_of" &&
                     object_type_name == "genotype" {
                         let expression = get_feat_rel_expression(&feature_rel.subject, feature_rel);
+                        let genotype_locus_identifier =
+                            get_feat_rel_prop_value("genotype_locus", feature_rel)
+                            .unwrap_or_else(|| {
+                                RcString::from(&format!("{}-{}", feature_rel.object.uniquename,
+                                                        feature_rel.feature_relationship_id))
+                            });
                         let allele_and_expression =
                             ExpressedAllele {
                                 allele_uniquename: subject_uniquename.clone(),
                                 expression,
                             };
-                        let entry = self.loci_of_genotypes.entry(object_uniquename.clone());
-                        let locus = GenotypeLocus {
-                            expressed_alleles: vec![allele_and_expression],
-                        };
-                        entry.or_insert_with(Vec::new).push(locus);
+                        let genotype_entry = self.loci_of_genotypes.entry(object_uniquename.clone());
+                        let locus_map = genotype_entry.or_insert_with(HashMap::new);
+
+                        let genotype_locus =
+                            locus_map.entry(String::from(&genotype_locus_identifier))
+                            .or_insert_with(|| GenotypeLocus {
+                                expressed_alleles: vec![]
+                            });
+
+                        genotype_locus.expressed_alleles.push(allele_and_expression);
+
                         continue;
                     }
             }
@@ -1775,8 +1798,9 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn store_genotype_details(&mut self, feat: &Feature) {
-        let mut loci =
-            self.loci_of_genotypes[&feat.uniquename].clone();
+        let mut loci: Vec<_> =
+            self.loci_of_genotypes[&feat.uniquename]
+            .values().cloned().collect();
         let genotype_display_uniquename =
             make_genotype_display_name(&loci, &self.alleles);
 
@@ -3208,10 +3232,11 @@ impl <'a> WebDataBuild<'a> {
                             }
                     },
                     "genotype" => {
-                        let loci =
-                            &self.loci_of_genotypes[&feature.uniquename];
+                        let loci: Vec<_> =
+                            self.loci_of_genotypes[&feature.uniquename]
+                            .values().cloned().collect();
                         let genotype_display_name =
-                            make_genotype_display_name(loci, &self.alleles);
+                            make_genotype_display_name(&loci, &self.alleles);
                         maybe_genotype_uniquename = Some(genotype_display_name);
                         genotype_background =
                             self.genotype_backgrounds.get(&feature.uniquename)

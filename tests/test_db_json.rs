@@ -121,6 +121,7 @@ fn make_test_feature_rel(feature_relationships: &mut Vec<Rc<FeatureRelationship>
                          publication: &Rc<Publication>,
                          subject: &Rc<Feature>, rel: &Rc<Cvterm>, object: &Rc<Feature>) {
     let rel = Rc::new(FeatureRelationship {
+        feature_relationship_id: 0,
         subject: subject.clone(),
         rel_type: rel.clone(),
         object: object.clone(),

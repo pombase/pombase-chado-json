@@ -230,6 +230,7 @@ impl Prop for FeatureCvtermprop {
 }
 
 pub struct FeatureRelationship {
+    pub feature_relationship_id: i32,
     pub subject: Rc<Feature>,
     pub object: Rc<Feature>,
     pub rel_type: Rc<Cvterm>,
@@ -601,6 +602,7 @@ impl Raw {
             let object_id: i32 = row.get(2);
             let type_id: i32 = row.get(3);
             let feature_relationship = FeatureRelationship {
+                feature_relationship_id,
                 subject: feature_map[&subject_id].clone(),
                 object: feature_map[&object_id].clone(),
                 rel_type: get_cvterm(&mut cvterm_map, type_id),
