@@ -1634,9 +1634,6 @@ impl <'a> WebDataBuild<'a> {
                     if let Some(mrna_location) = feat.featurelocs.borrow().get(0) {
                         let first_part_loc = &parts[0].location;
 
-                        println!("{} {} {} {} {}", transcript_uniquename, first_part_loc.chromosome_name,
-                                 cds_start, cds_end, first_part_loc.strand);
-
                         Some(ChromosomeLocation {
                             chromosome_name: first_part_loc.chromosome_name.clone(),
                             start_pos: cds_start,
