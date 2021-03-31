@@ -21,7 +21,7 @@ pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvCo
 
         for (cv_name, term_annotations) in &term_details.cv_annotations {
             if let Some(cv_config) = cv_config_map.get(cv_name) {
-                if subset_config.single_or_multi_allele != cv_config.single_or_multi_allele {
+                if subset_config.single_or_multi_locus != cv_config.single_or_multi_locus {
                     continue;
                 }
             } else {

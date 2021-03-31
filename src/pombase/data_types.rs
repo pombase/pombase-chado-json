@@ -51,6 +51,16 @@ use crate::rnacentral::RfamAnnotation;
 
 pub type RNAcentralAnnotations = HashMap<RcString, Vec<RfamAnnotation>>;
 
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub enum Ploidiness {
+#[serde(rename = "haploid")]
+    Haploid,
+#[serde(rename = "diploid")]
+    Diploid,
+#[serde(rename = "any")]
+    Any,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum Throughput {
 #[serde(rename = "high")]
@@ -1036,12 +1046,24 @@ pub struct GenotypeShort {
     pub loci: Vec<GenotypeLocus>,
 }
 
+impl GenotypeShort {
+    pub fn ploidiness(&self) -> Ploidiness {
+        for locus in &self.loci {
+            if locus.expressed_alleles.len() > 1 {
+                return Ploidiness::Diploid;
+            }
+        }
+        Ploidiness::Haploid
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeDetails {
     pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<RcString>,
     pub loci: Vec<GenotypeLocus>,
+    pub ploidiness: Ploidiness,
     pub cv_annotations: OntAnnotationMap,
     pub references_by_uniquename: ReferenceShortOptionMap,
     pub genes_by_uniquename: GeneShortOptionMap,
@@ -1143,7 +1165,7 @@ pub struct TermDetails {
     pub genes_annotated_with: HashSet<GeneUniquename>,
     pub is_obsolete: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub single_allele_genotype_uniquenames: HashSet<RcString>,
+    pub single_locus_genotype_uniquenames: HashSet<RcString>,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub cv_annotations: OntAnnotationMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
@@ -1314,6 +1336,7 @@ pub struct APIAlleleDetails {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIGenotypeAnnotation {
     pub is_multi: bool,
+    pub ploidiness: Ploidiness,
     pub conditions: HashSet<TermAndName>,
     pub alleles: Vec<APIAlleleDetails>,
 }

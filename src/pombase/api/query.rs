@@ -10,7 +10,7 @@ use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
-                       ChromosomeDetails, Strand};
+                       ChromosomeDetails, Strand, Ploidiness};
 use crate::web::config::TermAndName;
 
 use crate::bio::util::rev_comp;
@@ -40,7 +40,7 @@ pub enum FloatRangeType {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
-pub enum SingleOrMultiAllele {
+pub enum SingleOrMultiLocus {
 #[serde(rename = "single")]
     Single,
 #[serde(rename = "multi")]
@@ -74,7 +74,8 @@ pub struct TermNode {
     pub termid: String,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<TermName>,
-    pub single_or_multi_allele: Option<SingleOrMultiAllele>,
+    pub single_or_multi_locus: Option<SingleOrMultiLocus>,
+    pub ploidiness: Option<Ploidiness>,
     pub expression: Option<QueryExpressionFilter>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermAndName>,
@@ -245,13 +246,16 @@ fn exec_not(api_data: &APIData, site_db: &Option<SiteDB>,
 }
 
 fn exec_termid(api_data: &APIData, term_id: &str,
-               maybe_single_or_multi_allele: &Option<SingleOrMultiAllele>,
+               maybe_single_or_multi_locus: &Option<SingleOrMultiLocus>,
+               maybe_ploidiness: &Option<Ploidiness>,
                expression: &Option<QueryExpressionFilter>,
                conditions: &HashSet<TermAndName>,
                excluded_conditions: &HashSet<TermAndName>)  -> GeneUniquenameVecResult {
-    if let Some(ref single_or_multi_allele) = *maybe_single_or_multi_allele {
-        let genes = api_data.genes_of_genotypes(term_id, single_or_multi_allele,
-                                                   expression, conditions, excluded_conditions);
+    if let Some(ref single_or_multi_locus) = *maybe_single_or_multi_locus {
+        let ploidiness = maybe_ploidiness.clone().unwrap_or_else(|| Ploidiness::Any);
+        let genes = api_data.genes_of_genotypes(term_id, single_or_multi_locus,
+                                                &ploidiness,
+                                                expression, conditions, excluded_conditions);
         Ok(genes)
     } else {
         Ok(api_data.genes_of_termid(term_id))
@@ -446,7 +450,8 @@ impl QueryNode {
             return exec_not(api_data, site_db, &not_node.node_a, &not_node.node_b);
         }
         if let Some(ref term) = self.term {
-            return exec_termid(api_data, &term.termid, &term.single_or_multi_allele,
+            return exec_termid(api_data, &term.termid, &term.single_or_multi_locus,
+                               &term.ploidiness,
                                &term.expression, &term.conditions,
                                &term.excluded_conditions);
         }
