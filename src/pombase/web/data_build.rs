@@ -21,6 +21,7 @@ use crate::bio::util::rev_comp;
 use pombase_rc_string::RcString;
 
 use crate::interpro::UniprotResult;
+use crate::pfam::PfamProteinDetails;
 
 fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
     let mut maybe_taxonid: Option<u32> = None;
@@ -45,6 +46,7 @@ type UniprotIdentifier = RcString;
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
     domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+    pfam_data: &'a HashMap<UniprotIdentifier, PfamProteinDetails>,
     rnacentral_data: &'a RNAcentralAnnotations,
     config: &'a Config,
 
@@ -925,13 +927,16 @@ fn validate_transcript_parts(transcript_uniquename: &str, parts: &[FeatureShort]
 
 
 impl <'a> WebDataBuild<'a> {
-    pub fn new(raw: &'a Raw, domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+    pub fn new(raw: &'a Raw,
+               domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+               pfam_data: &'a HashMap<UniprotIdentifier, PfamProteinDetails>,
                rnacentral_data: &'a RNAcentralAnnotations,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
             raw,
             domain_data,
+            pfam_data,
             rnacentral_data,
             config,
 
@@ -1144,6 +1149,7 @@ impl <'a> WebDataBuild<'a> {
             location: gene_details.location.clone(),
             transcripts: gene_details.transcripts.clone(),
             tm_domain_count: gene_details.tm_domain_coords.len(),
+            coiled_coil_count: gene_details.coiled_coil_coords.len(),
             exon_count,
             transcript_count: gene_details.transcripts.len(),
         }
@@ -1496,6 +1502,30 @@ impl <'a> WebDataBuild<'a> {
                 (vec![], vec![])
             };
 
+        let (disordered_region_coords, coiled_coil_coords) =
+            if let Some(ref uniprot_identifier) = uniprot_identifier {
+                if let Some(result) = self.pfam_data.get(uniprot_identifier as &str) {
+                    let mut disordered_region_coords = vec![];
+                    let mut coiled_coil_coords = vec![];
+                    for motif in &result.motifs {
+                        if motif.motif_type == "disorder" {
+                            disordered_region_coords
+                                .push((motif.start, motif.end));
+                        } else {
+                            if motif.motif_type == "coiled_coil" {
+                                coiled_coil_coords
+                                    .push((motif.start, motif.end));
+                            }
+                        }
+                    }
+                    (disordered_region_coords, coiled_coil_coords)
+                } else {
+                    (vec![], vec![])
+                }
+            } else {
+                (vec![], vec![])
+            };
+
         let rfam_annotations =
             if let Some(ref rnacentral_urs_identifier) = rnacentral_urs_identifier {
                 if let Some(result) = self.rnacentral_data.get(rnacentral_urs_identifier.as_str()) {
@@ -1519,6 +1549,8 @@ impl <'a> WebDataBuild<'a> {
             rnacentral_urs_identifier,
             interpro_matches,
             tm_domain_coords,
+            disordered_region_coords,
+            coiled_coil_coords,
             rfam_annotations,
             orfeome_identifier,
             name_descriptions: vec![],

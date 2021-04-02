@@ -644,7 +644,9 @@ fn get_test_web_data() -> WebData {
     let config = get_test_config();
     let interpro_data = HashMap::new();
     let rnacentral_data = HashMap::new();
-    let web_data_build = WebDataBuild::new(&raw, &interpro_data, &rnacentral_data, &config);
+    let pfam_data = HashMap::new();
+    let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
+                                           &rnacentral_data, &config);
     web_data_build.get_web_data()
 }
 

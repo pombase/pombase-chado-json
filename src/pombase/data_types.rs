@@ -762,8 +762,12 @@ pub struct GeneDetails {
     pub rnacentral_urs_identifier: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub interpro_matches: Vec<InterProMatch>,
-    // non-InterPro domains:
-    pub tm_domain_coords: Vec<(usize, usize) >,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub tm_domain_coords: Vec<(usize, usize)>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub disordered_region_coords: Vec<(usize, usize)>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub coiled_coil_coords: Vec<(usize, usize)>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1332,6 +1336,7 @@ pub struct APIGeneSummary {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
     pub tm_domain_count: usize,
+    pub coiled_coil_count: usize,
     pub exon_count: usize,
     pub transcript_count: usize,
 }
