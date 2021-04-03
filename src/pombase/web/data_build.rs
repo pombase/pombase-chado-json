@@ -1502,28 +1502,29 @@ impl <'a> WebDataBuild<'a> {
                 (vec![], vec![])
             };
 
-        let (disordered_region_coords, coiled_coil_coords) =
+        let (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords) =
             if let Some(ref uniprot_identifier) = uniprot_identifier {
                 if let Some(result) = self.pfam_data.get(uniprot_identifier as &str) {
                     let mut disordered_region_coords = vec![];
+                    let mut low_complexity_region_coords = vec![];
                     let mut coiled_coil_coords = vec![];
                     for motif in &result.motifs {
-                        if motif.motif_type == "disorder" {
-                            disordered_region_coords
-                                .push((motif.start, motif.end));
-                        } else {
-                            if motif.motif_type == "coiled_coil" {
-                                coiled_coil_coords
-                                    .push((motif.start, motif.end));
-                            }
+                        match &motif.motif_type as &str {
+                            "disorder" => 
+                                disordered_region_coords.push((motif.start, motif.end)),
+                            "low_complexity" =>
+                                low_complexity_region_coords.push((motif.start, motif.end)),
+                            "coiled_coil" =>
+                                coiled_coil_coords.push((motif.start, motif.end)),
+                            _ => (),
                         }
                     }
-                    (disordered_region_coords, coiled_coil_coords)
+                    (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords)
                 } else {
-                    (vec![], vec![])
+                    (vec![], vec![], vec![])
                 }
             } else {
-                (vec![], vec![])
+                (vec![], vec![], vec![])
             };
 
         let rfam_annotations =
@@ -1550,6 +1551,7 @@ impl <'a> WebDataBuild<'a> {
             interpro_matches,
             tm_domain_coords,
             disordered_region_coords,
+            low_complexity_region_coords,
             coiled_coil_coords,
             rfam_annotations,
             orfeome_identifier,
