@@ -326,9 +326,9 @@ lazy_static! {
 
 pub fn make_genotype_display_name(loci: &[GenotypeLocus],
                                   allele_map: &UniquenameAlleleMap) -> RcString {
-    let locus_display_names: Vec<String> =
+    let mut locus_display_names: Vec<String> =
         loci.iter().map(|locus| {
-            let allele_display_names: Vec<String> =
+            let mut allele_display_names: Vec<String> =
                 locus.expressed_alleles.iter().map(|expressed_allele| {
                     let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
                     let mut display_name = allele_display_name(allele_short).to_string();
@@ -343,8 +343,11 @@ pub fn make_genotype_display_name(loci: &[GenotypeLocus],
                     }
                     display_name
                 }).collect();
+            allele_display_names.sort();
             allele_display_names.join("/")
         }).collect();
+
+    locus_display_names.sort();
 
     let joined_alleles = locus_display_names.join("  ");
 
