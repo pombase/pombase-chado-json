@@ -1122,6 +1122,111 @@ impl WebData {
         Ok(())
     }
 
+    fn write_gene_expression_table(&self, output_dir: &str) -> Result<(), io::Error> {
+        let file_name = format!("{}/gene_expression_table.tsv", output_dir);
+        let file = File::create(file_name).expect("Unable to open file for writing");
+        let mut writer = BufWriter::new(&file);
+
+        let header =
+            "reference\tfirst_author\tgene\tscale\tterm_name\tterm_id\tduring\tcopies_per_cell\taverage_copies_per_cell\n";
+        writer.write_all(header.as_bytes())?;
+
+        for annotation in &self.ont_annotations {
+            let gene_uniquename =
+                if let Some(gene_short) = annotation.genes.iter().next() {
+                    &gene_short.uniquename
+                } else {
+                    continue;
+                };
+
+            let ref_uniquename =
+                if let Some(ref_short) = &annotation.reference_short {
+                    &ref_short.uniquename
+                } else {
+                    continue;
+                };
+
+            let ref_authors_abbrev =
+                if let Some(ref_short) = &annotation.reference_short {
+                    if let Some(ref authors_abbrev) = ref_short.authors_abbrev {
+                        authors_abbrev.split(char::is_whitespace).into_iter().next().unwrap_or("NA")
+                    } else {
+                        ""
+                    }
+                } else {
+                    continue;
+                };
+
+            let mut during_ext = None;
+
+            for extpart in &annotation.extension {
+                if extpart.rel_type_name == "during" {
+                    during_ext = Some(&extpart.ext_range);
+                }
+            }
+
+            let during =
+                if let Some(during_ext) = during_ext {
+                    if let ExtRange::Term(termid) = during_ext {
+                        if let Some(term_details) = self.api_maps.terms.get(termid) {
+                            term_details.name.as_str()
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                } else {
+                    continue;
+                };
+
+            let gene_ex_props =
+                if let Some(ref props) = annotation.gene_ex_props {
+                    props
+                } else {
+                    continue;
+                };
+
+            let copies_per_cell =
+                if let Some(copies_per_cell) = gene_ex_props.copies_per_cell.as_ref() {
+                    copies_per_cell.as_str()
+                } else {
+                    "NA"
+                };
+
+            let avg_copies_per_cell =
+                if let Some(avg_copies) = gene_ex_props.avg_copies_per_cell.as_ref() {
+                    avg_copies.as_str()
+                } else {
+                    "NA"
+                };
+
+            let scale =
+                if let Some(scale) = gene_ex_props.scale.as_ref() {
+                    scale.as_str()
+                } else {
+                    "NA"
+                };
+
+            if &annotation.term_short.cv_name == "gene_ex" {
+                let line =
+                    format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                            ref_uniquename,
+                            ref_authors_abbrev,
+                            gene_uniquename,
+                            scale,
+                            annotation.term_short.name,
+                            annotation.term_short.termid,
+                            during,
+                            copies_per_cell,
+                            avg_copies_per_cell);
+                writer.write_all(line.as_bytes())?
+            }
+        }
+
+        Ok(())
+    }
+
     fn write_site_map_txt(&self, config: &Config, doc_config: &DocConfig, output_dir: &str)
                           -> Result<(), io::Error>
     {
@@ -1283,6 +1388,7 @@ impl WebData {
         self.write_deletion_viability(&config, &misc_path)?;
         self.write_slim_ids_and_names(&config, &misc_path)?;
         self.write_transmembrane_domains(&config, &misc_path)?;
+        self.write_gene_expression_table(&misc_path)?;
         self.write_site_map_txt(config, doc_config, &misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
