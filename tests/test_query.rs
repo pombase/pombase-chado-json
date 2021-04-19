@@ -238,7 +238,8 @@ fn test_termid() {
         term: Some(TermNode {
             termid: "GO:0044237".into(),
             name: None,
-            single_or_multi_allele: None,
+            single_or_multi_locus: None,
+            ploidiness: None,
             expression: None,
             conditions: HashSet::new(),
             excluded_conditions: HashSet::new(),
@@ -349,7 +350,8 @@ fn test_gene_gaf() {
         term: Some(TermNode {
             termid: "GO:0044237".into(),
             name: None,
-            single_or_multi_allele: None,
+            single_or_multi_locus: None,
+            ploidiness: None,
             expression: None,
             conditions: HashSet::new(),
             excluded_conditions: HashSet::new(),

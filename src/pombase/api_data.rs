@@ -13,9 +13,10 @@ use crate::data_types::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetai
                 ReferenceShort, ReferenceShortOptionMap,
                 FeatureShort,
                 GeneShort, GeneShortOptionMap, GeneQueryData,
-                ExtPart, ExtRange, GeneAndGeneProduct, WithFromValue};
+                ExtPart, ExtRange, GeneAndGeneProduct, WithFromValue,
+                Ploidiness};
 use crate::web::config::{Config, TermAndName};
-use crate::api::query::{SingleOrMultiAllele, QueryExpressionFilter};
+use crate::api::query::{SingleOrMultiLocus, QueryExpressionFilter};
 use crate::web::cv_summary::make_cv_summaries;
 
 use flate2::read::GzDecoder;
@@ -191,7 +192,8 @@ impl APIData {
     }
 
     pub fn genes_of_genotypes(&self, term_id: &str,
-                              single_or_multi_allele: &SingleOrMultiAllele,
+                              single_or_multi_locus: &SingleOrMultiLocus,
+                              query_ploidiness: &Ploidiness,
                               expression_filter: &Option<QueryExpressionFilter>,
                               conditions_filter: &HashSet<TermAndName>,
                               excluded_conditions_filter: &HashSet<TermAndName>)
@@ -204,10 +206,10 @@ impl APIData {
                 let mut add_single = false;
                 let mut add_multi = false;
 
-                match *single_or_multi_allele {
-                    SingleOrMultiAllele::Single => add_single = true,
-                    SingleOrMultiAllele::Multi => add_multi = true,
-                    SingleOrMultiAllele::Both => {
+                match *single_or_multi_locus {
+                    SingleOrMultiLocus::Single => add_single = true,
+                    SingleOrMultiLocus::Multi => add_multi = true,
+                    SingleOrMultiLocus::Both => {
                         add_single = true;
                         add_multi = true;
                     },
@@ -267,16 +269,39 @@ impl APIData {
                         false
                     };
 
-                if annotation.is_multi && add_multi ||
-                    !annotation.is_multi && add_single &&
-                    expression_matches(&annotation.alleles[0]) &&
-                    condition_matches(&annotation.conditions, conditions_filter) &&
-                    (excluded_conditions_filter.len() == 0 ||
-                     !condition_matches(&annotation.conditions, excluded_conditions_filter)) {
-                        for allele_details in &annotation.alleles {
-                            genes.insert(allele_details.gene.clone());
-                        }
+                let mut add_genotype_genes = false;
+
+
+                if annotation.is_multi && add_multi {
+                    if *query_ploidiness == annotation.ploidiness ||
+                        *query_ploidiness == Ploidiness::Any
+                    {
+                        add_genotype_genes = true;
                     }
+                }
+
+                if !annotation.is_multi && add_single {
+                    if (*query_ploidiness != Ploidiness::Haploid &&
+                        annotation.ploidiness == Ploidiness::Diploid) ||
+                        (annotation.ploidiness == Ploidiness::Haploid &&
+                         (*query_ploidiness == Ploidiness::Any ||
+                          (*query_ploidiness == Ploidiness::Haploid &&
+                           expression_matches(&annotation.alleles[0]) &&
+                           condition_matches(&annotation.conditions, conditions_filter) &&
+                           (excluded_conditions_filter.len() == 0 ||
+                            !condition_matches(&annotation.conditions, excluded_conditions_filter)))))
+                        {
+                            add_genotype_genes = true;
+                        }
+                }
+
+                if add_genotype_genes {
+                    for allele_details in &annotation.alleles {
+                        genes.insert(allele_details.gene.clone());
+                    }
+                }
+
+
             }
             genes.into_iter().collect::<Vec<_>>()
         } else {

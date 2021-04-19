@@ -301,14 +301,14 @@
         "assayed_using"
       ]
     },
-    "single_allele_phenotype": {
+    "single_locus_phenotype": {
       "feature_type": "genotype",
-      "display_name": "Single allele phenotype",
+      "display_name": "Single locus phenotype",
       "inherits_from": "fission_yeast_phenotype"
     },
-    "multi_allele_phenotype": {
+    "multi_locus_phenotype": {
       "feature_type": "genotype",
-      "display_name": "Multi-allele phenotype",
+      "display_name": "Multi-locus phenotype",
       "inherits_from": "fission_yeast_phenotype"
     },
     "phenotype_condition": {

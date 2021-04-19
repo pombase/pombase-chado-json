@@ -1838,6 +1838,15 @@ impl <'a> WebDataBuild<'a> {
         let genotype_display_uniquename =
             make_genotype_display_name(&loci, &self.alleles);
 
+        let mut ploidiness = Ploidiness::Haploid;
+
+        for locus in &loci {
+            if locus.expressed_alleles.len() > 1 {
+                ploidiness = Ploidiness::Diploid;
+                break;
+            }
+        }
+
         {
             let loci_cmp = |locus1: &GenotypeLocus, locus2: &GenotypeLocus| {
                 let locus1_display_name =
@@ -1866,6 +1875,7 @@ impl <'a> WebDataBuild<'a> {
                                   display_uniquename: rc_display_name,
                                   name: feat.name.as_ref().map(|s| RcString::from(s)),
                                   loci,
+                                  ploidiness,
                                   cv_annotations: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
@@ -2550,12 +2560,12 @@ impl <'a> WebDataBuild<'a> {
         for (gene_uniquename, gene_details) in &mut self.genes {
             let mut new_status = DeletionViability::Unknown;
 
-            if let Some(single_allele_term_annotations) =
-                gene_details.cv_annotations.get("single_allele_phenotype") {
+            if let Some(single_locus_term_annotations) =
+                gene_details.cv_annotations.get("single_locus_phenotype") {
                     let mut viable_conditions: HashMap<RcString, TermId> = HashMap::new();
                     let mut inviable_conditions: HashMap<RcString, TermId> = HashMap::new();
 
-                    for term_annotation in single_allele_term_annotations {
+                    for term_annotation in single_locus_term_annotations {
                         'ANNOTATION: for annotation_id in &term_annotation.annotations {
                             let annotation = self.annotation_details
                                 .get(&annotation_id).expect("can't find OntAnnotationDetail");
@@ -2563,9 +2573,9 @@ impl <'a> WebDataBuild<'a> {
                             let genotype_uniquename = annotation.genotype.as_ref().unwrap();
 
                             let genotype = &self.genotypes[genotype_uniquename];
-                            if genotype.loci.len() > 1 || genotype.loci[0].expressed_alleles.len() > 1 {
-                                // this is just a double check - we shouldn't get here 
-                                panic!("failed to determine viability for multi-allele genotype");
+                            if genotype.loci[0].expressed_alleles.len() > 1 {
+                                // diploid locus
+                                continue 'ANNOTATION;
                             }
                             let expressed_allele = &genotype.loci[0].expressed_alleles[0];
                             let allele = &self.alleles[&expressed_allele.allele_uniquename];
@@ -2858,7 +2868,7 @@ impl <'a> WebDataBuild<'a> {
                                       secondary_identifiers,
                                       genes_annotated_with: HashSet::new(),
                                       is_obsolete: cvterm.is_obsolete,
-                                      single_allele_genotype_uniquenames: HashSet::new(),
+                                      single_locus_genotype_uniquenames: HashSet::new(),
                                       cv_annotations: HashMap::new(),
                                       genes_by_uniquename: HashMap::new(),
                                       genotypes_by_uniquename: HashMap::new(),
@@ -3418,7 +3428,7 @@ impl <'a> WebDataBuild<'a> {
                 return_vec
             },
             "fission_yeast_phenotype" => {
-                let mut single_allele =
+                let mut single_locus =
                     OntTermAnnotations {
                         term: termid.clone(),
                         is_not,
@@ -3426,7 +3436,7 @@ impl <'a> WebDataBuild<'a> {
                         annotations: vec![],
                         summary: None,
                     };
-                let mut multi_allele =
+                let mut multi_locus =
                     OntTermAnnotations {
                         term: termid.clone(),
                         is_not,
@@ -3442,12 +3452,11 @@ impl <'a> WebDataBuild<'a> {
                     let genotype_uniquename = annotation.genotype.as_ref().unwrap();
 
                     if let Some(genotype_details) = self.genotypes.get(genotype_uniquename) {
-                        if genotype_details.loci.len() == 1 &&
-                            genotype_details.loci[0].expressed_alleles.len() == 1 {
-                            single_allele.annotations.push(*annotation_id);
+                        if genotype_details.loci.len() == 1 {
+                            single_locus.annotations.push(*annotation_id);
                         } else {
-                            if !multi_allele.annotations.contains(annotation_id) {
-                                multi_allele.annotations.push(*annotation_id);
+                            if !multi_locus.annotations.contains(annotation_id) {
+                                multi_locus.annotations.push(*annotation_id);
                             }
                         }
                     } else {
@@ -3457,14 +3466,14 @@ impl <'a> WebDataBuild<'a> {
 
                 let mut return_vec = vec![];
 
-                if !single_allele.annotations.is_empty() {
-                    return_vec.push((RcString::from("single_allele_phenotype"),
-                                     single_allele));
+                if !single_locus.annotations.is_empty() {
+                    return_vec.push((RcString::from("single_locus_phenotype"),
+                                     single_locus));
                 }
 
-                if !multi_allele.annotations.is_empty() {
-                    return_vec.push((RcString::from("multi_allele_phenotype"),
-                                     multi_allele));
+                if !multi_locus.annotations.is_empty() {
+                    return_vec.push((RcString::from("multi_locus_phenotype"),
+                                     multi_locus));
                 }
 
                 return_vec
@@ -4010,8 +4019,8 @@ impl <'a> WebDataBuild<'a> {
                             })
                             .collect::<HashSet<_>>();
                         let mut api_annotation = APIGenotypeAnnotation {
-                            is_multi: genotype.loci.len() == 1 &&
-                                genotype.loci[0].expressed_alleles.len() > 1,
+                            is_multi: genotype.loci.len() > 1,
+                            ploidiness: genotype.ploidiness(),
                             conditions,
                             alleles: vec![],
                         };
@@ -4713,13 +4722,13 @@ impl <'a> WebDataBuild<'a> {
     pub fn set_counts(&mut self) {
         let mut term_seen_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
         let mut term_seen_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
-        let mut term_seen_single_allele_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
+        let mut term_seen_single_locus_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
         let mut ref_seen_genes: HashMap<ReferenceUniquename, HashSet<GeneUniquename>> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
             let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
             let mut seen_genotypes: HashSet<GenotypeUniquename> = HashSet::new();
-            let mut seen_single_allele_genotypes: HashSet<GenotypeUniquename> = HashSet::new();
+            let mut seen_single_locus_genotypes: HashSet<GenotypeUniquename> = HashSet::new();
             for term_annotations in term_details.cv_annotations.values() {
                 for term_annotation in term_annotations {
                     for annotation_detail_id in &term_annotation.annotations {
@@ -4733,7 +4742,7 @@ impl <'a> WebDataBuild<'a> {
                             let genotype = &self.genotypes[genotype_uniquename];
                             if genotype.loci.len() == 1 &&
                                 genotype.loci[0].expressed_alleles.len() == 1 {
-                                seen_single_allele_genotypes.insert(genotype_uniquename.clone());
+                                seen_single_locus_genotypes.insert(genotype_uniquename.clone());
                             }
                         }
                     }
@@ -4741,7 +4750,7 @@ impl <'a> WebDataBuild<'a> {
             }
             term_seen_genes.insert(termid.clone(), seen_genes);
             term_seen_genotypes.insert(termid.clone(), seen_genotypes);
-            term_seen_single_allele_genotypes.insert(termid.clone(), seen_single_allele_genotypes);
+            term_seen_single_locus_genotypes.insert(termid.clone(), seen_single_locus_genotypes);
         }
 
         let mut all_published_uniquenames = vec![];
@@ -4794,8 +4803,8 @@ impl <'a> WebDataBuild<'a> {
 
 
         for term_details in self.terms.values_mut() {
-            term_details.single_allele_genotype_uniquenames =
-                term_seen_single_allele_genotypes.remove(&term_details.termid).unwrap();
+            term_details.single_locus_genotype_uniquenames =
+                term_seen_single_locus_genotypes.remove(&term_details.termid).unwrap();
 
             term_details.gene_count =
                 term_seen_genes[&term_details.termid].len();

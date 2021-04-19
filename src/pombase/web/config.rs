@@ -108,8 +108,8 @@ pub struct CvConfig {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub summary_relation_ranges_to_collect: Vec<RcString>,
 
-    #[serde(default="SingleOrMultiAlleleConfig::not_applicable")]
-    pub single_or_multi_allele: SingleOrMultiAlleleConfig,
+    #[serde(default="SingleOrMultiLocusConfig::not_applicable")]
+    pub single_or_multi_locus: SingleOrMultiLocusConfig,
 
     // the field to sort by
     #[serde(skip_serializing_if="Option::is_none")]
@@ -206,7 +206,7 @@ pub struct RNAcentralConfig {
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
-pub enum SingleOrMultiAlleleConfig {
+pub enum SingleOrMultiLocusConfig {
 #[serde(rename = "single")]
     Single,
 #[serde(rename = "multi")]
@@ -215,9 +215,9 @@ pub enum SingleOrMultiAlleleConfig {
     NotApplicable
 }
 
-impl SingleOrMultiAlleleConfig {
-    pub fn not_applicable() -> SingleOrMultiAlleleConfig {
-        SingleOrMultiAlleleConfig::NotApplicable
+impl SingleOrMultiLocusConfig {
+    pub fn not_applicable() -> SingleOrMultiLocusConfig {
+        SingleOrMultiLocusConfig::NotApplicable
     }
 }
 
@@ -232,8 +232,8 @@ pub struct AnnotationSubsetConfig {
     pub term_ids: Vec<TermId>,
     pub file_name: RcString,
     pub columns: Vec<ExportColumnConfig>,
-    #[serde(default="SingleOrMultiAlleleConfig::not_applicable")]
-    pub single_or_multi_allele: SingleOrMultiAlleleConfig,
+    #[serde(default="SingleOrMultiLocusConfig::not_applicable")]
+    pub single_or_multi_locus: SingleOrMultiLocusConfig,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -356,7 +356,7 @@ impl Config {
                 CvConfig {
                     feature_type: "".into(),
                     display_name: Some("".into()),
-                    single_or_multi_allele: SingleOrMultiAlleleConfig::NotApplicable,
+                    single_or_multi_locus: SingleOrMultiLocusConfig::NotApplicable,
                     filters: vec![],
                     split_by_parents: vec![],
                     summary_relations_to_hide: vec![],
