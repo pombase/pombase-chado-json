@@ -1,4 +1,4 @@
-use reqwest::Response;
+use reqwest::blocking::Response;
 use regex::Regex;
 
 pub fn get_query_part(words: &[String]) -> String {
@@ -37,7 +37,7 @@ pub fn clean_words(q: &str) -> Vec<String> {
 
 pub fn do_solr_request(url: &str) -> Result<Response, String> {
     print!("do_solr_request({:?})\n", url);
-    match reqwest::get(url) {
+    match reqwest::blocking::get(url) {
         Ok(res) => {
             if res.status().is_success() {
                 Ok(res)

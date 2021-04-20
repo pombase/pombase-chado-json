@@ -17,6 +17,7 @@ use std::env;
 use std::path::{Path, PathBuf};
 
 use getopts::Options;
+
 use rocket_contrib::json::{Json, JsonValue};
 use rocket_contrib::serve::StaticFiles;
 use rocket::response::NamedFile;
@@ -24,7 +25,7 @@ use rocket::response::NamedFile;
 use pombase::api::query::Query as PomBaseQuery;
 use pombase::api::result::QueryAPIResult;
 use pombase::api::search::{Search, TermSearchMatch, RefSearchMatch, DocSearchMatch,
-                           SolrSearchScope};
+                           SolrSearchScope, PNGPlot};
 use pombase::api::query_exec::QueryExec;
 use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
@@ -357,6 +358,25 @@ fn motif_search(scope: String, q: String, state: rocket::State<Mutex<Search>>)
     }
 }
 
+
+#[get ("/api/v1/dataset/latest/gene_ex_violin_plot/<genes>", rank=1)]
+fn gene_ex_violin_plot(genes: String, state: rocket::State<Mutex<Search>>)
+                       -> Option<PNGPlot>
+{
+    let search = state.lock().expect("failed to lock");
+    let res = search.gene_ex_violin_plot(&genes);
+
+    match res {
+        Ok(png_plot) => {
+            Some(png_plot)
+        },
+        Err(err) => {
+            println!("Motif search error: {:?}", err);
+            None
+        },
+    }
+}
+
 #[get ("/ping", rank=1)]
 fn ping() -> Option<String> {
     Some(String::from("OK") + " " + PKG_NAME + " " + VERSION)
@@ -441,7 +461,8 @@ fn main() {
                             get_term_summary_by_id,
                             seq_feature_page_features,
                             term_complete, ref_complete,
-                            solr_search, motif_search, ping])
+                            solr_search, motif_search, gene_ex_violin_plot,
+                            ping])
         .mount("/jbrowse",
                StaticFiles::from(Path::new("/")
                                  .join(&web_root_dir)

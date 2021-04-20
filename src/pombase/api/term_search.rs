@@ -128,7 +128,7 @@ pub fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
                      -> Result<Vec<SolrTermSummary>, String>
 {
     if let Some(terms_url) = make_terms_url(config, cv_name, q) {
-        match reqwest::get(&terms_url) {
+        match reqwest::blocking::get(&terms_url) {
             Ok(res) => {
                 if res.status().is_success() {
                     match serde_json::from_reader(res) {
@@ -166,7 +166,7 @@ pub fn term_summary_by_id(config: &ServerConfig, termid: &str)
 
     print!("url: {}", &term_url);
 
-    match reqwest::get(&term_url) {
+    match reqwest::blocking::get(&term_url) {
         Ok(res) => {
             if res.status().is_success() {
                 match serde_json::from_reader(res) {
