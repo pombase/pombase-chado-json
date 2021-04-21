@@ -116,9 +116,11 @@ impl Search {
         }
     }
 
-    pub fn gene_ex_violin_plot(&self, genes: &str) -> Result<PNGPlot, String> {
+    pub fn gene_ex_violin_plot(&self, plot_size: &str, genes: &str)
+                               -> Result<PNGPlot, String>
+    {
         let plot_url = self.config.django_url.to_owned() + "/gene_ex/gene_ex_violin/";
-        let params = [("genes", genes)];
+        let params = [("plot_size", plot_size), ("genes", genes)];
         let client = reqwest::blocking::Client::new();
         let result = client.get(&plot_url).query(&params).send();
 

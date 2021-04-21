@@ -359,12 +359,13 @@ fn motif_search(scope: String, q: String, state: rocket::State<Mutex<Search>>)
 }
 
 
-#[get ("/api/v1/dataset/latest/gene_ex_violin_plot/<genes>", rank=1)]
-fn gene_ex_violin_plot(genes: String, state: rocket::State<Mutex<Search>>)
+#[get ("/api/v1/dataset/latest/gene_ex_violin_plot/<plot_size>/<genes>", rank=1)]
+fn gene_ex_violin_plot(plot_size: String, genes: String,
+                       state: rocket::State<Mutex<Search>>)
                        -> Option<PNGPlot>
 {
     let search = state.lock().expect("failed to lock");
-    let res = search.gene_ex_violin_plot(&genes);
+    let res = search.gene_ex_violin_plot(&plot_size, &genes);
 
     match res {
         Ok(png_plot) => {
