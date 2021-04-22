@@ -1128,7 +1128,7 @@ impl WebData {
         let mut writer = BufWriter::new(&file);
 
         let header =
-            "reference\tfirst_author\tgene\tscale\tterm_name\tterm_id\tduring\tcopies_per_cell\taverage_copies_per_cell\n";
+            "reference\tfirst_author\tgene\tscale\tterm_name\tterm_id\tduring_term_id\tduring_term_name\tcopies_per_cell\taverage_copies_per_cell\n";
         writer.write_all(header.as_bytes())?;
 
         for annotation in &self.ont_annotations {
@@ -1165,11 +1165,12 @@ impl WebData {
                 }
             }
 
-            let during =
+            let (during_term_id, during_term_name) =
                 if let Some(during_ext) = during_ext {
                     if let ExtRange::Term(termid) = during_ext {
                         if let Some(term_details) = self.api_maps.terms.get(termid) {
-                            term_details.name.as_str()
+                            (term_details.termid.as_str(),
+                             term_details.name.as_str())
                         } else {
                             continue;
                         }
@@ -1210,14 +1211,15 @@ impl WebData {
 
             if &annotation.term_short.cv_name == "gene_ex" {
                 let line =
-                    format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                    format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                             ref_uniquename,
                             ref_authors_abbrev,
                             gene_uniquename,
                             scale,
                             annotation.term_short.name,
                             annotation.term_short.termid,
-                            during,
+                            during_term_id,
+                            during_term_name,
                             copies_per_cell,
                             avg_copies_per_cell);
                 writer.write_all(line.as_bytes())?
