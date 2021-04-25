@@ -17,12 +17,13 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
      include_gene: bool, include_genotype: bool,
      gene_map: &UniquenameGeneMap,
+     genotype_map: &UniquenameGenotypeMap,
      annotation_details: &IdOntAnnotationDetailMap) {
     for (cv_name, mut term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name(cv_name);
         make_cv_summary(&cv_config, children_by_termid,
                         include_gene, include_genotype, &mut term_annotations,
-                        gene_map, annotation_details);
+                        gene_map, genotype_map, annotation_details);
     }
 }
 
@@ -144,8 +145,35 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
     *rows = ret_rows;
 }
 
+fn sort_genotype_uniquenames(genotypes: &IdGenotypeMap,
+                             genotype_uniquenames: &mut Vec<RcString>) {
+    let cmp_genotype_ploidiness =
+        |genotype_a_uniquename: &RcString, genotype_b_uniquename: &RcString| {
+            let genotype_a = genotypes.get(genotype_a_uniquename)
+                .expect(&format!("missing genotype {}", genotype_a_uniquename));
+            let genotype_b = genotypes.get(genotype_b_uniquename)
+                .expect(&format!("missing genotype {}", genotype_b_uniquename));
+
+            let genotype_a_ploidiness = genotype_a.ploidiness();
+            let genotype_b_ploidiness = genotype_b.ploidiness();
+
+            if genotype_a_ploidiness == genotype_b_ploidiness {
+                return Ordering::Equal;
+            }
+
+            if genotype_a.ploidiness() == Ploidiness::Diploid {
+                return Ordering::Less;
+            } else {
+                return Ordering::Greater;
+            }
+        };
+
+    genotype_uniquenames.sort_by(cmp_genotype_ploidiness);
+}
+
 // combine rows that have a gene or genotype but no extension into one row
-fn collect_summary_rows(genes: &UniquenameGeneMap, rows: &mut Vec<TermSummaryRow>) {
+fn collect_summary_rows(genes: &UniquenameGeneMap, genotypes: &IdGenotypeMap,
+                        rows: &mut Vec<TermSummaryRow>) {
     let mut no_ext_rows = vec![];
     let mut other_rows = vec![];
 
@@ -178,10 +206,12 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, rows: &mut Vec<TermSummaryRow
     gene_uniquenames.sort_by(gene_cmp);
     gene_uniquenames.dedup();
 
-    let genotype_uniquenames: Vec<RcString> =
+    let mut genotype_uniquenames: Vec<RcString> =
         no_ext_rows.iter().filter(|row| !row.genotype_uniquenames.is_empty())
         .map(|row| row.genotype_uniquenames[0].clone())
         .collect();
+
+    sort_genotype_uniquenames(genotypes, &mut genotype_uniquenames);
 
     rows.clear();
 
@@ -342,6 +372,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                    include_gene: bool, include_genotype: bool,
                    term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
                    genes: &UniquenameGeneMap,
+                   genotypes: &UniquenameGenotypeMap,
                    annotation_details: &IdOntAnnotationDetailMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let mut rows = vec![];
@@ -379,7 +410,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                     vec![]
                 };
 
-            let genotype_uniquenames =
+            let mut genotype_uniquenames =
                 if include_genotype && cv_config.feature_type == "genotype" {
                     if let Some(ref genotype_uniquename) = annotation.genotype {
                         vec![genotype_uniquename.clone()]
@@ -389,6 +420,8 @@ fn make_cv_summary(cv_config: &CvConfig,
                 } else {
                     vec![]
                 };
+
+            sort_genotype_uniquenames(genotypes, &mut genotype_uniquenames);
 
             let summary_relations_to_hide = &cv_config.summary_relations_to_hide;
 
@@ -437,7 +470,7 @@ fn make_cv_summary(cv_config: &CvConfig,
 
     for term_and_annotations in &mut term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
-            collect_summary_rows(genes, summary);
+            collect_summary_rows(genes, genotypes, summary);
             collect_ext_summary_genes(&cv_config, summary, genes);
         }
     }

@@ -474,7 +474,8 @@ impl APIData {
             gene.references_by_uniquename =
                 self.fill_reference_map(&gene.references_by_uniquename);
             make_cv_summaries(&mut gene, &self.config, &self.maps.children_by_termid,
-                              false, true, &self.maps.genes, &details_map);
+                              false, true, &self.maps.genes, &self.maps.genotypes,
+                              &details_map);
 
             gene.annotation_details = details_map;
             Some(gene)
@@ -492,7 +493,8 @@ impl APIData {
             genotype.references_by_uniquename =
                 self.fill_reference_map(&genotype.references_by_uniquename);
             make_cv_summaries(&mut genotype, &self.config, &self.maps.children_by_termid,
-                              false, false, &self.maps.genes, &details_map);
+                              false, false, &self.maps.genes, &self.maps.genotypes,
+                              &details_map);
             genotype.annotation_details = details_map;
             Some(genotype)
         } else {
@@ -508,7 +510,8 @@ impl APIData {
         term.references_by_uniquename =
             self.fill_reference_map(&term.references_by_uniquename);
         make_cv_summaries(&mut term, &self.config, &self.maps.children_by_termid,
-                          true, true, &self.maps.genes, &details_map);
+                          true, true, &self.maps.genes, &self.maps.genotypes,
+                          &details_map);
         term.annotation_details = details_map;
         Some(term)
     }
@@ -534,7 +537,8 @@ impl APIData {
             reference.terms_by_termid = self.fill_term_map(&reference.terms_by_termid);
             reference.genes_by_uniquename = self.fill_gene_map(&reference.genes_by_uniquename);
             make_cv_summaries(&mut reference, &self.config, &self.maps.children_by_termid,
-                              true, true, &self.maps.genes, &details_map);
+                              true, true, &self.maps.genes, &self.maps.genotypes,
+                              &details_map);
             reference.annotation_details = details_map;
             Some(reference)
         } else {

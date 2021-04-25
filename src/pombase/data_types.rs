@@ -1074,6 +1074,17 @@ pub struct GenotypeDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
 }
 
+impl GenotypeDetails {
+    pub fn ploidiness(&self) -> Ploidiness {
+        for locus in &self.loci {
+            if locus.expressed_alleles.len() > 1 {
+                return Ploidiness::Diploid;
+            }
+        }
+        Ploidiness::Haploid
+    }
+}
+
 impl Container for GenotypeDetails {
     fn container_type(&self) -> ContainerType {
         ContainerType::Genotype
