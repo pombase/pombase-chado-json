@@ -161,7 +161,7 @@ fn sort_genotype_uniquenames(genotypes: &IdGenotypeMap,
                 return Ordering::Equal;
             }
 
-            if genotype_a.ploidiness() == Ploidiness::Diploid {
+            if genotype_a.ploidiness() == Ploidiness::Haploid {
                 return Ordering::Less;
             } else {
                 return Ordering::Greater;
