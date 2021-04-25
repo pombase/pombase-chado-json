@@ -250,11 +250,11 @@ fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart]
     // See: https://github.com/pombase/pombase-chado/issues/636
     let (mut ext1_for_cmp, ext1_rest): (Vec<ExtPart>, Vec<ExtPart>) =
         ext1.to_vec().into_iter().partition(&is_grouping_rel_name);
-    ext1_for_cmp.extend(ext1_rest.into_iter());
+    ext1_for_cmp.extend(ext1_rest);
 
     let (mut ext2_for_cmp, ext2_rest): (Vec<ExtPart>, Vec<ExtPart>) =
         ext2.to_vec().into_iter().partition(&is_grouping_rel_name);
-    ext2_for_cmp.extend(ext2_rest.into_iter());
+    ext2_for_cmp.extend(ext2_rest);
 
     let iter = ext1_for_cmp.iter().zip(&ext2_for_cmp).enumerate();
     for (_, (ext1_part, ext2_part)) in iter {
@@ -5099,7 +5099,7 @@ impl <'a> WebDataBuild<'a> {
                 // haven't or shouldn't be triaged, eg. GO_REF:...
                 true
             })
-            .into_iter().collect();
+            .collect();
 
         self.references = filtered_refs;
     }

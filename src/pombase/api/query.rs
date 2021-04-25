@@ -230,7 +230,7 @@ fn exec_not(api_data: &APIData, site_db: &Option<SiteDB>,
     let node_b_result = node_b.exec(api_data, site_db)?;
 
     let node_b_gene_set: HashSet<GeneUniquename> =
-        HashSet::from_iter(node_b_result.into_iter());
+        HashSet::from_iter(node_b_result);
 
     let node_a_result = node_a.exec(api_data, site_db)?;
 

@@ -1149,7 +1149,7 @@ impl WebData {
             let ref_authors_abbrev =
                 if let Some(ref_short) = &annotation.reference_short {
                     if let Some(ref authors_abbrev) = ref_short.authors_abbrev {
-                        authors_abbrev.split(char::is_whitespace).into_iter().next().unwrap_or("NA")
+                        authors_abbrev.split(char::is_whitespace).next().unwrap_or("NA")
                     } else {
                         ""
                     }
