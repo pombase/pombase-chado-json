@@ -1400,12 +1400,17 @@ pub struct GeneQueryData {
     pub taxonomic_distribution: Option<RcString>,
 #[serde(skip_serializing_if="Option::is_none")]
     pub tmm: Option<PresentAbsent>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub physical_interactors: HashSet<GeneUniquename>,
     // None for RNA genes:
+#[serde(skip_serializing_if="Option::is_none")]
     pub molecular_weight: Option<f32>,
+#[serde(skip_serializing_if="Option::is_none")]
     pub protein_length: Option<usize>,
     // bin is None for RNA genes:
+#[serde(skip_serializing_if="Option::is_none")]
     pub protein_length_bin: Option<GeneQueryAttrName>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subset_termids: HashSet<TermId>,
