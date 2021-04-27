@@ -1138,10 +1138,8 @@ pub struct GeneExProps {
     pub copies_per_cell: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub avg_copies_per_cell: Option<RcString>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub scale: Option<RcString>,
+    pub scale: RcString,
 }
-
 pub type OntName = RcString;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 

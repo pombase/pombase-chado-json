@@ -1132,7 +1132,12 @@ impl WebData {
         writer.write_all(header.as_bytes())?;
 
         for annotation in &self.ont_annotations {
-            let gene_uniquename =
+            if &annotation.term_short.cv_name == "gene_ex" {
+                continue;
+            }
+
+
+           let gene_uniquename =
                 if let Some(gene_short) = annotation.genes.iter().next() {
                     &gene_short.uniquename
                 } else {
@@ -1188,6 +1193,8 @@ impl WebData {
                     continue;
                 };
 
+            let scale = gene_ex_props.scale.as_str();
+
             let copies_per_cell =
                 if let Some(copies_per_cell) = gene_ex_props.copies_per_cell.as_ref() {
                     copies_per_cell.as_str()
@@ -1202,28 +1209,19 @@ impl WebData {
                     "NA"
                 };
 
-            let scale =
-                if let Some(scale) = gene_ex_props.scale.as_ref() {
-                    scale.as_str()
-                } else {
-                    "NA"
-                };
-
-            if &annotation.term_short.cv_name == "gene_ex" {
-                let line =
-                    format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-                            ref_uniquename,
-                            ref_authors_abbrev,
-                            gene_uniquename,
-                            scale,
-                            annotation.term_short.name,
-                            annotation.term_short.termid,
-                            during_term_id,
-                            during_term_name,
-                            copies_per_cell,
-                            avg_copies_per_cell);
-                writer.write_all(line.as_bytes())?
-            }
+            let line =
+                format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                        ref_uniquename,
+                        ref_authors_abbrev,
+                        gene_uniquename,
+                        scale,
+                        annotation.term_short.name,
+                        annotation.term_short.termid,
+                        during_term_id,
+                        during_term_name,
+                        copies_per_cell,
+                        avg_copies_per_cell);
+            writer.write_all(line.as_bytes())?
         }
 
         Ok(())
