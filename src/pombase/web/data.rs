@@ -1131,97 +1131,73 @@ impl WebData {
             "reference\tfirst_author\tgene\tscale\tterm_name\tterm_id\tduring_term_id\tduring_term_name\tcopies_per_cell\taverage_copies_per_cell\n";
         writer.write_all(header.as_bytes())?;
 
-        for annotation in &self.ont_annotations {
-            if &annotation.term_short.cv_name == "gene_ex" {
-                continue;
-            }
+        for (gene_uniquename, measurements) in &self.api_maps.gene_expression_measurements {
 
+            for measurement in measurements {
 
-           let gene_uniquename =
-                if let Some(gene_short) = annotation.genes.iter().next() {
-                    &gene_short.uniquename
-                } else {
-                    continue;
-                };
+                let ref_uniquename = &measurement.reference_uniquename;
 
-            let ref_uniquename =
-                if let Some(ref_short) = &annotation.reference_short {
-                    &ref_short.uniquename
-                } else {
-                    continue;
-                };
-
-            let ref_authors_abbrev =
-                if let Some(ref_short) = &annotation.reference_short {
-                    if let Some(ref authors_abbrev) = ref_short.authors_abbrev {
-                        authors_abbrev.split(char::is_whitespace).next().unwrap_or("NA")
-                    } else {
-                        ""
-                    }
-                } else {
-                    continue;
-                };
-
-            let mut during_ext = None;
-
-            for extpart in &annotation.extension {
-                if extpart.rel_type_name == "during" {
-                    during_ext = Some(&extpart.ext_range);
-                }
-            }
-
-            let (during_term_id, during_term_name) =
-                if let Some(during_ext) = during_ext {
-                    if let ExtRange::Term(termid) = during_ext {
-                        if let Some(term_details) = self.api_maps.terms.get(termid) {
-                            (term_details.termid.as_str(),
-                             term_details.name.as_str())
+                let ref_authors_abbrev =
+                    if let Some(ref_details) = self.api_maps.references.get(ref_uniquename) {
+                        if let Some(ref authors_abbrev) = ref_details.authors_abbrev {
+                            authors_abbrev.split(char::is_whitespace).next().unwrap_or("NA")
                         } else {
-                            continue;
+                            "Author unknown"
                         }
                     } else {
-                        continue;
-                    }
-                } else {
-                    continue;
-                };
+                        "Author unknown"
+                    };
 
-            let gene_ex_props =
-                if let Some(ref props) = annotation.gene_ex_props {
-                    props
-                } else {
-                    continue;
-                };
 
-            let scale = gene_ex_props.scale.as_str();
+                let termid = &measurement.termid;
 
-            let copies_per_cell =
-                if let Some(copies_per_cell) = gene_ex_props.copies_per_cell.as_ref() {
-                    copies_per_cell.as_str()
-                } else {
-                    "NA"
-                };
+                let term_name =
+                    if let Some(term_details) = self.api_maps.terms.get(termid) {
+                        term_details.name.as_str()
+                    } else {
+                        panic!("can't find term details for {}", termid);
+                    };
 
-            let avg_copies_per_cell =
-                if let Some(avg_copies) = gene_ex_props.avg_copies_per_cell.as_ref() {
-                    avg_copies.as_str()
-                } else {
-                    "NA"
-                };
 
-            let line =
-                format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-                        ref_uniquename,
-                        ref_authors_abbrev,
-                        gene_uniquename,
-                        scale,
-                        annotation.term_short.name,
-                        annotation.term_short.termid,
-                        during_term_id,
-                        during_term_name,
-                        copies_per_cell,
-                        avg_copies_per_cell);
-            writer.write_all(line.as_bytes())?
+                let during_termid = &measurement.during_termid;
+
+                let during_term_name =
+                    if let Some(term_details) = self.api_maps.terms.get(during_termid) {
+                        term_details.name.as_str()
+                    } else {
+                        panic!("can't find term details for {}", during_termid);
+                    };
+
+                let scale = &measurement.scale;
+
+                let copies_per_cell =
+                    if let Some(ref copies_per_cell) = measurement.copies_per_cell {
+                        copies_per_cell
+                    } else {
+                        "NA"
+                    };
+
+                let avg_copies_per_cell =
+                    if let Some(ref avg_copies_per_cell) = measurement.avg_copies_per_cell {
+                        avg_copies_per_cell
+                    } else {
+                        "NA"
+                    };
+
+                let line =
+                    format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                            ref_uniquename,
+                            ref_authors_abbrev,
+                            gene_uniquename,
+                            scale,
+                            term_name,
+                            termid,
+                            during_termid,
+                            during_term_name,
+                            copies_per_cell,
+                            avg_copies_per_cell);
+                writer.write_all(line.as_bytes())?
+            }
         }
 
         Ok(())

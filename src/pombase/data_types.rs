@@ -1140,6 +1140,19 @@ pub struct GeneExProps {
     pub avg_copies_per_cell: Option<RcString>,
     pub scale: RcString,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GeneExMeasurement {
+    pub reference_uniquename: RcString,
+    pub termid: RcString,
+    pub during_termid: RcString,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub copies_per_cell: Option<RcString>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub avg_copies_per_cell: Option<RcString>,
+    pub scale: RcString,
+}
+
 pub type OntName = RcString;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
 
@@ -1449,6 +1462,7 @@ pub struct APIMaps {
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
     pub children_by_termid: HashMap<TermId, HashSet<TermId>>,
+    pub gene_expression_measurements: HashMap<GeneUniquename, Vec<GeneExMeasurement>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

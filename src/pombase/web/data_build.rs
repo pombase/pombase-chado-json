@@ -86,6 +86,8 @@ pub struct WebDataBuild<'a> {
     all_community_curated: Vec<ReferenceShort>,
     all_admin_curated: Vec<ReferenceShort>,
 
+    gene_expression_measurements: HashMap<GeneUniquename, Vec<GeneExMeasurement>>,
+
     term_subsets: IdTermSubsetMap,
     gene_subsets: IdGeneSubsetMap,
 
@@ -984,6 +986,8 @@ impl <'a> WebDataBuild<'a> {
             annotation_details: HashMap::new(),
 
             ont_annotations: vec![],
+
+            gene_expression_measurements: HashMap::new(),
        }
     }
 
@@ -4337,6 +4341,10 @@ impl <'a> WebDataBuild<'a> {
         let mut children_by_termid = HashMap::new();
         std::mem::swap(&mut children_by_termid, &mut self.children_by_termid);
 
+        let mut gene_expression_measurements = HashMap::new();
+        std::mem::swap(&mut gene_expression_measurements,
+                       &mut self.gene_expression_measurements);
+
         APIMaps {
             gene_summaries,
             gene_query_data_map,
@@ -4356,6 +4364,7 @@ impl <'a> WebDataBuild<'a> {
             term_subsets,
             gene_subsets,
             children_by_termid,
+            gene_expression_measurements,
        }
     }
 
@@ -5076,6 +5085,88 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn set_gene_expression_measurements(&mut self) {
+       let mut measurements = HashMap::new();
+
+        for annotation in &self.ont_annotations {
+            if &annotation.term_short.cv_name != "gene_ex" {
+                continue;
+            }
+
+            let gene_uniquename =
+                if let Some(gene_short) = annotation.genes.iter().next() {
+                    gene_short.uniquename.clone()
+                } else {
+                    continue;
+                };
+
+            let termid = annotation.term_short.termid.clone();
+
+            let reference_uniquename =
+                if let Some(ref_short) = &annotation.reference_short {
+                    ref_short.uniquename.clone()
+                } else {
+                    continue;
+                };
+
+            let mut during_ext = None;
+
+            for extpart in &annotation.extension {
+                if extpart.rel_type_name == "during" {
+                    during_ext = Some(&extpart.ext_range);
+                }
+            }
+
+            let during_termid =
+                if let Some(during_ext) = during_ext {
+                    if let ExtRange::Term(termid) = during_ext {
+                        termid.clone()
+                    } else {
+                        continue;
+                    }
+                } else {
+                    continue;
+                };
+
+            let gene_ex_props =
+                if let Some(ref props) = annotation.gene_ex_props {
+                    props
+                } else {
+                    continue;
+                };
+
+            let scale = gene_ex_props.scale.clone();
+
+            let copies_per_cell =
+                if let Some(copies_per_cell) = gene_ex_props.copies_per_cell.as_ref() {
+                    Some(copies_per_cell.clone())
+                } else {
+                    None
+                };
+
+            let avg_copies_per_cell =
+                if let Some(avg_copies) = gene_ex_props.avg_copies_per_cell.as_ref() {
+                    Some(avg_copies.clone())
+                } else {
+                    None
+                };
+
+            measurements
+                .entry(gene_uniquename)
+                .or_insert_with(Vec::new)
+                .push(GeneExMeasurement {
+                    reference_uniquename,
+                    termid,
+                    during_termid,
+                    copies_per_cell,
+                    avg_copies_per_cell,
+                    scale
+                });
+        }
+
+        self.gene_expression_measurements = measurements;
+    }
+
     // remove some of the refs that have no annotations.
     // See: https://github.com/pombase/website/issues/628
     fn remove_non_curatable_refs(&mut self) {
@@ -5256,6 +5347,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_counts();
         self.make_subsets();
         self.sort_chromosome_genes();
+        self.set_gene_expression_measurements();
 
         let stats = self.get_stats();
 
