@@ -179,6 +179,7 @@ fn test_output_options() {
                 sequence: None,
                 gaf_lines: None,
                 subsets: HashSet::new(),
+                gene_expression: vec![],
             },
             ResultRow {
                 gene_uniquename: RcString::from("SPAC1805.15c"),
@@ -197,6 +198,7 @@ fn test_output_options() {
                 sequence: None,
                 gaf_lines: None,
                 subsets: HashSet::new(),
+                gene_expression: vec![],
             },
             ResultRow {
                 gene_uniquename: RcString::from("SPAC27E2.05"),
@@ -218,6 +220,7 @@ fn test_output_options() {
                 sequence: None,
                 gaf_lines: None,
                 subsets: HashSet::new(),
+                gene_expression: vec![],
             }];
 
     let qp1 = QueryNode {

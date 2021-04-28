@@ -478,5 +478,8 @@
       "transcript_gene_so_term_map": {
       }
     }
+  },
+  "gene_expression": {
+    "datasets": []
   }
 }

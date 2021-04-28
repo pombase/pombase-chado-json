@@ -10,7 +10,7 @@ use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
-                       ChromosomeDetails, Strand, Ploidiness};
+                       ChromosomeDetails, Strand, Ploidiness, GeneExMeasurement};
 use crate::web::config::TermAndName;
 
 use crate::bio::util::rev_comp;
@@ -713,10 +713,26 @@ impl Query {
         }
 
         if let Ok(gaf_str) = str::from_utf8(&gaf_bytes) {
-            Some(gaf_str.to_owned())
-        } else {
-            None
+            if gaf_str.len() > 0 {
+                return Some(gaf_str.to_owned())
+            }
         }
+        None
+    }
+
+    fn get_gene_ex_for_results(&self, api_data: &APIData, dataset_name: &str,
+                               gene_uniquename: &str)
+        -> Option<GeneExMeasurement>
+    {
+        let maybe_datasets =
+            api_data.get_maps().gene_expression_measurements.get(gene_uniquename);
+
+        if let Some(datasets) = maybe_datasets {
+            if let Some(measurement) = datasets.get(dataset_name) {
+                return Some(measurement.clone());
+            }
+        }
+        None
     }
 
     fn make_result_rows(&self, api_data: &APIData,
@@ -736,6 +752,7 @@ impl Query {
                let mut protein_length = None;
                let mut protein_length_bin = None;
                let mut subsets = HashSet::new();
+               let mut gene_expression = vec![];
 
                let maybe_gene_data = api_data.get_gene_query_data(&gene_uniquename);
 
@@ -766,7 +783,21 @@ impl Query {
                            "protein_length_bin" =>
                                protein_length_bin = gene_data.protein_length_bin.clone(),
                            "gene_uniquename" => (),
-                           _ => eprintln!("warning - no such option field: {}", field_name),
+                           _ => {
+                               if field_name.starts_with("gene_ex:") {
+                                   let dataset_name = RcString::from(&field_name[8..]);
+                                   let maybe_measurement =
+                                       self.get_gene_ex_for_results(api_data, &dataset_name,
+                                                                    &gene_uniquename);
+                                   if let Some(measurement) = maybe_measurement {
+                                       gene_expression.push(measurement);
+                                   } else {
+                                       eprintln!("warning - unknown dataset {}", dataset_name);
+                                   }
+                               } else {
+                                   eprintln!("warning - no such option field: {}", field_name);
+                               }
+                           }
                        }
                    }
 
@@ -799,11 +830,14 @@ impl Query {
                    protein_length,
                    protein_length_bin,
                    subsets,
+                   gene_expression,
                }
            }).collect::<Vec<_>>())
     }
 
-    pub fn exec(&self, api_data: &APIData, site_db: &Option<SiteDB>) -> QueryRowsResult {
+    pub fn exec(&self, api_data: &APIData, site_db: &Option<SiteDB>)
+                -> QueryRowsResult
+    {
         let genes_result = self.constraints.exec(api_data, site_db);
 
         match genes_result {

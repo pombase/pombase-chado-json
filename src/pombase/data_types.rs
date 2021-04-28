@@ -99,7 +99,7 @@ pub enum ExtRange {
     GeneProduct(TermId),  // eg.  PR:000027705
 #[serde(rename = "gene_and_gene_product")]
 // see: https://github.com/pombase/website/issues/1625
-    GeneAndGeneProduct(GeneAndGeneProduct), 
+    GeneAndGeneProduct(GeneAndGeneProduct),
 #[serde(rename = "summary_residues")]
     SummaryModifiedResidues(Vec<Residue>),
 }
@@ -1141,10 +1141,10 @@ pub struct GeneExProps {
     pub scale: RcString,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct GeneExMeasurement {
     pub reference_uniquename: RcString,
-    pub termid: RcString,
+    pub level_type_termid: RcString,
     pub during_termid: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
     pub copies_per_cell: Option<RcString>,
@@ -1442,6 +1442,11 @@ pub struct APIInteractor {
     pub interactor_uniquename: GeneUniquename,
 }
 
+pub type GeneExDataSetName = RcString;
+
+pub type GeneExDataSetMeasurements =
+    HashMap<GeneUniquename, HashMap<GeneExDataSetName, GeneExMeasurement>>;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
@@ -1462,7 +1467,7 @@ pub struct APIMaps {
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,
     pub children_by_termid: HashMap<TermId, HashSet<TermId>>,
-    pub gene_expression_measurements: HashMap<GeneUniquename, Vec<GeneExMeasurement>>,
+    pub gene_expression_measurements: GeneExDataSetMeasurements,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

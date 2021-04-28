@@ -607,6 +607,9 @@ fn get_test_config() -> Config {
             },
             nd_reference: String::from("GO_REF:0000015"),
         },
+        gene_expression: GeneExpressionConfig {
+            datasets: vec![],
+        },
     };
 
     config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("molecular_function"),

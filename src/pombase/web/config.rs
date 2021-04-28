@@ -295,6 +295,20 @@ pub struct SeqFeaturePageConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct GeneExDatasetConfig {
+    pub name: RcString,
+    pub pubmed_id: RcString,
+    pub level_type_termid: RcString,
+    pub during_termid: RcString,
+    pub scale: RcString,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct GeneExpressionConfig {
+    pub datasets: Vec<GeneExDatasetConfig>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: RcString,
     pub database_long_name: RcString,
@@ -327,6 +341,7 @@ pub struct Config {
     pub gene_results: GeneResultsConfig,
     pub ortholog_taxonids: HashSet<u32>,
     pub file_exports: FileExportConfig,
+    pub gene_expression: GeneExpressionConfig,
 }
 
 impl Config {

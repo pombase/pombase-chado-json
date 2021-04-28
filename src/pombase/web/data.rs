@@ -1131,9 +1131,9 @@ impl WebData {
             "reference\tfirst_author\tgene\tscale\tterm_name\tterm_id\tduring_term_id\tduring_term_name\tcopies_per_cell\taverage_copies_per_cell\n";
         writer.write_all(header.as_bytes())?;
 
-        for (gene_uniquename, measurements) in &self.api_maps.gene_expression_measurements {
+        for (gene_uniquename, datasets) in &self.api_maps.gene_expression_measurements {
 
-            for measurement in measurements {
+            for (_, measurement) in datasets {
 
                 let ref_uniquename = &measurement.reference_uniquename;
 
@@ -1149,7 +1149,7 @@ impl WebData {
                     };
 
 
-                let termid = &measurement.termid;
+                let termid = &measurement.level_type_termid;
 
                 let term_name =
                     if let Some(term_details) = self.api_maps.terms.get(termid) {

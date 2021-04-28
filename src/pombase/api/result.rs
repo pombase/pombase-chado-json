@@ -1,7 +1,8 @@
 use std::collections::HashSet;
 
 use crate::api::query::Query;
-use crate::data_types::{DeletionViability, PresentAbsent, GeneQueryTermData, GeneQueryAttrName};
+use crate::data_types::{DeletionViability, PresentAbsent, GeneQueryTermData,
+                        GeneQueryAttrName, GeneExMeasurement};
 use crate::types::{TermId, GeneUniquename};
 
 use pombase_rc_string::RcString;
@@ -39,6 +40,8 @@ pub struct ResultRow {
     pub gaf_lines: Option<String>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subsets: HashSet<TermId>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub gene_expression: Vec<GeneExMeasurement>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

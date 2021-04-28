@@ -86,7 +86,7 @@ pub struct WebDataBuild<'a> {
     all_community_curated: Vec<ReferenceShort>,
     all_admin_curated: Vec<ReferenceShort>,
 
-    gene_expression_measurements: HashMap<GeneUniquename, Vec<GeneExMeasurement>>,
+    gene_expression_measurements: GeneExDataSetMeasurements,
 
     term_subsets: IdTermSubsetMap,
     gene_subsets: IdGeneSubsetMap,
@@ -5085,6 +5085,26 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn get_dataset_name_for_measurement(&self, reference_uniquename: &str,
+                                        level_type_termid: &str,
+                                        during_termid: &str, scale: &str)
+                                        -> Option<RcString>
+    {
+        for conf in &self.config.gene_expression.datasets {
+            if conf.pubmed_id == reference_uniquename &&
+                conf.level_type_termid == level_type_termid &&
+                conf.during_termid == during_termid &&
+                conf.scale == scale {
+                    return Some(conf.name.clone());
+                }
+        }
+
+        eprintln!("can't find gene expression configuration for {} {} {} {}",
+                  reference_uniquename, level_type_termid, during_termid, scale);
+
+        None
+    }
+
     fn set_gene_expression_measurements(&mut self) {
        let mut measurements = HashMap::new();
 
@@ -5100,7 +5120,7 @@ impl <'a> WebDataBuild<'a> {
                     continue;
                 };
 
-            let termid = annotation.term_short.termid.clone();
+            let level_type_termid = annotation.term_short.termid.clone();
 
             let reference_uniquename =
                 if let Some(ref_short) = &annotation.reference_short {
@@ -5151,17 +5171,23 @@ impl <'a> WebDataBuild<'a> {
                     None
                 };
 
-            measurements
-                .entry(gene_uniquename)
-                .or_insert_with(Vec::new)
-                .push(GeneExMeasurement {
-                    reference_uniquename,
-                    termid,
-                    during_termid,
-                    copies_per_cell,
-                    avg_copies_per_cell,
-                    scale
-                });
+            if let Some(dataset_name) =
+                self.get_dataset_name_for_measurement(&reference_uniquename,
+                                                      &level_type_termid,
+                                                      &during_termid, &scale) {
+                    measurements
+                        .entry(gene_uniquename)
+                        .or_insert_with(HashMap::new)
+                        .insert(dataset_name,
+                                GeneExMeasurement {
+                                    reference_uniquename,
+                                    level_type_termid,
+                                    during_termid,
+                                    copies_per_cell,
+                                    avg_copies_per_cell,
+                                    scale
+                                });
+                }
         }
 
         self.gene_expression_measurements = measurements;
