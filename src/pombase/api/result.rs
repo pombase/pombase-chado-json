@@ -2,10 +2,16 @@ use std::collections::HashSet;
 
 use crate::api::query::Query;
 use crate::data_types::{DeletionViability, PresentAbsent, GeneQueryTermData,
-                        GeneQueryAttrName, GeneExMeasurement};
+                        GeneQueryAttrName};
 use crate::types::{TermId, GeneUniquename};
 
 use pombase_rc_string::RcString;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub struct GeneExValue {
+    pub dataset_name: RcString,
+    pub value: RcString,
+}
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ResultRow {
@@ -41,7 +47,7 @@ pub struct ResultRow {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subsets: HashSet<TermId>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub gene_expression: Vec<GeneExMeasurement>,
+    pub gene_expression: Vec<GeneExValue>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

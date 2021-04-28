@@ -10,7 +10,7 @@ use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
-                       ChromosomeDetails, Strand, Ploidiness, GeneExMeasurement};
+                       ChromosomeDetails, Strand, Ploidiness};
 use crate::web::config::TermAndName;
 
 use crate::bio::util::rev_comp;
@@ -722,17 +722,26 @@ impl Query {
 
     fn get_gene_ex_for_results(&self, api_data: &APIData, dataset_name: &str,
                                gene_uniquename: &str)
-        -> Option<GeneExMeasurement>
+        -> Vec<GeneExValue>
     {
+        let mut result = vec![];
+
         let maybe_datasets =
             api_data.get_maps().gene_expression_measurements.get(gene_uniquename);
 
         if let Some(datasets) = maybe_datasets {
             if let Some(measurement) = datasets.get(dataset_name) {
-                return Some(measurement.clone());
+                if let Some(ref avg_copies_per_cell) = measurement.avg_copies_per_cell {
+                    let new_value = GeneExValue {
+                        dataset_name: RcString::from(dataset_name),
+                        value: RcString::from(avg_copies_per_cell),
+                    };
+                    result.push(new_value);
+                }
             }
         }
-        None
+
+        result
     }
 
     fn make_result_rows(&self, api_data: &APIData,
@@ -784,16 +793,12 @@ impl Query {
                                protein_length_bin = gene_data.protein_length_bin.clone(),
                            "gene_uniquename" => (),
                            _ => {
-                               if field_name.starts_with("gene_ex:") {
-                                   let dataset_name = RcString::from(&field_name[8..]);
-                                   let maybe_measurement =
+                               if field_name.starts_with("gene_ex_avg_copies_per_cell:") {
+                                   let dataset_name = RcString::from(&field_name[28..]);
+                                   let results_measurements =
                                        self.get_gene_ex_for_results(api_data, &dataset_name,
                                                                     &gene_uniquename);
-                                   if let Some(measurement) = maybe_measurement {
-                                       gene_expression.push(measurement);
-                                   } else {
-                                       eprintln!("warning - unknown dataset {}", dataset_name);
-                                   }
+                                   gene_expression.extend(results_measurements);
                                } else {
                                    eprintln!("warning - no such option field: {}", field_name);
                                }
