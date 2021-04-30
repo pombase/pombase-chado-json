@@ -614,12 +614,15 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
     }
 
     for field_name in &config.gene_results.visualisation_field_names {
-        let column_conf = &config.gene_results.field_config[field_name];
+        if let Some(column_conf) = config.gene_results.field_config.get(field_name) {
 
-        for attr_value_conf in &column_conf.attr_values {
-            if let Some(ref termid) = attr_value_conf.termid {
-                add_to_set(&mut ret, termid.clone());
+            for attr_value_conf in &column_conf.attr_values {
+                if let Some(ref termid) = attr_value_conf.termid {
+                    add_to_set(&mut ret, termid.clone());
+                }
             }
+        } else {
+            panic!["can't find field configuration for {}", field_name];
         }
     }
 
