@@ -46,8 +46,8 @@ type UniprotIdentifier = RcString;
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
     domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
-    pfam_data: &'a HashMap<UniprotIdentifier, PfamProteinDetails>,
-    rnacentral_data: &'a RNAcentralAnnotations,
+    pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
+    rnacentral_data: &'a Option<RNAcentralAnnotations>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -937,8 +937,8 @@ fn validate_transcript_parts(transcript_uniquename: &str, parts: &[FeatureShort]
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
                domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
-               pfam_data: &'a HashMap<UniprotIdentifier, PfamProteinDetails>,
-               rnacentral_data: &'a RNAcentralAnnotations,
+               pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
+               rnacentral_data: &'a Option<RNAcentralAnnotations>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -1513,23 +1513,27 @@ impl <'a> WebDataBuild<'a> {
             };
 
         let (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords) =
-            if let Some(ref uniprot_identifier) = uniprot_identifier {
-                if let Some(result) = self.pfam_data.get(uniprot_identifier as &str) {
-                    let mut disordered_region_coords = vec![];
-                    let mut low_complexity_region_coords = vec![];
-                    let mut coiled_coil_coords = vec![];
-                    for motif in &result.motifs {
-                        match &motif.motif_type as &str {
-                            "disorder" => 
-                                disordered_region_coords.push((motif.start, motif.end)),
-                            "low_complexity" =>
-                                low_complexity_region_coords.push((motif.start, motif.end)),
-                            "coiled_coil" =>
-                                coiled_coil_coords.push((motif.start, motif.end)),
-                            _ => (),
+            if let Some(pfam_data) = self.pfam_data {
+                if let Some(ref uniprot_identifier) = uniprot_identifier {
+                    if let Some(result) = pfam_data.get(uniprot_identifier as &str) {
+                        let mut disordered_region_coords = vec![];
+                        let mut low_complexity_region_coords = vec![];
+                        let mut coiled_coil_coords = vec![];
+                        for motif in &result.motifs {
+                            match &motif.motif_type as &str {
+                                "disorder" => 
+                                    disordered_region_coords.push((motif.start, motif.end)),
+                                "low_complexity" =>
+                                    low_complexity_region_coords.push((motif.start, motif.end)),
+                                "coiled_coil" =>
+                                    coiled_coil_coords.push((motif.start, motif.end)),
+                                _ => (),
+                            }
                         }
+                        (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords)
+                    } else {
+                        (vec![], vec![], vec![])
                     }
-                    (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords)
                 } else {
                     (vec![], vec![], vec![])
                 }
@@ -1538,9 +1542,13 @@ impl <'a> WebDataBuild<'a> {
             };
 
         let rfam_annotations =
-            if let Some(ref rnacentral_urs_identifier) = rnacentral_urs_identifier {
-                if let Some(result) = self.rnacentral_data.get(rnacentral_urs_identifier.as_str()) {
-                    result.clone()
+            if let Some(rnacentral_data) = self.rnacentral_data {
+                if let Some(ref rnacentral_urs_identifier) = rnacentral_urs_identifier {
+                    if let Some(result) = rnacentral_data.get(rnacentral_urs_identifier.as_str()) {
+                        result.clone()
+                    } else {
+                        vec![]
+                    }
                 } else {
                     vec![]
                 }

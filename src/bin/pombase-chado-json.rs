@@ -93,16 +93,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         print_usage(&program, opts);
         process::exit(1);
     }
-    if !matches.opt_present("pfam-data-file") {
-        print!("no --pfam-data-file option\n");
-        print_usage(&program, opts);
-        process::exit(1);
-    }
-    if !matches.opt_present("rnacentral-data-file") {
-        print!("no -r|--rnacentral-data-file option\n");
-        print_usage(&program, opts);
-        process::exit(1);
-    }
     if !matches.opt_present("output-directory") {
         print!("no -d|--output-directory option\n");
         print_usage(&program, opts);
@@ -112,9 +102,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let config = Config::read(&matches.opt_str("c").unwrap());
     let doc_config = DocConfig::read(&matches.opt_str("C").unwrap());
     let connection_string = matches.opt_str("p").unwrap();
-    let pfam_json = matches.opt_str("pfam-data-file").unwrap();
+    let maybe_pfam_json = matches.opt_str("pfam-data-file");
     let interpro_json = matches.opt_str("i").unwrap();
-    let rnacentral_json = matches.opt_str("r").unwrap();
+    let maybe_rnacentral_json = matches.opt_str("r");
     let go_eco_mapping = GoEcoMapping::read(&matches.opt_str("go-eco-mapping").unwrap())?;
     let output_dir = matches.opt_str("d").unwrap();
 
@@ -125,8 +115,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let raw = Raw::new(&conn);
     let interpro_data = parse_interpro(&config, &interpro_json);
-    let pfam_data = parse_pfam(&pfam_json);
-    let rnacentral_data = pombase::rnacentral::parse_annotation_json(&rnacentral_json)?;
+    let pfam_data =
+        if let Some(pfam_json) = maybe_pfam_json {
+            Some(parse_pfam(&pfam_json))
+        } else {
+            None
+        };
+    let rnacentral_data =
+        if let Some(rnacentral_json) = maybe_rnacentral_json {
+            Some(pombase::rnacentral::parse_annotation_json(&rnacentral_json)?)
+        } else {
+            None
+        };
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
                                            &rnacentral_data, &config);
     let web_data = web_data_build.get_web_data();
