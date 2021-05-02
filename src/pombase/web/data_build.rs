@@ -5001,6 +5001,11 @@ impl <'a> WebDataBuild<'a> {
     // make InterPro subsets using the interpro_matches field of GeneDetails
     fn make_interpro_subsets(&mut self, subsets: &mut IdGeneSubsetMap) {
         for (gene_uniquename, gene_details) in &self.genes {
+            if self.config.load_organism_taxonid.is_none() ||
+                self.config.load_organism_taxonid.unwrap() != gene_details.taxonid {
+                    continue;
+                }
+
             for interpro_match in &gene_details.interpro_matches {
 
                 let mut new_subset_names = vec![];
