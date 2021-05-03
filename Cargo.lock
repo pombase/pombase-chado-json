@@ -1276,7 +1276,7 @@ dependencies = [
 
 [[package]]
 name = "pombase-chado-json"
-version = "98.2.0"
+version = "99.0.0"
 dependencies = [
  "bit-set",
  "bytes 1.0.1",
