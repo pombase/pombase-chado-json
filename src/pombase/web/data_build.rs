@@ -5115,9 +5115,6 @@ impl <'a> WebDataBuild<'a> {
                 }
         }
 
-        eprintln!("can't find gene expression configuration for {} {} {} {}",
-                  reference_uniquename, level_type_termid, during_termid, scale);
-
         None
     }
 
