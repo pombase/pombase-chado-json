@@ -902,6 +902,7 @@ impl OrthologAnnotationContainer for GeneDetails {
 pub struct ProteinDetails {
     pub uniquename: ProteinUniquename,
     pub sequence: RcString,
+    pub product: Option<RcString>,
     pub molecular_weight: f32,
     pub average_residue_weight: f32,
     pub charge_at_ph7: f32,

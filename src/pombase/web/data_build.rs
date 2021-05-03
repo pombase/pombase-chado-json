@@ -1780,6 +1780,7 @@ impl <'a> WebDataBuild<'a> {
             let protein = ProteinDetails {
                 uniquename: feat.uniquename.clone(),
                 sequence: RcString::from(&residues),
+                product: None,
                 molecular_weight: molecular_weight.unwrap(),
                 average_residue_weight: average_residue_weight.unwrap(),
                 charge_at_ph7: charge_at_ph7.unwrap(),
@@ -3058,6 +3059,20 @@ impl <'a> WebDataBuild<'a> {
         self.alleles[allele_uniquename].clone()
     }
 
+    fn add_product_to_protein(&mut self, gene_uniquename: &str, transcript_uniquename: &str,
+                              product: RcString) {
+        if let Some(gene_details) = self.genes.get_mut(gene_uniquename) {
+            for transcript in &mut gene_details.transcripts {
+                if transcript.uniquename == transcript_uniquename {
+                    if let Some(protein_details) = &mut transcript.protein {
+                        protein_details.product = Some(product);
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     // process feature properties stored as cvterms,
     // eg. characterisation_status and product
     fn process_props_from_feature_cvterms(&mut self) {
@@ -3065,42 +3080,50 @@ impl <'a> WebDataBuild<'a> {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
 
-            let gene_uniquenames_vec: Vec<GeneUniquename> =
+            let (maybe_gene_uniquename, maybe_transcript_uniquename) =
                 if cvterm.cv.name == "PomBase gene products" {
                     if feature.feat_type.name == "polypeptide" {
                         if let Some(transcript_uniquename) =
                             self.transcripts_of_polypeptides.get(&feature.uniquename) {
                                 if let Some(gene_uniquename) =
                                     self.genes_of_transcripts.get(transcript_uniquename) {
-                                        vec![gene_uniquename.clone()]
-                                    } else {
-                                        vec![]
+                                        (Some(gene_uniquename.clone()),
+                                         Some(transcript_uniquename.clone())
+)                                    } else {
+                                        (None, None)
                                     }
                             } else {
-                                vec![]
+                                (None, None)
                             }
                     } else {
                         if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
                             if let Some(gene_uniquename) =
                                 self.genes_of_transcripts.get(&feature.uniquename) {
-                                    vec![gene_uniquename.clone()]
+                                    (Some(gene_uniquename.clone()), Some(feature.uniquename.clone()))
                                 } else {
-                                    vec![]
+                                    (None, None)
                                 }
                         } else {
                             if feature.feat_type.name == "gene" {
-                                vec![feature.uniquename.clone()]
+                                (Some(feature.uniquename.clone()), None)
                             } else {
-                                vec![]
+                                (None, None)
                             }
                         }
                     }
                 } else {
-                    vec![]
+                    (None, None)
                 };
-            for gene_uniquename in &gene_uniquenames_vec {
+
+            if let Some(gene_uniquename) = maybe_gene_uniquename {
                 self.add_gene_product(&gene_uniquename, &cvterm.name);
+
+                if let Some(transcript_uniquename) = maybe_transcript_uniquename {
+                    self.add_product_to_protein(&gene_uniquename, &transcript_uniquename,
+                                                cvterm.name.clone());
+                }
             }
+
             if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
                 if cvterm.cv.name == "PomBase gene characterisation status" {
                     self.add_characterisation_status(&feature.uniquename, &cvterm.name);
