@@ -438,8 +438,6 @@ impl Config {
 pub const POMBASE_ANN_EXT_TERM_CV_NAME: &str = "PomBase annotation extension terms";
 pub const ANNOTATION_EXT_REL_PREFIX: &str = "annotation_extension_relation-";
 
-pub const DB_NAME: &str = "PomBase";
-
 pub enum FeatureRelAnnotationType {
     Interaction,
     Ortholog,

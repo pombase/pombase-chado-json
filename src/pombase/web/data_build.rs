@@ -3155,7 +3155,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_with_or_from_value(&self, with_or_from_value: &RcString) -> WithFromValue {
-        let db_prefix_patt = RcString::from("^") + DB_NAME + ":";
+        let db_prefix_patt = format!("^{}:", self.config.database_name);
         let re = Regex::new(&db_prefix_patt).unwrap();
         let gene_uniquename = RcString::from(re.replace_all(&with_or_from_value, "").as_ref());
         if self.genes.contains_key(&gene_uniquename) {
