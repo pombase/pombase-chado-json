@@ -335,7 +335,7 @@ impl APIData {
                     let uniquename = &gene_short.uniquename;
                     ExtRange::Gene(self.strip_db_prefix(&uniquename))
                 },
-                _ => panic!("unexpected WithFromValue varient: {:#?}", with_value),
+                _ => panic!("unexpected WithFromValue variant: {:#?}", with_value),
             };
 
         // a with property on a protein binding (GO:0005515) is
