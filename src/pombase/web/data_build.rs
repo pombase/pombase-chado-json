@@ -4447,7 +4447,6 @@ impl <'a> WebDataBuild<'a> {
                         .iter()
                         .chain(annotation_detail.froms.iter());
 
-
                     for with_from_value in with_from_iter {
                         match with_from_value {
                             WithFromValue::Gene(ref gene_short) =>
@@ -4711,6 +4710,20 @@ impl <'a> WebDataBuild<'a> {
                                     _ => {},
                                 }
                             }
+
+                            let with_from_iter = annotation_detail.withs
+                                .iter()
+                                .chain(annotation_detail.froms.iter());
+
+                            for with_from_value in with_from_iter {
+                                match with_from_value {
+                                    WithFromValue::Gene(ref gene_short) =>
+                                        self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
+                                                              &gene_short.uniquename),
+                                    _ => (),
+                                }
+                            }
+
                             if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                                 let genotype = self.make_genotype_short(genotype_uniquename);
                                 self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
