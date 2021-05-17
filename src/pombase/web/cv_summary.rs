@@ -1,5 +1,6 @@
 use std::mem;
 use std::cmp::Ordering;
+use std::hash::{Hash, Hasher};
 
 use std::collections::{HashSet, HashMap};
 
@@ -227,6 +228,26 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, genotypes: &IdGenotypeMap,
     rows.append(&mut other_rows);
 }
 
+// used to compare ExtParts by rel_type_display_name instead of rel_type_name
+
+#[derive(Clone)]
+struct ExtPartWrapper(ExtPart);
+
+impl PartialEq for ExtPartWrapper {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.rel_type_display_name == other.0.rel_type_display_name &&
+            self.0.ext_range == other.0.ext_range
+    }
+}
+impl Eq for ExtPartWrapper {
+}
+impl Hash for ExtPartWrapper {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.rel_type_display_name.hash(state);
+        self.0.ext_range.hash(state);
+    }
+}
+
 // Remove annotations from the summary where there is another more
 // specific annotation.  ie. the same annotation but with extra part(s) in the
 // extension.
@@ -238,6 +259,15 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
         return;
     }
 
+    let ext_parts_wrap = |ext_parts: &[ExtPart]| {
+        ext_parts
+            .iter()
+            .map(|part| {
+                ExtPartWrapper(part.clone())
+            })
+            .collect::<Vec<_>>()
+    };
+
     rows.reverse();
 
     let mut vec_set = VecSet::new();
@@ -246,7 +276,7 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
     if prev.gene_uniquenames.len() > 1 {
         panic!("remove_redundant_summary_rows() failed: num genes > 1\n");
     }
-    vec_set.insert(&prev.extension);
+    vec_set.insert(ext_parts_wrap(&prev.extension));
 
     for current in rows.drain(0..) {
         if current.gene_uniquenames.len() > 1 {
@@ -255,13 +285,13 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 
         if (&prev.gene_uniquenames, &prev.genotype_uniquenames) ==
             (&current.gene_uniquenames, &current.genotype_uniquenames) {
-                if !vec_set.contains_superset(&current.extension) {
+                if !vec_set.contains_superset(&ext_parts_wrap(&current.extension)) {
                     results.push(current.clone());
-                    vec_set.insert(&current.extension);
+                    vec_set.insert(ext_parts_wrap(&current.extension));
                 }
             } else {
                 vec_set = VecSet::new();
-                vec_set.insert(&current.extension);
+                vec_set.insert(ext_parts_wrap(&current.extension));
                 results.push(current.clone());
             }
 
