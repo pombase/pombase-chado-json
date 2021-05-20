@@ -588,7 +588,7 @@ fn get_test_config() -> Config {
             gene_uniquename_re: String::from("^SP([ABCN][CTP]|RR|SN|MIT|MT)[\\d\\w]*\\.\\d\\d\\d?\\d?c?$"),
         },
         extra_database_aliases: HashMap::new(),
-        chromosomes: HashMap::new(),
+        chromosomes: vec![],
         gene_results: GeneResultsConfig {
             field_config: HashMap::new(),
             visualisation_field_names: vec![]

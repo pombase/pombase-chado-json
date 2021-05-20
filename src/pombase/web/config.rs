@@ -59,6 +59,7 @@ pub struct SplitByParentsConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ChromosomeConfig {
+    pub name: RcString,
     // string to use for this chromosome in a file name, eg. "chromosome_II"
     // or "mitochondrial_chromosome"
     pub export_file_id: RcString,
@@ -337,7 +338,7 @@ pub struct Config {
     pub interpro: InterPro,
     pub server: ServerConfig,
     pub extra_database_aliases: DatabaseAliases,
-    pub chromosomes: HashMap<RcString, ChromosomeConfig>,
+    pub chromosomes: Vec<ChromosomeConfig>,
     pub gene_results: GeneResultsConfig,
     pub ortholog_taxonids: HashSet<u32>,
     pub file_exports: FileExportConfig,
@@ -427,11 +428,12 @@ impl Config {
     pub fn find_chromosome_config<'a>(&'a self, chromosome_name: &str)
                                       -> &'a ChromosomeConfig
     {
-        if let Some(ref chr_conf) = self.chromosomes.get(chromosome_name) {
-            &chr_conf
-        } else {
-            panic!("can't find chromosome configuration for {}", &chromosome_name);
+        for chr_config in &self.chromosomes {
+            if chr_config.name == chromosome_name {
+                return chr_config;
+            }
         }
+        panic!("can't find chromosome configuration for {}", &chromosome_name);
     }
 }
 
