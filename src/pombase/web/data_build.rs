@@ -3654,6 +3654,11 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
 
+                /*
+
+                Remove for now because it's messing with the gene counts.
+                See: https://github.com/pombase/website/issues/1705
+
                 // Add annotations to terms referred to in extensions.  They
                 // are added to fake CV that have a name starting with
                 // "extension:".  The CV name will end with ":genotype" if the
@@ -3696,6 +3701,8 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                 }
+
+                */
 
                 let gene_short_list =
                     annotation.genes.iter().map(|uniquename: &RcString| {
