@@ -1521,7 +1521,7 @@ impl <'a> WebDataBuild<'a> {
                         let mut coiled_coil_coords = vec![];
                         for motif in &result.motifs {
                             match &motif.motif_type as &str {
-                                "disorder" => 
+                                "disorder" =>
                                     disordered_region_coords.push((motif.start, motif.end)),
                                 "low_complexity" =>
                                     low_complexity_region_coords.push((motif.start, motif.end)),
