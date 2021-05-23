@@ -1378,6 +1378,7 @@ impl <'a> WebDataBuild<'a> {
                                        alleles_by_uniquename: HashMap::new(),
                                        terms_by_termid: HashMap::new(),
                                        annotation_details: HashMap::new(),
+                                       gene_count: 0,
                                    });
         }
     }
@@ -4669,6 +4670,23 @@ impl <'a> WebDataBuild<'a> {
     fn set_reference_details_maps(&mut self) {
         let mut seen_genes: HashMap<RcString, GeneShortOptionMap> = HashMap::new();
 
+        // for calculating the gene_count field, we don't incude non-pombe genes
+        let mut gene_count_hash: HashMap<RcString, GeneShortOptionMap> =
+            HashMap::new();
+
+        let mut maybe_add_to_gene_count_hash =
+            |reference_uniquename: &RcString, gene_uniquename: &GeneUniquename| {
+                if let Some(load_org_taxonid) = self.config.load_organism_taxonid {
+                    if let Some(gene_details) = self.genes.get(gene_uniquename) {
+                        if gene_details.taxonid == load_org_taxonid {
+                            self.add_gene_to_hash(&mut gene_count_hash,
+                                                  &reference_uniquename,
+                                                  gene_uniquename);
+                        }
+                    }
+                }
+            };
+
         type GenotypeShortMap = HashMap<GenotypeUniquename, GenotypeShort>;
         let mut seen_genotypes: HashMap<ReferenceUniquename, GenotypeShortMap> = HashMap::new();
 
@@ -4689,7 +4707,9 @@ impl <'a> WebDataBuild<'a> {
                                 .get(&annotation_detail_id).expect("can't find OntAnnotationDetail");
                             for gene_uniquename in &annotation_detail.genes {
                                 self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
-                                                      gene_uniquename)
+                                                      gene_uniquename);
+                                maybe_add_to_gene_count_hash(reference_uniquename,
+                                                             gene_uniquename);
                             }
                             for condition_termid in &annotation_detail.conditions {
                                 self.add_term_to_hash(&mut seen_terms, reference_uniquename,
@@ -4703,10 +4723,13 @@ impl <'a> WebDataBuild<'a> {
                                                               reference_uniquename,
                                                               range_termid),
                                     ExtRange::Gene(ref gene_uniquename) |
-                                    ExtRange::Promoter(ref gene_uniquename) =>
+                                    ExtRange::Promoter(ref gene_uniquename) => {
                                         self.add_gene_to_hash(&mut seen_genes,
                                                               reference_uniquename,
-                                                              gene_uniquename),
+                                                              gene_uniquename);
+                                        maybe_add_to_gene_count_hash(reference_uniquename,
+                                                                     gene_uniquename);
+                                    },
                                     _ => {},
                                 }
                             }
@@ -4717,9 +4740,12 @@ impl <'a> WebDataBuild<'a> {
 
                             for with_from_value in with_from_iter {
                                 match with_from_value {
-                                    WithFromValue::Gene(ref gene_short) =>
+                                    WithFromValue::Gene(ref gene_short) => {
                                         self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
-                                                              &gene_short.uniquename),
+                                                              &gene_short.uniquename);
+                                        maybe_add_to_gene_count_hash(reference_uniquename,
+                                                                     &gene_short.uniquename);
+                                    },
                                     _ => (),
                                 }
                             }
@@ -4740,21 +4766,34 @@ impl <'a> WebDataBuild<'a> {
                 for interaction in interaction_iter {
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &interaction.gene_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &interaction.gene_uniquename);
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &interaction.interactor_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &interaction.interactor_uniquename);
                 }
 
                 for ortholog_annotation in &reference_details.ortholog_annotations {
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &ortholog_annotation.gene_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &ortholog_annotation.gene_uniquename);
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &ortholog_annotation.ortholog_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &ortholog_annotation.ortholog_uniquename);
+
                 }
                 for paralog_annotation in &reference_details.paralog_annotations {
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &paralog_annotation.gene_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &paralog_annotation.gene_uniquename);
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &paralog_annotation.paralog_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &paralog_annotation.paralog_uniquename);
                 }
 
             }
@@ -4772,6 +4811,9 @@ impl <'a> WebDataBuild<'a> {
             }
             if let Some(terms) = seen_terms.remove(reference_uniquename) {
                 reference_details.terms_by_termid = terms;
+            }
+            if let Some(gene_count_genes) = gene_count_hash.remove(reference_uniquename) {
+                reference_details.gene_count = gene_count_genes.len();
             }
         }
     }

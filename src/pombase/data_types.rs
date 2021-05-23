@@ -373,7 +373,7 @@ impl ReferenceShort {
             publication_year: reference_details.publication_year.clone(),
             authors_abbrev: reference_details.authors_abbrev.clone(),
             approved_date: reference_details.approved_date.clone(),
-            gene_count: reference_details.genes_by_uniquename.keys().len(),
+            gene_count: reference_details.gene_count,
             genotype_count: reference_details.genotypes_by_uniquename.keys().len(),
         }
     }
@@ -439,6 +439,9 @@ pub struct ReferenceDetails {
     pub canto_session_submitted_date: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_added_date: Option<RcString>,
+
+    // count of genes from the main organism of the site (eg. pombe)
+    pub gene_count: usize,
 
     // This is set to the year part of canto_first_approved_date if it is
     // not None, otherwise set to the year part of canto_approved_date, otherwise
