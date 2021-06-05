@@ -335,6 +335,7 @@ pub struct ChromosomeDetails {
     pub ena_identifier: RcString,
     pub gene_uniquenames: Vec<RcString>,
     pub taxonid: OrganismTaxonId,
+    pub gene_count: usize,
 }
 
 impl ChromosomeDetails {
@@ -343,6 +344,7 @@ impl ChromosomeDetails {
             name: self.name.clone(),
             length: self.residues.len(),
             ena_identifier: self.ena_identifier.clone(),
+            gene_count: self.gene_count,
         }
     }
 }
@@ -705,6 +707,7 @@ pub struct ChromosomeShort {
     pub name: RcString,
     pub length: usize,
     pub ena_identifier: RcString,
+    pub gene_count: usize,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]

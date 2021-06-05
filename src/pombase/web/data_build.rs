@@ -1843,6 +1843,7 @@ impl <'a> WebDataBuild<'a> {
             ena_identifier: RcString::from(&ena_identifier.unwrap()),
             gene_uniquenames: vec![],
             taxonid: org.taxonid,
+            gene_count: 0,  // we'll update this once the genes are processed
         };
 
         self.chromosomes.insert(feat.uniquename.clone(), chr);
@@ -5291,6 +5292,25 @@ impl <'a> WebDataBuild<'a> {
         self.gene_expression_measurements = measurements;
     }
 
+    fn set_chromosome_gene_counts(&mut self) {
+        let mut counts = HashMap::new();
+
+        for gene_details in self.genes.values() {
+
+            if let Some(ref loc) = gene_details.location {
+                *counts
+                    .entry(&loc.chromosome_name)
+                    .or_insert(0) += 1;
+            }
+        }
+
+        for chromosome_detail in self.chromosomes.values_mut() {
+            if let Some(count) = counts.get(&chromosome_detail.name) {
+                chromosome_detail.gene_count = *count;
+            }
+        }
+    }
+
     // remove some of the refs that have no annotations.
     // See: https://github.com/pombase/website/issues/628
     fn remove_non_curatable_refs(&mut self) {
@@ -5468,6 +5488,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_gene_details_subset_termids();
         self.set_genotype_details_maps();
         self.set_reference_details_maps();
+        self.set_chromosome_gene_counts();
         self.set_counts();
         self.make_subsets();
         self.sort_chromosome_genes();
