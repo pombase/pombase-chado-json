@@ -1,10 +1,12 @@
+use std::sync::{Arc, Mutex};
+
 use uuid::Uuid;
 use postgres::{Connection, TlsMode};
 
 use crate::api::query::Query;
 
 pub struct SiteDB {
-    conn: Connection,
+    conn: Arc<Mutex<Connection>>,
 }
 
 impl SiteDB {
@@ -16,12 +18,12 @@ impl SiteDB {
         };
 
         SiteDB {
-            conn,
+            conn: Arc::new(Mutex::new(conn)),
         }
     }
 
     pub fn query_by_id(&self, uuid: &Uuid) -> Option<Query> {
-        let rs = match self.conn.query("SELECT query_json FROM query WHERE id = $1",
+        let rs = match self.conn.lock().as_mut().unwrap().query("SELECT query_json FROM query WHERE id = $1",
                                        &[uuid])
         {
             Ok(rs) => rs,
@@ -51,7 +53,7 @@ impl SiteDB {
             }
         };
 
-        let rs = match self.conn.query("SELECT id::uuid FROM query WHERE digest(query_json, 'sha256') = digest($1, 'sha256');",
+        let rs = match self.conn.lock().as_mut().unwrap().query("SELECT id::uuid FROM query WHERE digest(query_json, 'sha256') = digest($1, 'sha256');",
                                        &[&query_value])
         {
             Ok(rs) => rs,
@@ -71,7 +73,8 @@ impl SiteDB {
     }
 
     pub fn save_query(&self, uuid: &Uuid, query: &Query) -> Result<(), String> {
-        let trans = match self.conn.transaction() {
+        let mut locked_conn = self.conn.lock();
+        let trans = match locked_conn.as_mut().unwrap().transaction() {
             Ok(t) => t,
             Err(e) => return Err(format!("couldn't begin transaction: {}", e)),
         };

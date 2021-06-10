@@ -1,5 +1,5 @@
 [development]
-address = "localhost"
+address = "127.0.0.1"
 port = 8400
 workers = 1
 log = "normal"

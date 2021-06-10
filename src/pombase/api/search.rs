@@ -27,10 +27,10 @@ pub struct PNGPlot {
     pub bytes: Bytes
 }
 
-impl<'a> Responder<'a> for PNGPlot {
+impl<'a> Responder<'a, 'a> for PNGPlot {
     fn respond_to(self, _: &Request) -> response::Result<'a> {
         Response::build()
-            .sized_body(Cursor::new(self.bytes))
+            .sized_body(self.bytes.len(), Cursor::new(self.bytes))
             .header(ContentType::new("image", "png"))
             .ok()
     }

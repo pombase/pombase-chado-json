@@ -4,23 +4,21 @@
 extern crate getopts;
 
 #[macro_use] extern crate rocket;
-#[macro_use] extern crate rocket_contrib;
+use rocket::fs::NamedFile;
 use rocket::response::content;
 
 #[macro_use] extern crate serde_derive;
 
 extern crate pombase;
 
-use std::sync::Mutex;
 use std::process;
 use std::env;
 use std::path::{Path, PathBuf};
 
 use getopts::Options;
 
-use rocket_contrib::json::{Json, JsonValue};
-use rocket_contrib::serve::StaticFiles;
-use rocket::response::NamedFile;
+use rocket::serde::json::{Json, Value, json};
+use rocket::fs::FileServer;
 
 use pombase::api::query::Query as PomBaseQuery;
 use pombase::api::result::QueryAPIResult;
@@ -44,7 +42,6 @@ struct StaticFileState {
     web_root_dir: String,
 }
 
-
 #[derive(Serialize, Debug)]
 struct TermLookupResponse {
     status: String,
@@ -57,11 +54,11 @@ struct TermLookupResponse {
 // try the path, then try path + ".json", then default to loading the
 // Angular app from /index.html
 #[get("/<path..>", rank=3)]
-fn get_misc(mut path: PathBuf, state: rocket::State<Mutex<StaticFileState>>,
-            config: rocket::State<Config>)
+async fn get_misc(mut path: PathBuf, state: &rocket::State<StaticFileState>,
+            config: &rocket::State<Config>)
             -> Option<NamedFile>
 {
-    let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
+    let web_root_dir = &state.web_root_dir;
     let root_dir_path = Path::new("/").join(web_root_dir);
     let is_jbrowse_path = path.starts_with("jbrowse/");
 
@@ -76,11 +73,11 @@ fn get_misc(mut path: PathBuf, state: rocket::State<Mutex<StaticFileState>>,
 
     if full_path.is_dir() {
         let index_path = full_path.join("index.html");
-        return NamedFile::open(index_path).ok();
+        return NamedFile::open(index_path).await.ok();
     }
 
     if full_path.exists() {
-        return NamedFile::open(full_path).ok();
+        return NamedFile::open(full_path).await.ok();
     }
 
     let mut json_path_str = full_path.to_str().unwrap().to_owned();
@@ -88,7 +85,7 @@ fn get_misc(mut path: PathBuf, state: rocket::State<Mutex<StaticFileState>>,
     let json_path: PathBuf = json_path_str.into();
 
     if json_path.exists() {
-        return NamedFile::open(json_path).ok();
+        return NamedFile::open(json_path).await.ok();
     }
 
     // special case for missing JBrowse files - return 4044
@@ -96,12 +93,11 @@ fn get_misc(mut path: PathBuf, state: rocket::State<Mutex<StaticFileState>>,
         return None;
     }
 
-    NamedFile::open(root_dir_path.join("index.html")).ok()
+    NamedFile::open(root_dir_path.join("index.html")).await.ok()
 }
 
 #[get("/api/v1/dataset/latest/data/gene/<id>", rank=2)]
-fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GeneDetails>> {
-    let query_exec = state.lock().expect("failed to lock");
+async fn get_gene(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<GeneDetails>> {
     if let Some(gene) = query_exec.get_api_data().get_full_gene_details(&id) {
         Some(Json(gene))
     } else {
@@ -110,8 +106,7 @@ fn get_gene(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<G
 }
 
 #[get("/api/v1/dataset/latest/data/genotype/<id>", rank=2)]
-fn get_genotype(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<GenotypeDetails>> {
-    let query_exec = state.lock().expect("failed to lock");
+async fn get_genotype(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<GenotypeDetails>> {
     if let Some(genotype) = query_exec.get_api_data().get_genotype_details(&id) {
         Some(Json(genotype))
     } else {
@@ -120,8 +115,7 @@ fn get_genotype(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Js
 }
 
 #[get("/api/v1/dataset/latest/data/term/<id>", rank=2)]
-fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<TermDetails>> {
-    let query_exec = state.lock().expect("failed to lock");
+async fn get_term(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<TermDetails>> {
     if let Some(term) = query_exec.get_api_data().get_term_details(&id) {
         Some(Json(term))
     } else {
@@ -130,10 +124,9 @@ fn get_term(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<T
 }
 
 #[get("/api/v1/dataset/latest/summary/term/<id>", rank=2)]
-fn get_term_summary_by_id(id: String, state: rocket::State<Mutex<Search>>)
+async fn get_term_summary_by_id(id: String, search: &rocket::State<Search>)
                           -> Option<Json<TermLookupResponse>>
 {
-    let search = state.lock().expect("failed to lock");
     let res = search.term_summary_by_id(&id);
 
     let lookup_response =
@@ -157,8 +150,7 @@ fn get_term_summary_by_id(id: String, state: rocket::State<Mutex<Search>>)
 }
 
 #[get("/api/v1/dataset/latest/data/reference/<id>", rank=2)]
-fn get_reference(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<Json<ReferenceDetails>> {
-    let query_exec = state.lock().expect("failed to lock");
+async fn get_reference(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<ReferenceDetails>> {
     if let Some(reference) = query_exec.get_api_data().get_reference_details(&id) {
         Some(Json(reference))
     } else {
@@ -167,25 +159,23 @@ fn get_reference(id: String, state: rocket::State<Mutex<QueryExec>>) -> Option<J
 }
 
 #[get("/api/v1/dataset/latest/data/seq_feature_page_features", rank=2)]
-fn seq_feature_page_features(state: rocket::State<Mutex<QueryExec>>) -> Json<Vec<FeatureShort>> {
-    let query_exec = state.lock().expect("failed to lock");
+async fn seq_feature_page_features(query_exec: &rocket::State<QueryExec>) -> Json<Vec<FeatureShort>> {
     Json(query_exec.get_api_data().seq_feature_page_features())
 }
 
 #[get("/", rank=1)]
-fn get_index(state: rocket::State<Mutex<StaticFileState>>) -> Option<NamedFile> {
-    let web_root_dir = &state.lock().expect("failed to lock").web_root_dir;
+async fn get_index(state: &rocket::State<StaticFileState>) -> Option<NamedFile> {
+    let web_root_dir = &state.web_root_dir;
     let root_dir_path = Path::new("/").join(web_root_dir);
-    NamedFile::open(root_dir_path.join("index.html")).ok()
+    NamedFile::open(root_dir_path.join("index.html")).await.ok()
 }
 
 /*
 Return a simple HTML version a gene page for search engines
 */
 #[get("/simple/gene/<id>", rank=1)]
-fn get_simple_gene(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
-                   config: rocket::State<Config>) -> Option<content::Html<String>> {
-    let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
+async fn get_simple_gene(id: String, query_exec: &rocket::State<QueryExec>,
+                   config: &rocket::State<Config>) -> Option<content::Html<String>> {
     if let Some(gene) = query_exec.get_api_data().get_full_gene_details(&id) {
         Some(content::Html(render_simple_gene_page(&config, &gene)))
     } else {
@@ -197,9 +187,8 @@ fn get_simple_gene(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>
 Return a simple HTML version a reference page for search engines
 */
 #[get("/simple/reference/<id>", rank=1)]
-fn get_simple_reference(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
-                        config: rocket::State<Config>) -> Option<content::Html<String>> {
-    let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
+async fn get_simple_reference(id: String, query_exec: &rocket::State<QueryExec>,
+                        config: &rocket::State<Config>) -> Option<content::Html<String>> {
     if let Some(reference) = query_exec.get_api_data().get_reference_details(&id) {
         Some(content::Html(render_simple_reference_page(&config, &reference)))
     } else {
@@ -210,9 +199,8 @@ fn get_simple_reference(id: String, query_exec_state: rocket::State<Mutex<QueryE
 Return a simple HTML version a term page for search engines
 */
 #[get("/simple/term/<id>", rank=1)]
-fn get_simple_term(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>,
-                   config: rocket::State<Config>) -> Option<content::Html<String>> {
-    let query_exec = query_exec_state.lock().expect("failed to lock QueryExec");
+async fn get_simple_term(id: String, query_exec: &rocket::State<QueryExec>,
+                   config: &rocket::State<Config>) -> Option<content::Html<String>> {
     if let Some(term) = query_exec.get_api_data().get_term_details(&id) {
         Some(content::Html(render_simple_term_page(&config, &term)))
     } else {
@@ -221,10 +209,9 @@ fn get_simple_term(id: String, query_exec_state: rocket::State<Mutex<QueryExec>>
 }
 
 #[post("/api/v1/dataset/latest/query", rank=1, data="<q>", format = "application/json")]
-fn query_post(q: Json<PomBaseQuery>, state: rocket::State<Mutex<QueryExec>>)
+async fn query_post(q: Json<PomBaseQuery>, query_exec: &rocket::State<QueryExec>)
               -> Option<Json<QueryAPIResult>>
 {
-    let query_exec = state.lock().expect("failed to lock");
     Some(Json(query_exec.exec(&q.into_inner())))
 }
 
@@ -249,10 +236,9 @@ struct SolrSearchResponse  {
 }
 
 #[get ("/api/v1/dataset/latest/complete/term/<cv_name>/<q>", rank=1)]
-fn term_complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>)
+async fn term_complete(cv_name: String, q: String, search: &rocket::State<Search>)
               -> Option<Json<TermCompletionResponse>>
 {
-    let search = state.lock().expect("failed to lock");
     let res = search.term_complete(&cv_name, &q);
 
     let completion_response =
@@ -276,10 +262,9 @@ fn term_complete(cv_name: String, q: String, state: rocket::State<Mutex<Search>>
 }
 
 #[get ("/api/v1/dataset/latest/complete/ref/<q>", rank=1)]
-fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
+async fn ref_complete(q: String, search: &rocket::State<Search>)
                 -> Option<Json<RefCompletionResponse>>
 {
-    let search = state.lock().expect("failed to lock");
     let res = search.ref_complete(&q);
 
     let completion_response =
@@ -304,11 +289,9 @@ fn ref_complete(q: String, state: rocket::State<Mutex<Search>>)
 
 // search for terms, refs or docs that match the query
 #[get ("/api/v1/dataset/latest/search/<scope>/<q>", rank=1)]
-fn solr_search(scope: String, q: String, state: rocket::State<Mutex<Search>>)
+async fn solr_search(scope: String, q: String, search: &rocket::State<Search>)
     -> Option<Json<SolrSearchResponse>>
 {
-    let search = state.lock().expect("failed to lock");
-
     if let Some(parsed_scope) = SolrSearchScope::new_from_str(&scope) {
         let search_result = search.solr_search(&parsed_scope, &q);
 
@@ -341,10 +324,9 @@ fn solr_search(scope: String, q: String, state: rocket::State<Mutex<Search>>)
 }
 
 #[get ("/api/v1/dataset/latest/motif_search/<scope>/<q>", rank=1)]
-fn motif_search(scope: String, q: String, state: rocket::State<Mutex<Search>>)
+async fn motif_search(scope: String, q: String, search: &rocket::State<Search>)
                 -> Option<String>
 {
-    let search = state.lock().expect("failed to lock");
     let res = search.motif_search(&scope, &q);
 
     match res {
@@ -360,11 +342,10 @@ fn motif_search(scope: String, q: String, state: rocket::State<Mutex<Search>>)
 
 
 #[get ("/api/v1/dataset/latest/gene_ex_violin_plot/<plot_size>/<genes>", rank=1)]
-fn gene_ex_violin_plot(plot_size: String, genes: String,
-                       state: rocket::State<Mutex<Search>>)
+async fn gene_ex_violin_plot(plot_size: String, genes: String,
+                       search: &rocket::State<Search>)
                        -> Option<PNGPlot>
 {
-    let search = state.lock().expect("failed to lock");
     let res = search.gene_ex_violin_plot(&plot_size, &genes);
 
     match res {
@@ -384,7 +365,7 @@ fn ping() -> Option<String> {
 }
 
 #[catch(404)]
-fn not_found() -> JsonValue {
+fn not_found() -> Value {
     json!({
         "status": "error",
         "reason": "Resource was not found."
@@ -396,7 +377,8 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn main() {
+#[launch]
+fn rocket() -> _ {
     print!("{} v{}\n", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
@@ -455,7 +437,7 @@ fn main() {
     };
 
     println!("Starting server ...");
-    rocket::ignite()
+    rocket::build()
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
@@ -465,13 +447,12 @@ fn main() {
                             solr_search, motif_search, gene_ex_violin_plot,
                             ping])
         .mount("/jbrowse",
-               StaticFiles::from(Path::new("/")
+               FileServer::from(Path::new("/")
                                  .join(&web_root_dir)
                                  .join("jbrowse")))
-        .register(catchers![not_found])
-        .manage(Mutex::new(query_exec))
-        .manage(Mutex::new(searcher))
-        .manage(Mutex::new(static_file_state))
+        .register("/", catchers![not_found])
+        .manage(query_exec)
+        .manage(searcher)
+        .manage(static_file_state)
         .manage(config)
-        .launch();
 }
