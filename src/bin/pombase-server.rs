@@ -1,6 +1,3 @@
-#![feature(nll)]
-#![feature(proc_macro_hygiene, decl_macro)]
-
 extern crate getopts;
 
 #[macro_use] extern crate rocket;

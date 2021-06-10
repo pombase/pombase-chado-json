@@ -1,5 +1,3 @@
-#![feature(nll)]
-
 extern crate postgres;
 extern crate getopts;
 

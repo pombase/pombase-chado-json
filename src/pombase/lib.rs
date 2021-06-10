@@ -1,5 +1,3 @@
-#![feature(nll)]
-
 extern crate regex;
 extern crate bit_set;
 extern crate chrono;
