@@ -1,4 +1,4 @@
-[development]
+[debug]
 address = "127.0.0.1"
 port = 8400
 workers = 1
@@ -10,7 +10,7 @@ port = 8500
 log = "normal"
 workers = 8
 
-[production]
+[release]
 address = "0.0.0.0"
 port = 8500
 log = "normal"
