@@ -2913,6 +2913,8 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn process_extension_cvterms(&mut self) {
+        let db_prefix = format!("{}:", self.config.database_name);
+
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
@@ -2921,12 +2923,12 @@ impl <'a> WebDataBuild<'a> {
                             &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
                         let ext_rel_name = RcString::from(ext_rel_name_str);
                         let ext_range = (*cvtermprop).value.clone();
-                        let range: ExtRange = if ext_range.starts_with("SP") {
+                        let range: ExtRange = if ext_range.starts_with(&db_prefix) {
                             if let Some(captures) = PROMOTER_RE.captures(&ext_range) {
                                 let gene_uniquename = RcString::from(&captures["gene"]);
                                 ExtRange::Promoter(gene_uniquename)
                             } else {
-                                ExtRange::Gene(ext_range.clone())
+                                ExtRange::Gene(RcString::from(&ext_range[db_prefix.len()..]))
                             }
                         } else {
                             ExtRange::Misc(ext_range)
