@@ -2924,11 +2924,12 @@ impl <'a> WebDataBuild<'a> {
                         let ext_rel_name = RcString::from(ext_rel_name_str);
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with(&db_prefix) {
-                            if let Some(captures) = PROMOTER_RE.captures(&ext_range) {
+                            let gene_uniquename = &ext_range[db_prefix.len()..];
+                            if let Some(captures) = PROMOTER_RE.captures(gene_uniquename) {
                                 let gene_uniquename = RcString::from(&captures["gene"]);
                                 ExtRange::Promoter(gene_uniquename)
                             } else {
-                                ExtRange::Gene(RcString::from(&ext_range[db_prefix.len()..]))
+                                ExtRange::Gene(RcString::from(gene_uniquename))
                             }
                         } else {
                             ExtRange::Misc(ext_range)
