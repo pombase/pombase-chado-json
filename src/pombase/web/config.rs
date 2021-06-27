@@ -76,7 +76,8 @@ pub struct CvSourceConfig {
     // a type name for the cvtermprop to display to the user
     pub display_name_prop: Option<RcString>,
     // the cvtermprop type name for the ID used for linking
-    pub id_prop: Option<RcString>,
+    // or "ACCESSION" if the accession ID of the term should be used
+    pub id_source: Option<RcString>,
 }
 
 pub type TargetRelationName = String;

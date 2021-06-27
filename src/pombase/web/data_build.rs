@@ -2825,10 +2825,19 @@ impl <'a> WebDataBuild<'a> {
 
                 for (source_name, source_config) in cv_config.source_config {
                     let mut maybe_xref_id = None;
-                    if let Some(ref term_xref_id_prop) = source_config.id_prop {
-                        for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                            if cvtermprop.prop_type.name == *term_xref_id_prop {
-                                maybe_xref_id = Some(cvtermprop.value.clone());
+                    if let Some(ref term_xref_id_prop) = source_config.id_source {
+                        if term_xref_id_prop.starts_with("prop_name:") {
+                            let term_xref_id_prop = &term_xref_id_prop[9..];
+                            for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                                if cvtermprop.prop_type.name == *term_xref_id_prop {
+                                    maybe_xref_id = Some(cvtermprop.value.clone());
+                                    break;
+                                }
+                            }
+                        } else {
+                            if term_xref_id_prop == "ACCESSION" {
+                                let dbxref: &Dbxref = cvterm.dbxref.borrow();
+                                maybe_xref_id = Some(dbxref.accession.clone());
                             }
                         }
                     }
