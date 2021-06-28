@@ -520,6 +520,8 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
 
 lazy_static! {
     static ref PROMOTER_RE: Regex = Regex::new(r"^(?P<gene>.*)-promoter$").unwrap();
+    static ref PREFIX_AND_ID_RE: Regex =
+        Regex::new(r"^(?P<prefix>\S+):(?P<id>\S+)$").unwrap();
 }
 
 pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
@@ -3168,20 +3170,35 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+
     fn make_with_or_from_value(&self, with_or_from_value: &RcString) -> WithFromValue {
-        let db_prefix_patt = format!("^{}:", self.config.database_name);
-        let re = Regex::new(&db_prefix_patt).unwrap();
-        let gene_uniquename = RcString::from(re.replace_all(&with_or_from_value, "").as_ref());
-        if self.genes.contains_key(&gene_uniquename) {
-            let gene_short = self.make_gene_short(&gene_uniquename);
-            WithFromValue::Gene(gene_short)
-        } else {
-            if self.terms.get(with_or_from_value).is_some() {
-                WithFromValue::Term(self.make_term_short(with_or_from_value))
-            } else {
-                WithFromValue::Identifier(with_or_from_value.clone())
+        if let Some(captures) = PREFIX_AND_ID_RE.captures(with_or_from_value) {
+            let prefix = &captures["prefix"];
+            let id = &captures["id"];
+
+            if self.genes.contains_key(id) {
+                let gene_short = self.make_gene_short(id);
+                if self.config.database_name == prefix {
+                    // a gene from the main organism
+                    return WithFromValue::Gene(gene_short);
+                } else {
+                    if let Some(name) = &gene_short.name {
+                        return WithFromValue::IdentifierAndName({
+                            IdentifierAndName {
+                                identifier: with_or_from_value.clone(),
+                                name: RcString::from(name),
+                            }
+                        });
+                    }
+                }
             }
         }
+
+        if self.terms.get(with_or_from_value).is_some() {
+            return WithFromValue::Term(self.make_term_short(with_or_from_value))
+        }
+
+        WithFromValue::Identifier(with_or_from_value.clone())
     }
 
     // process annotation

@@ -495,13 +495,20 @@ impl OrthologAnnotationContainer for ReferenceDetails {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct IdentifierAndName {
+    pub identifier: RcString,
+    pub name: RcString,
+}
+
 // the GO with/from
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum WithFromValue {
     Gene(GeneShort),
     Term(TermShort),
-    Identifier(RcString)
+    Identifier(RcString),
+    IdentifierAndName(IdentifierAndName),
 }
 
 impl From<WithFromValue> for RcString {
@@ -510,6 +517,9 @@ impl From<WithFromValue> for RcString {
             WithFromValue::Gene(gene) => gene.uniquename,
             WithFromValue::Term(term) => term.termid,
             WithFromValue::Identifier(id) => id,
+            WithFromValue::IdentifierAndName(id_and_name) =>
+                RcString::from(&format!("{} ({})", id_and_name.name,
+                                        id_and_name.identifier)),
         }
     }
 }
@@ -521,12 +531,14 @@ impl Ord for WithFromValue {
                 WithFromValue::Gene(ref gene) => &gene.uniquename,
                 WithFromValue::Term(ref term) => &term.name,
                 WithFromValue::Identifier(ref id) => id,
+                WithFromValue::IdentifierAndName(ref id_and_name) => &id_and_name.identifier,
             };
         let other_string =
             match other {
                 WithFromValue::Gene(ref gene) => &gene.uniquename,
                 WithFromValue::Term(ref term) => &term.name,
                 WithFromValue::Identifier(ref id) => id,
+                WithFromValue::IdentifierAndName(ref id_and_name) => &id_and_name.identifier,
             };
 
         self_string.cmp(other_string)
