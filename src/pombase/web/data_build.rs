@@ -3192,6 +3192,12 @@ impl <'a> WebDataBuild<'a> {
                     }
                 }
             }
+        } else {
+            if self.genes.contains_key(with_or_from_value) {
+                let gene_short = self.make_gene_short(with_or_from_value);
+                // a gene from the main organism
+                return WithFromValue::Gene(gene_short);
+            }
         }
 
         if self.terms.get(with_or_from_value).is_some() {
