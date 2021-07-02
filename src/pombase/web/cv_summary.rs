@@ -31,7 +31,7 @@ pub fn make_cv_summaries<T: AnnotationContainer>
 // merge two ExtPart objects into one by merging ranges
 pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                          genes: &UniquenameGeneMap) -> ExtPart {
-    if ext_part1.rel_type_name == ext_part2.rel_type_name {
+    if ext_part1.rel_type_display_name == ext_part2.rel_type_display_name {
         match ext_part1.ext_range {
             ExtRange::SummaryGenes(ref part1_summ_genes) => {
                 if let ExtRange::SummaryGenes(ref part2_summ_genes) = ext_part2.ext_range {
@@ -123,7 +123,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                         if mem::discriminant(&prev_ext_part.ext_range) ==
                             mem::discriminant(&current_ext_part.ext_range) &&
                             current_row_extension == prev_row_extension &&
-                            prev_ext_part.rel_type_name == current_ext_part.rel_type_name {
+                            prev_ext_part.rel_type_display_name == current_ext_part.rel_type_display_name {
                                 let merged_ext_parts =
                                     merge_ext_part_ranges(&prev_ext_part,
                                                           &current_ext_part,
