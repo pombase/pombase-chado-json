@@ -573,6 +573,10 @@ impl WebData {
         let protein_features_file = File::create(protein_features_name).expect("Unable to open file");
         let mut protein_features_writer = BufWriter::new(&protein_features_file);
 
+        let disordered_regions_name = format!("{}/disordered_regions.tsv", output_dir);
+        let disordered_regions_file = File::create(disordered_regions_name).expect("Unable to open file");
+        let mut disordered_regions_writer = BufWriter::new(&disordered_regions_file);
+
         let aa_composition_name = format!("{}/aa_composition.tsv", output_dir);
         let aa_composition_file = File::create(aa_composition_name).expect("Unable to open file");
         let mut aa_composition_writer = BufWriter::new(&aa_composition_file);
@@ -580,6 +584,10 @@ impl WebData {
         let protein_features_header =
             "systematic_id\tgene_name\tpeptide_id\tdomain_id\tdatabase\tseq_start\tseq_end\n";
         protein_features_writer.write_all(protein_features_header.as_bytes())?;
+
+        let disordered_regions_header =
+            "systematic_id\tgene_name\tpeptide_id\tseq_start\tseq_end\n";
+        disordered_regions_writer.write_all(disordered_regions_header.as_bytes())?;
 
         let db_display_name = |db_alias: &str| {
             if let Some(name) = config.extra_database_aliases.get(&db_alias.to_lowercase()) {
@@ -630,6 +638,15 @@ impl WebData {
                                                location.start, location.end);
                             protein_features_writer.write_all(line.as_bytes())?;
                         }
+                    }
+
+                    for disordered_region in &gene_details.disordered_region_coords {
+                        let (start_pos, end_pos) = disordered_region;
+                        let line = format!("{}\t{}\t{}\t{}\t{}\n",
+                                           gene_uniquename, gene_name,
+                                           protein.uniquename,
+                                           start_pos, end_pos);
+                        disordered_regions_writer.write_all(line.as_bytes())?;
                     }
 
                     let composition = prot_composition(&mut total_composition, &protein);
