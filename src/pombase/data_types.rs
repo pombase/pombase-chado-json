@@ -1141,12 +1141,61 @@ pub struct ExpressedAllele {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AlleleShort {
     pub uniquename: RcString,
+    // don't serialise since the web code doesn't use this field:
+    #[serde(skip, default="RcString::new")]
+    pub encoded_name_and_type: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<RcString>,
     pub allele_type: RcString,
     #[serde(skip_serializing_if="Option::is_none")]
     pub description: Option<RcString>,
     pub gene_uniquename: GeneUniquename,
+}
+
+fn allele_encoded_name_and_type(allele_name: &Option<RcString>, allele_type: &str,
+                                allele_description: &Option<RcString>) -> RcString {
+    let name = allele_name.clone().unwrap_or_else(|| RcString::from("unnamed"));
+    let allele_type = allele_type.clone();
+    let description =
+        allele_description.clone().unwrap_or_else(|| RcString::from(allele_type));
+
+    if allele_type == "deletion" && name.ends_with("delta") ||
+        allele_type.starts_with("wild_type") && name.ends_with('+') {
+            let normalised_description = description.replace("[\\s_]+", "");
+            let normalised_allele_type = allele_type.replace("[\\s_]+", "");
+            if normalised_description != normalised_allele_type {
+                return RcString::from(&(name + "(" + description.as_str() + ")"));
+            } else {
+                return name;
+            }
+        }
+
+    let display_name =
+        if allele_type == "deletion" {
+            name + "-" + description.as_str()
+        } else {
+            name + "-" + description.as_str() + "-" + allele_type
+        };
+    RcString::from(&display_name)
+}
+
+impl AlleleShort {
+    pub fn new(uniquename: &str,
+               name: &Option<RcString>,
+               allele_type: &str,
+               description: &Option<RcString>,
+               gene_uniquename: &str) -> AlleleShort {
+        let encoded_name_and_type =
+            allele_encoded_name_and_type(&name, &allele_type, &description);
+        AlleleShort {
+            uniquename: RcString::from(uniquename),
+            encoded_name_and_type,
+            name: name.clone(),
+            allele_type: RcString::from(allele_type),
+            description: description.clone(),
+            gene_uniquename: RcString::from(gene_uniquename),
+        }
+    }
 }
 
 pub type RelName = RcString;

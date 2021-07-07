@@ -616,13 +616,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 #[allow(dead_code)]
 fn make_one_allele_short(uniquename: &str, name: &str, allele_type: &str,
                          description: Option<&str>, gene_uniquename: &str) -> AlleleShort {
-    AlleleShort {
-        uniquename: uniquename.into(),
-        description: description.map(RcString::from),
-        name: Some(name.into()),
-        allele_type: allele_type.into(),
-        gene_uniquename: gene_uniquename.into(),
-    }
+    AlleleShort::new(
+        uniquename.into(),
+        &Some(name.into()),
+        allele_type,
+        &description.map(RcString::from),
+        gene_uniquename,
+    )
 }
 
 #[allow(dead_code)]

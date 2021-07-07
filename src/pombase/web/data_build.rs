@@ -287,31 +287,6 @@ fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails) -> Or
 }
 
 
-fn allele_display_name(allele: &AlleleShort) -> RcString {
-    let name = allele.name.clone().unwrap_or_else(|| RcString::from("unnamed"));
-    let allele_type = allele.allele_type.clone();
-    let description = allele.description.clone().unwrap_or_else(|| allele_type.clone());
-
-    if allele_type == "deletion" && name.ends_with("delta") ||
-        allele_type.starts_with("wild_type") && name.ends_with('+') {
-            let normalised_description = description.replace("[\\s_]+", "");
-            let normalised_allele_type = allele_type.replace("[\\s_]+", "");
-            if normalised_description != normalised_allele_type {
-                return RcString::from(&(name + "(" + description.as_str() + ")"));
-            } else {
-                return name;
-            }
-        }
-
-    let display_name =
-        if allele_type == "deletion" {
-            name + "-" + description.as_str()
-        } else {
-            name + "-" + description.as_str() + "-" + &allele.allele_type
-        };
-    RcString::from(&display_name)
-}
-
 
 fn gene_display_name(gene: &GeneDetails) -> RcString {
     if let Some(ref name) = gene.name {
@@ -333,17 +308,19 @@ pub fn make_genotype_display_name(loci: &[GenotypeLocus],
             let mut allele_display_names: Vec<String> =
                 locus.expressed_alleles.iter().map(|expressed_allele| {
                     let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
-                    let mut display_name = allele_display_name(allele_short).to_string();
+                    let mut encoded_name_and_type =
+                        String::from(&allele_short.encoded_name_and_type);
                     if allele_short.allele_type != "deletion" {
-                        if display_name == "unnamed-unrecorded-unrecorded" {
-                            display_name = format!("{}-{}", allele_short.gene_uniquename,
-                                                   display_name);
+                        if encoded_name_and_type == "unnamed-unrecorded-unrecorded" {
+                            encoded_name_and_type =
+                                format!("{}-{}", allele_short.gene_uniquename,
+                                        encoded_name_and_type);
                         }
                         if let Some(ref expression) = expressed_allele.expression {
-                            display_name += &format!("-expression-{}", expression.to_lowercase());
+                            encoded_name_and_type += &format!("-expression-{}", expression.to_lowercase());
                         }
                     }
-                    display_name
+                    encoded_name_and_type
                 }).collect();
             allele_display_names.sort();
             allele_display_names.join("/")
@@ -1870,9 +1847,11 @@ impl <'a> WebDataBuild<'a> {
         {
             let loci_cmp = |locus1: &GenotypeLocus, locus2: &GenotypeLocus| {
                 let locus1_display_name =
-                    allele_display_name(&self.alleles[&locus1.expressed_alleles[0].allele_uniquename]);
+                    &self.alleles[&locus1.expressed_alleles[0].allele_uniquename]
+                    .encoded_name_and_type;
                 let locus2_display_name =
-                    allele_display_name(&self.alleles[&locus2.expressed_alleles[0].allele_uniquename]);
+                    &self.alleles[&locus2.expressed_alleles[0].allele_uniquename]
+                    .encoded_name_and_type;
                 locus1_display_name.cmp(&locus2_display_name)
             };
 
@@ -1919,20 +1898,17 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        if allele_type.is_none() {
+        if let Some(allele_type) = allele_type {
+            let gene_uniquename = &self.genes_of_alleles[&feat.uniquename];
+            let allele_details = AlleleShort::new(&feat.uniquename,
+                                                  &feat.name,
+                                                  &allele_type,
+                                                  &description,
+                                                  gene_uniquename);
+            self.alleles.insert(feat.uniquename.clone(), allele_details);
+        } else {
             panic!("no allele_type cvtermprop for {}", &feat.uniquename);
         }
-
-        let gene_uniquename =
-            self.genes_of_alleles[&feat.uniquename].clone();
-        let allele_details = AlleleShort {
-            uniquename: feat.uniquename.clone(),
-            name: feat.name.clone(),
-            gene_uniquename,
-            allele_type: allele_type.unwrap(),
-            description,
-        };
-        self.alleles.insert(feat.uniquename.clone(), allele_details);
     }
 
     fn process_chromosome_features(&mut self) {
