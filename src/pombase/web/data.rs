@@ -180,6 +180,35 @@ impl WebData {
         references_compressor.finish().expect("Unable to write references as JSON");
     }
 
+
+    fn write_intermine_data(&self, config: &Config, output_dir: &str)
+                            -> Result<(), io::Error>
+    {
+        let load_org_taxonid =
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                load_org_taxonid
+            } else {
+                return Ok(())
+            };
+
+        let intermine_genes: Vec<_> =
+            self.api_maps.genes.values()
+            .filter(|gene_details| gene_details.taxonid == load_org_taxonid)
+            .map(|gene_details| {
+                InterMineGeneDetails::from_gene_details(gene_details)
+            }).collect();
+
+        let genes_json_text = serde_json::to_string(&intermine_genes)?;
+        let genes_file_name = format!("{}/pombemine_gene_details.gz", output_dir);
+        let genes_file = File::create(genes_file_name)?;
+
+        let mut genes_compressor = GzEncoder::new(genes_file, Compression::default());
+        genes_compressor.write_all(genes_json_text.as_bytes())?;
+        genes_compressor.finish()?;
+
+        Ok(())
+    }
+
     fn write_subsets(&self, output_dir: &str) {
         let s = serde_json::to_string(&self.api_maps.term_subsets).unwrap();
         let file_name = String::new() + output_dir + "/term_subsets.json";
@@ -1359,6 +1388,11 @@ impl WebData {
         self.write_api_maps(&web_json_path);
         self.write_solr_data(&web_json_path);
         println!("wrote search data");
+
+        let intermine_data_path = self.create_dir(output_dir, "intermine_data");
+        self.write_intermine_data(config, &intermine_data_path)?;
+        println!("wrote intermine data");
+
         self.write_subsets(&web_json_path);
         println!("wrote subsets");
 

@@ -1648,6 +1648,50 @@ pub struct SolrData {
     pub reference_summaries: Vec<SolrReferenceSummary>,
 }
 
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct InterMineGeneDetails {
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<GeneName>,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<SynonymDetails>,
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub product: Option<GeneProduct>,
+
+    pub systematic_id: GeneUniquename,
+
+    pub feature_type: RcString,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub location: Option<ChromosomeLocation>,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub transcripts: Vec<TranscriptDetails>,
+
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub uniprot_identifier: Option<RcString>,
+    pub taxonid: OrganismTaxonId,
+}
+
+impl InterMineGeneDetails {
+    pub fn from_gene_details(gene_details: &GeneDetails) -> InterMineGeneDetails {
+        InterMineGeneDetails {
+            name: gene_details.name.clone(),
+            synonyms: gene_details.synonyms.clone(),
+            product: gene_details.product.clone(),
+            systematic_id: gene_details.uniquename.clone(),
+            feature_type: gene_details.feature_type.clone(),
+            location: gene_details.location.clone(),
+            transcripts: gene_details.transcripts.clone(),
+            uniprot_identifier: gene_details.uniprot_identifier.clone(),
+            taxonid: gene_details.taxonid.clone(),
+        }
+    }
+}
+
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct RecentReferences {
     // most recent papers from PubMed
