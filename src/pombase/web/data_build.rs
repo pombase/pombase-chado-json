@@ -5357,9 +5357,7 @@ impl <'a> WebDataBuild<'a> {
         let term_name_split_re = Regex::new(r"\W+").unwrap();
 
         for (termid, term_details) in &self.terms {
-            if term_details.cv_annotations.keys()
-                .filter(|cv_name| !cv_name.starts_with("extension:"))
-                .next().is_none() {
+            if term_details.is_obsolete {
                 continue;
             }
 
