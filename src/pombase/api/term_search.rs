@@ -112,7 +112,7 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
             return None;
         }
 
-        terms_url += " AND (name:(";
+        terms_url += "annotation_count:[1 TO *] AND (name:(";
 
         let query_part = get_query_part(&clean_words);
 

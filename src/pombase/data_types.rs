@@ -400,6 +400,20 @@ pub trait AnnotationContainer: Container {
     fn terms_by_termid(&self) -> &TermShortOptionMap;
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap;
     fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>>;
+
+    fn annotation_count(&self) -> usize {
+        let mut annotation_ids = HashSet::new();
+
+        for term_annotations in self.cv_annotations().values() {
+            for term_annotation in term_annotations {
+                for annotation_detail_id in &term_annotation.annotations {
+                    annotation_ids.insert(annotation_detail_id);
+                }
+            }
+        }
+
+        annotation_ids.len()
+    }
 }
 
 pub trait OrthologAnnotationContainer: AnnotationContainer {
@@ -1572,6 +1586,10 @@ pub struct SolrTermSummary {
     pub interesting_parent_ids: HashSet<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
+
+    pub annotation_count: usize,
+    pub gene_count: usize,
+    pub genotype_count: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

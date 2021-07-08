@@ -5406,6 +5406,7 @@ impl <'a> WebDataBuild<'a> {
                 })
                 .collect::<Vec<_>>();
 
+            let annotation_count = term_details.annotation_count();
             let interesting_parent_ids_for_solr =
                 term_details.interesting_parent_ids.clone();
             let term_summ = SolrTermSummary {
@@ -5419,6 +5420,10 @@ impl <'a> WebDataBuild<'a> {
                 distant_synonym_words: RcString::from(&distant_synonym_words_vec.join(" ")),
                 interesting_parent_ids: interesting_parent_ids_for_solr,
                 secondary_identifiers: term_details.secondary_identifiers.clone(),
+                annotation_count,
+                gene_count: term_details.gene_count,
+                genotype_count: term_details.genotype_count,
+
             };
             return_summaries.push(term_summ);
         }
