@@ -67,7 +67,6 @@ impl SiteDB {
             let id: Uuid = rs.get(0).get("id");
             Some(id)
         } else {
-            eprint!("query not in DB: {}\n", query_value);
             None
         }
     }
