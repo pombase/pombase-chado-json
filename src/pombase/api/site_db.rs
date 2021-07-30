@@ -1,37 +1,49 @@
-use std::sync::{Arc, Mutex};
-
 use uuid::Uuid;
-use postgres::{Connection, TlsMode};
+
+use deadpool_postgres::{Pool, Manager};
 
 use crate::api::query::Query;
 
+use std::str::FromStr;
+
 pub struct SiteDB {
-    conn: Arc<Mutex<Connection>>,
+    pool: Pool,
 }
 
 impl SiteDB {
-    pub fn new(connection_string: &str) -> SiteDB {
-        let conn = match Connection::connect(connection_string, TlsMode::None) {
-            Ok(conn) => conn,
-            Err(err) => panic!("failed to connect using: {}, err: {}",
-                               connection_string, err)
-        };
+    pub async fn new(connection_string: &str) -> Result<SiteDB, anyhow::Error> {
+        let config = tokio_postgres::Config::from_str(connection_string)?;
 
-        SiteDB {
-            conn: Arc::new(Mutex::new(conn)),
-        }
+        let manager = Manager::new(config, tokio_postgres::NoTls);
+        let pool = Pool::new(manager, 16);
+
+        Ok(SiteDB {
+            pool,
+        })
     }
 
-    pub fn query_by_id(&self, uuid: &Uuid) -> Option<Query> {
-        let rs = match self.conn.lock().as_mut().unwrap().query("SELECT query_json FROM query WHERE id = $1",
-                                       &[uuid])
-        {
-            Ok(rs) => rs,
-            Err(_) => return None,
-        };
+    pub async fn query_by_id(&self, uuid: &Uuid) -> Option<Query> {
+        let client =
+            match self.pool.get().await {
+                Ok(client) => client,
+                Err(err) => {
+                    eprintln!("error querying by ID: {}", err);
+                    return None;
+                },
+            };
+
+        let rs =
+            match client.query("SELECT query_json FROM query WHERE id = $1",
+                               &[uuid]).await {
+                Ok(rs) => rs,
+                Err(err) => {
+                    eprintln!("error querying by ID: {}", err);
+                    return None;
+                },
+            };
 
         if rs.len() > 0 {
-            let query_value: Option<String> = rs.get(0).get(0);
+            let query_value: Option<String> = rs[0].get(0);
 
             let query: Query = match serde_json::from_str(&query_value.unwrap()) {
                 Ok(v) => v,
@@ -44,7 +56,7 @@ impl SiteDB {
         None
     }
 
-    pub fn id_from_query(&self, query: &Query) -> Option<Uuid> {
+    pub async fn id_from_query(&self, query: &Query) -> Option<Uuid> {
         let query_value: String = match serde_json::value::to_value(query) {
             Ok(v) => v.to_string(),
             Err(err) => {
@@ -53,8 +65,18 @@ impl SiteDB {
             }
         };
 
-        let rs = match self.conn.lock().as_mut().unwrap().query("SELECT id::uuid FROM query WHERE digest(query_json, 'sha256') = digest($1, 'sha256');",
-                                       &[&query_value])
+        let client =
+            match self.pool.get().await {
+                Ok(client) => client,
+                Err(err) => {
+                    eprint!("can't get client: {:?}\n", err);
+                    return None;
+                }
+            };
+
+        let rs =
+            match client.query("SELECT id::uuid FROM query WHERE digest(query_json, 'sha256') = digest($1, 'sha256');",
+                               &[&query_value]).await
         {
             Ok(rs) => rs,
             Err(err) => {
@@ -64,16 +86,23 @@ impl SiteDB {
         };
 
         if rs.len() > 0 {
-            let id: Uuid = rs.get(0).get("id");
+            let id: Uuid = rs[0].get("id");
             Some(id)
         } else {
             None
         }
     }
 
-    pub fn save_query(&self, uuid: &Uuid, query: &Query) -> Result<(), String> {
-        let mut locked_conn = self.conn.lock();
-        let trans = match locked_conn.as_mut().unwrap().transaction() {
+    pub async fn save_query(&self, uuid: &Uuid, query: &Query) -> Result<(), String> {
+        let mut client =
+            match self.pool.get().await {
+                Ok(client) => client,
+                Err(err) => {
+                    return Err(format!("error saving query: {}", err));
+                },
+            };
+
+        let trans = match client.transaction().await {
             Ok(t) => t,
             Err(e) => return Err(format!("couldn't begin transaction: {}", e)),
         };
@@ -84,14 +113,14 @@ impl SiteDB {
         };
 
         match trans.execute("INSERT INTO query(id, query_json) values ($1, $2)",
-                            &[uuid, &serde_value]) {
+                            &[uuid, &serde_value]).await {
             Ok(_) => (),
-            Err(e) => return Err(format!("Error executing query: {}", e)),
+            Err(e) => return Err(format!("error executing query: {}", e)),
         };
 
-        match trans.commit() {
+        match trans.commit().await {
             Ok(_) => Ok(()),
-            Err(e) => Err(format!("{}", e)),
+            Err(e) => Err(format!("error saving query: {}", e)),
         }
     }
 }

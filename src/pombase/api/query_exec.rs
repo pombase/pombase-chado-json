@@ -21,11 +21,11 @@ impl QueryExec {
     }
 
     // execute a Query
-    pub fn exec(&self, query: &Query) -> QueryAPIResult {
+    pub async fn exec(&self, query: &Query) -> QueryAPIResult {
         let query =
             if let Some(ref site_db) = self.site_db {
                 if let Some(ref query_id) = query.get_constraints().get_query_id() {
-                    if let Some(existing_query) = site_db.query_by_id(query_id) {
+                    if let Some(existing_query) = site_db.query_by_id(query_id).await {
                         existing_query
                     } else {
                         let message = RcString::from(&format!("can't find query for ID {}",
@@ -42,11 +42,11 @@ impl QueryExec {
 
         let uuid =
             if let Some(ref site_db) = self.site_db {
-                if let Some(existing_uuid) = site_db.id_from_query(&query) {
+                if let Some(existing_uuid) = site_db.id_from_query(&query).await {
                     existing_uuid
                 } else {
                     let new_uuid = Uuid::new_v4();
-                    match site_db.save_query(&new_uuid, &query) {
+                    match site_db.save_query(&new_uuid, &query).await {
                         Ok(_) => (),
                         Err(mess) =>
                             return QueryAPIResult::new_error(&query, &mess),
@@ -57,9 +57,9 @@ impl QueryExec {
                 Uuid::new_v4()
             };
 
-        let id = RcString::from(&uuid.hyphenated().to_string());
+        let id = RcString::from(&uuid.to_hyphenated().to_string());
 
-        let rows_result = query.exec(&self.api_data, &self.site_db);
+        let rows_result = query.exec(&self.api_data, &self.site_db).await;
 
         match rows_result {
             Ok(rows) => {

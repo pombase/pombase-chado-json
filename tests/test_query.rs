@@ -26,10 +26,10 @@ fn get_api_data() -> APIData {
     APIData::new(&config, &api_maps)
 }
 
-fn check_gene_result(query: &Query, genes: Vec<&str>) {
+async fn check_gene_result(query: &Query, genes: Vec<&str>) {
     let api_data = get_api_data();
     let query_exec = QueryExec::new(api_data, None);
-    let result = query_exec.exec(&query);
+    let result = query_exec.exec(&query).await;
 
     let result_genes_iter =
         result.rows.into_iter()
@@ -43,11 +43,11 @@ fn check_gene_result(query: &Query, genes: Vec<&str>) {
                expect_genes_iter);
 }
 
-fn check_gene_result_with_viability(query: &Query,
+async fn check_gene_result_with_viability(query: &Query,
                                     expected_results: &Vec<ResultRow>) {
     let api_data = get_api_data();
     let query_exec = QueryExec::new(api_data, None);
-    let results = query_exec.exec(&query);
+    let results = query_exec.exec(&query).await;
 
     assert_eq!(expected_results, &results.rows);
 }
@@ -60,8 +60,8 @@ fn make_genes(ids: Vec<&str>) -> Vec<GeneShort> {
     ret
 }
 
-#[test]
-fn test_and_or_not() {
+#[tokio::test]
+async fn test_and_or_not() {
     let qp1 = QueryNode {
         gene_list: Some(GeneListNode {
             genes: make_genes(vec!["SPAC19G12.04", "SPAC1805.15c", "SPAC27E2.05"])
@@ -115,7 +115,7 @@ fn test_and_or_not() {
         };
     let and_query = Query::new(and_query_node, opts.clone());
 
-    check_gene_result(&and_query, vec!["SPAC1805.15c", "SPAC27E2.05"]);
+    check_gene_result(&and_query, vec!["SPAC1805.15c", "SPAC27E2.05"]).await;
 
     let or_query_node = QueryNode {
         or: Some(vec![and_query_node_1, and_query_node_2]),
@@ -123,7 +123,7 @@ fn test_and_or_not() {
     };
     let or_query = Query::new(or_query_node, opts.clone());
 
-    check_gene_result(&or_query, vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"]);
+    check_gene_result(&or_query, vec!["SPAC1805.15c", "SPAC27E2.05", "SPAC2F3.09"]).await;
 
     let not_query_node =
         QueryNode {
@@ -134,7 +134,7 @@ fn test_and_or_not() {
             .. QueryNode::template_node()
         };
     let not_query = Query::new(not_query_node, opts.clone());
-    check_gene_result(&not_query, vec!["SPAC19G12.04"]);
+    check_gene_result(&not_query, vec!["SPAC19G12.04"]).await;
 
     let not_query_2_node = QueryNode {
         not: Some(NotNode {
@@ -144,11 +144,11 @@ fn test_and_or_not() {
         .. QueryNode::template_node()
     };
     let not_query_2 = Query::new(not_query_2_node, opts.clone());
-    check_gene_result(&not_query_2, vec!["SPAC19G12.04", "SPAC1805.15c"]);
+    check_gene_result(&not_query_2, vec!["SPAC19G12.04", "SPAC1805.15c"]).await;
 }
 
-#[test]
-fn test_output_options() {
+#[tokio::test]
+async fn test_output_options() {
 
     // try extra output options
     let opts = QueryOutputOptions {
@@ -232,11 +232,11 @@ fn test_output_options() {
 
     let query = Query::new(qp1, opts);
 
-    check_gene_result_with_viability(&query, &expected_results);
+    check_gene_result_with_viability(&query, &expected_results).await;
 }
 
-#[test]
-fn test_termid() {
+#[tokio::test]
+async fn test_termid() {
     let qp1 = QueryNode {
         term: Some(TermNode {
             termid: "GO:0044237".into(),
@@ -257,11 +257,11 @@ fn test_termid() {
     };
     let q1 = Query::new(qp1, opts);
 
-    check_gene_result(&q1, vec!["SPAC24B11.06c", "SPAC19G12.03", "SPAC2F3.09", "SPAC27E2.05"]);
+    check_gene_result(&q1, vec!["SPAC24B11.06c", "SPAC19G12.03", "SPAC2F3.09", "SPAC27E2.05"]).await;
 }
 
-#[test]
-fn test_gene_subset() {
+#[tokio::test]
+async fn test_gene_subset() {
     let qp1 = QueryNode {
         subset: Some(SubsetNode {
             subset_name: "PTHR17490:SF9".into(),
@@ -276,11 +276,11 @@ fn test_gene_subset() {
     };
     let q1 = Query::new(qp1, opts);
 
-    check_gene_result(&q1, vec!["SPCC895.03c"]);
+    check_gene_result(&q1, vec!["SPCC895.03c"]).await;
 }
 
-#[test]
-fn test_gene_subset_invert() {
+#[tokio::test]
+async fn test_gene_subset_invert() {
     let qp1 = QueryNode {
         subset: Some(SubsetNode {
             subset_name: "!interpro:IPR002906".into(),
@@ -300,11 +300,11 @@ fn test_gene_subset_invert() {
                            "SPBC460.01c", "SPBC1652.02", "SPCC736.11",
                            "SPBC19F8.06c", "SPAC6G10.11c",
                            "SPBC359.01", "SPAC1039.09", "SPBC359.03c",
-                           "SPAC7D4.10", "SPCC895.03c"]);
+                           "SPAC7D4.10", "SPCC895.03c"]).await;
 }
 
-#[test]
-fn test_gene_subset_wildcard() {
+#[tokio::test]
+async fn test_gene_subset_wildcard() {
     let qp1 = QueryNode {
         subset: Some(SubsetNode {
             subset_name: "interpro:IPR*".into(),
@@ -320,11 +320,11 @@ fn test_gene_subset_wildcard() {
     let q1 = Query::new(qp1, opts);
 
     check_gene_result(&q1,
-                      vec!["SPAC589.10c", "SPCC736.11", "SPAC6G10.11c"]);
+                      vec!["SPAC589.10c", "SPCC736.11", "SPAC6G10.11c"]).await;
 }
 
-#[test]
-fn test_gene_subset_not_wildcard() {
+#[tokio::test]
+async fn test_gene_subset_not_wildcard() {
     let qp1 = QueryNode {
         subset: Some(SubsetNode {
             subset_name: "!interpro:IPR*".into(),
@@ -344,11 +344,11 @@ fn test_gene_subset_not_wildcard() {
                            "SPBC359.01", "SPAC17H9.16", "SPAC1039.09",
                            "SPBC359.03c", "SPCC736.11", "SPBC1652.02",
                            "SPBC460.01c", "SPAC6G10.11c", "SPCC895.03c",
-                           "SPBC19F8.06c"]);
+                           "SPBC19F8.06c"]).await;
 }
 
-#[test]
-fn test_gene_gaf() {
+#[tokio::test]
+async fn test_gene_gaf() {
     let qp1 = QueryNode {
         term: Some(TermNode {
             termid: "GO:0044237".into(),
@@ -378,7 +378,7 @@ fn test_gene_gaf() {
 
     let api_data = get_api_data();
     let query_exec = QueryExec::new(api_data, None);
-    let result = query_exec.exec(&query);
+    let result = query_exec.exec(&query).await;
 
     let mut gaf_lines = String::new();
 

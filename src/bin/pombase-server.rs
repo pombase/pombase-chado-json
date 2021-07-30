@@ -172,9 +172,9 @@ Return a simple HTML version a gene page for search engines
 */
 #[get("/simple/gene/<id>", rank=1)]
 async fn get_simple_gene(id: String, query_exec: &rocket::State<QueryExec>,
-                   config: &rocket::State<Config>) -> Option<content::Html<String>> {
+                   config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
     if let Some(gene) = query_exec.get_api_data().get_full_gene_details(&id) {
-        Some(content::Html(render_simple_gene_page(&config, &gene)))
+        Some(content::RawHtml(render_simple_gene_page(&config, &gene)))
     } else {
         None
     }
@@ -185,9 +185,9 @@ Return a simple HTML version a reference page for search engines
 */
 #[get("/simple/reference/<id>", rank=1)]
 async fn get_simple_reference(id: String, query_exec: &rocket::State<QueryExec>,
-                        config: &rocket::State<Config>) -> Option<content::Html<String>> {
+                        config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
     if let Some(reference) = query_exec.get_api_data().get_reference_details(&id) {
-        Some(content::Html(render_simple_reference_page(&config, &reference)))
+        Some(content::RawHtml(render_simple_reference_page(&config, &reference)))
     } else {
         None
     }
@@ -197,9 +197,9 @@ Return a simple HTML version a term page for search engines
 */
 #[get("/simple/term/<id>", rank=1)]
 async fn get_simple_term(id: String, query_exec: &rocket::State<QueryExec>,
-                   config: &rocket::State<Config>) -> Option<content::Html<String>> {
+                   config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
     if let Some(term) = query_exec.get_api_data().get_term_details(&id) {
-        Some(content::Html(render_simple_term_page(&config, &term)))
+        Some(content::RawHtml(render_simple_term_page(&config, &term)))
     } else {
         None
     }
@@ -209,7 +209,7 @@ async fn get_simple_term(id: String, query_exec: &rocket::State<QueryExec>,
 async fn query_post(q: Json<PomBaseQuery>, query_exec: &rocket::State<QueryExec>)
               -> Option<Json<QueryAPIResult>>
 {
-    Some(Json(query_exec.exec(&q.into_inner())))
+    Some(Json(query_exec.exec(&q.into_inner()).await))
 }
 
 #[derive(Serialize, Debug)]
@@ -375,7 +375,7 @@ fn print_usage(program: &str, opts: Options) {
 }
 
 #[launch]
-fn rocket() -> _ {
+async fn rocket() -> _ {
     print!("{} v{}\n", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
@@ -424,7 +424,17 @@ fn rocket() -> _ {
     let config = Config::read(&config_file_name);
     let api_maps = api_maps_from_file(&search_maps_filename);
     let api_data = APIData::new(&config, &api_maps);
-    let site_db = site_db_conn_string.map(|conn_str| SiteDB::new(&conn_str));
+    let site_db =
+        if let Some(conn_str) = site_db_conn_string {
+            match SiteDB::new(&conn_str).await {
+                Ok(site_db) => Some(site_db),
+                Err(err) => panic!("failed to connect to site db: {}", err),
+            }
+        } else {
+            None
+        };
+
+
     let query_exec = QueryExec::new(api_data, site_db);
     let searcher = Search::new(&config);
 

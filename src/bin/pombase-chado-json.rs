@@ -1,7 +1,8 @@
-extern crate postgres;
 extern crate getopts;
 
-use postgres::{Connection, TlsMode};
+use deadpool_postgres::{Pool, Manager};
+
+use std::str::FromStr;
 
 use std::error::Error;
 use std::env;
@@ -25,7 +26,8 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-fn main() -> Result<(), Box<dyn Error>> {
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn Error>> {
     print!("{} v{}\n", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
@@ -51,8 +53,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 "GO evidence code to ECO ID mapping from http://purl.obolibrary.org/obo/eco/gaf-eco-mapping.txt", "FILE");
     opts.optopt("d", "output-directory",
                 "Destination directory for the output", "DIR");
-    opts.optflag("j", "store-json",
-                 "optionally create a 'web_json' schema to store the generated JSON in the database");
 
     let matches = match opts.parse(&args[1..]) {
         Ok(m) => m,
@@ -106,12 +106,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let go_eco_mapping = GoEcoMapping::read(&matches.opt_str("go-eco-mapping").unwrap())?;
     let output_dir = matches.opt_str("d").unwrap();
 
-    let conn = match Connection::connect(connection_string.as_str(), TlsMode::None) {
-        Ok(conn) => conn,
-        Err(err) => panic!("failed to connect using: {}, err: {}", connection_string, err)
-    };
+    let pg_config = tokio_postgres::Config::from_str(&connection_string)?;
 
-    let raw = Raw::new(&conn);
+    let manager = Manager::new(pg_config, tokio_postgres::NoTls);
+    let pool = Pool::new(manager, 16);
+
+    let mut client = pool.get().await?;
+
+    let raw = Raw::new(&mut client).await?;
+
     let interpro_data = parse_interpro(&config, &interpro_json);
     let pfam_data =
         if let Some(pfam_json) = maybe_pfam_json {
@@ -134,22 +137,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         Err(e) => {
             panic!("error while writing: {}", e);
         },
-    }
-
-    if matches.opt_present("store-json") {
-        conn.execute("DROP SCHEMA IF EXISTS web_json CASCADE", &[])?;
-        conn.execute("CREATE SCHEMA web_json", &[])?;
-        conn.execute("CREATE EXTENSION IF NOT EXISTS pg_trgm;", &[])?;
-        conn.execute("CREATE TABLE web_json.gene (uniquename TEXT, data JSONB)", &[])?;
-        conn.execute("CREATE INDEX gene_uniquename_idx ON web_json.gene(uniquename)", &[])?;
-        conn.execute("CREATE TABLE web_json.term (termid TEXT, data JSONB)", &[])?;
-        conn.execute("CREATE INDEX term_termid_idx ON web_json.term(termid)", &[])?;
-        conn.execute("CREATE TABLE web_json.reference (uniquename TEXT, data JSONB)", &[])?;
-        conn.execute("CREATE INDEX reference_uniquename_idx on web_json.reference(uniquename)", &[])?;
-
-        web_data.store_jsonb(&conn);
-
-        print!("stored results as JSONB using {}\n", &connection_string);
     }
 
     Ok(())

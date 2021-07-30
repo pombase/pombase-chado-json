@@ -8,7 +8,8 @@ extern crate flate2;
 #[macro_use] extern crate serde_derive;
 extern crate pombase_rc_string;
 extern crate uuid;
-extern crate postgres;
+extern crate tokio_postgres;
+extern crate deadpool;
 
 pub mod db;
 pub mod web;

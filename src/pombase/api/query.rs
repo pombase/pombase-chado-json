@@ -4,6 +4,8 @@ use std::str;
 
 use std::collections::HashSet;
 
+use async_recursion::async_recursion;
+
 use uuid::Uuid;
 
 use crate::api_data::APIData;
@@ -60,8 +62,8 @@ pub enum QueryExpressionFilter {
 }
 
 type TermName = String;
-type QueryRowsResult = Result<Vec<ResultRow>, RcString>;
-type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, RcString>;
+type QueryRowsResult = Result<Vec<ResultRow>, String>;
+type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, String>;
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct NotNode {
@@ -178,17 +180,18 @@ pub struct QueryNode {
     pub query_id: Option<QueryIdNode>,
 }
 
-fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
+#[async_recursion]
+async fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
            nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
-        return Err(RcString::from("illegal query: OR operator has no nodes"));
+        return Err(String::from("illegal query: OR operator has no nodes"));
     }
 
     let mut seen_genes = HashSet::new();
     let mut or_rows = vec![];
 
     for node in nodes {
-        let exec_rows = node.exec(api_data, site_db)?;
+        let exec_rows = node.exec(api_data, site_db).await?;
 
         for row_gene_uniquename in &exec_rows {
             if !seen_genes.contains(row_gene_uniquename) {
@@ -201,20 +204,21 @@ fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
     Ok(or_rows)
 }
 
-fn exec_and(api_data: &APIData, site_db: &Option<SiteDB>,
-            nodes: &[QueryNode]) -> GeneUniquenameVecResult {
+#[async_recursion]
+async fn exec_and(api_data: &APIData, site_db: &Option<SiteDB>,
+                  nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
         return Err("illegal query: AND operator has no nodes".into());
     }
 
-    let first_node_genes = nodes[0].exec(api_data, site_db)?;
+    let first_node_genes = nodes[0].exec(api_data, site_db).await?;
 
     let current_genes = first_node_genes;
 
     let mut current_gene_set = HashSet::from_iter(current_genes);
 
     for node in nodes[1..].iter() {
-        let node_result_rows = node.exec(api_data, site_db)?;
+        let node_result_rows = node.exec(api_data, site_db).await?;
         let node_genes = node_result_rows.into_iter().collect::<HashSet<_>>();
 
         current_gene_set = current_gene_set.intersection(&node_genes).cloned().collect();
@@ -223,16 +227,17 @@ fn exec_and(api_data: &APIData, site_db: &Option<SiteDB>,
     Ok(current_gene_set.into_iter().collect())
 }
 
-fn exec_not(api_data: &APIData, site_db: &Option<SiteDB>,
-            node_a: &QueryNode, node_b: &QueryNode)
-             -> GeneUniquenameVecResult
+#[async_recursion]
+async fn exec_not(api_data: &APIData, site_db: &Option<SiteDB>,
+                  node_a: &QueryNode, node_b: &QueryNode)
+                  -> GeneUniquenameVecResult
 {
-    let node_b_result = node_b.exec(api_data, site_db)?;
+    let node_b_result = node_b.exec(api_data, site_db).await?;
 
     let node_b_gene_set: HashSet<GeneUniquename> =
         HashSet::from_iter(node_b_result);
 
-    let node_a_result = node_a.exec(api_data, site_db)?;
+    let node_a_result = node_a.exec(api_data, site_db).await?;
 
     let mut not_rows = vec![];
 
@@ -392,11 +397,13 @@ fn exec_interactors_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename
     Ok(api_data.interactors_of_genes(gene_uniquename, interaction_type))
 }
 
-fn exec_query_id(api_data: &APIData,
-                 maybe_site_db: &Option<SiteDB>, id: &Uuid) -> GeneUniquenameVecResult {
+async fn exec_query_id(api_data: &APIData,
+                       maybe_site_db: &Option<SiteDB>, id: &Uuid)
+                       -> GeneUniquenameVecResult
+{
     if let Some(site_db) = maybe_site_db {
-        if let Some(query) = site_db.query_by_id(id) {
-            match query.exec(api_data, maybe_site_db) {
+        if let Some(query) = site_db.query_by_id(id).await {
+            match query.exec(api_data, maybe_site_db).await {
                 Ok(res) => {
                     Ok(res.iter().map(|row| { row.gene_uniquename.clone() }).collect())
                 },
@@ -405,10 +412,10 @@ fn exec_query_id(api_data: &APIData,
                 }
             }
         } else {
-            Err(RcString::from(&format!("can't find query for ID {}", id)))
+            return Err(format!("can't find query for ID {}", id));
         }
     } else {
-        Err(RcString::from(&format!("can't find query for ID {} - no database", id)))
+        Err(format!("can't find query for ID {} - no database", id))
     }
 }
 
@@ -438,16 +445,17 @@ impl QueryNode {
         }
     }
 
-    pub fn exec(&self, api_data: &APIData,
-                site_db: &Option<SiteDB>) -> GeneUniquenameVecResult {
+    #[async_recursion]
+    pub async fn exec<'a>(&'a self, api_data: &'a APIData,
+                      site_db: &'a Option<SiteDB>) -> GeneUniquenameVecResult {
         if let Some(ref nodes) = self.or {
-            return exec_or(api_data, site_db, nodes);
+            return exec_or(api_data, site_db, nodes).await;
         }
         if let Some(ref nodes) = self.and {
-            return exec_and(api_data, site_db, nodes);
+            return exec_and(api_data, site_db, nodes).await;
         }
         if let Some(ref not_node) = self.not {
-            return exec_not(api_data, site_db, &not_node.node_a, &not_node.node_b);
+            return exec_not(api_data, site_db, &not_node.node_a, &not_node.node_b).await;
         }
         if let Some(ref term) = self.term {
             return exec_termid(api_data, &term.termid, &term.single_or_multi_locus,
@@ -474,8 +482,8 @@ impl QueryNode {
                 "genetic" =>
                     exec_interactors_of_gene(api_data, &interactors_node.gene_uniquename,
                                              InteractionType::Genetic),
-                _ => Err(RcString::from(&format!("No such interaction type: {}",
-                                                 interactors_node.interaction_type)))
+                _ => Err(format!("No such interaction type: {}",
+                                 interactors_node.interaction_type))
             };
         }
         if let Some(ref int_range_node) = self.int_range {
@@ -487,7 +495,7 @@ impl QueryNode {
                                     float_range_node.start, float_range_node.end);
         }
         if let Some(ref query_id_node) = self.query_id {
-            return exec_query_id(api_data, site_db, &query_id_node.id);
+            return exec_query_id(api_data, site_db, &query_id_node.id).await;
         }
 
         // fall through:
@@ -840,10 +848,10 @@ impl Query {
            }).collect::<Vec<_>>())
     }
 
-    pub fn exec(&self, api_data: &APIData, site_db: &Option<SiteDB>)
+    pub async fn exec(&self, api_data: &APIData, site_db: &Option<SiteDB>)
                 -> QueryRowsResult
     {
-        let genes_result = self.constraints.exec(api_data, site_db);
+        let genes_result = self.constraints.exec(api_data, site_db).await;
 
         match genes_result {
             Ok(genes) => self.make_result_rows(api_data, genes),

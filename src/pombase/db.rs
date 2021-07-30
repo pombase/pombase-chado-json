@@ -1,9 +1,9 @@
-extern crate postgres;
+extern crate tokio_postgres;
 
 use std::rc::Rc;
 use std::cell::RefCell;
 use std::collections::HashMap;
-use self::postgres::Connection;
+use self::tokio_postgres::Client;
 
 use pombase_rc_string::RcString;
 
@@ -244,7 +244,7 @@ pub struct FeatureRelationshipprop {
 }
 
 impl Raw {
-    pub fn new(conn: &Connection) -> Raw {
+    pub async fn new(conn: &mut Client) -> Result<Raw, tokio_postgres::Error> {
         let mut ret = Raw {
             organisms: vec![],
             organismprops: vec![],
@@ -297,7 +297,10 @@ impl Raw {
             synonym_map.get(&synonym_id).unwrap().clone()
         }
 
-        for row in &conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).unwrap() {
+        let result =
+            conn.query("SELECT organism_id, genus, species, abbreviation, common_name FROM organism", &[]).await?;
+
+        for row in &result {
             let genus: String = row.get(1);
             let species: String = row.get(2);
             let abbreviation: String = row.get(3);
@@ -315,7 +318,7 @@ impl Raw {
             organism_map.insert(row.get(0), rc_organism);
         }
 
-        for row in &conn.query("SELECT cv_id, name FROM cv", &[]).unwrap() {
+        for row in &conn.query("SELECT cv_id, name FROM cv", &[]).await? {
             let cv_name: String = row.get(1);
             let cv = Cv {
                 name: RcString::from(&cv_name),
@@ -326,7 +329,7 @@ impl Raw {
             cv_map.insert(row.get(0), rc_cv);
         }
 
-        for row in &conn.query("SELECT db_id, name FROM db", &[]).unwrap() {
+        for row in &conn.query("SELECT db_id, name FROM db", &[]).await? {
             let db_id = row.get(0);
             let name: String = row.get(1);
             let db = Db {
@@ -337,7 +340,7 @@ impl Raw {
             db_map.insert(db_id, rc_db);
         }
 
-        for row in &conn.query("SELECT dbxref_id, db_id, accession FROM dbxref", &[]).unwrap() {
+        for row in &conn.query("SELECT dbxref_id, db_id, accession FROM dbxref", &[]).await? {
             let dbxref_id: i32 = row.get(0);
             let db_id: i32 = row.get(1);
             let accession: String = row.get(2);
@@ -347,7 +350,7 @@ impl Raw {
             dbxref_map.insert(dbxref_id, rc_dbxref);
         }
 
-        for row in &conn.query("SELECT cvterm_id, cv_id, dbxref_id, name, definition, is_obsolete, is_relationshiptype FROM cvterm", &[]).unwrap() {
+        for row in &conn.query("SELECT cvterm_id, cv_id, dbxref_id, name, definition, is_obsolete, is_relationshiptype FROM cvterm", &[]).await? {
             let cvterm_id: i32 = row.get(0);
             let cv_id: i32 = row.get(1);
             let dbxref_id: i32 = row.get(2);
@@ -367,7 +370,7 @@ impl Raw {
             cvterm_map.insert(cvterm_id, rc_cvterm);
         }
 
-        for row in &conn.query("SELECT cvterm_id, type_id, synonym FROM cvtermsynonym", &[]).unwrap() {
+        for row in &conn.query("SELECT cvterm_id, type_id, synonym FROM cvtermsynonym", &[]).await? {
             let cvterm_id: i32 = row.get(0);
             let cvterm = get_cvterm(&mut cvterm_map, cvterm_id);
             let type_id: i32 = row.get(1);
@@ -382,7 +385,7 @@ impl Raw {
             cvterm.cvtermsynonyms.borrow_mut().push(rc_cvtermsynonym.clone());
         }
 
-        for row in &conn.query("SELECT cvterm_id, type_id, value FROM cvtermprop", &[]).unwrap() {
+        for row in &conn.query("SELECT cvterm_id, type_id, value FROM cvtermprop", &[]).await? {
             let cvterm_id: i32 = row.get(0);
             let cvterm = get_cvterm(&mut cvterm_map, cvterm_id);
             let type_id: i32 = row.get(1);
@@ -397,7 +400,7 @@ impl Raw {
             cvterm.cvtermprops.borrow_mut().push(rc_cvtermprop.clone());
         }
 
-        for row in &conn.query("SELECT pub_id, uniquename, type_id, title, miniref FROM pub", &[]).unwrap() {
+        for row in &conn.query("SELECT pub_id, uniquename, type_id, title, miniref FROM pub", &[]).await? {
             let pub_id: i32 = row.get(0);
             let uniquename_string: String = row.get(1);
             let uniquename = RcString::from(&uniquename_string);
@@ -416,7 +419,7 @@ impl Raw {
             publication_map.insert(pub_id, rc_publication);
         }
 
-        for row in &conn.query("SELECT pub_id, type_id, value FROM pubprop", &[]).unwrap() {
+        for row in &conn.query("SELECT pub_id, type_id, value FROM pubprop", &[]).await? {
             let pub_id: i32 = row.get(0);
             let type_id: i32 = row.get(1);
             let value: String = row.get(2);
@@ -431,7 +434,7 @@ impl Raw {
             publication.publicationprops.borrow_mut().push(rc_publicationprop.clone());
         }
 
-        for row in &conn.query("SELECT cv_id, type_id, value FROM cvprop", &[]).unwrap() {
+        for row in &conn.query("SELECT cv_id, type_id, value FROM cvprop", &[]).await? {
             let cv_id: i32 = row.get(0);
             let type_id: i32 = row.get(1);
             let value: String = row.get(2);
@@ -446,7 +449,7 @@ impl Raw {
             cv.cvprops.borrow_mut().push(rc_cvprop);
         }
 
-        for row in &conn.query("SELECT synonym_id, name, type_id FROM synonym", &[]).unwrap() {
+        for row in &conn.query("SELECT synonym_id, name, type_id FROM synonym", &[]).await? {
             let synonym_id = row.get(0);
             let name: String = row.get(1);
             let type_id: i32 = row.get(2);
@@ -460,7 +463,7 @@ impl Raw {
         }
 
         for row in &conn.query(
-            "SELECT feature_id, uniquename, name, type_id, organism_id, residues FROM feature", &[]).unwrap() {
+            "SELECT feature_id, uniquename, name, type_id, organism_id, residues FROM feature", &[]).await? {
             let feature_id = row.get(0);
             let type_id: i32 = row.get(3);
             let organism_id: i32 = row.get(4);
@@ -482,7 +485,7 @@ impl Raw {
             feature_map.insert(feature_id, rc_feature);
         }
 
-        for row in &conn.query("SELECT feature_id, type_id, value FROM featureprop", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_id, type_id, value FROM featureprop", &[]).await? {
             let feature_id: i32 = row.get(0);
             let feature = get_feature(&mut feature_map, feature_id);
             let type_id: i32 = row.get(1);
@@ -497,7 +500,7 @@ impl Raw {
             feature.featureprops.borrow_mut().push(rc_featureprop.clone());
         }
 
-        for row in &conn.query("SELECT feature_id, pub_id FROM feature_pub", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_id, pub_id FROM feature_pub", &[]).await? {
             let feature_id: i32 = row.get(0);
             let pub_id: i32 = row.get(1);
             let publication = publication_map[&pub_id].clone();
@@ -511,7 +514,7 @@ impl Raw {
             feature.featurepubs.borrow_mut().push(publication);
         }
 
-        for row in &conn.query("SELECT feature_id, srcfeature_id, fmin, fmax, strand, phase FROM featureloc", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_id, srcfeature_id, fmin, fmax, strand, phase FROM featureloc", &[]).await? {
             let feature_id: i32 = row.get(0);
             let feature = get_feature(&mut feature_map, feature_id);
             let srcfeature_id: i32 = row.get(1);
@@ -533,7 +536,7 @@ impl Raw {
             feature.featurelocs.borrow_mut().push(rc_featureloc.clone());
         }
 
-        for row in &conn.query("SELECT feature_id, synonym_id, pub_id, is_current FROM feature_synonym", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_id, synonym_id, pub_id, is_current FROM feature_synonym", &[]).await? {
             let feature_id: i32 = row.get(0);
             let synonym_id: i32 = row.get(1);
             let pub_id: i32 = row.get(2);
@@ -548,7 +551,7 @@ impl Raw {
             ret.feature_synonyms.push(rc_feature_synonym.clone());
         }
 
-        for row in &conn.query("SELECT feature_dbxref_id, feature_id, dbxref_id FROM feature_dbxref", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_dbxref_id, feature_id, dbxref_id FROM feature_dbxref", &[]).await? {
             let feature_dbxref_id = row.get(0);
             let feature_id = row.get(1);
             let dbxref_id: i32 = row.get(2);
@@ -562,7 +565,7 @@ impl Raw {
             feature_dbxref_map.insert(feature_dbxref_id, rc_feature_dbxref);
         }
 
-        for row in &conn.query("SELECT feature_cvterm_id, feature_id, cvterm_id, pub_id, is_not FROM feature_cvterm", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_cvterm_id, feature_id, cvterm_id, pub_id, is_not FROM feature_cvterm", &[]).await? {
             let feature_cvterm_id = row.get(0);
             let feature_id = row.get(1);
             let cvterm_id: i32 = row.get(2);
@@ -581,7 +584,7 @@ impl Raw {
             feature_cvterm_map.insert(feature_cvterm_id, rc_feature_cvterm);
         }
 
-        for row in &conn.query("SELECT feature_cvterm_id, type_id, value FROM feature_cvtermprop", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_cvterm_id, type_id, value FROM feature_cvtermprop", &[]).await? {
             let feature_cvterm_id: i32 = row.get(0);
             let feature_cvterm = feature_cvterm_map[&feature_cvterm_id].clone();
             let type_id: i32 = row.get(1);
@@ -596,7 +599,7 @@ impl Raw {
             feature_cvterm.feature_cvtermprops.borrow_mut().push(rc_feature_cvtermprop);
         }
 
-        for row in &conn.query("SELECT feature_relationship_id, subject_id, object_id, type_id FROM feature_relationship", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_relationship_id, subject_id, object_id, type_id FROM feature_relationship", &[]).await? {
             let feature_relationship_id = row.get(0);
             let subject_id = row.get(1);
             let object_id: i32 = row.get(2);
@@ -614,7 +617,7 @@ impl Raw {
             feature_relationship_map.insert(feature_relationship_id, rc_feature_relationship);
         }
 
-        for row in &conn.query("SELECT feature_relationship_id, type_id, value FROM feature_relationshipprop", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_relationship_id, type_id, value FROM feature_relationshipprop", &[]).await? {
             let feature_relationship_id: i32 = row.get(0);
             let feature_relationship =
                 feature_relationship_map[&feature_relationship_id].clone();
@@ -629,7 +632,7 @@ impl Raw {
             feature_relationship.feature_relationshipprops.borrow_mut().push(rc_feature_relationshipprop.clone());
         }
 
-        for row in &conn.query("SELECT feature_relationship_id, pub_id FROM feature_relationship_pub", &[]).unwrap() {
+        for row in &conn.query("SELECT feature_relationship_id, pub_id FROM feature_relationship_pub", &[]).await? {
             let feature_relationship_id: i32 = row.get(0);
             let feature_relationship =
                 feature_relationship_map[&feature_relationship_id].clone();
@@ -637,7 +640,7 @@ impl Raw {
             feature_relationship.publications.borrow_mut().push(publication_map[&pub_id].clone());
         }
 
-        for row in &conn.query("SELECT object_id, subject_id, type_id FROM cvterm_relationship", &[]).unwrap() {
+        for row in &conn.query("SELECT object_id, subject_id, type_id FROM cvterm_relationship", &[]).await? {
             let object_id = row.get(0);
             let subject_id: i32 = row.get(1);
             let type_id: i32 = row.get(2);
@@ -650,7 +653,7 @@ impl Raw {
             ret.cvterm_relationships.push(rc_cvterm_relationship.clone());
         }
 
-        for row in &conn.query("SELECT subject_id, object_id, type_id FROM cvtermpath WHERE pathdistance > 0", &[]).unwrap() {
+        for row in &conn.query("SELECT subject_id, object_id, type_id FROM cvtermpath WHERE pathdistance > 0", &[]).await? {
             let subject_id: i32 = row.get(0);
             let object_id: i32 = row.get(1);
             let type_id: Option<i32> = row.get(2);
@@ -667,7 +670,7 @@ impl Raw {
             ret.cvtermpaths.push(rc_cvtermpath.clone());
         }
 
-        for row in &conn.query("SELECT type_id, value FROM chadoprop", &[]).unwrap() {
+        for row in &conn.query("SELECT type_id, value FROM chadoprop", &[]).await? {
             let type_id: i32 = row.get(0);
             let value: Option<String> = row.get(1);
             let chadoprop = Chadoprop {
@@ -678,7 +681,7 @@ impl Raw {
             ret.chadoprops.push(rc_chadoprop.clone());
         }
 
-        for row in &conn.query("SELECT organism_id, type_id, value FROM organismprop", &[]).unwrap() {
+        for row in &conn.query("SELECT organism_id, type_id, value FROM organismprop", &[]).await? {
             let organism_id: i32 = row.get(0);
             let organism = organism_map[&organism_id].clone();
             let type_id: i32 = row.get(1);
@@ -694,7 +697,7 @@ impl Raw {
             organism.organismprops.borrow_mut().push(rc_organismprop.clone());
         }
 
-        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref WHERE is_for_definition = 1", &[]).unwrap() {
+        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref WHERE is_for_definition = 1", &[]).await? {
             let cvterm_id: i32 = row.get(0);
             let dbxref_id: i32 = row.get(1);
 
@@ -704,7 +707,7 @@ impl Raw {
             cvterm.definition_xrefs.borrow_mut().push(dbxref);
         }
 
-        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref WHERE is_for_definition = 0", &[]).unwrap() {
+        for row in &conn.query("SELECT cvterm_id, dbxref_id FROM cvterm_dbxref WHERE is_for_definition = 0", &[]).await? {
             let cvterm_id: i32 = row.get(0);
             let dbxref_id: i32 = row.get(1);
 
@@ -714,6 +717,6 @@ impl Raw {
             cvterm.other_dbxrefs.borrow_mut().push(dbxref);
         }
 
-        ret
+        Ok(ret)
     }
 }

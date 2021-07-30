@@ -1,5 +1,5 @@
+extern crate tokio_postgres;
 extern crate serde_json;
-extern crate postgres;
 
 use std::cmp::min;
 use std::fs::{File, create_dir_all};
@@ -10,8 +10,6 @@ use regex::Regex;
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
-
-use self::postgres::Connection;
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
@@ -1426,35 +1424,6 @@ impl WebData {
         self.write_gff(&config, &gff_path)?;
 
         Ok(())
-    }
-
-    pub fn store_jsonb(&self, conn: &Connection) {
-        let trans = conn.transaction().unwrap();
-
-        for (uniquename, gene_details) in &self.api_maps.genes {
-            let serde_value = serde_json::value::to_value(&gene_details).unwrap();
-            trans.execute("INSERT INTO web_json.gene (uniquename, data) values ($1, $2)",
-                          &[&uniquename.as_str(), &serde_value]).unwrap();
-        }
-        for (uniquename, ref_details) in &self.api_maps.references {
-            let serde_value = serde_json::value::to_value(&ref_details).unwrap();
-            trans.execute("INSERT INTO web_json.reference (uniquename, data) values ($1, $2)",
-                          &[&uniquename.as_str(), &serde_value]).unwrap();
-        }
-        for (termid, term_details) in &self.api_maps.terms {
-            let serde_value = serde_json::value::to_value(&term_details).unwrap();
-            trans.execute("INSERT INTO web_json.term (termid, data) values ($1, $2)",
-                          &[&termid.as_str(), &serde_value]).unwrap();
-        }
-
-        trans.execute("CREATE INDEX gene_jsonb_idx ON web_json.gene USING gin (data jsonb_path_ops)", &[]).unwrap();
-        trans.execute("CREATE INDEX gene_jsonb_name_idx ON web_json.gene USING gin ((data->>'name') gin_trgm_ops);", &[]).unwrap();
-        trans.execute("CREATE INDEX term_jsonb_idx ON web_json.term USING gin (data jsonb_path_ops)", &[]).unwrap();
-        trans.execute("CREATE INDEX term_jsonb_name_idx ON web_json.term USING gin ((data->>'name') gin_trgm_ops);", &[]).unwrap();
-        trans.execute("CREATE INDEX reference_jsonb_idx ON web_json.reference USING gin (data jsonb_path_ops)", &[]).unwrap();
-        trans.execute("CREATE INDEX reference_jsonb_title_idx ON web_json.reference USING gin ((data->>'title') gin_trgm_ops);", &[]).unwrap();
-
-        trans.commit().unwrap();
     }
 }
 
