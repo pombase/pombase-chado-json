@@ -96,6 +96,11 @@ pub struct GeneListNode {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct HasOrthologNode {
+    pub taxonid: u32,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct IntRangeNode {
     pub range_type: IntRangeType,
     pub start: Option<usize>,
@@ -168,6 +173,8 @@ pub struct QueryNode {
     pub subset: Option<SubsetNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub gene_list: Option<GeneListNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub has_ortholog: Option<HasOrthologNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub int_range: Option<IntRangeNode>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -281,6 +288,17 @@ fn exec_gene_list(genes: &[GeneShort])
     }
 
     Ok(ret)
+}
+
+fn exec_has_ortholog(api_data: &APIData, taxonid: u32)
+                     -> GeneUniquenameVecResult
+{
+    let gene_uniquenames =
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
+            gene.ortholog_taxonids.contains(&taxonid)
+        });
+
+    Ok(gene_uniquenames)
 }
 
 fn exec_genome_range_overlaps(api_data: &APIData, start: Option<usize>, end: Option<usize>,
@@ -429,6 +447,7 @@ impl QueryNode {
             term: None,
             subset: None,
             gene_list: None,
+            has_ortholog: None,
             int_range: None,
             float_range: None,
             genome_range: None,
@@ -468,6 +487,9 @@ impl QueryNode {
         }
         if let Some(ref gene_list_node) = self.gene_list {
             return exec_gene_list(&gene_list_node.genes);
+        }
+        if let Some(ref has_ortholog_node) = self.has_ortholog {
+            return exec_has_ortholog(api_data, has_ortholog_node.taxonid);
         }
         if let Some(ref genome_range_node) = self.genome_range {
             return exec_genome_range_overlaps(api_data, genome_range_node.start,

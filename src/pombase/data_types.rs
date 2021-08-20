@@ -1468,6 +1468,8 @@ pub struct APIGeneSummary {
     pub coiled_coil_count: usize,
     pub exon_count: usize,
     pub transcript_count: usize,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub ortholog_taxonids: HashSet<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

@@ -1128,6 +1128,10 @@ impl <'a> WebDataBuild<'a> {
             } else {
                 0
             };
+        let mut ortholog_taxonids = HashSet::new();
+        for ortholog_annotation in &gene_details.ortholog_annotations {
+            ortholog_taxonids.insert(ortholog_annotation.ortholog_taxonid);
+        }
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
@@ -1141,6 +1145,7 @@ impl <'a> WebDataBuild<'a> {
             coiled_coil_count: gene_details.coiled_coil_coords.len(),
             exon_count,
             transcript_count: gene_details.transcripts.len(),
+            ortholog_taxonids,
         }
     }
 
