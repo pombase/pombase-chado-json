@@ -2252,10 +2252,8 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    // avoid duplicates in the reference pages
                                     if self.config.load_organism_taxonid.is_some() &&
-                                        self.config.load_organism_taxonid.unwrap() == gene_details.taxonid ||
-                                        gene_organism_taxonid < other_gene_organism_taxonid
+                                        self.config.load_organism_taxonid.unwrap() == gene_details.taxonid
                                     {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
@@ -2301,21 +2299,7 @@ impl <'a> WebDataBuild<'a> {
                                         evidence: evidence_clone,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                     };
-                                other_gene_details.ortholog_annotations.push(ortholog_annotation.clone());
-                                if let Some(ref_details) =
-                                    if let Some(ref reference_uniquename) = maybe_reference_uniquename {
-                                        self.references.get_mut(reference_uniquename)
-                                    } else {
-                                        None
-                                    }
-                                {
-                                    if self.config.load_organism_taxonid.is_some() &&
-                                        self.config.load_organism_taxonid.unwrap() == other_gene_details.taxonid ||
-                                        gene_organism_taxonid > other_gene_organism_taxonid
-                                    {
-                                        ref_details.ortholog_annotations.push(ortholog_annotation);
-                                    }
-                                }
+                                other_gene_details.ortholog_annotations.push(ortholog_annotation);
                             },
                             FeatureRelAnnotationType::Paralog => {
                                 let paralog_annotation =
