@@ -269,8 +269,14 @@ impl APIData {
                         false
                     };
 
-                let mut add_genotype_genes = false;
+                if !condition_matches(&annotation.conditions, conditions_filter) ||
+                    excluded_conditions_filter.len() > 0 &&
+                    condition_matches(&annotation.conditions, excluded_conditions_filter) {
+                        continue;
+                    }
 
+
+                let mut add_genotype_genes = false;
 
                 if annotation.is_multi && add_multi {
                     if *query_ploidiness == annotation.ploidiness ||
@@ -286,10 +292,7 @@ impl APIData {
                         (annotation.ploidiness == Ploidiness::Haploid &&
                          (*query_ploidiness == Ploidiness::Any ||
                           (*query_ploidiness == Ploidiness::Haploid &&
-                           expression_matches(&annotation.alleles[0]) &&
-                           condition_matches(&annotation.conditions, conditions_filter) &&
-                           (excluded_conditions_filter.len() == 0 ||
-                            !condition_matches(&annotation.conditions, excluded_conditions_filter)))))
+                           expression_matches(&annotation.alleles[0]))))
                         {
                             add_genotype_genes = true;
                         }
