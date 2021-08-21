@@ -2252,9 +2252,7 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if self.config.load_organism_taxonid.is_some() &&
-                                        self.config.load_organism_taxonid.unwrap() == gene_details.taxonid
-                                    {
+                                    if Some(gene_details.taxonid) == self.config.load_organism_taxonid {
                                         ref_details.ortholog_annotations.push(ortholog_annotation);
                                     }
                                 }
