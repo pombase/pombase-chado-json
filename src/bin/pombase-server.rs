@@ -95,29 +95,17 @@ async fn get_misc(mut path: PathBuf, state: &rocket::State<StaticFileState>,
 
 #[get("/api/v1/dataset/latest/data/gene/<id>", rank=2)]
 async fn get_gene(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<GeneDetails>> {
-    if let Some(gene) = query_exec.get_api_data().get_full_gene_details(&id) {
-        Some(Json(gene))
-    } else {
-        None
-    }
+    query_exec.get_api_data().get_full_gene_details(&id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/genotype/<id>", rank=2)]
 async fn get_genotype(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<GenotypeDetails>> {
-    if let Some(genotype) = query_exec.get_api_data().get_genotype_details(&id) {
-        Some(Json(genotype))
-    } else {
-        None
-    }
+    query_exec.get_api_data().get_genotype_details(&id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/term/<id>", rank=2)]
 async fn get_term(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<TermDetails>> {
-    if let Some(term) = query_exec.get_api_data().get_term_details(&id) {
-        Some(Json(term))
-    } else {
-        None
-    }
+    query_exec.get_api_data().get_term_details(&id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/summary/term/<id>", rank=2)]
@@ -131,7 +119,7 @@ async fn get_term_summary_by_id(id: String, search: &rocket::State<Search>)
             Ok(summary) => {
                 TermLookupResponse {
                     status: "Ok".to_owned(),
-                    summary: summary,
+                    summary,
                 }
             },
             Err(err) => {
@@ -148,11 +136,7 @@ async fn get_term_summary_by_id(id: String, search: &rocket::State<Search>)
 
 #[get("/api/v1/dataset/latest/data/reference/<id>", rank=2)]
 async fn get_reference(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<ReferenceDetails>> {
-    if let Some(reference) = query_exec.get_api_data().get_reference_details(&id) {
-        Some(Json(reference))
-    } else {
-        None
-    }
+    query_exec.get_api_data().get_reference_details(&id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/seq_feature_page_features", rank=2)]
@@ -173,11 +157,8 @@ Return a simple HTML version a gene page for search engines
 #[get("/simple/gene/<id>", rank=1)]
 async fn get_simple_gene(id: String, query_exec: &rocket::State<QueryExec>,
                    config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    if let Some(gene) = query_exec.get_api_data().get_full_gene_details(&id) {
-        Some(content::RawHtml(render_simple_gene_page(&config, &gene)))
-    } else {
-        None
-    }
+    query_exec.get_api_data().get_full_gene_details(&id)
+        .map(|gene| content::RawHtml(render_simple_gene_page(config, &gene)))
 }
 
 /*
@@ -186,11 +167,8 @@ Return a simple HTML version a reference page for search engines
 #[get("/simple/reference/<id>", rank=1)]
 async fn get_simple_reference(id: String, query_exec: &rocket::State<QueryExec>,
                         config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    if let Some(reference) = query_exec.get_api_data().get_reference_details(&id) {
-        Some(content::RawHtml(render_simple_reference_page(&config, &reference)))
-    } else {
-        None
-    }
+    query_exec.get_api_data().get_reference_details(&id)
+        .map(|reference| content::RawHtml(render_simple_reference_page(config, &reference)))
 }
 /*
 Return a simple HTML version a term page for search engines
@@ -198,11 +176,8 @@ Return a simple HTML version a term page for search engines
 #[get("/simple/term/<id>", rank=1)]
 async fn get_simple_term(id: String, query_exec: &rocket::State<QueryExec>,
                    config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    if let Some(term) = query_exec.get_api_data().get_term_details(&id) {
-        Some(content::RawHtml(render_simple_term_page(&config, &term)))
-    } else {
-        None
-    }
+    query_exec.get_api_data().get_term_details(&id)
+        .map(|term| content::RawHtml(render_simple_term_page(config, &term)))
 }
 
 #[post("/api/v1/dataset/latest/query", rank=1, data="<q>", format = "application/json")]
@@ -243,7 +218,7 @@ async fn term_complete(cv_name: String, q: String, search: &rocket::State<Search
             Ok(matches) => {
                 TermCompletionResponse {
                     status: "Ok".to_owned(),
-                    matches: matches,
+                    matches,
                 }
             },
             Err(err) => {
@@ -269,7 +244,7 @@ async fn ref_complete(q: String, search: &rocket::State<Search>)
             Ok(matches) => {
                 RefCompletionResponse {
                     status: "Ok".to_owned(),
-                    matches: matches,
+                    matches,
                 }
             },
             Err(err) => {
@@ -376,7 +351,7 @@ fn print_usage(program: &str, opts: Options) {
 
 #[launch]
 async fn rocket() -> _ {
-    print!("{} v{}\n", PKG_NAME, VERSION);
+    println!("{} v{}", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
@@ -400,17 +375,17 @@ async fn rocket() -> _ {
     }
 
     if !matches.opt_present("config-file") {
-        print!("no -c|--config-file option\n");
+        println!("no -c|--config-file option");
         print_usage(&program, opts);
         process::exit(1);
     }
     if !matches.opt_present("search-maps") {
-        print!("no --search-maps|-m option\n");
+        println!("no --search-maps|-m option");
         print_usage(&program, opts);
         process::exit(1);
     }
     if !matches.opt_present("web-root-dir") {
-        print!("no --web-root-dir|-w option\n");
+        println!("no --web-root-dir|-w option");
         print_usage(&program, opts);
         process::exit(1);
     }

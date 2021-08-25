@@ -158,7 +158,7 @@ fn make_refs_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
         }
     }
 
-    print!("{:?}\n", refs_url);
+    println!("{:?}", refs_url);
 
     Some(refs_url)
 }

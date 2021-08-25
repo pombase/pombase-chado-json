@@ -15,7 +15,7 @@ pub fn cmp_residues(residue1: &Option<Residue>, residue2: &Option<Residue>) -> O
             {
                 let res1_aa = res1_captures.name("aa").unwrap().as_str();
                 let res2_aa = res2_captures.name("aa").unwrap().as_str();
-                let aa_order = res1_aa.cmp(&res2_aa);
+                let aa_order = res1_aa.cmp(res2_aa);
                 if aa_order == Ordering::Equal {
                     let res1_pos =
                         res1_captures.name("pos").unwrap().as_str().parse::<i32>().unwrap();
@@ -26,7 +26,7 @@ pub fn cmp_residues(residue1: &Option<Residue>, residue2: &Option<Residue>) -> O
                     aa_order
                 }
             } else {
-                res1.cmp(&res2)
+                res1.cmp(res2)
             }
         } else {
             Ordering::Less

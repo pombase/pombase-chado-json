@@ -29,7 +29,7 @@ pub fn parse_pfam(file_name: &str) -> HashMap<RcString, PfamProteinDetails> {
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {
-            print!("Failed to read {}: {}\n", file_name, err);
+            println!("Failed to read {}: {}", file_name, err);
             process::exit(1);
         }
     };

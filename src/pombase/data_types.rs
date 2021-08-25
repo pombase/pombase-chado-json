@@ -106,10 +106,7 @@ pub enum ExtRange {
 
 impl ExtRange {
     pub fn is_gene(&self) -> bool {
-        match *self {
-            ExtRange::Gene(_) => true,
-            _ => false,
-        }
+        matches!(*self, ExtRange::Gene(_))
     }
 }
 
@@ -1169,9 +1166,9 @@ pub struct AlleleShort {
 fn allele_encoded_name_and_type(allele_name: &Option<RcString>, allele_type: &str,
                                 allele_description: &Option<RcString>) -> RcString {
     let name = allele_name.clone().unwrap_or_else(|| RcString::from("unnamed"));
-    let allele_type = allele_type.clone();
+    let allele_type = allele_type.to_owned();
     let description =
-        allele_description.clone().unwrap_or_else(|| RcString::from(allele_type));
+        allele_description.clone().unwrap_or_else(|| RcString::from(&allele_type));
 
     if allele_type == "deletion" && name.ends_with("delta") ||
         allele_type.starts_with("wild_type") && name.ends_with('+') {
@@ -1188,7 +1185,7 @@ fn allele_encoded_name_and_type(allele_name: &Option<RcString>, allele_type: &st
         if allele_type == "deletion" {
             name + "-" + description.as_str()
         } else {
-            name + "-" + description.as_str() + "-" + allele_type
+            name + "-" + description.as_str() + "-" + &allele_type
         };
     RcString::from(&display_name)
 }
@@ -1200,7 +1197,7 @@ impl AlleleShort {
                description: &Option<RcString>,
                gene_uniquename: &str) -> AlleleShort {
         let encoded_name_and_type =
-            allele_encoded_name_and_type(&name, &allele_type, &description);
+            allele_encoded_name_and_type(name, allele_type, description);
         AlleleShort {
             uniquename: RcString::from(uniquename),
             encoded_name_and_type,
@@ -1706,7 +1703,7 @@ impl InterMineGeneDetails {
             location: gene_details.location.clone(),
             transcripts: gene_details.transcripts.clone(),
             uniprot_identifier: gene_details.uniprot_identifier.clone(),
-            taxonid: gene_details.taxonid.clone(),
+            taxonid: gene_details.taxonid,
         }
     }
 }

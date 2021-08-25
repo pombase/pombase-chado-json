@@ -657,10 +657,8 @@ impl Raw {
             let subject_id: i32 = row.get(0);
             let object_id: i32 = row.get(1);
             let type_id: Option<i32> = row.get(2);
-            let rel_type: Option<Rc<Cvterm>> = match type_id {
-                Some(cvterm_id) => Some(get_cvterm(&mut cvterm_map, cvterm_id)),
-                None => None
-            };
+            let rel_type: Option<Rc<Cvterm>> =
+                type_id.map(|cvterm_id| get_cvterm(&mut cvterm_map, cvterm_id));
             let cvtermpath = Cvtermpath {
                 subject: cvterm_map[&subject_id].clone(),
                 object: cvterm_map[&object_id].clone(),

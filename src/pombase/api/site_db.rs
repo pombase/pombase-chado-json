@@ -42,7 +42,7 @@ impl SiteDB {
                 },
             };
 
-        if rs.len() > 0 {
+        if !rs.is_empty() {
             let query_value: Option<String> = rs[0].get(0);
 
             let query: Query = match serde_json::from_str(&query_value.unwrap()) {
@@ -60,7 +60,7 @@ impl SiteDB {
         let query_value: String = match serde_json::value::to_value(query) {
             Ok(v) => v.to_string(),
             Err(err) => {
-                eprint!("error converting query to string: {:?}\n", err);
+                eprintln!("error converting query to string: {:?}", err);
                 return None;
             }
         };
@@ -69,7 +69,7 @@ impl SiteDB {
             match self.pool.get().await {
                 Ok(client) => client,
                 Err(err) => {
-                    eprint!("can't get client: {:?}\n", err);
+                    eprintln!("can't get client: {:?}", err);
                     return None;
                 }
             };
@@ -80,12 +80,12 @@ impl SiteDB {
         {
             Ok(rs) => rs,
             Err(err) => {
-                eprint!("error querying in id_from_query(): {:?}\n", err);
+                eprintln!("error querying in id_from_query(): {:?}", err);
                 return None;
             }
         };
 
-        if rs.len() > 0 {
+        if !rs.is_empty() {
             let id: Uuid = rs[0].get("id");
             Some(id)
         } else {

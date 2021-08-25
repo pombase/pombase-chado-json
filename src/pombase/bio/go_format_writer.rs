@@ -40,7 +40,7 @@ fn get_gpad_relation_of(term_details: &TermDetails,
     match term_details.cv_name.as_str() {
         "molecular_function" => {
             if annotation_detail.qualifiers.iter()
-                .find(|q| q.as_str() == "contributes_to").is_some()
+                .any(|q| q.as_str() == "contributes_to")
             {
                 String::from("RO:0002326")
             } else {
@@ -70,7 +70,7 @@ fn get_gpad_nd_relation_of(aspect: &str) -> String {
     }
 }
 
-fn make_gpad_extension_string(config: &Config, extension: &Vec<ExtPart>) -> String {
+fn make_gpad_extension_string(config: &Config, extension: &[ExtPart]) -> String {
     let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
     let get_rel_termid = |ext_part: &ExtPart| {
         if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
@@ -84,7 +84,7 @@ fn make_gpad_extension_string(config: &Config, extension: &Vec<ExtPart>) -> Stri
         let mut range_copy = ext_part.ext_range.clone();
 
         if let ExtRange::Gene(ref mut gene_uniquename) = range_copy {
-            if !gene_uniquename.contains(":") {
+            if !gene_uniquename.contains(':') {
                 let new_uniquename =
                     RcString::from(&format!("{}:{}", config.database_name,
                                             gene_uniquename));
@@ -171,18 +171,18 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
         for term_annotation in sorted_term_annotations {
             let term = api_maps.terms.get(&term_annotation.term)
-                .expect(&format!("failed to find term summary for {}",
+                .unwrap_or_else(|| panic!("failed to find term summary for {}",
                                  term_annotation.term));
 
             let mut sorted_annotations = term_annotation.annotations.clone();
 
             sorted_annotations.sort_by(|a1, a2| {
                 let detail1 =
-                    api_maps.annotation_details.get(&a1)
-                    .expect(&format!("can't find annotation {}", a1));
+                    api_maps.annotation_details.get(a1)
+                    .unwrap_or_else(|| panic!("can't find annotation {}", a1));
                 let detail2 =
-                    api_maps.annotation_details.get(&a2)
-                    .expect(&format!("can't find annotation {}", a1));
+                    api_maps.annotation_details.get(a2)
+                    .unwrap_or_else(|| panic!("can't find annotation {}", a1));
 
                 let ev_res = detail1.evidence.cmp(&detail2.evidence);
                 if ev_res != Ordering::Equal {
@@ -204,8 +204,8 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
             for annotation_id in &sorted_annotations {
                 let annotation_detail = api_maps.annotation_details
-                    .get(&annotation_id)
-                    .expect(&format!("can't find annotation {}", annotation_id));
+                    .get(annotation_id)
+                    .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
                 let not = if term_annotation.is_not {
                     "NOT"
                 } else {
@@ -226,7 +226,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                 let mut with_or_from_parts =
                     with_iter.chain(from_iter).map(|s| {
                         let s: RcString = s.clone().into();
-                        if s.contains(":") {
+                        if s.contains(':') {
                             s
                         } else {
                             RcString::from(&format!("{}:{}", assigned_by, s))
@@ -258,7 +258,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 }
 
 
-fn make_gaf_extension_string(config: &Config, extension: &Vec<ExtPart>) -> String {
+fn make_gaf_extension_string(config: &Config, extension: &[ExtPart]) -> String {
     let mut ret_string = String::new();
 
     for (idx, ext_part) in extension.iter().enumerate() {
@@ -266,13 +266,11 @@ fn make_gaf_extension_string(config: &Config, extension: &Vec<ExtPart>) -> Strin
         ret_string.push('(');
 
         if let ExtRange::Gene(ref gene_uniquename) = ext_part.ext_range {
-            if gene_uniquename.contains(":") {
-                ret_string += gene_uniquename;
-            } else {
+            if !gene_uniquename.contains(':') {
                 ret_string += &config.database_name;
                 ret_string.push(':');
-                ret_string += &gene_uniquename;
             }
+            ret_string += gene_uniquename;
         } else {
             write!(ret_string, "{}", &ext_part.ext_range).unwrap();
         }
@@ -314,10 +312,10 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         .join("|");
 
     let single_letter_aspect =
-        if cv_name.starts_with("b") {
+        if cv_name.starts_with('b') {
             "P"
         } else {
-            if cv_name.starts_with("c") {
+            if cv_name.starts_with('c') {
                 "C"
             } else {
                 "F"
@@ -328,8 +326,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         for term_annotation in term_annotations {
             for annotation_id in &term_annotation.annotations {
                 let annotation_detail = api_maps.annotation_details
-                    .get(&annotation_id)
-                    .expect(&format!("can't find annotation {}", annotation_id));
+                    .get(annotation_id)
+                    .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                 let mut qualifier_parts = vec![];
                 if term_annotation.is_not {
@@ -355,7 +353,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                 let mut with_or_from_parts =
                     with_iter.chain(from_iter).map(|s| {
                         let s: RcString = s.clone().into();
-                        if s.contains(":") {
+                        if s.contains(':') {
                             s
                         } else {
                             RcString::from(&format!("{}:{}", assigned_by, s))

@@ -53,7 +53,7 @@ pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
     let file = match File::open(search_maps_file_name) {
         Ok(file) => file,
         Err(err) => {
-            eprint!("Failed to read {}: {}\n", search_maps_file_name, err);
+            eprintln!("Failed to read {}: {}", search_maps_file_name, err);
             process::exit(1);
         }
     };
@@ -251,26 +251,26 @@ impl APIData {
 
                 let condition_matches =
                     |conditions: &HashSet<TermAndName>, test_conditions_filter: &HashSet<TermAndName>| {
-                        if test_conditions_filter.len() == 0 {
+                        if test_conditions_filter.is_empty() {
                             // don't filter in this case
                             return true;
                         }
 
                         for filter_condition in test_conditions_filter {
-                            if conditions.iter().find(
+                            if conditions.iter().any(
                                 |cond| {
                                     filter_condition.termid == cond.termid
                                 })
-                                .is_some() {
-                                    return true
-                                }
+                            {
+                                return true
+                            }
                         }
 
                         false
                     };
 
                 if !condition_matches(&annotation.conditions, conditions_filter) ||
-                    excluded_conditions_filter.len() > 0 &&
+                    !excluded_conditions_filter.is_empty() &&
                     condition_matches(&annotation.conditions, excluded_conditions_filter) {
                         continue;
                     }
@@ -336,7 +336,7 @@ impl APIData {
             match with_value {
                 WithFromValue::Gene(gene_short) => {
                     let uniquename = &gene_short.uniquename;
-                    ExtRange::Gene(self.strip_db_prefix(&uniquename))
+                    ExtRange::Gene(self.strip_db_prefix(uniquename))
                 },
                 _ => panic!("unexpected WithFromValue variant: {:#?}", with_value),
             };
@@ -379,23 +379,17 @@ impl APIData {
                 if let Some(with_value) = first_with.clone() {
                     annotation.extension.iter_mut().for_each(|mut ext_part| {
                         if ext_part.rel_type_name == "has_direct_input" {
-                            match &mut ext_part.ext_range {
-                                ExtRange::GeneProduct(range_termid) => {
-                                    match &with_value {
-                                        WithFromValue::Gene(gene_short) => {
-                                            let gene_uniquename =
-                                                self.strip_db_prefix(&gene_short.uniquename);
-                                            let val = GeneAndGeneProduct {
-                                                product: range_termid.clone(),
-                                                gene_uniquename,
-                                            };
-                                            ext_part.ext_range = ExtRange::GeneAndGeneProduct(val);
-                                            first_with = None;
-                                        },
-                                        _ => (),
-                                    }
-                                },
-                                _ => ()
+                            if let ExtRange::GeneProduct(range_termid) = &mut ext_part.ext_range {
+                                if let WithFromValue::Gene(gene_short) = &with_value {
+                                    let gene_uniquename =
+                                        self.strip_db_prefix(&gene_short.uniquename);
+                                    let val = GeneAndGeneProduct {
+                                        product: range_termid.clone(),
+                                        gene_uniquename,
+                                    };
+                                    ext_part.ext_range = ExtRange::GeneAndGeneProduct(val);
+                                    first_with = None;
+                                }
                             }
                         }
                     });
@@ -417,7 +411,7 @@ impl APIData {
         for term_annotations in ont_annotation_map.values() {
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
-                if let Some(ref term_details) = self.maps.terms.get(termid) {
+                if let Some(term_details) = self.maps.terms.get(termid) {
                     for annotation_detail_id in &term_annotation.annotations {
                         let mut annotation =
                             self.maps.annotation_details[annotation_detail_id].clone();
@@ -440,7 +434,7 @@ impl APIData {
                 let term_short = TermShort::from_term_details(term_details);
                 ret.insert(termid.clone(), Some(term_short));
             } else {
-                eprint!("WARNING missing short info for: {}\n", termid);
+                eprintln!("WARNING missing short info for: {}", termid);
                 ret.insert(termid.clone(), None);
             }
         }

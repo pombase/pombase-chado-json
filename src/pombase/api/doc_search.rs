@@ -30,7 +30,7 @@ struct SolrDocSearchResponseContainer {
 }
 
 fn make_docs_url(config: &ServerConfig, q: &str) -> Option<String> {
-    if q.len() > 0 {
+    if !q.is_empty() {
         let clean_words = clean_words(q);
 
         if clean_words.is_empty() {

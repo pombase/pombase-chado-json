@@ -28,7 +28,7 @@ fn print_usage(program: &str, opts: Options) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    print!("{} v{}\n", PKG_NAME, VERSION);
+    println!("{} v{}", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
@@ -67,32 +67,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if !matches.opt_present("config-file") {
-        print!("no -c|--config-file option\n");
+        println!("no -c|--config-file option");
         print_usage(&program, opts);
         process::exit(1);
     }
     if !matches.opt_present("doc-config-file") {
-        print!("no --doc-config-file option\n");
+        println!("no --doc-config-file option");
         print_usage(&program, opts);
         process::exit(1);
     }
     if !matches.opt_present("postgresql-connection-string") {
-        print!("no -p|--postgresql-connection-string option\n");
+        println!("no -p|--postgresql-connection-string option");
         print_usage(&program, opts);
         process::exit(1);
     }
     if !matches.opt_present("go-eco-mapping") {
-        print!("no --go-eco-mapping option\n");
+        println!("no --go-eco-mapping option");
         print_usage(&program, opts);
         process::exit(1);
     }
     if !matches.opt_present("domain-data-file") {
-        print!("no -i|--domain-data-file option\n");
+        println!("no -i|--domain-data-file option");
         print_usage(&program, opts);
         process::exit(1);
     }
     if !matches.opt_present("output-directory") {
-        print!("no -d|--output-directory option\n");
+        println!("no -d|--output-directory option");
         print_usage(&program, opts);
         process::exit(1);
     }
@@ -116,12 +116,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let raw = Raw::new(&mut client).await?;
 
     let interpro_data = parse_interpro(&config, &interpro_json);
-    let pfam_data =
-        if let Some(pfam_json) = maybe_pfam_json {
-            Some(parse_pfam(&pfam_json))
-        } else {
-            None
-        };
+    let pfam_data = maybe_pfam_json.map(|pfam_json| parse_pfam(&pfam_json));
     let rnacentral_data =
         if let Some(rnacentral_json) = maybe_rnacentral_json {
             Some(pombase::rnacentral::parse_annotation_json(&rnacentral_json)?)

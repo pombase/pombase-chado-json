@@ -44,7 +44,7 @@ const FASTA_SEQ_COLUMNS: usize = 60;
 fn write_as_fasta(writer: &mut dyn Write, id: &str, desc: Option<String>,
                   seq: &str)
 {
-    let fasta = format_fasta(id, desc, &seq, FASTA_SEQ_COLUMNS);
+    let fasta = format_fasta(id, desc, seq, FASTA_SEQ_COLUMNS);
     writer.write_all(fasta.as_bytes()).unwrap();
 }
 
@@ -284,7 +284,7 @@ impl WebData {
                             if let Some(ref name) = gene_details.name {
                                 buf.push_str(name);
                             }
-                            buf.push_str("|");
+                            buf.push('|');
                             if let Some(ref product) = gene_details.product {
                                 buf.push_str(product);
                             }
@@ -380,17 +380,17 @@ impl WebData {
         let funding_header = format!("!funding: {}\n", &config.funder);
 
         gpi_writer.write_all("!gpi-version: 2.0\n".as_bytes())?;
-        gpi_writer.write_all(&format!("!namespace: {}\n", database_name).as_bytes())?;
-        gpi_writer.write_all(&generated_by.as_bytes())?;
-        gpi_writer.write_all(&date_generated.as_bytes())?;
-        gpi_writer.write_all(&url_header.as_bytes())?;
-        gpi_writer.write_all(&funding_header.as_bytes())?;
+        gpi_writer.write_all(format!("!namespace: {}\n", database_name).as_bytes())?;
+        gpi_writer.write_all(generated_by.as_bytes())?;
+        gpi_writer.write_all(date_generated.as_bytes())?;
+        gpi_writer.write_all(url_header.as_bytes())?;
+        gpi_writer.write_all(funding_header.as_bytes())?;
 
         gpad_writer.write_all("!gpa-version: 2.0\n".as_bytes())?;
-        gpad_writer.write_all(&generated_by.as_bytes())?;
-        gpad_writer.write_all(&date_generated.as_bytes())?;
-        gpad_writer.write_all(&url_header.as_bytes())?;
-        gpad_writer.write_all(&funding_header.as_bytes())?;
+        gpad_writer.write_all(generated_by.as_bytes())?;
+        gpad_writer.write_all(date_generated.as_bytes())?;
+        gpad_writer.write_all(url_header.as_bytes())?;
+        gpad_writer.write_all(funding_header.as_bytes())?;
 
         for gene_details in self.api_maps.genes.values() {
             if gene_details.taxonid != load_org_taxonid {
@@ -416,9 +416,9 @@ impl WebData {
 
             let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
             let db_object_symbol =
-                gene_details.product.clone().unwrap_or_else(|| RcString::new());
+                gene_details.product.clone().unwrap_or_else(RcString::new);
             let db_object_name =
-                gene_details.name.clone().unwrap_or_else(|| RcString::new());
+                gene_details.name.clone().unwrap_or_else(RcString::new);
 
             let db_object_synonyms =
                 gene_details.synonyms.iter().filter(|synonym| {
@@ -509,7 +509,7 @@ impl WebData {
 
             let line = format!("{}\t{}\t{}\n",
                                gene_details.uniquename,
-                               gene_details.name.clone().unwrap_or_else(|| RcString::new()),
+                               gene_details.name.clone().unwrap_or_else(RcString::new),
                                synonyms);
 
             let gene_name = if let Some(ref gene_details_name) = gene_details.name {
@@ -654,7 +654,7 @@ impl WebData {
                                        protein.codon_adaptation_index);
                     peptide_stats_writer.write_all(line.as_bytes())?;
 
-                    let gene_name = gene_details.name.clone().unwrap_or_else(|| RcString::new());
+                    let gene_name = gene_details.name.clone().unwrap_or_else(RcString::new);
                     for interpro_match in &gene_details.interpro_matches {
                         let line_start = format!("{}\t{}\t{}\t{}\t{}",
                                                  gene_uniquename, gene_name,
@@ -676,7 +676,7 @@ impl WebData {
                         disordered_regions_writer.write_all(line.as_bytes())?;
                     }
 
-                    let composition = prot_composition(&mut total_composition, &protein);
+                    let composition = prot_composition(&mut total_composition, protein);
 
                     compositions_to_write.push((gene_uniquename.clone(), composition));
                 }
@@ -692,7 +692,7 @@ impl WebData {
             }
         }
 
-        all_composition_aa.sort();
+        all_composition_aa.sort_unstable();
 
         let all_composition_string =
             all_composition_aa.iter()
@@ -707,14 +707,14 @@ impl WebData {
             let mut line = String::from(first_col_string);
 
             for ch in &all_composition_aa {
-                line.push_str("\t");
+                line.push('\t');
                 if let Some(count) = comp.get(ch) {
                     line.push_str(&count.to_string());
                 } else {
-                    line.push_str("0");
+                    line.push('0');
                 }
             }
-            line.push_str("\n");
+            line.push('\n');
             line
         };
 
@@ -879,7 +879,8 @@ impl WebData {
                     let chromosome_export_id =
                         &config.find_chromosome_config(chromosome_name).export_id;
                     let gene_gff_lines =
-                        format_gene_gff(chromosome_export_id, &config.database_name, &gene_details);
+                        format_gene_gff(chromosome_export_id, &config.database_name,
+                                        gene_details);
                     for gff_line in gene_gff_lines {
                         all_gff_writer.write_all(gff_line.as_bytes())?;
                         all_gff_writer.write_all(b"\n")?;
@@ -912,8 +913,8 @@ impl WebData {
                 let chromosome_export_id =
                     &config.find_chromosome_config(chromosome_name).export_id;
                 let gff_lines =
-                    format_misc_feature_gff(&chromosome_export_id, &config.database_name,
-                                            &feature_short);
+                    format_misc_feature_gff(chromosome_export_id, &config.database_name,
+                                            feature_short);
                 for gff_line in gff_lines {
                     all_gff_writer.write_all(gff_line.as_bytes())?;
                     all_gff_writer.write_all(b"\n")?;
@@ -1015,7 +1016,7 @@ impl WebData {
             let refs_string = refs_vec.join(",");
             let assigned_by_string = assigned_bys_vec.join(",");
 
-            let line_bits = vec![term_short.termid.as_str(), &term_short.name.as_str(),
+            let line_bits = vec![term_short.termid.as_str(), term_short.name.as_str(),
                                  gene_short.uniquename.as_str(),
                                  gene_short.name.as_ref().map(RcString::as_str)
                                    .unwrap_or_else(|| gene_short.uniquename.as_str()),
@@ -1041,7 +1042,7 @@ impl WebData {
             let rnacentral_file_name = format!("{}/rnacentral.json", output_dir);
             let rnacentral_file = File::create(rnacentral_file_name).expect("Unable to open file");
             let mut rnacentral_writer = BufWriter::new(&rnacentral_file);
-            let rnacentral_struct = make_rnacentral_struct(&config, &self.api_maps.genes);
+            let rnacentral_struct = make_rnacentral_struct(config, &self.api_maps.genes);
             let s = serde_json::to_string(&rnacentral_struct).unwrap();
 
             rnacentral_writer.write_all(s.as_bytes())?;
@@ -1097,7 +1098,7 @@ impl WebData {
             for term_and_name in &slim_config.terms {
                 let line = format!("{}\t{}\n", term_and_name.termid, term_and_name.name);
 
-                slim_writer.write(line.as_bytes())?;
+                slim_writer.write_all(line.as_bytes())?;
             }
         }
 
@@ -1119,7 +1120,7 @@ impl WebData {
                 if prot_seq.len() >= *end {
                     coords_strings.push(format!("{}..{}", start, end));
                     let seq = &prot_seq[start-1..*end];
-                    seqs.push(seq.clone());
+                    seqs.push(seq.to_owned());
                 } else {
                     eprintln!("TM domain coord is outside of protein sequence, {}..{} for {}",
                              start, end, prot_seq);
@@ -1148,7 +1149,7 @@ impl WebData {
                 }
             }
 
-            if gene_details.tm_domain_coords.len() == 0 {
+            if gene_details.tm_domain_coords.is_empty() {
                 continue;
             }
 
@@ -1177,7 +1178,7 @@ impl WebData {
 
         for (gene_uniquename, datasets) in &self.api_maps.gene_expression_measurements {
 
-            for (_, measurement) in datasets {
+            for measurement in datasets.values() {
 
                 let ref_uniquename = &measurement.reference_uniquename;
 
@@ -1349,7 +1350,7 @@ impl WebData {
 
         for row in table {
             let line = row.join("\t") + "\n";
-            writer.write(line.as_bytes())?;
+            writer.write_all(line.as_bytes())?;
         }
 
         Ok(())
@@ -1403,16 +1404,16 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc");
 
-        self.write_go_annotation_files(&config, go_eco_mappping, &misc_path)?;
+        self.write_go_annotation_files(config, go_eco_mappping, &misc_path)?;
 
-        self.write_gene_id_table(&config, &misc_path)?;
-        self.write_protein_features(&config, &misc_path)?;
-        self.write_feature_coords(&config, &misc_path)?;
-        self.write_macromolecular_complexes(&config, &misc_path)?;
-        self.write_rnacentral(&config, &misc_path)?;
-        self.write_deletion_viability(&config, &misc_path)?;
-        self.write_slim_ids_and_names(&config, &misc_path)?;
-        self.write_transmembrane_domains(&config, &misc_path)?;
+        self.write_gene_id_table(config, &misc_path)?;
+        self.write_protein_features(config, &misc_path)?;
+        self.write_feature_coords(config, &misc_path)?;
+        self.write_macromolecular_complexes(config, &misc_path)?;
+        self.write_rnacentral(config, &misc_path)?;
+        self.write_deletion_viability(config, &misc_path)?;
+        self.write_slim_ids_and_names(config, &misc_path)?;
+        self.write_transmembrane_domains(config, &misc_path)?;
         self.write_gene_expression_table(&misc_path)?;
         self.write_site_map_txt(config, doc_config, &misc_path)?;
 
@@ -1421,7 +1422,7 @@ impl WebData {
         self.write_stats(&web_json_path)?;
 
         let gff_path = self.create_dir(output_dir, "gff");
-        self.write_gff(&config, &gff_path)?;
+        self.write_gff(config, &gff_path)?;
 
         Ok(())
     }

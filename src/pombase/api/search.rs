@@ -58,27 +58,15 @@ impl SolrSearchScope {
     }
 
     pub fn is_term(&self) -> bool {
-        if let SolrSearchScope::Term = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, SolrSearchScope::Term)
     }
 
     pub fn is_reference(&self) -> bool {
-        if let SolrSearchScope::Reference = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, SolrSearchScope::Reference)
     }
 
     pub fn is_documentation(&self) -> bool {
-        if let SolrSearchScope::Documentation = self {
-            true
-        } else {
-            false
-        }
+        matches!(self, SolrSearchScope::Documentation)
     }
 }
 
@@ -127,7 +115,7 @@ impl Search {
         match result {
             Ok(res) => {
                 match res.bytes() {
-                    Ok(bytes) => Ok(PNGPlot { bytes: bytes }),
+                    Ok(bytes) => Ok(PNGPlot { bytes }),
                     Err(err) => Err(format!("Error getting violin plot image: {:?}", err)),
                 }
             },

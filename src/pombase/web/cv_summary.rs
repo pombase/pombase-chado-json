@@ -151,9 +151,9 @@ fn sort_genotype_uniquenames(genotypes: &IdGenotypeMap,
     let cmp_genotype_ploidiness =
         |genotype_a_uniquename: &RcString, genotype_b_uniquename: &RcString| {
             let genotype_a = genotypes.get(genotype_a_uniquename)
-                .expect(&format!("missing genotype {}", genotype_a_uniquename));
+                .unwrap_or_else(|| panic!("missing genotype {}", genotype_a_uniquename));
             let genotype_b = genotypes.get(genotype_b_uniquename)
-                .expect(&format!("missing genotype {}", genotype_b_uniquename));
+                .unwrap_or_else(|| panic!("missing genotype {}", genotype_b_uniquename));
 
             let genotype_a_ploidiness = genotype_a.ploidiness();
             let genotype_b_ploidiness = genotype_b.ploidiness();
@@ -163,9 +163,9 @@ fn sort_genotype_uniquenames(genotypes: &IdGenotypeMap,
             }
 
             if genotype_a.ploidiness() == Ploidiness::Haploid {
-                return Ordering::Less;
+                Ordering::Less
             } else {
-                return Ordering::Greater;
+                Ordering::Greater
             }
         };
 
@@ -413,9 +413,9 @@ fn make_cv_summary(cv_config: &CvConfig,
         // https://github.com/pombase/website/issues/228
         let ext_comp = |id1: &i32, id2: &i32| {
             let a1: &OntAnnotationDetail =
-                annotation_details.get(&id1).expect("can't find OntAnnotationDetail");
+                annotation_details.get(id1).expect("can't find OntAnnotationDetail");
             let a2: &OntAnnotationDetail =
-                annotation_details.get(&id2).expect("can't find OntAnnotationDetail");
+                annotation_details.get(id2).expect("can't find OntAnnotationDetail");
 
             if a1.extension.is_empty() || a2.extension.is_empty() {
                 // sort is stable (hopefully) so this will keep the ordering the same
@@ -432,7 +432,7 @@ fn make_cv_summary(cv_config: &CvConfig,
 
         for annotation_id in &summary_sorted_annotations {
             let annotation =
-                annotation_details.get(&annotation_id).expect("can't find OntAnnotationDetail");
+                annotation_details.get(annotation_id).expect("can't find OntAnnotationDetail");
             let gene_uniquenames =
                 if include_gene && cv_config.feature_type == "gene" {
                     annotation.genes.clone()
@@ -501,7 +501,7 @@ fn make_cv_summary(cv_config: &CvConfig,
     for term_and_annotations in &mut term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
             collect_summary_rows(genes, genotypes, summary);
-            collect_ext_summary_genes(&cv_config, summary, genes);
+            collect_ext_summary_genes(cv_config, summary, genes);
         }
     }
 }

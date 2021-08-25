@@ -79,13 +79,13 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
     if let Some(gene_organism) = config.organism_by_taxonid(gene_details.taxonid) {
         summ += &format!("  <dt>Organism</dt> <dd>{}\n", gene_organism.scientific_name());
 
-        if gene_organism.alternative_names.len() > 0 {
+        if !gene_organism.alternative_names.is_empty() {
             summ += &format!(" ({})", gene_organism.alternative_names.join(", "));
         }
         summ += "</dd>\n";
     }
 
-    if gene_details.synonyms.len() > 0 {
+    if !gene_details.synonyms.is_empty() {
         let synonyms: Vec<RcString> =
             gene_details.synonyms.iter().map(|s| s.name.clone()).collect();
         summ += &format!("  <dt>Synonyms</dt> <dd>{}</dd>\n", synonyms.join(", "));
@@ -112,12 +112,12 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 }
 
 fn genotype_display_name(genotype_short: &GenotypeShort) -> String {
-    let mut bits: Vec<_> = genotype_short.display_uniquename.split("-").collect();
+    let mut bits: Vec<_> = genotype_short.display_uniquename.split('-').collect();
     bits.dedup();
     bits.join(" ")
 }
 
-fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
+fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
                    container: &dyn AnnotationContainer) -> String {
     let mut ret = String::new();
     let mut references = vec![];
@@ -135,17 +135,15 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
             }
 
             for gene_uniquename in &annotation_details.genes {
-                if let Some(maybe_gene_short) =
+                if let Some(Some(gene_short)) =
                     container.genes_by_uniquename().get(gene_uniquename.as_str()) {
-                        if let Some(gene_short) = maybe_gene_short {
-                            genes.push(gene_short)
-                        }
+                        genes.push(gene_short)
                     }
             }
         }
     }
 
-    if container.container_type() != ContainerType::Reference && references.len() > 0 {
+    if container.container_type() != ContainerType::Reference && !references.is_empty() {
         references.sort();
         references.dedup();
         ret += "<p>References:</p>\n<ul>";
@@ -155,7 +153,7 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
         ret += "</ul>\n";
     }
 
-    if container.container_type() != ContainerType::Gene && genes.len() > 0 {
+    if container.container_type() != ContainerType::Gene && !genes.is_empty() {
         genes.sort();
         genes.dedup();
         ret += "<p>Genes:</p>\n<ul>";
@@ -166,7 +164,7 @@ fn get_annotations(ont_annotation_ids: &Vec<OntAnnotationId>,
         ret += "</ul>\n";
     }
 
-    if container.container_type() != ContainerType::Genotype && genotypes.len() > 0 {
+    if container.container_type() != ContainerType::Genotype && !genotypes.is_empty() {
         genotypes.sort();
         genotypes.dedup();
         if let Some(genotypes_by_uniquename) = container.genotypes_by_uniquename() {
@@ -196,9 +194,9 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
 
     let cmp_display_names =
         |cv_name_a: &RcString, cv_name_b: &RcString| {
-            let cv_config_a = config.cv_config_by_name(&cv_name_a);
+            let cv_config_a = config.cv_config_by_name(cv_name_a);
             let cv_display_name_a = cv_config_a.display_name;
-            let cv_config_b = config.cv_config_by_name(&cv_name_b);
+            let cv_config_b = config.cv_config_by_name(cv_name_b);
             let cv_display_name_b = cv_config_b.display_name;
 
             cv_display_name_a.cmp(&cv_display_name_b)
@@ -214,13 +212,9 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
             annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_display_name);
             for term_annotation in term_annotations {
                 let term_name =
-                    if let Some(term_short_opt) =
+                    if let Some(Some(term_short)) =
                     container.terms_by_termid().get(&term_annotation.term) {
-                        if let Some(term_short) = term_short_opt {
-                            String::from(term_short.name.as_str())
-                        } else {
-                            String::from("(unknown term name)")
-                        }
+                        String::from(term_short.name.as_str())
                     } else {
                         String::from("(unknown term name)")
                     };
@@ -257,12 +251,10 @@ fn orthologs(config: &Config, container: &dyn OrthologAnnotationContainer) -> St
             } else {
                 String::from("Unknown organism")
             };
-        if let Some(maybe_orth_gene_short) =
+        if let Some(Some(orth_gene_short)) =
             container.genes_by_uniquename().get(&orth_annotation.ortholog_uniquename) {
-                if let Some(orth_gene_short) = maybe_orth_gene_short {
-                    orth_html += &format!("<li>{} {}</li>\n", orth_gene_short.display_name(),
-                                          orth_org_scientific_name);
-                }
+                orth_html += &format!("<li>{} {}</li>\n", orth_gene_short.display_name(),
+                                      orth_org_scientific_name);
             }
     }
 

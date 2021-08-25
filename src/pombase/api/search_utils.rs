@@ -36,7 +36,7 @@ pub fn clean_words(q: &str) -> Vec<String> {
 }
 
 pub fn do_solr_request(url: &str) -> Result<Response, String> {
-    print!("do_solr_request({:?})\n", url);
+    println!("do_solr_request({:?})", url);
     match reqwest::blocking::get(url) {
         Ok(res) => {
             if res.status().is_success() {

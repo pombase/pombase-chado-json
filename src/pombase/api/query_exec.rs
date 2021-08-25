@@ -30,7 +30,7 @@ impl QueryExec {
                     } else {
                         let message = RcString::from(&format!("can't find query for ID {}",
                                                               query_id));
-                        return QueryAPIResult::new_error(&query, &message);
+                        return QueryAPIResult::new_error(query, &message);
 
                     }
                 } else {

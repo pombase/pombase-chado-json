@@ -75,12 +75,12 @@ fn to_gff(chromosome_export_id: &str,
     let end_pos_str = format!("{}", location.end_pos);
     let mut ret_val = String::new();
     let bits: Vec<&str> =
-        vec![&chromosome_export_id, source, feat_type,
+        vec![chromosome_export_id, source, feat_type,
              &start_pos_str, &end_pos_str,
              ".", location.strand.to_gff_str(), phase_char];
     for s in bits {
         ret_val.push_str(s);
-        ret_val.push_str("\t");
+        ret_val.push('\t');
     }
 
     ret_val.push_str("ID=");
@@ -105,14 +105,10 @@ pub fn format_gene_gff(chromosome_export_id: &str,
     let mut ret_val = vec![];
     if let Some (ref gene_loc) = gene.location {
         let maybe_gene_name =
-            if let Some(gene_name) = gene.name.as_ref() {
-                Some(gene_name as &str)
-            } else {
-                None
-            };
+            gene.name.as_ref().map(|gene_name| gene_name as &str);
 
         ret_val.push(to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
-                            "gene", &gene_loc, None));
+                            "gene", gene_loc, None));
         for tr in &gene.transcripts {
             ret_val.push(to_gff(chromosome_export_id,
                                 source, &tr.uniquename, None, &tr.transcript_type,

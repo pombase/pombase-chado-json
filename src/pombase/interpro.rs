@@ -44,7 +44,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<RcString, Uni
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {
-            print!("Failed to read {}: {}\n", file_name, err);
+            println!("Failed to read {}: {}", file_name, err);
             process::exit(1);
         }
     };

@@ -264,7 +264,7 @@ fn exec_termid(api_data: &APIData, term_id: &str,
                conditions: &HashSet<TermAndName>,
                excluded_conditions: &HashSet<TermAndName>)  -> GeneUniquenameVecResult {
     if let Some(ref single_or_multi_locus) = *maybe_single_or_multi_locus {
-        let ploidiness = maybe_ploidiness.clone().unwrap_or_else(|| Ploidiness::Any);
+        let ploidiness = maybe_ploidiness.clone().unwrap_or(Ploidiness::Any);
         let genes = api_data.genes_of_genotypes(term_id, single_or_multi_locus,
                                                 &ploidiness,
                                                 expression, conditions, excluded_conditions);
@@ -306,8 +306,8 @@ fn exec_genome_range_overlaps(api_data: &APIData, start: Option<usize>, end: Opt
     let gene_uniquenames =
         api_data.filter_genes(&|gene: &APIGeneSummary| {
             if let Some(ref location) = gene.location {
-                (end.is_none() || usize::from(location.start_pos) <= end.unwrap()) &&
-                    (start.is_none() || usize::from(location.end_pos) >= start.unwrap()) &&
+                (end.is_none() || location.start_pos <= end.unwrap()) &&
+                    (start.is_none() || location.end_pos >= start.unwrap()) &&
                     location.chromosome_name == chromosome_name
             } else {
                 false
@@ -457,11 +457,7 @@ impl QueryNode {
     }
 
     pub fn get_query_id(&self) -> Option<Uuid> {
-        if let Some(ref query_id_node) = self.query_id {
-            Some(query_id_node.id.clone())
-        } else {
-            None
-        }
+        self.query_id.as_ref().map(|query_id_node| query_id_node.id)
     }
 
     #[async_recursion]
@@ -684,7 +680,7 @@ impl Query {
                 }
             }
 
-        seq.to_owned()
+        seq
     }
 
     fn make_sequence(&self, api_data: &APIData,
@@ -701,8 +697,8 @@ impl Query {
                         }
                     SeqType::Nucleotide(ref options) => {
                         let chr = gene_summary.location.as_ref()
-                            .map(|ref l| -> &RcString { &l.chromosome_name } )
-                            .map_or(None, |ref name| api_data.get_chr_details(name.as_str()));
+                            .map(|l| -> &RcString { &l.chromosome_name } )
+                            .and_then(|name| api_data.get_chr_details(name.as_str()));
                         let seq = self.make_nucl_seq(transcript, chr, options);
                         return Some(seq)
                     }
@@ -743,7 +739,7 @@ impl Query {
         }
 
         if let Ok(gaf_str) = str::from_utf8(&gaf_bytes) {
-            if gaf_str.len() > 0 {
+            if !gaf_str.is_empty() {
                 return Some(gaf_str.to_owned())
             }
         }
@@ -823,8 +819,8 @@ impl Query {
                                protein_length_bin = gene_data.protein_length_bin.clone(),
                            "gene_uniquename" => (),
                            _ => {
-                               if field_name.starts_with("gene_ex_avg_copies_per_cell:") {
-                                   let dataset_name = RcString::from(&field_name[28..]);
+                               if let Some(without_prefix) = field_name.strip_prefix("gene_ex_avg_copies_per_cell:") {
+                                   let dataset_name = RcString::from(without_prefix);
                                    let results_measurements =
                                        self.get_gene_ex_for_results(api_data, &dataset_name,
                                                                     &gene_uniquename);

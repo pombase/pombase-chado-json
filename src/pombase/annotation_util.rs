@@ -17,7 +17,7 @@ pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvCo
 
     for termid in &subset_config.term_ids {
         let term_details = api_maps.terms.get(termid.as_str())
-            .expect(&format!("no term details found for {} for config file", termid));
+            .unwrap_or_else(|| panic!("no term details found for {} for config file", termid));
 
         for (cv_name, term_annotations) in &term_details.cv_annotations {
             if let Some(cv_config) = cv_config_map.get(cv_name) {
@@ -40,7 +40,7 @@ pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvCo
                 for annotation_id in &term_annotation.annotations {
                     let mut row = vec![];
                     let annotation_details = api_maps.annotation_details
-                        .get(&annotation_id).expect("can't find OntAnnotationDetail");
+                        .get(annotation_id).expect("can't find OntAnnotationDetail");
 
                     let gene_uniquenames = &annotation_details.genes;
 

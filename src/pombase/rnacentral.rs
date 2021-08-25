@@ -123,13 +123,13 @@ fn make_genome_location(config: &Config, gene_details: &GeneDetails,
                         transcript_details: &TranscriptDetails)
                         -> RNAcentralNcRNALocation
 {
-    let assembly_version =
+    let assembly =
         config.organisms.iter()
         .filter(|org| org.taxonid == gene_details.taxonid)
         .collect::<Vec<_>>().get(0)
-        .expect(&format!("organism not found in configuration: {}", gene_details.taxonid))
+        .unwrap_or_else(|| panic!("organism not found in configuration: {}", gene_details.taxonid))
         .assembly_version.clone()
-        .expect(&format!("no assembly_version for: {}", gene_details.taxonid));
+        .unwrap_or_else(|| panic!("no assembly_version for: {}", gene_details.taxonid));
 
     let mut exons = vec![];
     for part in &transcript_details.parts {
@@ -153,7 +153,7 @@ fn make_genome_location(config: &Config, gene_details: &GeneDetails,
     }
 
     RNAcentralNcRNALocation {
-        assembly: assembly_version.clone(),
+        assembly,
         exons,
     }
 }
@@ -171,7 +171,7 @@ fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA>
         }
 
         for transcript_details in &gene_details.transcripts {
-            let rnacentral_gene = make_gene_struct(config, &gene_details);
+            let rnacentral_gene = make_gene_struct(config, gene_details);
 
             let primary_id = db_uniquename(config, &transcript_details.uniquename);
             let location = make_genome_location(config, gene_details, transcript_details);
@@ -200,14 +200,14 @@ fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA>
 pub fn make_rnacentral_struct(config: &Config, genes: &UniquenameGeneMap) -> RNAcentral {
     let local: DateTime<Local> = Local::now();
 
-    let database_name = config.database_name.clone();
-    let data = make_data(&config, genes);
+    let data_provider = config.database_name.clone();
+    let data = make_data(config, genes);
 
     RNAcentral {
         data,
         metadata: RNAcentralMetadata {
             date_produced: RcString::from(&local.to_rfc3339()),
-            data_provider: database_name.clone(),
+            data_provider,
             schema_version: RcString::from("0.3.0"),
             publications: vec![config.database_citation.clone()],
         }
@@ -243,7 +243,7 @@ pub fn parse_annotation_json(file_name: &str)
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {
-            eprint!("Failed to read {}: {}\n", file_name, err);
+            eprintln!("Failed to read {}: {}", file_name, err);
             return Err(Box::new(err));
         }
     };

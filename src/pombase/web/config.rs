@@ -537,7 +537,7 @@ impl GoEcoMapping {
         for line_result in reader.lines() {
             match line_result {
                 Ok(line) => {
-                    if line.starts_with("#") {
+                    if line.starts_with('#') {
                         continue;
                     }
                     let parts: Vec<&str> = line.split('\t').collect();
@@ -555,13 +555,13 @@ impl GoEcoMapping {
 
     pub fn lookup_default(&self, go_evidence_code: &str) -> Option<String> {
         self.mapping.get(&(String::from(go_evidence_code), String::from("Default")))
-            .map(|s| String::from(s))
+            .map(String::from)
     }
 
     pub fn lookup_with_go_ref(&self, go_evidence_code: &str, go_ref: &str)
                               -> Option<String>
     {
         self.mapping.get(&(String::from(go_evidence_code), String::from(go_ref)))
-            .map(|s| String::from(s))
+            .map(String::from)
     }
 }
