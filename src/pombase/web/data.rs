@@ -381,7 +381,7 @@ impl WebData {
         let generated_by = format!("!generated-by: {}\n", database_name);
         let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
         let date_generated = format!("!date-generated: {}\n", &iso_date);
-        let url_header = format!("!url: {}\n", &config.base_url);
+        let url_header = format!("!URL: {}\n", &config.base_url);
         let funding_header = format!("!funding: {}\n", &config.funder);
 
         gpi_writer.write_all("!gpi-version: 2.0\n".as_bytes())?;
