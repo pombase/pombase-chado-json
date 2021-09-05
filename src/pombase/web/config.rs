@@ -319,6 +319,7 @@ pub struct Config {
     pub site_description: RcString,
     pub load_organism_taxonid: Option<OrganismTaxonId>,
     pub base_url: RcString,
+    pub helpdesk_address: RcString,
     pub doc_page_aliases: HashMap<String, String>,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
@@ -369,7 +370,7 @@ impl Config {
         if let Some(config) = self.cv_config.get(cv_name) {
             config.clone()
         } else {
-            let empty_cv_config = 
+            let empty_cv_config =
                 CvConfig {
                     feature_type: "".into(),
                     display_name: Some("".into()),

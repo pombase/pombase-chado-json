@@ -364,14 +364,19 @@ impl WebData {
         let gpad_file_name =
             format!("{}/gene_product_annotation_data_taxonid_{}.tsv", output_dir,
                     load_org_taxonid);
-        let gaf_file_name = format!("{}/pombase_style_gaf.tsv", output_dir);
+        let pombase_gaf_file_name = format!("{}/pombase_style_gaf.tsv", output_dir);
+        let standard_gaf_file_name = format!("{}/go_style_gaf.tsv", output_dir);
 
         let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
         let gpad_file = File::create(gpad_file_name).expect("Unable to open file");
-        let gaf_file = File::create(gaf_file_name).expect("Unable to open file");
+        let pombase_gaf_file =
+            File::create(pombase_gaf_file_name).expect("Unable to open file");
+        let standard_gaf_file =
+            File::create(standard_gaf_file_name).expect("Unable to open file");
         let mut gpi_writer = BufWriter::new(&gpi_file);
         let mut gpad_writer = BufWriter::new(&gpad_file);
-        let mut gaf_writer = BufWriter::new(&gaf_file);
+        let mut pombase_gaf_writer = BufWriter::new(&pombase_gaf_file);
+        let mut standard_gaf_writer = BufWriter::new(&standard_gaf_file);
 
         let generated_by = format!("!generated-by: {}\n", database_name);
         let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
@@ -391,6 +396,13 @@ impl WebData {
         gpad_writer.write_all(date_generated.as_bytes())?;
         gpad_writer.write_all(url_header.as_bytes())?;
         gpad_writer.write_all(funding_header.as_bytes())?;
+
+        standard_gaf_writer.write_all("!gaf-version: 2.2\n".as_bytes())?;
+        standard_gaf_writer.write_all(generated_by.as_bytes())?;
+        standard_gaf_writer.write_all(date_generated.as_bytes())?;
+        standard_gaf_writer.write_all(url_header.as_bytes())?;
+        let contact = format!("!contact: {}\n", &config.helpdesk_address);
+        standard_gaf_writer.write_all(contact.as_bytes())?;
 
         for gene_details in self.api_maps.genes.values() {
             if gene_details.taxonid != load_org_taxonid {
@@ -458,7 +470,12 @@ impl WebData {
                                           &self.api_maps, gene_details)?;
 
             for aspect_name in &GO_ASPECT_NAMES {
-                write_go_annotation_format(&mut gaf_writer, config,
+                write_go_annotation_format(&mut pombase_gaf_writer, config,
+                                           GafWriteMode::PomBase,
+                                           &self.api_maps, gene_details,
+                                           aspect_name)?;
+                write_go_annotation_format(&mut standard_gaf_writer, config,
+                                           GafWriteMode::Standard,
                                            &self.api_maps, gene_details,
                                            aspect_name)?;
             }

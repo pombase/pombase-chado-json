@@ -11,6 +11,12 @@ use pombase_rc_string::RcString;
 use crate::web::config::*;
 use crate::data_types::*;
 
+#[derive(PartialEq, Eq)]
+pub enum GafWriteMode {
+  PomBase,
+  Standard,
+}
+
 pub const GO_ASPECT_NAMES: [&str; 3] =
     ["cellular_component", "biological_process", "molecular_function"];
 
@@ -286,6 +292,7 @@ fn make_gaf_extension_string(config: &Config, extension: &[ExtPart]) -> String {
 
 
 pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
+                                  write_mode: GafWriteMode,
                                   api_maps: &APIMaps, gene_details: &GeneDetails,
                                   cv_name: &str)
                                   -> Result<(), io::Error>
@@ -311,6 +318,22 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         .collect::<Vec<String>>()
         .join("|");
 
+        let db_object_name =
+        if let Some(ref product) = gene_details.product {
+            product.as_str()
+        } else {
+            ""
+        };
+
+    let transcript_type_str =
+        gene_details.transcripts[0].transcript_type.as_str();
+    let db_object_type =
+        if transcript_type_str == "mRNA" {
+            "protein"
+        } else {
+            transcript_type_str
+        };
+
     let single_letter_aspect =
         if cv_name.starts_with('b') {
             "P"
@@ -324,20 +347,38 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
     if let Some(term_annotations) = gene_details.cv_annotations.get(cv_name) {
         for term_annotation in term_annotations {
+            let go_term = api_maps.terms.get(&term_annotation.term)
+                .unwrap_or_else(|| panic!("failed to find term summary for {}",
+                                          term_annotation.term));
+
             for annotation_id in &term_annotation.annotations {
                 let annotation_detail = api_maps.annotation_details
                     .get(annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
-                let mut qualifier_parts = vec![];
-                if term_annotation.is_not {
-                    qualifier_parts.push("NOT");
+                let go_id = &term_annotation.term;
+
+                let qualifiers = if write_mode == GafWriteMode::PomBase {
+                    let mut qualifier_parts = vec![];
+                    if term_annotation.is_not {
+                        qualifier_parts.push("NOT");
+                    };
+
+                    qualifier_parts.extend(annotation_detail.qualifiers.iter()
+                                   .map(|s| s.as_str()));
+
+
+                    qualifier_parts.join("|")
+                } else {
+                    let relation = get_gpad_relation_of(go_term, annotation_detail);
+
+                    if term_annotation.is_not {
+                        format!("NOT|{}", relation)
+                    } else {
+                        relation
+                    }
                 };
 
-                qualifier_parts.extend(annotation_detail.qualifiers.iter()
-                                       .map(|s| s.as_str()));
-
-                let go_id = &term_annotation.term;
                 let reference_uniquename =
                     annotation_detail.reference.clone()
                     .unwrap_or_else(|| RcString::from(""));
@@ -369,21 +410,6 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     .map(|s| s.as_str())
                     .unwrap_or_else(|| "");
 
-                let db_object_name =
-                    if let Some(ref product) = gene_details.product {
-                        product.as_str()
-                    } else {
-                        ""
-                    };
-
-                let transcript_type_str =
-                    gene_details.transcripts[0].transcript_type.as_str();
-                let db_object_type =
-                    if transcript_type_str == "mRNA" {
-                        "protein"
-                    } else {
-                        transcript_type_str
-                    };
                 let date =
                     if let Some(ref raw_date) = annotation_detail.date {
                         raw_date.replace("-", "")
@@ -408,7 +434,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                    database_name,
                                    db_object_id,
                                    db_object_symbol,
-                                   qualifier_parts.join("|"),
+                                   qualifiers,
                                    go_id,
                                    reference_uniquename,
                                    evidence_code,
@@ -424,6 +450,34 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                    gene_product_form_id);
                 writer.write_all(line.as_bytes())?;
             }
+        }
+
+    } else {
+        if write_mode == GafWriteMode::Standard {
+            let local: DateTime<Local> = Local::now();
+            let date = local.format("%Y%m%d");
+            let relation = get_gpad_nd_relation_of(cv_name);
+            let go_aspect_termid =
+                config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
+            let nd_ref = &config.file_exports.nd_reference;
+            let assigned_by = database_name.as_str();
+
+            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\tND\t\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t\t\n",
+                               database_name,
+                               db_object_id,
+                               db_object_symbol,
+                               relation,
+                               go_aspect_termid,
+                               nd_ref,
+                               single_letter_aspect,
+                               db_object_name,
+                               db_object_synonyms,
+                               db_object_type,
+                               gene_details.taxonid,
+                               date,
+                               assigned_by);
+
+            writer.write_all(line.as_bytes())?;
         }
     }
 

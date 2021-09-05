@@ -4,6 +4,7 @@
   "database_long_name": "PomBase",
   "database_citation": "PMID:22039153",
   "funder": "Wellcome Trust",
+  "helpdesk_address": "helpdesk@some.domain",
   "site_description": "PomBase",
   "base_url": "https://www.pombase.org",
   "doc_page_aliases": {},

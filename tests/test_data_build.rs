@@ -24,6 +24,7 @@ fn get_test_config() -> Config {
         site_description: RcString::from("PomBase"),
         load_organism_taxonid: Some(4896),
         base_url: RcString::from("https://www.pombase.org"),
+        helpdesk_address: RcString::from("helpdesk@some.domain"),
         doc_page_aliases: HashMap::new(),
         sequence_feature_page: SeqFeaturePageConfig {
             so_types_to_show: vec![String::from("regional_centromere")],
