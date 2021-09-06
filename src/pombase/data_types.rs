@@ -522,6 +522,18 @@ pub enum WithFromValue {
     IdentifierAndName(IdentifierAndName),
 }
 
+impl WithFromValue {
+    pub fn id(&self) -> RcString {
+        match self {
+            WithFromValue::Gene(gene) => gene.uniquename.clone(),
+            WithFromValue::Term(term) => term.termid.clone(),
+            WithFromValue::Identifier(id) => id.clone(),
+            WithFromValue::IdentifierAndName(id_and_name) =>
+                id_and_name.identifier.clone(),
+        }
+    }
+}
+
 impl From<WithFromValue> for RcString {
     fn from(with_from: WithFromValue) -> Self {
         match with_from {

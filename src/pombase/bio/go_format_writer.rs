@@ -249,11 +249,12 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                 let from_iter = annotation_detail.froms.iter();
                 let mut with_or_from_parts =
                     with_iter.chain(from_iter).map(|s| {
-                        let s: RcString = s.clone().into();
-                        if s.contains(':') {
-                            s
+                        let with_from_id: RcString = s.id();
+                        if with_from_id.contains(':') {
+                            with_from_id
                         } else {
-                            RcString::from(&format!("{}:{}", assigned_by, s))
+                            RcString::from(&format!("{}:{}", assigned_by,
+                                                    with_from_id))
                         }
                     })
                     .collect::<Vec<RcString>>();
@@ -413,11 +414,12 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                 let from_iter = annotation_detail.froms.iter();
                 let mut with_or_from_parts =
                     with_iter.chain(from_iter).map(|s| {
-                        let s: RcString = s.clone().into();
-                        if s.contains(':') {
-                            s
+                        let with_from_id: RcString = s.id();
+                        if with_from_id.contains(':') {
+                            with_from_id
                         } else {
-                            RcString::from(&format!("{}:{}", assigned_by, s))
+                            RcString::from(&format!("{}:{}", assigned_by,
+                                                    with_from_id))
                         }
                     })
                     .collect::<Vec<RcString>>();
