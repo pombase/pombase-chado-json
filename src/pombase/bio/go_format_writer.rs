@@ -2,7 +2,7 @@ use std::io;
 
 use std::fmt::Write;
 use std::cmp::Ordering;
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 use chrono::prelude::{Local, DateTime};
 
@@ -10,6 +10,7 @@ use pombase_rc_string::RcString;
 
 use crate::web::config::*;
 use crate::data_types::*;
+use crate::types::TermId;
 
 #[derive(PartialEq, Eq)]
 pub enum GafWriteMode {
@@ -67,6 +68,15 @@ fn get_gpad_relation_of(term_details: &TermDetails,
     }
 }
 
+fn get_gpad_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
+                             term_details: &TermDetails,
+                             annotation_detail: &OntAnnotationDetail) -> String {
+    let rel_id = get_gpad_relation_of(term_details, annotation_detail);
+    String::from(&term_map.get(&rel_id)
+                 .expect(&format!("internal error, can't find term {}", rel_id))
+                 .name)
+}
+
 fn get_gpad_nd_relation_of(aspect: &str) -> String {
     match aspect {
         "molecular_function" => String::from("RO:0002327"),
@@ -74,6 +84,14 @@ fn get_gpad_nd_relation_of(aspect: &str) -> String {
         "cellular_component" => String::from("RO:0002432"),
         _ => panic!("unknown aspect in GPAD export: {}", aspect)
     }
+}
+
+fn get_gpad_nd_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
+                                aspect: &str) -> String {
+    let rel_id = get_gpad_nd_relation_of(aspect);
+    String::from(&term_map.get(&rel_id)
+                 .expect(&format!("internal error, can't find term {}", rel_id))
+                 .name)
 }
 
 fn make_gpad_extension_string(config: &Config, extension: &[ExtPart]) -> String {
@@ -370,12 +388,14 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
                     qualifier_parts.join("|")
                 } else {
-                    let relation = get_gpad_relation_of(go_term, annotation_detail);
+                    let relation_name =
+                        get_gpad_relation_name_of(&api_maps.terms,
+                                                  go_term, annotation_detail);
 
                     if term_annotation.is_not {
-                        format!("NOT|{}", relation)
+                        format!("NOT|{}", relation_name)
                     } else {
-                        relation
+                        relation_name
                     }
                 };
 
@@ -456,7 +476,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         if write_mode == GafWriteMode::Standard {
             let local: DateTime<Local> = Local::now();
             let date = local.format("%Y%m%d");
-            let relation = get_gpad_nd_relation_of(cv_name);
+            let relation_name =
+                get_gpad_nd_relation_name_of(&api_maps.terms, cv_name);
             let go_aspect_termid =
                 config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
             let nd_ref = &config.file_exports.nd_reference;
@@ -466,7 +487,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                database_name,
                                db_object_id,
                                db_object_symbol,
-                               relation,
+                               relation_name,
                                go_aspect_termid,
                                nd_ref,
                                single_letter_aspect,
