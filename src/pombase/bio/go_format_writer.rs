@@ -61,7 +61,7 @@ fn get_gpad_relation_of(term_details: &TermDetails,
             {
                 String::from("BFO:0000050")
             } else {
-                String::from("RO:0001025")
+                String::from("RO:0002432")
             }
         },
         _ => panic!("unknown cv_name in GPAD export: {}", term_details.cv_name)
