@@ -471,11 +471,11 @@ impl WebData {
 
             for aspect_name in &GO_ASPECT_NAMES {
                 write_go_annotation_format(&mut pombase_gaf_writer, config,
-                                           GafWriteMode::PomBase,
+                                           GpadGafWriteMode::PomBaseGaf,
                                            &self.api_maps, gene_details,
                                            aspect_name)?;
                 write_go_annotation_format(&mut standard_gaf_writer, config,
-                                           GafWriteMode::Standard,
+                                           GpadGafWriteMode::StandardGaf,
                                            &self.api_maps, gene_details,
                                            aspect_name)?;
             }

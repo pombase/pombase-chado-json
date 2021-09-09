@@ -1,6 +1,5 @@
 use std::io;
 
-use std::fmt::Write;
 use std::cmp::Ordering;
 use std::collections::{HashSet, HashMap};
 
@@ -12,11 +11,13 @@ use crate::web::config::*;
 use crate::data_types::*;
 use crate::types::TermId;
 
-#[derive(PartialEq, Eq)]
-pub enum GafWriteMode {
-  PomBase,
-  Standard,
+#[derive(Clone, PartialEq, Eq)]
+pub enum GpadGafWriteMode {
+  PomBaseGaf,
+  StandardGaf,
+  Gpad,
 }
+
 
 pub const GO_ASPECT_NAMES: [&str; 3] =
     ["cellular_component", "biological_process", "molecular_function"];
@@ -26,7 +27,8 @@ fn eco_evidence_from_annotation(mapping: &GoEcoMapping,
                                 annotation: &OntAnnotationDetail)
                                 -> String
 {
-    if let Some(ref go_evidence) = annotation.evidence {
+    if let Some(ref go_evidence) = annotation.
+        evidence {
         if let Some(ref reference) = annotation.reference {
             mapping.lookup_with_go_ref(go_evidence, reference)
                 .unwrap_or_else(|| mapping.lookup_default(go_evidence)
@@ -94,13 +96,31 @@ fn get_gpad_nd_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
                  .name)
 }
 
-fn make_gpad_extension_string(config: &Config, extension: &[ExtPart]) -> String {
+fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDetails>,
+                         write_mode: &GpadGafWriteMode, extension: &[ExtPart])
+       -> String
+{
     let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
-    let get_rel_termid = |ext_part: &ExtPart| {
-        if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
-            map_termid.clone().unwrap()
+    let get_rel_term = |ext_part: &ExtPart| {
+        if *write_mode == GpadGafWriteMode::PomBaseGaf {
+            String::from(&ext_part.rel_type_name)
         } else {
-            ext_part.rel_type_id.clone().unwrap()
+            let rel_term_id =
+                if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
+                    map_termid.clone().expect(&format!("internal error, no mapping for {}",
+                                                       &ext_part.rel_type_name))
+                } else {
+                    ext_part.rel_type_id.clone().unwrap()
+                };
+
+            if *write_mode == GpadGafWriteMode::Gpad {
+                String::from(rel_term_id)
+            } else {
+                String::from(&term_map.get(&rel_term_id)
+                             .expect(&format!("internal error, can't find term {}",
+                                              rel_term_id))
+                             .name)
+            }
         }
     };
 
@@ -120,13 +140,17 @@ fn make_gpad_extension_string(config: &Config, extension: &[ExtPart]) -> String 
 
     extension.iter()
         .filter(|ext_part| {
-            if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
-                map_termid.is_some()
+            if *write_mode == GpadGafWriteMode::PomBaseGaf {
+                true
             } else {
-                ext_part.rel_type_id.is_some()
+                if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
+                    map_termid.is_some()
+                } else {
+                    ext_part.rel_type_id.is_some()
+                }
             }
         })
-        .map(|ext_part| format!("{}({})", get_rel_termid(ext_part),
+        .map(|ext_part| format!("{}({})", get_rel_term(ext_part),
                                 get_range(ext_part)))
         .collect::<Vec<_>>().join(",")
 }
@@ -263,7 +287,9 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
                 if let Some(ref date) = annotation_detail.date {
                     let annotation_extensions =
-                        make_gpad_extension_string(config, &annotation_detail.extension);
+                        make_extension_string(config, &api_maps.terms,
+                                              &GpadGafWriteMode::Gpad,
+                                              &annotation_detail.extension);
                     let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t\n",
                                        db_object_id,
                                        not, relation, ontology_class_id,
@@ -282,36 +308,8 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     Ok(())
 }
 
-
-fn make_gaf_extension_string(config: &Config, extension: &[ExtPart]) -> String {
-    let mut ret_string = String::new();
-
-    for (idx, ext_part) in extension.iter().enumerate() {
-        ret_string += &ext_part.rel_type_name;
-        ret_string.push('(');
-
-        if let ExtRange::Gene(ref gene_uniquename) = ext_part.ext_range {
-            if !gene_uniquename.contains(':') {
-                ret_string += &config.database_name;
-                ret_string.push(':');
-            }
-            ret_string += gene_uniquename;
-        } else {
-            write!(ret_string, "{}", &ext_part.ext_range).unwrap();
-        }
-        ret_string.push(')');
-
-        if idx < extension.len() - 1 {
-            ret_string.push(',');
-        }
-    }
-
-    ret_string
-}
-
-
 pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
-                                  write_mode: GafWriteMode,
+                                  write_mode: GpadGafWriteMode,
                                   api_maps: &APIMaps, gene_details: &GeneDetails,
                                   cv_name: &str)
                                   -> Result<(), io::Error>
@@ -377,7 +375,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
                 let go_id = &term_annotation.term;
 
-                let qualifiers = if write_mode == GafWriteMode::PomBase {
+                let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf {
                     let mut qualifier_parts = vec![];
                     if term_annotation.is_not {
                         qualifier_parts.push("NOT");
@@ -442,7 +440,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     };
 
                 let annotation_extensions =
-                    make_gaf_extension_string(config, &annotation_detail.extension);
+                    make_extension_string(config, &api_maps.terms,
+                                          &write_mode, &annotation_detail.extension);
 
                 let gene_product_form_id =
                     if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id
@@ -475,7 +474,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         }
 
     } else {
-        if write_mode == GafWriteMode::Standard {
+        if write_mode == GpadGafWriteMode::StandardGaf {
             let local: DateTime<Local> = Local::now();
             let date = local.format("%Y%m%d");
             let relation_name =

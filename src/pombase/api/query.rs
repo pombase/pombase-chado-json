@@ -16,7 +16,7 @@ use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShor
 use crate::web::config::TermAndName;
 
 use crate::bio::util::rev_comp;
-use crate::bio::go_format_writer::{write_go_annotation_format, GafWriteMode};
+use crate::bio::go_format_writer::{write_go_annotation_format, GpadGafWriteMode};
 
 
 use crate::types::GeneUniquename;
@@ -729,7 +729,7 @@ impl Query {
             for aspect in aspects.iter() {
                 let result = write_go_annotation_format(&mut gaf_bytes,
                                                         api_data.get_config(),
-                                                        GafWriteMode::PomBase,
+                                                        GpadGafWriteMode::PomBaseGaf,
                                                         api_data.get_maps(), gene_details,
                                                         aspect);
 
