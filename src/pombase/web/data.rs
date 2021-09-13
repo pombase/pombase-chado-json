@@ -409,7 +409,6 @@ impl WebData {
                 continue;
             }
 
-
             if gene_details.feature_type == "ncRNA gene" {
                 let mut found = false;
                 for aspect in GO_ASPECT_NAMES.iter() {
@@ -426,45 +425,7 @@ impl WebData {
                 }
             }
 
-            let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
-            let db_object_symbol =
-                gene_details.product.clone().unwrap_or_else(RcString::new);
-            let db_object_name =
-                gene_details.name.clone().unwrap_or_else(RcString::new);
-
-            let db_object_synonyms =
-                gene_details.synonyms.iter().filter(|synonym| {
-                    synonym.synonym_type == "exact"
-                })
-                .map(|synonym| synonym.name.to_string())
-                .collect::<Vec<String>>()
-                .join("|");
-
-            let db_object_type = config.file_exports.gpad_gpi.transcript_gene_so_term_map
-                .get(gene_details.transcript_so_termid.as_str())
-                .unwrap_or_else(|| {
-                    panic!("failed for find configuration for {} in transcript_gene_so_term_map",
-                           &gene_details.transcript_so_termid);
-                });
-
-            let db_object_taxon = format!("NCBITaxon:{}", load_org_taxonid);
-            let db_xrefs =
-                if let Some(ref uniprot_id) = gene_details.uniprot_identifier {
-                    RcString::from(&format!("UniProtKB:{}", uniprot_id))
-                } else {
-                    RcString::from("")
-                };
-
-            let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\tgo-annotation-summary={}\n",
-                                   db_object_id,
-                                   db_object_name,
-                                   db_object_name,
-                                   db_object_synonyms,
-                                   db_object_type,
-                                   db_object_taxon,
-                                   db_xrefs,
-                                   db_object_symbol);
-            gpi_writer.write_all(gpi_line.as_bytes())?;
+            write_gene_to_gpi(&mut gpi_writer, config, &self.api_maps, gene_details)?;
 
             write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,
                                           &self.api_maps, gene_details)?;

@@ -3,6 +3,7 @@ use std::io;
 use std::cmp::Ordering;
 use std::collections::{HashSet, HashMap};
 
+use std::io::Write;
 use chrono::prelude::{Local, DateTime};
 
 use pombase_rc_string::RcString;
@@ -168,6 +169,97 @@ fn compare_withs(withs1: &HashSet<WithFromValue>,
     withs1_vec.cmp(&withs2_vec)
 }
 
+pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIMaps,
+                         gene_details: &GeneDetails)
+                         -> Result<(), io::Error>
+{
+    let database_name = &config.database_name;
+
+    let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
+    let db_object_symbol =
+        gene_details.product.clone().unwrap_or_else(RcString::new);
+    let db_object_name =
+        gene_details.name.clone().unwrap_or_else(RcString::new);
+
+    let db_object_synonyms =
+        gene_details.synonyms.iter().filter(|synonym| {
+            synonym.synonym_type == "exact"
+        })
+        .map(|synonym| synonym.name.to_string())
+        .collect::<Vec<String>>()
+        .join("|");
+
+    let db_object_type = config.file_exports.gpad_gpi.transcript_gene_so_term_map
+        .get(gene_details.transcript_so_termid.as_str())
+        .unwrap_or_else(|| {
+            panic!("failed for find configuration for {} in transcript_gene_so_term_map",
+                   &gene_details.transcript_so_termid);
+        });
+
+    let db_object_taxon =
+        format!("NCBITaxon:{}",
+                config.load_organism_taxonid.expect("internal error, no load_organism_taxonid"));
+    let db_xrefs =
+        if let Some(ref uniprot_id) = gene_details.uniprot_identifier {
+            RcString::from(&format!("UniProtKB:{}", uniprot_id))
+        } else {
+            RcString::from("")
+        };
+
+    let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\tgo-annotation-summary={}\n",
+                           db_object_id,
+                           db_object_name,
+                           db_object_name,
+                           db_object_synonyms,
+                           db_object_type,
+                           db_object_taxon,
+                           db_xrefs,
+                           db_object_symbol);
+    gpi_writer.write_all(gpi_line.as_bytes())?;
+
+    let mut pr_ids_seen = HashSet::new();
+
+    for aspect in GO_ASPECT_NAMES.iter() {
+        let term_annotations =
+        match gene_details.cv_annotations.get(&RcString::from(*aspect)) {
+            Some(term_annotations) => term_annotations.clone(),
+            None => continue,
+        };
+
+        for term_annotation in term_annotations {
+            for annotation_id in &term_annotation.annotations {
+                let annotation_detail = api_maps.annotation_details
+                    .get(annotation_id)
+                    .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id {
+                    if pr_ids_seen.contains(gene_product_form_id.as_str()) {
+                        continue;
+                    }
+
+                    pr_ids_seen.insert(String::from(gene_product_form_id));
+
+                    let gpi_line =
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\tgo-annotation-summary={}\n",
+                                gene_product_form_id,
+                                db_object_name,
+                                db_object_name,
+                                db_object_synonyms,
+                                db_object_type,
+                                db_object_taxon,
+                                db_object_id,
+                                db_object_id,
+                                db_xrefs,
+                                db_object_symbol);
+                    gpi_writer.write_all(gpi_line.as_bytes())?;
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
+
 pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                      go_eco_mappping: &GoEcoMapping, config: &Config,
                                      api_maps: &APIMaps, gene_details: &GeneDetails)
@@ -290,6 +382,12 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                         make_extension_string(config, &api_maps.terms,
                                               &GpadGafWriteMode::Gpad,
                                               &annotation_detail.extension);
+                    let db_object_id =
+                        if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id {
+                          &gene_product_form_id
+                        } else {
+                          &db_object_id
+                        };
                     let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t\n",
                                        db_object_id,
                                        not, relation, ontology_class_id,
