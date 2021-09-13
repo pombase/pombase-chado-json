@@ -78,6 +78,24 @@ pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
     }
 }
 
+fn get_gene_prod_extension(prod_value: RcString) -> ExtPart {
+  ExtPart {
+      rel_type_id: None,
+      rel_type_name: "active_form".into(),
+      rel_type_display_name: "active form".into(),
+      ext_range: ExtRange::GeneProduct(prod_value),
+  }
+}
+
+fn make_fake_gene_prod_extensions(annotation_details_map: &mut IdOntAnnotationDetailMap) {
+  for annotation_details in annotation_details_map.values_mut() {
+    if let Some(gene_product_form_id) = annotation_details.gene_product_form_id.take() {
+      let gene_prod_extension = get_gene_prod_extension(gene_product_form_id);
+      annotation_details.extension.push(gene_prod_extension);
+    }
+  }
+}
+
 impl APIData {
     pub fn new(config: &Config, maps: &APIMaps)
                ->APIData
@@ -103,6 +121,8 @@ impl APIData {
 
         let secondary_identifiers_map =
             make_secondary_identifiers_map(&maps.terms);
+
+        make_fake_gene_prod_extensions(&mut maps.annotation_details);
 
         APIData {
             config: config.clone(),

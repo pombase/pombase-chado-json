@@ -3113,25 +3113,6 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn get_gene_prod_extension(&self, prod_value: RcString) -> ExtPart {
-        let ext_range =
-            if prod_value.starts_with("PR:") {
-                ExtRange::GeneProduct(prod_value)
-            } else {
-                ExtRange::Misc(prod_value)
-            };
-
-        let active_form = "active_form";
-
-        ExtPart {
-            rel_type_id: None,
-            rel_type_name: active_form.into(),
-            rel_type_display_name: "active form".into(),
-            ext_range,
-        }
-    }
-
-
     fn make_with_or_from_value(&self, with_or_from_value: &RcString) -> WithFromValue {
         if let Some(captures) = PREFIX_AND_ID_RE.captures(with_or_from_value) {
             let prefix = &captures["prefix"];
@@ -3217,7 +3198,7 @@ impl <'a> WebDataBuild<'a> {
 
             for prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
                 match &prop.type_name() as &str {
-                    "residue" | "scale" |
+                    "residue" | "scale" | "gene_product_form_id" |
                     "quant_gene_ex_copies_per_cell" |
                     "quant_gene_ex_avg_copies_per_cell" => {
                         if let Some(value) = prop.value.clone() {
@@ -3271,11 +3252,6 @@ impl <'a> WebDataBuild<'a> {
                     "from" => {
                         if let Some(value) = prop.value.clone() {
                             froms.insert(self.make_with_or_from_value(&value));
-                        }
-                    },
-                    "gene_product_form_id" => {
-                        if let Some(value) = prop.value.clone() {
-                            extension.push(self.get_gene_prod_extension(value));
                         }
                     },
                     "annotation_throughput_type" => {
@@ -4426,6 +4402,13 @@ impl <'a> WebDataBuild<'a> {
                         self.add_term_to_hash(seen_terms, identifier,
                                               condition_termid);
                     }
+                    if let Some(ref gene_product_form_id) =
+                        annotation_detail.gene_product_form_id {
+                            if gene_product_form_id.starts_with("PR:") {
+                                self.add_term_to_hash(seen_terms, identifier,
+                                                      gene_product_form_id);
+                            }
+                        }
                     for ext_part in &annotation_detail.extension {
                         match ext_part.ext_range {
                             ExtRange::Term(ref range_termid) |
@@ -4498,6 +4481,13 @@ impl <'a> WebDataBuild<'a> {
                             self.add_term_to_hash(&mut seen_terms, termid,
                                                   condition_termid);
                         }
+                        if let Some(ref gene_product_form_id) =
+                            annotation_detail.gene_product_form_id {
+                                if gene_product_form_id.starts_with("PR:") {
+                                    self.add_term_to_hash(&mut seen_terms, termid,
+                                                          gene_product_form_id);
+                                }
+                            }
                         for ext_part in &annotation_detail.extension {
                             match ext_part.ext_range {
                                 ExtRange::Term(ref range_termid) |
@@ -4711,6 +4701,13 @@ impl <'a> WebDataBuild<'a> {
                                 self.add_term_to_hash(&mut seen_terms, reference_uniquename,
                                                       condition_termid);
                             }
+                           if let Some(ref gene_product_form_id) =
+                               annotation_detail.gene_product_form_id {
+                                   if gene_product_form_id.starts_with("PR:") {
+                                       self.add_term_to_hash(&mut seen_terms, reference_uniquename,
+                                                             gene_product_form_id);
+                                   }
+                               }
                             for ext_part in &annotation_detail.extension {
                                 match ext_part.ext_range {
                                     ExtRange::Term(ref range_termid) |
