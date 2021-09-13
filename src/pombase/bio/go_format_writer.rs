@@ -416,7 +416,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                         if with_from_id.contains(':') {
                             with_from_id
                         } else {
-                            RcString::from(&format!("{}:{}", assigned_by,
+                            RcString::from(&format!("{}:{}", database_name,
                                                     with_from_id))
                         }
                     })
