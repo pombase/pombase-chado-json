@@ -579,7 +579,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         }
 
     } else {
-        if write_mode == GpadGafWriteMode::StandardGaf {
+        if write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "gene" {
             let local: DateTime<Local> = Local::now();
             let date = local.format("%Y%m%d");
             let relation_name =
