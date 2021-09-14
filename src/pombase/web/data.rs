@@ -409,14 +409,6 @@ impl WebData {
                 continue;
             }
 
-            if let Some(transcript) = gene_details.transcripts.get(0) {
-                if transcript.protein.is_none() {
-                    continue;
-                }
-            } else {
-                continue;
-            }
-
             if gene_details.feature_type == "ncRNA gene" {
                 let mut found = false;
                 for aspect in GO_ASPECT_NAMES.iter() {
