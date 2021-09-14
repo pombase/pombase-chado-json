@@ -176,6 +176,12 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
     let database_name = &config.database_name;
 
     let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
+    let db_protein_id =
+        if let Some(ref protein) = gene_details.transcripts[0].protein {
+             format!("{}:{}", database_name, protein.uniquename)
+        } else {
+            return Ok(())
+        };
     let db_object_symbol =
         gene_details.product.clone().unwrap_or_else(RcString::new);
     let db_object_name =
@@ -248,7 +254,7 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                                 db_object_type,
                                 db_object_taxon,
                                 db_object_id,
-                                db_object_id,
+                                db_protein_id,
                                 db_xrefs,
                                 db_object_symbol);
                     gpi_writer.write_all(gpi_line.as_bytes())?;
