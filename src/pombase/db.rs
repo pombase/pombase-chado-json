@@ -254,7 +254,7 @@ impl Raw {
             cvtermpaths: vec![], cvterm_relationships: vec![],
             publications: vec![], publicationprops: vec![],
             features: vec![], featureprops: vec![],
-            synonyms: vec![], 
+            synonyms: vec![],
             featurelocs: vec![], feature_synonyms: vec![],
             feature_pubs: vec![], feature_dbxrefs: vec![],
             feature_cvterms: vec![], feature_cvtermprops: vec![],

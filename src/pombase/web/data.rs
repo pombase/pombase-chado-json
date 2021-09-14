@@ -1300,6 +1300,31 @@ impl WebData {
         Ok(())
     }
 
+    fn write_allele_tsv(&self, output_dir: &str) -> Result<(), io::Error> {
+        let file_name = format!("{}/allele_table.tsv", output_dir);
+        let file = File::create(file_name).expect("Unable to open file for writing");
+        let mut writer = BufWriter::new(&file);
+
+        let empty_string = RcString::from("");
+
+        for allele_short in self.api_maps.alleles.values() {
+            let gene =
+                self.api_maps.genes.get(&allele_short.gene_uniquename)
+                .expect(&format!("internal error, can't find gene for '{}'", allele_short.gene_uniquename));
+            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\n",
+                                      gene.uniquename,
+                                      gene.name.as_ref().unwrap_or(&empty_string),
+                                      allele_short.uniquename,
+                                      allele_short.name.as_ref().unwrap_or(&empty_string),
+                                      allele_short.allele_type,
+                                      allele_short.description.as_ref().unwrap_or(&empty_string));
+
+            writer.write_all(line.as_bytes())?;
+        }
+
+        Ok(())
+    }
+
     // write the subsets configured using "subset_export"
     fn write_annotation_subsets(&self, config: &Config, output_dir: &str)
                                 -> Result<(), io::Error>
@@ -1394,6 +1419,7 @@ impl WebData {
         self.write_transmembrane_domains(config, &misc_path)?;
         self.write_gene_expression_table(&misc_path)?;
         self.write_site_map_txt(config, doc_config, &misc_path)?;
+        self.write_allele_tsv(&misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
 

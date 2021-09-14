@@ -1549,6 +1549,7 @@ pub struct APIMaps {
     pub term_summaries: HashSet<TermShort>,
     pub genes: UniquenameGeneMap,
     pub gene_name_gene_map: HashMap<RcString, GeneUniquename>,
+    pub alleles: UniquenameAlleleMap,
     pub genotypes: IdGenotypeMap,
     pub terms: HashMap<TermId, TermDetails>,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,

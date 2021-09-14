@@ -4364,6 +4364,7 @@ impl <'a> WebDataBuild<'a> {
             term_summaries,
             genes: self.genes,
             gene_name_gene_map,
+            alleles: self.alleles,
             genotypes: self.genotypes,
             terms: terms_for_api,
             interactors_of_genes,
