@@ -1301,9 +1301,12 @@ impl WebData {
     }
 
     fn write_allele_tsv(&self, output_dir: &str) -> Result<(), io::Error> {
-        let file_name = format!("{}/allele_table.tsv", output_dir);
+        let file_name = format!("{}/all_alleles.tsv", output_dir);
         let file = File::create(file_name).expect("Unable to open file for writing");
         let mut writer = BufWriter::new(&file);
+
+        let header = "#gene_systematic_id\tgene_name\tallele_db_id\tallele_name\tallele_type\tallele_description\n";
+        writer.write_all(header.as_bytes())?;
 
         let empty_string = RcString::from("");
 
