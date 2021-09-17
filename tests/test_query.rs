@@ -105,6 +105,7 @@ async fn test_and_or_not() {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         gaf_options: None,
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
 
@@ -157,6 +158,7 @@ async fn test_output_options() {
                           "go_component".to_owned()],
         sequence: SeqType::None,
         gaf_options: None,
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
 
@@ -253,6 +255,7 @@ async fn test_termid() {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         gaf_options: None,
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -272,6 +275,7 @@ async fn test_gene_subset() {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         gaf_options: None,
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -291,6 +295,7 @@ async fn test_gene_subset_invert() {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         gaf_options: None,
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -315,6 +320,7 @@ async fn test_gene_subset_wildcard() {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         gaf_options: None,
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -335,6 +341,7 @@ async fn test_gene_subset_not_wildcard() {
         field_names: vec!["gene_uniquename".to_owned()],
         sequence: SeqType::None,
         gaf_options: None,
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
     let q1 = Query::new(qp1, opts);
@@ -372,6 +379,7 @@ async fn test_gene_gaf() {
         gaf_options: Some(GAFOptions {
             aspects,
         }),
+        ancestor_terms: HashSet::new(),
         flags: HashSet::new(),
     };
     let query = Query::new(qp1, opts);

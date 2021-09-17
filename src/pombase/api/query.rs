@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
+use crate::data_types::APIMaps;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand, Ploidiness};
 use crate::web::config::TermAndName;
@@ -553,6 +554,12 @@ pub struct QueryOutputOptions {
     #[serde(skip_serializing_if="Option::is_none")]
     pub gaf_options: Option<GAFOptions>,
     pub field_names: Vec<String>,
+
+    // If a gene in the results is directly or indirectly annotation with one of
+    // the ancestor_terms, that term will be added to the "subsets" field of the
+    // ResultRow
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub ancestor_terms: HashSet<RcString>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub flags: HashSet<String>,
 }
@@ -771,6 +778,20 @@ impl Query {
         result
     }
 
+    fn add_ancestor_terms(&self, api_maps: &APIMaps,  gene_uniquename: &str,
+                          subsets: &mut HashSet<RcString>) {
+      if api_maps.genes.contains_key(gene_uniquename) {
+          let needed_ancestor_terms = &self.output_options.ancestor_terms;
+          for ancestor_term in needed_ancestor_terms.iter() {
+              if let Some(genes_of_ancestor_term) = api_maps.termid_genes.get(ancestor_term) {
+                  if genes_of_ancestor_term.contains(gene_uniquename) {
+                      subsets.insert(ancestor_term.clone());
+                  }
+              }
+          }
+      }
+    }
+
     fn make_result_rows(&self, api_data: &APIData,
                         genes: Vec<RcString>) -> QueryRowsResult {
         Ok(genes.into_iter()
@@ -840,6 +861,8 @@ impl Query {
                        } else {
                            HashSet::new()
                        };
+
+                   self.add_ancestor_terms(api_data.get_maps(), &gene_uniquename, &mut subsets);
                }
 
                let sequence = self.make_sequence(api_data, &gene_uniquename);
