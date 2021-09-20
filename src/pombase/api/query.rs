@@ -780,17 +780,16 @@ impl Query {
     fn add_ancestor_terms(&self, api_data: &APIData,  gene_uniquename: &str,
                           subsets: &mut HashSet<RcString>) {
 
-          let needed_ancestor_terms = &self.output_options.ancestor_terms;
-          for ancestor_term in needed_ancestor_terms.iter() {
-              if let Some(genes_of_ancestor_term) =
-                  api_data.get_maps().termid_genes.get(ancestor_term)
-                {
-                  if genes_of_ancestor_term.contains(gene_uniquename) {
-                      subsets.insert(ancestor_term.clone());
-                  }
+        let needed_ancestor_terms = &self.output_options.ancestor_terms;
+        for ancestor_term in needed_ancestor_terms.iter() {
+            if let Some(genes_of_ancestor_term) =
+                api_data.get_maps().termid_genes.get(ancestor_term)
+            {
+                if genes_of_ancestor_term.contains(gene_uniquename) {
+                    subsets.insert(ancestor_term.clone());
                 }
-          }
-
+            }
+        }
     }
 
     fn make_result_rows(&self, api_data: &APIData,
