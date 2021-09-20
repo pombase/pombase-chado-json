@@ -112,7 +112,7 @@ impl SiteDB {
             Err(e) => return Err(format!("serde error: {}", e)),
         };
 
-        match trans.execute("INSERT INTO query(id, query_json) values ($1, $2)",
+        match trans.execute("INSERT INTO query(id, query_json) values ($1, $2) ON CONFLICT DO NOTHING",
                             &[uuid, &serde_value]).await {
             Ok(_) => (),
             Err(e) => return Err(format!("error executing query: {}", e)),
