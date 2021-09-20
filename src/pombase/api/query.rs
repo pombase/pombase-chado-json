@@ -11,7 +11,6 @@ use uuid::Uuid;
 use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
-use crate::data_types::APIMaps;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand, Ploidiness};
 use crate::web::config::TermAndName;
@@ -778,18 +777,20 @@ impl Query {
         result
     }
 
-    fn add_ancestor_terms(&self, api_maps: &APIMaps,  gene_uniquename: &str,
+    fn add_ancestor_terms(&self, api_data: &APIData,  gene_uniquename: &str,
                           subsets: &mut HashSet<RcString>) {
-      if api_maps.genes.contains_key(gene_uniquename) {
+
           let needed_ancestor_terms = &self.output_options.ancestor_terms;
           for ancestor_term in needed_ancestor_terms.iter() {
-              if let Some(genes_of_ancestor_term) = api_maps.termid_genes.get(ancestor_term) {
+              if let Some(genes_of_ancestor_term) =
+                  api_data.get_maps().termid_genes.get(ancestor_term)
+                {
                   if genes_of_ancestor_term.contains(gene_uniquename) {
                       subsets.insert(ancestor_term.clone());
                   }
-              }
+                }
           }
-      }
+
     }
 
     fn make_result_rows(&self, api_data: &APIData,
@@ -862,7 +863,7 @@ impl Query {
                            HashSet::new()
                        };
 
-                   self.add_ancestor_terms(api_data.get_maps(), &gene_uniquename, &mut subsets);
+                   self.add_ancestor_terms(api_data, &gene_uniquename, &mut subsets);
                }
 
                let sequence = self.make_sequence(api_data, &gene_uniquename);
