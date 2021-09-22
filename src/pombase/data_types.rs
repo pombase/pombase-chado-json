@@ -1173,6 +1173,8 @@ pub struct AlleleShort {
     #[serde(skip_serializing_if="Option::is_none")]
     pub description: Option<RcString>,
     pub gene_uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<SynonymDetails>,
 }
 
 fn allele_encoded_name_and_type(allele_name: &Option<RcString>, allele_type: &str,
@@ -1217,6 +1219,7 @@ impl AlleleShort {
             allele_type: RcString::from(allele_type),
             description: description.clone(),
             gene_uniquename: RcString::from(gene_uniquename),
+            synonyms: vec![],
         }
     }
 }

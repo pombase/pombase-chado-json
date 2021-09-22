@@ -2998,11 +2998,19 @@ impl <'a> WebDataBuild<'a> {
             let feature = &feature_synonym.feature;
             let synonym = &feature_synonym.synonym;
 
-            if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
-                gene_details.synonyms.push(SynonymDetails {
+            let make_synonym = || {
+                SynonymDetails {
                     name: synonym.name.clone(),
                     synonym_type: synonym.synonym_type.name.clone()
-                });
+                }
+            };
+
+            if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
+                gene_details.synonyms.push(make_synonym());
+            } else {
+                if let Some(ref mut allele) = self.alleles.get_mut(&feature.uniquename) {
+                    allele.synonyms.push(make_synonym())
+                }
             }
         }
     }
