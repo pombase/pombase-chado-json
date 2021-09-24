@@ -1143,6 +1143,8 @@ impl <'a> WebDataBuild<'a> {
             transcripts: gene_details.transcripts.clone(),
             tm_domain_count: gene_details.tm_domain_coords.len(),
             coiled_coil_count: gene_details.coiled_coil_coords.len(),
+            disordered_regions_count: gene_details.disordered_region_coords.len(),
+            low_complexity_regions_count: gene_details.low_complexity_region_coords.len(),
             exon_count,
             transcript_count: gene_details.transcripts.len(),
             ortholog_taxonids,

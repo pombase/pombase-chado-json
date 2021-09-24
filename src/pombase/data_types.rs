@@ -1478,6 +1478,8 @@ pub struct APIGeneSummary {
     pub transcripts: Vec<TranscriptDetails>,
     pub tm_domain_count: usize,
     pub coiled_coil_count: usize,
+    pub disordered_regions_count: usize,
+    pub low_complexity_regions_count: usize,
     pub exon_count: usize,
     pub transcript_count: usize,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
