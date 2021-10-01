@@ -11,10 +11,8 @@ use crate::web::config::{Config, ServerConfig};
 use crate::data_types::{SolrTermSummary, SolrReferenceSummary};
 
 use crate::api::term_search::{search_terms, term_complete, term_summary_by_id};
-pub use crate::api::term_search::TermSearchMatch;
 
-use crate::api::ref_search::{search_refs, ref_complete};
-pub use crate::api::ref_search::RefSearchMatch;
+use crate::api::ref_search::{search_refs};
 
 use crate::api::doc_search::search_docs;
 pub use crate::api::doc_search::DocSearchMatch;
@@ -73,8 +71,8 @@ impl SolrSearchScope {
 
 #[derive(Serialize, Debug)]
 pub struct SolrSearchResult {
-    pub term_matches: Vec<TermSearchMatch>,
-    pub ref_matches: Vec<RefSearchMatch>,
+    pub term_matches: Vec<SolrTermSummary>,
+    pub ref_matches: Vec<SolrReferenceSummary>,
     pub doc_matches: Vec<DocSearchMatch>,
 }
 
@@ -140,7 +138,7 @@ impl Search {
     pub fn ref_complete(&self, q: &str)
                         -> Result<Vec<SolrReferenceSummary>, String>
     {
-        ref_complete(&self.config, q)
+        search_refs(&self.config, q)
     }
 
     pub fn solr_search(&self, scope: &SolrSearchScope, q: &str)

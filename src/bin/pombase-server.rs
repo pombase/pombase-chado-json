@@ -19,7 +19,7 @@ use rocket::fs::FileServer;
 
 use pombase::api::query::Query as PomBaseQuery;
 use pombase::api::result::QueryAPIResult;
-use pombase::api::search::{Search, TermSearchMatch, RefSearchMatch, DocSearchMatch,
+use pombase::api::search::{Search, DocSearchMatch,
                            SolrSearchScope, PNGPlot};
 use pombase::api::query_exec::QueryExec;
 use pombase::api_data::{api_maps_from_file, APIData};
@@ -202,8 +202,8 @@ struct RefCompletionResponse {
 #[derive(Serialize, Debug)]
 struct SolrSearchResponse  {
     status: String,
-    term_matches: Vec<TermSearchMatch>,
-    ref_matches: Vec<RefSearchMatch>,
+    term_matches: Vec<SolrTermSummary>,
+    ref_matches: Vec<SolrReferenceSummary>,
     doc_matches: Vec<DocSearchMatch>,
 }
 

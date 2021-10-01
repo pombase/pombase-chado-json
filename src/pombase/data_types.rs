@@ -43,6 +43,7 @@ use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
+use crate::api::search_types::SolrMatchHighlight;
 use crate::web::config::*;
 use crate::types::*;
 use crate::interpro::InterProMatch;
@@ -1607,6 +1608,9 @@ pub struct SolrTermSummary {
     pub annotation_count: usize,
     pub gene_count: usize,
     pub genotype_count: usize,
+
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub highlighting: SolrMatchHighlight,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1637,6 +1641,9 @@ pub struct SolrReferenceSummary {
     pub canto_curator_name: Option<RcString>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_curator_role: Option<RcString>,
+
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub highlighting: SolrMatchHighlight,
 }
 
 impl SolrReferenceSummary {
@@ -1670,6 +1677,7 @@ impl SolrReferenceSummary {
             canto_annotation_status: reference_details.canto_annotation_status.clone(),
             canto_curator_name: reference_details.canto_curator_name.clone(),
             canto_curator_role: reference_details.canto_curator_role.clone(),
+            highlighting: HashMap::new(),
         }
     }
 }

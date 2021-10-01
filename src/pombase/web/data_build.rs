@@ -5391,7 +5391,7 @@ impl <'a> WebDataBuild<'a> {
                 annotation_count,
                 gene_count: term_details.gene_count,
                 genotype_count: term_details.genotype_count,
-
+                highlighting: HashMap::new(),
             };
             return_summaries.push(term_summ);
         }

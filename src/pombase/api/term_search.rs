@@ -8,26 +8,9 @@ use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
 use crate::api::search_utils::{do_solr_request, clean_words, get_query_part};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub struct TermSearchMatch {
-    pub id: String,
-    pub cv_name: String,
-    pub name: String,
-    pub definition: String,
-    pub hl: SolrMatchHighlight,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct TermSearchRes {
-    pub id: String,
-    pub cv_name: String,
-    pub name: String,
-    pub definition: String,
-}
-
 #[derive(Deserialize, Debug)]
 struct SolrTermSearchResponse {
-    pub docs: Vec<TermSearchRes>,
+    pub docs: Vec<SolrTermSummary>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -47,28 +30,16 @@ struct SolrTermResponseContainer {
 }
 
 pub fn search_terms(config: &ServerConfig, q: &str)
-                    -> Result<Vec<TermSearchMatch>, String>
+                    -> Result<Vec<SolrTermSummary>, String>
 {
     let cv_name = &config.cv_name_for_terms_search;
 
-    if let Some(mut url) = make_terms_url(config, cv_name, q) {
-        url += "&hl=on&hl.fl=name,definition&fl=id,name,cv_name,definition";
+    if let Some(url) = make_terms_url(config, cv_name, q) {
         let res = do_solr_request(&url)?;
 
         match serde_json::from_reader(res) {
             Ok(container) => {
-                let response_container: SolrTermSearchResponseContainer = container;
-                let mut hl_by_id = response_container.highlighting;
-                let matches: Vec<TermSearchMatch> = response_container.response.docs
-                    .iter().map(|doc| TermSearchMatch {
-                        id: String::from(&doc.id),
-                        cv_name: String::from(doc.cv_name.as_str()),
-                        name: String::from(doc.name.as_str()),
-                        definition: doc.definition.clone(),
-                        hl: hl_by_id.remove(doc.id.as_str())
-                            .unwrap_or_else(HashMap::new),
-                    }).collect();
-                Ok(matches)
+                Ok(container_to_matches(container))
             },
             Err(err) => {
                 Err(format!("Error parsing response from Solr: {:?}", err))
@@ -79,9 +50,21 @@ pub fn search_terms(config: &ServerConfig, q: &str)
     }
 }
 
+fn container_to_matches(container: SolrTermSearchResponseContainer) -> Vec<SolrTermSummary> {
+    let mut response_container: SolrTermSearchResponseContainer = container;
+    let mut hl_by_id = response_container.highlighting;
+    let matches: Vec<SolrTermSummary> = response_container.response.docs
+        .drain(0..).map(|mut doc: SolrTermSummary| {
+            doc.highlighting = hl_by_id.remove(doc.id.as_str())
+              .unwrap_or_else(HashMap::new);
+            doc
+        }).collect();
+    matches
+}
+
 pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<String> {
     let mut terms_url =
-        config.solr_url.to_owned() + "/terms/select?wt=json&q=";
+        config.solr_url.to_owned() + "/terms/select?wt=json&hl=on&hl.fl=name,definition&q=";
 
     let termid_re_string = r"^(?P<prefix>[\w_]+):(?P<accession>\d+)$";
     let termid_re = Regex::new(termid_re_string).unwrap();
@@ -133,8 +116,7 @@ pub fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
                 if res.status().is_success() {
                     match serde_json::from_reader(res) {
                         Ok(container) => {
-                            let solr_response_container: SolrTermResponseContainer = container;
-                            Ok(solr_response_container.response.docs)
+                            Ok(container_to_matches(container))
                         },
                         Err(err) => {
                             Err(format!("Error parsing response from Solr: {:?}", err))
@@ -163,8 +145,6 @@ pub fn term_summary_by_id(config: &ServerConfig, termid: &str)
 {
     let term_url = format!("{}/terms/select?wt=json&q=id:{}",
                            config.solr_url.to_owned(), termid.replace(":", r"\:"));
-
-    print!("url: {}", &term_url);
 
     match reqwest::blocking::get(&term_url) {
         Ok(res) => {
