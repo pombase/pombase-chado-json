@@ -78,21 +78,12 @@ pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
     }
 }
 
-fn get_gene_prod_extension(prod_value: RcString) -> ExtPart {
+fn get_gene_prod_extension(prod_value: &RcString) -> ExtPart {
   ExtPart {
       rel_type_id: None,
       rel_type_name: "active_form".into(),
       rel_type_display_name: "active form".into(),
-      ext_range: ExtRange::GeneProduct(prod_value),
-  }
-}
-
-fn make_fake_gene_prod_extensions(annotation_details_map: &mut IdOntAnnotationDetailMap) {
-  for annotation_details in annotation_details_map.values_mut() {
-    if let Some(gene_product_form_id) = annotation_details.gene_product_form_id.take() {
-      let gene_prod_extension = get_gene_prod_extension(gene_product_form_id);
-      annotation_details.extension.push(gene_prod_extension);
-    }
+      ext_range: ExtRange::GeneProduct(prod_value.to_owned()),
   }
 }
 
@@ -121,8 +112,6 @@ impl APIData {
 
         let secondary_identifiers_map =
             make_secondary_identifiers_map(&maps.terms);
-
-        make_fake_gene_prod_extensions(&mut maps.annotation_details);
 
         APIData {
             config: config.clone(),
@@ -435,8 +424,17 @@ impl APIData {
                     for annotation_detail_id in &term_annotation.annotations {
                         let mut annotation =
                             self.maps.annotation_details[annotation_detail_id].clone();
+
                         self.maybe_move_with(term_details, &mut annotation);
+
+                        if let Some(ref gene_product_form_id) = annotation.gene_product_form_id {
+                            let gene_prod_extension = get_gene_prod_extension(gene_product_form_id);
+                            annotation.extension.insert(0, gene_prod_extension);
+                        }
+
                         details_map.insert(*annotation_detail_id, annotation);
+
+
                     }
                 } else {
                     panic!("failed to find TermDetails for {}", termid);
