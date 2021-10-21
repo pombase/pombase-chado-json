@@ -111,14 +111,14 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                     }
 
                 let mut prev_row_extension = prev_row.extension.clone();
-                let prev_matching_ext_part =
-                    remove_first(&mut prev_row_extension, &merge_range_rel_p);
+                let prev_matching_ext_part_result =
+                    remove_first_with_index(&mut prev_row_extension, &merge_range_rel_p);
                 let mut current_row_extension = current_row.extension.clone();
                 let current_matching_ext_part =
                     remove_first(&mut current_row_extension, &merge_range_rel_p);
 
-                if let (Some(prev_ext_part), Some(current_ext_part)) =
-                    (prev_matching_ext_part, current_matching_ext_part) {
+                if let (Some((prev_ext_part, prev_removed_index)), Some(current_ext_part)) =
+                    (prev_matching_ext_part_result, current_matching_ext_part) {
 
                         if mem::discriminant(&prev_ext_part.ext_range) ==
                             mem::discriminant(&current_ext_part.ext_range) &&
@@ -128,8 +128,8 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                                     merge_ext_part_ranges(&prev_ext_part,
                                                           &current_ext_part,
                                                           genes);
-                                let mut new_ext = vec![merged_ext_parts];
-                                new_ext.extend_from_slice(&prev_row_extension);
+                                let mut new_ext = prev_row_extension.clone();
+                                new_ext.insert(prev_removed_index, merged_ext_parts);
                                 prev_row.extension = new_ext;
                                 continue;
                             }

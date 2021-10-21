@@ -30,6 +30,14 @@ pub fn remove_first<T, P>(vec: &mut Vec<T>, predicate: P) -> Option<T>
     None
 }
 
+pub fn remove_first_with_index<T, P>(vec: &mut Vec<T>, predicate: P) -> Option<(T, usize)>
+    where P: FnMut(&T) -> bool {
+    if let Some(pos) = vec.iter().position(predicate) {
+        return Some((vec.remove(pos), pos));
+    }
+
+    None
+}
 
 #[test]
 fn test_remove_first_string() {
