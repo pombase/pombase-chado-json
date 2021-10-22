@@ -16,7 +16,7 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Install latest nightly
+      - name: install stable rust
         uses: actions-rs/toolchain@v1
         with:
             toolchain: stable

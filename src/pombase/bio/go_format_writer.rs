@@ -76,7 +76,7 @@ fn get_gpad_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
                              annotation_detail: &OntAnnotationDetail) -> String {
     let rel_id = get_gpad_relation_of(term_details, annotation_detail);
     String::from(&term_map.get(&rel_id)
-                 .expect(&format!("internal error, can't find term {}", rel_id))
+                 .unwrap_or_else(|| panic!("internal error, can't find term {}", rel_id))
                  .name)
 }
 
@@ -93,7 +93,7 @@ fn get_gpad_nd_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
                                 aspect: &str) -> String {
     let rel_id = get_gpad_nd_relation_of(aspect);
     String::from(&term_map.get(&rel_id)
-                 .expect(&format!("internal error, can't find term {}", rel_id))
+                 .unwrap_or_else(|| panic!("internal error, can't find term {}", rel_id))
                  .name)
 }
 
@@ -108,8 +108,8 @@ fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDetails
         } else {
             let rel_term_id =
                 if let Some(map_termid) = rel_mapping.get(ext_part.rel_type_name.as_str()) {
-                    map_termid.clone().expect(&format!("internal error, no mapping for {}",
-                                                       &ext_part.rel_type_name))
+                    map_termid.clone().unwrap_or_else(|| panic!("internal error, no mapping for {}",
+                                                                &ext_part.rel_type_name))
                 } else {
                     ext_part.rel_type_id.clone().unwrap()
                 };
@@ -118,8 +118,8 @@ fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDetails
                 String::from(rel_term_id)
             } else {
                 String::from(&term_map.get(&rel_term_id)
-                             .expect(&format!("internal error, can't find term {}",
-                                              rel_term_id))
+                             .unwrap_or_else(|| panic!("internal error, can't find term {}",
+                                                       rel_term_id))
                              .name)
             }
         }
