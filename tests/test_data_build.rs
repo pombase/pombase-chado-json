@@ -728,7 +728,7 @@ fn test_cmp_ont_annotation_detail() {
             let annotation1 = annotation_details_maps.get(id1).expect(&format!("{}", id1));
             let annotation2 = annotation_details_maps.get(id2).expect(&format!("{}", id2));
             let cv_config = &get_test_config().cv_config_by_name("molecular_function");
-            pombase::web::data_build::cmp_ont_annotation_detail(cv_config,
+            pombase::sort_annotations::cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2, &genes,
                                       &genotypes, &terms).unwrap()
         };

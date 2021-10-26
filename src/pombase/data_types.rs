@@ -154,6 +154,15 @@ impl Hash for ExtPart {
     }
 }
 
+/* needs work and isn't currently needed:
+impl fmt::Display for ExtPart {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         write!(f, "{}/{} ({})", self.rel_type_display_name,
+                self.rel_type_name, self.ext_range)
+    }
+}
+*/
+
 // minimal information about a gene used in other objects
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneShort {

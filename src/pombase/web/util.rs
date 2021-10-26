@@ -2,6 +2,8 @@ use std::cmp::Ordering;
 
 use chrono::NaiveDate;
 
+use crate::data_types::*;
+
 // Parse two date strings and compare them.  If both can't be parsed, return Equal.
 pub fn cmp_str_dates(date_str1: &str, date_str2: &str) -> Ordering {
     let datetime1_res = NaiveDate::parse_from_str(date_str1, "%Y-%m-%d %H:%M:%S");
@@ -51,4 +53,17 @@ fn test_remove_first_string() {
     assert_eq!(arr.len(), 1);
     assert_eq!(remove_first(&mut arr, |x| x.starts_with("b")).unwrap(), "bar");
     assert_eq!(arr.len(), 0);
+}
+
+pub fn make_gene_short<'b>(gene_map: &'b UniquenameGeneMap,
+                       gene_uniquename: &'b str) -> GeneShort {
+    if let Some(gene_details) = gene_map.get(gene_uniquename) {
+        GeneShort {
+            uniquename: gene_details.uniquename.clone(),
+            name: gene_details.name.clone(),
+            product: gene_details.product.clone(),
+        }
+    } else {
+        panic!("can't find GeneDetails for gene uniquename {}", gene_uniquename)
+    }
 }

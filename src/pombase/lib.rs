@@ -22,3 +22,4 @@ pub mod rnacentral;
 pub mod annotation_util;
 pub mod data_types;
 pub mod api_data;
+pub mod sort_annotations;

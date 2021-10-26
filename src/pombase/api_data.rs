@@ -15,6 +15,7 @@ use crate::data_types::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetai
                 GeneShort, GeneShortOptionMap, GeneQueryData,
                 ExtPart, ExtRange, GeneAndGeneProduct, WithFromValue,
                 Ploidiness};
+use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiLocus, QueryExpressionFilter};
 use crate::web::cv_summary::make_cv_summaries;
@@ -421,20 +422,27 @@ impl APIData {
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
                 if let Some(term_details) = self.maps.terms.get(termid) {
-                    for annotation_detail_id in &term_annotation.annotations {
-                        let mut annotation =
+                    let annotations: Vec<OntAnnotationDetail> =
+                        term_annotation.annotations
+                        .iter()
+                        .map(|annotation_detail_id | {
+                            let mut annotation =
                             self.maps.annotation_details[annotation_detail_id].clone();
 
-                        self.maybe_move_with(term_details, &mut annotation);
+                           self.maybe_move_with(term_details, &mut annotation);
 
-                        if let Some(ref gene_product_form_id) = annotation.gene_product_form_id {
-                            let gene_prod_extension = get_gene_prod_extension(gene_product_form_id);
-                            annotation.extension.insert(0, gene_prod_extension);
-                        }
+                           if let Some(ref gene_product_form_id) = annotation.gene_product_form_id {
+                               let gene_prod_extension = get_gene_prod_extension(gene_product_form_id);
+                               annotation.extension.insert(0, gene_prod_extension);
+                           }
 
-                        details_map.insert(*annotation_detail_id, annotation);
+                           annotation
+                        })
+                        .collect();
 
-
+                    for annotation in annotations {
+                        let annotation_detail_id = annotation.id;
+                        details_map.insert(annotation_detail_id, annotation);
                     }
                 } else {
                     panic!("failed to find TermDetails for {}", termid);
@@ -488,6 +496,11 @@ impl APIData {
             gene.genes_by_uniquename = self.fill_gene_map(&gene.genes_by_uniquename);
             gene.references_by_uniquename =
                 self.fill_reference_map(&gene.references_by_uniquename);
+            sort_cv_annotation_details(&mut gene, &self.config,
+                                       &self.maps.genes,
+                                       &self.maps.genotypes,
+                                       &self.maps.terms,
+                                       &details_map);
             make_cv_summaries(&mut gene, &self.config, &self.maps.children_by_termid,
                               false, true, &self.maps.genes, &self.maps.genotypes,
                               &details_map);
@@ -507,6 +520,11 @@ impl APIData {
             genotype.genes_by_uniquename = self.fill_gene_map(&genotype.genes_by_uniquename);
             genotype.references_by_uniquename =
                 self.fill_reference_map(&genotype.references_by_uniquename);
+            sort_cv_annotation_details(&mut genotype, &self.config,
+                                       &self.maps.genes,
+                                       &self.maps.genotypes,
+                                       &self.maps.terms,
+                                       &details_map);
             make_cv_summaries(&mut genotype, &self.config, &self.maps.children_by_termid,
                               false, false, &self.maps.genes, &self.maps.genotypes,
                               &details_map);
@@ -524,6 +542,11 @@ impl APIData {
         term.genes_by_uniquename = self.fill_gene_map(&term.genes_by_uniquename);
         term.references_by_uniquename =
             self.fill_reference_map(&term.references_by_uniquename);
+        sort_cv_annotation_details(&mut term, &self.config,
+                                   &self.maps.genes,
+                                   &self.maps.genotypes,
+                                   &self.maps.terms,
+                                   &details_map);
         make_cv_summaries(&mut term, &self.config, &self.maps.children_by_termid,
                           true, true, &self.maps.genes, &self.maps.genotypes,
                           &details_map);
@@ -551,6 +574,11 @@ impl APIData {
             let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);
             reference.terms_by_termid = self.fill_term_map(&reference.terms_by_termid);
             reference.genes_by_uniquename = self.fill_gene_map(&reference.genes_by_uniquename);
+            sort_cv_annotation_details(&mut reference, &self.config,
+                                       &self.maps.genes,
+                                       &self.maps.genotypes,
+                                       &self.maps.terms,
+                                       &details_map);
             make_cv_summaries(&mut reference, &self.config, &self.maps.children_by_termid,
                               true, true, &self.maps.genes, &self.maps.genotypes,
                               &details_map);
