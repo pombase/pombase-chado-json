@@ -2922,9 +2922,13 @@ impl <'a> WebDataBuild<'a> {
                 };
 
             if let Some(gene_uniquename) = maybe_gene_uniquename {
-                self.add_gene_product(&gene_uniquename, &cvterm.name);
-
                 if let Some(transcript_uniquename) = maybe_transcript_uniquename {
+                    if transcript_uniquename.ends_with(".1") {
+                        // for multi-transcript genes, use the product
+                        // from the first transcript
+                        self.add_gene_product(&gene_uniquename, &cvterm.name);
+                    }
+
                     self.add_product_to_protein(&gene_uniquename, &transcript_uniquename,
                                                 cvterm.name.clone());
                 }
