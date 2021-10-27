@@ -2992,6 +2992,8 @@ impl <'a> WebDataBuild<'a> {
 
             let termid = cvterm.termid();
 
+            let mut maybe_transcript_uniquename = None;
+
             let mut extension = vec![];
 
             if cvterm.cv.name == "PomBase gene characterisation status" ||
@@ -3150,6 +3152,7 @@ impl <'a> WebDataBuild<'a> {
                         if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
                             if let Some(gene_uniquename) =
                                 self.genes_of_transcripts.get(&feature.uniquename) {
+                                    maybe_transcript_uniquename = Some(feature.uniquename.clone());
                                     vec![gene_uniquename.clone()]
                                 } else {
                                     vec![]
@@ -3197,6 +3200,7 @@ impl <'a> WebDataBuild<'a> {
             let annotation_detail = OntAnnotationDetail {
                 id: feature_cvterm.feature_cvterm_id,
                 genes: gene_uniquenames_vec,
+                transcript: maybe_transcript_uniquename,
                 reference: reference_uniquename,
                 genotype: maybe_genotype_uniquename,
                 genotype_background,
