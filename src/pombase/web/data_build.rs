@@ -1648,7 +1648,8 @@ impl <'a> WebDataBuild<'a> {
             ena_identifier: RcString::from(&ena_identifier.unwrap()),
             gene_uniquenames: vec![],
             taxonid: org.taxonid,
-            gene_count: 0,  // we'll update this once the genes are processed
+            gene_count: 0,    // we'll update the counts once the genes are processed
+            coding_gene_count: 0,
         };
 
         self.chromosomes.insert(feat.uniquename.clone(), chr);
@@ -5054,19 +5055,31 @@ impl <'a> WebDataBuild<'a> {
 
     fn set_chromosome_gene_counts(&mut self) {
         let mut counts = HashMap::new();
+        let mut coding_counts = HashMap::new();
 
         for gene_details in self.genes.values() {
-
             if let Some(ref loc) = gene_details.location {
                 *counts
                     .entry(&loc.chromosome_name)
                     .or_insert(0) += 1;
+            }
+
+            if gene_details.feature_type == "mRNA gene" {
+                if let Some(ref loc) = gene_details.location {
+                    *coding_counts
+                        .entry(&loc.chromosome_name)
+                        .or_insert(0) += 1;
+                }
             }
         }
 
         for chromosome_detail in self.chromosomes.values_mut() {
             if let Some(count) = counts.get(&chromosome_detail.name) {
                 chromosome_detail.gene_count = *count;
+            }
+
+            if let Some(count) = coding_counts.get(&chromosome_detail.name) {
+                chromosome_detail.coding_gene_count = *count;
             }
         }
     }
