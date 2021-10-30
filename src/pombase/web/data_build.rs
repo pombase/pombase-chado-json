@@ -2328,10 +2328,18 @@ impl <'a> WebDataBuild<'a> {
                                                         &term_details.termid,
                                                         &annotation.extension);
                         for (target_gene_uniquename, new_annotation) in new_annotations {
-                            target_of_annotations
-                                .entry(target_gene_uniquename.clone())
-                                .or_insert_with(HashSet::new)
-                                .insert(new_annotation);
+                           if self.genes.get(&target_gene_uniquename).is_some() {
+                               target_of_annotations
+                                   .entry(target_gene_uniquename.clone())
+                                   .or_insert_with(HashSet::new)
+                                   .insert(new_annotation);
+                           } else {
+                               eprintln!("can't find gene {} in extension for {}",
+                                         target_gene_uniquename, term_details.termid);
+                               for annotation_gene in &annotation.genes {
+                                   eprintln!("  in annotation of {}", annotation_gene);
+                               }
+                           }
                         }
                     }
                 }
