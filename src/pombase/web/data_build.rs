@@ -53,6 +53,7 @@ pub struct WebDataBuild<'a> {
     genotypes: UniquenameGenotypeMap,
     genotype_backgrounds: HashMap<GenotypeUniquename, RcString>,
     alleles: UniquenameAlleleMap,
+    transcripts: UniquenameTranscriptMap,
     other_features: UniquenameFeatureShortMap,
     terms: TermIdDetailsMap,
     chromosomes: ChrNameDetailsMap,
@@ -100,9 +101,11 @@ fn get_maps() ->
      HashMap<RcString, GeneShortOptionMap>,
      HashMap<RcString, GenotypeShortMap>,
      HashMap<RcString, AlleleShortMap>,
+     HashMap<RcString, TranscriptDetailsOptionMap>,
      HashMap<GeneUniquename, TermShortOptionMap>)
 {
-    (HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new())
+    (HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new(),
+     HashMap::new(), HashMap::new())
 }
 
 fn get_feat_rel_expression(feature: &Feature,
@@ -376,6 +379,7 @@ lazy_static! {
     static ref PROMOTER_RE: Regex = Regex::new(r"^(?P<gene>.*)-promoter$").unwrap();
     static ref PREFIX_AND_ID_RE: Regex =
         Regex::new(r"^(?P<prefix>\S+):(?P<id>\S+)$").unwrap();
+    static ref TRANSCRIPT_ID_RE: Regex = Regex::new(r"^(?P<gene>.*)\.(?P<suffix>\d+)$").unwrap();
 }
 
 // Some ancestor terms are useful in the web code.  This function uses the Config and returns
@@ -750,6 +754,7 @@ impl <'a> WebDataBuild<'a> {
             genotypes: HashMap::new(),
             genotype_backgrounds: HashMap::new(),
             alleles: HashMap::new(),
+            transcripts: HashMap::new(),
             other_features: HashMap::new(),
             terms: HashMap::new(),
             chromosomes: BTreeMap::new(),
@@ -811,6 +816,9 @@ impl <'a> WebDataBuild<'a> {
                         seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
                         identifier: &RcString,
                         other_gene_uniquename: &GeneUniquename) {
+        if !self.genes.contains_key(other_gene_uniquename) {
+            panic!("{}", other_gene_uniquename);
+        }
         seen_genes
             .entry(identifier.clone())
             .or_insert_with(HashMap::new)
@@ -852,6 +860,20 @@ impl <'a> WebDataBuild<'a> {
                 .insert(allele_uniquename.clone(), allele_short.clone());
         }
         allele_short
+    }
+
+    fn add_transcript_to_hash(&self,
+                              seen_transcripts: &mut HashMap<RcString, TranscriptDetailsOptionMap>,
+                              identifier: &RcString,
+                              transcript_uniquename: &TranscriptUniquename) {
+        if !self.transcripts.contains_key(transcript_uniquename) {
+            panic!("internal error, can't find transcript {}",
+                   transcript_uniquename);
+        }
+        seen_transcripts
+            .entry(identifier.clone())
+            .or_insert_with(HashMap::new)
+            .insert(transcript_uniquename.clone(), None);
     }
 
     fn add_term_to_hash(&self,
@@ -936,7 +958,13 @@ impl <'a> WebDataBuild<'a> {
             .map(|synonym| synonym.name.clone())
             .collect::<Vec<RcString>>();
         let exon_count =
-            if let Some(transcript) = gene_details.transcripts.get(0) {
+            if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+
+                let transcript = self.transcripts
+                    .get(transcript_uniquename)
+                    .expect(&format!("internal error, can't find transcript details for {}",
+                                     transcript_uniquename));
+
                 let mut count = 0;
                 for part in &transcript.parts {
                     if part.feature_type == FeatureType::Exon {
@@ -951,6 +979,16 @@ impl <'a> WebDataBuild<'a> {
         for ortholog_annotation in &gene_details.ortholog_annotations {
             ortholog_taxonids.insert(ortholog_annotation.ortholog_taxonid);
         }
+
+        let transcript_details = gene_details.transcripts
+            .iter()
+            .map(|transcript_uniquename| {
+                self.transcripts.get(transcript_uniquename)
+                    .expect(&format!("internal error, failed to find transcript: {}",
+                                    transcript_uniquename))
+                    .clone()
+            }).collect::<Vec<_>>();
+
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
@@ -959,7 +997,7 @@ impl <'a> WebDataBuild<'a> {
             exact_synonyms: synonyms,
             dbxrefs: gene_details.dbxrefs.clone(),
             location: gene_details.location.clone(),
-            transcripts: gene_details.transcripts.clone(),
+            transcripts: transcript_details,
             tm_domain_count: gene_details.tm_domain_coords.len(),
             coiled_coil_count: gene_details.coiled_coil_coords.len(),
             disordered_regions_count: gene_details.disordered_region_coords.len(),
@@ -1181,6 +1219,7 @@ impl <'a> WebDataBuild<'a> {
                                        genes_by_uniquename: HashMap::new(),
                                        genotypes_by_uniquename: HashMap::new(),
                                        alleles_by_uniquename: HashMap::new(),
+                                       transcripts_by_uniquename: HashMap::new(),
                                        terms_by_termid: HashMap::new(),
                                        annotation_details: HashMap::new(),
                                        gene_count: 0,
@@ -1396,6 +1435,7 @@ impl <'a> WebDataBuild<'a> {
             paralog_annotations: vec![],
             target_of_annotations: vec![],
             transcripts: vec![],
+            transcripts_by_uniquename: HashMap::new(),
             genes_by_uniquename: HashMap::new(),
             genotypes_by_uniquename: HashMap::new(),
             alleles_by_uniquename: HashMap::new(),
@@ -1507,25 +1547,27 @@ impl <'a> WebDataBuild<'a> {
                 None
             };
 
-
-        let transcript = TranscriptDetails {
-            uniquename: transcript_uniquename.clone(),
-            location: transcript_location,
-            transcript_type: feat.feat_type.name.clone(),
-            parts,
-            protein: None,
-            cds_location: maybe_cds_location,
-        };
-
         if let Some(gene_uniquename) =
             self.genes_of_transcripts.get(&transcript_uniquename) {
                 let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
+                let transcript_type = feat.feat_type.name.clone();
                 if gene_details.feature_type == "gene" {
-                    let feature_type =
-                        transcript.transcript_type.clone() + " " + &gene_details.feature_type;
+                    let feature_type = format!("{} {}", transcript_type, gene_details.feature_type);
                     gene_details.feature_type = RcString::from(&feature_type);
                 }
-                gene_details.transcripts.push(transcript);
+                let transcript = TranscriptDetails {
+                    uniquename: transcript_uniquename.clone(),
+                    location: transcript_location,
+                    transcript_type,
+                    parts,
+                    protein: None,
+                    cds_location: maybe_cds_location,
+                    gene_uniquename: gene_uniquename.to_owned(),
+                };
+
+                self.transcripts.insert(transcript_uniquename.clone(), transcript.clone());
+
+                gene_details.transcripts.push(transcript_uniquename);
                 gene_details.transcript_so_termid = feat.feat_type.termid();
             } else {
                 panic!("can't find gene for transcript: {}", transcript_uniquename);
@@ -1596,22 +1638,10 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(transcript_uniquename) =
                 self.transcripts_of_polypeptides.get(&protein_uniquename) {
-                    if let Some(gene_uniquename) =
-                        self.genes_of_transcripts.get(transcript_uniquename) {
-                            let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
-                            if gene_details.transcripts.is_empty() {
-                                panic!("gene has no transcript: {}", gene_uniquename);
-                            } else {
-                                for transcript in &mut gene_details.transcripts {
-                                    if &transcript.uniquename == transcript_uniquename {
-                                        transcript.protein = Some(protein);
-                                        break;
-                                    }
-                                }
-                            }
-                        } else {
-                            panic!("can't find gene for transcript: {}", transcript_uniquename);
-                        }
+                    self.transcripts.get_mut(transcript_uniquename)
+                        .expect(&format!("internal error, failed to find transcript: {}",
+                                         transcript_uniquename))
+                        .protein = Some(protein);
                 } else {
                     panic!("can't find transcript of polypeptide: {}", protein_uniquename)
                 }
@@ -1706,6 +1736,7 @@ impl <'a> WebDataBuild<'a> {
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
                                   references_by_uniquename: HashMap::new(),
+                                  transcripts_by_uniquename: HashMap::new(),
                                   terms_by_termid: HashMap::new(),
                                   annotation_details: HashMap::new(),
                               });
@@ -2694,6 +2725,7 @@ impl <'a> WebDataBuild<'a> {
                                       genes_by_uniquename: HashMap::new(),
                                       genotypes_by_uniquename: HashMap::new(),
                                       alleles_by_uniquename: HashMap::new(),
+                                      transcripts_by_uniquename: HashMap::new(),
                                       references_by_uniquename: HashMap::new(),
                                       terms_by_termid: HashMap::new(),
                                       annotation_details: HashMap::new(),
@@ -2727,12 +2759,24 @@ impl <'a> WebDataBuild<'a> {
                         let ext_rel_name = RcString::from(ext_rel_name_str);
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with(&db_prefix) {
-                            let gene_uniquename = &ext_range[db_prefix.len()..];
-                            if let Some(captures) = PROMOTER_RE.captures(gene_uniquename) {
+                            let db_feature_uniquename = &ext_range[db_prefix.len()..];
+                            if let Some(captures) = PROMOTER_RE.captures(db_feature_uniquename) {
                                 let gene_uniquename = RcString::from(&captures["gene"]);
                                 ExtRange::Promoter(gene_uniquename)
                             } else {
-                                ExtRange::Gene(RcString::from(gene_uniquename))
+                                if self.genes.contains_key(db_feature_uniquename) {
+                                    ExtRange::Gene(RcString::from(db_feature_uniquename))
+                                } else {
+                                    if let Some(captures) = TRANSCRIPT_ID_RE.captures(db_feature_uniquename) {
+                                        if self.genes.contains_key(&captures["gene"]) {
+                                            ExtRange::Transcript(RcString::from(db_feature_uniquename))
+                                        } else {
+                                            panic!("unknown gene for transcript: {}", db_feature_uniquename);
+                                        }
+                                    } else {
+                                        panic!("can't find gene or transcript for: {}", db_feature_uniquename);
+                                    }
+                                }
                             }
                         } else {
                             ExtRange::Misc(ext_range)
@@ -2874,16 +2918,15 @@ impl <'a> WebDataBuild<'a> {
         self.alleles[allele_uniquename].clone()
     }
 
-    fn add_product_to_protein(&mut self, gene_uniquename: &str, transcript_uniquename: &str,
+    fn add_product_to_protein(&mut self, transcript_uniquename: &str,
                               product: RcString) {
-        if let Some(gene_details) = self.genes.get_mut(gene_uniquename) {
-            for transcript in &mut gene_details.transcripts {
-                if transcript.uniquename == transcript_uniquename {
-                    if let Some(protein_details) = &mut transcript.protein {
-                        protein_details.product = Some(product);
-                        break;
-                    }
-                }
+        if let Some(transcript_details) =
+            self.transcripts.get_mut(transcript_uniquename)
+        {
+            if let Some(ref mut protein) = transcript_details
+                .protein
+            {
+                protein.product = Some(product);
             }
         }
     }
@@ -2938,7 +2981,7 @@ impl <'a> WebDataBuild<'a> {
                         self.add_gene_product(&gene_uniquename, &cvterm.name);
                     }
 
-                    self.add_product_to_protein(&gene_uniquename, &transcript_uniquename,
+                    self.add_product_to_protein(&transcript_uniquename,
                                                 cvterm.name.clone());
                 }
             }
@@ -3875,15 +3918,17 @@ impl <'a> WebDataBuild<'a> {
         let mut molecular_weight = None;
         let mut protein_length = None;
 
-        for transcript in &gene_details.transcripts {
-            if let Some(ref protein) = transcript.protein {
-                molecular_weight = Some((100.0 * protein.molecular_weight).round() / 100.0);
-                if protein.sequence.ends_with('*') {
-                    protein_length = Some(protein.sequence.len() - 1);
-                } else {
-                    protein_length = Some(protein.sequence.len());
+        for transcript_uniquename in &gene_details.transcripts {
+            if let Some(transcript) = self.transcripts.get(transcript_uniquename) {
+                if let Some(ref protein) = transcript.protein {
+                    molecular_weight = Some((100.0 * protein.molecular_weight).round() / 100.0);
+                    if protein.sequence.ends_with('*') {
+                        protein_length = Some(protein.sequence.len() - 1);
+                    } else {
+                        protein_length = Some(protein.sequence.len());
+                    }
+                    break;
                 }
-                break;
             }
         }
 
@@ -4162,6 +4207,7 @@ impl <'a> WebDataBuild<'a> {
             term_summaries,
             genes: self.genes,
             gene_name_gene_map,
+            transcripts: self.transcripts,
             alleles: self.alleles,
             genotypes: self.genotypes,
             terms: terms_for_api,
@@ -4185,6 +4231,7 @@ impl <'a> WebDataBuild<'a> {
                                   seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
                                   seen_genotypes: &mut HashMap<RcString, GenotypeShortMap>,
                                   seen_alleles: &mut HashMap<RcString, AlleleShortMap>,
+                                  seen_transcripts: &mut HashMap<RcString, TranscriptDetailsOptionMap>,
                                   seen_terms: &mut HashMap<RcString, TermShortOptionMap>) {
         for feat_annotations in cv_annotations.values() {
             for feat_annotation in feat_annotations.iter() {
@@ -4218,6 +4265,9 @@ impl <'a> WebDataBuild<'a> {
                             ExtRange::Promoter(ref gene_uniquename) =>
                                 self.add_gene_to_hash(seen_genes, identifier,
                                                       gene_uniquename),
+                            ExtRange::Transcript(ref transcript_uniquename) =>
+                                self.add_transcript_to_hash(seen_transcripts, identifier,
+                                                            transcript_uniquename),
                             _ => {},
                         }
                     }
@@ -4243,7 +4293,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn set_term_details_maps(&mut self) {
         let (mut seen_references, mut seen_genes, mut seen_genotypes,
-             mut seen_alleles, mut seen_terms) = get_maps();
+             mut seen_alleles, mut seen_transcripts, mut seen_terms) = get_maps();
 
         let mut genes_annotated_with_map: HashMap<TermId, HashSet<GeneUniquename>> =
             HashMap::new();
@@ -4297,6 +4347,9 @@ impl <'a> WebDataBuild<'a> {
                                 ExtRange::Promoter(ref gene_uniquename) =>
                                     self.add_gene_to_hash(&mut seen_genes, termid,
                                                           gene_uniquename),
+                                ExtRange::Transcript(ref transcript_uniquename) =>
+                                    self.add_transcript_to_hash(&mut seen_transcripts, termid,
+                                                                transcript_uniquename),
                                 _ => {},
                             }
                         }
@@ -4334,6 +4387,9 @@ impl <'a> WebDataBuild<'a> {
             if let Some(references) = seen_references.remove(termid) {
                 term_details.references_by_uniquename = references;
             }
+            if let Some(transcripts) = seen_transcripts.remove(termid) {
+                term_details.transcripts_by_uniquename = transcripts;
+            }
             if let Some(terms) = seen_terms.remove(termid) {
                 term_details.terms_by_termid = terms;
             }
@@ -4345,7 +4401,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn set_gene_details_maps(&mut self) {
         let (mut seen_references, mut seen_genes, mut seen_genotypes,
-             mut seen_alleles, mut seen_terms) = get_maps();
+             mut seen_alleles, mut seen_transcripts, mut seen_terms) = get_maps();
 
         {
             for (gene_uniquename, gene_details) in &self.genes {
@@ -4355,7 +4411,14 @@ impl <'a> WebDataBuild<'a> {
                                                 &mut seen_genes,
                                                 &mut seen_genotypes,
                                                 &mut seen_alleles,
+                                                &mut seen_transcripts,
                                                 &mut seen_terms);
+
+                for transcript_uniquename in &gene_details.transcripts {
+                    self.add_transcript_to_hash(&mut seen_transcripts,
+                                                gene_uniquename,
+                                                transcript_uniquename);
+                }
 
                 let interaction_iter =
                     gene_details.physical_interactions.iter().chain(&gene_details.genetic_interactions);
@@ -4416,6 +4479,9 @@ impl <'a> WebDataBuild<'a> {
             if let Some(genotypes) = seen_genotypes.remove(gene_uniquename) {
                 gene_details.genotypes_by_uniquename = genotypes;
             }
+            if let Some(transcripts) = seen_transcripts.remove(gene_uniquename) {
+                gene_details.transcripts_by_uniquename = transcripts;
+            }
             if let Some(terms) = seen_terms.remove(gene_uniquename) {
                 gene_details.terms_by_termid = terms;
             }
@@ -4424,7 +4490,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn set_genotype_details_maps(&mut self) {
         let (mut seen_references, mut seen_genes, mut seen_genotypes,
-             mut seen_alleles, mut seen_terms) = get_maps();
+             mut seen_alleles, mut seen_transcripts, mut seen_terms) = get_maps();
 
         for (genotype_uniquename, genotype_details) in &self.genotypes {
             self.add_cv_annotations_to_maps(genotype_uniquename,
@@ -4433,6 +4499,7 @@ impl <'a> WebDataBuild<'a> {
                                             &mut seen_genes,
                                             &mut seen_genotypes,
                                             &mut seen_alleles,
+                                            &mut seen_transcripts,
                                             &mut seen_terms);
         }
 
@@ -4446,6 +4513,9 @@ impl <'a> WebDataBuild<'a> {
             if let Some(genotypes) = seen_genes.remove(genotype_uniquename) {
                 genotype_details.genes_by_uniquename = genotypes;
             }
+            if let Some(transcripts) = seen_transcripts.remove(genotype_uniquename) {
+                genotype_details.transcripts_by_uniquename = transcripts;
+            }
             if let Some(terms) = seen_terms.remove(genotype_uniquename) {
                 genotype_details.terms_by_termid = terms;
             }
@@ -4453,8 +4523,6 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_reference_details_maps(&mut self) {
-        let mut seen_genes: HashMap<RcString, GeneShortOptionMap> = HashMap::new();
-
         // for calculating the gene_count field, we don't incude non-pombe genes
         let mut gene_count_hash: HashMap<RcString, GeneShortOptionMap> =
             HashMap::new();
@@ -4472,13 +4540,9 @@ impl <'a> WebDataBuild<'a> {
                 }
             };
 
-        type GenotypeShortMap = HashMap<GenotypeUniquename, GenotypeShort>;
-        let mut seen_genotypes: HashMap<ReferenceUniquename, GenotypeShortMap> = HashMap::new();
 
-        type AlleleShortMap = HashMap<AlleleUniquename, AlleleShort>;
-        let mut seen_alleles: HashMap<TermId, AlleleShortMap> = HashMap::new();
-
-        let mut seen_terms: HashMap<GeneUniquename, TermShortOptionMap> = HashMap::new();
+        let (_, mut seen_genes, mut seen_genotypes,
+             mut seen_alleles, mut seen_transcripts, mut seen_terms) = get_maps();
 
         {
             for (reference_uniquename, reference_details) in &self.references {
@@ -4522,6 +4586,10 @@ impl <'a> WebDataBuild<'a> {
                                         maybe_add_to_gene_count_hash(reference_uniquename,
                                                                      gene_uniquename);
                                     },
+                                    ExtRange::Transcript(ref transcript_uniquename) =>
+                                        self.add_transcript_to_hash(&mut seen_transcripts,
+                                                                    reference_uniquename,
+                                                                    transcript_uniquename),
                                     _ => {},
                                 }
                             }
@@ -4600,6 +4668,9 @@ impl <'a> WebDataBuild<'a> {
             }
             if let Some(terms) = seen_terms.remove(reference_uniquename) {
                 reference_details.terms_by_termid = terms;
+            }
+            if let Some(transcripts) = seen_transcripts.remove(reference_uniquename) {
+                reference_details.transcripts_by_uniquename = transcripts;
             }
             if let Some(gene_count_genes) = gene_count_hash.remove(reference_uniquename) {
                 reference_details.gene_count = gene_count_genes.len();

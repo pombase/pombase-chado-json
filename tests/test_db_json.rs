@@ -661,9 +661,14 @@ fn test_gene_details() {
     assert_eq!(web_data.api_maps.genes.len(), 3);
     let par1_gene = web_data.api_maps.genes.remove("SPCC188.02").unwrap();
 
-    assert_eq!(par1_gene.transcripts[0].parts[0].residues,
+    let transcript_0_uniquename = &par1_gene.transcripts[0];
+    let transcript_details_0 =
+        web_data.api_maps.transcripts.get(transcript_0_uniquename)
+        .unwrap();
+
+    assert_eq!(transcript_details_0.parts[0].residues,
                "TAGATAGTGCATGT");
-    assert_eq!(par1_gene.transcripts[0].parts[1].residues,
+    assert_eq!(transcript_details_0.parts[1].residues,
                "AGCTGTATTTATATCCGGATTAGCTA");
 
     assert_eq!(par1_gene.uniquename, "SPCC188.02");

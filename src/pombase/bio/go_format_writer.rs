@@ -218,8 +218,22 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
     gpi_writer.write_all(gpi_line.as_bytes())?;
 
     let db_protein_id =
-        if let Some(ref protein) = gene_details.transcripts[0].protein {
-            format!("{}:{}", database_name, protein.uniquename)
+        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+            if let Some(maybe_transcript_details) =
+                gene_details.transcripts_by_uniquename.get(transcript_uniquename)
+            {
+                if let Some(transcript_details) = maybe_transcript_details {
+                    if let Some(ref protein) = transcript_details.protein {
+                        format!("{}:{}", database_name, protein.uniquename)
+                    } else {
+                        return Ok(())
+                    }
+                } else {
+                        return Ok(())
+                }
+            } else {
+                return Ok(())
+            }
         } else {
             return Ok(())
         };
@@ -446,14 +460,23 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         } else {
             ""
         };
-
-    let transcript_type_str =
-        gene_details.transcripts[0].transcript_type.as_str();
+ 
     let db_object_type =
-        if transcript_type_str == "mRNA" {
-            "protein"
+        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+            let transcript_details = api_maps
+                .transcripts.get(transcript_uniquename)
+                .expect(&format!("internal error, failed to find transcript: {}",
+                                 transcript_uniquename));
+
+            let transcript_type = transcript_details.transcript_type.as_str();
+
+            if transcript_type == "mRNA" {
+                "protein"
+            } else {
+                transcript_type
+            }
         } else {
-            transcript_type_str
+            return Ok(());
         };
 
     let single_letter_aspect =

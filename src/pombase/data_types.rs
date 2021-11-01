@@ -38,6 +38,8 @@ pub type IdOntAnnotationDetailMap = HashMap<OntAnnotationId, OntAnnotationDetail
 pub type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
 pub type GeneShortOptionMap = HashMap<GeneUniquename, Option<GeneShort>>;
 pub type ReferenceShortOptionMap = HashMap<ReferenceUniquename, Option<ReferenceShort>>;
+pub type TranscriptDetailsOptionMap =
+    HashMap<TranscriptUniquename, Option<TranscriptDetails>>;
 
 use std::rc::Rc;
 use std::cmp::Ordering;
@@ -82,6 +84,8 @@ pub struct GeneAndGeneProduct {
 pub enum ExtRange {
 #[serde(rename = "gene_uniquename")]
     Gene(GeneUniquename),
+#[serde(rename = "transcript_uniquename")]
+    Transcript(TranscriptUniquename),
 #[serde(rename = "promoter_gene_uniquename")]
     Promoter(RcString),
 #[serde(rename = "summary_gene_uniquenames")]
@@ -116,6 +120,8 @@ impl fmt::Display for ExtRange {
         match self {
             ExtRange::Gene(ref gene_uniquename) | ExtRange::Promoter(ref gene_uniquename) =>
                 write!(f, "{}", gene_uniquename),
+            ExtRange::Transcript(ref transcript_uniquename) =>
+                write!(f, "{}", transcript_uniquename),
             ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
             ExtRange::Term(ref termid) => write!(f, "{}", termid),
             ExtRange::SummaryModifiedResidues(ref residue) =>
@@ -481,6 +487,8 @@ pub struct ReferenceDetails {
     pub genes_by_uniquename: GeneShortOptionMap,
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub transcripts_by_uniquename: TranscriptDetailsOptionMap,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
 }
@@ -857,7 +865,8 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_neighbourhood: Vec<GeneShort>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub transcripts: Vec<TranscriptDetails>,
+    // transcripts of this gene
+    pub transcripts: Vec<TranscriptUniquename>,
     pub cv_annotations: OntAnnotationMap,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub physical_interactions: Vec<InteractionAnnotation>,
@@ -877,6 +886,9 @@ pub struct GeneDetails {
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    // transcripts referenced by this gene
+    pub transcripts_by_uniquename: TranscriptDetailsOptionMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub terms_by_termid: TermShortOptionMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
@@ -1075,6 +1087,7 @@ pub struct TranscriptDetails {
     pub protein: Option<ProteinDetails>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
+    pub gene_uniquename: RcString,
 }
 
 impl TranscriptDetails {
@@ -1126,6 +1139,9 @@ pub struct GenotypeDetails {
     pub references_by_uniquename: ReferenceShortOptionMap,
     pub genes_by_uniquename: GeneShortOptionMap,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    // transcripts referenced by this genotype
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub transcripts_by_uniquename: TranscriptDetailsOptionMap,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
 }
@@ -1308,6 +1324,9 @@ pub struct TermDetails {
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub references_by_uniquename: ReferenceShortOptionMap,
+    // transcripts referenced by this term
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub transcripts_by_uniquename: TranscriptDetailsOptionMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub terms_by_termid: TermShortOptionMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
@@ -1567,6 +1586,7 @@ pub struct APIMaps {
     pub gene_query_data_map: HashMap<GeneUniquename, GeneQueryData>,
     pub term_summaries: HashSet<TermShort>,
     pub genes: UniquenameGeneMap,
+    pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<RcString, GeneUniquename>,
     pub alleles: UniquenameAlleleMap,
     pub genotypes: IdGenotypeMap,
@@ -1732,7 +1752,16 @@ pub struct InterMineGeneDetails {
 }
 
 impl InterMineGeneDetails {
-    pub fn from_gene_details(gene_details: &GeneDetails) -> InterMineGeneDetails {
+    pub fn from_gene_details(transcripts_by_uniquename: &UniquenameTranscriptMap,
+                             gene_details: &GeneDetails) -> InterMineGeneDetails {
+        let transcripts = gene_details.transcripts.iter()
+            .map(|transcript_uniquename|
+                 transcripts_by_uniquename.get(transcript_uniquename)
+                 .expect(&format!("internal error, failed to find transcript: {}",
+                                  transcript_uniquename))
+                 .to_owned())
+            .collect::<Vec<_>>();
+
         InterMineGeneDetails {
             name: gene_details.name.clone(),
             synonyms: gene_details.synonyms.clone(),
@@ -1740,7 +1769,7 @@ impl InterMineGeneDetails {
             systematic_id: gene_details.uniquename.clone(),
             feature_type: gene_details.feature_type.clone(),
             location: gene_details.location.clone(),
-            transcripts: gene_details.transcripts.clone(),
+            transcripts,
             uniprot_identifier: gene_details.uniprot_identifier.clone(),
             taxonid: gene_details.taxonid,
         }

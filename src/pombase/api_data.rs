@@ -5,16 +5,15 @@ use std::io::{Read, BufReader};
 use serde_json;
 use std::collections::{HashMap, HashSet};
 
-use crate::data_types::{APIMaps, IdGeneSubsetMap, APIGeneSummary, APIAlleleDetails,
-                GeneDetails, TermDetails, GenotypeDetails, ReferenceDetails,
-                InteractionType, OntAnnotationMap, IdOntAnnotationDetailMap,
-                OntAnnotationDetail,
-                TermShort, TermShortOptionMap, ChromosomeDetails,
-                ReferenceShort, ReferenceShortOptionMap,
-                FeatureShort,
-                GeneShort, GeneShortOptionMap, GeneQueryData,
-                ExtPart, ExtRange, GeneAndGeneProduct, WithFromValue,
-                Ploidiness};
+use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIMaps, ChromosomeDetails,
+                        ExtPart, ExtRange, FeatureShort, GeneAndGeneProduct, GeneDetails,
+                        GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails,
+                        IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType,
+                        OntAnnotationDetail, OntAnnotationMap, Ploidiness,
+                        ReferenceDetails, ReferenceShort, ReferenceShortOptionMap,
+                        TermDetails, TermShort, TermShortOptionMap,
+                        TranscriptDetailsOptionMap, WithFromValue};
+
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiLocus, QueryExpressionFilter};
@@ -477,6 +476,16 @@ impl APIData {
         ret
     }
 
+    fn fill_transcript_map(&self, transcript_map: &TranscriptDetailsOptionMap) -> TranscriptDetailsOptionMap {
+        let mut ret = transcript_map.clone();
+
+        for transcript_uniquename in transcript_map.keys() {
+            let transcript_details = &self.maps.transcripts[transcript_uniquename];
+            ret.insert(transcript_uniquename.clone(), Some(transcript_details.to_owned()));
+        }
+        ret
+    }
+
     fn fill_reference_map(&self, reference_map: &ReferenceShortOptionMap) -> ReferenceShortOptionMap {
         let mut ret = reference_map.clone();
         for reference_uniquename in reference_map.keys() {
@@ -494,6 +503,7 @@ impl APIData {
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
             gene.terms_by_termid = self.fill_term_map(&gene.terms_by_termid);
             gene.genes_by_uniquename = self.fill_gene_map(&gene.genes_by_uniquename);
+            gene.transcripts_by_uniquename = self.fill_transcript_map(&gene.transcripts_by_uniquename);
             gene.references_by_uniquename =
                 self.fill_reference_map(&gene.references_by_uniquename);
             sort_cv_annotation_details(&mut gene, &self.config,
@@ -518,6 +528,7 @@ impl APIData {
             let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
             genotype.terms_by_termid = self.fill_term_map(&genotype.terms_by_termid);
             genotype.genes_by_uniquename = self.fill_gene_map(&genotype.genes_by_uniquename);
+            genotype.transcripts_by_uniquename = self.fill_transcript_map(&genotype.transcripts_by_uniquename);
             genotype.references_by_uniquename =
                 self.fill_reference_map(&genotype.references_by_uniquename);
             sort_cv_annotation_details(&mut genotype, &self.config,
@@ -540,6 +551,7 @@ impl APIData {
         let details_map = self.detail_map_of_cv_annotations(&term.cv_annotations);
         term.terms_by_termid = self.fill_term_map(&term.terms_by_termid);
         term.genes_by_uniquename = self.fill_gene_map(&term.genes_by_uniquename);
+        term.transcripts_by_uniquename = self.fill_transcript_map(&term.transcripts_by_uniquename);
         term.references_by_uniquename =
             self.fill_reference_map(&term.references_by_uniquename);
         sort_cv_annotation_details(&mut term, &self.config,
@@ -574,6 +586,7 @@ impl APIData {
             let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);
             reference.terms_by_termid = self.fill_term_map(&reference.terms_by_termid);
             reference.genes_by_uniquename = self.fill_gene_map(&reference.genes_by_uniquename);
+            reference.transcripts_by_uniquename = self.fill_transcript_map(&reference.transcripts_by_uniquename);
             sort_cv_annotation_details(&mut reference, &self.config,
                                        &self.maps.genes,
                                        &self.maps.genotypes,

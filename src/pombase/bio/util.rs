@@ -1,6 +1,7 @@
 use std::collections::{HashSet, HashMap};
 use crate::data_types::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
-                TranscriptDetails, FeatureShort, ProteinDetails, FeatureType};
+                        UniquenameTranscriptMap, TranscriptDetails, FeatureShort,
+                        ProteinDetails, FeatureType};
 
 use pombase_rc_string::RcString;
 
@@ -101,7 +102,8 @@ fn to_gff(chromosome_export_id: &str,
 
 
 pub fn format_gene_gff(chromosome_export_id: &str,
-                       source: &str, gene: &GeneDetails) -> Vec<String> {
+                       source: &str, transcripts: &UniquenameTranscriptMap,
+                       gene: &GeneDetails) -> Vec<String> {
     let mut ret_val = vec![];
     if let Some (ref gene_loc) = gene.location {
         let maybe_gene_name =
@@ -109,11 +111,18 @@ pub fn format_gene_gff(chromosome_export_id: &str,
 
         ret_val.push(to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
                             "gene", gene_loc, None));
-        for tr in &gene.transcripts {
+        for transcript_uniquename in &gene.transcripts {
+            let transcript_details = transcripts
+                .get(transcript_uniquename)
+                .expect(&format!("internal error, failed to find transcript: {}",
+                                 transcript_uniquename));
+
             ret_val.push(to_gff(chromosome_export_id,
-                                source, &tr.uniquename, None, &tr.transcript_type,
-                                &tr.location, Some(&gene.uniquename)));
-            for part in &tr.parts {
+                                source, transcript_uniquename, None,
+                                &transcript_details.transcript_type,
+                                &transcript_details.location,
+                                Some(&gene.uniquename)));
+            for part in &transcript_details.parts {
                 let gff_feat_type =
                     match part.feature_type {
                         FeatureType::Exon => "CDS".to_owned(),
@@ -125,7 +134,8 @@ pub fn format_gene_gff(chromosome_export_id: &str,
                     };
                 ret_val.push(to_gff(chromosome_export_id,
                                     source, &part.uniquename, None, &gff_feat_type,
-                                    &part.location, Some(&tr.uniquename)));
+                                    &part.location,
+                                    Some(transcript_uniquename)));
             }
         }
     }
@@ -159,7 +169,11 @@ fn test_format_fasta() {
 #[test]
 fn test_format_gff() {
     let gene = make_test_gene();
-    let gene_gff_lines = format_gene_gff("chromosome_3", "PomBase", &gene);
+    let mut transcripts = HashMap::new();
+    transcripts.insert( RcString::from("SPCC18B5.06.1"),
+                       gene.transcripts_by_uniquename[&RcString::from("SPCC18B5.06.1")].clone().unwrap());
+    let gene_gff_lines = format_gene_gff("chromosome_3", "PomBase",
+                         &transcripts, &gene);
 
     assert_eq!(gene_gff_lines.len(), 13);
     assert_eq!(gene_gff_lines[0],
@@ -212,8 +226,12 @@ fn make_test_gene() -> GeneDetails {
         }),
         gene_neighbourhood: vec![],
         transcripts: vec![
-            TranscriptDetails {
-                uniquename:RcString::from("SPCC18B5.06.1"),
+            RcString::from("SPCC18B5.06.1"),
+        ],
+        transcripts_by_uniquename: HashMap::from([
+            (RcString::from("SPCC18B5.06.1"),
+             Some(TranscriptDetails {
+                uniquename: RcString::from("SPCC18B5.06.1"),
                 location: ChromosomeLocation {
                     chromosome_name: RcString::from("chromosome_3"),
                     start_pos: 729_054,
@@ -384,8 +402,9 @@ fn make_test_gene() -> GeneDetails {
                     strand: Strand::Forward,
                     phase: None,
                 }),
-            },
-        ],
+                gene_uniquename: RcString::from("SPCC18B5.06"),
+            })
+        )]),
         cv_annotations: HashMap::new(),
         physical_interactions: vec![],
         genetic_interactions: vec![],

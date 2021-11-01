@@ -24,6 +24,7 @@ fn string_from_ext_range(ext_range: &ExtRange,
                 .unwrap_or_else(|| panic!("can't find gene: {}", gene_uniquename));
             gene_display_name(gene)
         },
+        ExtRange::Transcript(ref transcript_uniquename) => transcript_uniquename.clone(),
         ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::Term(ref termid) => RcString::from(&terms.get(termid).unwrap().name),
         ExtRange::SummaryModifiedResidues(ref residue) => RcString::from(&residue.join(",")),

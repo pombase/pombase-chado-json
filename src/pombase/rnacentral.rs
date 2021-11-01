@@ -6,9 +6,9 @@ use std::io::BufReader;
 use chrono::prelude::{Local, DateTime};
 
 use crate::web::config::Config;
-use crate::data_types::{UniquenameGeneMap, GeneDetails,
-                        TranscriptDetails, FeatureType,
-                        RNAcentralAnnotations};
+
+use crate::data_types::{FeatureType, GeneDetails, RNAcentralAnnotations,
+                        TranscriptDetails, UniquenameGeneMap, UniquenameTranscriptMap};
 
 use pombase_rc_string::RcString;
 
@@ -158,7 +158,10 @@ fn make_genome_location(config: &Config, gene_details: &GeneDetails,
     }
 }
 
-fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA> {
+fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
+             genes: &UniquenameGeneMap)
+             -> Vec<RNAcentralNcRNA>
+{
     let rnacentral_config = config.file_exports.rnacentral.clone().unwrap();
 
     let mut ret = vec![];
@@ -170,11 +173,17 @@ fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA>
             continue;
         }
 
-        for transcript_details in &gene_details.transcripts {
+        for transcript_uniquename in &gene_details.transcripts {
+            let transcript_details = transcripts
+                .get(transcript_uniquename)
+                .expect(&format!("internal error, failed to find transcript: {}",
+                                 transcript_uniquename));
+
             let rnacentral_gene = make_gene_struct(config, gene_details);
 
-            let primary_id = db_uniquename(config, &transcript_details.uniquename);
-            let location = make_genome_location(config, gene_details, transcript_details);
+            let primary_id = db_uniquename(config, &transcript_uniquename);
+            let location = make_genome_location(config, gene_details,
+                                                &transcript_details);
 
             let uppercase_sequence =
                 transcript_details.spliced_transcript_sequence().to_uppercase();
@@ -197,11 +206,14 @@ fn make_data(config: &Config, genes: &UniquenameGeneMap) -> Vec<RNAcentralNcRNA>
     ret
 }
 
-pub fn make_rnacentral_struct(config: &Config, genes: &UniquenameGeneMap) -> RNAcentral {
+pub fn make_rnacentral_struct(config: &Config, transcripts: &UniquenameTranscriptMap,
+                              genes: &UniquenameGeneMap)
+                              -> RNAcentral
+{
     let local: DateTime<Local> = Local::now();
 
     let data_provider = config.database_name.clone();
-    let data = make_data(config, genes);
+    let data = make_data(config, transcripts, genes);
 
     RNAcentral {
         data,

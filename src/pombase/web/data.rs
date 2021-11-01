@@ -193,7 +193,8 @@ impl WebData {
             self.api_maps.genes.values()
             .filter(|gene_details| gene_details.taxonid == load_org_taxonid)
             .map(|gene_details| {
-                InterMineGeneDetails::from_gene_details(gene_details)
+                InterMineGeneDetails::from_gene_details(&self.api_maps.transcripts,
+                                                        gene_details)
             }).collect();
 
         let genes_json_text = serde_json::to_string(&intermine_genes)?;
@@ -237,7 +238,12 @@ impl WebData {
         let mut peptide_writer = make_seq_writer("peptide.fa");
 
         for (gene_uniquename, gene_details) in &self.api_maps.genes {
-            if let Some(transcript) = gene_details.transcripts.get(0) {
+            if let Some(transcript_uniquename) =
+                gene_details.transcripts.get(0)
+            {
+                let transcript = self.api_maps.transcripts.get(transcript_uniquename)
+                    .expect(&format!("internal error, can't find transcript details for {}",
+                                     transcript_uniquename));
                 let mut cds_seq = String::new();
                 let mut cds_introns_seq = String::new();
                 let mut cds_introns_utrs_seq = String::new();
@@ -622,7 +628,13 @@ impl WebData {
         let mut compositions_to_write = vec![];
 
         for (gene_uniquename, gene_details) in &self.api_maps.genes {
-            if let Some(transcript) = gene_details.transcripts.get(0) {
+            if let Some(transcript_uniquename) =
+                gene_details.transcripts.get(0)
+            {
+                let transcript = self.api_maps.transcripts.get(transcript_uniquename)
+                    .expect(&format!("internal error, can't find transcript details for {}",
+                                     transcript_uniquename));
+
                 if let Some(ref protein) = transcript.protein {
                     let line = format!("{}\t{:.2}\t{}\t{}\t{}\t{}\n",
                                        gene_uniquename, protein.molecular_weight,
@@ -748,7 +760,12 @@ impl WebData {
                 if let Some(ref gene_location) = gene.location {
                     write_line(gene_uniquename, gene_location, &mut gene_writer)?;
 
-                    for transcript in &gene.transcripts {
+                    for transcript_uniquename in &gene.transcripts {
+                        let transcript = self.api_maps.transcripts
+                            .get(transcript_uniquename)
+                            .expect(&format!("internal error, can't find transcript details for {}",
+                                             transcript_uniquename));
+
                         if let Some(ref cds_location) = transcript.cds_location {
                             write_line(gene_uniquename, cds_location, &mut cds_writer)?;
                         }
@@ -858,7 +875,7 @@ impl WebData {
                         &config.find_chromosome_config(chromosome_name).export_id;
                     let gene_gff_lines =
                         format_gene_gff(chromosome_export_id, &config.database_name,
-                                        gene_details);
+                                        &self.api_maps.transcripts, gene_details);
                     for gff_line in gene_gff_lines {
                         all_gff_writer.write_all(gff_line.as_bytes())?;
                         all_gff_writer.write_all(b"\n")?;
@@ -1020,7 +1037,8 @@ impl WebData {
             let rnacentral_file_name = format!("{}/rnacentral.json", output_dir);
             let rnacentral_file = File::create(rnacentral_file_name).expect("Unable to open file");
             let mut rnacentral_writer = BufWriter::new(&rnacentral_file);
-            let rnacentral_struct = make_rnacentral_struct(config, &self.api_maps.genes);
+            let rnacentral_struct = make_rnacentral_struct(config, &self.api_maps.transcripts,
+                                                           &self.api_maps.genes);
             let s = serde_json::to_string(&rnacentral_struct).unwrap();
 
             rnacentral_writer.write_all(s.as_bytes())?;
@@ -1131,7 +1149,13 @@ impl WebData {
                 continue;
             }
 
-            if let Some(transcript) = gene_details.transcripts.get(0) {
+            if let Some(transcript_uniquename) =
+                gene_details.transcripts.get(0)
+            {
+                let transcript = self.api_maps.transcripts.get(transcript_uniquename)
+                    .expect(&format!("internal error, can't find transcript details for {}",
+                                     transcript_uniquename));
+
                 if let Some(ref protein) = transcript.protein {
                     let line = format_one_gene(gene_details, &protein.sequence);
 
