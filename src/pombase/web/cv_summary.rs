@@ -30,7 +30,7 @@ pub fn make_cv_summaries<T: AnnotationContainer>
 
 // merge two ExtPart objects into one by merging ranges
 pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
-                         genes: &UniquenameGeneMap) -> ExtPart {
+                             genes: &UniquenameGeneMap) -> ExtPart {
     if ext_part1.rel_type_display_name == ext_part2.rel_type_display_name {
         match ext_part1.ext_range {
             ExtRange::SummaryGenes(ref part1_summ_genes) => {
@@ -46,6 +46,23 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     new_gene_uniquenames.sort_by(cmp);
                     new_gene_uniquenames.dedup();
                     ret_ext_part.ext_range = ExtRange::SummaryGenes(new_gene_uniquenames);
+                    return ret_ext_part
+                }
+            },
+            ExtRange::SummaryTranscripts(ref part1_summ_transcripts) => {
+                if let ExtRange::SummaryTranscripts(ref part2_summ_transcripts) = ext_part2.ext_range {
+                    let mut ret_ext_part = ext_part1.clone();
+                    let mut new_transcript_uniquenames =
+                        [part1_summ_transcripts.clone(), part2_summ_transcripts.clone()].concat();
+                    let cmp =
+                        |vec1: &Vec<RcString>, vec2: &Vec<RcString>| {
+                            let transcript_uniquename_1 = &vec1[0];
+                            let transcript_uniquename_2 = &vec2[0];
+                            transcript_uniquename_1.cmp(transcript_uniquename_2)
+                        };
+                    new_transcript_uniquenames.sort_by(cmp);
+                    new_transcript_uniquenames.dedup();
+                    ret_ext_part.ext_range = ExtRange::SummaryTranscripts(new_transcript_uniquenames);
                     return ret_ext_part
                 }
             },
@@ -90,7 +107,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
     let merge_range_rel_p =
         |ext_part: &ExtPart| {
             match ext_part.ext_range {
-                ExtRange::SummaryGenes(_) | ExtRange::SummaryTerms(_) |
+                ExtRange::SummaryGenes(_) | ExtRange::SummaryTranscripts(_) | ExtRange::SummaryTerms(_) |
                 ExtRange::SummaryModifiedResidues(_) =>
                     conf_rel_ranges.contains(&ext_part.rel_type_name),
                 _ =>false
@@ -385,6 +402,15 @@ pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
                     }
                 }
 
+                if let ExtRange::SummaryTranscripts(ref current_summ_transcripts) = current.ext_range {
+                    if let ExtRange::SummaryTranscripts(ref mut prev_summ_transcripts) = prev.ext_range {
+                        let mut current_transcripts = current_summ_transcripts[0].clone();
+                        prev_summ_transcripts[0].append(& mut current_transcripts);
+
+                        continue;
+                    }
+                }
+
                 result.push(prev);
                 prev = current;
             }
@@ -465,6 +491,10 @@ fn make_cv_summary(cv_config: &CvConfig,
                         ExtRange::Gene(gene_uniquename) => {
                             let summ_genes = vec![gene_uniquename];
                             ext_part.ext_range = ExtRange::SummaryGenes(vec![summ_genes]);
+                        },
+                        ExtRange::Transcript(transcript_uniquename) => {
+                            let summ_transcripts = vec![transcript_uniquename];
+                            ext_part.ext_range = ExtRange::SummaryTranscripts(vec![summ_transcripts]);
                         },
                         ExtRange::Term(termid) => {
                             ext_part.ext_range = ExtRange::SummaryTerms(vec![termid]);

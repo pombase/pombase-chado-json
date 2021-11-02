@@ -862,18 +862,22 @@ impl <'a> WebDataBuild<'a> {
         allele_short
     }
 
-    fn add_transcript_to_hash(&self,
+    fn add_transcript_to_hashes(&self,
                               seen_transcripts: &mut HashMap<RcString, TranscriptDetailsOptionMap>,
+                              seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
                               identifier: &RcString,
                               transcript_uniquename: &TranscriptUniquename) {
-        if !self.transcripts.contains_key(transcript_uniquename) {
+        if let Some(transcript_details) = self.transcripts.get(transcript_uniquename) {
+            seen_transcripts
+                .entry(identifier.clone())
+                .or_insert_with(HashMap::new)
+                .insert(transcript_uniquename.clone(), None);
+            self.add_gene_to_hash(seen_genes, identifier,
+                                  &transcript_details.gene_uniquename);
+        } else {
             panic!("internal error, can't find transcript {}",
                    transcript_uniquename);
         }
-        seen_transcripts
-            .entry(identifier.clone())
-            .or_insert_with(HashMap::new)
-            .insert(transcript_uniquename.clone(), None);
     }
 
     fn add_term_to_hash(&self,
@@ -4266,7 +4270,8 @@ impl <'a> WebDataBuild<'a> {
                                 self.add_gene_to_hash(seen_genes, identifier,
                                                       gene_uniquename),
                             ExtRange::Transcript(ref transcript_uniquename) =>
-                                self.add_transcript_to_hash(seen_transcripts, identifier,
+                                self.add_transcript_to_hashes(seen_transcripts, seen_genes,
+                                                            identifier,
                                                             transcript_uniquename),
                             _ => {},
                         }
@@ -4348,8 +4353,9 @@ impl <'a> WebDataBuild<'a> {
                                     self.add_gene_to_hash(&mut seen_genes, termid,
                                                           gene_uniquename),
                                 ExtRange::Transcript(ref transcript_uniquename) =>
-                                    self.add_transcript_to_hash(&mut seen_transcripts, termid,
-                                                                transcript_uniquename),
+                                    self.add_transcript_to_hashes(&mut seen_transcripts, 
+                                                                &mut seen_genes,
+                                                                termid, transcript_uniquename),
                                 _ => {},
                             }
                         }
@@ -4415,7 +4421,8 @@ impl <'a> WebDataBuild<'a> {
                                                 &mut seen_terms);
 
                 for transcript_uniquename in &gene_details.transcripts {
-                    self.add_transcript_to_hash(&mut seen_transcripts,
+                    self.add_transcript_to_hashes(&mut seen_transcripts,
+                                                &mut seen_genes,
                                                 gene_uniquename,
                                                 transcript_uniquename);
                 }
@@ -4587,9 +4594,10 @@ impl <'a> WebDataBuild<'a> {
                                                                      gene_uniquename);
                                     },
                                     ExtRange::Transcript(ref transcript_uniquename) =>
-                                        self.add_transcript_to_hash(&mut seen_transcripts,
-                                                                    reference_uniquename,
-                                                                    transcript_uniquename),
+                                        self.add_transcript_to_hashes(&mut seen_transcripts,
+                                                                      &mut seen_genes,
+                                                                      reference_uniquename,
+                                                                      transcript_uniquename),
                                     _ => {},
                                 }
                             }

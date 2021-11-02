@@ -91,6 +91,8 @@ pub enum ExtRange {
 #[serde(rename = "summary_gene_uniquenames")]
     // the inner Vec length will be > 1 for cases like "binds abc1 and def2, cdc2"
     SummaryGenes(Vec<Vec<RcString>>),
+#[serde(rename = "summary_transcript_uniquenames")]
+    SummaryTranscripts(Vec<Vec<TranscriptUniquename>>),
 #[serde(rename = "termid")]
     Term(TermId),
 #[serde(rename = "summary_termids")]
@@ -123,6 +125,7 @@ impl fmt::Display for ExtRange {
             ExtRange::Transcript(ref transcript_uniquename) =>
                 write!(f, "{}", transcript_uniquename),
             ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
+            ExtRange::SummaryTranscripts(_) => panic!("can't handle SummaryTranscripts\n"),
             ExtRange::Term(ref termid) => write!(f, "{}", termid),
             ExtRange::SummaryModifiedResidues(ref residue) =>
                 write!(f, "{}", &residue.join(",")),
