@@ -347,6 +347,9 @@ impl APIData {
                     let uniquename = &gene_short.uniquename;
                     ExtRange::Gene(self.strip_db_prefix(uniquename))
                 },
+                WithFromValue::Transcript(transcript_uniquename) => {
+                    ExtRange::Transcript(transcript_uniquename)
+                }
                 _ => panic!("unexpected WithFromValue variant: {:#?}", with_value),
             };
 
