@@ -2766,7 +2766,11 @@ impl <'a> WebDataBuild<'a> {
                             let db_feature_uniquename = &ext_range[db_prefix.len()..];
                             if let Some(captures) = PROMOTER_RE.captures(db_feature_uniquename) {
                                 let gene_uniquename = RcString::from(&captures["gene"]);
-                                ExtRange::Promoter(gene_uniquename)
+                                if self.genes.contains_key(&gene_uniquename) {
+                                    ExtRange::Promoter(gene_uniquename)
+                                } else {
+                                    panic!("unknown gene in promoter: {}", db_feature_uniquename);
+                                }
                             } else {
                                 if self.genes.contains_key(db_feature_uniquename) {
                                     ExtRange::Gene(RcString::from(db_feature_uniquename))

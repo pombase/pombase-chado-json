@@ -128,7 +128,8 @@ fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDetails
     let get_range = |ext_part: &ExtPart| {
         let mut range_copy = ext_part.ext_range.clone();
 
-        if let ExtRange::Gene(ref mut gene_uniquename) = range_copy {
+        if let ExtRange::Gene(ref mut gene_uniquename) |
+            ExtRange::Promoter(ref mut gene_uniquename) = range_copy {
             if !gene_uniquename.contains(':') {
                 let new_uniquename =
                     RcString::from(&format!("{}:{}", config.database_name,
@@ -460,7 +461,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         } else {
             ""
         };
- 
+
     let db_object_type =
         if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
             let transcript_details = api_maps
