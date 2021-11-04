@@ -59,7 +59,8 @@ fn get_gpad_relation_of(term_details: &TermDetails,
         },
         "biological_process" => String::from("RO:0002331"),
         "cellular_component" => {
-            if term_details.interesting_parent_details.iter()
+            if term_details.termid == RcString::from("GO:0032991") ||
+                term_details.interesting_parent_details.iter()
                 .any(|p| p.termid == RcString::from("GO:0032991"))
             {
                 String::from("BFO:0000050")
