@@ -605,7 +605,9 @@ impl PartialOrd for WithFromValue {
 pub struct OntAnnotationDetail {
     pub id: i32,
     pub genes: Vec<GeneUniquename>,
-    pub transcript: Option<TranscriptUniquename>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub transcripts: Vec<TranscriptUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,

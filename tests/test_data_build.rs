@@ -387,7 +387,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
     OntAnnotationDetail {
         id: id,
         genes: vec![gene_uniquename.into()],
-        transcript: None,
+        transcripts: vec![],
         genotype: maybe_genotype_uniquename.map(RcString::from),
         genotype_background: None,
         reference: Some(reference_uniquename.into()),

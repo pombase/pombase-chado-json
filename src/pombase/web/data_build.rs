@@ -3062,7 +3062,7 @@ impl <'a> WebDataBuild<'a> {
 
             let termid = cvterm.termid();
 
-            let mut maybe_transcript_uniquename = None;
+            let mut transcript_uniquenames = vec![];
 
             let mut extension = vec![];
 
@@ -3222,7 +3222,13 @@ impl <'a> WebDataBuild<'a> {
                         if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
                             if let Some(gene_uniquename) =
                                 self.genes_of_transcripts.get(&feature.uniquename) {
-                                    maybe_transcript_uniquename = Some(feature.uniquename.clone());
+                                    if let Some(gene_details) = self.genes.get(gene_uniquename) {
+                                        if gene_details.transcripts.len() > 1 {
+                                            // only bother to record the specific transcript if
+                                            // there is more than one
+                                            transcript_uniquenames.push(feature.uniquename.clone());
+                                        }
+                                    }
                                     vec![gene_uniquename.clone()]
                                 } else {
                                     vec![]
@@ -3270,7 +3276,7 @@ impl <'a> WebDataBuild<'a> {
             let annotation_detail = OntAnnotationDetail {
                 id: feature_cvterm.feature_cvterm_id,
                 genes: gene_uniquenames_vec,
-                transcript: maybe_transcript_uniquename,
+                transcripts: transcript_uniquenames,
                 reference: reference_uniquename,
                 genotype: maybe_genotype_uniquename,
                 genotype_background,
