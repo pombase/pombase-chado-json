@@ -64,7 +64,7 @@ pub enum Ploidiness {
     Any,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Throughput {
 #[serde(rename = "high")]
     HighThroughput,
@@ -641,11 +641,70 @@ pub struct OntAnnotationDetail {
 
 impl PartialEq for OntAnnotationDetail {
     fn eq(&self, other: &OntAnnotationDetail) -> bool {
-        self.id == other.id
+        self.genes == other.genes &&
+            self.reference == other.reference &&
+            self.evidence == other.evidence &&
+            self.extension == other.extension &&
+            self.withs == other.withs &&
+            self.froms == other.froms &&
+            self.residue == other.residue &&
+            self.gene_product_form_id == other.gene_product_form_id &&
+            self.qualifiers == other.qualifiers &&
+            self.gene_ex_props == other.gene_ex_props &&
+            self.genotype == other.genotype &&
+            self.genotype_background == other.genotype_background &&
+            self.conditions == other.conditions &&
+            self.date == other.date &&
+            self.assigned_by == other.assigned_by &&
+            self.throughput == other.throughput
     }
 }
 impl Eq for OntAnnotationDetail { }
 
+fn hash_a_hashset<T: Hash+Ord, H: Hasher>(hash_set: &HashSet<T>, state: &mut H) {
+    let mut v: Vec<_> = hash_set.iter().collect();
+    v.sort();
+    for el in v.iter() {
+        (*el).hash(state);
+    }
+}
+
+impl Hash for OntAnnotationDetail {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.genes.hash(state);
+        self.reference.hash(state);
+        self.evidence.hash(state);
+        self.extension.hash(state);
+        hash_a_hashset(&self.withs, state);
+        hash_a_hashset(&self.froms, state);
+        self.residue.hash(state);
+        self.gene_product_form_id.hash(state);
+        self.qualifiers.hash(state);
+        self.gene_ex_props.hash(state);
+        self.genotype.hash(state);
+        self.genotype_background.hash(state);
+        hash_a_hashset(&self.conditions, state);
+        self.date.hash(state);
+        self.assigned_by.hash(state);
+        self.throughput.hash(state);
+    }
+}
+
+impl PartialOrd for OntAnnotationDetail {
+    fn partial_cmp(&self, other: &OntAnnotationDetail) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for OntAnnotationDetail {
+    fn cmp(&self, other: &OntAnnotationDetail) -> Ordering {
+        if self == other {
+            Ordering::Equal
+        } else {
+            self.id.cmp(&other.id)
+        }
+    }
+}
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntTermAnnotations {
     pub term: TermId,
@@ -1266,7 +1325,7 @@ impl AlleleShort {
 
 pub type RelName = RcString;
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
 pub struct GeneExProps {
     #[serde(skip_serializing_if="Option::is_none")]
     pub copies_per_cell: Option<RcString>,

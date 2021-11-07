@@ -3417,6 +3417,56 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+
+    fn remove_duplicate_transcript_annotation(&mut self) {
+        let ont_annotation_map = &mut self.all_ont_annotations;
+
+        for (_, annotations) in ont_annotation_map {
+            let (no_transcript_annotations, mut has_transcript_annotations): (Vec<i32>, Vec<i32>) =
+                annotations
+                .iter()
+                .partition(|&annotation_id| {
+                    if let Some(ont_annotation_detail) =
+                        self.annotation_details.get(annotation_id) {
+                            ont_annotation_detail.transcripts.len() == 0
+                        } else {
+                            panic!("can't find annotation details for {}", annotation_id);
+                        }
+                });
+
+            *annotations = no_transcript_annotations;
+
+            if has_transcript_annotations.len() >= 2 {
+                // merge annotations that differ only by transcript ID
+
+                has_transcript_annotations.sort();
+
+                let mut prev_annotation_id = has_transcript_annotations.remove(0);
+
+                for current_annotation_id in has_transcript_annotations.drain(0..) {
+                    let (annotations_equal, current_transcript_uniquename) = {
+                        let prev_annotation =
+                            self.annotation_details.get(&prev_annotation_id).unwrap();
+                        let current_annotation =
+                            self.annotation_details.get(&current_annotation_id).unwrap();
+                        (prev_annotation == current_annotation,
+                         current_annotation.transcripts[0].clone())
+                    };
+                    if annotations_equal {
+                        self.annotation_details.get_mut(&prev_annotation_id).unwrap()
+                            .transcripts.push(current_transcript_uniquename);
+                    } else {
+                        annotations.push(prev_annotation_id);
+                        prev_annotation_id = current_annotation_id;
+                    }
+                }
+                annotations.push(prev_annotation_id);
+            } else {
+                annotations.extend(has_transcript_annotations.iter());
+            }
+        }
+    }
+
     // store the OntTermAnnotations in the TermDetails, GeneDetails,
     // GenotypeDetails and ReferenceDetails
     fn store_ont_annotations(&mut self, is_not: bool) {
@@ -5379,6 +5429,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_feature_synonyms();
         self.process_feature_publications();
         self.process_feature_cvterms();
+        self.remove_duplicate_transcript_annotation();
         self.store_ont_annotations(false);
         self.store_ont_annotations(true);
         self.process_cvtermpath();
