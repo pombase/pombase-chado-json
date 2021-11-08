@@ -3453,8 +3453,12 @@ impl <'a> WebDataBuild<'a> {
                          current_annotation.transcripts[0].clone())
                     };
                     if annotations_equal {
-                        self.annotation_details.get_mut(&prev_annotation_id).unwrap()
-                            .transcripts.push(current_transcript_uniquename);
+                        if let Some(ref annotation_details) = self.annotation_details.get(&prev_annotation_id) {
+                            if !annotation_details.transcripts.contains(&current_transcript_uniquename) {
+                                self.annotation_details.get_mut(&prev_annotation_id).unwrap()
+                                    .transcripts.push(current_transcript_uniquename);
+                            }
+                        }
                     } else {
                         annotations.push(prev_annotation_id);
                         prev_annotation_id = current_annotation_id;
