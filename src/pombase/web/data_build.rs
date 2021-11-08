@@ -4321,6 +4321,13 @@ impl <'a> WebDataBuild<'a> {
                     let annotation_detail = self.annotation_details.
                         get(annotation_detail_id).expect("can't find OntAnnotationDetail");
 
+                    for transcript_uniquename in &annotation_detail.transcript_uniquenames {
+                        self.add_transcript_to_hashes(seen_transcripts,
+                                                      seen_genes,
+                                                      identifier,
+                                                      transcript_uniquename);
+                    }
+
                     self.add_ref_to_hash(seen_references, identifier,
                                          &annotation_detail.reference);
                     for condition_termid in &annotation_detail.conditions {
@@ -4411,6 +4418,13 @@ impl <'a> WebDataBuild<'a> {
                                     .insert(gene_uniquename.clone());
                             }
                         }
+
+                        for transcript_uniquename in &annotation_detail.transcript_uniquenames {
+                            self.add_transcript_to_hashes(&mut seen_transcripts,
+                                                          &mut seen_genes,
+                                                          termid, transcript_uniquename);
+                        }
+
                         self.add_ref_to_hash(&mut seen_references, termid,
                                              &annotation_detail.reference);
                         for condition_termid in &annotation_detail.conditions {
@@ -4650,6 +4664,13 @@ impl <'a> WebDataBuild<'a> {
                        for annotation_detail_id in &feat_annotation.annotations {
                             let annotation_detail = self.annotation_details
                                 .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
+
+                           for transcript_uniquename in &annotation_detail.transcript_uniquenames {
+                               self.add_transcript_to_hashes(&mut seen_transcripts,
+                                                             &mut seen_genes,
+                                                             reference_uniquename, transcript_uniquename);
+                           }
+
                             for gene_uniquename in &annotation_detail.genes {
                                 self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                                       gene_uniquename);
