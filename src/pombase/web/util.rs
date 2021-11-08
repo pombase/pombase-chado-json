@@ -62,6 +62,7 @@ pub fn make_gene_short<'b>(gene_map: &'b UniquenameGeneMap,
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
+            transcript_count: gene_details.transcripts.len(),
         }
     } else {
         panic!("can't find GeneDetails for gene uniquename {}", gene_uniquename)

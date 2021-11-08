@@ -180,6 +180,8 @@ pub struct GeneShort {
     pub name: Option<GeneName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
+    #[serde(skip_serializing_if="is_one", default = "one")]
+    pub transcript_count: usize,
 }
 
 impl GeneShort {
@@ -188,6 +190,7 @@ impl GeneShort {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
+            transcript_count: gene_details.transcripts.len(),
         }
     }
 
@@ -251,6 +254,10 @@ pub struct IdNameAndOrganism {
 #[allow(clippy::trivially_copy_pass_by_ref)]
 fn is_one(num: &usize) -> bool {
     *num == 1
+}
+
+fn one() -> usize {
+    1
 }
 
 // identifiers used for autocomplete in the search box
@@ -606,7 +613,7 @@ pub struct OntAnnotationDetail {
     pub id: i32,
     pub genes: Vec<GeneUniquename>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub transcripts: Vec<TranscriptUniquename>,
+    pub transcript_uniquenames: Vec<TranscriptUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]

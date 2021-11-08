@@ -912,6 +912,7 @@ impl <'a> WebDataBuild<'a> {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
+            transcript_count: gene_details.transcripts.len(),
         }
     }
 
@@ -3276,7 +3277,7 @@ impl <'a> WebDataBuild<'a> {
             let annotation_detail = OntAnnotationDetail {
                 id: feature_cvterm.feature_cvterm_id,
                 genes: gene_uniquenames_vec,
-                transcripts: transcript_uniquenames,
+                transcript_uniquenames,
                 reference: reference_uniquename,
                 genotype: maybe_genotype_uniquename,
                 genotype_background,
@@ -3428,7 +3429,7 @@ impl <'a> WebDataBuild<'a> {
                 .partition(|&annotation_id| {
                     if let Some(ont_annotation_detail) =
                         self.annotation_details.get(annotation_id) {
-                            ont_annotation_detail.transcripts.len() == 0
+                            ont_annotation_detail.transcript_uniquenames.len() == 0
                         } else {
                             panic!("can't find annotation details for {}", annotation_id);
                         }
@@ -3450,13 +3451,13 @@ impl <'a> WebDataBuild<'a> {
                         let current_annotation =
                             self.annotation_details.get(&current_annotation_id).unwrap();
                         (prev_annotation == current_annotation,
-                         current_annotation.transcripts[0].clone())
+                         current_annotation.transcript_uniquenames[0].clone())
                     };
                     if annotations_equal {
                         if let Some(ref annotation_details) = self.annotation_details.get(&prev_annotation_id) {
-                            if !annotation_details.transcripts.contains(&current_transcript_uniquename) {
+                            if !annotation_details.transcript_uniquenames.contains(&current_transcript_uniquename) {
                                 self.annotation_details.get_mut(&prev_annotation_id).unwrap()
-                                    .transcripts.push(current_transcript_uniquename);
+                                    .transcript_uniquenames.push(current_transcript_uniquename);
                             }
                         }
                     } else {
