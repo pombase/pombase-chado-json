@@ -3057,6 +3057,7 @@ impl <'a> WebDataBuild<'a> {
     fn process_feature_cvterms(&mut self) {
         let rel_order = self.config.extension_relation_order.clone();
 
+        'FEATURE_CVTERM:
         for feature_cvterm in &self.raw.feature_cvterms {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
@@ -3235,8 +3236,9 @@ impl <'a> WebDataBuild<'a> {
                                     vec![]
                                 }
                         } else {
-                            panic!("can't handle annotation on feature type: {:?} {}",
-                                   &feature.feat_type.name, &feature.uniquename);
+                            eprintln!("can't handle annotation on {} {}",
+                                      &feature.feat_type.name, &feature.uniquename);
+                            continue 'FEATURE_CVTERM;
                         }
                 };
 
