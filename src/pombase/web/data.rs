@@ -1352,6 +1352,57 @@ impl WebData {
         Ok(())
     }
 
+    fn write_disease_association(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+        let file_name = format!("{}/disease_association.tsv", output_dir);
+        let file = File::create(file_name).expect("Unable to open file for writing");
+        let mut writer = BufWriter::new(&file);
+
+        let load_org_taxonid =
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                load_org_taxonid
+            } else {
+                return Ok(())
+            };
+
+        let empty_string = RcString::from("");
+
+        let header = "#gene_systematic_id\tgene_name\tmondo_id\treference\tdate\n";
+        writer.write_all(header.as_bytes())?;
+
+        for gene_details in self.api_maps.genes.values() {
+            if gene_details.taxonid != load_org_taxonid {
+                continue;
+            }
+
+            if let Some(term_annotations) = gene_details.cv_annotations.get(&RcString::from("mondo")) {
+                for term_annotation in term_annotations {
+
+                    let annotations = term_annotation.annotations.clone();
+
+                    for annotation_id in annotations {
+                        let annotation_detail = self.api_maps.annotation_details.get(&annotation_id)
+                            .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                        let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+                        let reference =
+                            annotation_detail.reference.as_ref().unwrap_or(&empty_string);
+                        let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
+                        let line = format!("{}\t{}\t{}\t{}\t{}\n",
+                                           gene_details.uniquename,
+                                           gene_name,
+                                           term_annotation.term,
+                                           reference,
+                                           date);
+
+                       writer.write_all(line.as_bytes())?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     // write the subsets configured using "subset_export"
     fn write_annotation_subsets(&self, config: &Config, output_dir: &str)
                                 -> Result<(), io::Error>
@@ -1447,6 +1498,7 @@ impl WebData {
         self.write_gene_expression_table(&misc_path)?;
         self.write_site_map_txt(config, doc_config, &misc_path)?;
         self.write_allele_tsv(&misc_path)?;
+        self.write_disease_association(config, &misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
 
