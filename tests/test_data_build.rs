@@ -243,8 +243,8 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 
 
     let mut test_conditions = HashSet::new();
-    test_conditions.insert(RcString::from("PECO:0000103"));
-    test_conditions.insert(RcString::from("PECO:0000137"));
+    test_conditions.insert(RcString::from("FYECO:0000103"));
+    test_conditions.insert(RcString::from("FYECO:0000137"));
 
     let mut fypo_details = vec![
         make_one_detail(41_717, "SPBC11B10.09", "PMID:9242669", None,
