@@ -139,13 +139,13 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                 Ok(ord)
             }
         } else {
-            Err(format!("comparing two OntAnnotationDetail but one has a genotype and
-one a gene:\n{:?}\n{:?}\n", detail1, detail2))
+            // needed to display the FYECO term pages
+            Ok(Ordering::Less)
         }
     } else {
         if detail2.genotype.is_some() {
-            Err(format!("comparing two OntAnnotationDetail but one has a genotype and
-one a gene:\n{:?}\n{:?}\n", detail1, detail2))
+            // needed to display the FYECO term pages
+            Ok(Ordering::Greater)
         } else {
             let ord = cmp_gene_vec(genes, &detail1.genes, &detail2.genes);
 
