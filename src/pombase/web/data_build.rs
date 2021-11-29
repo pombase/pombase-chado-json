@@ -2110,9 +2110,7 @@ impl <'a> WebDataBuild<'a> {
                                         None
                                     }
                                 {
-                                    if Some(gene_details.taxonid) == self.config.load_organism_taxonid {
-                                        ref_details.ortholog_annotations.push(ortholog_annotation);
-                                    }
+                                    ref_details.ortholog_annotations.push(ortholog_annotation);
                                 }
                             },
                             FeatureRelAnnotationType::Paralog => {
