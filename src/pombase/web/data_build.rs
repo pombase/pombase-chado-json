@@ -5297,17 +5297,10 @@ impl <'a> WebDataBuild<'a> {
                 if reference_has_annotation(reference_details) {
                     return true;
                 }
-                if let Some(ref canto_triage_status) = reference_details.canto_triage_status {
-                    if canto_triage_status == "New" {
+                if let Some(ref triage_status) = reference_details.canto_triage_status {
+                    if triage_status == "New" || triage_status == "Wrong organism" && triage_status == "Loaded in error"{
                         return false;
                     }
-                } else {
-                    if reference_details.uniquename.starts_with("PMID:") {
-                        println!("reference {} has no canto_triage_status", reference_details.uniquename);
-                    }
-                }
-                if let Some (ref triage_status) = reference_details.canto_triage_status {
-                    return triage_status != "Wrong organism" && triage_status != "Loaded in error";
                 }
                 // default to true because there are references that
                 // haven't or shouldn't be triaged, eg. GO_REF:...
