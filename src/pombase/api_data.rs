@@ -350,6 +350,9 @@ impl APIData {
                 WithFromValue::Transcript(transcript_uniquename) => {
                     ExtRange::Transcript(transcript_uniquename)
                 }
+                WithFromValue::Identifier(identifier) => {
+                    ExtRange::Misc(identifier)
+                }
                 _ => panic!("unexpected WithFromValue variant: {:#?}", with_value),
             };
 
