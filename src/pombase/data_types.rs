@@ -1148,6 +1148,7 @@ impl Display for FeatureType {
 pub struct FeatureShort {
     pub feature_type: FeatureType,
     pub uniquename: RcString,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<RcString>,
     pub location: ChromosomeLocation,
     pub residues: Residues,
@@ -1160,6 +1161,7 @@ pub struct TranscriptDetails {
     pub location: ChromosomeLocation,
     pub parts: Vec<FeatureShort>,
     pub transcript_type: RcString,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub protein: Option<ProteinDetails>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
