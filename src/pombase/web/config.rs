@@ -47,6 +47,8 @@ pub struct FilterConfig {
     pub display_name: String,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub term_categories: Vec<AncestorFilterCategory>,
+    #[serde(skip_serializing_if="Option::is_none", default)]
+    pub slim_name: Option<RcString>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub extension_categories: Vec<AncestorFilterCategory>,
 }
