@@ -38,7 +38,7 @@ pub struct RelationOrder {
 pub struct AncestorFilterCategory {
     pub display_name: RcString,
     // this category matches these terms and their descendants
-    pub ancestors: Vec<RcString>,
+    pub ancestors: Vec<TermId>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
