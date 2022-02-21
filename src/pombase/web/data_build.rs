@@ -4816,7 +4816,6 @@ impl <'a> WebDataBuild<'a> {
         let mut term_seen_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
         let mut term_seen_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
         let mut term_seen_single_locus_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
-        let mut ref_seen_genes: HashMap<ReferenceUniquename, HashSet<GeneUniquename>> = HashMap::new();
 
         for (termid, term_details) in &self.terms {
             let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
@@ -4849,31 +4848,6 @@ impl <'a> WebDataBuild<'a> {
         let mut all_published_uniquenames = vec![];
 
         for (reference_uniquename, reference_details) in &self.references {
-            let mut seen_genes: HashSet<GeneUniquename> = HashSet::new();
-            for rel_annotations in reference_details.cv_annotations.values() {
-                for rel_annotation in rel_annotations {
-                    for annotation_detail_id in &rel_annotation.annotations {
-                        let annotation_detail = self.annotation_details
-                            .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
-                        if !rel_annotation.is_not {
-                            for gene_uniquename in &annotation_detail.genes {
-                                seen_genes.insert(gene_uniquename.clone());
-                            }
-                        }
-                    }
-                }
-            }
-            let interaction_iter =
-                reference_details.physical_interactions.iter().chain(&reference_details.genetic_interactions);
-            for interaction in interaction_iter {
-                seen_genes.insert(interaction.gene_uniquename.clone());
-                seen_genes.insert(interaction.interactor_uniquename.clone());
-            }
-            for ortholog_annotation in &reference_details.ortholog_annotations {
-                seen_genes.insert(ortholog_annotation.gene_uniquename.clone());
-            }
-            ref_seen_genes.insert(reference_uniquename.clone(), seen_genes);
-
             if reference_details.pubmed_publication_date.is_some() {
                 all_published_uniquenames.push(reference_uniquename.clone());
             }
