@@ -1827,6 +1827,9 @@ pub struct InterMineGeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<RcString>,
     pub taxonid: OrganismTaxonId,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub references: Vec<ReferenceUniquename>,
 }
 
 impl InterMineGeneDetails {
@@ -1840,6 +1843,10 @@ impl InterMineGeneDetails {
                  .to_owned())
             .collect::<Vec<_>>();
 
+        let references =
+            gene_details.references_by_uniquename.keys()
+            .map(|uniquename_ref| uniquename_ref.to_owned()).collect();
+
         InterMineGeneDetails {
             name: gene_details.name.clone(),
             synonyms: gene_details.synonyms.clone(),
@@ -1850,6 +1857,7 @@ impl InterMineGeneDetails {
             transcripts,
             uniprot_identifier: gene_details.uniprot_identifier.clone(),
             taxonid: gene_details.taxonid,
+            references,
         }
     }
 }
