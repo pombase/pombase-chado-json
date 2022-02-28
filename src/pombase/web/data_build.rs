@@ -3499,7 +3499,6 @@ impl <'a> WebDataBuild<'a> {
         let mut ont_annotations = vec![];
 
         for (termid, annotations) in ont_annotation_map {
-            if !is_not {
                 let new_annotations =
                     self.make_term_annotations(termid, &annotations, is_not);
 
@@ -3512,7 +3511,6 @@ impl <'a> WebDataBuild<'a> {
                 } else {
                     panic!("missing termid: {}\n", termid);
                 }
-            }
 
             for annotation_id in annotations {
                 let annotation = self.annotation_details.
@@ -4418,9 +4416,12 @@ impl <'a> WebDataBuild<'a> {
                         for gene_uniquename in &annotation_detail.genes {
                             self.add_gene_to_hash(&mut seen_genes, termid,
                                                   gene_uniquename);
-                            if !cv_name.starts_with("extension:") {
+                            if !cv_name.starts_with("extension:") && !term_annotation.is_not {
                                 // prevent extension annotations from appearing
                                 // in the normal query builder searches
+
+                                // prevent NOT annotation from appearing in the
+                                // counts on term pages and in the query builder
                                 genes_annotated_with_map
                                     .entry(termid.clone()).or_insert_with(HashSet::new)
                                     .insert(gene_uniquename.clone());
