@@ -2729,7 +2729,7 @@ impl <'a> WebDataBuild<'a> {
                                       direct_ancestors: vec![],
                                       definition_xrefs,
                                       secondary_identifiers,
-                                      genes_annotated_with: HashSet::new(),
+                                      annotated_genes: HashSet::new(),
                                       is_obsolete: cvterm.is_obsolete,
                                       single_locus_genotype_uniquenames: HashSet::new(),
                                       cv_annotations: HashMap::new(),
@@ -4247,7 +4247,7 @@ impl <'a> WebDataBuild<'a> {
             if let Some(term_config) = cv_config.get(&term_details.cv_name) {
                 if term_config.feature_type == "gene" {
                     termid_genes.insert(termid.clone(),
-                                        term_details.genes_annotated_with.clone());
+                                        term_details.annotated_genes.clone());
                 }
             }
 
@@ -4395,7 +4395,7 @@ impl <'a> WebDataBuild<'a> {
         let (mut seen_references, mut seen_genes, mut seen_genotypes,
              mut seen_alleles, mut seen_transcripts, mut seen_terms) = get_maps();
 
-        let mut genes_annotated_with_map: HashMap<TermId, HashSet<GeneUniquename>> =
+        let mut annotated_genes_map: HashMap<TermId, HashSet<GeneUniquename>> =
             HashMap::new();
 
         for (termid, term_details) in &self.terms {
@@ -4422,7 +4422,7 @@ impl <'a> WebDataBuild<'a> {
 
                                 // prevent NOT annotation from appearing in the
                                 // counts on term pages and in the query builder
-                                genes_annotated_with_map
+                                annotated_genes_map
                                     .entry(termid.clone()).or_insert_with(HashSet::new)
                                     .insert(gene_uniquename.clone());
                             }
@@ -4511,8 +4511,8 @@ impl <'a> WebDataBuild<'a> {
             if let Some(terms) = seen_terms.remove(termid) {
                 term_details.terms_by_termid = terms;
             }
-            if let Some(gene_uniquename_set) = genes_annotated_with_map.remove(termid) {
-                term_details.genes_annotated_with = gene_uniquename_set;
+            if let Some(gene_uniquename_set) = annotated_genes_map.remove(termid) {
+                term_details.annotated_genes = gene_uniquename_set;
             }
         }
     }
@@ -4978,10 +4978,10 @@ impl <'a> WebDataBuild<'a> {
 
             let subset_element = TermSubsetElement {
                 name: term_details.name.clone(),
-                gene_count: term_details.genes_annotated_with.len(),
+                gene_count: term_details.annotated_genes.len(),
             };
 
-            for gene in &term_details.genes_annotated_with {
+            for gene in &term_details.annotated_genes {
                 all_genes.insert(gene);
             }
             slim_subset.insert(slim_termid.clone(), subset_element);
