@@ -4833,8 +4833,7 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                             seen_genotypes.insert(genotype_uniquename.clone());
                             let genotype = &self.genotypes[genotype_uniquename];
-                            if genotype.loci.len() == 1 &&
-                                genotype.loci[0].expressed_alleles.len() == 1 {
+                            if genotype.loci.len() == 1 {
                                 seen_single_locus_genotypes.insert(genotype_uniquename.clone());
                             }
                         }
