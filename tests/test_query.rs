@@ -18,7 +18,7 @@ use self::pombase_rc_string::RcString;
 fn get_api_data() -> APIData {
     use std::path::PathBuf;
     let mut search_maps_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    search_maps_path.push("tests/test_search_data.json.gz");
+    search_maps_path.push("tests/test_search_data.json.zst");
     let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     config_path.push("tests/test_config.json");
     let config = Config::read(&config_path.to_str().expect("config"));

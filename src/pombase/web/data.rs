@@ -10,6 +10,7 @@ use regex::Regex;
 
 use flate2::Compression;
 use flate2::write::GzEncoder;
+use zstd::stream::Encoder;
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
@@ -135,10 +136,12 @@ impl WebData {
     }
 
     fn write_api_maps(&self, output_dir: &str) {
-        let file_name = String::new() + output_dir + "/api_maps.json.gz";
+        let file_name = String::new() + output_dir + "/api_maps.json.zst";
         let f = File::create(file_name).expect("Unable to open file");
 
-        let mut compressor = GzEncoder::new(f, Compression::default());
+        let mut compressor = Encoder::new(f, 10).unwrap();
+        compressor.multithread(6).unwrap();
+        compressor.long_distance_matching(true).unwrap();
         serde_json::ser::to_writer(&mut compressor, &self.api_maps).unwrap();
 
         compressor.finish().unwrap();

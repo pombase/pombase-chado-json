@@ -19,7 +19,7 @@ use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiLocus, QueryExpressionFilter};
 use crate::web::cv_summary::make_cv_summaries;
 
-use flate2::read::GzDecoder;
+use zstd::stream::Decoder;
 
 use crate::types::{TermId, GeneUniquename};
 
@@ -59,7 +59,7 @@ pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
     };
 
     let reader = BufReader::new(file);
-    let mut decoder = GzDecoder::new(reader);
+    let mut decoder = Decoder::new(reader).unwrap();
 
     //  this uses less peak memory but is 4X slower
     //  See: https://github.com/serde-rs/json/issues/160
