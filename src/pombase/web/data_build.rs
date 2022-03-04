@@ -2730,6 +2730,8 @@ impl <'a> WebDataBuild<'a> {
                                       definition_xrefs,
                                       secondary_identifiers,
                                       annotated_genes: HashSet::new(),
+                                      single_locus_annotated_genes: HashSet::new(),
+                                      multi_locus_annotated_genes: HashSet::new(),
                                       is_obsolete: cvterm.is_obsolete,
                                       single_locus_genotype_uniquenames: HashSet::new(),
                                       cv_annotations: HashMap::new(),
@@ -4309,6 +4311,22 @@ impl <'a> WebDataBuild<'a> {
        }
     }
 
+    fn gene_uniquenames_from_genotype(&self, genotype_details: &GenotypeDetails) -> Vec<RcString> {
+        let mut ret = vec![];
+
+        for locus in &genotype_details.loci {
+            for expressed_allele in &locus.expressed_alleles {
+                let allele_uniquename = &expressed_allele.allele_uniquename;
+                let gene_uniquename =
+                    self.alleles.get(allele_uniquename)
+                    .unwrap().gene_uniquename.clone();
+                ret.push(gene_uniquename);
+            }
+        }
+
+        ret
+    }
+
     fn add_cv_annotations_to_maps(&self,
                                   identifier: &RcString,
                                   cv_annotations: &OntAnnotationMap,
@@ -4397,6 +4415,10 @@ impl <'a> WebDataBuild<'a> {
 
         let mut annotated_genes_map: HashMap<TermId, HashSet<GeneUniquename>> =
             HashMap::new();
+        let mut single_locus_annotated_genes_map: HashMap<TermId, HashSet<GeneUniquename>> =
+            HashMap::new();
+        let mut multi_locus_annotated_genes_map: HashMap<TermId, HashSet<GeneUniquename>> =
+            HashMap::new();
 
         for (termid, term_details) in &self.terms {
             for xref in &term_details.definition_xrefs {
@@ -4412,19 +4434,34 @@ impl <'a> WebDataBuild<'a> {
                     for annotation_detail_id in &term_annotation.annotations {
                         let annotation_detail = self.annotation_details
                             .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
+                        if !cv_name.starts_with("extension:") && !term_annotation.is_not &&
+                            annotation_detail.genotype.is_none() {
+                                for gene_uniquename in &annotation_detail.genes {
+                                    self.add_gene_to_hash(&mut seen_genes, termid,
+                                                          gene_uniquename);
 
-                        for gene_uniquename in &annotation_detail.genes {
-                            self.add_gene_to_hash(&mut seen_genes, termid,
-                                                  gene_uniquename);
-                            if !cv_name.starts_with("extension:") && !term_annotation.is_not {
-                                // prevent extension annotations from appearing
-                                // in the normal query builder searches
+                                    // prevent extension annotations from appearing
+                                    // in the normal query builder searches
 
-                                // prevent NOT annotation from appearing in the
-                                // counts on term pages and in the query builder
-                                annotated_genes_map
+                                    // prevent NOT annotation from appearing in the
+                                    // counts on term pages and in the query builder
+                                    annotated_genes_map
+                                        .entry(termid.clone()).or_insert_with(HashSet::new)
+                                        .insert(gene_uniquename.clone());
+                                }
+                            }
+
+                        if let Some(genotype_uniquename) = annotation_detail.genotype.as_ref() {
+                            let genotype_details = self.genotypes.get(genotype_uniquename).unwrap();
+                            let gene_uniquenames = self.gene_uniquenames_from_genotype(genotype_details);
+                            if genotype_details.loci.len() == 1 {
+                                single_locus_annotated_genes_map
                                     .entry(termid.clone()).or_insert_with(HashSet::new)
-                                    .insert(gene_uniquename.clone());
+                                    .extend(gene_uniquenames.iter().cloned());
+                            } else {
+                                multi_locus_annotated_genes_map
+                                    .entry(termid.clone()).or_insert_with(HashSet::new)
+                                    .extend(gene_uniquenames.iter().cloned());
                             }
                         }
 
@@ -4513,6 +4550,12 @@ impl <'a> WebDataBuild<'a> {
             }
             if let Some(gene_uniquename_set) = annotated_genes_map.remove(termid) {
                 term_details.annotated_genes = gene_uniquename_set;
+            }
+            if let Some(gene_uniquename_set) = single_locus_annotated_genes_map.remove(termid) {
+                term_details.single_locus_annotated_genes = gene_uniquename_set;
+            }
+            if let Some(gene_uniquename_set) = multi_locus_annotated_genes_map.remove(termid) {
+                term_details.multi_locus_annotated_genes = gene_uniquename_set;
             }
         }
     }
@@ -4967,6 +5010,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
+        let mut all_single_locus_genes = HashSet::new();
         let mut slim_subset: HashMap<TermId, TermSubsetElement> = HashMap::new();
         let slim_config = self.config.slims.get(slim_name)
             .unwrap_or_else(|| panic!("no slim config for {}", slim_name));
@@ -4978,17 +5022,26 @@ impl <'a> WebDataBuild<'a> {
             let subset_element = TermSubsetElement {
                 name: term_details.name.clone(),
                 gene_count: term_details.annotated_genes.len(),
+                single_locus_gene_count: term_details.single_locus_annotated_genes.len(),
             };
 
             for gene in &term_details.annotated_genes {
                 all_genes.insert(gene);
             }
+
+            if term_details.annotation_feature_type == "gene" {
+                for gene in &term_details.single_locus_annotated_genes {
+                    all_single_locus_genes.insert(gene);
+                }
+            }
+
             slim_subset.insert(slim_termid.clone(), subset_element);
         }
 
         TermSubsetDetails {
             name: RcString::from(slim_name),
             total_gene_count: all_genes.len(),
+            total_single_locus_gene_count: all_genes.len(),
             elements: slim_subset,
         }
     }

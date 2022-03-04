@@ -676,6 +676,8 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         definition_xrefs: HashSet::new(),
         secondary_identifiers: HashSet::new(),
         annotated_genes: HashSet::new(),
+        single_locus_annotated_genes: HashSet::new(),
+        multi_locus_annotated_genes: HashSet::new(),
         is_obsolete: false,
         single_locus_genotype_uniquenames: HashSet::new(),
         cv_annotations: HashMap::new(),

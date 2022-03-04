@@ -1387,8 +1387,19 @@ pub struct TermDetails {
     pub definition_xrefs: HashSet<TermId>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
+
+    // genes annotated with this term, except if the term is a phenotype
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub annotated_genes: HashSet<GeneUniquename>,
+
+    // genes in single locus genotypes annotated with this term
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub single_locus_annotated_genes: HashSet<GeneUniquename>,
+
+    // genes in multi locus genotypes annotated with this term
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub multi_locus_annotated_genes: HashSet<GeneUniquename>,
+
     pub is_obsolete: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub single_locus_genotype_uniquenames: HashSet<RcString>,
@@ -1877,12 +1888,19 @@ pub struct RecentReferences {
 pub struct TermSubsetElement {
     pub name: RcString,
     pub gene_count: usize,
+
+    // used for displaying the FYPO slim
+    pub single_locus_gene_count: usize,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermSubsetDetails {
     pub name: RcString,
     pub total_gene_count: usize, // total unique genes in all subsets
+
+    // total in single locus genotypes in all subsets, used by the FYPO slim
+    pub total_single_locus_gene_count: usize,
+
     pub elements: HashMap<TermId, TermSubsetElement>,
 }
 
