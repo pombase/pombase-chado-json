@@ -4434,20 +4434,22 @@ impl <'a> WebDataBuild<'a> {
                     for annotation_detail_id in &term_annotation.annotations {
                         let annotation_detail = self.annotation_details
                             .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
-                        if !cv_name.starts_with("extension:") && !term_annotation.is_not &&
+
+                        // prevent extension annotations from appearing
+                        // in the normal query builder searches
+                        if !cv_name.starts_with("extension:") &&
                             annotation_detail.genotype.is_none() {
                                 for gene_uniquename in &annotation_detail.genes {
                                     self.add_gene_to_hash(&mut seen_genes, termid,
                                                           gene_uniquename);
 
-                                    // prevent extension annotations from appearing
-                                    // in the normal query builder searches
-
+                                    if !term_annotation.is_not {
                                     // prevent NOT annotation from appearing in the
                                     // counts on term pages and in the query builder
                                     annotated_genes_map
                                         .entry(termid.clone()).or_insert_with(HashSet::new)
                                         .insert(gene_uniquename.clone());
+                                    }
                                 }
                             }
 
