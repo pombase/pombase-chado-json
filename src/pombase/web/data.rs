@@ -139,8 +139,8 @@ impl WebData {
         let file_name = String::new() + output_dir + "/api_maps.json.zst";
         let f = File::create(file_name).expect("Unable to open file");
 
-        let mut compressor = Encoder::new(f, 10).unwrap();
-        compressor.multithread(6).unwrap();
+        let mut compressor = Encoder::new(f, 12).unwrap();
+        compressor.multithread(8).unwrap();
         compressor.long_distance_matching(true).unwrap();
         serde_json::ser::to_writer(&mut compressor, &self.api_maps).unwrap();
 
