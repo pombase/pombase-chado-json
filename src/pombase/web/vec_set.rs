@@ -54,6 +54,13 @@ impl<T: Eq + Hash + Clone> VecSet<T> {
         let new_bitset = self.make_bit_set(tvec.to_vec());
         self.bit_sets.iter().any(|s| new_bitset.is_subset(s))
     }
+
+    // Return true iff a proper superset of the argument was inserted
+    // with insert() earlier
+    pub fn contains_proper_superset(&mut self, tvec: &[T]) -> bool {
+        let new_bitset = self.make_bit_set(tvec.to_vec());
+        self.bit_sets.iter().any(|s| new_bitset.is_subset(s) && &new_bitset != s)
+    }
 }
 
 #[test]
@@ -103,22 +110,28 @@ fn test_contains_superset() {
         |s_vec: Vec<&str>| s_vec.iter()
             .map(|s| String::from(*s)).collect::<Vec<String>>();
 
+    let s0 = str_data(vec!["one","seven","three","four"]);
+    vec_set.insert(s0);
     let s1 = str_data(vec!["one","two","three","four"]);
-    let s2 = str_data(vec!["one","two","five"]);
+    let s2 = str_data(vec!["one","two","three"]);
+    let s2_2 = str_data(vec!["one","two","five"]);
     let s3 = str_data(vec!["one"]);
     vec_set.insert(s1.clone());
-    assert!(vec_set.contains_superset(&s1));
+    assert!(vec_set.contains_proper_superset(&s2));
     vec_set.insert(s2.clone());
-    assert!(vec_set.contains_superset(&s2));
+    assert!(vec_set.contains_proper_superset(&s2));
+    vec_set.insert(s2_2.clone());
+    assert!(!vec_set.contains_proper_superset(&s2_2));
+    assert!(vec_set.contains_superset(&s2_2));
     vec_set.insert(s3.clone());
-    assert!(vec_set.contains_superset(&s3));
+    assert!(vec_set.contains_proper_superset(&s3));
 
     let s4 = str_data(vec!["one","two"]);
-    assert!(vec_set.contains_superset(&s4));
+    assert!(vec_set.contains_proper_superset(&s4));
 
     let s5 = str_data(vec!["five"]);
-    assert!(vec_set.contains_superset(&s5));
+    assert!(vec_set.contains_proper_superset(&s5));
 
     let s6 = str_data(vec!["six"]);
-    assert!(!vec_set.contains_superset(&s6));
+    assert!(!vec_set.contains_proper_superset(&s6));
 }

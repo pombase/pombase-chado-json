@@ -285,37 +285,51 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
             .collect::<Vec<_>>()
     };
 
-    rows.reverse();
+    let process_feature_rows =
+        |results: &mut Vec<TermSummaryRow>, vec_set: &mut VecSet<ExtPartWrapper>,
+         current_rows: &mut Vec<TermSummaryRow>| {
 
+            let mut seen = HashSet::new();
+
+            for current in current_rows.drain(0..) {
+                if !vec_set.contains_proper_superset(&ext_parts_wrap(&current.extension)) {
+                    if !seen.contains(&current.extension) {
+                        // no extension is more specific (ie. has more parts), so include in the summary:
+                        results.push(current.clone());
+                        seen.insert(current.extension);
+                    }
+                }
+            }
+        };
+
+    let mut current_rows = vec![];
     let mut vec_set = VecSet::new();
+
     let mut prev = rows.remove(0);
-    results.push(prev.clone());
-    if prev.gene_uniquenames.len() > 1 {
-        panic!("remove_redundant_summary_rows() failed: num genes > 1\n");
-    }
+
     vec_set.insert(ext_parts_wrap(&prev.extension));
+
+    current_rows.push(prev.clone());
 
     for current in rows.drain(0..) {
         if current.gene_uniquenames.len() > 1 {
             panic!("remove_redundant_summary_rows() failed: num genes > 1\n");
         }
 
-        if (&prev.gene_uniquenames, &prev.genotype_uniquenames) ==
+        if (&prev.gene_uniquenames, &prev.genotype_uniquenames) !=
             (&current.gene_uniquenames, &current.genotype_uniquenames) {
-                if !vec_set.contains_superset(&ext_parts_wrap(&current.extension)) {
-                    results.push(current.clone());
-                    vec_set.insert(ext_parts_wrap(&current.extension));
-                }
-            } else {
+                process_feature_rows(&mut results, &mut vec_set, &mut current_rows);
                 vec_set = VecSet::new();
-                vec_set.insert(ext_parts_wrap(&current.extension));
-                results.push(current.clone());
+                current_rows = vec![];
             }
+
+        vec_set.insert(ext_parts_wrap(&current.extension));
+        current_rows.push(current.clone());
 
         prev = current;
     }
 
-    results.reverse();
+    process_feature_rows(&mut results, &mut vec_set, &mut current_rows);
 
     *rows = results;
 }
