@@ -1239,7 +1239,7 @@ dependencies = [
 
 [[package]]
 name = "pombase-chado-json"
-version = "120.2.0"
+version = "120.3.0"
 dependencies = [
  "anyhow",
  "async-recursion",
