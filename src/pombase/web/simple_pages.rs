@@ -2,8 +2,9 @@ use pombase_rc_string::RcString;
 
 use crate::web::config::Config;
 use crate::data_types::{GeneDetails, ReferenceDetails, TermDetails,
-                       ContainerType, GenotypeShort,
-                       OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer};
+                        ContainerType, GenotypeShort,
+                        OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer,
+                        Strand};
 
 
 fn format_page(header: &str, body: &str) -> String {
@@ -100,11 +101,24 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
     }
 
     if let Some(ref characterisation_status) = gene_details.characterisation_status {
-        summ += &format!("  <dt>Characterisation status</dt> <dd>{}\n",
+        summ += &format!("  <dt>Characterisation status</dt> <dd>{}</dd>\n",
                          characterisation_status);
     }
 
-    summ += &format!("  <dt>Feature type</dt> <dd>{}\n", gene_details.feature_type);
+    summ += &format!("  <dt>Feature type</dt> <dd>{}</dd>\n", gene_details.feature_type);
+
+    if let Some(ref location) = gene_details.location {
+        let strand_str = match location.strand {
+            Strand::Forward => "forward strand",
+            Strand::Reverse => "reverse strand",
+            Strand::Unstranded => "",
+        };
+        let chr_config = config.find_chromosome_config(&location.chromosome_name);
+        
+        summ += &format!("  <dt>Genomic location</dt> <dd>chromosome {}: {}..{} {}</dd>\n",
+                         chr_config.short_display_name, location.start_pos,
+                         location.end_pos, strand_str);
+    }
 
     summ += "</dl>\n";
 
