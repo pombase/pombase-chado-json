@@ -223,7 +223,7 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
         let cv_config = config.cv_config_by_name(&cv_name);
 
         if let Some(cv_display_name) = cv_config.display_name {
-            annotation_html += &format!("<sect>\n<h3>{}</h3>\n", cv_display_name);
+            annotation_html += &format!("<section>\n<h3>{}</h3>\n", cv_display_name);
             for term_annotation in term_annotations {
                 let term_name =
                     if let Some(Some(term_short)) =
@@ -232,8 +232,8 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
                     } else {
                         String::from("(unknown term name)")
                     };
-                annotation_html += &format!("<sect><h4><a href='/term/{}'>{}</a> - \
-                                             <a href='/term/{}'>{}</a></h4>\n{}</sect>\n",
+                annotation_html += &format!("<section><h4><a href='/term/{}'>{}</a> - \
+                                             <a href='/term/{}'>{}</a></h4>\n{}</section>\n",
                                             term_annotation.term,
                                             term_annotation.term,
                                             term_annotation.term,
@@ -241,7 +241,7 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
                                             get_annotations(&term_annotation.annotations,
                                                             container));
             }
-            annotation_html += "</sect>\n";
+            annotation_html += "</section>\n";
         }
     }
 
@@ -277,7 +277,7 @@ fn orthologs(config: &Config, container: &dyn OrthologAnnotationContainer) -> St
         return orth_html;
     }
 
-    orth_html += "<sect><h2>Orthologs</h2>\n<ul>\n";
+    orth_html += "<section><h2>Orthologs</h2>\n<ul>\n";
 
     for orth_annotation in container.ortholog_annotations().iter() {
         let maybe_orth_org = config.organism_by_taxonid(orth_annotation.ortholog_taxonid);
@@ -294,7 +294,7 @@ fn orthologs(config: &Config, container: &dyn OrthologAnnotationContainer) -> St
             }
     }
 
-    orth_html += "</ul></sect>\n";
+    orth_html += "</ul></section>\n";
 
     orth_html
 }
@@ -304,17 +304,17 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<sect><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></sect>\n",
+    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
                      config.database_name, config.site_description);
 
-    body += &format!("<sect><h2>Gene summary</h2>\n{}</sect>\n",
+    body += &format!("<section><h2>Gene summary</h2>\n{}</section>\n",
                      gene_summary(config, gene_details));
 
-    body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
+    body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
                      annotation_section(config, gene_details));
 
     if gene_details.interpro_matches.len() > 0 {
-        body += &format!("<sect><h2>Protein features</h2>\n{}</sect>\n",
+        body += &format!("<section><h2>Protein features</h2>\n{}</section>\n",
                          protein_features(gene_details));
     }
 
@@ -374,13 +374,13 @@ fn reference_body(config: &Config, title: &str, reference_details: &ReferenceDet
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<sect><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></sect>\n",
+    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
                      config.database_name, config.site_description);
 
-    body += &format!("<sect><h2>Reference summary</h2>\n{}</sect>\n",
+    body += &format!("<section><h2>Reference summary</h2>\n{}</section>\n",
                      reference_summary(reference_details));
 
-    body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
+    body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
                      annotation_section(config, reference_details));
 
     body += &orthologs(config, reference_details);
@@ -425,13 +425,13 @@ fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<sect><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></sect>\n",
+    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
                      config.database_name, config.site_description);
 
-    body += &format!("<sect><h2>Term summary</h2>\n{}</sect>\n",
+    body += &format!("<section><h2>Term summary</h2>\n{}</section>\n",
                      term_summary(config, term_details));
 
-    body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
+    body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
                      annotation_section(config, term_details));
 
     body
