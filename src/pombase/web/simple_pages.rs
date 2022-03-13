@@ -248,6 +248,28 @@ fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> S
     annotation_html
 }
 
+fn protein_features(gene_details: &GeneDetails) -> String {
+    let mut protein_feature_html = String::new();
+
+    protein_feature_html += "<table>\n<thead>\n<tr>\n";
+    protein_feature_html += "<th>ID</th><th>Name</th><th>InterPro name</th><th>DB name</th>\n";
+    protein_feature_html += "</tr>\n</thead>\n";
+    protein_feature_html += "<tbody>\n";
+
+    for interpro_match in &gene_details.interpro_matches {
+        protein_feature_html +=
+            &format!("<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>\n",
+                     interpro_match.id,
+                     interpro_match.name,
+                     interpro_match.interpro_name,
+                     interpro_match.dbname);
+    }
+
+    protein_feature_html += "</tbody>\n</table>\n";
+
+    protein_feature_html
+}
+
 fn orthologs(config: &Config, container: &dyn OrthologAnnotationContainer) -> String {
     let mut orth_html = String::new();
 
@@ -290,6 +312,11 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 
     body += &format!("<sect><h2>Annotation</h2>\n{}</sect>\n",
                      annotation_section(config, gene_details));
+
+    if gene_details.interpro_matches.len() > 0 {
+        body += &format!("<sect><h2>Protein features</h2>\n{}</sect>\n",
+                         protein_features(gene_details));
+    }
 
     body += &orthologs(config, gene_details);
 
