@@ -5,49 +5,49 @@ use std::iter::FromIterator;
 use std::cmp::Ordering;
 
 extern crate pombase;
-extern crate pombase_rc_string;
+extern crate flexstr;
 
 use self::pombase::types::*;
 use self::pombase::data_types::*;
 use self::pombase::web::config::*;
 use self::pombase::web::cv_summary::*;
 
-use pombase_rc_string::RcString;
+use flexstr::{ToAFlexStr, a_flex_str as flex_str};
 
 #[allow(dead_code)]
 fn get_test_config() -> Config {
     let mut config = Config {
         database_name: "PomBase".into(),
-        database_long_name: RcString::from("PomBase"),
-        database_citation: RcString::from("PMID:22039153"),
-        funder: RcString::from("Wellcome Trust"),
-        site_description: RcString::from("PomBase"),
+        database_long_name: "PomBase".to_a_flex_str(),
+        database_citation: "PMID:22039153".to_a_flex_str(),
+        funder: "Wellcome Trust".to_a_flex_str(),
+        site_description: "PomBase".to_a_flex_str(),
         load_organism_taxonid: Some(4896),
-        base_url: RcString::from("https://www.pombase.org"),
-        helpdesk_address: RcString::from("helpdesk@some.domain"),
+        base_url: "https://www.pombase.org".to_a_flex_str(),
+        helpdesk_address: "helpdesk@some.domain".to_a_flex_str(),
         doc_page_aliases: HashMap::new(),
         sequence_feature_page: SeqFeaturePageConfig {
-            so_types_to_show: vec![String::from("regional_centromere")],
+            so_types_to_show: vec![flex_str!("regional_centromere")],
         },
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,
-                genus: RcString::from("Schizosaccharomyces"),
-                species: RcString::from("pombe"),
+                genus: "Schizosaccharomyces".to_a_flex_str(),
+                species: "pombe".to_a_flex_str(),
                 alternative_names: vec![],
-                assembly_version: Some(RcString::from("ASM294v2")),
+                assembly_version: Some("ASM294v2".to_a_flex_str()),
             },
             ConfigOrganism {
                 taxonid: 9606,
-                genus: RcString::from("Homo"),
-                species: RcString::from("sapiens"),
+                genus: "Homo".to_a_flex_str(),
+                species: "sapiens".to_a_flex_str(),
                 alternative_names: vec![],
                 assembly_version: None,
             },
             ConfigOrganism {
                 taxonid: 4932,
-                genus: RcString::from("Saccharomyces"),
-                species: RcString::from("cerevisiae"),
+                genus: "Saccharomyces".to_a_flex_str(),
+                species: "cerevisiae".to_a_flex_str(),
                 alternative_names: vec![],
                 assembly_version: None,
             }
@@ -56,17 +56,17 @@ fn get_test_config() -> Config {
         extension_display_names: vec![],
         extension_relation_order: RelationOrder{
             relation_order: vec![
-                RcString::from("directly_positively_regulates"),
-                RcString::from("has_direct_input"),
-                RcString::from("involved_in"),
-                RcString::from("occurs_at"),
-                RcString::from("occurs_in"),
-                RcString::from("added_by"),
-                RcString::from("added_during"),
-                RcString::from("has_penetrance"),
+                "directly_positively_regulates".to_a_flex_str(),
+                "has_direct_input".to_a_flex_str(),
+                "involved_in".to_a_flex_str(),
+                "occurs_at".to_a_flex_str(),
+                "occurs_in".to_a_flex_str(),
+                "added_by".to_a_flex_str(),
+                "added_during".to_a_flex_str(),
+                "has_penetrance".to_a_flex_str(),
             ],
-            always_last: vec![RcString::from("happens_during"),
-                              RcString::from("exists_during")],
+            always_last: vec!["happens_during".to_a_flex_str(),
+                              "exists_during".to_a_flex_str()],
         },
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
@@ -75,8 +75,8 @@ fn get_test_config() -> Config {
         },
         interesting_parents: vec![],
         viability_terms: ViabilityTerms {
-            viable: RcString::from("FYPO:0002058"),
-            inviable: RcString::from("FYPO:0002059"),
+            viable: "FYPO:0002058".to_a_flex_str(),
+            inviable: "FYPO:0002059".to_a_flex_str(),
         },
         reference_page_config: ReferencePageConfig {
             triage_status_to_ignore: vec![],
@@ -122,22 +122,22 @@ fn get_test_config() -> Config {
         },
     };
 
-    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("molecular_function"),
-                                                        RcString::from("GO:0003674"));
-    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("cellular_component"),
-                                                        RcString::from("GO:0005575"));
-    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("biological_process"),
-                                                        RcString::from("GO:0008150"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert("molecular_function".to_a_flex_str(),
+                                                        "GO:0003674".to_a_flex_str());
+    config.file_exports.gpad_gpi.go_aspect_terms.insert("cellular_component".to_a_flex_str(),
+                                                        "GO:0005575".to_a_flex_str());
+    config.file_exports.gpad_gpi.go_aspect_terms.insert("biological_process".to_a_flex_str(),
+                                                        "GO:0008150".to_a_flex_str());
 
-    config.cv_config.insert(RcString::from("molecular_function"),
+    config.cv_config.insert("molecular_function".to_a_flex_str(),
                             CvConfig {
-                                feature_type: RcString::from("Gene"),
-                                display_name: Some(RcString::from("molecular function")),
+                                feature_type: "Gene".to_a_flex_str(),
+                                display_name: Some("molecular function".to_a_flex_str()),
                                 single_or_multi_locus: SingleOrMultiLocusConfig::NotApplicable,
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
-                                summary_relation_ranges_to_collect: vec![RcString::from("has_substrate")],
+                                summary_relation_ranges_to_collect: vec!["has_substrate".to_a_flex_str()],
                                 sort_details_by: None,
                                 source_config: HashMap::new(),
                             });
@@ -150,72 +150,72 @@ fn get_test_config() -> Config {
 fn test_compare_ext_part_with_config() {
     let config = get_test_config();
     let mut ext_part1 = ExtPart {
-        rel_type_id: Some(RcString::from("RO:0002400")),
-        rel_type_name: RcString::from("has_direct_input"),
-        rel_type_display_name: RcString::from("NA"),
-        ext_range: ExtRange::Misc(RcString::from("misc_ext_part_1")),
+        rel_type_id: Some("RO:0002400".to_a_flex_str()),
+        rel_type_name: "has_direct_input".to_a_flex_str(),
+        rel_type_display_name: "NA".to_a_flex_str(),
+        ext_range: ExtRange::Misc("misc_ext_part_1".to_a_flex_str()),
     };
     let mut ext_part2 = ExtPart {
-        rel_type_id: Some(RcString::from("RO:0002400")),
-        rel_type_name: RcString::from("has_direct_input"),
-        rel_type_display_name: RcString::from("NA"),
-        ext_range: ExtRange::Misc(RcString::from("misc_ext_part_2")),
+        rel_type_id: Some("RO:0002400".to_a_flex_str()),
+        rel_type_name: "has_direct_input".to_a_flex_str(),
+        rel_type_display_name: "NA".to_a_flex_str(),
+        ext_range: ExtRange::Misc("misc_ext_part_2".to_a_flex_str()),
     };
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
-    ext_part1.rel_type_name = RcString::from("directly_positively_regulates");
+    ext_part1.rel_type_name = "directly_positively_regulates".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = RcString::from("has_direct_input");
-    ext_part2.rel_type_name = RcString::from("directly_positively_regulates");
+    ext_part1.rel_type_name = "has_direct_input".to_a_flex_str();
+    ext_part2.rel_type_name = "directly_positively_regulates".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part2.rel_type_name = RcString::from("absent_during");
+    ext_part2.rel_type_name = "absent_during".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part2.rel_type_name = RcString::from("misc_rel");
+    ext_part2.rel_type_name = "misc_rel".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = RcString::from("other_misc_rel");
+    ext_part1.rel_type_name = "other_misc_rel".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = RcString::from("other_misc_rel");
-    ext_part2.rel_type_name = RcString::from("other_misc_rel");
+    ext_part1.rel_type_name = "other_misc_rel".to_a_flex_str();
+    ext_part2.rel_type_name = "other_misc_rel".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
-    ext_part2.rel_type_name = RcString::from("happens_during");
+    ext_part2.rel_type_name = "happens_during".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = RcString::from("happens_during");
-    ext_part2.rel_type_name = RcString::from("misc_rel");
+    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
+    ext_part2.rel_type_name = "misc_rel".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = RcString::from("has_direct_input");
-    ext_part2.rel_type_name = RcString::from("happens_during");
+    ext_part1.rel_type_name = "has_direct_input".to_a_flex_str();
+    ext_part2.rel_type_name = "happens_during".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = RcString::from("happens_during");
-    ext_part2.rel_type_name = RcString::from("has_direct_input");
+    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
+    ext_part2.rel_type_name = "has_direct_input".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = RcString::from("happens_during");
-    ext_part2.rel_type_name = RcString::from("exists_during");
+    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
+    ext_part2.rel_type_name = "exists_during".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = RcString::from("happens_during");
-    ext_part2.rel_type_name = RcString::from("happens_during");
+    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
+    ext_part2.rel_type_name = "happens_during".to_a_flex_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 }
@@ -224,7 +224,7 @@ fn test_compare_ext_part_with_config() {
 fn make_test_ext_part(rel_type_name: &str, rel_type_display_name: &str,
                       ext_range: ExtRange) -> ExtPart {
     ExtPart {
-        rel_type_id: Some(RcString::from("RO:0000000")),
+        rel_type_id: Some("RO:0000000".to_a_flex_str()),
         rel_type_name: rel_type_name.into(),
         rel_type_display_name: rel_type_display_name.into(),
         ext_range: ext_range,
@@ -243,58 +243,58 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 
 
     let mut test_conditions = HashSet::new();
-    test_conditions.insert(RcString::from("FYECO:0000103"));
-    test_conditions.insert(RcString::from("FYECO:0000137"));
+    test_conditions.insert("FYECO:0000103".to_a_flex_str());
+    test_conditions.insert("FYECO:0000137".to_a_flex_str());
 
     let mut fypo_details = vec![
         make_one_detail(41_717, "SPBC11B10.09", "PMID:9242669", None,
                         "IDA",vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene(RcString::from("SPBC646.13"))), //  sds23
+                                               ExtRange::Gene("SPBC646.13".to_a_flex_str())), //  sds23
                         ], HashSet::new()),
         make_one_detail(41_718, "SPBC11B10.09", "PMID:11937031", None,
                         "IDA", vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene(RcString::from("SPBC32F12.09"))), // no name
+                                               ExtRange::Gene("SPBC32F12.09".to_a_flex_str())), // no name
                         ], HashSet::new()),
         make_one_detail(187_893, "SPBC11B10.09", "PMID:19523829", None, "IMP",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene(RcString::from("SPBC6B1.04"))), //  mde4
+                                               ExtRange::Gene("SPBC6B1.04".to_a_flex_str())), //  mde4
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term(RcString::from("GO:1902845"))),
+                                               ExtRange::Term("GO:1902845".to_a_flex_str())),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term(RcString::from("GO:0000089"))),
+                                               ExtRange::Term("GO:0000089".to_a_flex_str())),
                         ],
                         HashSet::new()),
         make_one_detail(193_221, "SPBC11B10.09", "PMID:10921876", None, "IMP",
                         vec![
                             make_test_ext_part("directly_negatively_regulates", "directly inhibits",
-                                               ExtRange::Gene(RcString::from("SPAC144.13c"))), //  srw1
+                                               ExtRange::Gene("SPAC144.13c".to_a_flex_str())), //  srw1
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term(RcString::from("GO:1903693"))),
+                                               ExtRange::Term("GO:1903693".to_a_flex_str())),
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term(RcString::from("GO:1905785"))),
+                                               ExtRange::Term("GO:1905785".to_a_flex_str())),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term(RcString::from("GO:0000080"))),
+                                               ExtRange::Term("GO:0000080".to_a_flex_str())),
                         ],
                         HashSet::new()),
         make_one_detail(194_213, "SPBC11B10.09", "PMID:7957097", None, "IDA",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene(RcString::from("SPBC776.02c"))),  // dis2
+                                               ExtRange::Gene("SPBC776.02c".to_a_flex_str())),  // dis2
                         ],
                         HashSet::new()),
         make_one_detail(194_661, "SPBC11B10.09", "PMID:10485849", None, "IMP",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene(RcString::from("SPBC146.03c"))), //  cut3
+                                               ExtRange::Gene("SPBC146.03c".to_a_flex_str())), //  cut3
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term(RcString::from("GO:1903380"))),
+                                               ExtRange::Term("GO:1903380".to_a_flex_str())),
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term(RcString::from("GO:0042307"))),
+                                               ExtRange::Term("GO:0042307".to_a_flex_str())),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term(RcString::from("GO:0000089"))),
+                                               ExtRange::Term("GO:0000089".to_a_flex_str())),
                         ],
                         HashSet::new()),
         make_one_detail(223_656,
@@ -358,7 +358,7 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 fn get_test_annotations() -> Vec<OntTermAnnotations> {
     let annotations1 = vec![188_448, 202_017];
     let ont_term1 = OntTermAnnotations {
-        term: RcString::from("GO:0097472"),
+        term: "GO:0097472".to_a_flex_str(),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations1,
@@ -369,7 +369,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
         vec![41_717, 41_718, 187_893, 193_221, 194_213, 194_661];
 
     let ont_term2 = OntTermAnnotations {
-        term: RcString::from("GO:0004693"),
+        term: "GO:0004693".to_a_flex_str(),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations2,
@@ -388,7 +388,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         id: id,
         genes: vec![gene_uniquename.into()],
         transcript_uniquenames: vec![],
-        genotype: maybe_genotype_uniquename.map(RcString::from),
+        genotype: maybe_genotype_uniquename.map(|s| s.to_a_flex_str()),
         genotype_background: None,
         reference: Some(reference_uniquename.into()),
         evidence: Some(evidence.into()),
@@ -401,7 +401,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         extension: extension,
         gene_ex_props: None,
         conditions: conditions,
-        assigned_by: Some(RcString::from("PomBase")),
+        assigned_by: Some("PomBase".to_a_flex_str()),
         throughput: Some(Throughput::HighThroughput),
     }
 }
@@ -416,7 +416,7 @@ fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
                      loci: Vec<GenotypeLocus>) -> GenotypeDetails {
     GenotypeDetails {
         display_uniquename: display_uniquename.into(),
-        name: name.map(RcString::from),
+        name: name.map(|s| s.to_a_flex_str()),
         loci: loci,
         ploidiness: Ploidiness::Haploid,
         cv_annotations: HashMap::new(),
@@ -433,7 +433,7 @@ fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
 fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
     GeneDetails {
         uniquename: uniquename.into(),
-        name: name.map(RcString::from),
+        name: name.map(|s| s.to_a_flex_str()),
         taxonid: 4896,
         product: None,
         deletion_viability: DeletionViability::Unknown,
@@ -451,9 +451,9 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
-        feature_type: RcString::from("gene"),
-        feature_so_termid: RcString::from("SO:0000704"),
-        transcript_so_termid: RcString::from("SO:0001217"),
+        feature_type: "gene".to_a_flex_str(),
+        feature_so_termid: "SO:0000704".to_a_flex_str(),
+        transcript_so_termid: "SO:0001217".to_a_flex_str(),
         characterisation_status: None,
         taxonomic_distribution: None,
         location: None,
@@ -502,7 +502,7 @@ fn get_test_genes_map() -> UniquenameGeneMap {
 fn get_test_genotypes_map() -> UniquenameGenotypeMap {
     let mut ret = HashMap::new();
 
-    ret.insert(RcString::from("e674fe7ceba478aa-genotype-2"),
+    ret.insert("e674fe7ceba478aa-genotype-2".to_a_flex_str(),
                make_one_genotype(
                    "G799D(G799D)",
                    Some("test genotype name"),
@@ -510,15 +510,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some(RcString::from("Not assayed")),
-                                   allele_uniquename: RcString::from("SPBC16A3.11:allele-7"),
+                                   expression: Some("Not assayed".to_a_flex_str()),
+                                   allele_uniquename: "SPBC16A3.11:allele-7".to_a_flex_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert(RcString::from("d6c914796c35e3b5-genotype-4"),
+    ret.insert("d6c914796c35e3b5-genotype-4".to_a_flex_str(),
                make_one_genotype(
                    "C-terminal truncation 940-1516(940-1516)",
                    None,
@@ -526,15 +526,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some(RcString::from("Not assayed")),
-                                   allele_uniquename: RcString::from("SPCC1919.10c:allele-5"),
+                                   expression: Some("Not assayed".to_a_flex_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-5".to_a_flex_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert(RcString::from("65c76fa511461156-genotype-3"),
+    ret.insert("65c76fa511461156-genotype-3".to_a_flex_str(),
                make_one_genotype(
                    "cdc25-22(c532y)",
                    None,
@@ -542,15 +542,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some(RcString::from("Not assayed")),
-                                   allele_uniquename: RcString::from("SPAC24H6.05:allele-3"),
+                                   expression: Some("Not assayed".to_a_flex_str()),
+                                   allele_uniquename: "SPAC24H6.05:allele-3".to_a_flex_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert(RcString::from("d6c914796c35e3b5-genotype-2"),
+    ret.insert("d6c914796c35e3b5-genotype-2".to_a_flex_str(),
                make_one_genotype(
                    "ATPase dead mutant(unknown)",
                    Some("ZZ-name"),
@@ -558,15 +558,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some(RcString::from("Not assayed")),
-                                   allele_uniquename: RcString::from("SPCC1919.10c:allele-4"),
+                                   expression: Some("Not assayed".to_a_flex_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-4".to_a_flex_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert(RcString::from("d6c914796c35e3b5-genotype-3"),
+    ret.insert("d6c914796c35e3b5-genotype-3".to_a_flex_str(),
                make_one_genotype(
                    "C-terminal truncation(1320-1516)",
                    None,
@@ -574,15 +574,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some(RcString::from("Not assayed")),
-                                   allele_uniquename: RcString::from("SPCC1919.10c:allele-6"),
+                                   expression: Some("Not assayed".to_a_flex_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-6".to_a_flex_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert(RcString::from("fd4f3f52f1d38106-genotype-4"),
+    ret.insert("fd4f3f52f1d38106-genotype-4".to_a_flex_str(),
                make_one_genotype(
                    "K418R(K418R)",
                    None,
@@ -590,15 +590,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some(RcString::from("Wild type product level")),
-                                   allele_uniquename: RcString::from("SPAC25A8.01c:allele-5"),
+                                   expression: Some("Wild type product level".to_a_flex_str()),
+                                   allele_uniquename: "SPAC25A8.01c:allele-5".to_a_flex_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert(RcString::from("a6d8f45c20c2227d-genotype-9"),
+    ret.insert("a6d8f45c20c2227d-genotype-9".to_a_flex_str(),
                make_one_genotype(
                    "UBS-I&II(F18A,F21A,W26A,L40A,W41A,W45A)",
                    None,
@@ -606,8 +606,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some(RcString::from("Not assayed")),
-                                   allele_uniquename: RcString::from("SPAC3G6.02:allele-7"),
+                                   expression: Some("Not assayed".to_a_flex_str()),
+                                   allele_uniquename: "SPAC3G6.02:allele-7".to_a_flex_str(),
                                }
                            ]
                        }
@@ -624,7 +624,7 @@ fn make_one_allele_short(uniquename: &str, name: &str, allele_type: &str,
         uniquename.into(),
         &Some(name.into()),
         allele_type,
-        &description.map(RcString::from),
+        &description.map(|s| s.to_a_flex_str()),
         gene_uniquename,
     )
 }
@@ -633,28 +633,28 @@ fn make_one_allele_short(uniquename: &str, name: &str, allele_type: &str,
 fn get_test_alleles_map() -> UniquenameAlleleMap {
     let mut ret = HashMap::new();
 
-    ret.insert(RcString::from("SPCC1919.10c:allele-4"),
+    ret.insert("SPCC1919.10c:allele-4".to_a_flex_str(),
                make_one_allele_short("SPCC1919.10c:allele-4", "ATPase dead mutant", "unknown", None, "SPCC1919.10c"));
 
-    ret.insert(RcString::from("SPCC1919.10c:allele-5"),
+    ret.insert("SPCC1919.10c:allele-5".to_a_flex_str(),
                make_one_allele_short("SPCC1919.10c:allele-5", "C-terminal truncation 940-1516", "partial_amino_acid_deletion",
                                      Some("940-1516"), "SPCC1919.10c"));
 
-    ret.insert(RcString::from("SPCC1919.10c:allele-6"),
+    ret.insert("SPCC1919.10c:allele-6".to_a_flex_str(),
                make_one_allele_short("SPCC1919.10c:allele-6", "C-terminal truncation", "partial_amino_acid_deletion", Some("1320-1516"),
                                      "SPCC1919.10c"));
 
-    ret.insert(RcString::from("SPBC16A3.11:allele-7"),
+    ret.insert("SPBC16A3.11:allele-7".to_a_flex_str(),
                make_one_allele_short("SPBC16A3.11:allele-7", "G799D", "amino_acid_mutation", Some("G799D"), "SPBC16A3.11"));
 
 
-    ret.insert(RcString::from("SPAC25A8.01c:allele-5"),
+    ret.insert("SPAC25A8.01c:allele-5".to_a_flex_str(),
                make_one_allele_short("SPAC25A8.01c:allele-5", "K418R", "amino_acid_mutation", Some("K418R"), "SPAC25A8.01c"));
 
-    ret.insert(RcString::from("SPAC3G6.02:allele-7"),
+    ret.insert("SPAC3G6.02:allele-7".to_a_flex_str(),
                make_one_allele_short("SPAC3G6.02:allele-7", "UBS-I&II", "amino_acid_mutation", Some("F18A,F21A,W26A,L40A,W41A,W45A"), "SPAC3G6.02"));
 
-    ret.insert(RcString::from("SPAC24H6.05:allele-3"),
+    ret.insert("SPAC24H6.05:allele-3".to_a_flex_str(),
                make_one_allele_short("SPAC24H6.05:allele-3", "cdc25-22", "amino_acid_mutation", Some("C532Y"), "SPAC24H6.05"));
 
     ret
@@ -666,10 +666,10 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         termid: id.into(),
         name: name.into(),
         cv_name: cv_name.into(),
-        annotation_feature_type: RcString::from("gene"),
+        annotation_feature_type: "gene".to_a_flex_str(),
         interesting_parent_ids: HashSet::new(),
         interesting_parent_details: HashSet::new(),
-        in_subsets: HashSet::from_iter(vec![RcString::from("goslim_pombe")]),
+        in_subsets: HashSet::from_iter(vec!["goslim_pombe".to_a_flex_str()]),
         synonyms: vec![],
         definition: None,
         direct_ancestors: vec![],
@@ -733,7 +733,7 @@ fn test_cmp_ont_annotation_detail() {
         |id1: &i32, id2: &i32| {
             let annotation1 = annotation_details_maps.get(id1).expect(&format!("{}", id1));
             let annotation2 = annotation_details_maps.get(id2).expect(&format!("{}", id2));
-            let cv_config = &get_test_config().cv_config_by_name("molecular_function");
+            let cv_config = &get_test_config().cv_config_by_name(&flex_str!("molecular_function"));
             pombase::sort_annotations::cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2, &genes,
                                       &genotypes, &terms).unwrap()
@@ -795,7 +795,7 @@ fn test_cmp_ont_annotation_detail() {
 #[allow(dead_code)]
 fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermAnnotations {
     OntTermAnnotations {
-        term: RcString::from(termid),
+        term: termid.to_a_flex_str(),
         is_not: false,
         annotations: vec![],
         rel_names: HashSet::new(),
@@ -807,12 +807,12 @@ fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermAnnotati
 #[test]
 fn test_summary_row_equals() {
     let r1 = TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAPB1A10.09")],
+        gene_uniquenames: vec!["SPAPB1A10.09".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     };
     let r2 = TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAPB1A10.09")],
+        gene_uniquenames: vec!["SPAPB1A10.09".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     };
@@ -824,9 +824,9 @@ fn get_test_summaries() -> Vec<OntTermAnnotations> {
     let mut summaries = vec![];
 
     let ext = make_test_ext_part("part_of", "involved in",
-                                 ExtRange::Term(RcString::from("GO:1905785")));
+                                 ExtRange::Term("GO:1905785".to_a_flex_str()));
     let ext2 = make_test_ext_part("some_rel", "some_rel_display_name",
-                                  ExtRange::Term(RcString::from("GO:1234567")));
+                                  ExtRange::Term("GO:1234567".to_a_flex_str()));
 
     summaries.push(make_test_summary("GO:0022403", vec![]));
     summaries.push(make_test_summary("GO:0051318",
@@ -861,28 +861,28 @@ fn get_test_children_by_termid() -> HashMap<TermId, HashSet<TermId>> {
     let mut children_by_termid = HashMap::new();
 
     let mut children_of_0022403 = HashSet::new();
-    children_of_0022403.insert(RcString::from("GO:0051318"));
-    children_of_0022403.insert(RcString::from("GO:0000080"));
-    children_of_0022403.insert(RcString::from("GO:0088888"));
-    children_of_0022403.insert(RcString::from("GO:0000089"));
-    children_of_0022403.insert(RcString::from("GO:0099999"));
+    children_of_0022403.insert("GO:0051318".to_a_flex_str());
+    children_of_0022403.insert("GO:0000080".to_a_flex_str());
+    children_of_0022403.insert("GO:0088888".to_a_flex_str());
+    children_of_0022403.insert("GO:0000089".to_a_flex_str());
+    children_of_0022403.insert("GO:0099999".to_a_flex_str());
 
     let mut children_of_0051318 = HashSet::new();
-    children_of_0051318.insert(RcString::from("GO:0000080"));
-    children_of_0051318.insert(RcString::from("GO:0088888"));
-    children_of_0051318.insert(RcString::from("GO:0000089"));
-    children_of_0051318.insert(RcString::from("GO:0099999"));
+    children_of_0051318.insert("GO:0000080".to_a_flex_str());
+    children_of_0051318.insert("GO:0088888".to_a_flex_str());
+    children_of_0051318.insert("GO:0000089".to_a_flex_str());
+    children_of_0051318.insert("GO:0099999".to_a_flex_str());
 
     let mut children_of_0000080 = HashSet::new();
-    children_of_0000080.insert(RcString::from("GO:0088888"));
+    children_of_0000080.insert("GO:0088888".to_a_flex_str());
 
     let mut children_of_0000089 = HashSet::new();
-    children_of_0000089.insert(RcString::from("GO:0099999"));
+    children_of_0000089.insert("GO:0099999".to_a_flex_str());
 
-    children_by_termid.insert(RcString::from("GO:0022403"), children_of_0022403);
-    children_by_termid.insert(RcString::from("GO:0051318"), children_of_0051318);
-    children_by_termid.insert(RcString::from("GO:0000080"), children_of_0000080);
-    children_by_termid.insert(RcString::from("GO:0000089"), children_of_0000089);
+    children_by_termid.insert("GO:0022403".to_a_flex_str(), children_of_0022403);
+    children_by_termid.insert("GO:0051318".to_a_flex_str(), children_of_0051318);
+    children_by_termid.insert("GO:0000080".to_a_flex_str(), children_of_0000080);
+    children_by_termid.insert("GO:0000089".to_a_flex_str(), children_of_0000089);
 
     children_by_termid
 }
@@ -906,12 +906,12 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
     let mut ret_map = BTreeMap::new();
 
     let base_details = GeneDetails {
-        uniquename: RcString::from(""),
-        name: Some(RcString::from("")),
-        product: Some(RcString::from("")),
+        uniquename: "".to_a_flex_str(),
+        name: Some("".to_a_flex_str()),
+        product: Some("".to_a_flex_str()),
         taxonid: 4896,
         deletion_viability: DeletionViability::Viable,
-        uniprot_identifier: Some(RcString::from("")),
+        uniprot_identifier: Some("".to_a_flex_str()),
         secondary_identifier: None,
         biogrid_interactor_id: None,
         rnacentral_urs_identifier: None,
@@ -921,15 +921,15 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
         low_complexity_region_coords: vec![],
         coiled_coil_coords: vec![],
         rfam_annotations: vec![],
-        orfeome_identifier: Some(RcString::from("")),
+        orfeome_identifier: Some("".to_a_flex_str()),
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
-        feature_type: RcString::from(""),
-        feature_so_termid: RcString::from(""),
-        transcript_so_termid: RcString::from(""),
-        characterisation_status: Some(RcString::from("")),
-        taxonomic_distribution: Some(RcString::from("")),
+        feature_type: "".to_a_flex_str(),
+        feature_so_termid: "".to_a_flex_str(),
+        transcript_so_termid: "".to_a_flex_str(),
+        characterisation_status: Some("".to_a_flex_str()),
+        taxonomic_distribution: Some("".to_a_flex_str()),
         location: None,
         gene_neighbourhood: vec![],
         transcripts: vec![],
@@ -950,32 +950,32 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
         subset_termids: HashSet::new(),
     };
 
-    ret_map.insert(RcString::from("SPAC977.09c"),
+    ret_map.insert("SPAC977.09c".to_a_flex_str(),
                    GeneDetails {
-                       uniquename: RcString::from("SPAC977.09c"),
+                       uniquename: "SPAC977.09c".to_a_flex_str(),
                        name: None,
-                       product: Some(RcString::from("phospholipase (predicted)")),
+                       product: Some("phospholipase (predicted)".to_a_flex_str()),
                        .. base_details.clone()
                    });
-    ret_map.insert(RcString::from("SPAC3G9.09c"),
+    ret_map.insert("SPAC3G9.09c".to_a_flex_str(),
                    GeneDetails {
-                       uniquename: RcString::from("SPAC3G9.09c"),
-                       name: Some(RcString::from("tif211")),
-                       product: Some(RcString::from("translation initiation factor eIF2 alpha subunit")),
+                       uniquename: "SPAC3G9.09c".to_a_flex_str(),
+                       name: Some("tif211".to_a_flex_str()),
+                       product: Some("translation initiation factor eIF2 alpha subunit".to_a_flex_str()),
                        .. base_details.clone()
                    });
-    ret_map.insert(RcString::from("SPAC16.01"),
+    ret_map.insert("SPAC16.01".to_a_flex_str(),
                    GeneDetails {
-                       uniquename: RcString::from("SPAC16.01"),
-                       name: Some(RcString::from("rho2")),
-                       product: Some(RcString::from("Rho family GTPase Rho2")),
+                       uniquename: "SPAC16.01".to_a_flex_str(),
+                       name: Some("rho2".to_a_flex_str()),
+                       product: Some("Rho family GTPase Rho2".to_a_flex_str()),
                        .. base_details.clone()
                    });
-    ret_map.insert(RcString::from("SPAC24C9.02c"),
+    ret_map.insert("SPAC24C9.02c".to_a_flex_str(),
                    GeneDetails {
-                       uniquename: RcString::from("SPAC24C9.02c"),
-                       name: Some(RcString::from("cyt2")),
-                       product: Some(RcString::from("cytochrome c1 heme lyase Cyt2 (predicted)")),
+                       uniquename: "SPAC24C9.02c".to_a_flex_str(),
+                       name: Some("cyt2".to_a_flex_str()),
+                       product: Some("cytochrome c1 heme lyase Cyt2 (predicted)".to_a_flex_str()),
                        .. base_details
                    });
 
@@ -988,196 +988,196 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
 #[test]
 fn test_merge_ext_part_ranges() {
     let ext_part1 = ExtPart {
-        rel_type_id: Some(RcString::from("RO:0000000")),
-        rel_type_name: RcString::from("has_substrate"),
-        rel_type_display_name: RcString::from("has substrate"),
-        ext_range: ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC977.09c")]]),
+        rel_type_id: Some("RO:0000000".to_a_flex_str()),
+        rel_type_name: "has_substrate".to_a_flex_str(),
+        rel_type_display_name: "has substrate".to_a_flex_str(),
+        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC977.09c".to_a_flex_str()]]),
     };
     let ext_part2 = ExtPart {
-        rel_type_id: Some(RcString::from("RO:0000000")),
-        rel_type_name: RcString::from("has_substrate"),
-        rel_type_display_name: RcString::from("has substrate"),
-        ext_range: ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC24C9.02c")]]),
+        rel_type_id: Some("RO:0000000".to_a_flex_str()),
+        rel_type_name: "has_substrate".to_a_flex_str(),
+        rel_type_display_name: "has substrate".to_a_flex_str(),
+        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_a_flex_str()]]),
     };
 
     let gene_short_map = get_test_gene_short_map();
     let res = merge_ext_part_ranges(&ext_part1, &ext_part2, &gene_short_map);
 
     assert_eq!(res.ext_range,
-               ExtRange::SummaryGenes(vec![vec![RcString::from("SPAC24C9.02c")],
-                                           vec![RcString::from("SPAC977.09c")]]));
+               ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_a_flex_str()],
+                                           vec!["SPAC977.09c".to_a_flex_str()]]));
 }
 
 fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     let mut rows = vec![];
 
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC25B2.01c")],
+        gene_uniquenames: vec!["SPAC25B2.01c".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC25B2.01c")],
+        gene_uniquenames: vec!["SPAC25B2.01c".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC25B8.03")],
+        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC25B8.03")],
+        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("some_good_rel"),
-                rel_type_display_name: RcString::from("some rel"),
-                ext_range: ExtRange::Term(RcString::from("GO:0070301")),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "some_good_rel".to_a_flex_str(),
+                rel_type_display_name: "some rel".to_a_flex_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC25B8.03")],
+        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("has_substrate"),
-                rel_type_display_name: RcString::from("has substrate"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "has_substrate".to_a_flex_str(),
+                rel_type_display_name: "has substrate".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC3G9.09c")]]),
+                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC25B8.03")],
+        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("has_substrate"),
-                rel_type_display_name: RcString::from("has substrate"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "has_substrate".to_a_flex_str(),
+                rel_type_display_name: "has substrate".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC3G9.09c")]]),
+                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
             },
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("during"),
-                rel_type_display_name: RcString::from("during"),
-                ext_range: ExtRange::Term(RcString::from("GO:0070301")),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "during".to_a_flex_str(),
+                rel_type_display_name: "during".to_a_flex_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC25B8.03")],
+        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("has_substrate"),
-                rel_type_display_name: RcString::from("has substrate"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "has_substrate".to_a_flex_str(),
+                rel_type_display_name: "has substrate".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC3G9.09c")]]),
+                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
             },
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("during"),
-                rel_type_display_name: RcString::from("during"),
-                ext_range: ExtRange::Term(RcString::from("GO:0070301")),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "during".to_a_flex_str(),
+                rel_type_display_name: "during".to_a_flex_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC1786.03")], // change annotated gene
+        gene_uniquenames: vec!["SPAC1786.03".to_a_flex_str()], // change annotated gene
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("has_substrate"),
-                rel_type_display_name: RcString::from("has substrate"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "has_substrate".to_a_flex_str(),
+                rel_type_display_name: "has substrate".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC3G9.09c")]]),
+                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
             },
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("during"),
-                rel_type_display_name: RcString::from("during"),
-                ext_range: ExtRange::Term(RcString::from("GO:0070301")),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "during".to_a_flex_str(),
+                rel_type_display_name: "during".to_a_flex_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC1786.03")],
+        gene_uniquenames: vec!["SPAC1786.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("has_substrate"),
-                rel_type_display_name: RcString::from("has substrate"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "has_substrate".to_a_flex_str(),
+                rel_type_display_name: "has substrate".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC16.01")]]),   // change substrate
+                    vec![vec!["SPAC16.01".to_a_flex_str()]]),   // change substrate
             },
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("during"),
-                rel_type_display_name: RcString::from("during"),
-                ext_range: ExtRange::Term(RcString::from("GO:0070301")),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "during".to_a_flex_str(),
+                rel_type_display_name: "during".to_a_flex_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC1786.03")],
+        gene_uniquenames: vec!["SPAC1786.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("has_substrate"),
-                rel_type_display_name: RcString::from("has substrate"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "has_substrate".to_a_flex_str(),
+                rel_type_display_name: "has substrate".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC16.01")]]),
+                    vec![vec!["SPAC16.01".to_a_flex_str()]]),
             },
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("during"),
-                rel_type_display_name: RcString::from("during"),
-                ext_range: ExtRange::Term(RcString::from("GO:0071472")), // change during term
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "during".to_a_flex_str(),
+                rel_type_display_name: "during".to_a_flex_str(),
+                ext_range: ExtRange::Term("GO:0071472".to_a_flex_str()), // change during term
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC222.03")],
+        gene_uniquenames: vec!["SPAC222.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("binds"),
-                rel_type_display_name: RcString::from("binds"),
-                ext_range: ExtRange::Term(RcString::from("PR:000027629")),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "binds".to_a_flex_str(),
+                rel_type_display_name: "binds".to_a_flex_str(),
+                ext_range: ExtRange::Term("PR:000027629".to_a_flex_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC222.03")],
+        gene_uniquenames: vec!["SPAC222.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("binds"),
-                rel_type_display_name: RcString::from("binds"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "binds".to_a_flex_str(),
+                rel_type_display_name: "binds".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC16.01")]]),
+                    vec![vec!["SPAC16.01".to_a_flex_str()]]),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec![RcString::from("SPAC222.03")],
+        gene_uniquenames: vec!["SPAC222.03".to_a_flex_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("binds"),
-                rel_type_display_name: RcString::from("binds"),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "binds".to_a_flex_str(),
+                rel_type_display_name: "binds".to_a_flex_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec![RcString::from("SPAC16.01")]]),
+                    vec![vec!["SPAC16.01".to_a_flex_str()]]),
             },
             ExtPart {
-                rel_type_id: Some(RcString::from("RO:0000000")),
-                rel_type_name: RcString::from("binds"),
-                rel_type_display_name: RcString::from("binds"),
-                ext_range: ExtRange::Term(RcString::from("PR:000027629")),
+                rel_type_id: Some("RO:0000000".to_a_flex_str()),
+                rel_type_name: "binds".to_a_flex_str(),
+                rel_type_display_name: "binds".to_a_flex_str(),
+                ext_range: ExtRange::Term("PR:000027629".to_a_flex_str()),
             },
 ],
     });
@@ -1194,14 +1194,14 @@ fn test_collect_ext_summary_genes() {
 
     let gene_short_map = get_test_gene_short_map();
 
-    pombase::web::cv_summary::collect_ext_summary_genes(&config.cv_config_by_name("molecular_function"),
+    pombase::web::cv_summary::collect_ext_summary_genes(&config.cv_config_by_name(&flex_str!("molecular_function")),
                                                         &mut rows, &gene_short_map);
     assert_eq!(rows.len(), 11);
 
     let collected_ext = rows.get(6).unwrap();
     let collected_ext_ext_part_1 = collected_ext.extension.get(0).unwrap();
-    let summary_genes_vec = vec![vec![RcString::from("SPAC16.01")],
-                                 vec![RcString::from("SPAC3G9.09c")]];
+    let summary_genes_vec = vec![vec!["SPAC16.01".to_a_flex_str()],
+                                 vec!["SPAC3G9.09c".to_a_flex_str()]];
     assert_eq!(collected_ext_ext_part_1.ext_range,
                ExtRange::SummaryGenes(summary_genes_vec));
 }

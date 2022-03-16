@@ -10,7 +10,7 @@ use crate::web::config::*;
 use crate::web::vec_set::*;
 use crate::web::util::*;
 
-use pombase_rc_string::RcString;
+use flexstr::AFlexStr as FlexStr;
 
 pub fn make_cv_summaries<T: AnnotationContainer>
     (container: &mut T,
@@ -38,7 +38,7 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     let mut ret_ext_part = ext_part1.clone();
                     let mut new_gene_uniquenames = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
                     let cmp =
-                        |vec1: &Vec<RcString>, vec2: &Vec<RcString>| {
+                        |vec1: &Vec<FlexStr>, vec2: &Vec<FlexStr>| {
                             let gene1 = &genes[&vec1[0]];
                             let gene2 = &genes[&vec2[0]];
                             gene1.cmp(gene2)
@@ -55,7 +55,7 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     let mut new_transcript_uniquenames =
                         [part1_summ_transcripts.clone(), part2_summ_transcripts.clone()].concat();
                     let cmp =
-                        |vec1: &Vec<RcString>, vec2: &Vec<RcString>| {
+                        |vec1: &Vec<FlexStr>, vec2: &Vec<FlexStr>| {
                             let transcript_uniquename_1 = &vec1[0];
                             let transcript_uniquename_2 = &vec2[0];
                             transcript_uniquename_1.cmp(transcript_uniquename_2)
@@ -164,9 +164,9 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
 }
 
 fn sort_genotype_uniquenames(genotypes: &IdGenotypeMap,
-                             genotype_uniquenames: &mut Vec<RcString>) {
+                             genotype_uniquenames: &mut Vec<FlexStr>) {
     let cmp_genotype_ploidiness =
-        |genotype_a_uniquename: &RcString, genotype_b_uniquename: &RcString| {
+        |genotype_a_uniquename: &FlexStr, genotype_b_uniquename: &FlexStr| {
             let genotype_a = genotypes.get(genotype_a_uniquename)
                 .unwrap_or_else(|| panic!("missing genotype {}", genotype_a_uniquename));
             let genotype_b = genotypes.get(genotype_b_uniquename)
@@ -210,13 +210,13 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, genotypes: &IdGenotypeMap,
             }
     }
 
-    let mut gene_uniquenames: Vec<RcString> =
+    let mut gene_uniquenames: Vec<FlexStr> =
         no_ext_rows.iter().filter(|row| !row.gene_uniquenames.is_empty())
         .map(|row| row.gene_uniquenames[0].clone())
         .collect();
 
     let gene_cmp =
-        |uniquename1: &RcString, uniquename2: &RcString| {
+        |uniquename1: &FlexStr, uniquename2: &FlexStr| {
             let gene1 = genes.get(uniquename1).unwrap();
             let gene2 = genes.get(uniquename2).unwrap();
             gene1.cmp(gene2)
@@ -224,7 +224,7 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, genotypes: &IdGenotypeMap,
     gene_uniquenames.sort_by(gene_cmp);
     gene_uniquenames.dedup();
 
-    let mut genotype_uniquenames: Vec<RcString> =
+    let mut genotype_uniquenames: Vec<FlexStr> =
         no_ext_rows.iter().filter(|row| !row.genotype_uniquenames.is_empty())
         .map(|row| row.genotype_uniquenames[0].clone())
         .collect();

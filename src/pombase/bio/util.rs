@@ -3,7 +3,7 @@ use crate::data_types::{GeneDetails, ChromosomeLocation, DeletionViability, Stra
                         UniquenameTranscriptMap, TranscriptDetails, FeatureShort,
                         ProteinDetails, FeatureType};
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
 
 fn complement_char(base: char) -> char {
     match base {
@@ -19,11 +19,11 @@ fn complement_char(base: char) -> char {
     }
 }
 
-pub fn rev_comp(residues: &str) -> RcString {
+pub fn rev_comp(residues: &str) -> FlexStr {
     let residues: String = residues.chars()
         .rev().map(complement_char)
         .collect();
-    RcString::from(&residues)
+    residues.to_a_flex_str()
 }
 
 
@@ -170,8 +170,8 @@ fn test_format_fasta() {
 fn test_format_gff() {
     let gene = make_test_gene();
     let mut transcripts = HashMap::new();
-    transcripts.insert( RcString::from("SPCC18B5.06.1"),
-                       gene.transcripts_by_uniquename[&RcString::from("SPCC18B5.06.1")].clone().unwrap());
+    transcripts.insert( flex_str!("SPCC18B5.06.1"),
+                       gene.transcripts_by_uniquename[&flex_str!("SPCC18B5.06.1")].clone().unwrap());
     let gene_gff_lines = format_gene_gff("chromosome_3", "PomBase",
                          &transcripts, &gene);
 
@@ -193,12 +193,12 @@ fn test_format_gff() {
 #[allow(dead_code)]
 fn make_test_gene() -> GeneDetails {
     GeneDetails {
-        uniquename: RcString::from("SPCC18B5.06"),
-        name: Some(RcString::from("dom34")),
+        uniquename: flex_str!("SPCC18B5.06"),
+        name: Some(flex_str!("dom34")),
         taxonid: 4896,
-        product: Some(RcString::from("Dom34-Hbs1 translation release factor complex subunit, peloto ortholog Dom34")),
+        product: Some(flex_str!("Dom34-Hbs1 translation release factor complex subunit, peloto ortholog Dom34")),
         deletion_viability: DeletionViability::Viable,
-        uniprot_identifier: Some(RcString::from("Q9USL5")),
+        uniprot_identifier: Some(flex_str!("Q9USL5")),
         secondary_identifier: None,
         biogrid_interactor_id: Some(275937),
         rnacentral_urs_identifier: None,
@@ -212,13 +212,13 @@ fn make_test_gene() -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
-        feature_type: RcString::from("mRNA gene"),
-        feature_so_termid: RcString::from("SO:0000704"),
-        transcript_so_termid: RcString::from("SO:0001217"),
-        characterisation_status: Some(RcString::from("published")),
-        taxonomic_distribution: Some(RcString::from("dubious")),
+        feature_type: flex_str!("mRNA gene"),
+        feature_so_termid: flex_str!("SO:0000704"),
+        transcript_so_termid: flex_str!("SO:0001217"),
+        characterisation_status: Some(flex_str!("published")),
+        taxonomic_distribution: Some(flex_str!("dubious")),
         location: Some(ChromosomeLocation {
-            chromosome_name: RcString::from("chromosome_3"),
+            chromosome_name: flex_str!("chromosome_3"),
             start_pos: 729_054,
             end_pos: 730_829,
             strand: Strand::Forward,
@@ -226,14 +226,14 @@ fn make_test_gene() -> GeneDetails {
         }),
         gene_neighbourhood: vec![],
         transcripts: vec![
-            RcString::from("SPCC18B5.06.1"),
+            flex_str!("SPCC18B5.06.1"),
         ],
         transcripts_by_uniquename: HashMap::from([
-            (RcString::from("SPCC18B5.06.1"),
+            (flex_str!("SPCC18B5.06.1"),
              Some(TranscriptDetails {
-                uniquename: RcString::from("SPCC18B5.06.1"),
+                uniquename: flex_str!("SPCC18B5.06.1"),
                 location: ChromosomeLocation {
-                    chromosome_name: RcString::from("chromosome_3"),
+                    chromosome_name: flex_str!("chromosome_3"),
                     start_pos: 729_054,
                     end_pos: 730_829,
                     strand: Strand::Forward,
@@ -242,152 +242,152 @@ fn make_test_gene() -> GeneDetails {
                 parts: vec![
                     FeatureShort {
                         feature_type: FeatureType::FivePrimeUtr,
-                        uniquename: RcString::from("SPCC18B5.06.1:five_prime_UTR:1"),
+                        uniquename: flex_str!("SPCC18B5.06.1:five_prime_UTR:1"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_054,
                             end_pos: 729_132,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("AAAATTTCGAGATATTATGTCAGTCAAAATAGCCTAAAAAATTCCTGTTCACTTAAATTCTTCGTCAACCACATTCAAT"),
+                        residues: flex_str!("AAAATTTCGAGATATTATGTCAGTCAAAATAGCCTAAAAAATTCCTGTTCACTTAAATTCTTCGTCAACCACATTCAAT"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
-                        uniquename: RcString::from("SPCC18B5.06.1:exon:1"),
+                        uniquename: flex_str!("SPCC18B5.06.1:exon:1"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_133,
                             end_pos: 729_212,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("ATGAAGTTGATTCAAAAAAACATCGAAAAAAATGGCTCCGGATGGATAACCATGTGCCCTGAAGAGCCAGAAGATATGTG"),
+                        residues: flex_str!("ATGAAGTTGATTCAAAAAAACATCGAAAAAAATGGCTCCGGATGGATAACCATGTGCCCTGAAGAGCCAGAAGATATGTG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
-                        uniquename: RcString::from("SPCC18B5.06.1:intron:1"),
+                        uniquename: flex_str!("SPCC18B5.06.1:intron:1"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_213,
                             end_pos: 729_265,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("GTATGCCTGGTTGCTGTATATCTGCAATCAATGCACAAACTAACTTAGTTTAG"),
+                        residues: flex_str!("GTATGCCTGGTTGCTGTATATCTGCAATCAATGCACAAACTAACTTAGTTTAG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
-                        uniquename: RcString::from("SPCC18B5.06.1:exon:2"),
+                        uniquename: flex_str!("SPCC18B5.06.1:exon:2"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_266,
                             end_pos: 729_319,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("GCATTTGTATAATATTCTTCAAGTTGGAGATCAGCTGAAGGCTTCTACAGTTCG"),
+                        residues: flex_str!("GCATTTGTATAATATTCTTCAAGTTGGAGATCAGCTGAAGGCTTCTACAGTTCG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
-                        uniquename: RcString::from("SPCC18B5.06.1:intron:2"),
+                        uniquename: flex_str!("SPCC18B5.06.1:intron:2"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_320,
                             end_pos: 729_379,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("GTATGAAATAAAGTGTATCTTCAATGTTCGATAATAACACCTGTTTTTTCTGTTGTTTAG"),
+                        residues: flex_str!("GTATGAAATAAAGTGTATCTTCAATGTTCGATAATAACACCTGTTTTTTCTGTTGTTTAG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
-                        uniquename: RcString::from("SPCC18B5.06.1:exon:3"),
+                        uniquename: flex_str!("SPCC18B5.06.1:exon:3"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_380,
                             end_pos: 729_678,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("TCGTGTAGTGAAAGTTGGCGCTACAGGAAGTACGTCAGGTTCAAGAGTTGTGATGAAACTACGTATTTTAGTTGAGAATATGGACTTTGATACAAAGGCTGCTCAATTGCACATCAAAGGACGGACAACTGAATACCATCCTGAAGTTAAGATGGGATCCTACCATACCTTGGACTTAGAACTACATCGCAATTTTACTCTATATAAAAATGAATGGGATGCATTTGCATTGGACCGTGTAGATGCTGCTTGTAATCCTTCAAGAAATGCTGAAATAGGTGCTGTGGTTTTAGATGAAG"),
+                        residues: flex_str!("TCGTGTAGTGAAAGTTGGCGCTACAGGAAGTACGTCAGGTTCAAGAGTTGTGATGAAACTACGTATTTTAGTTGAGAATATGGACTTTGATACAAAGGCTGCTCAATTGCACATCAAAGGACGGACAACTGAATACCATCCTGAAGTTAAGATGGGATCCTACCATACCTTGGACTTAGAACTACATCGCAATTTTACTCTATATAAAAATGAATGGGATGCATTTGCATTGGACCGTGTAGATGCTGCTTGTAATCCTTCAAGAAATGCTGAAATAGGTGCTGTGGTTTTAGATGAAG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
-                        uniquename: RcString::from("SPCC18B5.06.1:intron:3"),
+                        uniquename: flex_str!("SPCC18B5.06.1:intron:3"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_679,
                             end_pos: 729_734,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("GTAAATTTCTTGGCTTACATCGCTTTATTAGTTCGTGCATGTTTACTGACTTGCAG"),
+                        residues: flex_str!("GTAAATTTCTTGGCTTACATCGCTTTATTAGTTCGTGCATGTTTACTGACTTGCAG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
-                        uniquename: RcString::from("SPCC18B5.06.1:exon:4"),
+                        uniquename: flex_str!("SPCC18B5.06.1:exon:4"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_735,
                             end_pos: 729_841,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("GTCTTGCCAATATTTGTCTCATTACAGATTATATGACCATCCTGCGTCAAAGGATTGATCAAGTGATTCCAAGGAAACGGAGAGGGGACAGCAGCGCTTACCAAAAG"),
+                        residues: flex_str!("GTCTTGCCAATATTTGTCTCATTACAGATTATATGACCATCCTGCGTCAAAGGATTGATCAAGTGATTCCAAGGAAACGGAGAGGGGACAGCAGCGCTTACCAAAAG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
-                        uniquename: RcString::from("SPCC18B5.06.1:intron:4"),
+                        uniquename: flex_str!("SPCC18B5.06.1:intron:4"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_842,
                             end_pos: 729_889,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("GTAAATTTTTAGACTTTGATTTTTCGTCCGTACTGATCAATTTTTTAG"),
+                        residues: flex_str!("GTAAATTTTTAGACTTTGATTTTTCGTCCGTACTGATCAATTTTTTAG"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
-                        uniquename: RcString::from("SPCC18B5.06.1:exon:5"),
+                        uniquename: flex_str!("SPCC18B5.06.1:exon:5"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 729_890,
                             end_pos: 730_522,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("GGCCTTGATAAATTTTATGACTCTGTTTTTCAATCCATTAACTCAGAATTTGATTTTGATAAATTGAAAGTCGTTATTCTTGCTTCACCAGGATTTGTGGCTCGAGGCTTGTATGACTACATATTCAGCATGGCCGTGAAGTTAGACTTGAAACAAATTGTTAAATCAAAGAATAAATTTGTCATCCTTCATTCTAGCACTGGTCATATTCATTCCCTTAATGAAATTTTGAAGGACCCTGCTGTTGAATCAAAACTAGCCGACACAAAATACGTACAAGAAATTCGCGTTCTGAATAAATTTTACGATGTCATGAATGAAGATGATAGAAAGGCATGGTATGGTCCAAATCATGTTTTGAAGGCTTTTGAACTTGGCGCGATCGGAGAACTTCTGATTAGCGATTCTCTGTTCAGGAGTTCTGACATTGCTACTAGAAAAAAATGGGTTTCATTAGTAGAAGGTGTTAAGGAGATTAACTGTCCTGTTTATATTTTCAGTAGTTTGCATGAGTCAGGGAAGCAGCTGGATCTGTTGTCAGGTATTGCCGCCATTCTCACTTACCCAGTCGATGAAGAGGATATATCAGAAGATGAAGAGGATGAGGAATCCCAAAATTTTGAACATAGTTAA"),
+                        residues: flex_str!("GGCCTTGATAAATTTTATGACTCTGTTTTTCAATCCATTAACTCAGAATTTGATTTTGATAAATTGAAAGTCGTTATTCTTGCTTCACCAGGATTTGTGGCTCGAGGCTTGTATGACTACATATTCAGCATGGCCGTGAAGTTAGACTTGAAACAAATTGTTAAATCAAAGAATAAATTTGTCATCCTTCATTCTAGCACTGGTCATATTCATTCCCTTAATGAAATTTTGAAGGACCCTGCTGTTGAATCAAAACTAGCCGACACAAAATACGTACAAGAAATTCGCGTTCTGAATAAATTTTACGATGTCATGAATGAAGATGATAGAAAGGCATGGTATGGTCCAAATCATGTTTTGAAGGCTTTTGAACTTGGCGCGATCGGAGAACTTCTGATTAGCGATTCTCTGTTCAGGAGTTCTGACATTGCTACTAGAAAAAAATGGGTTTCATTAGTAGAAGGTGTTAAGGAGATTAACTGTCCTGTTTATATTTTCAGTAGTTTGCATGAGTCAGGGAAGCAGCTGGATCTGTTGTCAGGTATTGCCGCCATTCTCACTTACCCAGTCGATGAAGAGGATATATCAGAAGATGAAGAGGATGAGGAATCCCAAAATTTTGAACATAGTTAA"),
                     },
                     FeatureShort {
                         feature_type: FeatureType::ThreePrimeUtr,
-                        uniquename: RcString::from("SPCC18B5.06.1:three_prime_UTR:1"),
+                        uniquename: flex_str!("SPCC18B5.06.1:three_prime_UTR:1"),
                         name: None,
                         location: ChromosomeLocation {
-                            chromosome_name: RcString::from("chromosome_3"),
+                            chromosome_name: flex_str!("chromosome_3"),
                             start_pos: 730_523,
                             end_pos: 730_829,
                             strand: Strand::Forward,
                             phase: None,
                         },
-                        residues: RcString::from("AGTTCATCAGTATCCGAATTGTCATGAATCTAATTATTGCTAAGCCAATATTTCATACTTTAAGCTCGGTTAGAACAATTTGTTTCATTCTCTTAAAAAATTTATTTATGGGCTCGTTTTGGTAGTCATTATTTATGCTTTTACTTGGATGTTTTAGGGTATTTACTATGATAAACATGCAAAAAATTAGGTGTTAGAATGGTCAAAAATTGATACCCTAAAATGATTTATACTTATCGATTATAACTCTTAACTTGTAAAATTAAGCTGTTAATTATAGCCGGTCCAATACAGTATTCAATTACAG"),
+                        residues: flex_str!("AGTTCATCAGTATCCGAATTGTCATGAATCTAATTATTGCTAAGCCAATATTTCATACTTTAAGCTCGGTTAGAACAATTTGTTTCATTCTCTTAAAAAATTTATTTATGGGCTCGTTTTGGTAGTCATTATTTATGCTTTTACTTGGATGTTTTAGGGTATTTACTATGATAAACATGCAAAAAATTAGGTGTTAGAATGGTCAAAAATTGATACCCTAAAATGATTTATACTTATCGATTATAACTCTTAACTTGTAAAATTAAGCTGTTAATTATAGCCGGTCCAATACAGTATTCAATTACAG"),
                     }
                 ],
-                transcript_type: RcString::from("mRNA"),
+                transcript_type: flex_str!("mRNA"),
                 protein: Some(ProteinDetails {
-                    uniquename: RcString::from("SPCC18B5.06.1:pep"),
-                    sequence: RcString::from("MKLIQKNIEKNGSGWITMCPEEPEDMWHLYNILQVGDQLKASTVRRVVKVGATGSTSGSRVVMKLRILVENMDFDTKAAQLHIKGRTTEYHPEVKMGSYHTLDLELHRNFTLYKNEWDAFALDRVDAACNPSRNAEIGAVVLDEGLANICLITDYMTILRQRIDQVIPRKRRGDSSAYQKGLDKFYDSVFQSINSEFDFDKLKVVILASPGFVARGLYDYIFSMAVKLDLKQIVKSKNKFVILHSSTGHIHSLNEILKDPAVESKLADTKYVQEIRVLNKFYDVMNEDDRKAWYGPNHVLKAFELGAIGELLISDSLFRSSDIATRKKWVSLVEGVKEINCPVYIFSSLHESGKQLDLLSGIAAILTYPVDEEDISEDEEDEESQNFEHS*"),
+                    uniquename: flex_str!("SPCC18B5.06.1:pep"),
+                    sequence: flex_str!("MKLIQKNIEKNGSGWITMCPEEPEDMWHLYNILQVGDQLKASTVRRVVKVGATGSTSGSRVVMKLRILVENMDFDTKAAQLHIKGRTTEYHPEVKMGSYHTLDLELHRNFTLYKNEWDAFALDRVDAACNPSRNAEIGAVVLDEGLANICLITDYMTILRQRIDQVIPRKRRGDSSAYQKGLDKFYDSVFQSINSEFDFDKLKVVILASPGFVARGLYDYIFSMAVKLDLKQIVKSKNKFVILHSSTGHIHSLNEILKDPAVESKLADTKYVQEIRVLNKFYDVMNEDDRKAWYGPNHVLKAFELGAIGELLISDSLFRSSDIATRKKWVSLVEGVKEINCPVYIFSSLHESGKQLDLLSGIAAILTYPVDEEDISEDEEDEESQNFEHS*"),
                     product: None,
                     molecular_weight: 44.3361,
                     average_residue_weight: 0.11339,
@@ -396,13 +396,13 @@ fn make_test_gene() -> GeneDetails {
                     codon_adaptation_index: 0.59
                 }),
                 cds_location: Some(ChromosomeLocation {
-                    chromosome_name: RcString::from("chromosome_3"),
+                    chromosome_name: flex_str!("chromosome_3"),
                     start_pos: 729_133,
                     end_pos: 730_522,
                     strand: Strand::Forward,
                     phase: None,
                 }),
-                gene_uniquename: RcString::from("SPCC18B5.06"),
+                gene_uniquename: flex_str!("SPCC18B5.06"),
             })
         )]),
         cv_annotations: HashMap::new(),

@@ -1,32 +1,32 @@
-use pombase_rc_string::RcString;
+use flexstr::AFlexStr as FlexStr;
 
-pub type CvName = RcString;
-pub type MiscExtRange = RcString;
+pub type CvName = FlexStr;
+pub type MiscExtRange = FlexStr;
 
-pub type GeneUniquename = RcString;
-pub type TermUniquename = RcString;
-pub type ReferenceUniquename = RcString;
-pub type GeneName = RcString;
-pub type TypeName = RcString;
-pub type GeneProduct = RcString;
+pub type GeneUniquename = FlexStr;
+pub type TermUniquename = FlexStr;
+pub type ReferenceUniquename = FlexStr;
+pub type GeneName = FlexStr;
+pub type TypeName = FlexStr;
+pub type GeneProduct = FlexStr;
 
-pub type TermName = RcString;
-pub type TermId = RcString;
-pub type TermDef = RcString;
-pub type ChromosomeName = RcString;
+pub type TermName = FlexStr;
+pub type TermId = FlexStr;
+pub type TermDef = FlexStr;
+pub type ChromosomeName = FlexStr;
 
-pub type Evidence = RcString;
-pub type Residue = RcString;
+pub type Evidence = FlexStr;
+pub type Residue = FlexStr;
 pub type Condition = String;
-pub type Qualifier = RcString;
+pub type Qualifier = FlexStr;
 
-pub type TranscriptUniquename = RcString;
-pub type ProteinUniquename = RcString;
+pub type TranscriptUniquename = FlexStr;
+pub type ProteinUniquename = FlexStr;
 
-pub type GenotypeUniquename = RcString;
-pub type AlleleUniquename = RcString;
+pub type GenotypeUniquename = FlexStr;
+pub type AlleleUniquename = FlexStr;
 
 pub type OrganismTaxonId = u32;
 
-pub type SubSetName = RcString;
+pub type SubSetName = FlexStr;
 

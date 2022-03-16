@@ -23,7 +23,7 @@ use zstd::stream::Decoder;
 
 use crate::types::{TermId, GeneUniquename};
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
 
 pub struct APIData {
     config: Config,
@@ -78,7 +78,7 @@ pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
     }
 }
 
-fn get_gene_prod_extension(prod_value: &RcString) -> ExtPart {
+fn get_gene_prod_extension(prod_value: &FlexStr) -> ExtPart {
   ExtPart {
       rel_type_id: None,
       rel_type_name: "active_form".into(),
@@ -94,16 +94,16 @@ impl APIData {
         let mut maps = maps.clone();
         let mut new_entries: IdGeneSubsetMap = HashMap::new();
 
-        let prefixes_to_remove: Vec<String> =
+        let prefixes_to_remove: Vec<FlexStr> =
             config.server.subsets.prefixes_to_remove
             .iter().map(|prefix| prefix.clone() + ":").collect();
 
         // strip prefixes and add to map
         for (subset_name, subset_details) in &maps.gene_subsets {
             for prefix in &prefixes_to_remove {
-                if subset_name.starts_with(prefix) {
-                    let new_subset_name = &subset_name[prefix.len()..];
-                    new_entries.insert(RcString::from(new_subset_name), subset_details.clone());
+                if subset_name.starts_with(prefix.as_ref()) {
+                    let new_subset_name = subset_name[prefix.len()..].to_a_flex_str();
+                    new_entries.insert(new_subset_name, subset_details.clone());
                 }
             }
         }
@@ -128,7 +128,7 @@ impl APIData {
         &self.maps
     }
 
-    pub fn gene_uniquename_of_id(&self, id: &RcString) -> Option<GeneUniquename> {
+    pub fn gene_uniquename_of_id(&self, id: &FlexStr) -> Option<GeneUniquename> {
         if self.maps.gene_summaries.contains_key(id) {
             Some(id.clone())
         } else {
@@ -147,19 +147,19 @@ impl APIData {
         }
     }
 
-    pub fn get_gene_summary(&self, gene_uniquename: &str) -> Option<&APIGeneSummary> {
+    pub fn get_gene_summary(&self, gene_uniquename: &FlexStr) -> Option<&APIGeneSummary> {
         self.maps.gene_summaries.get(gene_uniquename)
     }
 
-    pub fn get_gene_details(&self, gene_uniquename: &str) -> Option<&GeneDetails> {
+    pub fn get_gene_details(&self, gene_uniquename: &FlexStr) -> Option<&GeneDetails> {
         self.maps.genes.get(gene_uniquename)
     }
 
-    pub fn get_gene_query_data(&self, gene_uniquename: &str) -> Option<&GeneQueryData> {
+    pub fn get_gene_query_data(&self, gene_uniquename: &FlexStr) -> Option<&GeneQueryData> {
         self.maps.gene_query_data_map.get(gene_uniquename)
     }
 
-    pub fn genes_of_termid(&self, term_id: &str) -> Vec<GeneUniquename> {
+    pub fn genes_of_termid(&self, term_id: &FlexStr) -> Vec<GeneUniquename> {
         match self.maps.termid_genes.get(term_id) {
             Some(gene_uniquenames) => {
                 gene_uniquenames.iter().cloned().collect::<Vec<_>>()
@@ -168,9 +168,9 @@ impl APIData {
         }
     }
 
-    pub fn genes_of_subset(&self, search_name: &str) -> Vec<GeneUniquename> {
+    pub fn genes_of_subset(&self, search_name: &FlexStr) -> Vec<GeneUniquename> {
         if search_name.starts_with('!') || search_name.ends_with('*') {
-            let mut trimmed_search_name = search_name.to_owned();
+            let mut trimmed_search_name = search_name.to_string();
             let invert_search = search_name.starts_with('!');
             let wildcard = search_name.ends_with('*');
             if invert_search {
@@ -179,10 +179,11 @@ impl APIData {
             if wildcard {
                 trimmed_search_name.pop();
             }
+            let trimmed_search_name = trimmed_search_name.to_a_flex_str();
             let mut genes = HashSet::new();
             for (subset_name, subset_details) in &self.maps.gene_subsets {
                 let name_matches =
-                    wildcard && subset_name.starts_with(&trimmed_search_name) ||
+                    wildcard && subset_name.starts_with(trimmed_search_name.as_ref()) ||
                     trimmed_search_name.eq(subset_name);
 
                 if !invert_search && name_matches || invert_search && !name_matches {
@@ -200,7 +201,7 @@ impl APIData {
         }
     }
 
-    pub fn genes_of_genotypes(&self, term_id: &str,
+    pub fn genes_of_genotypes(&self, term_id: &FlexStr,
                               single_or_multi_locus: &SingleOrMultiLocus,
                               query_ploidiness: &Ploidiness,
                               expression_filter: &Option<QueryExpressionFilter>,
@@ -331,9 +332,9 @@ impl APIData {
     }
 
 
-    fn strip_db_prefix(&self, uniquename: &RcString) -> RcString {
+    fn strip_db_prefix(&self, uniquename: &FlexStr) -> FlexStr {
         if uniquename.starts_with("PomBase:SP") {
-            RcString::from(&uniquename[8..])
+            uniquename[8..].to_a_flex_str()
         } else {
             uniquename.clone()
         }
@@ -374,9 +375,9 @@ impl APIData {
         if let Some(ref evidence_code) = annotation.evidence {
             if evidence_code == "IPI" &&
                 (term_details.termid == "GO:0005515" ||
-                 term_details.interesting_parent_ids.contains("GO:0005515") ||
+                 term_details.interesting_parent_ids.contains(&flex_str!("GO:0005515")) ||
                  term_details.termid == "GO:0003723" ||
-                 term_details.interesting_parent_ids.contains("GO:0003723"))
+                 term_details.interesting_parent_ids.contains(&flex_str!("GO:0003723")))
             {
                 let mut first_with = None;
 
@@ -504,7 +505,8 @@ impl APIData {
 
     // return a GeneDetails object with the term, genes and references maps filled in
     pub fn get_full_gene_details(&self, gene_uniquename: &str) -> Option<GeneDetails> {
-        if let Some(gene_ref) = self.maps.genes.get(gene_uniquename) {
+        let gene_uniquename = gene_uniquename.to_a_flex_str();
+        if let Some(gene_ref) = self.maps.genes.get(&gene_uniquename) {
             let mut gene = gene_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
             gene.terms_by_termid = self.fill_term_map(&gene.terms_by_termid);
@@ -529,7 +531,8 @@ impl APIData {
     }
 
     pub fn get_genotype_details(&self, genotype_uniquename: &str) -> Option<GenotypeDetails> {
-        if let Some(genotype_ref) = self.maps.genotypes.get(genotype_uniquename) {
+        let genotype_uniquename = genotype_uniquename.to_a_flex_str();
+        if let Some(genotype_ref) = self.maps.genotypes.get(&genotype_uniquename) {
             let mut genotype = genotype_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
             genotype.terms_by_termid = self.fill_term_map(&genotype.terms_by_termid);
@@ -573,11 +576,13 @@ impl APIData {
     }
 
     pub fn get_term_details(&self, termid: &str) -> Option<TermDetails> {
+        let termid = termid.to_a_flex_str();
         let termid =
-            if let Some(real_termid) = self.secondary_identifiers_map.get(termid) {
+            if let Some(real_termid) =
+               self.secondary_identifiers_map.get(&termid) {
                 real_termid
             } else {
-                termid
+                &termid
             };
         if let Some(term_ref) = self.maps.terms.get(termid) {
             self.term_details_helper(term_ref)
@@ -587,7 +592,8 @@ impl APIData {
     }
 
     pub fn get_reference_details(&self, reference_uniquename: &str) -> Option<ReferenceDetails> {
-        if let Some(reference_ref) = self.maps.references.get(reference_uniquename) {
+        let reference_uniquename = reference_uniquename.to_a_flex_str();
+        if let Some(reference_ref) = self.maps.references.get(&reference_uniquename) {
             let mut reference = reference_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);
             reference.terms_by_termid = self.fill_term_map(&reference.terms_by_termid);
@@ -623,7 +629,7 @@ impl APIData {
         }
     }
 
-    pub fn get_chr_details(&self, chr_name: &str) -> Option<&ChromosomeDetails> {
+    pub fn get_chr_details(&self, chr_name: &FlexStr) -> Option<&ChromosomeDetails> {
         self.maps.chromosomes.get(chr_name)
     }
 

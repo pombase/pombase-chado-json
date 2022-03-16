@@ -4,17 +4,17 @@ use std::io::BufReader;
 use std::process;
 use serde_json;
 
-use pombase_rc_string::RcString;
+use flexstr::AFlexStr as FlexStr;
 
 #[derive(Debug, Deserialize)]
 pub struct PfamMotifMetadata {
-    pub database: RcString,
+    pub database: FlexStr,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct PfamMotif {
     #[serde(rename = "type")]
-    pub motif_type: RcString,
+    pub motif_type: FlexStr,
     pub metadata: PfamMotifMetadata,
     pub start: usize,
     pub end: usize,
@@ -25,7 +25,7 @@ pub struct PfamProteinDetails {
     pub motifs: Vec<PfamMotif>,
 }
 
-pub fn parse_pfam(file_name: &str) -> HashMap<RcString, PfamProteinDetails> {
+pub fn parse_pfam(file_name: &str) -> HashMap<FlexStr, PfamProteinDetails> {
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {

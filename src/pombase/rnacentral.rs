@@ -10,19 +10,19 @@ use crate::web::config::Config;
 use crate::data_types::{FeatureType, GeneDetails, RNAcentralAnnotations,
                         TranscriptDetails, UniquenameGeneMap, UniquenameTranscriptMap};
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, ToAFlexStr, a_flex_str as flex_str, a_flex_fmt as flex_fmt};
 
-pub type RNAcentralGeneSynonym = RcString;
+pub type RNAcentralGeneSynonym = FlexStr;
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralGene {
 #[serde(rename = "geneId")]
-    pub gene_id: RcString,
+    pub gene_id: FlexStr,
 #[serde(skip_serializing_if="Option::is_none")]
-    pub symbol: Option<RcString>,
+    pub symbol: Option<FlexStr>,
 #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<RcString>,
-    pub url: RcString,
+    pub name: Option<FlexStr>,
+    pub url: FlexStr,
     pub synonyms: Vec<RNAcentralGeneSynonym>,
 }
 
@@ -34,60 +34,60 @@ pub struct RNAcentralGenomeLocation {
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralGenomeLocationExon {
-    pub chromosome: RcString,
+    pub chromosome: FlexStr,
 #[serde(rename = "startPosition")]
     pub start_position: usize,
 #[serde(rename = "endPosition")]
     pub end_position: usize,
-    pub strand: RcString,
+    pub strand: FlexStr,
 }
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralNcRNALocationExon {
-    pub chromosome: RcString,
+    pub chromosome: FlexStr,
 #[serde(rename = "startPosition")]
     pub start_position: usize,
 #[serde(rename = "endPosition")]
     pub end_position: usize,
-    pub strand: RcString,
+    pub strand: FlexStr,
 }
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralNcRNALocation {
-    pub assembly: RcString,
+    pub assembly: FlexStr,
     pub exons: Vec<RNAcentralNcRNALocationExon>,
 }
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralNcRNA {
 #[serde(rename = "primaryId")]
-    pub primary_id: RcString,
+    pub primary_id: FlexStr,
 #[serde(rename = "taxonId")]
-    pub taxon_id: RcString,
+    pub taxon_id: FlexStr,
 #[serde(skip_serializing_if="Option::is_none")]
-    pub symbol: Option<RcString>,
+    pub symbol: Option<FlexStr>,
 #[serde(rename = "symbolSynonyms")]
-    pub symbol_synonyms: Vec<RcString>,
+    pub symbol_synonyms: Vec<FlexStr>,
 #[serde(rename = "soTermId")]
-    pub so_term_id: RcString,
-    pub sequence: RcString,
-    pub url: RcString,
+    pub so_term_id: FlexStr,
+    pub sequence: FlexStr,
+    pub url: FlexStr,
     pub gene: RNAcentralGene,
 #[serde(rename = "genomeLocations")]
     pub genome_locations: Vec<RNAcentralNcRNALocation>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub publications: HashSet<RcString>,
+    pub publications: HashSet<FlexStr>,
 }
 
 #[derive(Serialize, Debug)]
 pub struct RNAcentralMetadata {
 #[serde(rename = "dateProduced")]
-    pub date_produced: RcString,
+    pub date_produced: FlexStr,
 #[serde(rename = "dataProvider")]
-    pub data_provider: RcString,
+    pub data_provider: FlexStr,
 #[serde(rename = "schemaVersion")]
-    pub schema_version: RcString,
-    pub publications: Vec<RcString>,
+    pub schema_version: FlexStr,
+    pub publications: Vec<FlexStr>,
 }
 
 #[derive(Serialize, Debug)]
@@ -97,16 +97,16 @@ pub struct RNAcentral {
     metadata: RNAcentralMetadata,
 }
 
-fn gene_synonyms(gene_details: &GeneDetails) -> Vec<RcString> {
+fn gene_synonyms(gene_details: &GeneDetails) -> Vec<FlexStr> {
     gene_details.synonyms.iter().map(|syn| syn.name.clone()).collect::<Vec<_>>()
 }
 
-fn db_uniquename(config: &Config, uniquename: &RcString) -> RcString {
-    RcString::from(&format!("{}:{}", &config.database_name, uniquename))
+fn db_uniquename(config: &Config, uniquename: &FlexStr) -> FlexStr {
+    FlexStr::from(&format!("{}:{}", &config.database_name, uniquename))
 }
 
-fn make_url(config: &Config, gene_details: &GeneDetails) -> RcString {
-    RcString::from(&format!("{}/gene/{}", &config.base_url, &gene_details.uniquename))
+fn make_url(config: &Config, gene_details: &GeneDetails) -> FlexStr {
+    FlexStr::from(&format!("{}/gene/{}", &config.base_url, &gene_details.uniquename))
 }
 
 fn make_gene_struct(config: &Config, gene_details: &GeneDetails) -> RNAcentralGene {
@@ -147,7 +147,7 @@ fn make_genome_location(config: &Config, gene_details: &GeneDetails,
                 chromosome,
                 start_position,
                 end_position,
-                strand: RcString::from(part.location.strand.to_gff_str()),
+                strand: flex_str!(part.location.strand.to_gff_str()),
             });
         }
     }
@@ -190,11 +190,11 @@ fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
 
             ret.push(RNAcentralNcRNA {
                 primary_id,
-                taxon_id: RcString::from(&format!("NCBITaxon:{}", gene_details.taxonid)),
+                taxon_id: flex_fmt!("NCBITaxon:{}", gene_details.taxonid),
                 symbol: None,
                 symbol_synonyms: vec![],
                 so_term_id: so_term_id.clone(),
-                sequence: RcString::from(&uppercase_sequence),
+                sequence: uppercase_sequence.to_a_flex_str(),
                 url: make_url(config, gene_details),
                 gene: rnacentral_gene,
                 genome_locations: vec![location],
@@ -218,9 +218,9 @@ pub fn make_rnacentral_struct(config: &Config, transcripts: &UniquenameTranscrip
     RNAcentral {
         data,
         metadata: RNAcentralMetadata {
-            date_produced: RcString::from(&local.to_rfc3339()),
+            date_produced: local.to_rfc3339().to_a_flex_str(),
             data_provider,
-            schema_version: RcString::from("0.3.0"),
+            schema_version: flex_str!("0.3.0"),
             publications: vec![config.database_citation.clone()],
         }
     }
@@ -261,7 +261,7 @@ pub fn parse_annotation_json(file_name: &str)
     };
     let reader = BufReader::new(file);
 
-    let annotation: HashMap<RcString, Vec<RfamAnnotation>> =
+    let annotation: HashMap<FlexStr, Vec<RfamAnnotation>> =
         match serde_json::from_reader(reader) {
             Ok(annotation) => annotation,
             Err(err) => {

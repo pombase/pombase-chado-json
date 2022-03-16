@@ -12,9 +12,9 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use zstd::stream::Encoder;
 
-use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
 
-use pombase_rc_string::RcString;
+use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
 use crate::web::config::*;
 use crate::rnacentral::*;
@@ -24,6 +24,8 @@ use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
 use crate::bio::go_format_writer::*;
+
+use crate::utils::join;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -262,7 +264,7 @@ impl WebData {
                     }
                     if part.feature_type == FeatureType::CdsIntron {
                         write_as_fasta(&mut introns_writer, &part.uniquename,
-                                       Some(String::from(gene_uniquename)),
+                                       Some(gene_uniquename.to_string()),
                                        &part.residues);
                     }
                     cds_introns_utrs_seq += &part.residues;
@@ -421,7 +423,7 @@ impl WebData {
             if gene_details.feature_type == "ncRNA gene" {
                 let mut found = false;
                 for aspect in GO_ASPECT_NAMES.iter() {
-                    let term_annotations = gene_details.cv_annotations.get(&RcString::from(*aspect));
+                    let term_annotations = gene_details.cv_annotations.get(aspect);
                     if term_annotations.is_some() {
                         found = true;
                         break;
@@ -496,19 +498,19 @@ impl WebData {
 
             let line = format!("{}\t{}\t{}\n",
                                gene_details.uniquename,
-                               gene_details.name.clone().unwrap_or_else(RcString::new),
+                               gene_details.name.clone().unwrap_or(flex_str!("")),
                                synonyms);
 
             let gene_name = if let Some(ref gene_details_name) = gene_details.name {
                 gene_details_name.clone()
             } else {
-                RcString::new()
+                flex_str!("")
             };
 
             let gene_product = if let Some(ref gene_details_product) = gene_details.product {
                 gene_details_product.clone()
             } else {
-                RcString::new()
+                flex_str!("")
             };
 
             let line_with_product = format!("{}\t{}\t{}\t{}\n",
@@ -532,7 +534,7 @@ impl WebData {
             }
 
             let uniprot_id =
-                if let Some(ref gene_uniprot_id) = gene_details.uniprot_identifier {
+                if let Some(gene_uniprot_id) = gene_details.uniprot_identifier.as_ref() {
                     gene_uniprot_id
                 } else {
                     ""
@@ -603,11 +605,12 @@ impl WebData {
             "systematic_id\tgene_name\tpeptide_id\tseq_start\tseq_end\n";
         disordered_regions_writer.write_all(disordered_regions_header.as_bytes())?;
 
-        let db_display_name = |db_alias: &str| {
-            if let Some(name) = config.extra_database_aliases.get(&db_alias.to_lowercase()) {
-                RcString::from(name)
+        let db_display_name = |db_alias: &FlexStr| {
+            let lower_db_alias = db_alias.to_lowercase().to_a_flex_str();
+            if let Some(name) = config.extra_database_aliases.get(&lower_db_alias) {
+                name.clone()
             } else {
-                RcString::from(db_alias)
+                db_alias.clone()
             }
         };
 
@@ -647,7 +650,7 @@ impl WebData {
                                        protein.codon_adaptation_index);
                     peptide_stats_writer.write_all(line.as_bytes())?;
 
-                    let gene_name = gene_details.name.clone().unwrap_or_else(RcString::new);
+                    let gene_name = gene_details.name.clone().unwrap_or_else(|| flex_str!(""));
                     for interpro_match in &gene_details.interpro_matches {
                         let line_start = format!("{}\t{}\t{}\t{}\t{}",
                                                  gene_uniquename, gene_name,
@@ -696,8 +699,8 @@ impl WebData {
             &all_composition_string + "\n";
         aa_composition_writer.write_all(composition_header.as_bytes())?;
 
-        let composition_line = |first_col_string: RcString, comp: &AAComposition| {
-            let mut line = String::from(first_col_string);
+        let composition_line = |first_col_string: FlexStr, comp: &AAComposition| {
+            let mut line = first_col_string.to_string();
 
             for ch in &all_composition_aa {
                 line.push('\t');
@@ -717,7 +720,7 @@ impl WebData {
         }
 
         let composition_total_line =
-            composition_line(RcString::from("total"), &total_composition);
+            composition_line(flex_str!("total"), &total_composition);
         aa_composition_writer.write_all(composition_total_line.as_bytes())?;
 
         peptide_stats_writer.flush()?;
@@ -950,9 +953,9 @@ impl WebData {
     pub fn write_macromolecular_complexes(&self, config: &Config, output_dir: &str)
                                           -> Result<(), io::Error>
     {
-        let mut complex_data: HashMap<(TermShort, GeneShort, RcString), _> = HashMap::new();
+        let mut complex_data: HashMap<(TermShort, GeneShort, FlexStr), _> = HashMap::new();
 
-        let no_evidence = RcString::from("NO_EVIDENCE");
+        let no_evidence = flex_str!("NO_EVIDENCE");
 
         let make_key = |annotation: &OntAnnotation| {
             let evidence = annotation.evidence.clone().unwrap_or_else(|| no_evidence.clone());
@@ -961,21 +964,21 @@ impl WebData {
         };
 
         if let Some(ref complexes_config) = config.file_exports.macromolecular_complexes {
-            let check_parent_term = |el: &RcString| {
+            let check_parent_term = |el: &FlexStr| {
                 *el == complexes_config.parent_complex_termid
             };
             'TERM: for annotation in &self.ont_annotations {
                 let term_short = &annotation.term_short;
                 let termid = &term_short.termid;
 
-                if complexes_config.excluded_terms.contains(termid.as_str()) {
+                if complexes_config.excluded_terms.contains(&termid) {
                     continue 'TERM;
                 }
                 if !term_short.interesting_parent_ids.iter().any(check_parent_term) {
                     continue 'TERM;
                 }
 
-                let key: (TermShort, GeneShort, RcString) = make_key(annotation);
+                let key: (TermShort, GeneShort, FlexStr) = make_key(annotation);
                 complex_data.entry(key)
                     .or_insert_with(Vec::new)
                     .push((annotation.reference_short.clone(), annotation.assigned_by.clone()));
@@ -1011,14 +1014,14 @@ impl WebData {
             let mut assigned_bys_vec = assigned_bys.into_iter().collect::<Vec<_>>();
             assigned_bys_vec.sort();
 
-            let refs_string = refs_vec.join(",");
-            let assigned_by_string = assigned_bys_vec.join(",");
+            let refs_string = join(&refs_vec, ",");
+            let assigned_by_string = join(&assigned_bys_vec, ",");
 
             let line_bits = vec![term_short.termid.as_str(), term_short.name.as_str(),
                                  gene_short.uniquename.as_str(),
-                                 gene_short.name.as_ref().map(RcString::as_str)
+                                 gene_short.name.as_ref().map(FlexStr::as_str)
                                    .unwrap_or_else(|| gene_short.uniquename.as_str()),
-                                 gene_short.product.as_ref().map(RcString::as_str).unwrap_or_else(|| ""),
+                                 gene_short.product.as_ref().map(FlexStr::as_str).unwrap_or_else(|| ""),
                                  evidence.as_str(), refs_string.as_str(),
                                  assigned_by_string.as_str()];
 
@@ -1335,7 +1338,7 @@ impl WebData {
         let header = "#gene_systematic_id\tgene_name\tcurrent_internal_id\tallele_name\tallele_type\tallele_description\n";
         writer.write_all(header.as_bytes())?;
 
-        let empty_string = RcString::from("");
+        let empty_string = flex_str!("");
 
         for allele_short in self.api_maps.alleles.values() {
             let gene =
@@ -1367,7 +1370,7 @@ impl WebData {
                 return Ok(())
             };
 
-        let empty_string = RcString::from("");
+        let empty_string = flex_str!("");
 
         let header = "#gene_systematic_id\tgene_name\tmondo_id\treference\tdate\n";
         writer.write_all(header.as_bytes())?;
@@ -1377,7 +1380,7 @@ impl WebData {
                 continue;
             }
 
-            if let Some(term_annotations) = gene_details.cv_annotations.get(&RcString::from("mondo")) {
+            if let Some(term_annotations) = gene_details.cv_annotations.get(&flex_str!("mondo")) {
                 for term_annotation in term_annotations {
 
                     let annotations = term_annotation.annotations.clone();
@@ -1433,7 +1436,7 @@ impl WebData {
         let table = table_for_export(&self.api_maps, cv_config_map, subset_config);
 
         for row in table {
-            let line = row.join("\t") + "\n";
+            let line = join(&row, "\t") + "\n";
             writer.write_all(line.as_bytes())?;
         }
 

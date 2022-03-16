@@ -1,5 +1,5 @@
 extern crate pombase;
-extern crate pombase_rc_string;
+extern crate flexstr;
 
 use std::iter::Iterator;
 
@@ -13,7 +13,7 @@ use self::pombase::data_types::{GeneShort, DeletionViability, GeneQueryTermData}
 use self::pombase::api_data::*;
 use self::pombase::bio::go_format_writer::GO_ASPECT_NAMES;
 
-use self::pombase_rc_string::RcString;
+use flexstr::{ToAFlexStr};
 
 fn get_api_data() -> APIData {
     use std::path::PathBuf;
@@ -37,7 +37,7 @@ async fn check_gene_result(query: &Query, genes: Vec<&str>) {
         .collect::<HashSet<_>>();
     let expect_genes_iter =
         genes.iter().cloned()
-        .map(|s: &str| RcString::from(s))
+        .map(|s: &str| s.to_a_flex_str())
         .collect::<HashSet<_>>();
     assert_eq!(result_genes_iter,
                expect_genes_iter);
@@ -102,7 +102,7 @@ async fn test_and_or_not() {
     };
 
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: None,
         ancestor_terms: HashSet::new(),
@@ -153,9 +153,9 @@ async fn test_output_options() {
 
     // try extra output options
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned(),
-                          "deletion_viability".to_owned(),
-                          "go_component".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str(),
+                          "deletion_viability".to_a_flex_str(),
+                          "go_component".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: None,
         ancestor_terms: HashSet::new(),
@@ -165,7 +165,7 @@ async fn test_output_options() {
     let expected_results =
         vec![
             ResultRow {
-                gene_uniquename: RcString::from("SPAC19G12.04"),
+                gene_uniquename: "SPAC19G12.04".to_a_flex_str(),
                 deletion_viability: Some(DeletionViability::Inviable),
                 go_component: None,
                 go_process_superslim: None,
@@ -184,7 +184,7 @@ async fn test_output_options() {
                 gene_expression: vec![],
             },
             ResultRow {
-                gene_uniquename: RcString::from("SPAC1805.15c"),
+                gene_uniquename: "SPAC1805.15c".to_a_flex_str(),
                 deletion_viability: Some(DeletionViability::Viable),
                 go_component: Some(GeneQueryTermData::Other),
                 go_process_superslim: None,
@@ -203,11 +203,11 @@ async fn test_output_options() {
                 gene_expression: vec![],
             },
             ResultRow {
-                gene_uniquename: RcString::from("SPAC27E2.05"),
+                gene_uniquename: "SPAC27E2.05".to_a_flex_str(),
                 deletion_viability: Some(DeletionViability::DependsOnConditions),
                 go_component: Some(GeneQueryTermData::Term(TermAndName {
-                    termid: RcString::from("GO:0005634"),
-                    name: RcString::from("nucleus"),
+                    termid: "GO:0005634".to_a_flex_str(),
+                    name: "nucleus".to_a_flex_str(),
                 })),
                 go_process_superslim: None,
                 go_function: None,
@@ -252,7 +252,7 @@ async fn test_termid() {
         .. QueryNode::template_node()
     };
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: None,
         ancestor_terms: HashSet::new(),
@@ -272,7 +272,7 @@ async fn test_gene_subset() {
         .. QueryNode::template_node()
     };
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: None,
         ancestor_terms: HashSet::new(),
@@ -292,7 +292,7 @@ async fn test_gene_subset_invert() {
         .. QueryNode::template_node()
     };
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: None,
         ancestor_terms: HashSet::new(),
@@ -317,7 +317,7 @@ async fn test_gene_subset_wildcard() {
         .. QueryNode::template_node()
     };
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: None,
         ancestor_terms: HashSet::new(),
@@ -338,7 +338,7 @@ async fn test_gene_subset_not_wildcard() {
         .. QueryNode::template_node()
     };
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: None,
         ancestor_terms: HashSet::new(),
@@ -370,11 +370,11 @@ async fn test_gene_gaf() {
     };
     let mut aspects = HashSet::new();
     for aspect in GO_ASPECT_NAMES.iter() {
-        aspects.insert(String::from(*aspect));
+        aspects.insert(aspect.clone());
     }
 
     let opts = QueryOutputOptions {
-        field_names: vec!["gene_uniquename".to_owned()],
+        field_names: vec!["gene_uniquename".to_a_flex_str()],
         sequence: SeqType::None,
         gaf_options: Some(GAFOptions {
             aspects,

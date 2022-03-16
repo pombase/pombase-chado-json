@@ -4,7 +4,9 @@ use chrono::NaiveDate;
 
 use crate::data_types::*;
 
-// Parse two date strings and compare them.  If both can't be parsed, return Equal.
+use flexstr::AFlexStr as FlexStr;
+
+ // Parse two date strings and compare them.  If both can't be parsed, return Equal.
 pub fn cmp_str_dates(date_str1: &str, date_str2: &str) -> Ordering {
     let datetime1_res = NaiveDate::parse_from_str(date_str1, "%Y-%m-%d %H:%M:%S");
     let datetime2_res = NaiveDate::parse_from_str(date_str2, "%Y-%m-%d %H:%M:%S");
@@ -56,7 +58,7 @@ fn test_remove_first_string() {
 }
 
 pub fn make_gene_short<'b>(gene_map: &'b UniquenameGeneMap,
-                       gene_uniquename: &'b str) -> GeneShort {
+                           gene_uniquename: &'b FlexStr) -> GeneShort {
     if let Some(gene_details) = gene_map.get(gene_uniquename) {
         GeneShort {
             uniquename: gene_details.uniquename.clone(),

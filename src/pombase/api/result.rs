@@ -5,17 +5,17 @@ use crate::data_types::{DeletionViability, PresentAbsent, GeneQueryTermData,
                         GeneQueryAttrName};
 use crate::types::{TermId, GeneUniquename};
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct GeneExValue {
-    pub dataset_name: RcString,
-    pub value: RcString,
+    pub dataset_name: FlexStr,
+    pub value: FlexStr,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ResultRow {
-    pub gene_uniquename: RcString,
+    pub gene_uniquename: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub deletion_viability: Option<DeletionViability>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -25,9 +25,9 @@ pub struct ResultRow {
     #[serde(skip_serializing_if="Option::is_none")]
     pub go_function: Option<GeneQueryTermData>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub characterisation_status: Option<RcString>,
+    pub characterisation_status: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub taxonomic_distribution: Option<RcString>,
+    pub taxonomic_distribution: Option<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
@@ -53,17 +53,17 @@ pub struct ResultRow {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct QueryAPIResult {
     pub query: Query,
-    pub id: RcString,
-    pub status: RcString,
+    pub id: FlexStr,
+    pub status: FlexStr,
     pub rows: Vec<ResultRow>,
 }
 
 impl QueryAPIResult {
-    pub fn new_error(query: &Query, error_message: &str) -> QueryAPIResult {
+    pub fn new_error(query: &Query, error_message: FlexStr) -> QueryAPIResult {
         QueryAPIResult {
             query: query.clone(),
-            id: RcString::from("error"),
-            status: RcString::from(error_message),
+            id: flex_str!("error"),
+            status: error_message,
             rows: vec![],
         }
     }

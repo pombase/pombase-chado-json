@@ -5,7 +5,7 @@ use std::iter::FromIterator;
 use std::collections::{HashMap, HashSet};
 
 extern crate pombase;
-extern crate pombase_rc_string;
+extern crate flexstr;
 
 use self::pombase::db::*;
 use self::pombase::data_types::*;
@@ -13,17 +13,16 @@ use self::pombase::web::config::*;
 use self::pombase::web::data_build::*;
 use self::pombase::web::data::*;
 
-use self::pombase_rc_string::RcString;
-
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
 
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
                            cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str,
                            accession: &str) -> Rc<Cvterm> {
-    let dbxref = Rc::new(Dbxref::new(db.clone(), RcString::from(accession)));
+    let dbxref = Rc::new(Dbxref::new(db.clone(), accession.to_a_flex_str()));
     let cvterm = Rc::new(Cvterm::new(
         cv.clone(),
         dbxref.clone(),
-        RcString::from(cvterm_name),
+        cvterm_name.to_a_flex_str(),
         false, false,
         None));
     cvterms.push(cvterm.clone());
@@ -33,7 +32,7 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
 
 fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
     let cv = Rc::new(Cv {
-        name: RcString::from(cv_name),
+        name: cv_name.to_a_flex_str(),
         cvprops: RefCell::new(vec![]),
     });
     cvs.push(cv.clone());
@@ -42,14 +41,14 @@ fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
 
 fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
     let db = Rc::new(Db {
-        name: RcString::from(db_name),
+        name: db_name.to_a_flex_str(),
     });
     dbs.push(db.clone());
     db
 }
 
 fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
-                     type_cvterm: &Rc<Cvterm>, uniquename: &str, name: Option<RcString>)
+                     type_cvterm: &Rc<Cvterm>, uniquename: &str, name: Option<FlexStr>)
                      -> Rc<Feature> {
     let residues =
         if type_cvterm.name == "chromosome" {
@@ -61,7 +60,7 @@ ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
         };
     let feature = Rc::new(Feature {
         organism: organism.clone(),
-        uniquename: RcString::from(uniquename),
+        uniquename: uniquename.to_a_flex_str(),
         name: name,
         feat_type: type_cvterm.clone(),
         residues: Some(residues.into()),
@@ -74,7 +73,7 @@ ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
 }
 
 fn make_test_featureprop(featureprops: &mut Vec<Rc<Featureprop>>, feature: &Rc<Feature>,
-                         type_cvterm: &Rc<Cvterm>, value: Option<RcString>) -> Rc<Featureprop> {
+                         type_cvterm: &Rc<Cvterm>, value: Option<FlexStr>) -> Rc<Featureprop> {
     let featureprop = Rc::new(Featureprop {
         feature: feature.clone(),
         prop_type: type_cvterm.clone(),
@@ -166,10 +165,10 @@ fn get_test_raw() -> Raw {
 
     let pombe_organism =
         Rc::new(Organism{
-            genus: RcString::from("Schizosaccharomyces"),
-            species: RcString::from("pombe"),
-            abbreviation: RcString::from("Spombe"),
-            common_name: RcString::from("pombe"),
+            genus: flex_str!("Schizosaccharomyces"),
+            species: flex_str!("pombe"),
+            abbreviation: flex_str!("Spombe"),
+            common_name: flex_str!("pombe"),
             organismprops: RefCell::new(vec![]),
         });
 
@@ -294,22 +293,22 @@ fn get_test_raw() -> Raw {
     pombe_organism.organismprops.borrow_mut().push(pombe_organismprop.clone());
 
     let publication = Rc::new(Publication {
-        uniquename: RcString::from("PMID:11707284"),
-        title: Some(RcString::from("The protein phosphatase 2A B'-regulatory subunit par1p is implicated in regulation of the S. pombe septation initiation network.")),
+        uniquename: flex_str!("PMID:11707284"),
+        title: Some(flex_str!("The protein phosphatase 2A B'-regulatory subunit par1p is implicated in regulation of the S. pombe septation initiation network.")),
         pub_type: paper_cvterm,
-        miniref: Some(RcString::from("FEBS Lett. 2001 Nov 9;508(1):136-42")),
+        miniref: Some(flex_str!("FEBS Lett. 2001 Nov 9;508(1):136-42")),
         publicationprops: RefCell::new(vec![]),
     });
 
     let publication_pub_date = Rc::new(Publicationprop {
         publication: publication.clone(),
         prop_type: pubmed_publication_date_cvterm,
-        value: RcString::from("9 Nov 2001"),
+        value: flex_str!("9 Nov 2001"),
     });
     let publication_authors = Rc::new(Publicationprop {
         publication: publication.clone(),
         prop_type: pubmed_authors_cvterm,
-        value: RcString::from("Le Goff X, Buvelot S, Salimova E, Guerry F, Schmidt S, Cueille N, Cano E, Simanis V"),
+        value: flex_str!("Le Goff X, Buvelot S, Salimova E, Guerry F, Schmidt S, Cueille N, Cano E, Simanis V"),
     });
 
     publication.publicationprops.borrow_mut().push(publication_pub_date);
@@ -318,7 +317,7 @@ fn get_test_raw() -> Raw {
     let triage_status = Rc::new(Publicationprop {
         publication: publication.clone(),
         prop_type: canto_triage_status_cvterm,
-        value: RcString::from("Curatable"),
+        value: flex_str!("Curatable"),
     });
 
     publication.publicationprops.borrow_mut().push(triage_status);
@@ -348,45 +347,45 @@ fn get_test_raw() -> Raw {
 
     let chadoprops = vec![Rc::new(Chadoprop {
         prop_type: db_creation_datetime_cvterm,
-        value: Some(RcString::from("2016-10-17 03:41:56")),
+        value: Some(flex_str!("2016-10-17 03:41:56")),
     })];
 
     let chr_1 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_1", None);
     make_test_featureprop(&mut featureprops, &chr_1, &ena_identifier_cvterm,
-                          Some(RcString::from("CU329670.1")));
+                          Some(flex_str!("CU329670.1")));
     let chr_3 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_3", None);
     make_test_featureprop(&mut featureprops, &chr_3, &ena_identifier_cvterm,
-                          Some(RcString::from("CU329672.1")));
+                          Some(flex_str!("CU329672.1")));
 
     let pom1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
-                                      "SPAC2F7.03c", Some(RcString::from("pom1")));
+                                      "SPAC2F7.03c", Some(flex_str!("pom1")));
 
     let cdc16_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
-                                      "SPAC6F6.08c", Some(RcString::from("cdc16")));
+                                      "SPAC6F6.08c", Some(flex_str!("cdc16")));
     let cdc16_allele1 = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
-                                          "SPAC6F6.08c-allele1", Some(RcString::from("cdc16::ura4+")));
+                                          "SPAC6F6.08c-allele1", Some(flex_str!("cdc16::ura4+")));
     make_test_featureprop(&mut featureprops, &cdc16_allele1, &allele_type_cvterm,
-                          Some(RcString::from("disruption")));
+                          Some(flex_str!("disruption")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_allele1, &instance_of_cvterm, &cdc16_gene);
 
     let cdc16_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
-                                               "SPAC6F6.08c-allele2", Some(RcString::from("cdc16delta")));
+                                               "SPAC6F6.08c-allele2", Some(flex_str!("cdc16delta")));
     make_test_featureprop(&mut featureprops, &cdc16_delta_allele, &allele_type_cvterm,
-                          Some(RcString::from("deletion")));
+                          Some(flex_str!("deletion")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &cdc16_delta_allele, &instance_of_cvterm, &cdc16_gene);
 
     let par1_gene = make_test_feature(&mut features, &pombe_organism, &gene_cvterm,
-                                      "SPCC188.02", Some(RcString::from("par1")));
+                                      "SPCC188.02", Some(flex_str!("par1")));
     let par1_delta_allele = make_test_feature(&mut features, &pombe_organism, &allele_cvterm,
-                                              "SPCC188.02-allele1", Some(RcString::from("par1delta")));
+                                              "SPCC188.02-allele1", Some(flex_str!("par1delta")));
     make_test_featureprop(&mut featureprops, &par1_delta_allele, &allele_type_cvterm,
-                          Some(RcString::from("deletion")));
+                          Some(flex_str!("deletion")));
     make_test_featureprop(&mut featureprops, &par1_delta_allele, &description_cvterm,
-                          Some(RcString::from("deletion")));
+                          Some(flex_str!("deletion")));
     make_test_feature_rel(&mut feature_relationships, &publication,
                           &par1_delta_allele, &instance_of_cvterm, &par1_gene);
 
@@ -519,15 +518,15 @@ fn get_test_config() -> Config {
     let mut config = Config {
         load_organism_taxonid: Some(4896),
         database_name: "PomBase".into(),
-        database_long_name: RcString::from("PomBase"),
-        site_description: RcString::from("PomBase"),
-        database_citation: RcString::from("PMID:22039153"),
-        funder: RcString::from("Wellcome Trust"),
-        base_url: RcString::from("https://www.pombase.org"),
-        helpdesk_address: RcString::from("helpdesk@some.domain"),
+        database_long_name: flex_str!("PomBase"),
+        site_description: flex_str!("PomBase"),
+        database_citation: flex_str!("PMID:22039153"),
+        funder: flex_str!("Wellcome Trust"),
+        base_url: flex_str!("https://www.pombase.org"),
+        helpdesk_address: flex_str!("helpdesk@some.domain"),
         doc_page_aliases: HashMap::new(),
         sequence_feature_page: SeqFeaturePageConfig {
-            so_types_to_show: vec![String::from("regional_centromere")],
+            so_types_to_show: vec!["regional_centromere".to_a_flex_str()],
         },
         organisms: vec![
             ConfigOrganism {
@@ -535,7 +534,7 @@ fn get_test_config() -> Config {
                 genus: "Schizosaccharomyces".into(),
                 species: "pombe".into(),
                 alternative_names: vec![],
-                assembly_version: Some(RcString::from("ASM294v2")),
+                assembly_version: Some(flex_str!("ASM294v2")),
             },
             ConfigOrganism {
                 taxonid: 9606,
@@ -613,29 +612,29 @@ fn get_test_config() -> Config {
         },
     };
 
-    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("molecular_function"),
-                                                        RcString::from("GO:0003674"));
-    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("cellular_component"),
-                                                        RcString::from("GO:0005575"));
-    config.file_exports.gpad_gpi.go_aspect_terms.insert(String::from("biological_process"),
-                                                        RcString::from("GO:0008150"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(flex_str!("molecular_function"),
+                                                        flex_str!("GO:0003674"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(flex_str!("cellular_component"),
+                                                        flex_str!("GO:0005575"));
+    config.file_exports.gpad_gpi.go_aspect_terms.insert(flex_str!("biological_process"),
+                                                        flex_str!("GO:0008150"));
 
-    config.slims.insert(RcString::from("bp_goslim_pombe"),
+    config.slims.insert(flex_str!("bp_goslim_pombe"),
                         SlimConfig {
-                            slim_display_name: RcString::from("GO BP slim"),
-                            cv_name: RcString::from("biological_process"),
+                            slim_display_name: flex_str!("GO BP slim"),
+                            cv_name: flex_str!("biological_process"),
                             terms: vec![],
                         });
 
-    config.cv_config.insert(RcString::from("molecular_function"),
+    config.cv_config.insert(flex_str!("molecular_function"),
                             CvConfig {
-                                feature_type: RcString::from("Gene"),
-                                display_name: Some(RcString::from("molecular function")),
+                                feature_type: flex_str!("Gene"),
+                                display_name: Some(flex_str!("molecular function")),
                                 single_or_multi_locus: SingleOrMultiLocusConfig::NotApplicable,
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
-                                summary_relation_ranges_to_collect: vec![RcString::from("has_substrate")],
+                                summary_relation_ranges_to_collect: vec![flex_str!("has_substrate")],
                                 sort_details_by: None,
                                 source_config: HashMap::new(),
                             });
@@ -659,7 +658,7 @@ fn test_gene_details() {
     let mut web_data = get_test_web_data();
 
     assert_eq!(web_data.api_maps.genes.len(), 3);
-    let par1_gene = web_data.api_maps.genes.remove("SPCC188.02").unwrap();
+    let par1_gene = web_data.api_maps.genes.remove(&flex_str!("SPCC188.02")).unwrap();
 
     let transcript_0_uniquename = &par1_gene.transcripts[0];
     let transcript_details_0 =
@@ -675,7 +674,7 @@ fn test_gene_details() {
     assert_eq!(par1_gene.name.unwrap(), "par1");
     assert_eq!(par1_gene.cv_annotations.len(), 2);
 
-    if par1_gene.cv_annotations.get(POMBASE_ANN_EXT_TERM_CV_NAME).is_some() {
+    if par1_gene.cv_annotations.get(&flex_str!(POMBASE_ANN_EXT_TERM_CV_NAME)).is_some() {
         panic!("extension cv shouldn't be in the annotations");
     }
 }
@@ -684,8 +683,8 @@ fn test_gene_details() {
 fn test_make_publication_short() {
     let web_data = get_test_web_data();
 
-    let pmid = "PMID:11707284";
-    let ref_short = web_data.api_maps.references.get(pmid).unwrap();
+    let pmid = "PMID:11707284".to_a_flex_str();
+    let ref_short = web_data.api_maps.references.get(&pmid).unwrap();
 
     assert_eq!(ref_short.uniquename, pmid);
 
@@ -696,9 +695,9 @@ fn test_make_publication_short() {
 #[test]
 fn test_term_gene_count() {
     let web_data = get_test_web_data();
-    let par1_gene = web_data.api_maps.genes.get("SPCC188.02").unwrap().clone();
+    let par1_gene = web_data.api_maps.genes.get(&flex_str!("SPCC188.02")).unwrap().clone();
     let cv_annotations = par1_gene.cv_annotations;
-    let biological_process_annotations = cv_annotations.get("biological_process").unwrap();
+    let biological_process_annotations = cv_annotations.get(&flex_str!("biological_process")).unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0];
     let actual_count =
@@ -709,9 +708,9 @@ fn test_term_gene_count() {
 #[test]
 fn test_gene_with() {
     let web_data = get_test_web_data();
-    let par1_gene = web_data.api_maps.genes.get("SPCC188.02").unwrap().clone();
+    let par1_gene = web_data.api_maps.genes.get(&flex_str!("SPCC188.02")).unwrap().clone();
     let cv_annotations = par1_gene.cv_annotations;
-    let biological_process_annotations = cv_annotations.get("biological_process").unwrap();
+    let biological_process_annotations = cv_annotations.get(&flex_str!("biological_process")).unwrap();
     assert_eq!(biological_process_annotations[0].annotations.len(), 1);
     let first_process_annotation_id =
         biological_process_annotations[0].annotations[0];
@@ -733,8 +732,8 @@ fn test_genotype_annotation() {
     // make sure that if a genotype has two allele from the same gene,
     // we get only one annotation
     let web_data = get_test_web_data();
-    let cdc16_gene = web_data.api_maps.genes.get("SPAC6F6.08c").unwrap().clone();
-    let fypo_annotations = cdc16_gene.cv_annotations.get("single_locus_phenotype").unwrap();
+    let cdc16_gene = web_data.api_maps.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
+    let fypo_annotations = cdc16_gene.cv_annotations.get(&flex_str!("single_locus_phenotype")).unwrap();
 
     assert_eq!(fypo_annotations.len(), 1);
 }
@@ -756,30 +755,30 @@ fn test_remove_first_u32() {
 fn test_collect_duplicated_relations() {
     let mut ext = vec![
         ExtPart {
-            rel_type_id: Some(RcString::from("RO:0000000")),
-            rel_type_name: RcString::from("some_rel"),
-            rel_type_display_name: RcString::from("some rel"),
-            ext_range: ExtRange::Term(RcString::from("GO:12345")),
+            rel_type_id: Some(flex_str!("RO:0000000")),
+            rel_type_name: flex_str!("some_rel"),
+            rel_type_display_name: flex_str!("some rel"),
+            ext_range: ExtRange::Term(flex_str!("GO:12345")),
         },
         ExtPart {
-            rel_type_id: Some(RcString::from("RO:0000000")),
-            rel_type_name: RcString::from("has_input"),
-            rel_type_display_name: RcString::from("binds"),
+            rel_type_id: Some(flex_str!("RO:0000000")),
+            rel_type_name: flex_str!("has_input"),
+            rel_type_display_name: flex_str!("binds"),
             ext_range: ExtRange::SummaryGenes(
-                vec![vec![RcString::from("SPAC3G9.09c")]]),
+                vec![vec![flex_str!("SPAC3G9.09c")]]),
         },
         ExtPart {
-            rel_type_id: Some(RcString::from("RO:0000000")),
-            rel_type_name: RcString::from("has_input"),
-            rel_type_display_name: RcString::from("binds"),
+            rel_type_id: Some(flex_str!("RO:0000000")),
+            rel_type_name: flex_str!("has_input"),
+            rel_type_display_name: flex_str!("binds"),
             ext_range: ExtRange::SummaryGenes(
-                vec![vec![RcString::from("SPAC16.01")]]),
+                vec![vec![flex_str!("SPAC16.01")]]),
         },
         ExtPart {
-            rel_type_id: Some(RcString::from("RO:0000000")),
-            rel_type_name: RcString::from("during"),
-            rel_type_display_name: RcString::from("during"),
-            ext_range: ExtRange::Term(RcString::from("GO:0070301")),
+            rel_type_id: Some(flex_str!("RO:0000000")),
+            rel_type_name: flex_str!("during"),
+            rel_type_display_name: flex_str!("during"),
+            ext_range: ExtRange::Term(flex_str!("GO:0070301")),
         }];
 
     pombase::web::cv_summary::collect_duplicated_relations(&mut ext);
@@ -790,8 +789,8 @@ fn test_collect_duplicated_relations() {
     assert_eq!(ext_part_1.rel_type_name, "has_input");
     if let ExtRange::SummaryGenes(summary_genes) = ext_part_1.ext_range.clone() {
         assert_eq!(summary_genes.get(0).unwrap(),
-                   &vec![RcString::from("SPAC3G9.09c"),
-                         RcString::from("SPAC16.01")]);
+                   &vec![flex_str!("SPAC3G9.09c"),
+                         flex_str!("SPAC16.01")]);
     } else {
         panic!();
     }
@@ -802,12 +801,12 @@ fn test_collect_duplicated_relations() {
 fn test_terms() {
     let web_data = get_test_web_data();
 
-    let go0031030_cvterm = web_data.api_maps.terms.get("GO:0031030").unwrap();
+    let go0031030_cvterm = web_data.api_maps.terms.get(&flex_str!("GO:0031030")).unwrap();
     assert_eq!("negative regulation of septation initiation signaling",
                go0031030_cvterm.name.as_str());
     assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 
-    let bp_cvterm = web_data.api_maps.terms.get("GO:0008150").unwrap();
+    let bp_cvterm = web_data.api_maps.terms.get(&flex_str!("GO:0008150")).unwrap();
     assert_eq!("biological_process", bp_cvterm.name.as_str());
     assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 }
@@ -816,7 +815,7 @@ fn test_terms() {
 fn test_locations() {
     let web_data = get_test_web_data();
 
-    let pom1_gene = web_data.api_maps.genes.get("SPAC2F7.03c").unwrap().clone();
+    let pom1_gene = web_data.api_maps.genes.get(&flex_str!("SPAC2F7.03c")).unwrap().clone();
     let pom1_loc = pom1_gene.location.unwrap().clone();
 
     assert_eq!(&pom1_loc.chromosome_name, "chromosome_1");
@@ -828,7 +827,7 @@ fn test_locations() {
     assert_eq!(&pom1_gene.gene_neighbourhood[0].uniquename, "SPAC2F7.03c");
     assert_eq!(&pom1_gene.gene_neighbourhood[1].uniquename, "SPAC6F6.08c");
 
-    let cdc16_gene = web_data.api_maps.genes.get("SPAC6F6.08c").unwrap().clone();
+    let cdc16_gene = web_data.api_maps.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
     let cdc16_loc = cdc16_gene.location.unwrap().clone();
 
     assert_eq!(&cdc16_loc.chromosome_name, "chromosome_1");

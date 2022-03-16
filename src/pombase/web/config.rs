@@ -6,37 +6,37 @@ use std::fs::File;
 use crate::types::*;
 use serde_json;
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str};
 
 // configuration for extension display names and for the "Target of" section
 #[derive(Deserialize, Clone, Debug)]
 pub struct ExtensionDisplayNames {
-    pub rel_name: RcString, // name of extension relation
-    pub display_name: RcString, // text to display
-    pub if_descendant_of: Option<RcString>, // None if applies to any extension
-    pub reciprocal_display: Option<RcString>, // None if reciprocal shouldn't be displayed
+    pub rel_name: FlexStr, // name of extension relation
+    pub display_name: FlexStr, // text to display
+    pub if_descendant_of: Option<FlexStr>, // None if applies to any extension
+    pub reciprocal_display: Option<FlexStr>, // None if reciprocal shouldn't be displayed
 }
 
 // "interesting parents" are those stored in the JSON in the TermShort structs
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct InterestingParent {
-    pub termid: RcString,
-    pub rel_name: RcString,
+    pub termid: FlexStr,
+    pub rel_name: FlexStr,
 }
 
 // the order of relations within an extension:
 #[derive(Deserialize, Clone, Debug)]
 pub struct RelationOrder {
     // put the relations in this order in the displayed extensions:
-    pub relation_order: Vec<RcString>,
+    pub relation_order: Vec<FlexStr>,
     // except for these reactions which should always come last:
-    pub always_last: Vec<RcString>,
+    pub always_last: Vec<FlexStr>,
 }
 
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct AncestorFilterCategory {
-    pub display_name: RcString,
+    pub display_name: FlexStr,
     // this category matches these terms and their descendants
     pub ancestors: Vec<TermId>,
 }
@@ -48,38 +48,38 @@ pub struct FilterConfig {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub term_categories: Vec<AncestorFilterCategory>,
     #[serde(skip_serializing_if="Option::is_none", default)]
-    pub slim_name: Option<RcString>,
+    pub slim_name: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub extension_categories: Vec<AncestorFilterCategory>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct SplitByParentsConfig {
-    pub termids: Vec<RcString>,
-    pub display_name: RcString,
+    pub termids: Vec<FlexStr>,
+    pub display_name: FlexStr,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ChromosomeConfig {
-    pub name: RcString,
+    pub name: FlexStr,
     // string to use for this chromosome in a file name, eg. "chromosome_II"
     // or "mitochondrial_chromosome"
-    pub export_file_id: RcString,
+    pub export_file_id: FlexStr,
     // string to use within files, eg. "II" or "mitochondrial"
-    pub export_id: RcString,
+    pub export_id: FlexStr,
     // eg. "Chromosome II" or "Mitochondrial chromosome"
-    pub long_display_name: RcString,
+    pub long_display_name: FlexStr,
     // eg. "II" or "Mitochondrial"
-    pub short_display_name: RcString,
+    pub short_display_name: FlexStr,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvSourceConfig {
     // a type name for the cvtermprop to display to the user
-    pub display_name_prop: Option<RcString>,
+    pub display_name_prop: Option<FlexStr>,
     // the cvtermprop type name for the ID used for linking
     // or "ACCESSION" if the accession ID of the term should be used
-    pub id_source: Option<RcString>,
+    pub id_source: Option<FlexStr>,
 }
 
 pub type TargetRelationName = String;
@@ -94,8 +94,8 @@ pub struct TargetOfConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
-    pub feature_type: RcString,
-    pub display_name: Option<RcString>,
+    pub feature_type: FlexStr,
+    pub display_name: Option<FlexStr>,
     // filtering configured per CV
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub filters: Vec<FilterConfig>,
@@ -105,75 +105,75 @@ pub struct CvConfig {
     pub split_by_parents: Vec<SplitByParentsConfig>,
     // relations to not show in the summary
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub summary_relations_to_hide: Vec<RcString>,
+    pub summary_relations_to_hide: Vec<FlexStr>,
     // relations where the range is a gene ID to display like:
     //   has substrate pom1, cdc1 involved in negative regulation of ...
     // rather than as two lines
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub summary_relation_ranges_to_collect: Vec<RcString>,
+    pub summary_relation_ranges_to_collect: Vec<FlexStr>,
 
     #[serde(default="SingleOrMultiLocusConfig::not_applicable")]
     pub single_or_multi_locus: SingleOrMultiLocusConfig,
 
     // the field to sort by
     #[serde(skip_serializing_if="Option::is_none")]
-    pub sort_details_by: Option<Vec<RcString>>,
+    pub sort_details_by: Option<Vec<FlexStr>>,
 
     // This is the configuration for the "Source" column, a map from
     // source name to config
     // See Disease association for an example.  If there is no config
     // there will be no Source column will be displayed
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
-    pub source_config: HashMap<RcString, CvSourceConfig>,
+    pub source_config: HashMap<FlexStr, CvSourceConfig>,
 }
 
-pub type ShortEvidenceCode = RcString;
-pub type LongEvidenceCode = RcString;
+pub type ShortEvidenceCode = FlexStr;
+pub type LongEvidenceCode = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ConfigOrganism {
     pub taxonid: OrganismTaxonId,
-    pub genus: RcString,
-    pub species: RcString,
-    pub alternative_names: Vec<RcString>,
-    pub assembly_version: Option<RcString>,
+    pub genus: FlexStr,
+    pub species: FlexStr,
+    pub alternative_names: Vec<FlexStr>,
+    pub assembly_version: Option<FlexStr>,
 }
 
 impl ConfigOrganism {
     pub fn full_name(&self) -> String {
-        self.genus.clone() + "_" + self.species.as_str()
+        self.genus.to_string() + "_" + self.species.as_str()
     }
 
     pub fn scientific_name(&self) -> String {
-        self.genus.clone() + " " + self.species.as_str()
+        self.genus.to_string() + " " + self.species.as_str()
     }
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ViabilityTerms {
-    pub viable: RcString,
-    pub inviable: RcString,
+    pub viable: FlexStr,
+    pub inviable: FlexStr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct TermAndName {
-    pub termid: RcString,
-    pub name: RcString,
+    pub termid: FlexStr,
+    pub name: FlexStr,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ReferencePageConfig {
-    pub triage_status_to_ignore: Vec<String>,
+    pub triage_status_to_ignore: Vec<FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct InterPro {
-    pub dbnames_to_filter: Vec<RcString>,
+    pub dbnames_to_filter: Vec<FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ServerSubsetConfig {
-    pub prefixes_to_remove: Vec<RcString>,
+    pub prefixes_to_remove: Vec<FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -191,22 +191,22 @@ pub struct ServerConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct EvidenceDetails {
     pub long: LongEvidenceCode,
-    pub link: Option<RcString>,
+    pub link: Option<FlexStr>,
 }
 
-pub type DatabaseName = RcString;
+pub type DatabaseName = FlexStr;
 pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct MacromolecularComplexesConfig {
-    pub parent_complex_termid: RcString,
-    pub excluded_terms: HashSet<RcString>,
+    pub parent_complex_termid: FlexStr,
+    pub excluded_terms: HashSet<FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct RNAcentralConfig {
     // SO termids of RNA features to export
-    pub export_so_ids: HashSet<RcString>,
+    pub export_so_ids: HashSet<FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug, PartialEq)]
@@ -227,14 +227,14 @@ impl SingleOrMultiLocusConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ExportColumnConfig {
-    pub name: RcString,
-    pub display_name: RcString
+    pub name: FlexStr,
+    pub display_name: FlexStr
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct AnnotationSubsetConfig {
     pub term_ids: Vec<TermId>,
-    pub file_name: RcString,
+    pub file_name: FlexStr,
     pub columns: Vec<ExportColumnConfig>,
     #[serde(default="SingleOrMultiLocusConfig::not_applicable")]
     pub single_or_multi_locus: SingleOrMultiLocusConfig,
@@ -243,19 +243,19 @@ pub struct AnnotationSubsetConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct GpadGpiConfig {
     // the term IDs of the three GO aspects
-    pub go_aspect_terms: HashMap<String, TermId>,
+    pub go_aspect_terms: HashMap<FlexStr, TermId>,
     // Map a relation term name to a term ID, unless the term ID is None in
     // which case we skip writing this extension part
-    pub extension_relation_mappings: HashMap<String, Option<TermId>>,
+    pub extension_relation_mappings: HashMap<FlexStr, Option<TermId>>,
     // A map from the SO type of a transcript to the SO type of the gene is
     // derives from
-    pub transcript_gene_so_term_map: HashMap<String, String>,
+    pub transcript_gene_so_term_map: HashMap<FlexStr, FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct FileExportConfig {
-    pub site_map_term_prefixes: Vec<RcString>,
-    pub site_map_reference_prefixes: Vec<RcString>,
+    pub site_map_term_prefixes: Vec<FlexStr>,
+    pub site_map_reference_prefixes: Vec<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub macromolecular_complexes: Option<MacromolecularComplexesConfig>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -268,8 +268,8 @@ pub struct FileExportConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct GeneResultVisAttrValueConfig {
-    pub termid: Option<RcString>,
-    pub name: RcString,
+    pub termid: Option<FlexStr>,
+    pub name: FlexStr,
     pub bin_start: Option<usize>,
     pub bin_end: Option<usize>,
 }
@@ -282,29 +282,29 @@ pub struct GeneResultVisColumnConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct GeneResultsConfig {
-    pub field_config: HashMap<RcString, GeneResultVisColumnConfig>,
-    pub visualisation_field_names: Vec<RcString>,
+    pub field_config: HashMap<FlexStr, GeneResultVisColumnConfig>,
+    pub visualisation_field_names: Vec<FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct SlimConfig {
-    pub slim_display_name: RcString,
-    pub cv_name: RcString,
+    pub slim_display_name: FlexStr,
+    pub cv_name: FlexStr,
     pub terms: Vec<TermAndName>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct SeqFeaturePageConfig {
-    pub so_types_to_show: Vec<String>,
+    pub so_types_to_show: Vec<FlexStr>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct GeneExDatasetConfig {
-    pub name: RcString,
-    pub pubmed_id: RcString,
-    pub level_type_termid: RcString,
-    pub during_termid: RcString,
-    pub scale: RcString,
+    pub name: FlexStr,
+    pub pubmed_id: FlexStr,
+    pub level_type_termid: FlexStr,
+    pub during_termid: FlexStr,
+    pub scale: FlexStr,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -314,14 +314,14 @@ pub struct GeneExpressionConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
-    pub database_name: RcString,
-    pub database_long_name: RcString,
-    pub database_citation: RcString,
-    pub funder: RcString,
-    pub site_description: RcString,
+    pub database_name: FlexStr,
+    pub database_long_name: FlexStr,
+    pub database_citation: FlexStr,
+    pub funder: FlexStr,
+    pub site_description: FlexStr,
     pub load_organism_taxonid: Option<OrganismTaxonId>,
-    pub base_url: RcString,
-    pub helpdesk_address: RcString,
+    pub base_url: FlexStr,
+    pub helpdesk_address: FlexStr,
     pub doc_page_aliases: HashMap<String, String>,
     pub organisms: Vec<ConfigOrganism>,
     pub api_seq_chunk_sizes: Vec<usize>,
@@ -337,7 +337,7 @@ pub struct Config {
     pub interesting_parents: Vec<InterestingParent>,
     pub viability_terms: ViabilityTerms,
     // slim sets by slim name:
-    pub slims: HashMap<RcString, SlimConfig>,
+    pub slims: HashMap<FlexStr, SlimConfig>,
     pub reference_page_config: ReferencePageConfig,
     pub interpro: InterPro,
     pub server: ServerConfig,
@@ -368,7 +368,7 @@ impl Config {
         }
     }
 
-    pub fn cv_config_by_name(&self, cv_name: &str) -> CvConfig {
+    pub fn cv_config_by_name(&self, cv_name: &FlexStr) -> CvConfig {
         if let Some(config) = self.cv_config.get(cv_name) {
             config.clone()
         } else {
@@ -479,7 +479,7 @@ pub const DESCENDANT_REL_NAMES: [&str; 7] =
     ["is_a", "part_of", "regulates", "positively_regulates", "negatively_regulates",
      "has_part", "output_of"];
 // only consider has_part relations for these ontologies:
-pub const HAS_PART_CV_NAMES: [&str; 1] = ["fission_yeast_phenotype"];
+pub const HAS_PART_CV_NAMES: [FlexStr; 1] = [flex_str!("fission_yeast_phenotype")];
 
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
@@ -497,7 +497,7 @@ pub const HANDLED_FEATURE_TYPES: [&str; 7] =
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct DocConfig {
-    pub pages: BTreeMap<RcString, RcString>,
+    pub pages: BTreeMap<FlexStr, FlexStr>,
 }
 
 impl DocConfig {
@@ -522,7 +522,7 @@ impl DocConfig {
 
 
 pub struct GoEcoMapping {
-    mapping: HashMap<(String, String), String>,
+    mapping: HashMap<(FlexStr, FlexStr), FlexStr>,
 }
 
 impl GoEcoMapping {
@@ -544,8 +544,8 @@ impl GoEcoMapping {
                         continue;
                     }
                     let parts: Vec<&str> = line.split('\t').collect();
-                    mapping.insert((String::from(parts[0]), String::from(parts[1])),
-                                   String::from(parts[2]));
+                    mapping.insert((FlexStr::from(parts[0]), FlexStr::from(parts[1])),
+                                   FlexStr::from(parts[2]));
                 },
                 Err(err) => return Err(err)
             };
@@ -556,15 +556,15 @@ impl GoEcoMapping {
         })
     }
 
-    pub fn lookup_default(&self, go_evidence_code: &str) -> Option<String> {
-        self.mapping.get(&(String::from(go_evidence_code), String::from("Default")))
-            .map(String::from)
+    pub fn lookup_default(&self, go_evidence_code: &FlexStr) -> Option<FlexStr> {
+        self.mapping.get(&(go_evidence_code.clone(), flex_str!("Default")))
+            .map(FlexStr::from)
     }
 
-    pub fn lookup_with_go_ref(&self, go_evidence_code: &str, go_ref: &str)
-                              -> Option<String>
+    pub fn lookup_with_go_ref(&self, go_evidence_code: &FlexStr, go_ref: &FlexStr)
+                              -> Option<FlexStr>
     {
-        self.mapping.get(&(String::from(go_evidence_code), String::from(go_ref)))
-            .map(String::from)
+        self.mapping.get(&(go_evidence_code.clone(), go_ref.clone()))
+            .map(FlexStr::from)
     }
 }

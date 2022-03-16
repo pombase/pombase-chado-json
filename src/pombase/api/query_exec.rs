@@ -5,7 +5,7 @@ use crate::api::query::*;
 use crate::api::site_db::SiteDB;
 use crate::api_data::APIData;
 
-use pombase_rc_string::RcString;
+use flexstr::{ToAFlexStr, a_flex_str as flex_str, a_flex_fmt as flex_fmt};
 
 pub struct QueryExec {
     api_data: APIData,
@@ -28,10 +28,9 @@ impl QueryExec {
                     if let Some(existing_query) = site_db.query_by_id(query_id).await {
                         existing_query
                     } else {
-                        let message = RcString::from(&format!("can't find query for ID {}",
-                                                              query_id));
-                        return QueryAPIResult::new_error(query, &message);
-
+                        let message =
+                            flex_fmt!("can't find query for ID {}", query_id);
+                        return QueryAPIResult::new_error(query, message);
                     }
                 } else {
                     query.clone()
@@ -49,7 +48,7 @@ impl QueryExec {
                     match site_db.save_query(&new_uuid, &query).await {
                         Ok(_) => (),
                         Err(mess) =>
-                            return QueryAPIResult::new_error(&query, &mess),
+                            return QueryAPIResult::new_error(&query, mess.to_a_flex_str()),
                     }
                     new_uuid
                 }
@@ -57,7 +56,7 @@ impl QueryExec {
                 Uuid::new_v4()
             };
 
-        let id = RcString::from(&uuid.to_hyphenated().to_string());
+        let id = uuid.to_hyphenated().to_string().to_a_flex_str();
 
         let rows_result = query.exec(&self.api_data, &self.site_db).await;
 
@@ -66,11 +65,11 @@ impl QueryExec {
                 QueryAPIResult {
                     query,
                     id,
-                    status: RcString::from("ok"),
+                    status: flex_str!("ok"),
                     rows,
                 }
             },
-            Err(mess) => QueryAPIResult::new_error(&query, &mess),
+            Err(mess) => QueryAPIResult::new_error(&query, mess.clone()),
         }
     }
 

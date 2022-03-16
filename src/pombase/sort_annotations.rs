@@ -2,13 +2,14 @@ use std::cmp::Ordering;
 
 use crate::types::*;
 use crate::data_types::*;
+use crate::utils::join;
 use crate::web::config::*;
 use crate::web::cmp_utils::cmp_residues;
 use crate::web::util::*;
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, a_flex_fmt as flex_fmt};
 
-fn gene_display_name(gene: &GeneDetails) -> RcString {
+fn gene_display_name(gene: &GeneDetails) -> FlexStr {
     if let Some(ref name) = gene.name {
         name.clone()
     } else {
@@ -17,7 +18,7 @@ fn gene_display_name(gene: &GeneDetails) -> RcString {
 }
 
 fn string_from_ext_range(ext_range: &ExtRange,
-                          genes: &UniquenameGeneMap, terms: &TermIdDetailsMap) -> RcString {
+                          genes: &UniquenameGeneMap, terms: &TermIdDetailsMap) -> FlexStr {
     match *ext_range {
         ExtRange::Gene(ref gene_uniquename) | ExtRange::Promoter(ref gene_uniquename) => {
             let gene = genes.get(gene_uniquename)
@@ -27,15 +28,15 @@ fn string_from_ext_range(ext_range: &ExtRange,
         ExtRange::Transcript(ref transcript_uniquename) => transcript_uniquename.clone(),
         ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::SummaryTranscripts(_) => panic!("can't handle SummaryTranscripts\n"),
-        ExtRange::Term(ref termid) => RcString::from(&terms.get(termid).unwrap().name),
-        ExtRange::SummaryModifiedResidues(ref residue) => RcString::from(&residue.join(",")),
+        ExtRange::Term(ref termid) => terms.get(termid).unwrap().name.clone(),
+        ExtRange::SummaryModifiedResidues(ref residue) => join(residue, ","),
         ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::Misc(ref misc) => misc.clone(),
         ExtRange::Domain(ref domain) => domain.clone(),
         ExtRange::GeneProduct(ref gene_product) => gene_product.clone(),
         ExtRange::GeneAndGeneProduct(ref gene_and_gene_product) =>
-            RcString::from(&format!("{} ({})", gene_and_gene_product.gene_uniquename,
-                                    gene_and_gene_product.product)),
+            flex_fmt!("{} ({})", gene_and_gene_product.gene_uniquename,
+                      gene_and_gene_product.product),
     }
 }
 
@@ -107,11 +108,11 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
                 gene_vec2: &[GeneUniquename]) -> Ordering {
 
     let gene_short_vec1: Vec<GeneShort> =
-        gene_vec1.iter().map(|gene_uniquename: &RcString| {
+        gene_vec1.iter().map(|gene_uniquename: &FlexStr| {
             make_gene_short(genes, gene_uniquename)
         }).collect();
     let gene_short_vec2: Vec<GeneShort> =
-        gene_vec2.iter().map(|gene_uniquename: &RcString| {
+        gene_vec2.iter().map(|gene_uniquename: &FlexStr| {
             make_gene_short(genes, gene_uniquename)
         }).collect();
 
@@ -186,7 +187,7 @@ pub fn sort_cv_annotation_details<T: AnnotationContainer>
      annotation_details_map: &IdOntAnnotationDetailMap)
 {
 
-    let detail_cmp_using_cv_name = |cv_name: &str| {
+    let detail_cmp_using_cv_name = |cv_name: &FlexStr| {
         let cv_config = config.cv_config.get(cv_name);
 
         move |id1: &i32, id2: &i32| {

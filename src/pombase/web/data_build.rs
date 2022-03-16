@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::usize;
+use std::string::ToString;
 
 use regex::Regex;
 
@@ -14,10 +15,11 @@ use crate::data_types::*;
 use crate::web::data::*;
 use crate::web::config::*;
 use crate::web::util::cmp_str_dates;
+use crate::utils::join;
 
 use crate::bio::util::rev_comp;
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr, a_flex_fmt as flex_fmt};
 
 use crate::interpro::UniprotResult;
 use crate::pfam::PfamProteinDetails;
@@ -40,7 +42,7 @@ fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
 
 type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
 
-type UniprotIdentifier = RcString;
+type UniprotIdentifier = FlexStr;
 
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
@@ -51,7 +53,7 @@ pub struct WebDataBuild<'a> {
 
     genes: UniquenameGeneMap,
     genotypes: UniquenameGenotypeMap,
-    genotype_backgrounds: HashMap<GenotypeUniquename, RcString>,
+    genotype_backgrounds: HashMap<GenotypeUniquename, FlexStr>,
     alleles: UniquenameAlleleMap,
     transcripts: UniquenameTranscriptMap,
     other_features: UniquenameFeatureShortMap,
@@ -62,13 +64,13 @@ pub struct WebDataBuild<'a> {
     all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
 
     // map from term name to term ID (ie "nucleus" -> "GO:0005634")
-    term_ids_by_name: HashMap<RcString, TermId>,
+    term_ids_by_name: HashMap<FlexStr, TermId>,
 
-    genes_of_transcripts: HashMap<RcString, RcString>,
-    transcripts_of_polypeptides: HashMap<RcString, RcString>,
-    parts_of_transcripts: HashMap<RcString, Vec<FeatureShort>>,
-    genes_of_alleles: HashMap<RcString, RcString>,
-    loci_of_genotypes: HashMap<RcString, HashMap<String, GenotypeLocus>>,
+    genes_of_transcripts: HashMap<FlexStr, FlexStr>,
+    transcripts_of_polypeptides: HashMap<FlexStr, FlexStr>,
+    parts_of_transcripts: HashMap<FlexStr, Vec<FeatureShort>>,
+    genes_of_alleles: HashMap<FlexStr, FlexStr>,
+    loci_of_genotypes: HashMap<FlexStr, HashMap<FlexStr, GenotypeLocus>>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -78,7 +80,7 @@ pub struct WebDataBuild<'a> {
 
     // a set of child terms for each term from the cvtermpath table
     children_by_termid: HashMap<TermId, HashSet<TermId>>,
-    dbxrefs_of_features: HashMap<RcString, HashSet<RcString>>,
+    dbxrefs_of_features: HashMap<FlexStr, HashSet<FlexStr>>,
 
     possible_interesting_parents: HashSet<InterestingParent>,
 
@@ -97,11 +99,11 @@ pub struct WebDataBuild<'a> {
 }
 
 fn get_maps() ->
-    (HashMap<RcString, ReferenceShortOptionMap>,
-     HashMap<RcString, GeneShortOptionMap>,
-     HashMap<RcString, GenotypeShortMap>,
-     HashMap<RcString, AlleleShortMap>,
-     HashMap<RcString, TranscriptDetailsOptionMap>,
+    (HashMap<FlexStr, ReferenceShortOptionMap>,
+     HashMap<FlexStr, GeneShortOptionMap>,
+     HashMap<FlexStr, GenotypeShortMap>,
+     HashMap<FlexStr, AlleleShortMap>,
+     HashMap<FlexStr, TranscriptDetailsOptionMap>,
      HashMap<GeneUniquename, TermShortOptionMap>)
 {
     (HashMap::new(), HashMap::new(), HashMap::new(), HashMap::new(),
@@ -109,7 +111,7 @@ fn get_maps() ->
 }
 
 fn get_feat_rel_expression(feature: &Feature,
-                           feature_relationship: &FeatureRelationship) -> Option<RcString> {
+                           feature_relationship: &FeatureRelationship) -> Option<FlexStr> {
     for feature_prop in feature.featureprops.borrow().iter() {
         if feature_prop.prop_type.name == "allele_type" {
             if let Some(ref value) = feature_prop.value {
@@ -129,10 +131,10 @@ fn get_feat_rel_expression(feature: &Feature,
     None
 }
 
-fn get_feat_rel_prop_value(prop_name: &str,
-                           feature_relationship: &FeatureRelationship) -> Option<RcString> {
+fn get_feat_rel_prop_value(prop_name: &FlexStr,
+                           feature_relationship: &FeatureRelationship) -> Option<FlexStr> {
     for rel_prop in feature_relationship.feature_relationshipprops.borrow().iter() {
-        if rel_prop.prop_type.name == prop_name {
+        if rel_prop.prop_type.name == *prop_name {
             return rel_prop.value.clone();
         }
     }
@@ -148,7 +150,7 @@ fn reference_has_annotation(reference_details: &ReferenceDetails) -> bool {
         !reference_details.paralog_annotations.is_empty()
 }
 
-fn is_gene_type(feature_type_name: &str) -> bool {
+fn is_gene_type(feature_type_name: &FlexStr) -> bool {
     feature_type_name == "gene" || feature_type_name == "pseudogene"
 }
 
@@ -211,14 +213,14 @@ lazy_static! {
 }
 
 pub fn make_genotype_display_name(loci: &[GenotypeLocus],
-                                  allele_map: &UniquenameAlleleMap) -> RcString {
+                                  allele_map: &UniquenameAlleleMap) -> FlexStr {
     let mut locus_display_names: Vec<String> =
         loci.iter().map(|locus| {
             let mut allele_display_names: Vec<String> =
                 locus.expressed_alleles.iter().map(|expressed_allele| {
                     let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
                     let mut encoded_name_and_type =
-                        String::from(&allele_short.encoded_name_and_type);
+                        allele_short.encoded_name_and_type.to_string();
                     if allele_short.allele_type != "deletion" {
                         if encoded_name_and_type == "unnamed-unrecorded-unrecorded" {
                             encoded_name_and_type =
@@ -241,7 +243,7 @@ pub fn make_genotype_display_name(loci: &[GenotypeLocus],
 
     let clean_display_name =
         BAD_GENOTYPE_NAME_CHARS_RE.replace_all(&joined_alleles, "_");
-    RcString::from(clean_display_name.as_ref())
+    clean_display_name.to_a_flex_str()
 }
 
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
@@ -351,7 +353,7 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
 }
 
 pub fn make_chromosome_short<'a>(chromosome_map: &'a ChrNameDetailsMap,
-                                 chromosome_name: &'a str) -> ChromosomeShort {
+                                 chromosome_name: &'a FlexStr) -> ChromosomeShort {
     if let Some(chr) = chromosome_map.get(chromosome_name) {
         chr.make_chromosome_short()
     } else {
@@ -361,7 +363,7 @@ pub fn make_chromosome_short<'a>(chromosome_map: &'a ChrNameDetailsMap,
 
 
 fn make_reference_short(reference_map: &UniquenameReferenceMap,
-                        reference_uniquename: &str) -> Option<ReferenceShort> {
+                        reference_uniquename: &FlexStr) -> Option<ReferenceShort> {
     if reference_uniquename == "null" {
         None
     } else {
@@ -395,16 +397,16 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         if let Some(ref conf_termid) = ext_conf.if_descendant_of {
             ret.insert(InterestingParent {
                 termid: conf_termid.clone(),
-                rel_name: RcString::from("is_a"),
+                rel_name: flex_str!("is_a"),
             });
         }
     }
 
-    let add_to_set = |set: &mut HashSet<_>, termid: RcString| {
+    let add_to_set = |set: &mut HashSet<_>, termid: FlexStr| {
         for rel_name in &DESCENDANT_REL_NAMES {
             set.insert(InterestingParent {
                 termid: termid.to_owned(),
-                rel_name: RcString::from(*rel_name),
+                rel_name: flex_str!(*rel_name),
             });
         }
     };
@@ -430,24 +432,24 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
 
     ret.insert(InterestingParent {
         termid: config.viability_terms.viable.clone(),
-        rel_name: RcString::from("is_a"),
+        rel_name: flex_str!("is_a"),
     });
     ret.insert(InterestingParent {
         termid: config.viability_terms.inviable.clone(),
-        rel_name: RcString::from("is_a"),
+        rel_name: flex_str!("is_a"),
     });
 
     let add_filter_ancestor =
-        |set: &mut HashSet<_>, category: &AncestorFilterCategory, cv_name: &str| {
+        |set: &mut HashSet<_>, category: &AncestorFilterCategory, cv_name: &FlexStr| {
             for ancestor in &category.ancestors {
                 for config_rel_name in &DESCENDANT_REL_NAMES {
                     if *config_rel_name == "has_part" &&
-                        !HAS_PART_CV_NAMES.contains(&cv_name) {
+                        !HAS_PART_CV_NAMES.contains(cv_name) {
                             continue;
                         }
                     set.insert(InterestingParent {
                         termid: ancestor.clone(),
-                        rel_name: RcString::from(*config_rel_name),
+                        rel_name: flex_str!(*config_rel_name),
                     });
                 }
             }
@@ -467,7 +469,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
             for ancestor in &split_by_parent_config.termids {
                 let ancestor_termid =
                     if let Some(without_prefix) = ancestor.strip_prefix("NOT ") {
-                        RcString::from(without_prefix)
+                        without_prefix.to_a_flex_str()
                     } else {
                         ancestor.clone()
                     };
@@ -485,7 +487,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
 const MAX_RECENT_REFS: usize = 20;
 
 fn make_recently_added(references_map: &UniquenameReferenceMap,
-                       all_ref_uniquenames: &[RcString]) -> Vec<ReferenceShort> {
+                       all_ref_uniquenames: &[FlexStr]) -> Vec<ReferenceShort> {
     let mut date_sorted_pub_uniquenames = all_ref_uniquenames.to_owned();
 
     {
@@ -528,7 +530,7 @@ fn make_recently_added(references_map: &UniquenameReferenceMap,
 }
 
 fn make_canto_curated(references_map: &UniquenameReferenceMap,
-                      all_ref_uniquenames: &[RcString])
+                      all_ref_uniquenames: &[FlexStr])
                       -> (Vec<ReferenceShort>, Vec<ReferenceShort>, Vec<ReferenceShort>,
                           Vec<ReferenceShort>) {
     let mut sorted_pub_uniquenames: Vec<ReferenceUniquename> =
@@ -590,7 +592,7 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
 }
 
 fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
-                             transcript_uniquename: &str, parts: &mut Vec<FeatureShort>) {
+                             transcript_uniquename: &FlexStr, parts: &mut Vec<FeatureShort>) {
     let mut new_parts: Vec<FeatureShort> = vec![];
     let mut intron_count = 0;
 
@@ -638,7 +640,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     };
                 maybe_new_intron = Some(FeatureShort {
                     feature_type: intron_type,
-                    uniquename: RcString::from(&intron_uniquename),
+                    uniquename: intron_uniquename.to_a_flex_str(),
                     name: None,
                     location: new_intron_loc,
                     residues: intron_residues,
@@ -656,7 +658,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
     *parts = new_parts;
 }
 
-fn validate_transcript_parts(transcript_uniquename: &str, parts: &[FeatureShort]) {
+fn validate_transcript_parts(transcript_uniquename: &FlexStr, parts: &[FeatureShort]) {
     let mut seen_exon = false;
     for part in parts {
         if part.feature_type == FeatureType::Exon {
@@ -798,8 +800,8 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_ref_to_hash(&self,
-                       seen_references: &mut HashMap<RcString, ReferenceShortOptionMap>,
-                       identifier: &str,
+                       seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
+                       identifier: &FlexStr,
                        maybe_reference_uniquename: &Option<ReferenceUniquename>) {
         if let Some(reference_uniquename) = maybe_reference_uniquename {
             if reference_uniquename != "null" {
@@ -813,8 +815,8 @@ impl <'a> WebDataBuild<'a> {
 
 
     fn add_gene_to_hash(&self,
-                        seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
-                        identifier: &RcString,
+                        seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                        identifier: &FlexStr,
                         other_gene_uniquename: &GeneUniquename) {
         if !self.genes.contains_key(other_gene_uniquename) {
             panic!("{}", other_gene_uniquename);
@@ -826,11 +828,11 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_genotype_to_hash(&self,
-                            seen_genotypes: &mut HashMap<RcString, GenotypeShortMap>,
-                            seen_alleles: &mut HashMap<RcString, AlleleShortMap>,
-                            seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
-                            identifier: &RcString,
-                            genotype_uniquename: &RcString) {
+                            seen_genotypes: &mut HashMap<FlexStr, GenotypeShortMap>,
+                            seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
+                            seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                            identifier: &FlexStr,
+                            genotype_uniquename: &FlexStr) {
         let genotype_short = self.make_genotype_short(genotype_uniquename);
         for locus in &genotype_short.loci {
             for expressed_allele in &locus.expressed_alleles {
@@ -846,9 +848,9 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_allele_to_hash(&self,
-                          seen_alleles: &mut HashMap<RcString, AlleleShortMap>,
-                          seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
-                          identifier: &RcString,
+                          seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
+                          seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                          identifier: &FlexStr,
                           allele_uniquename: &AlleleUniquename) -> AlleleShort {
         let allele_short = self.make_allele_short(allele_uniquename);
         {
@@ -863,9 +865,9 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_transcript_to_hashes(&self,
-                              seen_transcripts: &mut HashMap<RcString, TranscriptDetailsOptionMap>,
-                              seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
-                              identifier: &RcString,
+                              seen_transcripts: &mut HashMap<FlexStr, TranscriptDetailsOptionMap>,
+                              seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                              identifier: &FlexStr,
                               transcript_uniquename: &TranscriptUniquename) {
         if let Some(transcript_details) = self.transcripts.get(transcript_uniquename) {
             seen_transcripts
@@ -882,7 +884,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_term_to_hash(&self,
                         seen_terms: &mut HashMap<TermId, TermShortOptionMap>,
-                        identifier: &RcString,
+                        identifier: &FlexStr,
                         other_termid: &TermId) {
         seen_terms
             .entry(identifier.clone())
@@ -890,7 +892,7 @@ impl <'a> WebDataBuild<'a> {
             .insert(other_termid.clone(), None);
     }
 
-    fn get_gene<'b>(&'b self, gene_uniquename: &'b str) -> &'b GeneDetails {
+    fn get_gene<'b>(&'b self, gene_uniquename: &'b FlexStr) -> &'b GeneDetails {
         if let Some(gene_details) = self.genes.get(gene_uniquename) {
             gene_details
         } else {
@@ -898,7 +900,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn get_gene_mut<'b>(&'b mut self, gene_uniquename: &'b str) -> &'b mut GeneDetails {
+    fn get_gene_mut<'b>(&'b mut self, gene_uniquename: &'b FlexStr) -> &'b mut GeneDetails {
         if let Some(gene_details) = self.genes.get_mut(gene_uniquename) {
             gene_details
         } else {
@@ -906,7 +908,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_gene_short(&self, gene_uniquename: &str) -> GeneShort {
+    fn make_gene_short(&self, gene_uniquename: &FlexStr) -> GeneShort {
         let gene_details = self.get_gene(gene_uniquename);
         GeneShort {
             uniquename: gene_details.uniquename.clone(),
@@ -916,13 +918,13 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_gene_summary(&self, gene_uniquename: &str) -> GeneSummary {
+    fn make_gene_summary(&self, gene_uniquename: &FlexStr) -> GeneSummary {
         let gene_details = self.get_gene(gene_uniquename);
         let synonyms =
             gene_details.synonyms.iter()
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
-            .collect::<Vec<RcString>>();
+            .collect::<Vec<FlexStr>>();
         let ortholog_ids =
             gene_details.ortholog_annotations.iter()
             .map(|ortholog_annotation| {
@@ -955,13 +957,13 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_api_gene_summary(&self, gene_uniquename: &str) -> APIGeneSummary {
+    fn make_api_gene_summary(&self, gene_uniquename: &FlexStr) -> APIGeneSummary {
         let gene_details = self.get_gene(gene_uniquename);
         let synonyms =
             gene_details.synonyms.iter()
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
-            .collect::<Vec<RcString>>();
+            .collect::<Vec<FlexStr>>();
         let exon_count =
             if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
 
@@ -1013,7 +1015,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_term_short(&self, termid: &str) -> TermShort {
+    fn make_term_short(&self, termid: &FlexStr) -> TermShort {
         if let Some(term_details) = self.terms.get(termid) {
             TermShort::from_term_details(term_details)
         } else {
@@ -1021,18 +1023,18 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn add_characterisation_status(&mut self, gene_uniquename: &str,
-                                   cvterm_name: &RcString) {
+    fn add_characterisation_status(&mut self, gene_uniquename: &FlexStr,
+                                   cvterm_name: &FlexStr) {
         let gene_details = self.genes.get_mut(gene_uniquename).unwrap();
         gene_details.characterisation_status = Some(cvterm_name.clone());
     }
 
-    fn add_gene_product(&mut self, gene_uniquename: &str, product: &RcString) {
+    fn add_gene_product(&mut self, gene_uniquename: &FlexStr, product: &FlexStr) {
         let gene_details = self.get_gene_mut(gene_uniquename);
         gene_details.product = Some(product.clone());
     }
 
-    fn add_name_description(&mut self, gene_uniquename: &str, name_description: &str) {
+    fn add_name_description(&mut self, gene_uniquename: &FlexStr, name_description: &FlexStr) {
         let gene_details = self.get_gene_mut(gene_uniquename);
         gene_details.name_descriptions.push(name_description.into());
     }
@@ -1106,20 +1108,20 @@ impl <'a> WebDataBuild<'a> {
                 continue;
             }
 
-            let mut pubmed_authors: Option<RcString> = None;
-            let mut pubmed_publication_date: Option<RcString> = None;
-            let mut pubmed_abstract: Option<RcString> = None;
-            let mut pubmed_doi: Option<RcString> = None;
-            let mut non_pubmed_authors: Option<RcString> = None;
-            let mut non_pubmed_abstract: Option<RcString> = None;
-            let mut canto_annotation_status: Option<RcString> = None;
-            let mut canto_triage_status: Option<RcString> = None;
-            let mut canto_curator_role: Option<RcString> = None;
-            let mut canto_curator_name: Option<RcString> = None;
-            let mut canto_first_approved_date: Option<RcString> = None;
-            let mut canto_approved_date: Option<RcString> = None;
-            let mut canto_added_date: Option<RcString> = None;
-            let mut canto_session_submitted_date: Option<RcString> = None;
+            let mut pubmed_authors: Option<FlexStr> = None;
+            let mut pubmed_publication_date: Option<FlexStr> = None;
+            let mut pubmed_abstract: Option<FlexStr> = None;
+            let mut pubmed_doi: Option<FlexStr> = None;
+            let mut non_pubmed_authors: Option<FlexStr> = None;
+            let mut non_pubmed_abstract: Option<FlexStr> = None;
+            let mut canto_annotation_status: Option<FlexStr> = None;
+            let mut canto_triage_status: Option<FlexStr> = None;
+            let mut canto_curator_role: Option<FlexStr> = None;
+            let mut canto_curator_name: Option<FlexStr> = None;
+            let mut canto_first_approved_date: Option<FlexStr> = None;
+            let mut canto_approved_date: Option<FlexStr> = None;
+            let mut canto_added_date: Option<FlexStr> = None;
+            let mut canto_session_submitted_date: Option<FlexStr> = None;
 
             for prop in rc_publication.publicationprops.borrow().iter() {
                 match &prop.prop_type.name as &str {
@@ -1171,7 +1173,7 @@ impl <'a> WebDataBuild<'a> {
                     let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
                     let replaced: String =
                         author_re.replace_all(&authors, "$f et al.").into();
-                    authors_abbrev = Some(RcString::from(&replaced));
+                    authors_abbrev = Some(replaced.to_a_flex_str());
                 } else {
                     authors_abbrev = Some(authors.clone());
                 }
@@ -1179,7 +1181,7 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(publication_date) = pubmed_publication_date.clone() {
                 let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
-                publication_year = Some(RcString::from(date_re.replace_all(&publication_date, "$y").as_ref()));
+                publication_year = Some(date_re.replace_all(&publication_date, "$y").to_a_flex_str());
             }
 
             let mut approved_date = canto_first_approved_date.clone();
@@ -1191,7 +1193,7 @@ impl <'a> WebDataBuild<'a> {
             approved_date =
                 if let Some(date) = approved_date {
                     let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
-                    Some(RcString::from(re.replace_all(&date, "$date").as_ref()))
+                    Some(re.replace_all(&date, "$date").to_a_flex_str())
                 } else {
                     None
                 };
@@ -1274,10 +1276,10 @@ impl <'a> WebDataBuild<'a> {
                     object_type_name == "genotype" {
                         let expression = get_feat_rel_expression(&feature_rel.subject, feature_rel);
                         let genotype_locus_identifier =
-                            get_feat_rel_prop_value("genotype_locus", feature_rel)
+                            get_feat_rel_prop_value(&flex_str!("genotype_locus"), feature_rel)
                             .unwrap_or_else(|| {
-                                RcString::from(&format!("{}-{}", feature_rel.object.uniquename,
-                                                        feature_rel.feature_relationship_id))
+                                flex_fmt!("{}-{}", feature_rel.object.uniquename,
+                                          feature_rel.feature_relationship_id)
                             });
                         let allele_and_expression =
                             ExpressedAllele {
@@ -1288,7 +1290,7 @@ impl <'a> WebDataBuild<'a> {
                         let locus_map = genotype_entry.or_insert_with(HashMap::new);
 
                         let genotype_locus =
-                            locus_map.entry(String::from(&genotype_locus_identifier))
+                            locus_map.entry(genotype_locus_identifier)
                             .or_insert_with(|| GenotypeLocus {
                                 expressed_alleles: vec![]
                             });
@@ -1306,7 +1308,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn get_feature_dbxrefs(&self, feature: &Feature) -> HashSet<RcString> {
+    fn get_feature_dbxrefs(&self, feature: &Feature) -> HashSet<FlexStr> {
         if let Some(dbxrefs) = self.dbxrefs_of_features.get(&feature.uniquename) {
             dbxrefs.clone()
         } else {
@@ -1329,7 +1331,7 @@ impl <'a> WebDataBuild<'a> {
         let mut orfeome_identifier = None;
         for dbxref in &dbxrefs {
             if let Some(without_prefix) = dbxref.strip_prefix("SPD:") {
-                orfeome_identifier = Some(RcString::from(without_prefix));
+                orfeome_identifier = Some(without_prefix.to_a_flex_str());
             }
         }
 
@@ -1358,7 +1360,7 @@ impl <'a> WebDataBuild<'a> {
 
         let (interpro_matches, tm_domain_coords) =
             if let Some(ref uniprot_identifier) = uniprot_identifier {
-                if let Some(result) = self.domain_data.get(uniprot_identifier as &str) {
+                if let Some(result) = self.domain_data.get(uniprot_identifier) {
                     let tm_domain_matches = result.tmhmm_matches.iter()
                         .map(|tm_match| (tm_match.start, tm_match.end))
                         .collect::<Vec<_>>();
@@ -1373,7 +1375,7 @@ impl <'a> WebDataBuild<'a> {
         let (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords) =
             if let Some(pfam_data) = self.pfam_data {
                 if let Some(ref uniprot_identifier) = uniprot_identifier {
-                    if let Some(result) = pfam_data.get(uniprot_identifier as &str) {
+                    if let Some(result) = pfam_data.get(uniprot_identifier) {
                         let mut disordered_region_coords = vec![];
                         let mut low_complexity_region_coords = vec![];
                         let mut coiled_coil_coords = vec![];
@@ -1402,7 +1404,7 @@ impl <'a> WebDataBuild<'a> {
         let rfam_annotations =
             if let Some(rnacentral_data) = self.rnacentral_data {
                 if let Some(ref rnacentral_urs_identifier) = rnacentral_urs_identifier {
-                    if let Some(result) = rnacentral_data.get(rnacentral_urs_identifier.as_str()) {
+                    if let Some(result) = rnacentral_data.get(rnacentral_urs_identifier) {
                         result.clone()
                     } else {
                         vec![]
@@ -1462,7 +1464,7 @@ impl <'a> WebDataBuild<'a> {
         self.genes.insert(feat.uniquename.clone(), gene_feature);
     }
 
-    fn get_transcript_parts(&mut self, transcript_uniquename: &str) -> Vec<FeatureShort> {
+    fn get_transcript_parts(&mut self, transcript_uniquename: &FlexStr) -> Vec<FeatureShort> {
         if let Some(mut parts) = self.parts_of_transcripts.remove(transcript_uniquename) {
             if parts.is_empty() {
                 panic!("transcript has no parts: {}", transcript_uniquename);
@@ -1566,7 +1568,7 @@ impl <'a> WebDataBuild<'a> {
                 let transcript_type = feat.feat_type.name.clone();
                 if gene_details.feature_type == "gene" {
                     let feature_type = format!("{} {}", transcript_type, gene_details.feature_type);
-                    gene_details.feature_type = RcString::from(&feature_type);
+                    gene_details.feature_type = feature_type.to_a_flex_str();
                 }
                 let transcript = TranscriptDetails {
                     uniquename: transcript_uniquename.clone(),
@@ -1597,7 +1599,7 @@ impl <'a> WebDataBuild<'a> {
             let mut isoelectric_point = None;
             let mut codon_adaptation_index = None;
 
-            let parse_prop_as_f32 = |p: &Option<RcString>| {
+            let parse_prop_as_f32 = |p: &Option<FlexStr>| {
                 if let Some(ref prop_value) = p {
                     let maybe_value = prop_value.parse();
                     if let Ok(parsed_prop) = maybe_value {
@@ -1640,7 +1642,7 @@ impl <'a> WebDataBuild<'a> {
 
             let protein = ProteinDetails {
                 uniquename: feat.uniquename.clone(),
-                sequence: RcString::from(&residues),
+                sequence: residues.to_a_flex_str(),
                 product: None,
                 molecular_weight: molecular_weight.unwrap(),
                 average_residue_weight: average_residue_weight.unwrap(),
@@ -1687,8 +1689,8 @@ impl <'a> WebDataBuild<'a> {
 
         let chr = ChromosomeDetails {
             name: feat.uniquename.clone(),
-            residues: RcString::from(&residues),
-            ena_identifier: RcString::from(&ena_identifier.unwrap()),
+            residues: residues.to_a_flex_str(),
+            ena_identifier: ena_identifier.unwrap().to_a_flex_str(),
             gene_uniquenames: vec![],
             taxonid: org.taxonid,
             gene_count: 0,    // we'll update the counts once the genes are processed
@@ -1737,12 +1739,12 @@ impl <'a> WebDataBuild<'a> {
             }
         }
 
-        let rc_display_name = RcString::from(&genotype_display_uniquename);
+        let rc_display_name = genotype_display_uniquename.to_a_flex_str();
 
         self.genotypes.insert(rc_display_name.clone(),
                               GenotypeDetails {
                                   display_uniquename: rc_display_name,
-                                  name: feat.name.as_ref().map(|s| RcString::from(s)),
+                                  name: feat.name.as_ref().map(|s| s.to_a_flex_str()),
                                   loci,
                                   ploidiness,
                                   cv_annotations: HashMap::new(),
@@ -1827,7 +1829,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_interesting_parents(&mut self) {
-        let mut interesting_parents_by_termid: HashMap<RcString, HashSet<InterestingParent>> =
+        let mut interesting_parents_by_termid: HashMap<FlexStr, HashSet<InterestingParent>> =
             HashMap::new();
 
         for cvtermpath in &self.raw.cvtermpaths {
@@ -1886,7 +1888,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_gene_neighbourhoods(&mut self) {
         struct GeneAndLoc {
-            gene_uniquename: RcString,
+            gene_uniquename: FlexStr,
             loc: ChromosomeLocation,
         }
 
@@ -1980,7 +1982,7 @@ impl <'a> WebDataBuild<'a> {
                         let mut evidence: Option<Evidence> = None;
                         let mut throughput: Option<Throughput> = None;
                         let mut is_inferred_interaction: bool = false;
-                        let mut interaction_note: Option<RcString> = None;
+                        let mut interaction_note: Option<FlexStr> = None;
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0);
@@ -2208,13 +2210,13 @@ impl <'a> WebDataBuild<'a> {
     }
 
     // find the extension_display_names config for the given termid and relation type name
-    fn matching_ext_config(&self, annotation_termid: &str,
-                           rel_type_name: &str) -> Option<ExtensionDisplayNames> {
+    fn matching_ext_config(&self, annotation_termid: &FlexStr,
+                           rel_type_name: &FlexStr) -> Option<ExtensionDisplayNames> {
         let ext_configs = &self.config.extension_display_names;
 
         if let Some(annotation_term_details) = self.terms.get(annotation_termid) {
             for ext_config in ext_configs {
-                if ext_config.rel_name == rel_type_name {
+                if ext_config.rel_name == *rel_type_name {
                     if let Some(ref if_descendant_of) = ext_config.if_descendant_of {
                         if annotation_termid == if_descendant_of.as_str() ||
                             annotation_term_details.interesting_parent_ids.contains(if_descendant_of) {
@@ -2231,11 +2233,11 @@ impl <'a> WebDataBuild<'a> {
     }
 
     // create and returns any TargetOfAnnotations implied by the extension
-    fn make_target_of_for_ext(&self, cv_name: &str,
-                              genes: &[RcString],
-                              maybe_genotype_uniquename: &Option<RcString>,
-                              reference_uniquename: &Option<RcString>,
-                              annotation_termid: &str,
+    fn make_target_of_for_ext(&self, cv_name: &FlexStr,
+                              genes: &[FlexStr],
+                              maybe_genotype_uniquename: &Option<FlexStr>,
+                              reference_uniquename: &Option<FlexStr>,
+                              annotation_termid: &FlexStr,
                               extension: &[ExtPart]) -> Vec<(GeneUniquename, TargetOfAnnotation)> {
         if genes.len() != 1 {
             panic!("expected an annotation with one gene for {}, got: {:?}",
@@ -2398,15 +2400,15 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn set_deletion_viability(&mut self) {
-        let some_null = Some(RcString::from("Null"));
+        let some_null = Some(flex_str!("Null"));
 
         let mut gene_statuses = HashMap::new();
 
         let condition_string =
-            |condition_ids: HashSet<RcString>| {
-                let mut ids_vec: Vec<RcString> = condition_ids.iter().cloned().collect();
+            |condition_ids: HashSet<FlexStr>| {
+                let mut ids_vec: Vec<FlexStr> = condition_ids.iter().cloned().collect();
                 ids_vec.sort();
-                RcString::from(&ids_vec.join(" "))
+                join(&ids_vec, " ")
             };
 
         let viable_termid = &self.config.viability_terms.viable;
@@ -2416,9 +2418,9 @@ impl <'a> WebDataBuild<'a> {
             let mut new_status = DeletionViability::Unknown;
 
             if let Some(single_locus_term_annotations) =
-                gene_details.cv_annotations.get("single_locus_phenotype") {
-                    let mut viable_conditions: HashMap<RcString, TermId> = HashMap::new();
-                    let mut inviable_conditions: HashMap<RcString, TermId> = HashMap::new();
+                gene_details.cv_annotations.get(&flex_str!("single_locus_phenotype")) {
+                    let mut viable_conditions: HashMap<FlexStr, TermId> = HashMap::new();
+                    let mut inviable_conditions: HashMap<FlexStr, TermId> = HashMap::new();
 
                     for term_annotation in single_locus_term_annotations {
                         'ANNOTATION: for annotation_id in &term_annotation.annotations {
@@ -2467,9 +2469,9 @@ impl <'a> WebDataBuild<'a> {
                         } else {
                             new_status = DeletionViability::DependsOnConditions;
 
-                            let viable_conditions_set: HashSet<RcString> =
+                            let viable_conditions_set: HashSet<FlexStr> =
                                 viable_conditions.keys().cloned().collect();
-                            let inviable_conditions_set: HashSet<RcString> =
+                            let inviable_conditions_set: HashSet<FlexStr> =
                                 inviable_conditions.keys().cloned().collect();
 
                             let intersecting_conditions =
@@ -2526,7 +2528,7 @@ impl <'a> WebDataBuild<'a> {
     // front end might need it, eg. slim term IDs
     fn set_gene_details_subset_termids(&mut self) {
         let is_subset_member =
-            |subset_termid: &str, test_termid: &str| {
+            |subset_termid: &FlexStr, test_termid: &FlexStr| {
                 if subset_termid == test_termid {
                     return true;
                 }
@@ -2566,18 +2568,19 @@ impl <'a> WebDataBuild<'a> {
     fn set_taxonomic_distributions(&mut self) {
         let mut term_name_map = HashMap::new();
 
-        let in_archaea = "conserved in archaea";
-        let in_bacteria = "conserved in bacteria";
-        let in_fungi_only = "conserved in fungi only";
-        let in_metazoa = "conserved in metazoa";
-        let pombe_specific = "Schizosaccharomyces pombe specific";
-        let schizo_specific = "Schizosaccharomyces specific";
+        let in_archaea = "conserved in archaea".to_a_flex_str();
+        let in_bacteria = "conserved in bacteria".to_a_flex_str();
+        let in_fungi_only = "conserved in fungi only".to_a_flex_str();
+        let in_metazoa = "conserved in metazoa".to_a_flex_str();
+        let pombe_specific = "Schizosaccharomyces pombe specific".to_a_flex_str();
+        let schizo_specific = "Schizosaccharomyces specific".to_a_flex_str();
 
-        let names = vec![in_archaea, in_bacteria, in_fungi_only, in_metazoa,
-                         pombe_specific, schizo_specific];
+        let names = vec![in_archaea.clone(), in_bacteria.clone(),
+                         in_fungi_only.clone(), in_metazoa.clone(),
+                         pombe_specific.clone(), schizo_specific.clone()];
 
         for name in names {
-            if let Some(termid) = self.term_ids_by_name.get(name) {
+            if let Some(termid) = self.term_ids_by_name.get(&name) {
                 term_name_map.insert(termid.clone(), name.to_owned());
             } else {
                 eprintln!("configuration error: can't find {} in term_ids_by_name map", name);
@@ -2590,7 +2593,7 @@ impl <'a> WebDataBuild<'a> {
         for gene_details in self.genes.values_mut() {
             let mut dist_names = HashSet::new();
 
-            if let Some(species_dists) = gene_details.cv_annotations.get("species_dist") {
+            if let Some(species_dists) = gene_details.cv_annotations.get(&flex_str!("species_dist")) {
                 for ont_term_annotations in species_dists {
                     let term = &ont_term_annotations.term;
                     if let Some(term_name) = term_name_map.get(term) {
@@ -2599,56 +2602,56 @@ impl <'a> WebDataBuild<'a> {
                 }
             }
 
-            if (dist_names.contains(in_archaea) || dist_names.contains(in_bacteria))
-                && !dist_names.contains(in_metazoa) {
+            if (dist_names.contains(&in_archaea) || dist_names.contains(&in_bacteria))
+                && !dist_names.contains(&in_metazoa) {
                     gene_details.taxonomic_distribution =
-                        Some(RcString::from("fungi and prokaryotes"));
+                        Some(flex_str!("fungi and prokaryotes"));
                     continue 'GENE;
                 }
-            if dist_names.contains(in_metazoa) &&
-                !((dist_names.contains(in_archaea) || dist_names.contains(in_bacteria))
-                  && dist_names.contains(in_metazoa)) {
+            if dist_names.contains(&in_metazoa) &&
+                !((dist_names.contains(&in_archaea) || dist_names.contains(&in_bacteria))
+                  && dist_names.contains(&in_metazoa)) {
                     gene_details.taxonomic_distribution =
-                        Some(RcString::from("eukaryotes only, fungi and metazoa"));
-                    continue 'GENE;
-                }
-
-
-            if (dist_names.contains(in_archaea) || dist_names.contains(in_bacteria)) &&
-                dist_names.contains(in_metazoa) {
-                    gene_details.taxonomic_distribution =
-                        Some(RcString::from("eukaryotes and prokaryotes"));
+                        Some(flex_str!("eukaryotes only, fungi and metazoa"));
                     continue 'GENE;
                 }
 
-            if dist_names.contains(in_fungi_only) {
-                gene_details.taxonomic_distribution = Some(RcString::from("fungi only"));
+
+            if (dist_names.contains(&in_archaea) || dist_names.contains(&in_bacteria)) &&
+                dist_names.contains(&in_metazoa) {
+                    gene_details.taxonomic_distribution =
+                        Some(flex_str!("eukaryotes and prokaryotes"));
+                    continue 'GENE;
+                }
+
+            if dist_names.contains(&in_fungi_only) {
+                gene_details.taxonomic_distribution = Some(flex_str!("fungi only"));
                 continue 'GENE;
             }
 
-            if dist_names.contains(pombe_specific) {
-                gene_details.taxonomic_distribution = Some(RcString::from("S. pombe specific"));
+            if dist_names.contains(&pombe_specific) {
+                gene_details.taxonomic_distribution = Some(flex_str!("S. pombe specific"));
                 continue 'GENE;
             }
 
-            if dist_names.contains(schizo_specific) {
-                gene_details.taxonomic_distribution = Some(RcString::from("Schizos. specific"));
+            if dist_names.contains(&schizo_specific) {
+                gene_details.taxonomic_distribution = Some(flex_str!("Schizos. specific"));
                 continue 'GENE;
             }
 
             if let Some(ref characterisation_status) = gene_details.characterisation_status {
                 if characterisation_status == "dubious" {
-                    gene_details.taxonomic_distribution = Some(RcString::from("dubious"));
+                    gene_details.taxonomic_distribution = Some(flex_str!("dubious"));
                     continue 'GENE;
                 }
             }
 
             if gene_details.feature_type != "mRNA gene" {
-                gene_details.taxonomic_distribution = Some(RcString::from("not curated"));
+                gene_details.taxonomic_distribution = Some(flex_str!("not curated"));
                 continue 'GENE;
             }
 
-            gene_details.taxonomic_distribution = Some(RcString::from("other"));
+            gene_details.taxonomic_distribution = Some(flex_str!("other"));
         }
     }
 
@@ -2751,12 +2754,12 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn get_ext_rel_display_name(&self, annotation_termid: &str,
-                                ext_rel_name: &str) -> RcString {
+    fn get_ext_rel_display_name(&self, annotation_termid: &FlexStr,
+                                ext_rel_name: &FlexStr) -> FlexStr {
         if let Some(ext_conf) = self.matching_ext_config(annotation_termid, ext_rel_name) {
             ext_conf.display_name
         } else {
-            RcString::from(&str::replace(ext_rel_name, "_", " "))
+            str::replace(ext_rel_name, "_", " ").to_a_flex_str()
         }
     }
 
@@ -2769,24 +2772,24 @@ impl <'a> WebDataBuild<'a> {
                     if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
                         let ext_rel_name_str =
                             &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
-                        let ext_rel_name = RcString::from(ext_rel_name_str);
+                        let ext_rel_name = ext_rel_name_str.to_a_flex_str();
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with(&db_prefix) {
-                            let db_feature_uniquename = &ext_range[db_prefix.len()..];
-                            if let Some(captures) = PROMOTER_RE.captures(db_feature_uniquename) {
-                                let gene_uniquename = RcString::from(&captures["gene"]);
+                            let db_feature_uniquename = ext_range[db_prefix.len()..].to_a_flex_str();
+                            if let Some(captures) = PROMOTER_RE.captures(&db_feature_uniquename) {
+                                let gene_uniquename = captures["gene"].to_a_flex_str();
                                 if self.genes.contains_key(&gene_uniquename) {
                                     ExtRange::Promoter(gene_uniquename)
                                 } else {
                                     panic!("unknown gene in promoter: {}", db_feature_uniquename);
                                 }
                             } else {
-                                if self.genes.contains_key(db_feature_uniquename) {
-                                    ExtRange::Gene(RcString::from(db_feature_uniquename))
+                                if self.genes.contains_key(&db_feature_uniquename) {
+                                    ExtRange::Gene(db_feature_uniquename.clone())
                                 } else {
-                                    if let Some(captures) = TRANSCRIPT_ID_RE.captures(db_feature_uniquename) {
-                                        if self.genes.contains_key(&captures["gene"]) {
-                                            ExtRange::Transcript(RcString::from(db_feature_uniquename))
+                                    if let Some(captures) = TRANSCRIPT_ID_RE.captures(db_feature_uniquename.as_ref()) {
+                                        if self.genes.contains_key(&captures["gene"].to_a_flex_str()) {
+                                            ExtRange::Transcript(db_feature_uniquename.clone())
                                         } else {
                                             panic!("unknown gene for transcript: {}", db_feature_uniquename);
                                         }
@@ -2919,7 +2922,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_genotype_short(&self, genotype_display_name: &str) -> GenotypeShort {
+    fn make_genotype_short(&self, genotype_display_name: &FlexStr) -> GenotypeShort {
         if let Some(details) = self.genotypes.get(genotype_display_name) {
             GenotypeShort {
                 display_uniquename: details.display_uniquename.clone(),
@@ -2931,12 +2934,12 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_allele_short(&self, allele_uniquename: &str) -> AlleleShort {
+    fn make_allele_short(&self, allele_uniquename: &FlexStr) -> AlleleShort {
         self.alleles[allele_uniquename].clone()
     }
 
-    fn add_product_to_protein(&mut self, transcript_uniquename: &str,
-                              product: RcString) {
+    fn add_product_to_protein(&mut self, transcript_uniquename: &FlexStr,
+                              product: FlexStr) {
         if let Some(transcript_details) =
             self.transcripts.get_mut(transcript_uniquename)
         {
@@ -3015,13 +3018,13 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_with_or_from_value(&self, with_or_from_value: &RcString) -> WithFromValue {
+    fn make_with_or_from_value(&self, with_or_from_value: &FlexStr) -> WithFromValue {
         if let Some(captures) = PREFIX_AND_ID_RE.captures(with_or_from_value) {
-            let prefix = &captures["prefix"];
-            let id = &captures["id"];
+            let prefix = captures["prefix"].to_a_flex_str();
+            let id = captures["id"].to_a_flex_str();
 
-            if self.genes.contains_key(id) {
-                let gene_short = self.make_gene_short(id);
+            if self.genes.contains_key(&id) {
+                let gene_short = self.make_gene_short(&id);
                 if self.config.database_name == prefix {
                     // a gene from the main organism
                     return WithFromValue::Gene(gene_short);
@@ -3030,15 +3033,15 @@ impl <'a> WebDataBuild<'a> {
                         return WithFromValue::IdentifierAndName({
                             IdentifierAndName {
                                 identifier: with_or_from_value.clone(),
-                                name: RcString::from(name),
+                                name: name.clone(),
                             }
                         });
                     }
                 }
             } else {
-                if self.transcripts.contains_key(id) {
+                if self.transcripts.contains_key(&id) {
                     if self.config.database_name == prefix {
-                        return WithFromValue::Transcript(RcString::from(id));
+                        return WithFromValue::Transcript(id);
                     }
                 }
             }
@@ -3049,7 +3052,7 @@ impl <'a> WebDataBuild<'a> {
                 return WithFromValue::Gene(gene_short);
             } else {
                 if self.transcripts.contains_key(with_or_from_value) {
-                    return WithFromValue::Transcript(RcString::from(with_or_from_value));
+                    return WithFromValue::Transcript(with_or_from_value.clone());
                 }
             }
         }
@@ -3083,15 +3086,15 @@ impl <'a> WebDataBuild<'a> {
                 }
 
             let publication = &feature_cvterm.publication;
-            let mut extra_props: HashMap<RcString, RcString> = HashMap::new();
+            let mut extra_props: HashMap<FlexStr, FlexStr> = HashMap::new();
             let mut conditions: HashSet<TermId> = HashSet::new();
             let mut withs: HashSet<WithFromValue> = HashSet::new();
             let mut froms: HashSet<WithFromValue> = HashSet::new();
             let mut qualifiers: Vec<Qualifier> = vec![];
-            let mut date: Option<RcString> = None;
-            let mut assigned_by: Option<RcString> = None;
-            let mut evidence: Option<RcString> = None;
-            let mut genotype_background: Option<RcString> = None;
+            let mut date: Option<FlexStr> = None;
+            let mut assigned_by: Option<FlexStr> = None;
+            let mut evidence: Option<FlexStr> = None;
+            let mut genotype_background: Option<FlexStr> = None;
             let mut throughput: Option<Throughput> = None;
 
             // need to get evidence first as it's used later
@@ -3123,7 +3126,7 @@ impl <'a> WebDataBuild<'a> {
                                 let residue = value.clone();
                                 let display_name =
                                     self.get_ext_rel_display_name(&termid,
-                                                                  "modified residue");
+                                                                  &flex_str!("modified residue"));
 
                                 let residue_range_part = ExtPart {
                                     rel_type_id: None,
@@ -3253,7 +3256,7 @@ impl <'a> WebDataBuild<'a> {
             gene_uniquenames_vec.dedup();
 
             gene_uniquenames_vec =
-                gene_uniquenames_vec.iter().map(|gene_uniquename: &RcString| {
+                gene_uniquenames_vec.iter().map(|gene_uniquename: &FlexStr| {
                     self.make_gene_short(gene_uniquename).uniquename
                 }).collect();
 
@@ -3265,11 +3268,11 @@ impl <'a> WebDataBuild<'a> {
                 };
 
             let mut extra_props_clone = extra_props.clone();
-            let copies_per_cell = extra_props_clone.remove("quant_gene_ex_copies_per_cell");
-            let avg_copies_per_cell = extra_props_clone.remove("quant_gene_ex_avg_copies_per_cell");
+            let copies_per_cell = extra_props_clone.remove(&flex_str!("quant_gene_ex_copies_per_cell"));
+            let avg_copies_per_cell = extra_props_clone.remove(&flex_str!("quant_gene_ex_avg_copies_per_cell"));
             let gene_ex_props =
                 if copies_per_cell.is_some() || avg_copies_per_cell.is_some() {
-                    let scale = extra_props_clone.remove("scale")
+                    let scale = extra_props_clone.remove(&flex_str!("scale"))
                         .expect("gene ex scale missing");
                     Some(GeneExProps {
                         copies_per_cell,
@@ -3293,8 +3296,8 @@ impl <'a> WebDataBuild<'a> {
                 genotype_background,
                 withs,
                 froms,
-                residue: extra_props_clone.remove("residue"),
-                gene_product_form_id: extra_props_clone.remove("gene_product_form_id"),
+                residue: extra_props_clone.remove(&flex_str!("residue")),
+                gene_product_form_id: extra_props_clone.remove(&flex_str!("gene_product_form_id")),
                 gene_ex_props,
                 qualifiers,
                 evidence,
@@ -3311,7 +3314,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn make_term_annotations(&self, termid: &RcString, detail_ids: &[OntAnnotationId],
+    fn make_term_annotations(&self, termid: &FlexStr, detail_ids: &[OntAnnotationId],
                              is_not: bool)
                        -> Vec<(CvName, OntTermAnnotations)> {
         let term_details = &self.terms[termid];
@@ -3353,12 +3356,12 @@ impl <'a> WebDataBuild<'a> {
                 let mut return_vec = vec![];
 
                 if !qual_annotations.annotations.is_empty() {
-                    return_vec.push((RcString::from("qualitative_gene_expression"),
+                    return_vec.push((flex_str!("qualitative_gene_expression"),
                                      qual_annotations));
                 }
 
                 if !quant_annotations.annotations.is_empty() {
-                    return_vec.push((RcString::from("quantitative_gene_expression"),
+                    return_vec.push((flex_str!("quantitative_gene_expression"),
                                      quant_annotations));
                 }
 
@@ -3404,12 +3407,12 @@ impl <'a> WebDataBuild<'a> {
                 let mut return_vec = vec![];
 
                 if !single_locus.annotations.is_empty() {
-                    return_vec.push((RcString::from("single_locus_phenotype"),
+                    return_vec.push((flex_str!("single_locus_phenotype"),
                                      single_locus));
                 }
 
                 if !multi_locus.annotations.is_empty() {
-                    return_vec.push((RcString::from("multi_locus_phenotype"),
+                    return_vec.push((flex_str!("multi_locus_phenotype"),
                                      multi_locus));
                 }
 
@@ -3495,7 +3498,7 @@ impl <'a> WebDataBuild<'a> {
             HashMap::new();
         let mut genotype_annotation_by_term: HashMap<GenotypeUniquename, HashMap<TermId, Vec<OntAnnotationId>>> =
             HashMap::new();
-        let mut ref_annotation_by_term: HashMap<RcString, HashMap<TermId, Vec<OntAnnotationId>>> =
+        let mut ref_annotation_by_term: HashMap<FlexStr, HashMap<TermId, Vec<OntAnnotationId>>> =
             HashMap::new();
 
         let mut ont_annotations = vec![];
@@ -3604,7 +3607,7 @@ impl <'a> WebDataBuild<'a> {
                                 };
 
                             part_term_details.cv_annotations
-                                .entry(RcString::from(&extension_cv_name))
+                                .entry(flex_str!(&extension_cv_name))
                                 .or_insert({
                                     let mut new_vec = Vec::new();
                                     let new_term_annotation =
@@ -3628,17 +3631,17 @@ impl <'a> WebDataBuild<'a> {
                 */
 
                 let gene_short_list =
-                    annotation.genes.iter().map(|uniquename: &RcString| {
+                    annotation.genes.iter().map(|uniquename: &FlexStr| {
                         self.make_gene_short(uniquename)
                     }).collect::<HashSet<_>>();
 
                 let reference_short =
-                    annotation.reference.as_ref().and_then(|uniquename: &RcString| {
+                    annotation.reference.as_ref().and_then(|uniquename: &FlexStr| {
                         make_reference_short(&self.references, uniquename)
                     });
 
                 let genotype_short =
-                    annotation.genotype.as_ref().map(|uniquename: &RcString| {
+                    annotation.genotype.as_ref().map(|uniquename: &FlexStr| {
                         self.make_genotype_short(uniquename)
                     });
 
@@ -3757,7 +3760,7 @@ impl <'a> WebDataBuild<'a> {
 
     // return true if the term could or should appear in the interesting_parent_details
     // field of the TermDetails and TermShort structs
-    fn is_interesting_parent(&self, termid: &str, rel_name: &str) -> bool {
+    fn is_interesting_parent(&self, termid: &FlexStr, rel_name: &FlexStr) -> bool {
         self.possible_interesting_parents.contains(&InterestingParent {
             termid: termid.into(),
             rel_name: rel_name.into(),
@@ -3797,7 +3800,7 @@ impl <'a> WebDataBuild<'a> {
                     self.make_term_short(&rel_termid).name;
 
                 if rel_term_name == "has_part" &&
-                    !HAS_PART_CV_NAMES.contains(&subject_term_details.cv_name.as_str()) {
+                    !HAS_PART_CV_NAMES.contains(&subject_term_details.cv_name) {
                         continue;
                     }
 
@@ -3840,7 +3843,7 @@ impl <'a> WebDataBuild<'a> {
         for ((dest_cv_name, dest_termid), dest_annotations_map) in new_annotations.drain() {
             for (source_termid, source_annotations_map) in dest_annotations_map {
                 let mut new_annotations: Vec<OntAnnotationId> = vec![];
-                let mut all_rel_names: HashSet<RcString> = HashSet::new();
+                let mut all_rel_names: HashSet<FlexStr> = HashSet::new();
                 for (annotation_id, rel_names) in source_annotations_map {
                     new_annotations.push(annotation_id);
                     for rel_name in rel_names {
@@ -3930,8 +3933,8 @@ impl <'a> WebDataBuild<'a> {
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 
         Metadata {
-            export_prog_name: RcString::from(PKG_NAME),
-            export_prog_version: RcString::from(VERSION),
+            export_prog_name: flex_str!(PKG_NAME),
+            export_prog_version: flex_str!(VERSION),
             db_creation_datetime: db_creation_datetime.unwrap(),
             gene_count: self.genes.len(),
             term_count: self.terms.len(),
@@ -4039,12 +4042,12 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_gene_query_go_data(&self, gene_details: &GeneDetails, term_config: &[TermId],
-                               cv_name: &str) -> Option<GeneQueryTermData>
+                               cv_name: &FlexStr) -> Option<GeneQueryTermData>
     {
         let component_term_annotations =
             gene_details.cv_annotations.get(cv_name)?;
 
-        let in_component = |check_termid: &str| {
+        let in_component = |check_termid: &FlexStr| {
             for term_annotation in component_term_annotations {
                 let maybe_term_details = self.terms.get(&term_annotation.term);
 
@@ -4056,7 +4059,7 @@ impl <'a> WebDataBuild<'a> {
                 let interesting_parent_ids = &term_details.interesting_parent_ids;
 
                 if !term_annotation.is_not &&
-                    (term_annotation.term == check_termid ||
+                    (term_annotation.term == *check_termid ||
                      interesting_parent_ids.contains(check_termid))
                 {
                     return true;
@@ -4135,13 +4138,13 @@ impl <'a> WebDataBuild<'a> {
 
             let go_component =
                 self.make_gene_query_go_data(gene_details, &cc_terms,
-                                             "cellular_component");
+                    &flex_str!("cellular_component"));
             let go_process_superslim =
                 self.make_gene_query_go_data(gene_details, &process_terms,
-                                             "biological_process");
+                    &flex_str!("biological_process"));
             let go_function =
                 self.make_gene_query_go_data(gene_details, &function_terms,
-                                             "molecular_function");
+                    &flex_str!("molecular_function"));
 
             let tmm =
                 if gene_details.feature_type == "mRNA gene" {
@@ -4262,13 +4265,13 @@ impl <'a> WebDataBuild<'a> {
                 let so_types_to_show =
                     &self.config.sequence_feature_page.so_types_to_show;
                 let feature_type_string =
-                    feature_short.feature_type.to_string();
+                    feature_short.feature_type.to_string().to_a_flex_str();
                 so_types_to_show.contains(&feature_type_string)
             })
             .map(|feature_short| {
                 let mut new_feature = feature_short.clone();
                 // we don't need the residues for the seq feature page
-                new_feature.residues = RcString::new();
+                new_feature.residues = flex_str!("");
                 new_feature
             }).collect();
 
@@ -4311,7 +4314,7 @@ impl <'a> WebDataBuild<'a> {
        }
     }
 
-    fn gene_uniquenames_from_genotype(&self, genotype_details: &GenotypeDetails) -> Vec<RcString> {
+    fn gene_uniquenames_from_genotype(&self, genotype_details: &GenotypeDetails) -> Vec<FlexStr> {
         let mut ret = vec![];
 
         for locus in &genotype_details.loci {
@@ -4328,14 +4331,14 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_cv_annotations_to_maps(&self,
-                                  identifier: &RcString,
+                                  identifier: &FlexStr,
                                   cv_annotations: &OntAnnotationMap,
-                                  seen_references: &mut HashMap<RcString, ReferenceShortOptionMap>,
-                                  seen_genes: &mut HashMap<RcString, GeneShortOptionMap>,
-                                  seen_genotypes: &mut HashMap<RcString, GenotypeShortMap>,
-                                  seen_alleles: &mut HashMap<RcString, AlleleShortMap>,
-                                  seen_transcripts: &mut HashMap<RcString, TranscriptDetailsOptionMap>,
-                                  seen_terms: &mut HashMap<RcString, TermShortOptionMap>) {
+                                  seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
+                                  seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                                  seen_genotypes: &mut HashMap<FlexStr, GenotypeShortMap>,
+                                  seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
+                                  seen_transcripts: &mut HashMap<FlexStr, TranscriptDetailsOptionMap>,
+                                  seen_terms: &mut HashMap<FlexStr, TermShortOptionMap>) {
         for feat_annotations in cv_annotations.values() {
             for feat_annotation in feat_annotations.iter() {
                 self.add_term_to_hash(seen_terms, identifier,
@@ -4688,11 +4691,11 @@ impl <'a> WebDataBuild<'a> {
 
     fn set_reference_details_maps(&mut self) {
         // for calculating the gene_count field, we don't incude non-pombe genes
-        let mut gene_count_hash: HashMap<RcString, GeneShortOptionMap> =
+        let mut gene_count_hash: HashMap<FlexStr, GeneShortOptionMap> =
             HashMap::new();
 
         let mut maybe_add_to_gene_count_hash =
-            |reference_uniquename: &RcString, gene_uniquename: &GeneUniquename| {
+            |reference_uniquename: &FlexStr, gene_uniquename: &GeneUniquename| {
                 if let Some(load_org_taxonid) = self.config.load_organism_taxonid {
                     if let Some(gene_details) = self.genes.get(gene_uniquename) {
                         if gene_details.taxonid == load_org_taxonid {
@@ -4926,10 +4929,10 @@ impl <'a> WebDataBuild<'a> {
     }
 
     // make gene subsets for genes the are not in a slim category
-    fn make_non_slim_subset(&self, cv_name: &str, slim_subset: &TermSubsetDetails)
+    fn make_non_slim_subset(&self, cv_name: &FlexStr, slim_subset: &TermSubsetDetails)
                             -> IdGeneSubsetMap
     {
-        let slim_termid_set: HashSet<RcString> =
+        let slim_termid_set: HashSet<FlexStr> =
             slim_subset.elements.keys().cloned().collect();
 
         let mut non_slim_with_bp_annotation = HashSet::new();
@@ -4960,8 +4963,8 @@ impl <'a> WebDataBuild<'a> {
                 continue;
             }
 
-            if gene_details.characterisation_status == Some(RcString::from("transposon")) ||
-                gene_details.characterisation_status == Some(RcString::from("dubious"))
+            if gene_details.characterisation_status == Some(flex_str!("transposon")) ||
+                gene_details.characterisation_status == Some(flex_str!("dubious"))
             {
                 continue;
             }
@@ -4990,27 +4993,27 @@ impl <'a> WebDataBuild<'a> {
         let with_annotation_display_name =
             String::from("Gene products with ") + &cv_display_name +
             " annotation that are not in a slim category";
-        let name = RcString::from(&format!("non_slim_with_{}_annotation", cv_name));
+        let name = flex_fmt!("non_slim_with_{}_annotation", cv_name);
         return_map.insert(name.clone(),
                           GeneSubsetDetails {
                               name,
-                              display_name: RcString::from(&with_annotation_display_name),
+                              display_name: with_annotation_display_name.to_a_flex_str(),
                               elements: non_slim_with_bp_annotation,
                           });
         let without_annotation_display_name =
             String::from("Gene products with no ") + &cv_display_name +
             " annotation and are not in a slim category";
-        let name = RcString::from(&format!("non_slim_without_{}_annotation", cv_name));
+        let name = flex_fmt!("non_slim_without_{}_annotation", cv_name);
         return_map.insert(name.clone(),
                           GeneSubsetDetails {
                               name,
-                              display_name: RcString::from(&without_annotation_display_name),
+                              display_name: without_annotation_display_name.to_a_flex_str(),
                               elements: non_slim_without_bp_annotation,
                           });
         return_map
     }
 
-    fn make_slim_subset(&self, slim_name: &str) -> TermSubsetDetails {
+    fn make_slim_subset(&self, slim_name: &FlexStr) -> TermSubsetDetails {
         let mut all_genes = HashSet::new();
         let mut all_single_locus_genes = HashSet::new();
         let mut slim_subset: HashMap<TermId, TermSubsetElement> = HashMap::new();
@@ -5041,7 +5044,7 @@ impl <'a> WebDataBuild<'a> {
         }
 
         TermSubsetDetails {
-            name: RcString::from(slim_name),
+            name: slim_name.clone(),
             total_gene_count: all_genes.len(),
             total_single_locus_gene_count: all_genes.len(),
             elements: slim_subset,
@@ -5057,13 +5060,13 @@ impl <'a> WebDataBuild<'a> {
             }
 
             let subset_name =
-                RcString::from("feature_type:") + &gene_details.feature_type;
+                flex_str!("feature_type:") + &gene_details.feature_type;
             let re = Regex::new(r"[\s,:]+").unwrap();
-            let subset_name_no_spaces = RcString::from(re.replace_all(&subset_name, "_").as_ref());
+            let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_a_flex_str();
             subsets.entry(subset_name_no_spaces.clone())
                 .or_insert(GeneSubsetDetails {
                     name: subset_name_no_spaces,
-                    display_name: RcString::from(&subset_name),
+                    display_name: subset_name.clone(),
                     elements: HashSet::new()
                 })
                 .elements.insert(gene_details.uniquename.clone());
@@ -5085,13 +5088,13 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(ref characterisation_status) = gene_details.characterisation_status {
                 let subset_name =
-                    RcString::from("characterisation_status:") + characterisation_status;
+                    flex_str!("characterisation_status:") + characterisation_status;
                 let re = Regex::new(r"[\s,:]+").unwrap();
-                let subset_name_no_spaces = RcString::from(re.replace_all(&subset_name, "_").as_ref());
+                let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_a_flex_str();
                 subsets.entry(subset_name_no_spaces.clone())
                     .or_insert(GeneSubsetDetails {
                         name: subset_name_no_spaces,
-                        display_name: RcString::from(&subset_name),
+                        display_name: subset_name.to_a_flex_str(),
                         elements: HashSet::new()
                     })
                     .elements.insert(gene_details.uniquename.clone());
@@ -5114,13 +5117,13 @@ impl <'a> WebDataBuild<'a> {
                 if !interpro_match.interpro_id.is_empty() {
                     let subset_name =
                         String::from("interpro:") + &interpro_match.interpro_id;
-                    new_subset_names.push((RcString::from(&subset_name),
+                    new_subset_names.push((subset_name.to_a_flex_str(),
                                            interpro_match.interpro_name.clone()));
                 }
 
                 let subset_name = String::from("interpro:") +
                      &interpro_match.dbname.clone() + ":" + &interpro_match.id;
-                new_subset_names.push((RcString::from(&subset_name), interpro_match.name.clone()));
+                new_subset_names.push((subset_name.to_a_flex_str(), interpro_match.name.clone()));
 
                 for (subset_name, display_name) in new_subset_names {
                     subsets.entry(subset_name.clone())
@@ -5202,16 +5205,16 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    fn get_dataset_name_for_measurement(&self, reference_uniquename: &str,
-                                        level_type_termid: &str,
-                                        during_termid: &str, scale: &str)
-                                        -> Option<RcString>
+    fn get_dataset_name_for_measurement(&self, reference_uniquename: &FlexStr,
+                                        level_type_termid: &FlexStr,
+                                        during_termid: &FlexStr, scale: &FlexStr)
+                                        -> Option<FlexStr>
     {
         for conf in &self.config.gene_expression.datasets {
-            if conf.pubmed_id == reference_uniquename &&
-                conf.level_type_termid == level_type_termid &&
-                conf.during_termid == during_termid &&
-                conf.scale == scale {
+            if conf.pubmed_id == *reference_uniquename &&
+                conf.level_type_termid == *level_type_termid &&
+                conf.during_termid == *during_termid &&
+                conf.scale == *scale {
                     return Some(conf.name.clone());
                 }
         }
@@ -5366,18 +5369,18 @@ impl <'a> WebDataBuild<'a> {
             let term_name_words =
                 term_name_split_re.split(&term_details.name)
                 .map(|s: &str| {
-                    s.trim_matches(&trimmable_p).to_owned()
-                }).collect::<Vec<String>>();
+                    s.trim_matches(&trimmable_p).to_a_flex_str()
+                }).collect::<Vec<_>>();
 
             let mut close_synonyms = vec![];
-            let mut close_synonym_words_vec: Vec<RcString> = vec![];
+            let mut close_synonym_words_vec: Vec<FlexStr> = vec![];
             let mut distant_synonyms = vec![];
-            let mut distant_synonym_words_vec: Vec<RcString> = vec![];
+            let mut distant_synonym_words_vec: Vec<FlexStr> = vec![];
 
-            let add_to_words_vec = |synonym: &str, words_vec: &mut Vec<RcString>| {
+            let add_to_words_vec = |synonym: &FlexStr, words_vec: &mut Vec<FlexStr>| {
                 let synonym_words = term_name_split_re.split(synonym);
                 for word in synonym_words {
-                    let word_string = RcString::from(word.trim_matches(&trimmable_p));
+                    let word_string = word.trim_matches(&trimmable_p).to_a_flex_str();
                     if !words_vec.contains(&word_string) &&
                         !term_name_words.contains(&word_string) {
                             words_vec.push(word_string);
@@ -5410,9 +5413,9 @@ impl <'a> WebDataBuild<'a> {
                 name: term_details.name.clone(),
                 definition: term_details.definition.clone(),
                 close_synonyms,
-                close_synonym_words: RcString::from(&close_synonym_words_vec.join(" ")),
+                close_synonym_words: join(&close_synonym_words_vec," "),
                 distant_synonyms,
-                distant_synonym_words: RcString::from(&distant_synonym_words_vec.join(" ")),
+                distant_synonym_words: join(&distant_synonym_words_vec, " "),
                 interesting_parent_ids: interesting_parent_ids_for_solr,
                 secondary_identifiers: term_details.secondary_identifiers.clone(),
                 annotation_count,

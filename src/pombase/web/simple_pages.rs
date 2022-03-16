@@ -1,4 +1,4 @@
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, Flex};
 
 use crate::web::config::Config;
 use crate::data_types::{GeneDetails, ReferenceDetails, TermDetails,
@@ -81,15 +81,17 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
         summ += &format!("  <dt>Organism</dt> <dd>{}\n", gene_organism.scientific_name());
 
         if !gene_organism.alternative_names.is_empty() {
-            summ += &format!(" ({})", gene_organism.alternative_names.join(", "));
+            summ += &format!(" ({})", gene_organism.alternative_names.iter()
+                         .map(Flex::to_string).collect::<Vec<_>>().join(", "));
         }
         summ += "</dd>\n";
     }
 
     if !gene_details.synonyms.is_empty() {
-        let synonyms: Vec<RcString> =
+        let synonyms: Vec<FlexStr> =
             gene_details.synonyms.iter().map(|s| s.name.clone()).collect();
-        summ += &format!("  <dt>Synonyms</dt> <dd>{}</dd>\n", synonyms.join(", "));
+        summ += &format!("  <dt>Synonyms</dt> <dd>{}</dd>\n",
+                         synonyms.iter().map(Flex::to_string).collect::<Vec<_>>().join(", "));
     }
 
     if let Some(ref uniprot_identifier) = gene_details.uniprot_identifier {
@@ -114,7 +116,7 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
             Strand::Unstranded => "",
         };
         let chr_config = config.find_chromosome_config(&location.chromosome_name);
-        
+
         summ += &format!("  <dt>Genomic location</dt> <dd>chromosome {}: {}..{} {}</dd>\n",
                          chr_config.short_display_name, location.start_pos,
                          location.end_pos, strand_str);
@@ -150,7 +152,7 @@ fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
 
             for gene_uniquename in &annotation_details.genes {
                 if let Some(Some(gene_short)) =
-                    container.genes_by_uniquename().get(gene_uniquename.as_str()) {
+                    container.genes_by_uniquename().get(&gene_uniquename) {
                         genes.push(gene_short)
                     }
             }
@@ -184,7 +186,7 @@ fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
         if let Some(genotypes_by_uniquename) = container.genotypes_by_uniquename() {
             ret += "<p>Genotypes:</p>\n<ul>";
             for uniquename in genotypes {
-                if let Some(genotype_short) = genotypes_by_uniquename.get(uniquename.as_str()) {
+                if let Some(genotype_short) = genotypes_by_uniquename.get(&uniquename) {
                     ret += &format!("<li><a href='/genotype/{}'>{}</a></li>\n",
                                     uniquename,
                                     genotype_display_name(genotype_short));
@@ -200,14 +202,14 @@ fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
 fn annotation_section(config: &Config, container: &dyn AnnotationContainer) -> String {
     let mut annotation_html = String::new();
 
-    let mut cv_names: Vec<RcString> = vec![];
+    let mut cv_names: Vec<FlexStr> = vec![];
 
     for cv_name in container.cv_annotations().keys() {
         cv_names.push(cv_name.clone());
     }
 
     let cmp_display_names =
-        |cv_name_a: &RcString, cv_name_b: &RcString| {
+        |cv_name_a: &FlexStr, cv_name_b: &FlexStr| {
             let cv_config_a = config.cv_config_by_name(cv_name_a);
             let cv_display_name_a = cv_config_a.display_name;
             let cv_config_b = config.cv_config_by_name(cv_name_b);
@@ -396,7 +398,7 @@ pub fn render_simple_reference_page(config: &Config, reference_details: &Referen
 
 fn make_term_title(config: &Config, term_details: &TermDetails) -> String {
     let cv_config = config.cv_config_by_name(&term_details.cv_name);
-    let cv_display_name = cv_config.display_name.unwrap_or_else(|| RcString::from("DEFAULT"));
+    let cv_display_name = cv_config.display_name.unwrap_or_else(|| flex_str!("DEFAULT"));
 
     format!("{} - Term - {} - {} - {}", config.database_name, term_details.termid,
             term_details.name, cv_display_name)
@@ -411,7 +413,7 @@ fn term_summary(config: &Config, term_details: &TermDetails) -> String {
     summ += &format!("<dt>Term name</dt> <dd>{}</dd>\n", term_details.name);
 
     let cv_config = config.cv_config_by_name(&term_details.cv_name);
-    let cv_display_name = cv_config.display_name.unwrap_or_else(|| RcString::from("DEFAULT"));
+    let cv_display_name = cv_config.display_name.unwrap_or_else(|| flex_str!("DEFAULT"));
 
     summ += &format!("<dt>CV name</dt> <dd>{}</dd>\n", cv_display_name);
 

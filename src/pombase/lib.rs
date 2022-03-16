@@ -7,10 +7,11 @@ extern crate flate2;
 extern crate zstd;
 #[macro_use] extern crate lazy_static;
 #[macro_use] extern crate serde_derive;
-extern crate pombase_rc_string;
+extern crate flexstr;
 extern crate uuid;
 extern crate tokio_postgres;
 extern crate deadpool;
+extern crate itertools;
 
 pub mod db;
 pub mod web;
@@ -24,3 +25,4 @@ pub mod annotation_util;
 pub mod data_types;
 pub mod api_data;
 pub mod sort_annotations;
+pub mod utils;

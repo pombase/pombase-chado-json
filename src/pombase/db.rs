@@ -5,7 +5,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use self::tokio_postgres::Client;
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, ToAFlexStr};
 
 use crate::types::*;
 
@@ -37,26 +37,26 @@ pub struct Raw {
 }
 
 pub trait Prop {
-    fn type_name(&self) -> RcString;
-    fn value(&self) -> Option<RcString>;
+    fn type_name(&self) -> FlexStr;
+    fn value(&self) -> Option<FlexStr>;
 }
 
 pub struct Chadoprop {
     pub prop_type: Rc<Cvterm>,
-    pub value: Option<RcString>,
+    pub value: Option<FlexStr>,
 }
 
 pub struct Organism {
-    pub genus: RcString,
-    pub species: RcString,
-    pub abbreviation: RcString,
-    pub common_name: RcString,
+    pub genus: FlexStr,
+    pub species: FlexStr,
+    pub abbreviation: FlexStr,
+    pub common_name: FlexStr,
     pub organismprops: RefCell<Vec<Rc<Organismprop>>>,
 }
 pub struct Organismprop {
     pub organism: Rc<Organism>,
     pub prop_type: Rc<Cvterm>,
-    pub value: RcString,
+    pub value: FlexStr,
 }
 pub struct Cv {
     pub name: CvName,
@@ -64,51 +64,51 @@ pub struct Cv {
 }
 pub struct Cvprop {
     pub prop_type: Rc<Cvterm>,
-    pub value: RcString,
+    pub value: FlexStr,
     pub cv: Rc<Cv>,
 }
 pub struct Db {
-    pub name: RcString,
+    pub name: FlexStr,
 }
 pub struct Dbxref {
-    pub accession: RcString,
+    pub accession: FlexStr,
     pub db: Rc<Db>,
-    _identifier: RcString,
+    _identifier: FlexStr,
 }
 impl Dbxref {
-    pub fn new(db: Rc<Db>, accession: RcString) -> Dbxref {
+    pub fn new(db: Rc<Db>, accession: FlexStr) -> Dbxref {
         let identifier = String::new() + &db.name + ":" + &accession;
-        let rc_identifier = RcString::from(&identifier);
+        let rc_identifier = identifier.to_a_flex_str();
         Dbxref {
             accession,
             db,
             _identifier: rc_identifier,
         }
     }
-    pub fn identifier(&self) -> RcString {
+    pub fn identifier(&self) -> FlexStr {
         self._identifier.clone()
     }
 }
 pub struct Cvterm {
-    pub name: RcString,
+    pub name: FlexStr,
     pub cv: Rc<Cv>,
     pub dbxref: Rc<Dbxref>,
     pub definition_xrefs: RefCell<Vec<Rc<Dbxref>>>,
     pub other_dbxrefs: RefCell<Vec<Rc<Dbxref>>>,
-    pub definition: Option<RcString>,
+    pub definition: Option<FlexStr>,
     pub is_obsolete: bool,
     pub is_relationshiptype: bool,
     pub cvtermsynonyms: RefCell<Vec<Rc<Cvtermsynonym>>>,
     pub cvtermprops: RefCell<Vec<Rc<Cvtermprop>>>,
-    _termid: RcString,
+    _termid: FlexStr,
 }
 
 impl Cvterm {
-    pub fn new(cv: Rc<Cv>, dbxref: Rc<Dbxref>, name: RcString,
+    pub fn new(cv: Rc<Cv>, dbxref: Rc<Dbxref>, name: FlexStr,
                is_obsolete: bool, is_relationshiptype: bool,
-               definition: Option<RcString>) -> Cvterm {
+               definition: Option<FlexStr>) -> Cvterm {
         let termid = String::new() + &dbxref.db.name + ":" + &dbxref.accession;
-        let rc_termid = RcString::from(&termid);
+        let rc_termid = termid.to_a_flex_str();
 
         Cvterm {
             name,
@@ -125,31 +125,31 @@ impl Cvterm {
         }
     }
 
-    pub fn termid(&self) -> RcString {
+    pub fn termid(&self) -> FlexStr {
         self._termid.clone()
     }
 }
 pub struct Cvtermsynonym {
     pub cvterm: Rc<Cvterm>,
     pub synonym_type: Rc<Cvterm>,
-    pub name: RcString,
+    pub name: FlexStr,
 }
 pub struct Cvtermprop {
     pub cvterm: Rc<Cvterm>,
     pub prop_type: Rc<Cvterm>,
-    pub value: RcString,
+    pub value: FlexStr,
 }
 pub struct Publication {
-    pub uniquename: RcString,
+    pub uniquename: FlexStr,
     pub pub_type: Rc<Cvterm>,
-    pub title: Option<RcString>,
-    pub miniref: Option<RcString>,
+    pub title: Option<FlexStr>,
+    pub miniref: Option<FlexStr>,
     pub publicationprops: RefCell<Vec<Rc<Publicationprop>>>,
 }
 pub struct Publicationprop {
     pub publication: Rc<Publication>,
     pub prop_type: Rc<Cvterm>,
-    pub value: RcString,
+    pub value: FlexStr,
 }
 pub struct CvtermRelationship {
     pub subject: Rc<Cvterm>,
@@ -166,11 +166,11 @@ pub struct Cvtermpath {
     pub rel_type: Option<Rc<Cvterm>>,
 }
 pub struct Feature {
-    pub uniquename: RcString,
-    pub name: Option<RcString>,
+    pub uniquename: FlexStr,
+    pub name: Option<FlexStr>,
     pub feat_type: Rc<Cvterm>,
     pub organism: Rc<Organism>,
-    pub residues: Option<RcString>,
+    pub residues: Option<FlexStr>,
     pub featureprops: RefCell<Vec<Rc<Featureprop>>>,
     pub featurelocs: RefCell<Vec<Rc<Featureloc>>>,
     pub featurepubs: RefCell<Vec<Rc<Publication>>>,
@@ -186,10 +186,10 @@ pub struct Featureloc {
 pub struct Featureprop {
     pub feature: Rc<Feature>,
     pub prop_type: Rc<Cvterm>,
-    pub value: Option<RcString>,
+    pub value: Option<FlexStr>,
 }
 pub struct Synonym {
-    pub name: RcString,
+    pub name: FlexStr,
     pub synonym_type: Rc<Cvterm>
 }
 pub struct FeatureSynonym {
@@ -218,13 +218,13 @@ pub struct FeatureCvterm {
 pub struct FeatureCvtermprop {
     pub feature_cvterm: Rc<FeatureCvterm>,
     pub prop_type: Rc<Cvterm>,
-    pub value: Option<RcString>,
+    pub value: Option<FlexStr>,
 }
 impl Prop for FeatureCvtermprop {
-    fn type_name(&self) -> RcString {
+    fn type_name(&self) -> FlexStr {
         self.prop_type.name.clone()
     }
-    fn value(&self) -> Option<RcString> {
+    fn value(&self) -> Option<FlexStr> {
         self.value.clone()
     }
 }
@@ -240,7 +240,7 @@ pub struct FeatureRelationship {
 pub struct FeatureRelationshipprop {
     pub feature_relationship: Rc<FeatureRelationship>,
     pub prop_type: Rc<Cvterm>,
-    pub value: Option<RcString>,
+    pub value: Option<FlexStr>,
 }
 
 impl Raw {
@@ -307,10 +307,10 @@ impl Raw {
             let common_name: String = row.get(4);
 
             let organism = Organism {
-                genus: RcString::from(&genus),
-                species: RcString::from(&species),
-                abbreviation: RcString::from(&abbreviation),
-                common_name: RcString::from(&common_name),
+                genus: genus.to_a_flex_str(),
+                species: species.to_a_flex_str(),
+                abbreviation: abbreviation.to_a_flex_str(),
+                common_name: common_name.to_a_flex_str(),
                 organismprops: RefCell::new(vec![]),
             };
             let rc_organism = Rc::new(organism);
@@ -321,7 +321,7 @@ impl Raw {
         for row in &conn.query("SELECT cv_id, name FROM cv", &[]).await? {
             let cv_name: String = row.get(1);
             let cv = Cv {
-                name: RcString::from(&cv_name),
+                name: cv_name.to_a_flex_str(),
                 cvprops: RefCell::new(vec![]),
             };
             let rc_cv = Rc::new(cv);
@@ -333,7 +333,7 @@ impl Raw {
             let db_id = row.get(0);
             let name: String = row.get(1);
             let db = Db {
-                name: RcString::from(&name),
+                name: name.to_a_flex_str(),
             };
             let rc_db = Rc::new(db);
             ret.dbs.push(rc_db.clone());
@@ -344,7 +344,7 @@ impl Raw {
             let dbxref_id: i32 = row.get(0);
             let db_id: i32 = row.get(1);
             let accession: String = row.get(2);
-            let dbxref = Dbxref::new(get_db(&mut db_map, db_id), RcString::from(&accession));
+            let dbxref = Dbxref::new(get_db(&mut db_map, db_id), accession.to_a_flex_str());
             let rc_dbxref = Rc::new(dbxref);
             ret.dbxrefs.push(rc_dbxref.clone());
             dbxref_map.insert(dbxref_id, rc_dbxref);
@@ -355,7 +355,7 @@ impl Raw {
             let cv_id: i32 = row.get(1);
             let dbxref_id: i32 = row.get(2);
             let name: String = row.get(3);
-            let rc_name = RcString::from(&name);
+            let rc_name = name.to_a_flex_str();
             let definition: Option<String> = row.get(4);
             let is_obsolete: i32 = row.get(5);
             let is_relationshiptype: i32 = row.get(6);
@@ -364,7 +364,7 @@ impl Raw {
                                      rc_name,
                                      is_obsolete != 0,
                                      is_relationshiptype != 0,
-                                     definition.map(|s| RcString::from(&s)));
+                                     definition.map(|s| s.to_a_flex_str()));
             let rc_cvterm = Rc::new(cvterm);
             ret.cvterms.push(rc_cvterm.clone());
             cvterm_map.insert(cvterm_id, rc_cvterm);
@@ -378,7 +378,7 @@ impl Raw {
             let cvtermsynonym = Cvtermsynonym {
                 cvterm: cvterm.clone(),
                 synonym_type: get_cvterm(&mut cvterm_map, type_id),
-                name: RcString::from(&synonym),
+                name: synonym.to_a_flex_str(),
             };
             let rc_cvtermsynonym = Rc::new(cvtermsynonym);
             ret.cvtermsynonyms.push(rc_cvtermsynonym.clone());
@@ -393,7 +393,7 @@ impl Raw {
             let cvtermprop = Cvtermprop {
                 cvterm: cvterm.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: RcString::from(&value),
+                value: value.to_a_flex_str(),
             };
             let rc_cvtermprop = Rc::new(cvtermprop);
             ret.cvtermprops.push(rc_cvtermprop.clone());
@@ -403,15 +403,15 @@ impl Raw {
         for row in &conn.query("SELECT pub_id, uniquename, type_id, title, miniref FROM pub", &[]).await? {
             let pub_id: i32 = row.get(0);
             let uniquename_string: String = row.get(1);
-            let uniquename = RcString::from(&uniquename_string);
+            let uniquename = uniquename_string.to_a_flex_str();
             let type_id: i32 = row.get(2);
             let title: Option<String> = row.get(3);
             let miniref: Option<String> = row.get(4);
             let publication = Publication {
                 uniquename,
                 pub_type: get_cvterm(&mut cvterm_map, type_id),
-                title: title.map(|s| RcString::from(&s)),
-                miniref: miniref.map(|s| RcString::from(&s)),
+                title: title.map(|s| s.to_a_flex_str()),
+                miniref: miniref.map(|s| s.to_a_flex_str()),
                 publicationprops: RefCell::new(vec![]),
             };
             let rc_publication = Rc::new(publication);
@@ -427,7 +427,7 @@ impl Raw {
             let publicationprop = Publicationprop {
                 publication: publication.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: RcString::from(&value),
+                value: value.to_a_flex_str(),
             };
             let rc_publicationprop = Rc::new(publicationprop);
             ret.publicationprops.push(rc_publicationprop.clone());
@@ -442,7 +442,7 @@ impl Raw {
             let cvprop = Cvprop {
                 cv: cv.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: RcString::from(&value),
+                value: value.to_a_flex_str(),
             };
             let rc_cvprop = Rc::new(cvprop);
             ret.cvprops.push(rc_cvprop.clone());
@@ -454,7 +454,7 @@ impl Raw {
             let name: String = row.get(1);
             let type_id: i32 = row.get(2);
             let synonym = Synonym {
-                name: RcString::from(&name),
+                name: name.to_a_flex_str(),
                 synonym_type: get_cvterm(&mut cvterm_map, type_id),
             };
             let rc_synonym = Rc::new(synonym);
@@ -471,11 +471,11 @@ impl Raw {
             let uniquename: String = row.get(1);
             let name: Option<String> = row.get(2);
             let feature = Feature {
-                uniquename: RcString::from(&uniquename),
-                name: name.map(|s| RcString::from(&s)),
+                uniquename: uniquename.to_a_flex_str(),
+                name: name.map(|s| s.to_a_flex_str()),
                 feat_type: get_cvterm(&mut cvterm_map, type_id),
                 organism: organism_map[&organism_id].clone(),
-                residues: residues.map(|s| RcString::from(&s)),
+                residues: residues.map(|s| s.to_a_flex_str()),
                 featureprops: RefCell::new(vec![]),
                 featurelocs: RefCell::new(vec![]),
                 featurepubs: RefCell::new(vec![]),
@@ -493,7 +493,7 @@ impl Raw {
             let featureprop = Featureprop {
                 feature: feature.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value.map(|s| RcString::from(&s)),
+                value: value.map(|s| s.to_a_flex_str()),
             };
             let rc_featureprop = Rc::new(featureprop);
             ret.featureprops.push(rc_featureprop.clone());
@@ -592,7 +592,7 @@ impl Raw {
             let feature_cvtermprop = FeatureCvtermprop {
                 feature_cvterm: feature_cvterm.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value.map(|s| RcString::from(&s)),
+                value: value.map(|s| s.to_a_flex_str()),
             };
             let rc_feature_cvtermprop = Rc::new(feature_cvtermprop);
             ret.feature_cvtermprops.push(rc_feature_cvtermprop.clone());
@@ -626,7 +626,7 @@ impl Raw {
             let feature_relationshipprop = FeatureRelationshipprop {
                 feature_relationship: feature_relationship.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
-                value: value.map(|s| RcString::from(&s)),
+                value: value.map(|s| s.to_a_flex_str()),
             };
             let rc_feature_relationshipprop = Rc::new(feature_relationshipprop);
             feature_relationship.feature_relationshipprops.borrow_mut().push(rc_feature_relationshipprop.clone());
@@ -673,7 +673,7 @@ impl Raw {
             let value: Option<String> = row.get(1);
             let chadoprop = Chadoprop {
                 prop_type: cvterm_map[&type_id].clone(),
-                value: value.map(|s| RcString::from(&s)),
+                value: value.map(|s| s.to_a_flex_str()),
             };
             let rc_chadoprop = Rc::new(chadoprop);
             ret.chadoprops.push(rc_chadoprop.clone());
@@ -688,7 +688,7 @@ impl Raw {
             let organismprop = Organismprop {
                 organism: organism.clone(),
                 prop_type,
-                value: RcString::from(&value),
+                value: value.to_a_flex_str(),
             };
             let rc_organismprop = Rc::new(organismprop);
             ret.organismprops.push(rc_organismprop.clone());

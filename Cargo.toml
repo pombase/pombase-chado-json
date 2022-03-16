@@ -26,6 +26,7 @@ async-recursion = "0.2"
 deadpool-postgres = "0.9"
 deadpool = "0.8"
 anyhow = "1.0"
+itertools = "0.10"
 
 [dependencies.zstd]
 version = "0.10"
@@ -36,9 +37,9 @@ git = "https://github.com/SergioBenitez/Rocket.git"
 version = "0.5.0-rc.1"
 features = ["json"]
 
-[dependencies.pombase_rc_string]
-git = "https://github.com/pombase/pombase_rc_string.git"
-version = "0.5.0"
+[dependencies.flexstr]
+version = "0.8.0"
+features = ["serde"]
 
 [dependencies.serde]
 version = "1.0"

@@ -6,7 +6,7 @@ use serde_json;
 
 use crate::web::config::Config;
 
-use pombase_rc_string::RcString;
+use flexstr::AFlexStr as FlexStr;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Location {
@@ -17,14 +17,14 @@ pub struct Location {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct InterProMatch {
-    pub id: RcString,
-    pub dbname: RcString,
-    pub name: RcString,
-    pub model: Option<RcString>,
-    pub evidence: RcString,
-    pub interpro_id: RcString,
-    pub interpro_name: RcString,
-    pub interpro_type: RcString,
+    pub id: FlexStr,
+    pub dbname: FlexStr,
+    pub name: FlexStr,
+    pub model: Option<FlexStr>,
+    pub evidence: FlexStr,
+    pub interpro_id: FlexStr,
+    pub interpro_name: FlexStr,
+    pub interpro_type: FlexStr,
     pub locations: Vec<Location>,
 }
 
@@ -40,7 +40,7 @@ pub struct UniprotResult {
     pub tmhmm_matches: Vec<TMMatch>,
 }
 
-pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<RcString, UniprotResult> {
+pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<FlexStr, UniprotResult> {
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {
@@ -50,7 +50,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<RcString, Uni
     };
     let reader = BufReader::new(file);
 
-    let uniprot_results: HashMap<RcString, UniprotResult> =
+    let uniprot_results: HashMap<FlexStr, UniprotResult> =
         match serde_json::from_reader(reader) {
             Ok(uniprot_results) => uniprot_results,
             Err(err) => {

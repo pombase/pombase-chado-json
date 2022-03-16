@@ -21,7 +21,7 @@ use crate::bio::go_format_writer::{write_go_annotation_format, GpadGafWriteMode}
 
 use crate::types::GeneUniquename;
 
-use pombase_rc_string::RcString;
+use flexstr::{AFlexStr as FlexStr, ToAFlexStr, a_flex_str as flex_str, a_flex_fmt as flex_fmt};
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum IntRangeType {
@@ -67,9 +67,9 @@ pub enum QueryExpressionFilter {
     WtOverexpressed,
 }
 
-type TermName = String;
-type QueryRowsResult = Result<Vec<ResultRow>, String>;
-type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, String>;
+type TermName = FlexStr;
+type QueryRowsResult = Result<Vec<ResultRow>, FlexStr>;
+type GeneUniquenameVecResult = Result<Vec<GeneUniquename>, FlexStr>;
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct NotNode {
@@ -79,7 +79,7 @@ pub struct NotNode {
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct TermNode {
-    pub termid: String,
+    pub termid: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<TermName>,
     pub single_or_multi_locus: Option<SingleOrMultiLocus>,
@@ -93,7 +93,7 @@ pub struct TermNode {
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct SubsetNode {
-    pub subset_name: String,
+    pub subset_name: FlexStr,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -197,7 +197,7 @@ pub struct QueryNode {
 async fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
            nodes: &[QueryNode]) -> GeneUniquenameVecResult {
     if nodes.is_empty() {
-        return Err(String::from("illegal query: OR operator has no nodes"));
+        return Err(flex_str!("illegal query: OR operator has no nodes"));
     }
 
     let mut seen_genes = HashSet::new();
@@ -263,7 +263,7 @@ async fn exec_not(api_data: &APIData, site_db: &Option<SiteDB>,
     Ok(not_rows)
 }
 
-fn exec_termid(api_data: &APIData, term_id: &str,
+fn exec_termid(api_data: &APIData, term_id: &FlexStr,
                maybe_single_or_multi_locus: &Option<SingleOrMultiLocus>,
                maybe_ploidiness: &Option<Ploidiness>,
                expression: &Option<QueryExpressionFilter>,
@@ -280,7 +280,7 @@ fn exec_termid(api_data: &APIData, term_id: &str,
     }
 }
 
-fn exec_subset(api_data: &APIData, subset_name: &str)  -> GeneUniquenameVecResult {
+fn exec_subset(api_data: &APIData, subset_name: &FlexStr)  -> GeneUniquenameVecResult {
     Ok(api_data.genes_of_subset(subset_name))
 }
 
@@ -475,10 +475,10 @@ async fn exec_query_id(api_data: &APIData,
                 }
             }
         } else {
-            return Err(format!("can't find query for ID {}", id));
+            return Err(flex_fmt!("can't find query for ID {}", id));
         }
     } else {
-        Err(format!("can't find query for ID {} - no database", id))
+        Err(flex_fmt!("can't find query for ID {} - no database", id))
     }
 }
 
@@ -545,8 +545,8 @@ impl QueryNode {
                 "genetic" =>
                     exec_interactors_of_gene(api_data, &interactors_node.gene_uniquename,
                                              InteractionType::Genetic),
-                _ => Err(format!("No such interaction type: {}",
-                                 interactors_node.interaction_type))
+                _ => Err(flex_fmt!("No such interaction type: {}",
+                                   interactors_node.interaction_type))
             };
         }
         if let Some(ref int_range_node) = self.int_range {
@@ -589,7 +589,7 @@ pub enum SeqType {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GAFOptions {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub aspects: HashSet<String>,
+    pub aspects: HashSet<FlexStr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -597,15 +597,15 @@ pub struct QueryOutputOptions {
     pub sequence: SeqType,
     #[serde(skip_serializing_if="Option::is_none")]
     pub gaf_options: Option<GAFOptions>,
-    pub field_names: Vec<String>,
+    pub field_names: Vec<FlexStr>,
 
     // If a gene in the results is directly or indirectly annotation with one of
     // the ancestor_terms, that term will be added to the "subsets" field of the
     // ResultRow
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub ancestor_terms: HashSet<RcString>,
+    pub ancestor_terms: HashSet<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub flags: HashSet<String>,
+    pub flags: HashSet<FlexStr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -620,8 +620,8 @@ enum BeforeOrAfter {
     After,
 }
 
-fn get_chr_range(chr_residues: &RcString, feature_edge: usize, base_count: usize,
-                 before_or_after: BeforeOrAfter) -> RcString
+fn get_chr_range(chr_residues: &FlexStr, feature_edge: usize, base_count: usize,
+                 before_or_after: BeforeOrAfter) -> FlexStr
 {
     let (start_pos, end_pos) =
         if before_or_after == BeforeOrAfter::Before {
@@ -644,7 +644,7 @@ fn get_chr_range(chr_residues: &RcString, feature_edge: usize, base_count: usize
             (feature_edge, end_pos)
         };
 
-    RcString::from(&chr_residues.as_str()[start_pos..end_pos])
+    chr_residues.as_str()[start_pos..end_pos].to_a_flex_str()
 }
 
 impl Query {
@@ -735,7 +735,7 @@ impl Query {
     }
 
     fn make_sequence(&self, api_data: &APIData,
-                     gene_uniquename: &RcString) -> Option<String> {
+                     gene_uniquename: &FlexStr) -> Option<String> {
         let maybe_gene_summary = api_data.get_gene_summary(gene_uniquename);
 
         if let Some(gene_summary) = maybe_gene_summary {
@@ -748,8 +748,8 @@ impl Query {
                         }
                     SeqType::Nucleotide(ref options) => {
                         let chr = gene_summary.location.as_ref()
-                            .map(|l| -> &RcString { &l.chromosome_name } )
-                            .and_then(|name| api_data.get_chr_details(name.as_str()));
+                            .map(|l| -> &FlexStr { &l.chromosome_name } )
+                            .and_then(|name| api_data.get_chr_details(name));
                         let seq = self.make_nucl_seq(transcript, chr, options);
                         return Some(seq)
                     }
@@ -762,7 +762,7 @@ impl Query {
     }
 
     fn make_gaf_lines(&self, api_data: &APIData,
-                      gene_uniquename: &RcString) -> Option<String> {
+                      gene_uniquename: &FlexStr) -> Option<String> {
 
         let gaf_options = &self.output_options.gaf_options;
 
@@ -798,8 +798,8 @@ impl Query {
         None
     }
 
-    fn get_gene_ex_for_results(&self, api_data: &APIData, dataset_name: &str,
-                               gene_uniquename: &str)
+    fn get_gene_ex_for_results(&self, api_data: &APIData, dataset_name: &FlexStr,
+                               gene_uniquename: &FlexStr)
         -> Vec<GeneExValue>
     {
         let mut result = vec![];
@@ -811,8 +811,8 @@ impl Query {
             if let Some(measurement) = datasets.get(dataset_name) {
                 if let Some(ref avg_copies_per_cell) = measurement.avg_copies_per_cell {
                     let new_value = GeneExValue {
-                        dataset_name: RcString::from(dataset_name),
-                        value: RcString::from(avg_copies_per_cell),
+                        dataset_name: dataset_name.clone(),
+                        value: avg_copies_per_cell.clone(),
                     };
                     result.push(new_value);
                 }
@@ -822,8 +822,8 @@ impl Query {
         result
     }
 
-    fn add_ancestor_terms(&self, api_data: &APIData,  gene_uniquename: &str,
-                          subsets: &mut HashSet<RcString>) {
+    fn add_ancestor_terms(&self, api_data: &APIData,  gene_uniquename: &FlexStr,
+                          subsets: &mut HashSet<FlexStr>) {
 
         let needed_ancestor_terms = &self.output_options.ancestor_terms;
         for ancestor_term in needed_ancestor_terms.iter() {
@@ -838,7 +838,7 @@ impl Query {
     }
 
     fn make_result_rows(&self, api_data: &APIData,
-                        genes: Vec<RcString>) -> QueryRowsResult {
+                        genes: Vec<FlexStr>) -> QueryRowsResult {
         Ok(genes.into_iter()
            .map(|gene_uniquename| {
                let mut deletion_viability = None;
@@ -860,7 +860,7 @@ impl Query {
 
                if let Some(gene_data) = maybe_gene_data {
                    for field_name in &self.output_options.field_names {
-                       match field_name as &str {
+                       match field_name.as_ref() {
                            "deletion_viability" =>
                                 deletion_viability = Some(gene_data.deletion_viability.clone()),
                            "ortholog_taxonids" =>
@@ -887,7 +887,7 @@ impl Query {
                            "gene_uniquename" => (),
                            _ => {
                                if let Some(without_prefix) = field_name.strip_prefix("gene_ex_avg_copies_per_cell:") {
-                                   let dataset_name = RcString::from(without_prefix);
+                                   let dataset_name = without_prefix.to_a_flex_str();
                                    let results_measurements =
                                        self.get_gene_ex_for_results(api_data, &dataset_name,
                                                                     &gene_uniquename);
@@ -901,7 +901,7 @@ impl Query {
 
 
                    subsets =
-                       if self.output_options.flags.contains("include_gene_subsets") {
+                       if self.output_options.flags.contains(&flex_str!("include_gene_subsets")) {
                            gene_data.subset_termids.clone()
                        } else {
                            HashSet::new()
