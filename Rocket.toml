@@ -2,10 +2,11 @@
 address = "127.0.0.1"
 port = 8400
 workers = 1
-log = "normal"
+log_level = "normal"
+cli_colors = true
 
 [release]
 address = "0.0.0.0"
 port = 8500
-log = "normal"
+log_level = "normal"
 workers = 12
