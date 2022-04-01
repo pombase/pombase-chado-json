@@ -1215,6 +1215,7 @@ pub struct GenotypeDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
     pub loci: Vec<GenotypeLocus>,
+    pub comment: Option<FlexStr>,
     pub ploidiness: Ploidiness,
     pub cv_annotations: OntAnnotationMap,
     pub references_by_uniquename: ReferenceShortOptionMap,

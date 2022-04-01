@@ -1708,6 +1708,7 @@ impl <'a> WebDataBuild<'a> {
             make_genotype_display_name(&loci, &self.alleles);
 
         let mut ploidiness = Ploidiness::Haploid;
+        let mut comment: Option<FlexStr> = None;
 
         for locus in &loci {
             if locus.expressed_alleles.len() > 1 {
@@ -1736,6 +1737,12 @@ impl <'a> WebDataBuild<'a> {
                     self.genotype_backgrounds.insert(feat.uniquename.clone(),
                                                      background.clone());
                 }
+            } else {
+                if prop.prop_type.name == "genotype_comment" {
+                    if let Some(ref comment_ref) = prop.value {
+                        comment = Some(comment_ref.to_a_flex_str());
+                    }
+                }
             }
         }
 
@@ -1747,6 +1754,7 @@ impl <'a> WebDataBuild<'a> {
                                   name: feat.name.as_ref().map(|s| s.to_a_flex_str()),
                                   loci,
                                   ploidiness,
+                                  comment,
                                   cv_annotations: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
