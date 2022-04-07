@@ -692,6 +692,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         gene_count: 0,
         genotype_count: 0,
         xrefs: HashMap::new(),
+        pombase_gene_id: None,
     }
 }
 

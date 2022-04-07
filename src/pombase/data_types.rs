@@ -1428,6 +1428,8 @@ pub struct TermDetails {
     pub genotype_count: usize,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub xrefs: HashMap<FlexStr, TermXref>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pombase_gene_id: Option<FlexStr>,
 }
 
 impl Container for TermDetails {

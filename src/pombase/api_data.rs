@@ -78,15 +78,6 @@ pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
     }
 }
 
-fn get_gene_prod_extension(prod_value: &FlexStr) -> ExtPart {
-  ExtPart {
-      rel_type_id: None,
-      rel_type_name: "active_form".into(),
-      rel_type_display_name: "active form".into(),
-      ext_range: ExtRange::GeneProduct(prod_value.to_owned()),
-  }
-}
-
 impl APIData {
     pub fn new(config: &Config, maps: &APIMaps)
                ->APIData
@@ -392,20 +383,32 @@ impl APIData {
                 // if there is an ExtRange that is a PRO ID (ExtRange::GeneProduct),
                 // and there is a with value, combine them into an
                 // ExtRange::GeneAndGeneProduct
+                // if there is ExtRange::GeneAndGeneProduct that mentions the with gene,
+                // drop the with for this annotation
                 if let Some(with_value) = first_with.clone() {
                     annotation.extension.iter_mut().for_each(|mut ext_part| {
                         if ext_part.rel_type_name == "has_direct_input" {
-                            if let ExtRange::GeneProduct(range_termid) = &mut ext_part.ext_range {
-                                if let WithFromValue::Gene(gene_short) = &with_value {
-                                    let gene_uniquename =
-                                        self.strip_db_prefix(&gene_short.uniquename);
-                                    let val = GeneAndGeneProduct {
-                                        product: range_termid.clone(),
-                                        gene_uniquename,
-                                    };
-                                    ext_part.ext_range = ExtRange::GeneAndGeneProduct(val);
-                                    first_with = None;
-                                }
+                            match &mut ext_part.ext_range {
+                                ExtRange::GeneProduct(range_termid) => {
+                                    if let WithFromValue::Gene(gene_short) = &with_value {
+                                        let gene_uniquename =
+                                            self.strip_db_prefix(&gene_short.uniquename);
+                                        let val = GeneAndGeneProduct {
+                                            product: range_termid.clone(),
+                                            gene_uniquename,
+                                        };
+                                        ext_part.ext_range = ExtRange::GeneAndGeneProduct(val);
+                                        first_with = None;
+                                    }
+                                },
+                                ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename, product: _ }) => {
+                                    if let WithFromValue::Gene(ref with_gene) = with_value {
+                                        if *gene_uniquename == with_gene.uniquename {
+                                           first_with = None;
+                                        }
+                                    }
+                                },
+                                _ => (),
                             }
                         }
                     });
@@ -418,6 +421,28 @@ impl APIData {
         }
     }
 
+    fn get_gene_prod_extension(&self, prod_value: &FlexStr) -> ExtPart {
+      let ext_range =
+        if let Some(term_details) = self.maps.terms.get(prod_value) {
+          if let Some(ref pombase_gene_id) = term_details.pombase_gene_id {
+            let gene_and_product = GeneAndGeneProduct {
+              gene_uniquename: pombase_gene_id.clone(),
+              product: prod_value.to_owned(),
+            };
+            ExtRange::GeneAndGeneProduct(gene_and_product)
+          } else {
+            ExtRange::GeneProduct(prod_value.to_owned())
+          }
+        } else {
+          ExtRange::GeneProduct(prod_value.to_owned())
+        };
+      ExtPart {
+        rel_type_id: None,
+        rel_type_name: "active_form".into(),
+        rel_type_display_name: "active form".into(),
+        ext_range,
+      }
+    }
 
     fn detail_map_of_cv_annotations(&self, ont_annotation_map: &OntAnnotationMap)
                                     -> IdOntAnnotationDetailMap
@@ -438,7 +463,7 @@ impl APIData {
                            self.maybe_move_with(term_details, &mut annotation);
 
                            if let Some(ref gene_product_form_id) = annotation.gene_product_form_id {
-                               let gene_prod_extension = get_gene_prod_extension(gene_product_form_id);
+                               let gene_prod_extension = self.get_gene_prod_extension(gene_product_form_id);
                                annotation.extension.insert(0, gene_prod_extension);
                            }
 

@@ -2669,6 +2669,14 @@ impl <'a> WebDataBuild<'a> {
                 let cv_config = self.config.cv_config_by_name(&cvterm.cv.name);
                 let annotation_feature_type = cv_config.feature_type.clone();
 
+                let mut maybe_pombase_gene_id = None;
+
+                for cvtermprop in cvterm.cvtermprops.borrow().iter() {
+                  if cvtermprop.prop_type.name == "pombase_gene_id" {
+                    maybe_pombase_gene_id = Some(cvtermprop.value.clone());
+                  }
+                }
+
                 let mut xrefs = HashMap::new();
 
                 for (source_name, source_config) in cv_config.source_config {
@@ -2756,6 +2764,7 @@ impl <'a> WebDataBuild<'a> {
                                       gene_count: 0,
                                       genotype_count: 0,
                                       xrefs,
+                                      pombase_gene_id: maybe_pombase_gene_id,
                                   });
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
@@ -2834,6 +2843,26 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
+    fn make_term_ext_range(&self, term_id: &FlexStr) -> ExtRange {
+       if term_id.starts_with("PR:") {
+         if let Some(term_details) = self.terms.get(term_id) {
+           if let Some(ref pombase_gene_id) = term_details.pombase_gene_id {
+             let gene_and_product = GeneAndGeneProduct {
+                gene_uniquename: pombase_gene_id.clone(),
+                product: term_id.clone(),
+             };
+             ExtRange::GeneAndGeneProduct(gene_and_product)
+           } else {
+             ExtRange::GeneProduct(term_id.clone())
+           }
+         } else {
+           ExtRange::GeneProduct(term_id.clone())
+         }
+       } else {
+         ExtRange::Term(term_id.clone())
+       }
+    }
+
     fn process_cvterm_rels(&mut self) {
         for cvterm_rel in &self.raw.cvterm_relationships {
             let subject_term = &cvterm_rel.subject;
@@ -2874,11 +2903,7 @@ impl <'a> WebDataBuild<'a> {
                                 self.get_ext_rel_display_name(base_termid, &rel_type.name);
 
                             let ext_range =
-                                if object_termid.starts_with("PR:") {
-                                    ExtRange::GeneProduct(object_termid)
-                                } else {
-                                    ExtRange::Term(object_termid)
-                                };
+                               self.make_term_ext_range(&object_termid);
 
                             self.parts_of_extensions.entry(subject_termid)
                                 .or_insert_with(Vec::new).push(ExtPart {
@@ -4382,6 +4407,8 @@ impl <'a> WebDataBuild<'a> {
                             ExtRange::GeneProduct(ref range_termid) =>
                                 self.add_term_to_hash(seen_terms, identifier,
                                                       range_termid),
+                            ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename: _, ref product }) =>
+                                self.add_term_to_hash(seen_terms, identifier, product),
                             ExtRange::Gene(ref gene_uniquename) |
                             ExtRange::Promoter(ref gene_uniquename) =>
                                 self.add_gene_to_hash(seen_genes, identifier,
@@ -4503,6 +4530,8 @@ impl <'a> WebDataBuild<'a> {
                                 ExtRange::GeneProduct(ref range_termid) =>
                                     self.add_term_to_hash(&mut seen_terms, termid,
                                                           range_termid),
+                                ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename: _, ref product }) =>
+                                    self.add_term_to_hash(&mut seen_terms, termid, product),
                                 ExtRange::Gene(ref gene_uniquename) |
                                 ExtRange::Promoter(ref gene_uniquename) =>
                                     self.add_gene_to_hash(&mut seen_genes, termid,
@@ -4760,6 +4789,9 @@ impl <'a> WebDataBuild<'a> {
                                         self.add_term_to_hash(&mut seen_terms,
                                                               reference_uniquename,
                                                               range_termid),
+                                    ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename: _, ref product }) =>
+                                        self.add_term_to_hash(&mut seen_terms, reference_uniquename,
+                                                              product),
                                     ExtRange::Gene(ref gene_uniquename) |
                                     ExtRange::Promoter(ref gene_uniquename) => {
                                         self.add_gene_to_hash(&mut seen_genes,
