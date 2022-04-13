@@ -4407,8 +4407,10 @@ impl <'a> WebDataBuild<'a> {
                             ExtRange::GeneProduct(ref range_termid) =>
                                 self.add_term_to_hash(seen_terms, identifier,
                                                       range_termid),
-                            ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename: _, ref product }) =>
-                                self.add_term_to_hash(seen_terms, identifier, product),
+                            ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { ref gene_uniquename, ref product }) => {
+                                self.add_gene_to_hash(seen_genes, identifier, gene_uniquename);
+                                self.add_term_to_hash(seen_terms, identifier, product);
+                            },
                             ExtRange::Gene(ref gene_uniquename) |
                             ExtRange::Promoter(ref gene_uniquename) =>
                                 self.add_gene_to_hash(seen_genes, identifier,
@@ -4530,8 +4532,10 @@ impl <'a> WebDataBuild<'a> {
                                 ExtRange::GeneProduct(ref range_termid) =>
                                     self.add_term_to_hash(&mut seen_terms, termid,
                                                           range_termid),
-                                ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename: _, ref product }) =>
-                                    self.add_term_to_hash(&mut seen_terms, termid, product),
+                                ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { ref gene_uniquename, ref product }) => {
+                                    self.add_gene_to_hash(&mut seen_genes, termid, gene_uniquename);
+                                    self.add_term_to_hash(&mut seen_terms, termid, product);
+                                },
                                 ExtRange::Gene(ref gene_uniquename) |
                                 ExtRange::Promoter(ref gene_uniquename) =>
                                     self.add_gene_to_hash(&mut seen_genes, termid,
@@ -4789,9 +4793,11 @@ impl <'a> WebDataBuild<'a> {
                                         self.add_term_to_hash(&mut seen_terms,
                                                               reference_uniquename,
                                                               range_termid),
-                                    ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename: _, ref product }) =>
+                                    ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { ref gene_uniquename, ref product }) => {
+                                        self.add_gene_to_hash(&mut seen_genes, reference_uniquename, gene_uniquename);
                                         self.add_term_to_hash(&mut seen_terms, reference_uniquename,
-                                                              product),
+                                                              product);
+                                    },
                                     ExtRange::Gene(ref gene_uniquename) |
                                     ExtRange::Promoter(ref gene_uniquename) => {
                                         self.add_gene_to_hash(&mut seen_genes,
