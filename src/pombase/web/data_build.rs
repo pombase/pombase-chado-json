@@ -1991,6 +1991,7 @@ impl <'a> WebDataBuild<'a> {
                         let mut throughput: Option<Throughput> = None;
                         let mut is_inferred_interaction: bool = false;
                         let mut interaction_note: Option<FlexStr> = None;
+                        let mut ortholog_qualifier = None;
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.get(0);
@@ -2042,6 +2043,10 @@ impl <'a> WebDataBuild<'a> {
                                 if let Some(interaction_note_value) = prop.value.clone() {
                                     interaction_note = Some(interaction_note_value);
                                 }
+                            }
+                            if prop.prop_type.name == "ortholog qualifier" ||
+                                prop.prop_type.name == "ortholog_qualifier" {
+                                ortholog_qualifier = prop.value.clone()
                             }
                         }
 
@@ -2118,6 +2123,7 @@ impl <'a> WebDataBuild<'a> {
                                         ortholog_taxonid: other_gene_organism_taxonid,
                                         evidence,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
+                                        qualifier: ortholog_qualifier.clone(),
                                     };
                                 let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                 gene_details.ortholog_annotations.push(ortholog_annotation.clone());
@@ -2170,6 +2176,7 @@ impl <'a> WebDataBuild<'a> {
                                         ortholog_taxonid: gene_organism_taxonid,
                                         evidence: evidence_clone,
                                         reference_uniquename: maybe_reference_uniquename.clone(),
+                                        qualifier: ortholog_qualifier,
                                     };
                                 other_gene_details.ortholog_annotations.push(ortholog_annotation);
                             },

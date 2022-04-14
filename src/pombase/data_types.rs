@@ -1513,6 +1513,8 @@ pub struct OrthologAnnotation {
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference_uniquename: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub qualifier: Option<FlexStr>,
 }
 impl PartialEq for OrthologAnnotation {
     fn eq(&self, other: &Self) -> bool {
