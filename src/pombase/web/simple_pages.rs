@@ -305,6 +305,32 @@ fn orthologs(config: &Config, container: &dyn OrthologAnnotationContainer) -> St
     orth_html
 }
 
+fn gene_references(config: &Config, gene_details: &GeneDetails) -> String {
+    let mut refs_html = String::new();
+
+    refs_html += "<dl>\n";
+
+    let unknown_title = flex_str!("Unknown title");
+    let empty = flex_str!("");
+
+    for ref_uniquename in gene_details.references_by_uniquename.keys() {
+        let ref_by_uniquename = &gene_details.references_by_uniquename;
+        if let Some(ref_short_opt) = ref_by_uniquename.get(ref_uniquename) {
+            if let Some(ref_short) = ref_short_opt {
+                refs_html += &format!("<dt><a href='/reference/{}'>{}</a> - {}</dt> <dd>{} {}</dd>\n",
+                                      ref_short.uniquename, ref_short.uniquename,
+                                      ref_short.title.as_ref().unwrap_or_else(|| &unknown_title),
+                                      ref_short.authors_abbrev.as_ref().unwrap_or_else(|| &empty),
+                                      ref_short.citation.as_ref().unwrap_or_else(|| &empty));
+            }
+        }
+    }
+
+    refs_html += "</dl>\n";
+
+    refs_html
+}
+
 fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String {
     let mut body = String::new();
 
@@ -325,6 +351,9 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
     }
 
     body += &orthologs(config, gene_details);
+
+    body += &format!("<section><h2>References / Literature</h2>\n{}</section>\n",
+                     gene_references(config, gene_details));
 
     body
 }
