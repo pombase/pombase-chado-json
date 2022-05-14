@@ -305,7 +305,7 @@ fn orthologs(config: &Config, container: &dyn OrthologAnnotationContainer) -> St
     orth_html
 }
 
-fn gene_references(config: &Config, gene_details: &GeneDetails) -> String {
+fn gene_references(gene_details: &GeneDetails) -> String {
     let mut refs_html = String::new();
 
     refs_html += "<dl>\n";
@@ -353,7 +353,7 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
     body += &orthologs(config, gene_details);
 
     body += &format!("<section><h2>References / Literature</h2>\n{}</section>\n",
-                     gene_references(config, gene_details));
+                     gene_references(gene_details));
 
     body
 }
