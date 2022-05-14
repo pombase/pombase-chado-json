@@ -1,6 +1,6 @@
 [package]
 name = "pombase-chado-json"
-version = "122.1.0"
+version = "122.2.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 edition = "2021"
 rust-version = "1.57"
@@ -34,7 +34,7 @@ features = ["zstdmt"]
 
 [dependencies.rocket]
 git = "https://github.com/SergioBenitez/Rocket.git"
-version = "0.5.0-rc.1"
+version = "0.5.0-rc.2"
 features = ["json"]
 
 [dependencies.flexstr]
