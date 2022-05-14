@@ -77,6 +77,10 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
     }
     summ += &format!("  <dt>Systematic ID</dt> <dd>{}</dd>\n", gene_details.uniquename);
 
+    if let Some(ref product) = gene_details.product {
+        summ += &format!("  <dt>Product</dt> <dd>{}</dd>\n", product);
+    }
+
     if let Some(gene_organism) = config.organism_by_taxonid(gene_details.taxonid) {
         summ += &format!("  <dt>Organism</dt> <dd>{}\n", gene_organism.scientific_name());
 
