@@ -3,7 +3,7 @@ use crate::data_types::{GeneDetails, ChromosomeLocation, DeletionViability, Stra
                         UniquenameTranscriptMap, TranscriptDetails, FeatureShort,
                         ProteinDetails, FeatureType};
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
 fn complement_char(base: char) -> char {
     match base {
@@ -23,7 +23,7 @@ pub fn rev_comp(residues: &str) -> FlexStr {
     let residues: String = residues.chars()
         .rev().map(complement_char)
         .collect();
-    residues.to_a_flex_str()
+    residues.to_shared_str()
 }
 
 

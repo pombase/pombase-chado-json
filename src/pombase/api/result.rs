@@ -5,7 +5,7 @@ use crate::data_types::{DeletionViability, PresentAbsent, GeneQueryTermData,
                         GeneQueryAttrName};
 use crate::types::{TermId, GeneUniquename};
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct GeneExValue {

@@ -6,7 +6,7 @@ use std::collections::{HashSet, HashMap};
 use std::io::Write;
 use chrono::prelude::{Local, DateTime};
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, a_flex_fmt as flex_fmt, ToAFlexStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt, ToSharedStr};
 
 use crate::utils::join;
 use crate::web::config::*;
@@ -156,7 +156,7 @@ fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDetails
         })
         .map(|ext_part| format!("{}({})", get_rel_term(ext_part),
                                 get_range(ext_part)))
-        .collect::<Vec<_>>().join(",").to_a_flex_str()
+        .collect::<Vec<_>>().join(",").to_shared_str()
 }
 
 fn compare_withs(withs1: &HashSet<WithFromValue>,

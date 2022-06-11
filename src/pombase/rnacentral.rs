@@ -10,7 +10,7 @@ use crate::web::config::Config;
 use crate::data_types::{FeatureType, GeneDetails, RNAcentralAnnotations,
                         TranscriptDetails, UniquenameGeneMap, UniquenameTranscriptMap};
 
-use flexstr::{AFlexStr as FlexStr, ToAFlexStr, a_flex_str as flex_str, a_flex_fmt as flex_fmt};
+use flexstr::{SharedStr as FlexStr, ToSharedStr, shared_str as flex_str, shared_fmt as flex_fmt};
 
 pub type RNAcentralGeneSynonym = FlexStr;
 
@@ -194,7 +194,7 @@ fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
                 symbol: None,
                 symbol_synonyms: vec![],
                 so_term_id: so_term_id.clone(),
-                sequence: uppercase_sequence.to_a_flex_str(),
+                sequence: uppercase_sequence.to_shared_str(),
                 url: make_url(config, gene_details),
                 gene: rnacentral_gene,
                 genome_locations: vec![location],
@@ -218,7 +218,7 @@ pub fn make_rnacentral_struct(config: &Config, transcripts: &UniquenameTranscrip
     RNAcentral {
         data,
         metadata: RNAcentralMetadata {
-            date_produced: local.to_rfc3339().to_a_flex_str(),
+            date_produced: local.to_rfc3339().to_shared_str(),
             data_provider,
             schema_version: flex_str!("0.3.0"),
             publications: vec![config.database_citation.clone()],

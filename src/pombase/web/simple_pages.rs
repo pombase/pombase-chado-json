@@ -1,4 +1,4 @@
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, Flex};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
 use crate::web::config::Config;
 use crate::data_types::{GeneDetails, ReferenceDetails, TermDetails,
@@ -86,7 +86,7 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 
         if !gene_organism.alternative_names.is_empty() {
             summ += &format!(" ({})", gene_organism.alternative_names.iter()
-                         .map(Flex::to_string).collect::<Vec<_>>().join(", "));
+                         .map(FlexStr::to_string).collect::<Vec<_>>().join(", "));
         }
         summ += "</dd>\n";
     }
@@ -95,7 +95,7 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
         let synonyms: Vec<FlexStr> =
             gene_details.synonyms.iter().map(|s| s.name.clone()).collect();
         summ += &format!("  <dt>Synonyms</dt> <dd>{}</dd>\n",
-                         synonyms.iter().map(Flex::to_string).collect::<Vec<_>>().join(", "));
+                         synonyms.iter().map(FlexStr::to_string).collect::<Vec<_>>().join(", "));
     }
 
     if let Some(ref uniprot_identifier) = gene_details.uniprot_identifier {
@@ -156,7 +156,7 @@ fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
 
             for gene_uniquename in &annotation_details.genes {
                 if let Some(Some(gene_short)) =
-                    container.genes_by_uniquename().get(&gene_uniquename) {
+                    container.genes_by_uniquename().get(gene_uniquename) {
                         genes.push(gene_short)
                     }
             }
@@ -190,7 +190,7 @@ fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
         if let Some(genotypes_by_uniquename) = container.genotypes_by_uniquename() {
             ret += "<p>Genotypes:</p>\n<ul>";
             for uniquename in genotypes {
-                if let Some(genotype_short) = genotypes_by_uniquename.get(&uniquename) {
+                if let Some(genotype_short) = genotypes_by_uniquename.get(uniquename) {
                     ret += &format!("<li><a href='/genotype/{}'>{}</a></li>\n",
                                     uniquename,
                                     genotype_display_name(genotype_short));

@@ -6,7 +6,7 @@ use std::fs::File;
 use crate::types::*;
 use serde_json;
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
 // configuration for extension display names and for the "Target of" section
 #[derive(Deserialize, Clone, Debug)]

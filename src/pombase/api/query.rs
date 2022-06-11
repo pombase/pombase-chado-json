@@ -21,7 +21,7 @@ use crate::bio::go_format_writer::{write_go_annotation_format, GpadGafWriteMode}
 
 use crate::types::GeneUniquename;
 
-use flexstr::{AFlexStr as FlexStr, ToAFlexStr, a_flex_str as flex_str, a_flex_fmt as flex_fmt};
+use flexstr::{SharedStr as FlexStr, ToSharedStr, shared_str as flex_str, shared_fmt as flex_fmt};
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum IntRangeType {
@@ -644,7 +644,7 @@ fn get_chr_range(chr_residues: &FlexStr, feature_edge: usize, base_count: usize,
             (feature_edge, end_pos)
         };
 
-    chr_residues.as_str()[start_pos..end_pos].to_a_flex_str()
+    chr_residues.as_str()[start_pos..end_pos].to_shared_str()
 }
 
 impl Query {
@@ -887,7 +887,7 @@ impl Query {
                            "gene_uniquename" => (),
                            _ => {
                                if let Some(without_prefix) = field_name.strip_prefix("gene_ex_avg_copies_per_cell:") {
-                                   let dataset_name = without_prefix.to_a_flex_str();
+                                   let dataset_name = without_prefix.to_shared_str();
                                    let results_measurements =
                                        self.get_gene_ex_for_results(api_data, &dataset_name,
                                                                     &gene_uniquename);

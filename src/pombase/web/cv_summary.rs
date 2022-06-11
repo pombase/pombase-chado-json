@@ -10,7 +10,7 @@ use crate::web::config::*;
 use crate::web::vec_set::*;
 use crate::web::util::*;
 
-use flexstr::AFlexStr as FlexStr;
+use flexstr::SharedStr as FlexStr;
 
 pub fn make_cv_summaries<T: AnnotationContainer>
     (container: &mut T,

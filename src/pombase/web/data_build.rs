@@ -19,7 +19,7 @@ use crate::utils::join;
 
 use crate::bio::util::rev_comp;
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr, a_flex_fmt as flex_fmt};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
 use crate::interpro::UniprotResult;
 use crate::pfam::PfamProteinDetails;
@@ -243,7 +243,7 @@ pub fn make_genotype_display_name(loci: &[GenotypeLocus],
 
     let clean_display_name =
         BAD_GENOTYPE_NAME_CHARS_RE.replace_all(&joined_alleles, "_");
-    clean_display_name.to_a_flex_str()
+    clean_display_name.to_shared_str()
 }
 
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
@@ -469,7 +469,7 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
             for ancestor in &split_by_parent_config.termids {
                 let ancestor_termid =
                     if let Some(without_prefix) = ancestor.strip_prefix("NOT ") {
-                        without_prefix.to_a_flex_str()
+                        without_prefix.to_shared_str()
                     } else {
                         ancestor.clone()
                     };
@@ -640,7 +640,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     };
                 maybe_new_intron = Some(FeatureShort {
                     feature_type: intron_type,
-                    uniquename: intron_uniquename.to_a_flex_str(),
+                    uniquename: intron_uniquename.to_shared_str(),
                     name: None,
                     location: new_intron_loc,
                     residues: intron_residues,
@@ -1173,7 +1173,7 @@ impl <'a> WebDataBuild<'a> {
                     let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
                     let replaced: String =
                         author_re.replace_all(&authors, "$f et al.").into();
-                    authors_abbrev = Some(replaced.to_a_flex_str());
+                    authors_abbrev = Some(replaced.to_shared_str());
                 } else {
                     authors_abbrev = Some(authors.clone());
                 }
@@ -1181,7 +1181,7 @@ impl <'a> WebDataBuild<'a> {
 
             if let Some(publication_date) = pubmed_publication_date.clone() {
                 let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
-                publication_year = Some(date_re.replace_all(&publication_date, "$y").to_a_flex_str());
+                publication_year = Some(date_re.replace_all(&publication_date, "$y").to_shared_str());
             }
 
             let mut approved_date = canto_first_approved_date.clone();
@@ -1193,7 +1193,7 @@ impl <'a> WebDataBuild<'a> {
             approved_date =
                 if let Some(date) = approved_date {
                     let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
-                    Some(re.replace_all(&date, "$date").to_a_flex_str())
+                    Some(re.replace_all(&date, "$date").to_shared_str())
                 } else {
                     None
                 };
@@ -1331,7 +1331,7 @@ impl <'a> WebDataBuild<'a> {
         let mut orfeome_identifier = None;
         for dbxref in &dbxrefs {
             if let Some(without_prefix) = dbxref.strip_prefix("SPD:") {
-                orfeome_identifier = Some(without_prefix.to_a_flex_str());
+                orfeome_identifier = Some(without_prefix.to_shared_str());
             }
         }
 
@@ -1568,7 +1568,7 @@ impl <'a> WebDataBuild<'a> {
                 let transcript_type = feat.feat_type.name.clone();
                 if gene_details.feature_type == "gene" {
                     let feature_type = format!("{} {}", transcript_type, gene_details.feature_type);
-                    gene_details.feature_type = feature_type.to_a_flex_str();
+                    gene_details.feature_type = feature_type.to_shared_str();
                 }
                 let transcript = TranscriptDetails {
                     uniquename: transcript_uniquename.clone(),
@@ -1642,7 +1642,7 @@ impl <'a> WebDataBuild<'a> {
 
             let protein = ProteinDetails {
                 uniquename: feat.uniquename.clone(),
-                sequence: residues.to_a_flex_str(),
+                sequence: residues.to_shared_str(),
                 product: None,
                 molecular_weight: molecular_weight.unwrap(),
                 average_residue_weight: average_residue_weight.unwrap(),
@@ -1689,8 +1689,8 @@ impl <'a> WebDataBuild<'a> {
 
         let chr = ChromosomeDetails {
             name: feat.uniquename.clone(),
-            residues: residues.to_a_flex_str(),
-            ena_identifier: ena_identifier.unwrap().to_a_flex_str(),
+            residues: residues.to_shared_str(),
+            ena_identifier: ena_identifier.unwrap().to_shared_str(),
             gene_uniquenames: vec![],
             taxonid: org.taxonid,
             gene_count: 0,    // we'll update the counts once the genes are processed
@@ -1740,18 +1740,18 @@ impl <'a> WebDataBuild<'a> {
             } else {
                 if prop.prop_type.name == "genotype_comment" {
                     if let Some(ref comment_ref) = prop.value {
-                        comment = Some(comment_ref.to_a_flex_str());
+                        comment = Some(comment_ref.to_shared_str());
                     }
                 }
             }
         }
 
-        let rc_display_name = genotype_display_uniquename.to_a_flex_str();
+        let rc_display_name = genotype_display_uniquename.to_shared_str();
 
         self.genotypes.insert(rc_display_name.clone(),
                               GenotypeDetails {
                                   display_uniquename: rc_display_name,
-                                  name: feat.name.as_ref().map(|s| s.to_a_flex_str()),
+                                  name: feat.name.as_ref().map(|s| s.to_shared_str()),
                                   loci,
                                   ploidiness,
                                   comment,
@@ -2583,12 +2583,12 @@ impl <'a> WebDataBuild<'a> {
     fn set_taxonomic_distributions(&mut self) {
         let mut term_name_map = HashMap::new();
 
-        let in_archaea = "conserved in archaea".to_a_flex_str();
-        let in_bacteria = "conserved in bacteria".to_a_flex_str();
-        let in_fungi_only = "conserved in fungi only".to_a_flex_str();
-        let in_metazoa = "conserved in metazoa".to_a_flex_str();
-        let pombe_specific = "Schizosaccharomyces pombe specific".to_a_flex_str();
-        let schizo_specific = "Schizosaccharomyces specific".to_a_flex_str();
+        let in_archaea = "conserved in archaea".to_shared_str();
+        let in_bacteria = "conserved in bacteria".to_shared_str();
+        let in_fungi_only = "conserved in fungi only".to_shared_str();
+        let in_metazoa = "conserved in metazoa".to_shared_str();
+        let pombe_specific = "Schizosaccharomyces pombe specific".to_shared_str();
+        let schizo_specific = "Schizosaccharomyces specific".to_shared_str();
 
         let names = vec![in_archaea.clone(), in_bacteria.clone(),
                          in_fungi_only.clone(), in_metazoa.clone(),
@@ -2783,7 +2783,7 @@ impl <'a> WebDataBuild<'a> {
         if let Some(ext_conf) = self.matching_ext_config(annotation_termid, ext_rel_name) {
             ext_conf.display_name
         } else {
-            str::replace(ext_rel_name, "_", " ").to_a_flex_str()
+            str::replace(ext_rel_name, "_", " ").to_shared_str()
         }
     }
 
@@ -2796,12 +2796,12 @@ impl <'a> WebDataBuild<'a> {
                     if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
                         let ext_rel_name_str =
                             &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
-                        let ext_rel_name = ext_rel_name_str.to_a_flex_str();
+                        let ext_rel_name = ext_rel_name_str.to_shared_str();
                         let ext_range = (*cvtermprop).value.clone();
                         let range: ExtRange = if ext_range.starts_with(&db_prefix) {
-                            let db_feature_uniquename = ext_range[db_prefix.len()..].to_a_flex_str();
+                            let db_feature_uniquename = ext_range[db_prefix.len()..].to_shared_str();
                             if let Some(captures) = PROMOTER_RE.captures(&db_feature_uniquename) {
-                                let gene_uniquename = captures["gene"].to_a_flex_str();
+                                let gene_uniquename = captures["gene"].to_shared_str();
                                 if self.genes.contains_key(&gene_uniquename) {
                                     ExtRange::Promoter(gene_uniquename)
                                 } else {
@@ -2812,7 +2812,7 @@ impl <'a> WebDataBuild<'a> {
                                     ExtRange::Gene(db_feature_uniquename.clone())
                                 } else {
                                     if let Some(captures) = TRANSCRIPT_ID_RE.captures(db_feature_uniquename.as_ref()) {
-                                        if self.genes.contains_key(&captures["gene"].to_a_flex_str()) {
+                                        if self.genes.contains_key(&captures["gene"].to_shared_str()) {
                                             ExtRange::Transcript(db_feature_uniquename.clone())
                                         } else {
                                             panic!("unknown gene for transcript: {}", db_feature_uniquename);
@@ -3060,8 +3060,8 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_with_or_from_value(&self, with_or_from_value: &FlexStr) -> WithFromValue {
         if let Some(captures) = PREFIX_AND_ID_RE.captures(with_or_from_value) {
-            let prefix = captures["prefix"].to_a_flex_str();
-            let id = captures["id"].to_a_flex_str();
+            let prefix = captures["prefix"].to_shared_str();
+            let id = captures["id"].to_shared_str();
 
             if self.genes.contains_key(&id) {
                 let gene_short = self.make_gene_short(&id);
@@ -4305,7 +4305,7 @@ impl <'a> WebDataBuild<'a> {
                 let so_types_to_show =
                     &self.config.sequence_feature_page.so_types_to_show;
                 let feature_type_string =
-                    feature_short.feature_type.to_string().to_a_flex_str();
+                    feature_short.feature_type.to_string().to_shared_str();
                 so_types_to_show.contains(&feature_type_string)
             })
             .map(|feature_short| {
@@ -5050,7 +5050,7 @@ impl <'a> WebDataBuild<'a> {
         return_map.insert(name.clone(),
                           GeneSubsetDetails {
                               name,
-                              display_name: with_annotation_display_name.to_a_flex_str(),
+                              display_name: with_annotation_display_name.to_shared_str(),
                               elements: non_slim_with_bp_annotation,
                           });
         let without_annotation_display_name =
@@ -5060,7 +5060,7 @@ impl <'a> WebDataBuild<'a> {
         return_map.insert(name.clone(),
                           GeneSubsetDetails {
                               name,
-                              display_name: without_annotation_display_name.to_a_flex_str(),
+                              display_name: without_annotation_display_name.to_shared_str(),
                               elements: non_slim_without_bp_annotation,
                           });
         return_map
@@ -5115,7 +5115,7 @@ impl <'a> WebDataBuild<'a> {
             let subset_name =
                 flex_str!("feature_type:") + &gene_details.feature_type;
             let re = Regex::new(r"[\s,:]+").unwrap();
-            let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_a_flex_str();
+            let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_shared_str();
             subsets.entry(subset_name_no_spaces.clone())
                 .or_insert(GeneSubsetDetails {
                     name: subset_name_no_spaces,
@@ -5143,11 +5143,11 @@ impl <'a> WebDataBuild<'a> {
                 let subset_name =
                     flex_str!("characterisation_status:") + characterisation_status;
                 let re = Regex::new(r"[\s,:]+").unwrap();
-                let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_a_flex_str();
+                let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_shared_str();
                 subsets.entry(subset_name_no_spaces.clone())
                     .or_insert(GeneSubsetDetails {
                         name: subset_name_no_spaces,
-                        display_name: subset_name.to_a_flex_str(),
+                        display_name: subset_name.to_shared_str(),
                         elements: HashSet::new()
                     })
                     .elements.insert(gene_details.uniquename.clone());
@@ -5170,13 +5170,13 @@ impl <'a> WebDataBuild<'a> {
                 if !interpro_match.interpro_id.is_empty() {
                     let subset_name =
                         String::from("interpro:") + &interpro_match.interpro_id;
-                    new_subset_names.push((subset_name.to_a_flex_str(),
+                    new_subset_names.push((subset_name.to_shared_str(),
                                            interpro_match.interpro_name.clone()));
                 }
 
                 let subset_name = String::from("interpro:") +
                      &interpro_match.dbname.clone() + ":" + &interpro_match.id;
-                new_subset_names.push((subset_name.to_a_flex_str(), interpro_match.name.clone()));
+                new_subset_names.push((subset_name.to_shared_str(), interpro_match.name.clone()));
 
                 for (subset_name, display_name) in new_subset_names {
                     subsets.entry(subset_name.clone())
@@ -5422,7 +5422,7 @@ impl <'a> WebDataBuild<'a> {
             let term_name_words =
                 term_name_split_re.split(&term_details.name)
                 .map(|s: &str| {
-                    s.trim_matches(&trimmable_p).to_a_flex_str()
+                    s.trim_matches(&trimmable_p).to_shared_str()
                 }).collect::<Vec<_>>();
 
             let mut close_synonyms = vec![];
@@ -5433,7 +5433,7 @@ impl <'a> WebDataBuild<'a> {
             let add_to_words_vec = |synonym: &FlexStr, words_vec: &mut Vec<FlexStr>| {
                 let synonym_words = term_name_split_re.split(synonym);
                 for word in synonym_words {
-                    let word_string = word.trim_matches(&trimmable_p).to_a_flex_str();
+                    let word_string = word.trim_matches(&trimmable_p).to_shared_str();
                     if !words_vec.contains(&word_string) &&
                         !term_name_words.contains(&word_string) {
                             words_vec.push(word_string);

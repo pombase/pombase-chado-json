@@ -4,7 +4,7 @@ use chrono::NaiveDate;
 
 use crate::data_types::*;
 
-use flexstr::AFlexStr as FlexStr;
+use flexstr::SharedStr as FlexStr;
 
  // Parse two date strings and compare them.  If both can't be parsed, return Equal.
 pub fn cmp_str_dates(date_str1: &str, date_str2: &str) -> Ordering {

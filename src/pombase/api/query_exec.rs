@@ -5,7 +5,7 @@ use crate::api::query::*;
 use crate::api::site_db::SiteDB;
 use crate::api_data::APIData;
 
-use flexstr::{ToAFlexStr, a_flex_str as flex_str, a_flex_fmt as flex_fmt};
+use flexstr::{ToSharedStr, shared_str as flex_str, shared_fmt as flex_fmt};
 
 pub struct QueryExec {
     api_data: APIData,
@@ -48,7 +48,7 @@ impl QueryExec {
                     match site_db.save_query(&new_uuid, &query).await {
                         Ok(_) => (),
                         Err(mess) =>
-                            return QueryAPIResult::new_error(&query, mess.to_a_flex_str()),
+                            return QueryAPIResult::new_error(&query, mess.to_shared_str()),
                     }
                     new_uuid
                 }
@@ -56,7 +56,7 @@ impl QueryExec {
                 Uuid::new_v4()
             };
 
-        let id = uuid.to_hyphenated().to_string().to_a_flex_str();
+        let id = uuid.to_hyphenated().to_string().to_shared_str();
 
         let rows_result = query.exec(&self.api_data, &self.site_db).await;
 

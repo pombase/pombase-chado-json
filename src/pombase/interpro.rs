@@ -6,7 +6,7 @@ use serde_json;
 
 use crate::web::config::Config;
 
-use flexstr::AFlexStr as FlexStr;
+use flexstr::SharedStr as FlexStr;
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Location {

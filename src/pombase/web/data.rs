@@ -12,7 +12,7 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use zstd::stream::Encoder;
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
@@ -606,7 +606,7 @@ impl WebData {
         disordered_regions_writer.write_all(disordered_regions_header.as_bytes())?;
 
         let db_display_name = |db_alias: &FlexStr| {
-            let lower_db_alias = db_alias.to_lowercase().to_a_flex_str();
+            let lower_db_alias = db_alias.to_lowercase().to_shared_str();
             if let Some(name) = config.extra_database_aliases.get(&lower_db_alias) {
                 name.clone()
             } else {
@@ -971,7 +971,7 @@ impl WebData {
                 let term_short = &annotation.term_short;
                 let termid = &term_short.termid;
 
-                if complexes_config.excluded_terms.contains(&termid) {
+                if complexes_config.excluded_terms.contains(termid) {
                     continue 'TERM;
                 }
                 if !term_short.interesting_parent_ids.iter().any(check_parent_term) {

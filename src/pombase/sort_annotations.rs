@@ -7,7 +7,7 @@ use crate::web::config::*;
 use crate::web::cmp_utils::cmp_residues;
 use crate::web::util::*;
 
-use flexstr::{AFlexStr as FlexStr, a_flex_fmt as flex_fmt};
+use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt};
 
 fn gene_display_name(gene: &GeneDetails) -> FlexStr {
     if let Some(ref name) = gene.name {

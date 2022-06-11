@@ -12,19 +12,19 @@ use self::pombase::data_types::*;
 use self::pombase::web::config::*;
 use self::pombase::web::cv_summary::*;
 
-use flexstr::{ToAFlexStr, a_flex_str as flex_str};
+use flexstr::{ToSharedStr, shared_str as flex_str};
 
 #[allow(dead_code)]
 fn get_test_config() -> Config {
     let mut config = Config {
         database_name: "PomBase".into(),
-        database_long_name: "PomBase".to_a_flex_str(),
-        database_citation: "PMID:22039153".to_a_flex_str(),
-        funder: "Wellcome Trust".to_a_flex_str(),
-        site_description: "PomBase".to_a_flex_str(),
+        database_long_name: "PomBase".to_shared_str(),
+        database_citation: "PMID:22039153".to_shared_str(),
+        funder: "Wellcome Trust".to_shared_str(),
+        site_description: "PomBase".to_shared_str(),
         load_organism_taxonid: Some(4896),
-        base_url: "https://www.pombase.org".to_a_flex_str(),
-        helpdesk_address: "helpdesk@some.domain".to_a_flex_str(),
+        base_url: "https://www.pombase.org".to_shared_str(),
+        helpdesk_address: "helpdesk@some.domain".to_shared_str(),
         doc_page_aliases: HashMap::new(),
         sequence_feature_page: SeqFeaturePageConfig {
             so_types_to_show: vec![flex_str!("regional_centromere")],
@@ -32,22 +32,22 @@ fn get_test_config() -> Config {
         organisms: vec![
             ConfigOrganism {
                 taxonid: 4896,
-                genus: "Schizosaccharomyces".to_a_flex_str(),
-                species: "pombe".to_a_flex_str(),
+                genus: "Schizosaccharomyces".to_shared_str(),
+                species: "pombe".to_shared_str(),
                 alternative_names: vec![],
-                assembly_version: Some("ASM294v2".to_a_flex_str()),
+                assembly_version: Some("ASM294v2".to_shared_str()),
             },
             ConfigOrganism {
                 taxonid: 9606,
-                genus: "Homo".to_a_flex_str(),
-                species: "sapiens".to_a_flex_str(),
+                genus: "Homo".to_shared_str(),
+                species: "sapiens".to_shared_str(),
                 alternative_names: vec![],
                 assembly_version: None,
             },
             ConfigOrganism {
                 taxonid: 4932,
-                genus: "Saccharomyces".to_a_flex_str(),
-                species: "cerevisiae".to_a_flex_str(),
+                genus: "Saccharomyces".to_shared_str(),
+                species: "cerevisiae".to_shared_str(),
                 alternative_names: vec![],
                 assembly_version: None,
             }
@@ -56,17 +56,17 @@ fn get_test_config() -> Config {
         extension_display_names: vec![],
         extension_relation_order: RelationOrder{
             relation_order: vec![
-                "directly_positively_regulates".to_a_flex_str(),
-                "has_direct_input".to_a_flex_str(),
-                "involved_in".to_a_flex_str(),
-                "occurs_at".to_a_flex_str(),
-                "occurs_in".to_a_flex_str(),
-                "added_by".to_a_flex_str(),
-                "added_during".to_a_flex_str(),
-                "has_penetrance".to_a_flex_str(),
+                "directly_positively_regulates".to_shared_str(),
+                "has_direct_input".to_shared_str(),
+                "involved_in".to_shared_str(),
+                "occurs_at".to_shared_str(),
+                "occurs_in".to_shared_str(),
+                "added_by".to_shared_str(),
+                "added_during".to_shared_str(),
+                "has_penetrance".to_shared_str(),
             ],
-            always_last: vec!["happens_during".to_a_flex_str(),
-                              "exists_during".to_a_flex_str()],
+            always_last: vec!["happens_during".to_shared_str(),
+                              "exists_during".to_shared_str()],
         },
         evidence_types: HashMap::new(),
         cv_config: HashMap::new(),
@@ -75,8 +75,8 @@ fn get_test_config() -> Config {
         },
         interesting_parents: vec![],
         viability_terms: ViabilityTerms {
-            viable: "FYPO:0002058".to_a_flex_str(),
-            inviable: "FYPO:0002059".to_a_flex_str(),
+            viable: "FYPO:0002058".to_shared_str(),
+            inviable: "FYPO:0002059".to_shared_str(),
         },
         reference_page_config: ReferencePageConfig {
             triage_status_to_ignore: vec![],
@@ -122,22 +122,22 @@ fn get_test_config() -> Config {
         },
     };
 
-    config.file_exports.gpad_gpi.go_aspect_terms.insert("molecular_function".to_a_flex_str(),
-                                                        "GO:0003674".to_a_flex_str());
-    config.file_exports.gpad_gpi.go_aspect_terms.insert("cellular_component".to_a_flex_str(),
-                                                        "GO:0005575".to_a_flex_str());
-    config.file_exports.gpad_gpi.go_aspect_terms.insert("biological_process".to_a_flex_str(),
-                                                        "GO:0008150".to_a_flex_str());
+    config.file_exports.gpad_gpi.go_aspect_terms.insert("molecular_function".to_shared_str(),
+                                                        "GO:0003674".to_shared_str());
+    config.file_exports.gpad_gpi.go_aspect_terms.insert("cellular_component".to_shared_str(),
+                                                        "GO:0005575".to_shared_str());
+    config.file_exports.gpad_gpi.go_aspect_terms.insert("biological_process".to_shared_str(),
+                                                        "GO:0008150".to_shared_str());
 
-    config.cv_config.insert("molecular_function".to_a_flex_str(),
+    config.cv_config.insert("molecular_function".to_shared_str(),
                             CvConfig {
-                                feature_type: "Gene".to_a_flex_str(),
-                                display_name: Some("molecular function".to_a_flex_str()),
+                                feature_type: "Gene".to_shared_str(),
+                                display_name: Some("molecular function".to_shared_str()),
                                 single_or_multi_locus: SingleOrMultiLocusConfig::NotApplicable,
                                 filters: vec![],
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
-                                summary_relation_ranges_to_collect: vec!["has_substrate".to_a_flex_str()],
+                                summary_relation_ranges_to_collect: vec!["has_substrate".to_shared_str()],
                                 sort_details_by: None,
                                 source_config: HashMap::new(),
                             });
@@ -150,72 +150,72 @@ fn get_test_config() -> Config {
 fn test_compare_ext_part_with_config() {
     let config = get_test_config();
     let mut ext_part1 = ExtPart {
-        rel_type_id: Some("RO:0002400".to_a_flex_str()),
-        rel_type_name: "has_direct_input".to_a_flex_str(),
-        rel_type_display_name: "NA".to_a_flex_str(),
-        ext_range: ExtRange::Misc("misc_ext_part_1".to_a_flex_str()),
+        rel_type_id: Some("RO:0002400".to_shared_str()),
+        rel_type_name: "has_direct_input".to_shared_str(),
+        rel_type_display_name: "NA".to_shared_str(),
+        ext_range: ExtRange::Misc("misc_ext_part_1".to_shared_str()),
     };
     let mut ext_part2 = ExtPart {
-        rel_type_id: Some("RO:0002400".to_a_flex_str()),
-        rel_type_name: "has_direct_input".to_a_flex_str(),
-        rel_type_display_name: "NA".to_a_flex_str(),
-        ext_range: ExtRange::Misc("misc_ext_part_2".to_a_flex_str()),
+        rel_type_id: Some("RO:0002400".to_shared_str()),
+        rel_type_name: "has_direct_input".to_shared_str(),
+        rel_type_display_name: "NA".to_shared_str(),
+        ext_range: ExtRange::Misc("misc_ext_part_2".to_shared_str()),
     };
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
-    ext_part1.rel_type_name = "directly_positively_regulates".to_a_flex_str();
+    ext_part1.rel_type_name = "directly_positively_regulates".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "has_direct_input".to_a_flex_str();
-    ext_part2.rel_type_name = "directly_positively_regulates".to_a_flex_str();
+    ext_part1.rel_type_name = "has_direct_input".to_shared_str();
+    ext_part2.rel_type_name = "directly_positively_regulates".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part2.rel_type_name = "absent_during".to_a_flex_str();
+    ext_part2.rel_type_name = "absent_during".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part2.rel_type_name = "misc_rel".to_a_flex_str();
+    ext_part2.rel_type_name = "misc_rel".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "other_misc_rel".to_a_flex_str();
+    ext_part1.rel_type_name = "other_misc_rel".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = "other_misc_rel".to_a_flex_str();
-    ext_part2.rel_type_name = "other_misc_rel".to_a_flex_str();
+    ext_part1.rel_type_name = "other_misc_rel".to_shared_str();
+    ext_part2.rel_type_name = "other_misc_rel".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
-    ext_part2.rel_type_name = "happens_during".to_a_flex_str();
+    ext_part2.rel_type_name = "happens_during".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
-    ext_part2.rel_type_name = "misc_rel".to_a_flex_str();
+    ext_part1.rel_type_name = "happens_during".to_shared_str();
+    ext_part2.rel_type_name = "misc_rel".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = "has_direct_input".to_a_flex_str();
-    ext_part2.rel_type_name = "happens_during".to_a_flex_str();
+    ext_part1.rel_type_name = "has_direct_input".to_shared_str();
+    ext_part2.rel_type_name = "happens_during".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
-    ext_part2.rel_type_name = "has_direct_input".to_a_flex_str();
+    ext_part1.rel_type_name = "happens_during".to_shared_str();
+    ext_part2.rel_type_name = "has_direct_input".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
-    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
-    ext_part2.rel_type_name = "exists_during".to_a_flex_str();
+    ext_part1.rel_type_name = "happens_during".to_shared_str();
+    ext_part2.rel_type_name = "exists_during".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
-    ext_part1.rel_type_name = "happens_during".to_a_flex_str();
-    ext_part2.rel_type_name = "happens_during".to_a_flex_str();
+    ext_part1.rel_type_name = "happens_during".to_shared_str();
+    ext_part2.rel_type_name = "happens_during".to_shared_str();
     assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 }
@@ -224,7 +224,7 @@ fn test_compare_ext_part_with_config() {
 fn make_test_ext_part(rel_type_name: &str, rel_type_display_name: &str,
                       ext_range: ExtRange) -> ExtPart {
     ExtPart {
-        rel_type_id: Some("RO:0000000".to_a_flex_str()),
+        rel_type_id: Some("RO:0000000".to_shared_str()),
         rel_type_name: rel_type_name.into(),
         rel_type_display_name: rel_type_display_name.into(),
         ext_range: ext_range,
@@ -243,58 +243,58 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 
 
     let mut test_conditions = HashSet::new();
-    test_conditions.insert("FYECO:0000103".to_a_flex_str());
-    test_conditions.insert("FYECO:0000137".to_a_flex_str());
+    test_conditions.insert("FYECO:0000103".to_shared_str());
+    test_conditions.insert("FYECO:0000137".to_shared_str());
 
     let mut fypo_details = vec![
         make_one_detail(41_717, "SPBC11B10.09", "PMID:9242669", None,
                         "IDA",vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC646.13".to_a_flex_str())), //  sds23
+                                               ExtRange::Gene("SPBC646.13".to_shared_str())), //  sds23
                         ], HashSet::new()),
         make_one_detail(41_718, "SPBC11B10.09", "PMID:11937031", None,
                         "IDA", vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC32F12.09".to_a_flex_str())), // no name
+                                               ExtRange::Gene("SPBC32F12.09".to_shared_str())), // no name
                         ], HashSet::new()),
         make_one_detail(187_893, "SPBC11B10.09", "PMID:19523829", None, "IMP",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC6B1.04".to_a_flex_str())), //  mde4
+                                               ExtRange::Gene("SPBC6B1.04".to_shared_str())), //  mde4
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1902845".to_a_flex_str())),
+                                               ExtRange::Term("GO:1902845".to_shared_str())),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term("GO:0000089".to_a_flex_str())),
+                                               ExtRange::Term("GO:0000089".to_shared_str())),
                         ],
                         HashSet::new()),
         make_one_detail(193_221, "SPBC11B10.09", "PMID:10921876", None, "IMP",
                         vec![
                             make_test_ext_part("directly_negatively_regulates", "directly inhibits",
-                                               ExtRange::Gene("SPAC144.13c".to_a_flex_str())), //  srw1
+                                               ExtRange::Gene("SPAC144.13c".to_shared_str())), //  srw1
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1903693".to_a_flex_str())),
+                                               ExtRange::Term("GO:1903693".to_shared_str())),
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1905785".to_a_flex_str())),
+                                               ExtRange::Term("GO:1905785".to_shared_str())),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term("GO:0000080".to_a_flex_str())),
+                                               ExtRange::Term("GO:0000080".to_shared_str())),
                         ],
                         HashSet::new()),
         make_one_detail(194_213, "SPBC11B10.09", "PMID:7957097", None, "IDA",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC776.02c".to_a_flex_str())),  // dis2
+                                               ExtRange::Gene("SPBC776.02c".to_shared_str())),  // dis2
                         ],
                         HashSet::new()),
         make_one_detail(194_661, "SPBC11B10.09", "PMID:10485849", None, "IMP",
                         vec![
                             make_test_ext_part("has_direct_input", "has substrate",
-                                               ExtRange::Gene("SPBC146.03c".to_a_flex_str())), //  cut3
+                                               ExtRange::Gene("SPBC146.03c".to_shared_str())), //  cut3
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:1903380".to_a_flex_str())),
+                                               ExtRange::Term("GO:1903380".to_shared_str())),
                             make_test_ext_part("part_of", "involved in",
-                                               ExtRange::Term("GO:0042307".to_a_flex_str())),
+                                               ExtRange::Term("GO:0042307".to_shared_str())),
                             make_test_ext_part("happens_during", "during",
-                                               ExtRange::Term("GO:0000089".to_a_flex_str())),
+                                               ExtRange::Term("GO:0000089".to_shared_str())),
                         ],
                         HashSet::new()),
         make_one_detail(223_656,
@@ -358,7 +358,7 @@ fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
 fn get_test_annotations() -> Vec<OntTermAnnotations> {
     let annotations1 = vec![188_448, 202_017];
     let ont_term1 = OntTermAnnotations {
-        term: "GO:0097472".to_a_flex_str(),
+        term: "GO:0097472".to_shared_str(),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations1,
@@ -369,7 +369,7 @@ fn get_test_annotations() -> Vec<OntTermAnnotations> {
         vec![41_717, 41_718, 187_893, 193_221, 194_213, 194_661];
 
     let ont_term2 = OntTermAnnotations {
-        term: "GO:0004693".to_a_flex_str(),
+        term: "GO:0004693".to_shared_str(),
         is_not: false,
         rel_names: HashSet::new(),
         annotations: annotations2,
@@ -388,7 +388,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         id: id,
         genes: vec![gene_uniquename.into()],
         transcript_uniquenames: vec![],
-        genotype: maybe_genotype_uniquename.map(|s| s.to_a_flex_str()),
+        genotype: maybe_genotype_uniquename.map(|s| s.to_shared_str()),
         genotype_background: None,
         reference: Some(reference_uniquename.into()),
         evidence: Some(evidence.into()),
@@ -401,7 +401,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         extension: extension,
         gene_ex_props: None,
         conditions: conditions,
-        assigned_by: Some("PomBase".to_a_flex_str()),
+        assigned_by: Some("PomBase".to_shared_str()),
         throughput: Some(Throughput::HighThroughput),
     }
 }
@@ -416,7 +416,7 @@ fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
                      loci: Vec<GenotypeLocus>) -> GenotypeDetails {
     GenotypeDetails {
         display_uniquename: display_uniquename.into(),
-        name: name.map(|s| s.to_a_flex_str()),
+        name: name.map(|s| s.to_shared_str()),
         loci: loci,
         ploidiness: Ploidiness::Haploid,
         comment: None,
@@ -434,7 +434,7 @@ fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
 fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
     GeneDetails {
         uniquename: uniquename.into(),
-        name: name.map(|s| s.to_a_flex_str()),
+        name: name.map(|s| s.to_shared_str()),
         taxonid: 4896,
         product: None,
         deletion_viability: DeletionViability::Unknown,
@@ -452,9 +452,9 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
-        feature_type: "gene".to_a_flex_str(),
-        feature_so_termid: "SO:0000704".to_a_flex_str(),
-        transcript_so_termid: "SO:0001217".to_a_flex_str(),
+        feature_type: "gene".to_shared_str(),
+        feature_so_termid: "SO:0000704".to_shared_str(),
+        transcript_so_termid: "SO:0001217".to_shared_str(),
         characterisation_status: None,
         taxonomic_distribution: None,
         location: None,
@@ -503,7 +503,7 @@ fn get_test_genes_map() -> UniquenameGeneMap {
 fn get_test_genotypes_map() -> UniquenameGenotypeMap {
     let mut ret = HashMap::new();
 
-    ret.insert("e674fe7ceba478aa-genotype-2".to_a_flex_str(),
+    ret.insert("e674fe7ceba478aa-genotype-2".to_shared_str(),
                make_one_genotype(
                    "G799D(G799D)",
                    Some("test genotype name"),
@@ -511,15 +511,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some("Not assayed".to_a_flex_str()),
-                                   allele_uniquename: "SPBC16A3.11:allele-7".to_a_flex_str(),
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPBC16A3.11:allele-7".to_shared_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert("d6c914796c35e3b5-genotype-4".to_a_flex_str(),
+    ret.insert("d6c914796c35e3b5-genotype-4".to_shared_str(),
                make_one_genotype(
                    "C-terminal truncation 940-1516(940-1516)",
                    None,
@@ -527,15 +527,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some("Not assayed".to_a_flex_str()),
-                                   allele_uniquename: "SPCC1919.10c:allele-5".to_a_flex_str(),
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-5".to_shared_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert("65c76fa511461156-genotype-3".to_a_flex_str(),
+    ret.insert("65c76fa511461156-genotype-3".to_shared_str(),
                make_one_genotype(
                    "cdc25-22(c532y)",
                    None,
@@ -543,15 +543,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some("Not assayed".to_a_flex_str()),
-                                   allele_uniquename: "SPAC24H6.05:allele-3".to_a_flex_str(),
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPAC24H6.05:allele-3".to_shared_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert("d6c914796c35e3b5-genotype-2".to_a_flex_str(),
+    ret.insert("d6c914796c35e3b5-genotype-2".to_shared_str(),
                make_one_genotype(
                    "ATPase dead mutant(unknown)",
                    Some("ZZ-name"),
@@ -559,15 +559,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some("Not assayed".to_a_flex_str()),
-                                   allele_uniquename: "SPCC1919.10c:allele-4".to_a_flex_str(),
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-4".to_shared_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert("d6c914796c35e3b5-genotype-3".to_a_flex_str(),
+    ret.insert("d6c914796c35e3b5-genotype-3".to_shared_str(),
                make_one_genotype(
                    "C-terminal truncation(1320-1516)",
                    None,
@@ -575,15 +575,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some("Not assayed".to_a_flex_str()),
-                                   allele_uniquename: "SPCC1919.10c:allele-6".to_a_flex_str(),
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-6".to_shared_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert("fd4f3f52f1d38106-genotype-4".to_a_flex_str(),
+    ret.insert("fd4f3f52f1d38106-genotype-4".to_shared_str(),
                make_one_genotype(
                    "K418R(K418R)",
                    None,
@@ -591,15 +591,15 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some("Wild type product level".to_a_flex_str()),
-                                   allele_uniquename: "SPAC25A8.01c:allele-5".to_a_flex_str(),
+                                   expression: Some("Wild type product level".to_shared_str()),
+                                   allele_uniquename: "SPAC25A8.01c:allele-5".to_shared_str(),
                                }
                            ]
                        }
                    ]
                ));
 
-    ret.insert("a6d8f45c20c2227d-genotype-9".to_a_flex_str(),
+    ret.insert("a6d8f45c20c2227d-genotype-9".to_shared_str(),
                make_one_genotype(
                    "UBS-I&II(F18A,F21A,W26A,L40A,W41A,W45A)",
                    None,
@@ -607,8 +607,8 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
                        GenotypeLocus {
                            expressed_alleles: vec![
                                ExpressedAllele {
-                                   expression: Some("Not assayed".to_a_flex_str()),
-                                   allele_uniquename: "SPAC3G6.02:allele-7".to_a_flex_str(),
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPAC3G6.02:allele-7".to_shared_str(),
                                }
                            ]
                        }
@@ -625,7 +625,7 @@ fn make_one_allele_short(uniquename: &str, name: &str, allele_type: &str,
         uniquename.into(),
         &Some(name.into()),
         allele_type,
-        &description.map(|s| s.to_a_flex_str()),
+        &description.map(|s| s.to_shared_str()),
         gene_uniquename,
     )
 }
@@ -634,28 +634,28 @@ fn make_one_allele_short(uniquename: &str, name: &str, allele_type: &str,
 fn get_test_alleles_map() -> UniquenameAlleleMap {
     let mut ret = HashMap::new();
 
-    ret.insert("SPCC1919.10c:allele-4".to_a_flex_str(),
+    ret.insert("SPCC1919.10c:allele-4".to_shared_str(),
                make_one_allele_short("SPCC1919.10c:allele-4", "ATPase dead mutant", "unknown", None, "SPCC1919.10c"));
 
-    ret.insert("SPCC1919.10c:allele-5".to_a_flex_str(),
+    ret.insert("SPCC1919.10c:allele-5".to_shared_str(),
                make_one_allele_short("SPCC1919.10c:allele-5", "C-terminal truncation 940-1516", "partial_amino_acid_deletion",
                                      Some("940-1516"), "SPCC1919.10c"));
 
-    ret.insert("SPCC1919.10c:allele-6".to_a_flex_str(),
+    ret.insert("SPCC1919.10c:allele-6".to_shared_str(),
                make_one_allele_short("SPCC1919.10c:allele-6", "C-terminal truncation", "partial_amino_acid_deletion", Some("1320-1516"),
                                      "SPCC1919.10c"));
 
-    ret.insert("SPBC16A3.11:allele-7".to_a_flex_str(),
+    ret.insert("SPBC16A3.11:allele-7".to_shared_str(),
                make_one_allele_short("SPBC16A3.11:allele-7", "G799D", "amino_acid_mutation", Some("G799D"), "SPBC16A3.11"));
 
 
-    ret.insert("SPAC25A8.01c:allele-5".to_a_flex_str(),
+    ret.insert("SPAC25A8.01c:allele-5".to_shared_str(),
                make_one_allele_short("SPAC25A8.01c:allele-5", "K418R", "amino_acid_mutation", Some("K418R"), "SPAC25A8.01c"));
 
-    ret.insert("SPAC3G6.02:allele-7".to_a_flex_str(),
+    ret.insert("SPAC3G6.02:allele-7".to_shared_str(),
                make_one_allele_short("SPAC3G6.02:allele-7", "UBS-I&II", "amino_acid_mutation", Some("F18A,F21A,W26A,L40A,W41A,W45A"), "SPAC3G6.02"));
 
-    ret.insert("SPAC24H6.05:allele-3".to_a_flex_str(),
+    ret.insert("SPAC24H6.05:allele-3".to_shared_str(),
                make_one_allele_short("SPAC24H6.05:allele-3", "cdc25-22", "amino_acid_mutation", Some("C532Y"), "SPAC24H6.05"));
 
     ret
@@ -667,10 +667,10 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         termid: id.into(),
         name: name.into(),
         cv_name: cv_name.into(),
-        annotation_feature_type: "gene".to_a_flex_str(),
+        annotation_feature_type: "gene".to_shared_str(),
         interesting_parent_ids: HashSet::new(),
         interesting_parent_details: HashSet::new(),
-        in_subsets: HashSet::from_iter(vec!["goslim_pombe".to_a_flex_str()]),
+        in_subsets: HashSet::from_iter(vec!["goslim_pombe".to_shared_str()]),
         synonyms: vec![],
         definition: None,
         direct_ancestors: vec![],
@@ -797,7 +797,7 @@ fn test_cmp_ont_annotation_detail() {
 #[allow(dead_code)]
 fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermAnnotations {
     OntTermAnnotations {
-        term: termid.to_a_flex_str(),
+        term: termid.to_shared_str(),
         is_not: false,
         annotations: vec![],
         rel_names: HashSet::new(),
@@ -809,12 +809,12 @@ fn make_test_summary(termid: &str, rows: Vec<TermSummaryRow>) -> OntTermAnnotati
 #[test]
 fn test_summary_row_equals() {
     let r1 = TermSummaryRow {
-        gene_uniquenames: vec!["SPAPB1A10.09".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAPB1A10.09".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     };
     let r2 = TermSummaryRow {
-        gene_uniquenames: vec!["SPAPB1A10.09".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAPB1A10.09".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     };
@@ -826,9 +826,9 @@ fn get_test_summaries() -> Vec<OntTermAnnotations> {
     let mut summaries = vec![];
 
     let ext = make_test_ext_part("part_of", "involved in",
-                                 ExtRange::Term("GO:1905785".to_a_flex_str()));
+                                 ExtRange::Term("GO:1905785".to_shared_str()));
     let ext2 = make_test_ext_part("some_rel", "some_rel_display_name",
-                                  ExtRange::Term("GO:1234567".to_a_flex_str()));
+                                  ExtRange::Term("GO:1234567".to_shared_str()));
 
     summaries.push(make_test_summary("GO:0022403", vec![]));
     summaries.push(make_test_summary("GO:0051318",
@@ -863,28 +863,28 @@ fn get_test_children_by_termid() -> HashMap<TermId, HashSet<TermId>> {
     let mut children_by_termid = HashMap::new();
 
     let mut children_of_0022403 = HashSet::new();
-    children_of_0022403.insert("GO:0051318".to_a_flex_str());
-    children_of_0022403.insert("GO:0000080".to_a_flex_str());
-    children_of_0022403.insert("GO:0088888".to_a_flex_str());
-    children_of_0022403.insert("GO:0000089".to_a_flex_str());
-    children_of_0022403.insert("GO:0099999".to_a_flex_str());
+    children_of_0022403.insert("GO:0051318".to_shared_str());
+    children_of_0022403.insert("GO:0000080".to_shared_str());
+    children_of_0022403.insert("GO:0088888".to_shared_str());
+    children_of_0022403.insert("GO:0000089".to_shared_str());
+    children_of_0022403.insert("GO:0099999".to_shared_str());
 
     let mut children_of_0051318 = HashSet::new();
-    children_of_0051318.insert("GO:0000080".to_a_flex_str());
-    children_of_0051318.insert("GO:0088888".to_a_flex_str());
-    children_of_0051318.insert("GO:0000089".to_a_flex_str());
-    children_of_0051318.insert("GO:0099999".to_a_flex_str());
+    children_of_0051318.insert("GO:0000080".to_shared_str());
+    children_of_0051318.insert("GO:0088888".to_shared_str());
+    children_of_0051318.insert("GO:0000089".to_shared_str());
+    children_of_0051318.insert("GO:0099999".to_shared_str());
 
     let mut children_of_0000080 = HashSet::new();
-    children_of_0000080.insert("GO:0088888".to_a_flex_str());
+    children_of_0000080.insert("GO:0088888".to_shared_str());
 
     let mut children_of_0000089 = HashSet::new();
-    children_of_0000089.insert("GO:0099999".to_a_flex_str());
+    children_of_0000089.insert("GO:0099999".to_shared_str());
 
-    children_by_termid.insert("GO:0022403".to_a_flex_str(), children_of_0022403);
-    children_by_termid.insert("GO:0051318".to_a_flex_str(), children_of_0051318);
-    children_by_termid.insert("GO:0000080".to_a_flex_str(), children_of_0000080);
-    children_by_termid.insert("GO:0000089".to_a_flex_str(), children_of_0000089);
+    children_by_termid.insert("GO:0022403".to_shared_str(), children_of_0022403);
+    children_by_termid.insert("GO:0051318".to_shared_str(), children_of_0051318);
+    children_by_termid.insert("GO:0000080".to_shared_str(), children_of_0000080);
+    children_by_termid.insert("GO:0000089".to_shared_str(), children_of_0000089);
 
     children_by_termid
 }
@@ -908,12 +908,12 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
     let mut ret_map = BTreeMap::new();
 
     let base_details = GeneDetails {
-        uniquename: "".to_a_flex_str(),
-        name: Some("".to_a_flex_str()),
-        product: Some("".to_a_flex_str()),
+        uniquename: "".to_shared_str(),
+        name: Some("".to_shared_str()),
+        product: Some("".to_shared_str()),
         taxonid: 4896,
         deletion_viability: DeletionViability::Viable,
-        uniprot_identifier: Some("".to_a_flex_str()),
+        uniprot_identifier: Some("".to_shared_str()),
         secondary_identifier: None,
         biogrid_interactor_id: None,
         rnacentral_urs_identifier: None,
@@ -923,15 +923,15 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
         low_complexity_region_coords: vec![],
         coiled_coil_coords: vec![],
         rfam_annotations: vec![],
-        orfeome_identifier: Some("".to_a_flex_str()),
+        orfeome_identifier: Some("".to_shared_str()),
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
-        feature_type: "".to_a_flex_str(),
-        feature_so_termid: "".to_a_flex_str(),
-        transcript_so_termid: "".to_a_flex_str(),
-        characterisation_status: Some("".to_a_flex_str()),
-        taxonomic_distribution: Some("".to_a_flex_str()),
+        feature_type: "".to_shared_str(),
+        feature_so_termid: "".to_shared_str(),
+        transcript_so_termid: "".to_shared_str(),
+        characterisation_status: Some("".to_shared_str()),
+        taxonomic_distribution: Some("".to_shared_str()),
         location: None,
         gene_neighbourhood: vec![],
         transcripts: vec![],
@@ -952,32 +952,32 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
         subset_termids: HashSet::new(),
     };
 
-    ret_map.insert("SPAC977.09c".to_a_flex_str(),
+    ret_map.insert("SPAC977.09c".to_shared_str(),
                    GeneDetails {
-                       uniquename: "SPAC977.09c".to_a_flex_str(),
+                       uniquename: "SPAC977.09c".to_shared_str(),
                        name: None,
-                       product: Some("phospholipase (predicted)".to_a_flex_str()),
+                       product: Some("phospholipase (predicted)".to_shared_str()),
                        .. base_details.clone()
                    });
-    ret_map.insert("SPAC3G9.09c".to_a_flex_str(),
+    ret_map.insert("SPAC3G9.09c".to_shared_str(),
                    GeneDetails {
-                       uniquename: "SPAC3G9.09c".to_a_flex_str(),
-                       name: Some("tif211".to_a_flex_str()),
-                       product: Some("translation initiation factor eIF2 alpha subunit".to_a_flex_str()),
+                       uniquename: "SPAC3G9.09c".to_shared_str(),
+                       name: Some("tif211".to_shared_str()),
+                       product: Some("translation initiation factor eIF2 alpha subunit".to_shared_str()),
                        .. base_details.clone()
                    });
-    ret_map.insert("SPAC16.01".to_a_flex_str(),
+    ret_map.insert("SPAC16.01".to_shared_str(),
                    GeneDetails {
-                       uniquename: "SPAC16.01".to_a_flex_str(),
-                       name: Some("rho2".to_a_flex_str()),
-                       product: Some("Rho family GTPase Rho2".to_a_flex_str()),
+                       uniquename: "SPAC16.01".to_shared_str(),
+                       name: Some("rho2".to_shared_str()),
+                       product: Some("Rho family GTPase Rho2".to_shared_str()),
                        .. base_details.clone()
                    });
-    ret_map.insert("SPAC24C9.02c".to_a_flex_str(),
+    ret_map.insert("SPAC24C9.02c".to_shared_str(),
                    GeneDetails {
-                       uniquename: "SPAC24C9.02c".to_a_flex_str(),
-                       name: Some("cyt2".to_a_flex_str()),
-                       product: Some("cytochrome c1 heme lyase Cyt2 (predicted)".to_a_flex_str()),
+                       uniquename: "SPAC24C9.02c".to_shared_str(),
+                       name: Some("cyt2".to_shared_str()),
+                       product: Some("cytochrome c1 heme lyase Cyt2 (predicted)".to_shared_str()),
                        .. base_details
                    });
 
@@ -990,196 +990,196 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
 #[test]
 fn test_merge_ext_part_ranges() {
     let ext_part1 = ExtPart {
-        rel_type_id: Some("RO:0000000".to_a_flex_str()),
-        rel_type_name: "has_substrate".to_a_flex_str(),
-        rel_type_display_name: "has substrate".to_a_flex_str(),
-        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC977.09c".to_a_flex_str()]]),
+        rel_type_id: Some("RO:0000000".to_shared_str()),
+        rel_type_name: "has_substrate".to_shared_str(),
+        rel_type_display_name: "has substrate".to_shared_str(),
+        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC977.09c".to_shared_str()]]),
     };
     let ext_part2 = ExtPart {
-        rel_type_id: Some("RO:0000000".to_a_flex_str()),
-        rel_type_name: "has_substrate".to_a_flex_str(),
-        rel_type_display_name: "has substrate".to_a_flex_str(),
-        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_a_flex_str()]]),
+        rel_type_id: Some("RO:0000000".to_shared_str()),
+        rel_type_name: "has_substrate".to_shared_str(),
+        rel_type_display_name: "has substrate".to_shared_str(),
+        ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_shared_str()]]),
     };
 
     let gene_short_map = get_test_gene_short_map();
     let res = merge_ext_part_ranges(&ext_part1, &ext_part2, &gene_short_map);
 
     assert_eq!(res.ext_range,
-               ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_a_flex_str()],
-                                           vec!["SPAC977.09c".to_a_flex_str()]]));
+               ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_shared_str()],
+                                           vec!["SPAC977.09c".to_shared_str()]]));
 }
 
 fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     let mut rows = vec![];
 
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC25B2.01c".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC25B2.01c".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC25B2.01c".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC25B2.01c".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC25B8.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC25B8.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "some_good_rel".to_a_flex_str(),
-                rel_type_display_name: "some rel".to_a_flex_str(),
-                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "some_good_rel".to_shared_str(),
+                rel_type_display_name: "some rel".to_shared_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_shared_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC25B8.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "has_substrate".to_a_flex_str(),
-                rel_type_display_name: "has substrate".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "has_substrate".to_shared_str(),
+                rel_type_display_name: "has substrate".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
+                    vec![vec!["SPAC3G9.09c".to_shared_str()]]),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC25B8.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "has_substrate".to_a_flex_str(),
-                rel_type_display_name: "has substrate".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "has_substrate".to_shared_str(),
+                rel_type_display_name: "has substrate".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
+                    vec![vec!["SPAC3G9.09c".to_shared_str()]]),
             },
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "during".to_a_flex_str(),
-                rel_type_display_name: "during".to_a_flex_str(),
-                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "during".to_shared_str(),
+                rel_type_display_name: "during".to_shared_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_shared_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC25B8.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC25B8.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "has_substrate".to_a_flex_str(),
-                rel_type_display_name: "has substrate".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "has_substrate".to_shared_str(),
+                rel_type_display_name: "has substrate".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
+                    vec![vec!["SPAC3G9.09c".to_shared_str()]]),
             },
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "during".to_a_flex_str(),
-                rel_type_display_name: "during".to_a_flex_str(),
-                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "during".to_shared_str(),
+                rel_type_display_name: "during".to_shared_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_shared_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC1786.03".to_a_flex_str()], // change annotated gene
+        gene_uniquenames: vec!["SPAC1786.03".to_shared_str()], // change annotated gene
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "has_substrate".to_a_flex_str(),
-                rel_type_display_name: "has substrate".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "has_substrate".to_shared_str(),
+                rel_type_display_name: "has substrate".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC3G9.09c".to_a_flex_str()]]),
+                    vec![vec!["SPAC3G9.09c".to_shared_str()]]),
             },
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "during".to_a_flex_str(),
-                rel_type_display_name: "during".to_a_flex_str(),
-                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "during".to_shared_str(),
+                rel_type_display_name: "during".to_shared_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_shared_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC1786.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC1786.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "has_substrate".to_a_flex_str(),
-                rel_type_display_name: "has substrate".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "has_substrate".to_shared_str(),
+                rel_type_display_name: "has substrate".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC16.01".to_a_flex_str()]]),   // change substrate
+                    vec![vec!["SPAC16.01".to_shared_str()]]),   // change substrate
             },
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "during".to_a_flex_str(),
-                rel_type_display_name: "during".to_a_flex_str(),
-                ext_range: ExtRange::Term("GO:0070301".to_a_flex_str()),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "during".to_shared_str(),
+                rel_type_display_name: "during".to_shared_str(),
+                ext_range: ExtRange::Term("GO:0070301".to_shared_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC1786.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC1786.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "has_substrate".to_a_flex_str(),
-                rel_type_display_name: "has substrate".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "has_substrate".to_shared_str(),
+                rel_type_display_name: "has substrate".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC16.01".to_a_flex_str()]]),
+                    vec![vec!["SPAC16.01".to_shared_str()]]),
             },
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "during".to_a_flex_str(),
-                rel_type_display_name: "during".to_a_flex_str(),
-                ext_range: ExtRange::Term("GO:0071472".to_a_flex_str()), // change during term
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "during".to_shared_str(),
+                rel_type_display_name: "during".to_shared_str(),
+                ext_range: ExtRange::Term("GO:0071472".to_shared_str()), // change during term
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC222.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC222.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "binds".to_a_flex_str(),
-                rel_type_display_name: "binds".to_a_flex_str(),
-                ext_range: ExtRange::Term("PR:000027629".to_a_flex_str()),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "binds".to_shared_str(),
+                rel_type_display_name: "binds".to_shared_str(),
+                ext_range: ExtRange::Term("PR:000027629".to_shared_str()),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC222.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC222.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "binds".to_a_flex_str(),
-                rel_type_display_name: "binds".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "binds".to_shared_str(),
+                rel_type_display_name: "binds".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC16.01".to_a_flex_str()]]),
+                    vec![vec!["SPAC16.01".to_shared_str()]]),
             }],
     });
     rows.push(TermSummaryRow {
-        gene_uniquenames: vec!["SPAC222.03".to_a_flex_str()],
+        gene_uniquenames: vec!["SPAC222.03".to_shared_str()],
         genotype_uniquenames: vec![],
         extension: vec![
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "binds".to_a_flex_str(),
-                rel_type_display_name: "binds".to_a_flex_str(),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "binds".to_shared_str(),
+                rel_type_display_name: "binds".to_shared_str(),
                 ext_range: ExtRange::SummaryGenes(
-                    vec![vec!["SPAC16.01".to_a_flex_str()]]),
+                    vec![vec!["SPAC16.01".to_shared_str()]]),
             },
             ExtPart {
-                rel_type_id: Some("RO:0000000".to_a_flex_str()),
-                rel_type_name: "binds".to_a_flex_str(),
-                rel_type_display_name: "binds".to_a_flex_str(),
-                ext_range: ExtRange::Term("PR:000027629".to_a_flex_str()),
+                rel_type_id: Some("RO:0000000".to_shared_str()),
+                rel_type_name: "binds".to_shared_str(),
+                rel_type_display_name: "binds".to_shared_str(),
+                ext_range: ExtRange::Term("PR:000027629".to_shared_str()),
             },
 ],
     });
@@ -1202,8 +1202,8 @@ fn test_collect_ext_summary_genes() {
 
     let collected_ext = rows.get(6).unwrap();
     let collected_ext_ext_part_1 = collected_ext.extension.get(0).unwrap();
-    let summary_genes_vec = vec![vec!["SPAC16.01".to_a_flex_str()],
-                                 vec!["SPAC3G9.09c".to_a_flex_str()]];
+    let summary_genes_vec = vec![vec!["SPAC16.01".to_shared_str()],
+                                 vec!["SPAC3G9.09c".to_shared_str()]];
     assert_eq!(collected_ext_ext_part_1.ext_range,
                ExtRange::SummaryGenes(summary_genes_vec));
 }

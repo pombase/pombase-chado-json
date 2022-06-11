@@ -1,6 +1,6 @@
 use std::collections::{HashSet, HashMap};
 
-use flexstr::AFlexStr as FlexStr;
+use flexstr::SharedStr as FlexStr;
 
 use crate::web::config::{CvConfig, AnnotationSubsetConfig};
 use crate::types::{CvName};
@@ -17,7 +17,7 @@ pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvCo
     let mut result: Vec<Vec<FlexStr>> = vec![];
 
     for termid in &subset_config.term_ids {
-        let term_details = api_maps.terms.get(&termid)
+        let term_details = api_maps.terms.get(termid)
             .unwrap_or_else(|| panic!("no term details found for {} for config file", termid));
 
         for (cv_name, term_annotations) in &term_details.cv_annotations {

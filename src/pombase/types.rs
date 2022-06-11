@@ -1,4 +1,4 @@
-use flexstr::AFlexStr as FlexStr;
+use flexstr::SharedStr as FlexStr;
 
 pub type CvName = FlexStr;
 pub type MiscExtRange = FlexStr;

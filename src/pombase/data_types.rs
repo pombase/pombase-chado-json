@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet, BTreeMap};
 use std::fmt::Display;
 use std::fmt;
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, Flex, ToAFlexStr, a_flex_fmt as flex_fmt};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
@@ -132,7 +132,7 @@ impl fmt::Display for ExtRange {
             ExtRange::SummaryTranscripts(_) => panic!("can't handle SummaryTranscripts\n"),
             ExtRange::Term(ref termid) => write!(f, "{}", termid),
             ExtRange::SummaryModifiedResidues(ref residue) =>
-                write!(f, "{}", residue.iter().map(Flex::to_string).collect::<Vec<_>>().join(",")),
+                write!(f, "{}", residue.iter().map(FlexStr::to_string).collect::<Vec<_>>().join(",")),
             ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
             ExtRange::Misc(ref misc) => write!(f, "{}", misc),
             ExtRange::Domain(ref domain) => write!(f, "{}", domain),
@@ -1181,7 +1181,7 @@ impl TranscriptDetails {
             }
         }
 
-        seq.to_a_flex_str()
+        seq.to_shared_str()
     }
 }
 
@@ -1294,7 +1294,7 @@ fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str
     let name = allele_name.clone().unwrap_or_else(|| flex_str!("unnamed"));
     let allele_type = allele_type.to_owned();
     let description =
-        allele_description.clone().unwrap_or_else(|| allele_type.to_a_flex_str());
+        allele_description.clone().unwrap_or_else(|| allele_type.to_shared_str());
 
     if allele_type == "deletion" && name.ends_with("delta") ||
         allele_type.starts_with("wild_type") && name.ends_with('+') {
@@ -1325,12 +1325,12 @@ impl AlleleShort {
         let encoded_name_and_type =
             allele_encoded_name_and_type(name, allele_type, description);
         AlleleShort {
-            uniquename: uniquename.to_a_flex_str(),
+            uniquename: uniquename.to_shared_str(),
             encoded_name_and_type,
             name: name.clone(),
-            allele_type: allele_type.to_a_flex_str(),
+            allele_type: allele_type.to_shared_str(),
             description: description.clone(),
-            gene_uniquename: gene_uniquename.to_a_flex_str(),
+            gene_uniquename: gene_uniquename.to_shared_str(),
             synonyms: vec![],
         }
     }

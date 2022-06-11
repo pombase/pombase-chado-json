@@ -23,7 +23,7 @@ use zstd::stream::Decoder;
 
 use crate::types::{TermId, GeneUniquename};
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
 pub struct APIData {
     config: Config,
@@ -93,7 +93,7 @@ impl APIData {
         for (subset_name, subset_details) in &maps.gene_subsets {
             for prefix in &prefixes_to_remove {
                 if subset_name.starts_with(prefix.as_ref()) {
-                    let new_subset_name = subset_name[prefix.len()..].to_a_flex_str();
+                    let new_subset_name = subset_name[prefix.len()..].to_shared_str();
                     new_entries.insert(new_subset_name, subset_details.clone());
                 }
             }
@@ -170,7 +170,7 @@ impl APIData {
             if wildcard {
                 trimmed_search_name.pop();
             }
-            let trimmed_search_name = trimmed_search_name.to_a_flex_str();
+            let trimmed_search_name = trimmed_search_name.to_shared_str();
             let mut genes = HashSet::new();
             for (subset_name, subset_details) in &self.maps.gene_subsets {
                 let name_matches =
@@ -325,7 +325,7 @@ impl APIData {
 
     fn strip_db_prefix(&self, uniquename: &FlexStr) -> FlexStr {
         if uniquename.starts_with("PomBase:SP") {
-            uniquename[8..].to_a_flex_str()
+            uniquename[8..].to_shared_str()
         } else {
             uniquename.clone()
         }
@@ -530,7 +530,7 @@ impl APIData {
 
     // return a GeneDetails object with the term, genes and references maps filled in
     pub fn get_full_gene_details(&self, gene_uniquename: &str) -> Option<GeneDetails> {
-        let gene_uniquename = gene_uniquename.to_a_flex_str();
+        let gene_uniquename = gene_uniquename.to_shared_str();
         if let Some(gene_ref) = self.maps.genes.get(&gene_uniquename) {
             let mut gene = gene_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
@@ -556,7 +556,7 @@ impl APIData {
     }
 
     pub fn get_genotype_details(&self, genotype_uniquename: &str) -> Option<GenotypeDetails> {
-        let genotype_uniquename = genotype_uniquename.to_a_flex_str();
+        let genotype_uniquename = genotype_uniquename.to_shared_str();
         if let Some(genotype_ref) = self.maps.genotypes.get(&genotype_uniquename) {
             let mut genotype = genotype_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
@@ -601,7 +601,7 @@ impl APIData {
     }
 
     pub fn get_term_details(&self, termid: &str) -> Option<TermDetails> {
-        let termid = termid.to_a_flex_str();
+        let termid = termid.to_shared_str();
         let termid =
             if let Some(real_termid) =
                self.secondary_identifiers_map.get(&termid) {
@@ -617,7 +617,7 @@ impl APIData {
     }
 
     pub fn get_reference_details(&self, reference_uniquename: &str) -> Option<ReferenceDetails> {
-        let reference_uniquename = reference_uniquename.to_a_flex_str();
+        let reference_uniquename = reference_uniquename.to_shared_str();
         if let Some(reference_ref) = self.maps.references.get(&reference_uniquename) {
             let mut reference = reference_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);

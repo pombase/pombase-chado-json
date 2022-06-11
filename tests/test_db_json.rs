@@ -13,16 +13,16 @@ use self::pombase::web::config::*;
 use self::pombase::web::data_build::*;
 use self::pombase::web::data::*;
 
-use flexstr::{AFlexStr as FlexStr, a_flex_str as flex_str, ToAFlexStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
                            cv: &Rc<Cv>, db: &Rc<Db>, cvterm_name: &str,
                            accession: &str) -> Rc<Cvterm> {
-    let dbxref = Rc::new(Dbxref::new(db.clone(), accession.to_a_flex_str()));
+    let dbxref = Rc::new(Dbxref::new(db.clone(), accession.to_shared_str()));
     let cvterm = Rc::new(Cvterm::new(
         cv.clone(),
         dbxref.clone(),
-        cvterm_name.to_a_flex_str(),
+        cvterm_name.to_shared_str(),
         false, false,
         None));
     cvterms.push(cvterm.clone());
@@ -32,7 +32,7 @@ fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<D
 
 fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
     let cv = Rc::new(Cv {
-        name: cv_name.to_a_flex_str(),
+        name: cv_name.to_shared_str(),
         cvprops: RefCell::new(vec![]),
     });
     cvs.push(cv.clone());
@@ -41,7 +41,7 @@ fn make_test_cv(cvs: &mut Vec<Rc<Cv>>, cv_name: &str) -> Rc<Cv> {
 
 fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
     let db = Rc::new(Db {
-        name: db_name.to_a_flex_str(),
+        name: db_name.to_shared_str(),
     });
     dbs.push(db.clone());
     db
@@ -60,7 +60,7 @@ ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
         };
     let feature = Rc::new(Feature {
         organism: organism.clone(),
-        uniquename: uniquename.to_a_flex_str(),
+        uniquename: uniquename.to_shared_str(),
         name: name,
         feat_type: type_cvterm.clone(),
         residues: Some(residues.into()),
@@ -526,7 +526,7 @@ fn get_test_config() -> Config {
         helpdesk_address: flex_str!("helpdesk@some.domain"),
         doc_page_aliases: HashMap::new(),
         sequence_feature_page: SeqFeaturePageConfig {
-            so_types_to_show: vec!["regional_centromere".to_a_flex_str()],
+            so_types_to_show: vec!["regional_centromere".to_shared_str()],
         },
         organisms: vec![
             ConfigOrganism {
@@ -683,7 +683,7 @@ fn test_gene_details() {
 fn test_make_publication_short() {
     let web_data = get_test_web_data();
 
-    let pmid = "PMID:11707284".to_a_flex_str();
+    let pmid = "PMID:11707284".to_shared_str();
     let ref_short = web_data.api_maps.references.get(&pmid).unwrap();
 
     assert_eq!(ref_short.uniquename, pmid);

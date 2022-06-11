@@ -4,7 +4,7 @@ use std::io::BufReader;
 use std::process;
 use serde_json;
 
-use flexstr::AFlexStr as FlexStr;
+use flexstr::SharedStr as FlexStr;
 
 #[derive(Debug, Deserialize)]
 pub struct PfamMotifMetadata {
