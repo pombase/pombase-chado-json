@@ -22,7 +22,7 @@ once_cell = "1.2"
 uuid = { version = "0.8", features = ["v4", "serde", ] }
 bytes = "1.0"
 tokio = "^1.6.1"
-async-recursion = "0.2"
+async-recursion = "1.0"
 deadpool-postgres = "0.9"
 deadpool = "0.8"
 anyhow = "1.0"
