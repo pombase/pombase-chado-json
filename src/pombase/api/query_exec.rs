@@ -56,7 +56,7 @@ impl QueryExec {
                 Uuid::new_v4()
             };
 
-        let id = uuid.to_hyphenated().to_string().to_shared_str();
+        let id = uuid.as_hyphenated().to_string().to_shared_str();
 
         let rows_result = query.exec(&self.api_data, &self.site_db).await;
 
