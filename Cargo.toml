@@ -29,7 +29,7 @@ anyhow = "1.0"
 itertools = "0.10"
 
 [dependencies.zstd]
-version = "0.10"
+version = "0.11"
 features = ["zstdmt"]
 
 [dependencies.rocket]
