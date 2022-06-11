@@ -109,7 +109,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let pg_config = tokio_postgres::Config::from_str(&connection_string)?;
 
     let manager = Manager::new(pg_config, tokio_postgres::NoTls);
-    let pool = Pool::new(manager, 16);
+
+    let pool = Pool::builder(manager).max_size(16).build().unwrap();
 
     let mut client = pool.get().await?;
 

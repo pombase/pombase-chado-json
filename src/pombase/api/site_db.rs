@@ -13,9 +13,9 @@ pub struct SiteDB {
 impl SiteDB {
     pub async fn new(connection_string: &str) -> Result<SiteDB, anyhow::Error> {
         let config = tokio_postgres::Config::from_str(connection_string)?;
-
         let manager = Manager::new(config, tokio_postgres::NoTls);
-        let pool = Pool::new(manager, 16);
+
+        let pool = Pool::builder(manager).max_size(16).build().unwrap();
 
         Ok(SiteDB {
             pool,

@@ -23,7 +23,7 @@ uuid = { version = "0.8", features = ["v4", "serde", ] }
 bytes = "1.0"
 tokio = "^1.6.1"
 async-recursion = "1.0"
-deadpool-postgres = "0.9"
+deadpool-postgres = "0.10.2"
 deadpool = "0.9"
 anyhow = "1.0"
 itertools = "0.10"
