@@ -23,7 +23,7 @@ use crate::types::CvName;
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
-use crate::bio::go_format_writer::*;
+use crate::bio::go_format_writer::write_go_annotation_files;
 
 use crate::utils::join;
 
@@ -353,107 +353,6 @@ impl WebData {
         let f = File::create(file_name).expect("Unable to open file");
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes()).expect("Unable to write chromosome_summaries.json");
-    }
-
-
-    fn write_go_annotation_files(&self, config: &Config, go_eco_mappping: &GoEcoMapping,
-                                 output_dir: &str)
-                                 -> Result<(), io::Error>
-    {
-        let load_org_taxonid =
-            if let Some(load_org_taxonid) = config.load_organism_taxonid {
-                load_org_taxonid
-            } else {
-                return Ok(())
-            };
-
-        let database_name = &config.database_name;
-
-        let gpi_file_name =
-            format!("{}/gene_product_information_taxonid_{}.tsv", output_dir,
-                    load_org_taxonid);
-        let gpad_file_name =
-            format!("{}/gene_product_annotation_data_taxonid_{}.tsv", output_dir,
-                    load_org_taxonid);
-        let pombase_gaf_file_name = format!("{}/pombase_style_gaf.tsv", output_dir);
-        let standard_gaf_file_name = format!("{}/go_style_gaf.tsv", output_dir);
-
-        let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
-        let gpad_file = File::create(gpad_file_name).expect("Unable to open file");
-        let pombase_gaf_file =
-            File::create(pombase_gaf_file_name).expect("Unable to open file");
-        let standard_gaf_file =
-            File::create(standard_gaf_file_name).expect("Unable to open file");
-        let mut gpi_writer = BufWriter::new(&gpi_file);
-        let mut gpad_writer = BufWriter::new(&gpad_file);
-        let mut pombase_gaf_writer = BufWriter::new(&pombase_gaf_file);
-        let mut standard_gaf_writer = BufWriter::new(&standard_gaf_file);
-
-        let generated_by = format!("!generated-by: {}\n", database_name);
-        let iso_date = self.metadata.db_creation_datetime.replace(" ", "T");
-        let date_generated = format!("!date-generated: {}\n", &iso_date);
-        let url_header = format!("!URL: {}\n", &config.base_url);
-        let funding_header = format!("!funding: {}\n", &config.funder);
-
-        gpi_writer.write_all("!gpi-version: 2.0\n".as_bytes())?;
-        gpi_writer.write_all(format!("!namespace: {}\n", database_name).as_bytes())?;
-        gpi_writer.write_all(generated_by.as_bytes())?;
-        gpi_writer.write_all(date_generated.as_bytes())?;
-        gpi_writer.write_all(url_header.as_bytes())?;
-        gpi_writer.write_all(funding_header.as_bytes())?;
-
-        gpad_writer.write_all("!gpa-version: 2.0\n".as_bytes())?;
-        gpad_writer.write_all(generated_by.as_bytes())?;
-        gpad_writer.write_all(date_generated.as_bytes())?;
-        gpad_writer.write_all(url_header.as_bytes())?;
-        gpad_writer.write_all(funding_header.as_bytes())?;
-
-        standard_gaf_writer.write_all("!gaf-version: 2.2\n".as_bytes())?;
-        standard_gaf_writer.write_all(generated_by.as_bytes())?;
-        standard_gaf_writer.write_all(date_generated.as_bytes())?;
-        standard_gaf_writer.write_all(url_header.as_bytes())?;
-        let contact = format!("!contact: {}\n", &config.helpdesk_address);
-        standard_gaf_writer.write_all(contact.as_bytes())?;
-
-        for gene_details in self.api_maps.genes.values() {
-            if gene_details.taxonid != load_org_taxonid {
-                continue;
-            }
-
-            if gene_details.feature_type == "ncRNA gene" {
-                let mut found = false;
-                for aspect in GO_ASPECT_NAMES.iter() {
-                    let term_annotations = gene_details.cv_annotations.get(aspect);
-                    if term_annotations.is_some() {
-                        found = true;
-                        break;
-                    }
-                }
-                if !found {
-                    // special case for ncRNA genes: only write ND lines for an aspect
-                    // if there are some annotations for the other aspects
-                    continue;
-                }
-            }
-
-            write_gene_to_gpi(&mut gpi_writer, config, &self.api_maps, gene_details)?;
-
-            write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,
-                                          &self.api_maps, gene_details)?;
-
-            for aspect_name in &GO_ASPECT_NAMES {
-                write_go_annotation_format(&mut pombase_gaf_writer, config,
-                                           GpadGafWriteMode::PomBaseGaf,
-                                           &self.api_maps, gene_details,
-                                           aspect_name)?;
-                write_go_annotation_format(&mut standard_gaf_writer, config,
-                                           GpadGafWriteMode::StandardGaf,
-                                           &self.api_maps, gene_details,
-                                           aspect_name)?;
-            }
-       }
-
-        Ok(())
     }
 
     fn write_gene_id_table(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
@@ -1491,7 +1390,8 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc");
 
-        self.write_go_annotation_files(config, go_eco_mappping, &misc_path)?;
+        write_go_annotation_files(&self.api_maps, config, &self.metadata.db_creation_datetime,
+                                  go_eco_mappping, &misc_path)?;
 
         self.write_gene_id_table(config, &misc_path)?;
         self.write_protein_features(config, &misc_path)?;
