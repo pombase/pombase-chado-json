@@ -57,10 +57,6 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
 
                 let expressed_alleles = &locus.expressed_alleles;
 
-                if expressed_alleles.len() > 1 {
-                    continue 'GENOTYPES;
-                }
-
                 for test_expressed_allele in &expressed_alleles[1..] {
                     if expressed_alleles[0] != *test_expressed_allele {
                         continue 'GENOTYPES;
@@ -71,6 +67,8 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
             } else {
                 continue;
             };
+
+        let is_homozygous_diploid = genotype_details.loci[0].expressed_alleles.len() > 1;
 
         let locus_allele =
             api_maps.alleles.get(&expressed_allele.allele_uniquename)
@@ -172,7 +170,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                         };
 
                     let line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                 database_name,
                                 locus_gene.uniquename,
                                 term.termid,
@@ -192,6 +190,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                                 reference_uniquename,
                                 load_org_taxonid,
                                 date,
+                                if is_homozygous_diploid { "homozygous diploid" } else { "haploid" },
                         );
                     phaf_writer.write_all(line.as_bytes())?;
                 }
