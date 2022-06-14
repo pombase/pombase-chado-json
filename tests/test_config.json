@@ -481,6 +481,10 @@
       },
       "transcript_gene_so_term_map": {
       }
+    },
+    "phaf_cv_name": "single_locus_phenotype",
+    "phaf_parental_strain": {
+      "4896": "972 h-"
     }
   },
   "gene_expression": {

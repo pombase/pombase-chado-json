@@ -813,6 +813,35 @@ pub struct SynonymDetails {
     pub synonym_type: FlexStr
 }
 
+impl PartialEq for SynonymDetails {
+    fn eq(&self, other: &SynonymDetails) -> bool {
+        self.name == other.name && self.synonym_type == other.synonym_type
+    }
+}
+impl Eq for SynonymDetails { }
+impl Ord for SynonymDetails {
+    fn cmp(&self, other: &SynonymDetails) -> Ordering {
+        let type_cmp = self.synonym_type.cmp(&other.synonym_type);
+        if type_cmp == Ordering::Equal {
+            self.name.cmp(&other.name)
+        } else {
+            type_cmp
+        }
+    }
+}
+impl PartialOrd for SynonymDetails {
+    fn partial_cmp(&self, other: &SynonymDetails) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Hash for SynonymDetails {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.name.hash(state);
+        self.synonym_type.hash(state);
+    }
+}
+
+
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum Strand {
@@ -1214,6 +1243,7 @@ pub struct GenotypeDetails {
     pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
+    pub taxonid: u32,
     pub loci: Vec<GenotypeLocus>,
     pub comment: Option<FlexStr>,
     pub ploidiness: Ploidiness,
@@ -1266,7 +1296,7 @@ impl AnnotationContainer for GenotypeDetails {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<FlexStr>,

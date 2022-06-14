@@ -116,6 +116,8 @@ fn get_test_config() -> Config {
                 go_aspect_terms: HashMap::new(),
             },
             nd_reference: String::from("GO_REF:0000015"),
+            phaf_cv_name: String::from("single_locus_phenotype"),
+            phaf_parental_strain: HashMap::new(),
         },
         gene_expression: GeneExpressionConfig {
             datasets: vec![],
@@ -417,6 +419,7 @@ fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
     GenotypeDetails {
         display_uniquename: display_uniquename.into(),
         name: name.map(|s| s.to_shared_str()),
+        taxonid: 4896,
         loci: loci,
         ploidiness: Ploidiness::Haploid,
         comment: None,

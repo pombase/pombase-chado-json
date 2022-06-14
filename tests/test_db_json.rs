@@ -606,6 +606,8 @@ fn get_test_config() -> Config {
                 transcript_gene_so_term_map: HashMap::new(),
             },
             nd_reference: String::from("GO_REF:0000015"),
+            phaf_cv_name: String::from("single_locus_phenotype"),
+            phaf_parental_strain: HashMap::new(),
         },
         gene_expression: GeneExpressionConfig {
             datasets: vec![],

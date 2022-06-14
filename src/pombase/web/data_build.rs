@@ -1710,6 +1710,8 @@ impl <'a> WebDataBuild<'a> {
         let mut ploidiness = Ploidiness::Haploid;
         let mut comment: Option<FlexStr> = None;
 
+        let organism = make_organism(&feat.organism);
+
         for locus in &loci {
             if locus.expressed_alleles.len() > 1 {
                 ploidiness = Ploidiness::Diploid;
@@ -1752,6 +1754,7 @@ impl <'a> WebDataBuild<'a> {
                               GenotypeDetails {
                                   display_uniquename: rc_display_name,
                                   name: feat.name.as_ref().map(|s| s.to_shared_str()),
+                                  taxonid: organism.taxonid,
                                   loci,
                                   ploidiness,
                                   comment,
@@ -2943,7 +2946,11 @@ impl <'a> WebDataBuild<'a> {
                 gene_details.synonyms.push(make_synonym());
             } else {
                 if let Some(ref mut allele) = self.alleles.get_mut(&feature.uniquename) {
-                    allele.synonyms.push(make_synonym())
+                    let synonym = make_synonym();
+                    if let Err(insert_pos) = allele.synonyms.binary_search(&synonym) {
+                        // keep synonym list ordered
+                        allele.synonyms.insert(insert_pos, synonym);
+                    }
                 }
             }
         }

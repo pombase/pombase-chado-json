@@ -24,6 +24,7 @@ use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
 use crate::bio::go_format_writer::write_go_annotation_files;
+use crate::bio::phenotype_format_writer::write_phenotype_annotation_files;
 
 use crate::utils::join;
 
@@ -1392,6 +1393,8 @@ impl WebData {
 
         write_go_annotation_files(&self.api_maps, config, &self.metadata.db_creation_datetime,
                                   go_eco_mappping, &misc_path)?;
+
+        write_phenotype_annotation_files(&self.api_maps, config, &misc_path)?;
 
         self.write_gene_id_table(config, &misc_path)?;
         self.write_protein_features(config, &misc_path)?;

@@ -264,6 +264,8 @@ pub struct FileExportConfig {
     pub gpad_gpi: GpadGpiConfig,
     // the reference to use for ND lines in GPAD/GAF output
     pub nd_reference: String,
+    pub phaf_cv_name: String,
+    pub phaf_parental_strain: HashMap<OrganismTaxonId, String>,
 }
 
 #[derive(Deserialize, Clone, Debug)]

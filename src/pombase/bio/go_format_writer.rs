@@ -8,12 +8,14 @@ use std::fs::File;
 
 use chrono::prelude::{Local, DateTime};
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt, ToSharedStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt};
 
 use crate::utils::join;
 use crate::web::config::*;
 use crate::data_types::*;
 use crate::types::TermId;
+
+use super::util::make_extension_string;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum GpadGafWriteMode {
@@ -202,65 +204,6 @@ fn get_gpad_nd_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
     term_map.get(&rel_id)
             .unwrap_or_else(|| panic!("internal error, can't find term {}", rel_id))
             .name.clone()
-}
-
-fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDetails>,
-                         write_mode: &GpadGafWriteMode, extension: &[ExtPart])
-       -> FlexStr
-{
-    let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
-    let get_rel_term = |ext_part: &ExtPart| {
-        if *write_mode == GpadGafWriteMode::PomBaseGaf {
-            ext_part.rel_type_name.clone()
-        } else {
-            let rel_term_id =
-                if let Some(map_termid) = rel_mapping.get(&ext_part.rel_type_name) {
-                    map_termid.clone().unwrap_or_else(|| panic!("internal error, no mapping for {}",
-                                                                &ext_part.rel_type_name))
-                } else {
-                    ext_part.rel_type_id.clone().unwrap()
-                };
-
-            if *write_mode == GpadGafWriteMode::Gpad {
-                rel_term_id
-            } else {
-                term_map.get(&rel_term_id)
-                         .unwrap_or_else(|| panic!("internal error, can't find term {}",
-                                                   rel_term_id))
-                         .name.clone()
-            }
-        }
-    };
-
-    let get_range = |ext_part: &ExtPart| {
-        let mut range_copy = ext_part.ext_range.clone();
-
-        if let ExtRange::Gene(ref mut gene_uniquename) |
-            ExtRange::Promoter(ref mut gene_uniquename) = range_copy {
-            if !gene_uniquename.contains(':') {
-                let new_uniquename =
-                    flex_fmt!("{}:{}", config.database_name, gene_uniquename);
-                *gene_uniquename = new_uniquename;
-            }
-        }
-        range_copy
-    };
-
-    extension.iter()
-        .filter(|ext_part| {
-            if *write_mode == GpadGafWriteMode::PomBaseGaf {
-                true
-            } else {
-                if let Some(map_termid) = rel_mapping.get(&ext_part.rel_type_name) {
-                    map_termid.is_some()
-                } else {
-                    ext_part.rel_type_id.is_some()
-                }
-            }
-        })
-        .map(|ext_part| format!("{}({})", get_rel_term(ext_part),
-                                get_range(ext_part)))
-        .collect::<Vec<_>>().join(",").to_shared_str()
 }
 
 fn compare_withs(withs1: &HashSet<WithFromValue>,
