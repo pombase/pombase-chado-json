@@ -3141,6 +3141,7 @@ impl <'a> WebDataBuild<'a> {
             let mut date: Option<FlexStr> = None;
             let mut assigned_by: Option<FlexStr> = None;
             let mut evidence: Option<FlexStr> = None;
+            let mut eco_evidence: Option<FlexStr> = None;
             let mut genotype_background: Option<FlexStr> = None;
             let mut throughput: Option<Throughput> = None;
 
@@ -3208,6 +3209,9 @@ impl <'a> WebDataBuild<'a> {
                         if let Some(value) = prop.value.clone() {
                             date = Some(value);
                         }
+                    },
+                    "eco_evidence" => {
+                        eco_evidence = prop.value.clone();
                     },
                     "with" => {
                         if let Some(value) = prop.value.clone() {
@@ -3348,6 +3352,7 @@ impl <'a> WebDataBuild<'a> {
                 gene_ex_props,
                 qualifiers,
                 evidence,
+                eco_evidence,
                 conditions,
                 extension,
                 date,

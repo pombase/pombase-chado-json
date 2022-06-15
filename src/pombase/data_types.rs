@@ -621,6 +621,8 @@ pub struct OntAnnotationDetail {
     pub reference: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub eco_evidence: Option<Evidence>,
     pub extension: Vec<ExtPart>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub withs: HashSet<WithFromValue>,

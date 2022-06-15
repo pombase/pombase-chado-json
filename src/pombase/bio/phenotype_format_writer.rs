@@ -17,6 +17,7 @@ use super::util::make_extension_string;
 
 pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                                         config: &Config,
+                                        use_eco_evidence: bool,
                                         output_dir: &str)
   -> Result<(), io::Error>
 {
@@ -34,9 +35,15 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
 
     let database_name = &config.database_name;
 
+    let eco_ev_bit =
+        if use_eco_evidence {
+            "_eco_evidence"
+        } else {
+            ""
+        };
     let phaf_file_name =
-        format!("{}/single_locus_phenotype_annotations_taxon_{}.phaf", output_dir,
-                load_org_taxonid);
+        format!("{}/single_locus_phenotype_annotations_taxon_{}{}.phaf", output_dir,
+                load_org_taxonid, eco_ev_bit);
     let phaf_file = File::create(phaf_file_name).expect("Unable to open file");
     let mut phaf_writer = BufWriter::new(&phaf_file);
 
@@ -110,6 +117,13 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                         .get(annotation_id)
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
+                    let evidence =
+                        if use_eco_evidence {
+                            annotation_detail.eco_evidence.clone().unwrap_or_else(|| flex_fmt!(""))
+                        } else {
+                            annotation_detail.evidence.clone().unwrap_or_else(|| flex_fmt!(""))
+                        };
+
                     let conditions =
                         annotation_detail.conditions.iter()
                         .map(|fs| fs.as_str())
@@ -182,7 +196,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                                 locus_allele.name.clone().unwrap_or_else(|| flex_fmt!("")),
                                 locus_allele_synonyms,
                                 locus_allele.allele_type,
-                                annotation_detail.evidence.clone().unwrap_or_else(|| flex_fmt!("")),
+                                evidence,
                                 conditions,
                                 penetrance,
                                 severity,
