@@ -356,6 +356,17 @@ impl WebData {
         writer.write_all(s.as_bytes()).expect("Unable to write chromosome_summaries.json");
     }
 
+    fn write_alleles_json(&self, output_dir: &str) -> Result<(), io::Error> {
+        let s = serde_json::to_string(&self.api_maps.alleles).unwrap();
+        let file_name = String::new() + output_dir + "/allele_details.json";
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+
+        writer.write_all(s.as_bytes())?;
+
+        Ok(())
+    }
+
     fn write_gene_id_table(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let gene_file_name = output_dir.to_owned() + "/sysID2product.tsv";
         let rna_file_name = output_dir.to_owned() + "/sysID2product.rna.tsv";
@@ -1372,6 +1383,7 @@ impl WebData {
         self.write_all_admin_curated(&web_json_path);
         println!("wrote references");
         self.write_api_maps(&web_json_path);
+        println!("wrote API maps");
         self.write_solr_data(&web_json_path);
         println!("wrote search data");
 
@@ -1396,6 +1408,10 @@ impl WebData {
 
         write_phenotype_annotation_files(&self.api_maps, config, false, &misc_path)?;
         write_phenotype_annotation_files(&self.api_maps, config, true, &misc_path)?;
+        println!("wrote GAF and PHAF files");
+
+        self.write_alleles_json(&misc_path)?;
+        println!("wrote allele data to JSON");
 
         self.write_gene_id_table(config, &misc_path)?;
         self.write_protein_features(config, &misc_path)?;
