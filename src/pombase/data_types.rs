@@ -16,7 +16,7 @@ pub type UniquenameProteinMap =
 pub type UniquenameReferenceMap =
     HashMap<TermId, ReferenceDetails>;
 
-pub type UniquenameAlleleMap = HashMap<AlleleUniquename, AlleleShort>;
+pub type UniquenameAlleleDetailsMap = HashMap<AlleleUniquename, AlleleDetails>;
 pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type UniquenameFeatureShortMap = HashMap<FlexStr, FeatureShort>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
@@ -1308,9 +1308,6 @@ pub struct ExpressedAllele {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AlleleShort {
     pub uniquename: FlexStr,
-    // don't serialise since the web code doesn't use this field:
-    #[serde(skip, default="empty_string")]
-    pub encoded_name_and_type: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
     pub allele_type: FlexStr,
@@ -1348,15 +1345,15 @@ fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str
     display_name.clone()
 }
 
-impl AlleleShort {
+impl AlleleDetails {
     pub fn new(uniquename: &str,
                name: &Option<FlexStr>,
                allele_type: &str,
                description: &Option<FlexStr>,
-               gene_uniquename: &str) -> AlleleShort {
+               gene_uniquename: &str) -> AlleleDetails {
         let encoded_name_and_type =
             allele_encoded_name_and_type(name, allele_type, description);
-        AlleleShort {
+        AlleleDetails {
             uniquename: uniquename.to_shared_str(),
             encoded_name_and_type,
             name: name.clone(),
@@ -1366,6 +1363,23 @@ impl AlleleShort {
             synonyms: vec![],
         }
     }
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AlleleDetails {
+    pub uniquename: FlexStr,
+    // don't serialise since the web code doesn't use this field:
+    #[serde(skip, default="empty_string")]
+    pub encoded_name_and_type: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<FlexStr>,
+    pub allele_type: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub description: Option<FlexStr>,
+    pub gene_uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<SynonymDetails>,
 }
 
 pub type RelName = FlexStr;
@@ -1717,7 +1731,7 @@ pub struct APIMaps {
     pub genes: UniquenameGeneMap,
     pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,
-    pub alleles: UniquenameAlleleMap,
+    pub alleles: UniquenameAlleleDetailsMap,
     pub genotypes: IdGenotypeMap,
     pub terms: HashMap<TermId, TermDetails>,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,

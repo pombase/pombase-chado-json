@@ -623,9 +623,9 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 }
 
 #[allow(dead_code)]
-fn make_one_allele_short(uniquename: &str, name: &str, allele_type: &str,
-                         description: Option<&str>, gene_uniquename: &str) -> AlleleShort {
-    AlleleShort::new(
+fn make_one_allele_details(uniquename: &str, name: &str, allele_type: &str,
+                           description: Option<&str>, gene_uniquename: &str) -> AlleleDetails {
+     AlleleDetails::new(
         uniquename.into(),
         &Some(name.into()),
         allele_type,
@@ -635,32 +635,32 @@ fn make_one_allele_short(uniquename: &str, name: &str, allele_type: &str,
 }
 
 #[allow(dead_code)]
-fn get_test_alleles_map() -> UniquenameAlleleMap {
+fn get_test_alleles_map() -> UniquenameAlleleDetailsMap {
     let mut ret = HashMap::new();
 
     ret.insert("SPCC1919.10c:allele-4".to_shared_str(),
-               make_one_allele_short("SPCC1919.10c:allele-4", "ATPase dead mutant", "unknown", None, "SPCC1919.10c"));
+               make_one_allele_details("SPCC1919.10c:allele-4", "ATPase dead mutant", "unknown", None, "SPCC1919.10c"));
 
     ret.insert("SPCC1919.10c:allele-5".to_shared_str(),
-               make_one_allele_short("SPCC1919.10c:allele-5", "C-terminal truncation 940-1516", "partial_amino_acid_deletion",
+               make_one_allele_details("SPCC1919.10c:allele-5", "C-terminal truncation 940-1516", "partial_amino_acid_deletion",
                                      Some("940-1516"), "SPCC1919.10c"));
 
     ret.insert("SPCC1919.10c:allele-6".to_shared_str(),
-               make_one_allele_short("SPCC1919.10c:allele-6", "C-terminal truncation", "partial_amino_acid_deletion", Some("1320-1516"),
+               make_one_allele_details("SPCC1919.10c:allele-6", "C-terminal truncation", "partial_amino_acid_deletion", Some("1320-1516"),
                                      "SPCC1919.10c"));
 
     ret.insert("SPBC16A3.11:allele-7".to_shared_str(),
-               make_one_allele_short("SPBC16A3.11:allele-7", "G799D", "amino_acid_mutation", Some("G799D"), "SPBC16A3.11"));
+               make_one_allele_details("SPBC16A3.11:allele-7", "G799D", "amino_acid_mutation", Some("G799D"), "SPBC16A3.11"));
 
 
     ret.insert("SPAC25A8.01c:allele-5".to_shared_str(),
-               make_one_allele_short("SPAC25A8.01c:allele-5", "K418R", "amino_acid_mutation", Some("K418R"), "SPAC25A8.01c"));
+               make_one_allele_details("SPAC25A8.01c:allele-5", "K418R", "amino_acid_mutation", Some("K418R"), "SPAC25A8.01c"));
 
     ret.insert("SPAC3G6.02:allele-7".to_shared_str(),
-               make_one_allele_short("SPAC3G6.02:allele-7", "UBS-I&II", "amino_acid_mutation", Some("F18A,F21A,W26A,L40A,W41A,W45A"), "SPAC3G6.02"));
+               make_one_allele_details("SPAC3G6.02:allele-7", "UBS-I&II", "amino_acid_mutation", Some("F18A,F21A,W26A,L40A,W41A,W45A"), "SPAC3G6.02"));
 
     ret.insert("SPAC24H6.05:allele-3".to_shared_str(),
-               make_one_allele_short("SPAC24H6.05:allele-3", "cdc25-22", "amino_acid_mutation", Some("C532Y"), "SPAC24H6.05"));
+               make_one_allele_details("SPAC24H6.05:allele-3", "cdc25-22", "amino_acid_mutation", Some("C532Y"), "SPAC24H6.05"));
 
     ret
 }

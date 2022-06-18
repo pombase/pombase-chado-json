@@ -54,7 +54,7 @@ pub struct WebDataBuild<'a> {
     genes: UniquenameGeneMap,
     genotypes: UniquenameGenotypeMap,
     genotype_backgrounds: HashMap<GenotypeUniquename, FlexStr>,
-    alleles: UniquenameAlleleMap,
+    alleles: UniquenameAlleleDetailsMap,
     transcripts: UniquenameTranscriptMap,
     other_features: UniquenameFeatureShortMap,
     terms: TermIdDetailsMap,
@@ -213,7 +213,7 @@ lazy_static! {
 }
 
 pub fn make_genotype_display_name(loci: &[GenotypeLocus],
-                                  allele_map: &UniquenameAlleleMap) -> FlexStr {
+                                  allele_map: &UniquenameAlleleDetailsMap) -> FlexStr {
     let mut locus_display_names: Vec<String> =
         loci.iter().map(|locus| {
             let mut allele_display_names: Vec<String> =
@@ -1784,11 +1784,11 @@ impl <'a> WebDataBuild<'a> {
 
         if let Some(allele_type) = allele_type {
             let gene_uniquename = &self.genes_of_alleles[&feat.uniquename];
-            let allele_details = AlleleShort::new(&feat.uniquename,
-                                                  &feat.name,
-                                                  &allele_type,
-                                                  &description,
-                                                  gene_uniquename);
+            let allele_details = AlleleDetails::new(&feat.uniquename,
+                                                    &feat.name,
+                                                    &allele_type,
+                                                    &description,
+                                                    gene_uniquename);
             self.alleles.insert(feat.uniquename.clone(), allele_details);
         } else {
             panic!("no allele_type cvtermprop for {}", &feat.uniquename);
@@ -2982,7 +2982,18 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_allele_short(&self, allele_uniquename: &FlexStr) -> AlleleShort {
-        self.alleles[allele_uniquename].clone()
+        if let Some(details) = self.alleles.get(allele_uniquename) {
+            AlleleShort {
+                uniquename: details.uniquename.clone(),
+                name: details.name.clone(),
+                allele_type: details.allele_type.clone(),
+                description: details.description.clone(),
+                gene_uniquename: details.gene_uniquename.clone(),
+                synonyms: details.synonyms.clone(),
+            }
+        } else {
+            panic!("can't find allele for {}", allele_uniquename);
+        }
     }
 
     fn add_product_to_protein(&mut self, transcript_uniquename: &FlexStr,
