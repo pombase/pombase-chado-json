@@ -358,7 +358,7 @@ impl WebData {
 
     fn write_alleles_json(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.api_maps.alleles).unwrap();
-        let file_name = String::new() + output_dir + "/allele_details.json";
+        let file_name = String::new() + output_dir + "/allele_summaries.json";
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
 
