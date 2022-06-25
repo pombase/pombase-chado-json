@@ -429,6 +429,7 @@ fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
         genes_by_uniquename: HashMap::new(),
         alleles_by_uniquename: HashMap::new(),
         transcripts_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
         annotation_details: HashMap::new(),
     }

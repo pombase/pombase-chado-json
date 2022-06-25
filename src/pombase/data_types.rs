@@ -428,7 +428,7 @@ pub trait AnnotationContainer: Container {
     fn annotation_details(&self) -> &IdOntAnnotationDetailMap;
     fn terms_by_termid(&self) -> &TermShortOptionMap;
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap;
-    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>>;
+    fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort>;
 
     fn annotation_count(&self) -> usize {
         let mut annotation_ids = HashSet::new();
@@ -529,8 +529,8 @@ impl AnnotationContainer for ReferenceDetails {
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
     }
-    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
-        Some(&self.genotypes_by_uniquename)
+    fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort> {
+        &self.genotypes_by_uniquename
     }
 }
 
@@ -1064,8 +1064,8 @@ impl AnnotationContainer for GeneDetails {
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
     }
-    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
-        Some(&self.genotypes_by_uniquename)
+    fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort> {
+        &self.genotypes_by_uniquename
     }
 }
 
@@ -1256,6 +1256,7 @@ pub struct GenotypeDetails {
     // transcripts referenced by this genotype
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub transcripts_by_uniquename: TranscriptDetailsOptionMap,
+    pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
 }
@@ -1293,8 +1294,8 @@ impl AnnotationContainer for GenotypeDetails {
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
     }
-    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
-        None
+    fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort> {
+        &self.genotypes_by_uniquename
     }
 }
 
@@ -1500,8 +1501,8 @@ impl AnnotationContainer for TermDetails {
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap {
         &self.genes_by_uniquename
     }
-    fn genotypes_by_uniquename(&self) -> Option<&HashMap<GenotypeUniquename, GenotypeShort>> {
-        Some(&self.genotypes_by_uniquename)
+    fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort> {
+       &self.genotypes_by_uniquename
     }
 }
 

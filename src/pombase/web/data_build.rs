@@ -1763,6 +1763,7 @@ impl <'a> WebDataBuild<'a> {
                                   alleles_by_uniquename: HashMap::new(),
                                   references_by_uniquename: HashMap::new(),
                                   transcripts_by_uniquename: HashMap::new(),
+                                  genotypes_by_uniquename: HashMap::new(),
                                   terms_by_termid: HashMap::new(),
                                   annotation_details: HashMap::new(),
                               });
@@ -4748,8 +4749,11 @@ impl <'a> WebDataBuild<'a> {
             if let Some(alleles) = seen_alleles.remove(genotype_uniquename) {
                 genotype_details.alleles_by_uniquename = alleles;
             }
-            if let Some(genotypes) = seen_genes.remove(genotype_uniquename) {
-                genotype_details.genes_by_uniquename = genotypes;
+            if let Some(genes) = seen_genes.remove(genotype_uniquename) {
+                genotype_details.genes_by_uniquename = genes;
+            }
+            if let Some(genotypes) = seen_genotypes.remove(genotype_uniquename) {
+                genotype_details.genotypes_by_uniquename = genotypes;
             }
             if let Some(transcripts) = seen_transcripts.remove(genotype_uniquename) {
                 genotype_details.transcripts_by_uniquename = transcripts;

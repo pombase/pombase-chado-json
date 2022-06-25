@@ -187,17 +187,17 @@ fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
     if container.container_type() != ContainerType::Genotype && !genotypes.is_empty() {
         genotypes.sort();
         genotypes.dedup();
-        if let Some(genotypes_by_uniquename) = container.genotypes_by_uniquename() {
-            ret += "<p>Genotypes:</p>\n<ul>";
-            for uniquename in genotypes {
-                if let Some(genotype_short) = genotypes_by_uniquename.get(uniquename) {
-                    ret += &format!("<li><a href='/genotype/{}'>{}</a></li>\n",
-                                    uniquename,
-                                    genotype_display_name(genotype_short));
-                }
+        let genotypes_by_uniquename = container.genotypes_by_uniquename();
+
+        ret += "<p>Genotypes:</p>\n<ul>";
+        for uniquename in genotypes {
+            if let Some(genotype_short) = genotypes_by_uniquename.get(uniquename) {
+                ret += &format!("<li><a href='/genotype/{}'>{}</a></li>\n",
+                                uniquename,
+                                genotype_display_name(genotype_short));
             }
-            ret += "</ul>\n";
         }
+        ret += "</ul>\n";
     }
 
     ret
