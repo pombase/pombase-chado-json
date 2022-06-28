@@ -1346,6 +1346,19 @@ fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str
     display_name.clone()
 }
 
+impl From<&AlleleDetails> for AlleleShort {
+    fn from(details: &AlleleDetails) -> AlleleShort {
+        AlleleShort {
+           uniquename: details.uniquename.clone(),
+           name: details.name.clone(),
+           allele_type: details.allele_type.clone(),
+           description: details.description.clone(),
+           gene_uniquename: details.gene_uniquename.clone(),
+           synonyms: details.synonyms.clone(),
+       }
+    }
+}
+
 impl AlleleDetails {
     pub fn new(uniquename: &str,
                name: &Option<FlexStr>,

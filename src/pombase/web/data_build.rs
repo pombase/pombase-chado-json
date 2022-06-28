@@ -2984,14 +2984,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn make_allele_short(&self, allele_uniquename: &FlexStr) -> AlleleShort {
         if let Some(details) = self.alleles.get(allele_uniquename) {
-            AlleleShort {
-                uniquename: details.uniquename.clone(),
-                name: details.name.clone(),
-                allele_type: details.allele_type.clone(),
-                description: details.description.clone(),
-                gene_uniquename: details.gene_uniquename.clone(),
-                synonyms: details.synonyms.clone(),
-            }
+            details.into()
         } else {
             panic!("can't find allele for {}", allele_uniquename);
         }
