@@ -1359,6 +1359,23 @@ impl From<&AlleleDetails> for AlleleShort {
     }
 }
 
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AlleleDetails {
+    pub uniquename: FlexStr,
+    // don't serialise since the web code doesn't use this field:
+    #[serde(skip, default="empty_string")]
+    pub encoded_name_and_type: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<FlexStr>,
+    pub allele_type: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub description: Option<FlexStr>,
+    pub gene_uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<SynonymDetails>,
+}
+
 impl AlleleDetails {
     pub fn new(uniquename: &str,
                name: &Option<FlexStr>,
@@ -1379,22 +1396,6 @@ impl AlleleDetails {
     }
 }
 
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct AlleleDetails {
-    pub uniquename: FlexStr,
-    // don't serialise since the web code doesn't use this field:
-    #[serde(skip, default="empty_string")]
-    pub encoded_name_and_type: FlexStr,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<FlexStr>,
-    pub allele_type: FlexStr,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub description: Option<FlexStr>,
-    pub gene_uniquename: GeneUniquename,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub synonyms: Vec<SynonymDetails>,
-}
 
 pub type RelName = FlexStr;
 
