@@ -1388,6 +1388,8 @@ pub struct AlleleDetails {
     pub synonyms: Vec<SynonymDetails>,
     // genotypes containing this allele:
     pub genotypes: HashSet<GenotypeShort>,
+
+    pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
 }
 
 impl AlleleDetails {
@@ -1407,6 +1409,7 @@ impl AlleleDetails {
             gene_uniquename: gene_uniquename.to_shared_str(),
             synonyms: vec![],
             genotypes: HashSet::new(),
+            alleles_by_uniquename: HashMap::new(),
         }
     }
 }

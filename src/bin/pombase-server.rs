@@ -1,6 +1,7 @@
 extern crate getopts;
 
 #[macro_use] extern crate rocket;
+use pombase::data_types::AlleleDetails;
 use rocket::fs::NamedFile;
 use rocket::response::content;
 
@@ -101,6 +102,11 @@ async fn get_gene(id: String, query_exec: &rocket::State<QueryExec>) -> Option<J
 #[get("/api/v1/dataset/latest/data/genotype/<id>", rank=2)]
 async fn get_genotype(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<GenotypeDetails>> {
     query_exec.get_api_data().get_genotype_details(&id).map(Json)
+}
+
+#[get("/api/v1/dataset/latest/data/allele/<id>", rank=2)]
+async fn get_allele(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<AlleleDetails>> {
+    query_exec.get_api_data().get_allele_details(&id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/term/<id>", rank=2)]
@@ -421,7 +427,7 @@ async fn rocket() -> _ {
     println!("Starting server ...");
     rocket::build()
         .mount("/", routes![get_index, get_misc, query_post,
-                            get_gene, get_genotype, get_term, get_reference,
+                            get_gene, get_genotype, get_allele, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
                             get_term_summary_by_id,
                             seq_feature_page_features,

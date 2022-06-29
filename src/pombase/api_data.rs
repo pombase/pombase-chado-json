@@ -12,7 +12,8 @@ use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIMaps, ChromosomeDet
                         OntAnnotationDetail, OntAnnotationMap, Ploidiness,
                         ReferenceDetails, ReferenceShort, ReferenceShortOptionMap,
                         TermDetails, TermShort, TermShortOptionMap,
-                        TranscriptDetailsOptionMap, WithFromValue};
+                        TranscriptDetailsOptionMap, WithFromValue, AlleleDetails,
+                        AlleleShort};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
@@ -578,6 +579,30 @@ impl APIData {
         } else {
             None
         }
+    }
+
+    pub fn get_allele_details(&self, allele_uniquename: &str) -> Option<AlleleDetails> {
+        let allele_uniquename = allele_uniquename.to_shared_str();
+
+        let allele_ref = self.maps.alleles.get(&allele_uniquename)?;
+        let mut allele_details = allele_ref.clone();
+
+        let mut alleles_by_uniquename = HashMap::new();
+
+        for genotype_short in &allele_details.genotypes {
+            for locus in &genotype_short.loci {
+                for expressed_allele in &locus.expressed_alleles {
+                    let allele_uniquename = &expressed_allele.allele_uniquename;
+                    let allele_short: AlleleShort =
+                        self.maps.alleles.get(allele_uniquename).unwrap().into();
+                    alleles_by_uniquename.insert(allele_uniquename.clone(), allele_short);
+                }
+            }
+        }
+
+        allele_details.alleles_by_uniquename = alleles_by_uniquename;
+
+        Some(allele_details)
     }
 
     fn term_details_helper(&self, term_ref: &TermDetails) -> Option<TermDetails> {
