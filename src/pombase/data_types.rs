@@ -1216,12 +1216,12 @@ impl TranscriptDetails {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GenotypeLocus {
     pub expressed_alleles: Vec<ExpressedAllele>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GenotypeShort {
     pub display_uniquename: GenotypeUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1272,6 +1272,16 @@ impl GenotypeDetails {
     }
 }
 
+impl From<&GenotypeDetails> for GenotypeShort {
+    fn from(details: &GenotypeDetails) -> GenotypeShort {
+        GenotypeShort {
+            display_uniquename: details.display_uniquename.clone(),
+            name: details.name.clone(),
+            loci: details.loci.clone(),
+        }
+    }
+}
+
 impl Container for GenotypeDetails {
     fn container_type(&self) -> ContainerType {
         ContainerType::Genotype
@@ -1299,10 +1309,12 @@ impl AnnotationContainer for GenotypeDetails {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+type Expression = FlexStr;
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
-    pub expression: Option<FlexStr>,
+    pub expression: Option<Expression>,
     pub allele_uniquename: AlleleUniquename,
 }
 
@@ -1374,6 +1386,8 @@ pub struct AlleleDetails {
     pub gene_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
+    // genotypes containing this allele:
+    pub genotypes: HashSet<GenotypeShort>,
 }
 
 impl AlleleDetails {
@@ -1392,6 +1406,7 @@ impl AlleleDetails {
             description: description.clone(),
             gene_uniquename: gene_uniquename.to_shared_str(),
             synonyms: vec![],
+            genotypes: HashSet::new(),
         }
     }
 }

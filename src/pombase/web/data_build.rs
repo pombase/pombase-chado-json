@@ -53,6 +53,7 @@ pub struct WebDataBuild<'a> {
 
     genes: UniquenameGeneMap,
     genotypes: UniquenameGenotypeMap,
+    genotypes_of_alleles: HashMap<AlleleUniquename, HashSet<GenotypeUniquename>>,
     genotype_backgrounds: HashMap<GenotypeUniquename, FlexStr>,
     alleles: UniquenameAlleleDetailsMap,
     transcripts: UniquenameTranscriptMap,
@@ -71,6 +72,7 @@ pub struct WebDataBuild<'a> {
     parts_of_transcripts: HashMap<FlexStr, Vec<FeatureShort>>,
     genes_of_alleles: HashMap<FlexStr, FlexStr>,
     loci_of_genotypes: HashMap<FlexStr, HashMap<FlexStr, GenotypeLocus>>,
+    genotype_display_names: HashMap<GenotypeUniquename, FlexStr>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -754,6 +756,7 @@ impl <'a> WebDataBuild<'a> {
 
             genes: BTreeMap::new(),
             genotypes: HashMap::new(),
+            genotypes_of_alleles: HashMap::new(),
             genotype_backgrounds: HashMap::new(),
             alleles: HashMap::new(),
             transcripts: HashMap::new(),
@@ -778,6 +781,7 @@ impl <'a> WebDataBuild<'a> {
             parts_of_transcripts: HashMap::new(),
             genes_of_alleles: HashMap::new(),
             loci_of_genotypes: HashMap::new(),
+            genotype_display_names: HashMap::new(),
 
             parts_of_extensions: HashMap::new(),
 
@@ -1281,12 +1285,16 @@ impl <'a> WebDataBuild<'a> {
                                 flex_fmt!("{}-{}", feature_rel.object.uniquename,
                                           feature_rel.feature_relationship_id)
                             });
+
+                        let allele_uniquename = subject_uniquename;
                         let allele_and_expression =
                             ExpressedAllele {
-                                allele_uniquename: subject_uniquename.clone(),
+                                allele_uniquename: allele_uniquename.clone(),
                                 expression,
                             };
-                        let genotype_entry = self.loci_of_genotypes.entry(object_uniquename.clone());
+
+                        let genotype_uniquename = object_uniquename;
+                        let genotype_entry = self.loci_of_genotypes.entry(genotype_uniquename.clone());
                         let locus_map = genotype_entry.or_insert_with(HashMap::new);
 
                         let genotype_locus =
@@ -1296,6 +1304,10 @@ impl <'a> WebDataBuild<'a> {
                             });
 
                         genotype_locus.expressed_alleles.push(allele_and_expression);
+
+                        self.genotypes_of_alleles.entry(allele_uniquename.clone())
+                           .or_insert_with(HashSet::new)
+                           .insert(genotype_uniquename.clone());
 
                         continue;
                     }
@@ -1701,11 +1713,15 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn store_genotype_details(&mut self, feat: &Feature) {
+        let genotype_uniquename = &feat.uniquename;
         let mut loci: Vec<_> =
-            self.loci_of_genotypes[&feat.uniquename]
+            self.loci_of_genotypes[genotype_uniquename]
             .values().cloned().collect();
         let genotype_display_uniquename =
             make_genotype_display_name(&loci, &self.alleles);
+
+        self.genotype_display_names.insert(genotype_uniquename.clone(),
+                                           genotype_display_uniquename.clone());
 
         let mut ploidiness = Ploidiness::Haploid;
         let mut comment: Option<FlexStr> = None;
@@ -1894,6 +1910,24 @@ impl <'a> WebDataBuild<'a> {
         for feat in &self.raw.features {
             if feat.feat_type.name == "genotype" {
                 self.store_genotype_details(feat);
+            }
+        }
+    }
+
+    fn add_genotypes_to_allele_details(&mut self) {
+        for allele_details in self.alleles.values_mut() {
+            let genotype_uniquenames = &self.genotypes_of_alleles[&allele_details.uniquename];
+
+            for genotype_uniquename in genotype_uniquenames {
+
+                let genotype_display_uniquename =
+                    self.genotype_display_names.get(genotype_uniquename).unwrap();
+
+                if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
+                    allele_details.genotypes.insert(genotype_details.into());
+                } else {
+                    panic!("can't find GenotypeDetails for {}", genotype_display_uniquename);
+                }
             }
         }
     }
@@ -5554,6 +5588,7 @@ impl <'a> WebDataBuild<'a> {
         self.process_props_from_feature_cvterms();
         self.process_allele_features();
         self.process_genotype_features();
+        self.add_genotypes_to_allele_details();
         self.process_cvterms();
         self.add_interesting_parents();
         self.process_cvterm_rels();
