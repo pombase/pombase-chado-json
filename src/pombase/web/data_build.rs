@@ -1782,6 +1782,7 @@ impl <'a> WebDataBuild<'a> {
                                   genotypes_by_uniquename: HashMap::new(),
                                   terms_by_termid: HashMap::new(),
                                   annotation_details: HashMap::new(),
+                                  annotation_count: 0,
                               });
     }
 
@@ -1924,7 +1925,9 @@ impl <'a> WebDataBuild<'a> {
                     self.genotype_display_names.get(genotype_uniquename).unwrap();
 
                 if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
-                    allele_details.genotypes.insert(genotype_details.into());
+                    if genotype_details.annotation_count > 0 {
+                        allele_details.genotypes.insert(genotype_details.into());
+                    }
                 } else {
                     panic!("can't find GenotypeDetails for {}", genotype_display_uniquename);
                 }
@@ -5033,6 +5036,18 @@ impl <'a> WebDataBuild<'a> {
             term_details.genotype_count =
                 term_seen_genotypes[&term_details.termid].len();
         }
+
+        for genotype in self.genotypes.values_mut() {
+            let mut annotation_count = 0;
+
+            for (_, term_annotations) in genotype.cv_annotations() {
+                for term_annotation in term_annotations {
+                    annotation_count += term_annotation.annotations.len()
+                }
+            }
+
+            genotype.annotation_count = annotation_count;
+        }
     }
 
     // make gene subsets for genes the are not in a slim category
@@ -5588,7 +5603,6 @@ impl <'a> WebDataBuild<'a> {
         self.process_props_from_feature_cvterms();
         self.process_allele_features();
         self.process_genotype_features();
-        self.add_genotypes_to_allele_details();
         self.process_cvterms();
         self.add_interesting_parents();
         self.process_cvterm_rels();
@@ -5613,6 +5627,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_reference_details_maps();
         self.set_chromosome_gene_counts();
         self.set_counts();
+        self.add_genotypes_to_allele_details();
         self.make_subsets();
         self.sort_chromosome_genes();
         self.set_gene_expression_measurements();

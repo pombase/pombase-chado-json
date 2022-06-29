@@ -1259,6 +1259,7 @@ pub struct GenotypeDetails {
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
+    pub annotation_count: usize,
 }
 
 impl GenotypeDetails {
