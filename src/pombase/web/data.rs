@@ -19,7 +19,7 @@ use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 use crate::web::config::*;
 use crate::rnacentral::*;
 
-use crate::types::CvName;
+use crate::types::{CvName, AlleleUniquename};
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
@@ -357,7 +357,12 @@ impl WebData {
     }
 
     fn write_alleles_json(&self, output_dir: &str) -> Result<(), io::Error> {
-        let s = serde_json::to_string(&self.api_maps.alleles).unwrap();
+        let allele_summaries: HashMap<AlleleUniquename, AlleleShort> =
+            self.api_maps.alleles.iter().map(|(uniquename, details)| {
+                (uniquename.clone(), details.into())
+            }).collect();
+
+        let s = serde_json::to_string(&allele_summaries).unwrap();
         let file_name = String::new() + output_dir + "/allele_summaries.json";
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
