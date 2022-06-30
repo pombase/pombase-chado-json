@@ -173,6 +173,18 @@ impl WebData {
         genes_compressor.write_all(genes_json_text.as_bytes()).expect("Unable to write genes as JSON");
         genes_compressor.finish().expect("Unable to write genes as JSON");
 
+
+        let alleles = self.solr_data.allele_summaries.clone();
+
+        let alleles_json_text = serde_json::to_string(&alleles).unwrap();
+        let alleles_file_name = format!("{}/alleles.json.gz", new_path);
+        let alleles_file = File::create(alleles_file_name).expect("Unable to open alleles file for SOLR");
+
+        let mut alleles_compressor = GzEncoder::new(alleles_file, Compression::default());
+        alleles_compressor.write_all(alleles_json_text.as_bytes()).expect("Unable to write alleles as JSON");
+        alleles_compressor.finish().expect("Unable to write alleles as JSON");
+
+
         let references = self.solr_data.reference_summaries.clone();
 
         let references_json_text = serde_json::to_string(&references).unwrap();

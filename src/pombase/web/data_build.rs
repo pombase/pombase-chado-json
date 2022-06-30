@@ -5494,6 +5494,21 @@ impl <'a> WebDataBuild<'a> {
         (gene_summaries, solr_gene_summaries)
     }
 
+    fn make_solr_allele_summaries(&mut self) -> Vec<SolrAlleleSummary> {
+        self.alleles.values().map(|details| {
+            SolrAlleleSummary {
+                id: details.uniquename.clone(),
+                name: details.name.clone(),
+                allele_type: details.allele_type.clone(),
+                description: details.description.clone(),
+                gene_uniquename: details.gene.uniquename.clone(),
+                gene_name: details.gene.name.clone(),
+                synonyms: details.synonyms.iter().map(|s| s.name.clone()).collect(),
+            }
+        })
+        .collect()
+    }
+
     fn make_solr_term_summaries(&mut self) -> Vec<SolrTermSummary> {
         let mut return_summaries = vec![];
 
@@ -5659,12 +5674,14 @@ impl <'a> WebDataBuild<'a> {
 
         let (gene_summaries, solr_gene_summaries) = self.make_gene_summaries();
 
+        let solr_allele_summaries = self.make_solr_allele_summaries();
         let solr_term_summaries = self.make_solr_term_summaries();
         let solr_reference_summaries = self.make_solr_reference_summaries();
 
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,
             gene_summaries: solr_gene_summaries,
+            allele_summaries: solr_allele_summaries,
             reference_summaries: solr_reference_summaries,
         };
 

@@ -1807,6 +1807,21 @@ pub struct SolrGeneSummary {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct SolrAlleleSummary {
+    pub id: AlleleUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<FlexStr>,
+    pub allele_type: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub description: Option<FlexStr>,
+    pub gene_uniquename: GeneUniquename,
+    pub gene_name: Option<FlexStr>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<FlexStr>,
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct SolrTermSummary {
     pub id: TermId,
     pub name: TermName,
@@ -1909,6 +1924,7 @@ impl SolrReferenceSummary {
 pub struct SolrData {
     pub term_summaries: Vec<SolrTermSummary>,
     pub gene_summaries: Vec<SolrGeneSummary>,
+    pub allele_summaries: Vec<SolrAlleleSummary>,
     pub reference_summaries: Vec<SolrReferenceSummary>,
 }
 
