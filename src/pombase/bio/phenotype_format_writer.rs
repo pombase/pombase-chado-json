@@ -84,8 +84,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
         let locus_allele_synonyms =
             locus_allele.synonyms.iter().map(|s| s.name.clone()).collect::<Vec<_>>().join("|");
 
-        let locus_gene = api_maps.genes.get(&locus_allele.gene_uniquename)
-            .unwrap_or_else(|| panic!("no gene found for {}", locus_allele.gene_uniquename));
+        let locus_gene = &locus_allele.gene;
 
         let locus_gene_name_or_uniquename =
             if let Some(ref name) = locus_gene.name {

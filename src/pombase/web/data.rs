@@ -1257,9 +1257,7 @@ impl WebData {
         let empty_string = flex_str!("");
 
         for allele_short in self.api_maps.alleles.values() {
-            let gene =
-                self.api_maps.genes.get(&allele_short.gene_uniquename)
-                    .unwrap_or_else(|| panic!("internal error, can't find gene for '{}'", allele_short.gene_uniquename));
+            let gene = &allele_short.gene;
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\n",
                                       gene.uniquename,
                                       gene.name.as_ref().unwrap_or(&empty_string),

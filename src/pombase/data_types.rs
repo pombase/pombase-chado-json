@@ -207,6 +207,17 @@ impl GeneShort {
     }
 }
 
+impl From<&GeneDetails> for GeneShort {
+    fn from(details: &GeneDetails) -> GeneShort {
+        GeneShort {
+            uniquename: details.uniquename.clone(),
+            name: details.name.clone(),
+            product: details.product.clone(),
+            transcript_count: details.transcripts.len(),
+        }
+    }
+}
+
 impl PartialEq for GeneShort {
     fn eq(&self, other: &GeneShort) -> bool {
         self.uniquename == other.uniquename
@@ -1366,7 +1377,7 @@ impl From<&AlleleDetails> for AlleleShort {
            name: details.name.clone(),
            allele_type: details.allele_type.clone(),
            description: details.description.clone(),
-           gene_uniquename: details.gene_uniquename.clone(),
+           gene_uniquename: details.gene.uniquename.clone(),
            synonyms: details.synonyms.clone(),
        }
     }
@@ -1384,7 +1395,7 @@ pub struct AlleleDetails {
     pub allele_type: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub description: Option<FlexStr>,
-    pub gene_uniquename: GeneUniquename,
+    pub gene: GeneShort,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
     // genotypes containing this allele:
@@ -1398,7 +1409,7 @@ impl AlleleDetails {
                name: &Option<FlexStr>,
                allele_type: &str,
                description: &Option<FlexStr>,
-               gene_uniquename: &str) -> AlleleDetails {
+               gene: GeneShort) -> AlleleDetails {
         let encoded_name_and_type =
             allele_encoded_name_and_type(name, allele_type, description);
         AlleleDetails {
@@ -1407,7 +1418,7 @@ impl AlleleDetails {
             name: name.clone(),
             allele_type: allele_type.to_shared_str(),
             description: description.clone(),
-            gene_uniquename: gene_uniquename.to_shared_str(),
+            gene,
             synonyms: vec![],
             genotypes: HashSet::new(),
             alleles_by_uniquename: HashMap::new(),

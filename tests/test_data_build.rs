@@ -627,12 +627,13 @@ fn get_test_genotypes_map() -> UniquenameGenotypeMap {
 #[allow(dead_code)]
 fn make_one_allele_details(uniquename: &str, name: &str, allele_type: &str,
                            description: Option<&str>, gene_uniquename: &str) -> AlleleDetails {
+     let ref gene = make_test_gene(gene_uniquename, None); 
      AlleleDetails::new(
         uniquename.into(),
         &Some(name.into()),
         allele_type,
         &description.map(|s| s.to_shared_str()),
-        gene_uniquename,
+        gene.into(),
     )
 }
 

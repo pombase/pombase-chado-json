@@ -220,13 +220,13 @@ pub fn make_genotype_display_name(loci: &[GenotypeLocus],
         loci.iter().map(|locus| {
             let mut allele_display_names: Vec<String> =
                 locus.expressed_alleles.iter().map(|expressed_allele| {
-                    let allele_short = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
+                    let allele_details = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
                     let mut encoded_name_and_type =
-                        allele_short.encoded_name_and_type.to_string();
-                    if allele_short.allele_type != "deletion" {
+                        allele_details.encoded_name_and_type.to_string();
+                    if allele_details.allele_type != "deletion" {
                         if encoded_name_and_type == "unnamed-unrecorded-unrecorded" {
                             encoded_name_and_type =
-                                format!("{}-{}", allele_short.gene_uniquename,
+                                format!("{}-{}", allele_details.gene.uniquename,
                                         encoded_name_and_type);
                         }
                         if let Some(ref expression) = expressed_allele.expression {
@@ -913,13 +913,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn make_gene_short(&self, gene_uniquename: &FlexStr) -> GeneShort {
-        let gene_details = self.get_gene(gene_uniquename);
-        GeneShort {
-            uniquename: gene_details.uniquename.clone(),
-            name: gene_details.name.clone(),
-            product: gene_details.product.clone(),
-            transcript_count: gene_details.transcripts.len(),
-        }
+        self.get_gene(gene_uniquename).into()
     }
 
     fn make_gene_summary(&self, gene_uniquename: &FlexStr) -> GeneSummary {
@@ -1802,11 +1796,12 @@ impl <'a> WebDataBuild<'a> {
 
         if let Some(allele_type) = allele_type {
             let gene_uniquename = &self.genes_of_alleles[&feat.uniquename];
+            let gene_details = &self.genes[gene_uniquename];
             let allele_details = AlleleDetails::new(&feat.uniquename,
                                                     &feat.name,
                                                     &allele_type,
                                                     &description,
-                                                    gene_uniquename);
+                                                    gene_details.into());
             self.alleles.insert(feat.uniquename.clone(), allele_details);
         } else {
             panic!("no allele_type cvtermprop for {}", &feat.uniquename);
@@ -4075,7 +4070,7 @@ impl <'a> WebDataBuild<'a> {
                                 let allele_short =
                                     self.alleles.get(allele_uniquename).expect("Can't find allele");
                                 let allele_gene_uniquename =
-                                    allele_short.gene_uniquename.clone();
+                                    allele_short.gene.uniquename.clone();
                                 let allele_details = APIAlleleDetails {
                                     gene: allele_gene_uniquename,
                                     allele_type: allele_short.allele_type.clone(),
@@ -4416,7 +4411,7 @@ impl <'a> WebDataBuild<'a> {
                 let allele_uniquename = &expressed_allele.allele_uniquename;
                 let gene_uniquename =
                     self.alleles.get(allele_uniquename)
-                    .unwrap().gene_uniquename.clone();
+                    .unwrap().gene.uniquename.clone();
                 ret.push(gene_uniquename);
             }
         }
