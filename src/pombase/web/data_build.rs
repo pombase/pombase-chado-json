@@ -5657,7 +5657,6 @@ impl <'a> WebDataBuild<'a> {
 
         let metadata = self.make_metadata();
 
-        let gene_summaries: Vec<GeneSummary> = vec![];
         let (gene_summaries, solr_gene_summaries) = self.make_gene_summaries();
 
         let solr_term_summaries = self.make_solr_term_summaries();
