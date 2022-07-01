@@ -90,7 +90,7 @@ fn make_refs_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
                 query_field_names
                 .iter()
                 .map(|field_name| {
-                    let weight = if *field_name == "title" {
+                    let weight = if *field_name == "title" || *field_name == "authors" {
                         2.0
                     } else {
                         0.5
