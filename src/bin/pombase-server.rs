@@ -26,9 +26,9 @@ use pombase::api::query_exec::QueryExec;
 use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
 
-use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, GeneDetails, GenotypeDetails,
-                          FeatureShort,
-                         TermDetails, ReferenceDetails};
+use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary,
+                          GeneDetails, GenotypeDetails, FeatureShort,
+                          TermDetails, ReferenceDetails};
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
                                  render_simple_term_page};
 use pombase::web::config::Config;
@@ -206,6 +206,12 @@ struct RefCompletionResponse {
 }
 
 #[derive(Serialize, Debug)]
+struct AlleleCompletionResponse {
+    status: String,
+    matches: Vec<SolrAlleleSummary>,
+}
+
+#[derive(Serialize, Debug)]
 struct SolrSearchResponse  {
     status: String,
     term_matches: Vec<SolrTermSummary>,
@@ -256,6 +262,32 @@ async fn ref_complete(q: String, search: &rocket::State<Search>)
             Err(err) => {
                 println!("{:?}", err);
                 RefCompletionResponse {
+                    status: "Error".to_owned(),
+                    matches: vec![],
+                }
+            },
+        };
+
+    Some(Json(completion_response))
+}
+
+#[get ("/api/v1/dataset/latest/complete/allele/<q>", rank=1)]
+async fn allele_complete(q: String, search: &rocket::State<Search>)
+                -> Option<Json<AlleleCompletionResponse>>
+{
+    let res = search.allele_complete(&q);
+
+    let completion_response =
+        match res {
+            Ok(matches) => {
+                AlleleCompletionResponse {
+                    status: "Ok".to_owned(),
+                    matches,
+                }
+            },
+            Err(err) => {
+                println!("{:?}", err);
+                AlleleCompletionResponse {
                     status: "Error".to_owned(),
                     matches: vec![],
                 }
@@ -431,7 +463,7 @@ async fn rocket() -> _ {
                             get_simple_gene, get_simple_reference, get_simple_term,
                             get_term_summary_by_id,
                             seq_feature_page_features,
-                            term_complete, ref_complete,
+                            term_complete, ref_complete, allele_complete,
                             solr_search, motif_search, gene_ex_violin_plot,
                             ping])
         .mount("/jbrowse",

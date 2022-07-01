@@ -8,11 +8,13 @@ use rocket::http::ContentType;
 
 use crate::web::config::{Config, ServerConfig};
 
-use crate::data_types::{SolrTermSummary, SolrReferenceSummary};
+use crate::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary};
 
 use crate::api::term_search::{search_terms, term_complete, term_summary_by_id};
 
 use crate::api::ref_search::{search_refs};
+
+use crate::api::allele_search::search_alleles;
 
 use crate::api::doc_search::search_docs;
 pub use crate::api::doc_search::DocSearchMatch;
@@ -139,6 +141,12 @@ impl Search {
                         -> Result<Vec<SolrReferenceSummary>, String>
     {
         search_refs(&self.config, q)
+    }
+
+    pub fn allele_complete(&self, q: &str)
+                           -> Result<Vec<SolrAlleleSummary>, String>
+    {
+        search_alleles(&self.config, q)
     }
 
     pub fn solr_search(&self, scope: &SolrSearchScope, q: &str)

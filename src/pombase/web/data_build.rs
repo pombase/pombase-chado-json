@@ -5504,6 +5504,7 @@ impl <'a> WebDataBuild<'a> {
                 gene_uniquename: details.gene.uniquename.clone(),
                 gene_name: details.gene.name.clone(),
                 synonyms: details.synonyms.iter().map(|s| s.name.clone()).collect(),
+                highlighting: HashMap::new(),
             }
         })
         .collect()

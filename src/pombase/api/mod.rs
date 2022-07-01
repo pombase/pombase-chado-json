@@ -2,6 +2,7 @@ pub mod query;
 pub mod search_types;
 pub mod term_search;
 pub mod ref_search;
+pub mod allele_search;
 pub mod doc_search;
 pub mod search;
 pub mod search_utils;
