@@ -12,7 +12,7 @@ use getopts::Options;
 
 extern crate pombase;
 
-use pombase::db::*;
+use pombase::db::Raw;
 use pombase::web::config::*;
 use pombase::web::data_build::*;
 use pombase::interpro::parse_interpro;
