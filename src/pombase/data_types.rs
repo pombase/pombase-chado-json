@@ -823,7 +823,9 @@ pub struct TargetOfAnnotation {
 pub struct SynonymDetails {
     pub name: FlexStr,
     #[serde(rename = "type")]
-    pub synonym_type: FlexStr
+    pub synonym_type: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none", default)]
+    pub reference: Option<ReferenceUniquename>,
 }
 
 impl PartialEq for SynonymDetails {

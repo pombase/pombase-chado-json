@@ -2763,6 +2763,7 @@ impl <'a> WebDataBuild<'a> {
                         SynonymDetails {
                             synonym_type: (*syn).synonym_type.name.clone(),
                             name: syn.name.clone(),
+                            reference: None,
                         }
                     }).collect::<Vec<_>>();
 
@@ -2969,10 +2970,17 @@ impl <'a> WebDataBuild<'a> {
             let feature = &feature_synonym.feature;
             let synonym = &feature_synonym.synonym;
 
+            let reference =
+                if feature_synonym.publication.uniquename == "null" {
+                    None
+                } else {
+                    Some(feature_synonym.publication.uniquename.clone())
+                };
             let make_synonym = || {
                 SynonymDetails {
                     name: synonym.name.clone(),
-                    synonym_type: synonym.synonym_type.name.clone()
+                    synonym_type: synonym.synonym_type.name.clone(),
+                    reference,
                 }
             };
 
