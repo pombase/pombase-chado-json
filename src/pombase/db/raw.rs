@@ -10,8 +10,8 @@ use flexstr::{SharedStr as FlexStr, ToSharedStr};
 use crate::types::*;
 
 pub struct Raw {
-    pub organisms: Vec<Rc<Organism>>,
-    pub organismprops: Vec<Rc<Organismprop>>,
+    pub organisms: Vec<Rc<ChadoOrganism>>,
+    pub organismprops: Vec<Rc<ChadoOrganismprop>>,
     pub cvs: Vec<Rc<Cv>>,
     pub cvprops: Vec<Rc<Cvprop>>,
     pub dbs: Vec<Rc<Db>>,
@@ -46,15 +46,15 @@ pub struct Chadoprop {
     pub value: Option<FlexStr>,
 }
 
-pub struct Organism {
+pub struct ChadoOrganism {
     pub genus: FlexStr,
     pub species: FlexStr,
     pub abbreviation: FlexStr,
     pub common_name: FlexStr,
-    pub organismprops: RefCell<Vec<Rc<Organismprop>>>,
+    pub organismprops: RefCell<Vec<Rc<ChadoOrganismprop>>>,
 }
-pub struct Organismprop {
-    pub organism: Rc<Organism>,
+pub struct ChadoOrganismprop {
+    pub organism: Rc<ChadoOrganism>,
     pub prop_type: Rc<Cvterm>,
     pub value: FlexStr,
 }
@@ -169,12 +169,19 @@ pub struct Feature {
     pub uniquename: FlexStr,
     pub name: Option<FlexStr>,
     pub feat_type: Rc<Cvterm>,
-    pub organism: Rc<Organism>,
+    pub organism: Rc<ChadoOrganism>,
     pub residues: Option<FlexStr>,
     pub featureprops: RefCell<Vec<Rc<Featureprop>>>,
     pub featurelocs: RefCell<Vec<Rc<Featureloc>>>,
     pub featurepubs: RefCell<Vec<Rc<Publication>>>,
 }
+
+impl Feature {
+    pub fn type_name(&self) -> FlexStr {
+        self.feat_type.name.clone()
+    }
+}
+
 pub struct Featureloc {
     pub feature: Rc<Feature>,
     pub srcfeature: Rc<Feature>,
@@ -261,7 +268,7 @@ impl Raw {
             feature_relationships: vec![], chadoprops: vec![],
         };
 
-        let mut organism_map: HashMap<i32, Rc<Organism>> = HashMap::new();
+        let mut organism_map: HashMap<i32, Rc<ChadoOrganism>> = HashMap::new();
         let mut cv_map: HashMap<i32, Rc<Cv>> = HashMap::new();
         let mut db_map: HashMap<i32, Rc<Db>> = HashMap::new();
         let mut dbxref_map: HashMap<i32, Rc<Dbxref>> = HashMap::new();
@@ -306,7 +313,7 @@ impl Raw {
             let abbreviation: String = row.get(3);
             let common_name: String = row.get(4);
 
-            let organism = Organism {
+            let organism = ChadoOrganism {
                 genus: genus.to_shared_str(),
                 species: species.to_shared_str(),
                 abbreviation: abbreviation.to_shared_str(),
@@ -685,7 +692,7 @@ impl Raw {
             let type_id: i32 = row.get(1);
             let prop_type = get_cvterm(&mut cvterm_map, type_id);
             let value: String = row.get(2);
-            let organismprop = Organismprop {
+            let organismprop = ChadoOrganismprop {
                 organism: organism.clone(),
                 prop_type,
                 value: value.to_shared_str(),

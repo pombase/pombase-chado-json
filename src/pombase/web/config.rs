@@ -140,6 +140,20 @@ pub struct ConfigOrganism {
 }
 
 impl ConfigOrganism {
+    pub fn new(taxonid: OrganismTaxonId,
+               genus: FlexStr,
+               species: FlexStr,
+               alternative_names: Vec<FlexStr>,
+               assembly_version: Option<FlexStr>) -> ConfigOrganism {
+        ConfigOrganism {
+            taxonid,
+            genus,
+            species,
+            alternative_names,
+            assembly_version,
+        }
+    }
+
     pub fn full_name(&self) -> String {
         self.genus.to_string() + "_" + self.species.as_str()
     }

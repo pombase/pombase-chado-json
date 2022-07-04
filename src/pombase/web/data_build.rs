@@ -25,7 +25,7 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_
 use crate::interpro::UniprotResult;
 use crate::pfam::PfamProteinDetails;
 
-fn make_organism(rc_organism: &Rc<Organism>) -> ConfigOrganism {
+fn make_organism(rc_organism: &Rc<ChadoOrganism>) -> ConfigOrganism {
     let mut maybe_taxonid: Option<u32> = None;
     for prop in rc_organism.organismprops.borrow().iter() {
         if prop.prop_type.name == "taxon_id" {

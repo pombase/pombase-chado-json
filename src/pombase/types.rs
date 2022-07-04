@@ -25,6 +25,7 @@ pub type ProteinUniquename = FlexStr;
 
 pub type GenotypeUniquename = FlexStr;
 pub type AlleleUniquename = FlexStr;
+pub type AlleleName = FlexStr;
 
 pub type OrganismTaxonId = u32;
 

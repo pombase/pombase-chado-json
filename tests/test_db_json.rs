@@ -47,7 +47,7 @@ fn make_test_db(dbs: &mut Vec<Rc<Db>>, db_name: &str) -> Rc<Db> {
     db
 }
 
-fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<Organism>,
+fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<ChadoOrganism>,
                      type_cvterm: &Rc<Cvterm>, uniquename: &str, name: Option<FlexStr>)
                      -> Rc<Feature> {
     let residues =
@@ -164,7 +164,7 @@ fn get_test_raw() -> Raw {
     let mut feature_cvtermprops: Vec<Rc<FeatureCvtermprop>> = vec![];
 
     let pombe_organism =
-        Rc::new(Organism{
+        Rc::new(ChadoOrganism{
             genus: flex_str!("Schizosaccharomyces"),
             species: flex_str!("pombe"),
             abbreviation: flex_str!("Spombe"),
@@ -285,7 +285,7 @@ fn get_test_raw() -> Raw {
                                 "taxon_id", "0001200");
 
     let pombe_organismprop =
-        Rc::new(Organismprop {
+        Rc::new(ChadoOrganismprop {
             organism: pombe_organism.clone(),
             prop_type: taxon_id_cvterm.clone(),
             value: "4896".into(),
