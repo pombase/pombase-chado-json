@@ -188,17 +188,23 @@ pub fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDet
     };
 
     let get_range = |ext_part: &ExtPart| {
-        let mut range_copy = ext_part.ext_range.clone();
-
-        if let ExtRange::Gene(ref mut gene_uniquename) |
-        ExtRange::Promoter(ref mut gene_uniquename) = range_copy {
-            if !gene_uniquename.contains(':') {
-                let new_uniquename =
-                    flex_fmt!("{}:{}", config.database_name, gene_uniquename);
-                *gene_uniquename = new_uniquename;
-            }
+        match ext_part.ext_range {
+            ExtRange::Gene(ref gene_uniquename) |
+            ExtRange::Promoter(ref gene_uniquename) => {
+                if !gene_uniquename.contains(':') {
+                    let new_uniquename =
+                        flex_fmt!("{}:{}", config.database_name, gene_uniquename);
+                    ExtRange::Gene(new_uniquename)
+                } else {
+                    ext_part.ext_range.clone()
+                }
+            },
+            ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename: _, ref product }) => {
+                // avoid "SPCC622.08c (PR:000027564)" in extensions
+                ExtRange::GeneProduct(product.clone())
+            },
+            _ => ext_part.ext_range.clone(),
         }
-        range_copy
     };
 
     extension.iter()
