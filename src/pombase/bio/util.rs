@@ -209,6 +209,9 @@ pub fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDet
 
     extension.iter()
         .filter(|ext_part| {
+            if ext_part.rel_type_name == "binding site" {
+                return false;
+            }
             if *write_mode == GpadGafWriteMode::PomBaseGaf {
                 true
             } else {
