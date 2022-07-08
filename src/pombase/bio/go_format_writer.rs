@@ -231,13 +231,16 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
     let db_object_name =
         gene_details.name.clone().unwrap_or(flex_str!(""));
 
-    let db_object_synonyms =
+    let mut db_object_synonyms =
         gene_details.synonyms.iter().filter(|synonym| {
             synonym.synonym_type == "exact"
         })
         .map(|synonym| synonym.name.to_string())
-        .collect::<Vec<String>>()
-        .join("|");
+        .collect::<Vec<String>>();
+
+    db_object_synonyms.sort();
+
+    let db_object_synonyms_string = db_object_synonyms.join("|");
 
     let db_object_type = config.file_exports.gpad_gpi.transcript_gene_so_term_map
         .get(&gene_details.transcript_so_termid)
@@ -260,7 +263,7 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                            db_object_id,
                            db_object_name,
                            db_object_name,
-                           db_object_synonyms,
+                           db_object_synonyms_string,
                            db_object_type,
                            db_object_taxon,
                            db_xrefs,
@@ -315,7 +318,7 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                                 gene_product_form_id,
                                 db_object_name,
                                 db_object_name,
-                                db_object_synonyms,
+                                db_object_synonyms_string,
                                 db_object_type,
                                 db_object_taxon,
                                 db_object_id,
@@ -495,13 +498,16 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         } else {
             &db_object_id
         };
-    let db_object_synonyms =
+    let mut db_object_synonyms =
         gene_details.synonyms.iter().filter(|synonym| {
             synonym.synonym_type == "exact"
         })
         .map(|synonym| synonym.name.to_string())
-        .collect::<Vec<String>>()
-        .join("|");
+        .collect::<Vec<String>>();
+
+    db_object_synonyms.sort();
+
+    let db_object_synonyms_string = db_object_synonyms.join("|");
 
         let db_object_name =
         if let Some(ref product) = gene_details.product {
@@ -561,6 +567,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     qualifier_parts.extend(annotation_detail.qualifiers.iter()
                                    .map(|s| s.as_str()));
 
+                    qualifier_parts.sort();
 
                     qualifier_parts.join("|")
                 } else {
@@ -639,7 +646,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                    with_or_from,
                                    single_letter_aspect,
                                    db_object_name,
-                                   db_object_synonyms,
+                                   db_object_synonyms_string,
                                    db_object_type,
                                    gene_details.taxonid,
                                    date,
@@ -670,7 +677,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                nd_ref,
                                single_letter_aspect,
                                db_object_name,
-                               db_object_synonyms,
+                               db_object_synonyms_string,
                                db_object_type,
                                gene_details.taxonid,
                                date,
