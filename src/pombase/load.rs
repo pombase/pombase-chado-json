@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::error::Error;
 
 use deadpool_postgres::Client;
@@ -75,7 +76,20 @@ VALUES ((SELECT feature_id FROM feature f join cvterm t ON f.type_id = t.cvterm_
 
         let add_feat_synonym_smt = trans.prepare(add_feat_synonym_sql).await?;
 
+        let mut seen_allele_names = HashSet::new();
+
         for allele in alleles.values() {
+            if let Some(ref allele_name) = allele.name {
+                if seen_allele_names.contains(allele_name) {
+                    eprintln!("skipping allele with name that has alread been loaded: {} {}",
+                              allele_name.as_str(),
+                              allele.allele_type);
+                    continue;
+                } else {
+                    seen_allele_names.insert(allele_name.clone());
+               }
+            }
+
             if self.processed.allele_by_uniquename(&allele.uniquename).is_some() {
                 panic!("allele loading failed: can't find {} in the database", allele.uniquename);
             }
