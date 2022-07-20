@@ -1913,7 +1913,7 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_genotypes_to_allele_details(&mut self) {
         for allele_details in self.alleles.values_mut() {
-            let genotype_uniquenames = &self.genotypes_of_alleles[&allele_details.uniquename];
+            if let Some(genotype_uniquenames) = self.genotypes_of_alleles.get(&allele_details.uniquename) {
 
             for genotype_uniquename in genotype_uniquenames {
 
@@ -1927,6 +1927,7 @@ impl <'a> WebDataBuild<'a> {
                 } else {
                     panic!("can't find GenotypeDetails for {}", genotype_display_uniquename);
                 }
+            }
             }
         }
     }
