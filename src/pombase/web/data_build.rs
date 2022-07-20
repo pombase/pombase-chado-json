@@ -1915,19 +1915,19 @@ impl <'a> WebDataBuild<'a> {
         for allele_details in self.alleles.values_mut() {
             if let Some(genotype_uniquenames) = self.genotypes_of_alleles.get(&allele_details.uniquename) {
 
-            for genotype_uniquename in genotype_uniquenames {
+                for genotype_uniquename in genotype_uniquenames {
 
-                let genotype_display_uniquename =
-                    self.genotype_display_names.get(genotype_uniquename).unwrap();
+                    let genotype_display_uniquename =
+                        self.genotype_display_names.get(genotype_uniquename).unwrap();
 
-                if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
-                    if genotype_details.annotation_count > 0 {
-                        allele_details.genotypes.insert(genotype_details.into());
+                    if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
+                        if genotype_details.annotation_count > 0 {
+                            allele_details.genotypes.insert(genotype_details.into());
+                        }
+                    } else {
+                        panic!("can't find GenotypeDetails for {}", genotype_display_uniquename);
                     }
-                } else {
-                    panic!("can't find GenotypeDetails for {}", genotype_display_uniquename);
                 }
-            }
             }
         }
     }
