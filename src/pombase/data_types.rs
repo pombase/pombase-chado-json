@@ -1158,6 +1158,13 @@ pub enum FeatureType {
     SNP,
 }
 
+impl FeatureType {
+    pub fn is_any_intron_type(&self) -> bool {
+        *self == FeatureType::CdsIntron || *self == FeatureType::FivePrimeUtrIntron ||
+        *self == FeatureType::ThreePrimeUtrIntron
+    }
+}
+
 impl Display for FeatureType {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(match *self {

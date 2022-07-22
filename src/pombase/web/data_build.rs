@@ -595,8 +595,11 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
 }
 
 fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
-                             transcript_uniquename: &FlexStr, parts: &mut Vec<FeatureShort>) {
+                             transcript_uniquename: &FlexStr,
+                             strand: Strand,
+                             parts: &mut Vec<FeatureShort>) {
     let mut new_parts: Vec<FeatureShort> = vec![];
+
     let mut intron_count = 0;
 
     for part in parts.drain(0..) {
@@ -616,8 +619,6 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                 // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
             } else {
 
-                intron_count += 1;
-
                 let new_intron_loc = ChromosomeLocation {
                     chromosome_name: prev_part.location.chromosome_name.clone(),
                     start_pos: intron_start,
@@ -626,8 +627,6 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     phase: None,
                 };
 
-                let intron_uniquename =
-                    format!("{}:intron:{}", transcript_uniquename, intron_count);
                 let intron_residues = get_loc_residues(chromosome, &new_intron_loc);
 
                 let intron_type =
@@ -643,11 +642,13 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     };
                 maybe_new_intron = Some(FeatureShort {
                     feature_type: intron_type,
-                    uniquename: intron_uniquename.to_shared_str(),
+                    uniquename: flex_str!("placeholder"), // we set this later
                     name: None,
                     location: new_intron_loc,
                     residues: intron_residues,
                 });
+
+                intron_count += 1;
             }
         }
 
@@ -656,6 +657,28 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
         }
 
         new_parts.push(part);
+    }
+
+    let mut count_for_uniquename =
+        if strand == Strand::Forward {
+            1
+        } else {
+            intron_count
+        };
+
+    for part in &mut new_parts {
+        if part.feature_type.is_any_intron_type() {
+           let intron_uniquename =
+              format!("{}:intron:{}", transcript_uniquename, count_for_uniquename);
+
+           part.uniquename = intron_uniquename.into();
+
+           if strand == Strand::Forward {
+               count_for_uniquename += 1;
+           } else {
+               count_for_uniquename -= 1;
+           }
+        }
     }
 
     *parts = new_parts;
@@ -1477,6 +1500,8 @@ impl <'a> WebDataBuild<'a> {
                 panic!("transcript has no parts: {}", transcript_uniquename);
             }
 
+            let strand = parts[0].location.strand;
+
             let part_cmp = |a: &FeatureShort, b: &FeatureShort| {
                 a.location.start_pos.cmp(&b.location.start_pos)
             };
@@ -1487,7 +1512,7 @@ impl <'a> WebDataBuild<'a> {
 
             let chr_name = &parts[0].location.chromosome_name.clone();
             if let Some(chromosome) = self.chromosomes.get(chr_name) {
-                add_introns_to_transcript(chromosome, transcript_uniquename, &mut parts);
+                add_introns_to_transcript(chromosome, transcript_uniquename, strand, &mut parts);
             } else {
                 panic!("can't find chromosome details for: {}", chr_name);
             }
