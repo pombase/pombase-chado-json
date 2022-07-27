@@ -388,7 +388,7 @@ impl APIData {
                 // drop the with for this annotation
                 if let Some(with_value) = first_with.clone() {
                     annotation.extension.iter_mut().for_each(|mut ext_part| {
-                        if ext_part.rel_type_name == "has_direct_input" {
+                        if ext_part.rel_type_name == "has_input" {
                             match &mut ext_part.ext_range {
                                 ExtRange::GeneProduct(range_termid) => {
                                     if let WithFromValue::Gene(gene_short) = &with_value {
