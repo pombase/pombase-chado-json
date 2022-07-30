@@ -212,7 +212,7 @@ pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,
 
 lazy_static! {
     static ref BAD_GENOTYPE_NAME_CHARS_RE: Regex =
-        Regex::new(r"[% /&;]").unwrap();
+        Regex::new(r"[% /&;?]").unwrap();
 }
 
 pub fn make_genotype_display_name(loci: &[GenotypeLocus],
