@@ -77,15 +77,15 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     return ret_ext_part
                 }
             },
-            ExtRange::SummaryModifiedResidues(ref part1_summ_residues) => {
-                if let ExtRange::SummaryModifiedResidues(ref part2_summ_residues) = ext_part2.ext_range
+            ExtRange::ModifiedResidues(ref part1_summ_residues) => {
+                if let ExtRange::ModifiedResidues(ref part2_summ_residues) = ext_part2.ext_range
                 {
                     let mut ret_ext_part = ext_part1.clone();
                     let mut new_terms =
                         [part1_summ_residues.clone(), part2_summ_residues.clone()].concat();
                     new_terms.sort();
                     new_terms.dedup();
-                    ret_ext_part.ext_range = ExtRange::SummaryModifiedResidues(new_terms);
+                    ret_ext_part.ext_range = ExtRange::ModifiedResidues(new_terms);
                     return ret_ext_part
                 }
             },
@@ -108,7 +108,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
         |ext_part: &ExtPart| {
             match ext_part.ext_range {
                 ExtRange::SummaryGenes(_) | ExtRange::SummaryTranscripts(_) | ExtRange::SummaryTerms(_) |
-                ExtRange::SummaryModifiedResidues(_) =>
+                ExtRange::ModifiedResidues(_) =>
                     conf_rel_ranges.contains(&ext_part.rel_type_name),
                 _ =>false
             }

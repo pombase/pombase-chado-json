@@ -112,7 +112,7 @@ pub enum ExtRange {
 // see: https://github.com/pombase/website/issues/1625
     GeneAndGeneProduct(GeneAndGeneProduct),
 #[serde(rename = "summary_residues")]
-    SummaryModifiedResidues(Vec<Residue>),
+    ModifiedResidues(Vec<Residue>),
 }
 
 impl ExtRange {
@@ -131,7 +131,7 @@ impl fmt::Display for ExtRange {
             ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
             ExtRange::SummaryTranscripts(_) => panic!("can't handle SummaryTranscripts\n"),
             ExtRange::Term(ref termid) => write!(f, "{}", termid),
-            ExtRange::SummaryModifiedResidues(ref residue) =>
+            ExtRange::ModifiedResidues(ref residue) =>
                 write!(f, "{}", residue.iter().map(FlexStr::to_string).collect::<Vec<_>>().join(",")),
             ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
             ExtRange::Misc(ref misc) => write!(f, "{}", misc),

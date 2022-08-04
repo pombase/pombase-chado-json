@@ -3252,7 +3252,7 @@ impl <'a> WebDataBuild<'a> {
                                     rel_type_id: None,
                                     rel_type_name: display_name.clone(),
                                     rel_type_display_name: display_name,
-                                    ext_range: ExtRange::SummaryModifiedResidues(vec![residue]),
+                                    ext_range: ExtRange::ModifiedResidues(vec![residue]),
                                 };
                                 extension.insert(0, residue_range_part);
                             }
