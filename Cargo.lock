@@ -184,15 +184,16 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chrono"
-version = "0.4.19"
+version = "0.4.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "670ad68c9088c2a963aaa298cb369688cf3f9465ce5e2d4ca10e6e0098a1ce73"
+checksum = "6127248204b9aba09a362f6c930ef6a78f2c1b2215f8a7b398c06e1083f17af0"
 dependencies = [
- "libc",
+ "js-sys",
  "num-integer",
  "num-traits",
  "serde",
  "time 0.1.44",
+ "wasm-bindgen",
  "winapi 0.3.9",
 ]
 
@@ -1371,7 +1372,7 @@ checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket.git#f7e703bc5e5d83af34669e8c44c3e928a30b5410"
+source = "git+https://github.com/SergioBenitez/Rocket.git#cbe4dcb4b5f823e2018d9068b1f9aeed0b1ebe6a"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1409,7 +1410,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket.git#f7e703bc5e5d83af34669e8c44c3e928a30b5410"
+source = "git+https://github.com/SergioBenitez/Rocket.git#cbe4dcb4b5f823e2018d9068b1f9aeed0b1ebe6a"
 dependencies = [
  "devise",
  "glob",
@@ -1424,7 +1425,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket.git#f7e703bc5e5d83af34669e8c44c3e928a30b5410"
+source = "git+https://github.com/SergioBenitez/Rocket.git#cbe4dcb4b5f823e2018d9068b1f9aeed0b1ebe6a"
 dependencies = [
  "cookie",
  "either",
