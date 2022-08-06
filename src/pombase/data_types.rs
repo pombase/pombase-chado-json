@@ -1824,6 +1824,7 @@ pub struct SolrAlleleSummary {
     #[serde(skip_serializing_if="Option::is_none")]
     pub description: Option<FlexStr>,
     pub gene_uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub gene_name: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<FlexStr>,
