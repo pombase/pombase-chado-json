@@ -20,20 +20,27 @@ struct SolrAlleleResponseContainer {
 }
 
 lazy_static! {
+    static ref WT_RE: Regex = Regex::new(r#"(\+)(\s+|$)"#).unwrap();
     static ref CLEAN_RE: Regex = Regex::new(r#"([\+\-\&\\!\(\)"\~\*\?:])"#).unwrap();
+    static ref DELTA_RE: Regex = Regex::new(r#"[Δδ]"#).unwrap();
 }
 
-// remove non-alphanumeric chars and then split on spaces
-pub fn clean_words(q: &str) -> Vec<String> {
+// split on spaces and tidy search string
+fn allele_words(q: &str) -> Vec<String> {
     let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
-    let lower_q = substring(&q.to_lowercase(), 200);
-    CLEAN_RE.replace_all(&lower_q, "\\$1")
-       .split_whitespace().map(|s| s.to_owned()).collect()
+    let lc_substr = substring(&q.to_lowercase(), 200);
+    let q = DELTA_RE.replace_all(&lc_substr, "delta").replace("wild type", "wild_type");
+    let q = WT_RE.replace_all(&q, " wild_type ");
+
+    q.split_whitespace().map(|s| s.to_owned()).collect()
 }
 
-fn make_allele_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
+fn make_allele_url(config: &ServerConfig, q: &str)
                    -> Option<String>
 {
+    let query_field_names = ["name", "synonyms", "description",
+                             "gene_name", "gene_uniquename"];
+
     let joined_query_fields = query_field_names.join(",");
     let mut allele_url =
         format!("{}/alleles/select?wt=json&hl=on&hl.fl={}&q=",
@@ -41,37 +48,35 @@ fn make_allele_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
                 &joined_query_fields);
 
     let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
-    let lower_q = substring(&q.to_lowercase(), 200);
+    let lower_q = substring(&q.to_lowercase(), 100);
 
-    let mut clean_words: Vec<String> = clean_words(&lower_q);
+    let mut words: Vec<String> = allele_words(&lower_q);
 
-    if clean_words.is_empty() {
+    if words.is_empty() {
         return None
     }
 
-    if clean_words.iter().any(|s| s == "Δ" || s == "δ") {
-        clean_words.push("delta".to_owned());
-    }
-    if clean_words.iter().any(|s| s == "delete" || s =="delta") {
-        clean_words.push("deletion".to_owned());
+    if words.iter().any(|s| s == "delete" || s =="delta" || s == "deletion") {
+        words.push("deletion".to_owned());
+        words.push("delta".to_owned());
     }
 
-    let url_parts =
-        itertools::iproduct!(query_field_names, clean_words)
-        .map(|(field_name, query_word)| {
-            let weight = if *field_name == "name" || *field_name == "allele_type" {
-                2.0
-            } else {
-                if *field_name == "synonyms" || *field_name == "gene_name" {
-                    1.0
-                } else {
-                    0.2
-                }
-            };
+    let mut url_parts = vec![];
+    let mut clean_words = vec![];
 
-            format!("{}:({})^{}", field_name, query_word, weight)
-        })
-        .collect::<Vec<String>>();
+    for word in &words {
+        clean_words.push(CLEAN_RE.replace_all(&word, "\\$1"));
+
+        url_parts.push(format!("name:({})^5.0", word));
+        url_parts.push(format!("synonyms:({})^4.0", word));
+        url_parts.push(format!("allele_type:({})^4.0", word));
+        url_parts.push(format!("gene_name:({})^3.0", word));
+        url_parts.push(format!("gene_uniquename:({})^3.0", word));
+    }
+
+    for word in &clean_words {
+        url_parts.push(format!("description:({})^1.0", word));
+    }
 
     allele_url += &url_parts.join(" OR ");
 
@@ -92,9 +97,7 @@ fn matches_from_container(container: SolrAlleleResponseContainer) -> Vec<SolrAll
 }
 
 pub fn search_alleles(config: &ServerConfig, q: &str) -> Result<Vec<SolrAlleleSummary>, String> {
-    let query_field_names = ["name", "synonyms", "description", "allele_type",
-                             "gene_name", "gene_uniquename"];
-    let maybe_url = make_allele_url(config, q, &query_field_names);
+    let maybe_url = make_allele_url(config, q);
 
     if let Some(url) = maybe_url {
         let res = do_solr_request(&url)?;
