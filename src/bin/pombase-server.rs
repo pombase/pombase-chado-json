@@ -275,7 +275,7 @@ async fn ref_complete(q: String, search: &rocket::State<Search>)
 async fn allele_complete(q: String, search: &rocket::State<Search>)
                 -> Option<Json<AlleleCompletionResponse>>
 {
-    let res = search.allele_complete(&q);
+    let res = search.allele_complete(&q).await;
 
     let completion_response =
         match res {

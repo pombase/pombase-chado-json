@@ -1,4 +1,7 @@
+use bytes::Buf;
 use regex::Regex;
+use reqwest::Client;
+use std::error::Error;
 
 use crate::data_types::SolrAlleleSummary;
 
@@ -6,7 +9,7 @@ use std::collections::HashMap;
 
 use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
-use crate::api::search_utils::do_solr_request;
+use crate::api::search_utils::solr_request;
 
 #[derive(Deserialize, Debug)]
 struct SolrAlleleResponse {
@@ -20,7 +23,6 @@ struct SolrAlleleResponseContainer {
 }
 
 lazy_static! {
-    static ref WT_RE: Regex = Regex::new(r#"(\+)(\s+|$)"#).unwrap();
     static ref CLEAN_RE: Regex = Regex::new(r#"([\+\-\&\\!\(\)"\~\*\?:])"#).unwrap();
     static ref DELTA_RE: Regex = Regex::new(r#"[Δδ]"#).unwrap();
 }
@@ -30,23 +32,11 @@ fn allele_words(q: &str) -> Vec<String> {
     let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
     let lc_substr = substring(&q.to_lowercase(), 200);
     let q = DELTA_RE.replace_all(&lc_substr, "delta").replace("wild type", "wild_type");
-    let q = WT_RE.replace_all(&q, " wild_type ");
 
     q.split_whitespace().map(|s| s.to_owned()).collect()
 }
 
-fn make_allele_url(config: &ServerConfig, q: &str)
-                   -> Option<String>
-{
-    let query_field_names = ["name", "synonyms", "description",
-                             "gene_name", "gene_uniquename"];
-
-    let joined_query_fields = query_field_names.join(",");
-    let mut allele_url =
-        format!("{}/alleles/select?wt=json&hl=on&hl.fl={}&q=",
-                &config.solr_url,
-                &joined_query_fields);
-
+fn make_allele_url(q: &str) -> Option<String> {
     let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
     let lower_q = substring(&q.to_lowercase(), 100);
 
@@ -78,9 +68,7 @@ fn make_allele_url(config: &ServerConfig, q: &str)
         url_parts.push(format!("description:({})^1.0", word));
     }
 
-    allele_url += &url_parts.join(" OR ");
-
-    Some(allele_url)
+    Some(url_parts.join(" OR "))
 }
 
 fn matches_from_container(container: SolrAlleleResponseContainer) -> Vec<SolrAlleleSummary> {
@@ -96,16 +84,30 @@ fn matches_from_container(container: SolrAlleleResponseContainer) -> Vec<SolrAll
     matches
 }
 
-pub fn search_alleles(config: &ServerConfig, q: &str) -> Result<Vec<SolrAlleleSummary>, String> {
-    let maybe_url = make_allele_url(config, q);
+pub async fn search_alleles(config: &ServerConfig, reqwest_client: &Client, q: &str)
+     -> Result<Vec<SolrAlleleSummary>, Box<dyn Error + Send + Sync>>
+{
+    let query_field_names = ["name", "synonyms", "description",
+                             "gene_name", "gene_uniquename"];
+
+    let maybe_url = make_allele_url(q);
+
+    let base_url = format!("{}/alleles/select", &config.solr_url);
 
     if let Some(url) = maybe_url {
-        let res = do_solr_request(&url)?;
+        let res = solr_request(reqwest_client, &base_url, &query_field_names, &url).await?;
 
-        match serde_json::from_reader(res) {
-            Ok(container) => Ok(matches_from_container(container)),
+        let bytes = res.bytes().await?;
+
+        println!("bytes: {:?}", bytes);
+
+        match serde_json::from_reader(bytes.reader()) {
+            Ok(res) => {
+                Ok(matches_from_container(res))
+            },
             Err(err) => {
-                Err(format!("Error parsing response from Solr: {:?}", err))
+                let mess = format!("Error parsing response from Solr: {:?}", err);
+                Err(mess.as_str().into())
             }
         }
     } else {

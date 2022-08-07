@@ -1,4 +1,6 @@
-use reqwest::blocking::Response;
+use std::error::Error;
+
+use reqwest::{Response, Client};
 use regex::Regex;
 
 pub fn get_query_part(words: &[String]) -> String {
@@ -35,7 +37,7 @@ pub fn clean_words(q: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn do_solr_request(url: &str) -> Result<Response, String> {
+pub fn do_solr_request(url: &str) -> Result<reqwest::blocking::Response, String> {
     println!("do_solr_request({:?})", url);
     match reqwest::blocking::get(url) {
         Ok(res) => {
@@ -52,6 +54,41 @@ pub fn do_solr_request(url: &str) -> Result<Response, String> {
         },
         Err(err) => {
             Err(format!("Error from Reqwest: {:?} for {}", err, url))
+        }
+    }
+}
+
+pub async fn solr_request(reqwest_client: &Client, url_base: &str, highlight_fields: &[&str], query: &str)
+   -> Result<Response, Box<dyn Error + Send + Sync>>
+{
+    eprintln!("querying with: {}", query);
+
+    let highlighted_fields_str = highlight_fields.join(",");
+    let params = vec![("wt", "json"), ("hl", "on"), ("hl.fl", &highlighted_fields_str), ("q", query)];
+
+    let url = reqwest::Url::parse_with_params(url_base, &params)?;
+
+    let req = reqwest_client
+        .get(url)
+        .header("Accepts", "application/json");
+
+    match req.send().await {
+        Ok(res) => {
+            if res.status().is_success() {
+                Ok(res)
+            } else {
+                if let Some(reason) = res.status().canonical_reason() {
+                    let var_name = format!("HTTP request to Solr failed: {} - {}", res.status(), reason);
+                    Err(var_name.as_str().into())
+                } else {
+                    let mess = format!("HTTP request to Solr failed with status code: {}", res.status());
+                    Err(mess.as_str().into())
+                 }
+            }
+        },
+        Err(err) => {
+            let mess = format!("Error from Reqwest: {:?} for {} q:{}", err, url_base, query);
+            Err(mess.as_str().into())
         }
     }
 }

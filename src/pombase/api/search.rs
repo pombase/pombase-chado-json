@@ -1,4 +1,6 @@
 use bytes::Bytes;
+use reqwest::Client;
+use std::error::Error;
 
 use std::io::Cursor;
 
@@ -21,6 +23,7 @@ pub use crate::api::doc_search::DocSearchMatch;
 
 pub struct Search {
     config: ServerConfig,
+    reqwest_client: Client,
 }
 
 pub struct PNGPlot {
@@ -82,6 +85,7 @@ impl Search {
     pub fn new(config: &Config) -> Search {
         Search {
             config: config.server.clone(),
+            reqwest_client: Client::new(),
         }
     }
 
@@ -143,10 +147,10 @@ impl Search {
         search_refs(&self.config, q)
     }
 
-    pub fn allele_complete(&self, q: &str)
-                           -> Result<Vec<SolrAlleleSummary>, String>
+    pub async fn allele_complete(&self, q: &str)
+                           -> Result<Vec<SolrAlleleSummary>, Box<dyn Error + Send + Sync>>
     {
-        search_alleles(&self.config, q)
+        search_alleles(&self.config, &self.reqwest_client, q).await
     }
 
     pub fn solr_search(&self, scope: &SolrSearchScope, q: &str)
