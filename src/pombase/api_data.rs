@@ -259,16 +259,12 @@ impl APIData {
                         }
 
                         for filter_condition in test_conditions_filter {
-                            if conditions.iter().any(
-                                |cond| {
-                                    filter_condition.termid == cond.termid
-                                })
-                            {
-                                return true
+                            if !conditions.contains(filter_condition) {
+                                return false
                             }
                         }
 
-                        false
+                        true
                     };
 
                 if !condition_matches(&annotation.conditions, conditions_filter) ||
