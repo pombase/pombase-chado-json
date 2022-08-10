@@ -366,6 +366,22 @@ impl Hash for TermShort {
     }
 }
 
+impl From<&TermDetails> for TermShort {
+    fn from(details: &TermDetails) -> TermShort {
+        TermShort {
+            name: details.name.clone(),
+            termid: details.termid.clone(),
+            cv_name: details.cv_name.clone(),
+            secondary_identifiers: details.secondary_identifiers.clone(),
+            interesting_parent_ids: details.interesting_parent_ids.clone(),
+            is_obsolete: details.is_obsolete,
+            gene_count: details.gene_count,
+            genotype_count: details.genotype_count,
+            xrefs: details.xrefs.clone(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChromosomeDetails {
     pub name: FlexStr,
@@ -1409,6 +1425,8 @@ pub struct AlleleDetails {
     pub synonyms: Vec<SynonymDetails>,
     // genotypes containing this allele:
     pub genotypes: HashSet<GenotypeShort>,
+    // the phenotypes of those genotypes
+    pub phenotypes: HashSet<TermAndName>,
 
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
 }
@@ -1430,6 +1448,7 @@ impl AlleleDetails {
             gene,
             synonyms: vec![],
             genotypes: HashSet::new(),
+            phenotypes: HashSet::new(),
             alleles_by_uniquename: HashMap::new(),
         }
     }

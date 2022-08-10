@@ -3,6 +3,7 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
 
+use crate::data_types::TermShort;
 use crate::types::*;
 use serde_json;
 
@@ -173,6 +174,15 @@ pub struct ViabilityTerms {
 pub struct TermAndName {
     pub termid: FlexStr,
     pub name: FlexStr,
+}
+
+impl From<&TermShort> for TermAndName {
+    fn from(term: &TermShort) -> TermAndName {
+        TermAndName {
+            termid: term.termid.clone(),
+            name: term.name.clone(),
+        }
+    }
 }
 
 #[derive(Deserialize, Clone, Debug)]

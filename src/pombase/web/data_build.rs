@@ -1946,6 +1946,15 @@ impl <'a> WebDataBuild<'a> {
                         self.genotype_display_names.get(genotype_uniquename).unwrap();
 
                     if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
+                        for term_annotations in genotype_details.cv_annotations.values() {
+                            for term_annotation in term_annotations {
+                                let termid = &term_annotation.term;
+                                let term_details =
+                                     self.terms.get(termid).expect(&format!("missing termid {}", termid));
+                                let term_short: &TermShort = &term_details.into();
+                                allele_details.phenotypes.insert(term_short.into());
+                            }
+                        }
                         if genotype_details.annotation_count > 0 {
                             allele_details.genotypes.insert(genotype_details.into());
                         }
