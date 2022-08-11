@@ -1959,6 +1959,9 @@ impl <'a> WebDataBuild<'a> {
         };
 
         for allele_details in self.alleles.values_mut() {
+            let mut genotypes: HashSet<GenotypeShort> = HashSet::new();
+            let mut phenotypes: HashSet<TermShort> = HashSet::new();
+
             if let Some(genotype_uniquenames) = self.genotypes_of_alleles.get(&allele_details.uniquename) {
 
                 for genotype_uniquename in genotype_uniquenames {
@@ -1973,17 +1976,20 @@ impl <'a> WebDataBuild<'a> {
                                 let term_details =
                                      self.terms.get(termid).expect(&format!("missing termid {}", termid));
                                 let term_short: TermShort = term_details.into();
-                                allele_details.phenotypes.push(term_short);
+                                phenotypes.insert(term_short);
                             }
                         }
                         if genotype_details.annotation_count > 0 {
-                            allele_details.genotypes.push(genotype_details.into());
+                            genotypes.insert(genotype_details.into());
                         }
                     } else {
                         panic!("can't find GenotypeDetails for {}", genotype_display_uniquename);
                     }
                 }
             }
+
+            allele_details.genotypes.extend(genotypes.drain());
+            allele_details.phenotypes.extend(phenotypes.drain());
 
             allele_details.genotypes.sort_by(genotype_cmp);
             allele_details.phenotypes.sort_by(phenotype_cmp);
