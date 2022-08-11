@@ -99,8 +99,6 @@ pub async fn search_alleles(config: &ServerConfig, reqwest_client: &Client, q: &
 
         let bytes = res.bytes().await?;
 
-        println!("bytes: {:?}", bytes);
-
         match serde_json::from_reader(bytes.reader()) {
             Ok(res) => {
                 Ok(matches_from_container(res))
