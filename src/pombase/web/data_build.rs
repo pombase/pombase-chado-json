@@ -1144,6 +1144,7 @@ impl <'a> WebDataBuild<'a> {
             let mut canto_approved_date: Option<FlexStr> = None;
             let mut canto_added_date: Option<FlexStr> = None;
             let mut canto_session_submitted_date: Option<FlexStr> = None;
+            let mut annotation_curators = vec![];
 
             for prop in rc_publication.publicationprops.borrow().iter() {
                 match &prop.prop_type.name as &str {
@@ -1175,6 +1176,12 @@ impl <'a> WebDataBuild<'a> {
                         canto_added_date = Some(prop.value.clone()),
                     "canto_session_submitted_date" =>
                         canto_session_submitted_date = Some(prop.value.clone()),
+                    "annotation_curator" => {
+                        println!("annotation_curator: {}", prop.value);
+                        let curator = serde_json::from_str(&prop.value)
+                            .expect(&format!("failed to parse annotation_curators pupprop: {}", prop.value));
+                        annotation_curators.push(curator);
+                    },
                     _ => ()
                 }
             }
@@ -1246,6 +1253,7 @@ impl <'a> WebDataBuild<'a> {
                                        canto_approved_date,
                                        canto_session_submitted_date,
                                        canto_added_date,
+                                       annotation_curators,
                                        approved_date,
                                        publication_year,
                                        cv_annotations: HashMap::new(),
@@ -5742,6 +5750,21 @@ impl <'a> WebDataBuild<'a> {
         self.make_subsets();
         self.sort_chromosome_genes();
         self.set_gene_expression_measurements();
+
+        for (_termid, term_details) in &self.terms {
+            for (cv_name, term_annotations) in &term_details.cv_annotations {
+                for term_annotation in term_annotations {
+                    for annotation_detail_id in &term_annotation.annotations {
+                        let annotation_detail = self.annotation_details
+                            .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
+
+                        for part in &annotation_detail.extension {
+//                           println!("{} {}", cv_name, part.rel_type_name);
+                        }
+                    }
+                }
+            }
+        }
 
         let stats = self.get_stats();
 

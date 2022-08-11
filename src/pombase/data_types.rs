@@ -477,6 +477,13 @@ pub trait OrthologAnnotationContainer: AnnotationContainer {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AnnotationCurator {
+    pub name: FlexStr,
+    pub community_curator: bool,
+    pub annotation_count: usize,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceDetails {
     pub uniquename: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -511,6 +518,9 @@ pub struct ReferenceDetails {
     pub canto_session_submitted_date: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_added_date: Option<FlexStr>,
+
+    // the curators of the annotations from Canto, may be different from the canto_curator_name
+    pub annotation_curators: Vec<AnnotationCurator>,
 
     // count of genes from the main organism of the site (eg. pombe)
     pub gene_count: usize,
