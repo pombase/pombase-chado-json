@@ -1938,6 +1938,19 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_genotypes_to_allele_details(&mut self) {
         let genotype_cmp = |geno1: &GenotypeShort, geno2: &GenotypeShort| {
+            let geno1_ploidiness = geno1.ploidiness();
+            let geno2_ploidiness = geno2.ploidiness();
+
+            if geno1_ploidiness == Ploidiness::Haploid &&
+               geno2_ploidiness == Ploidiness::Diploid {
+                return Ordering::Less;
+            }
+
+            if geno1_ploidiness == Ploidiness::Diploid &&
+               geno2_ploidiness == Ploidiness::Haploid {
+                return Ordering::Greater;
+            }
+
             geno1.display_uniquename.to_ascii_lowercase()
                  .cmp(&geno2.display_uniquename.to_ascii_lowercase())
         };
