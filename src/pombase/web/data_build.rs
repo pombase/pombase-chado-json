@@ -1937,6 +1937,14 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_genotypes_to_allele_details(&mut self) {
+        let genotype_cmp = |geno1: &GenotypeShort, geno2: &GenotypeShort| {
+            geno1.display_uniquename.to_ascii_lowercase()
+                 .cmp(&geno2.display_uniquename.to_ascii_lowercase())
+        };
+        let phenotype_cmp = |pheno1: &TermShort, pheno2: &TermShort| {
+            pheno1.name.to_ascii_lowercase().cmp(&pheno2.name.to_ascii_lowercase())
+        };
+
         for allele_details in self.alleles.values_mut() {
             if let Some(genotype_uniquenames) = self.genotypes_of_alleles.get(&allele_details.uniquename) {
 
@@ -1951,18 +1959,21 @@ impl <'a> WebDataBuild<'a> {
                                 let termid = &term_annotation.term;
                                 let term_details =
                                      self.terms.get(termid).expect(&format!("missing termid {}", termid));
-                                let term_short: &TermShort = &term_details.into();
-                                allele_details.phenotypes.insert(term_short.into());
+                                let term_short: TermShort = term_details.into();
+                                allele_details.phenotypes.push(term_short);
                             }
                         }
                         if genotype_details.annotation_count > 0 {
-                            allele_details.genotypes.insert(genotype_details.into());
+                            allele_details.genotypes.push(genotype_details.into());
                         }
                     } else {
                         panic!("can't find GenotypeDetails for {}", genotype_display_uniquename);
                     }
                 }
             }
+
+            allele_details.genotypes.sort_by(genotype_cmp);
+            allele_details.phenotypes.sort_by(phenotype_cmp);
         }
     }
 

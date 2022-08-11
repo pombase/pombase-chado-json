@@ -1424,9 +1424,9 @@ pub struct AlleleDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
     // genotypes containing this allele:
-    pub genotypes: HashSet<GenotypeShort>,
+    pub genotypes: Vec<GenotypeShort>,
     // the phenotypes of those genotypes
-    pub phenotypes: HashSet<TermAndName>,
+    pub phenotypes: Vec<TermShort>,
 
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
 }
@@ -1447,8 +1447,8 @@ impl AlleleDetails {
             description: description.clone(),
             gene,
             synonyms: vec![],
-            genotypes: HashSet::new(),
-            phenotypes: HashSet::new(),
+            genotypes: vec![],
+            phenotypes: vec![],
             alleles_by_uniquename: HashMap::new(),
         }
     }
