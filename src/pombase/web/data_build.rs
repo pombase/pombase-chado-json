@@ -1177,7 +1177,6 @@ impl <'a> WebDataBuild<'a> {
                     "canto_session_submitted_date" =>
                         canto_session_submitted_date = Some(prop.value.clone()),
                     "annotation_curator" => {
-                        println!("annotation_curator: {}", prop.value);
                         let curator = serde_json::from_str(&prop.value)
                             .expect(&format!("failed to parse annotation_curators pupprop: {}", prop.value));
                         annotation_curators.push(curator);
