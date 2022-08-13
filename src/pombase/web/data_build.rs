@@ -5750,21 +5750,6 @@ impl <'a> WebDataBuild<'a> {
         self.sort_chromosome_genes();
         self.set_gene_expression_measurements();
 
-        for (_termid, term_details) in &self.terms {
-            for (cv_name, term_annotations) in &term_details.cv_annotations {
-                for term_annotation in term_annotations {
-                    for annotation_detail_id in &term_annotation.annotations {
-                        let annotation_detail = self.annotation_details
-                            .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
-
-                        for part in &annotation_detail.extension {
-//                           println!("{} {}", cv_name, part.rel_type_name);
-                        }
-                    }
-                }
-            }
-        }
-
         let stats = self.get_stats();
 
         let metadata = self.make_metadata();
