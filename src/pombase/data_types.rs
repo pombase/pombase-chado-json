@@ -481,6 +481,7 @@ pub struct AnnotationCurator {
     pub name: FlexStr,
     pub community_curator: bool,
     pub annotation_count: usize,
+    pub orcid: Option<FlexStr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
