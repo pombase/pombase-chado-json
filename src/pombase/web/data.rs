@@ -1369,6 +1369,43 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_apicuron_files(&self, output_dir: &str) -> Result<(), io::Error> {
+        let mut curator_details = HashMap::new();
+
+        for ref_details in self.api_maps.references.values() {
+            if ref_details.cv_annotations.is_empty() {
+                continue;
+            }
+
+            for annotation_curator in &ref_details.annotation_curators {
+                if let Some(ref curator_orcid) = annotation_curator.orcid {
+                    let mut curator =
+                        curator_details
+                            .entry(&annotation_curator.name)
+                            .or_insert_with(|| ApicuronCuratorDetails {
+                                 curator_name: annotation_curator.name.clone(),
+                                 curator_orcid: curator_orcid.clone(),
+                                 curated_publication_count: 0,
+                            });
+
+                    curator.curated_publication_count += 1;
+                }
+
+            }
+        }
+
+        let apicuron_data = ApicuronData {
+            curator_details: curator_details.values().cloned().collect(),
+        };
+
+        let s = serde_json::to_string(&apicuron_data).unwrap();
+        let file_name = String::new() + output_dir + "/apicuron_data.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write apicuron_data.json");
+
+        Ok(())
+    }
 
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
@@ -1442,6 +1479,8 @@ impl WebData {
         self.write_disease_association(config, &misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
+
+        self.write_apicuron_files(&misc_path)?;
 
         self.write_stats(&web_json_path)?;
 

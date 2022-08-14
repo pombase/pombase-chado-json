@@ -2093,3 +2093,15 @@ pub struct Stats {
     pub community_pubs_count: usize,
     pub non_community_pubs_count: usize,
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ApicuronCuratorDetails {
+    pub curator_name: FlexStr,
+    pub curator_orcid: FlexStr,
+    pub curated_publication_count: usize,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ApicuronData {
+    pub curator_details: Vec<ApicuronCuratorDetails>,
+}
