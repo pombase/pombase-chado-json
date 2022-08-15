@@ -1419,6 +1419,11 @@ impl From<&AlleleDetails> for AlleleShort {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct CommentAndReference {
+    pub comment: FlexStr,
+    pub reference_uniquename: Option<FlexStr>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AlleleDetails {
@@ -1440,7 +1445,7 @@ pub struct AlleleDetails {
     pub phenotypes: Vec<TermShort>,
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub comments: Vec<FlexStr>,
+    pub comments: Vec<CommentAndReference>,
 
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
 }
@@ -1450,7 +1455,7 @@ impl AlleleDetails {
                name: &Option<FlexStr>,
                allele_type: &str,
                description: &Option<FlexStr>,
-               comments: &Vec<FlexStr>,
+               comments: &Vec<CommentAndReference>,
                gene: GeneShort) -> AlleleDetails {
         let encoded_name_and_type =
             allele_encoded_name_and_type(name, allele_type, description);

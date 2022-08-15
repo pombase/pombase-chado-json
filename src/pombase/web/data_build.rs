@@ -1825,7 +1825,13 @@ impl <'a> WebDataBuild<'a> {
                 "description" =>
                     description = prop.value.clone(),
                 "comment" => if let Some(ref comment) = prop.value {
-                    comments.push(comment.clone())
+                    let comment = CommentAndReference {
+                      comment: comment.clone(),
+                      reference_uniquename:
+                         prop.featureprop_pubs.borrow().get(0)
+                             .map(|publication| publication.uniquename.clone()),
+                    };
+                    comments.push(comment);
                 },
                 _ => ()
             }

@@ -194,7 +194,9 @@ pub struct Featureprop {
     pub feature: Rc<Feature>,
     pub prop_type: Rc<Cvterm>,
     pub value: Option<FlexStr>,
+    pub featureprop_pubs: RefCell<Vec<Rc<Publication>>>,
 }
+
 pub struct Synonym {
     pub name: FlexStr,
     pub synonym_type: Rc<Cvterm>
@@ -275,6 +277,7 @@ impl Raw {
         let mut cvterm_map: HashMap<i32, Rc<Cvterm>> = HashMap::new();
         let mut synonym_map: HashMap<i32, Rc<Synonym>> = HashMap::new();
         let mut feature_map: HashMap<i32, Rc<Feature>> = HashMap::new();
+        let mut featureprop_map: HashMap<i32, Rc<Featureprop>> = HashMap::new();
         let mut feature_dbxref_map: HashMap<i32, Rc<FeatureDbxref>> = HashMap::new();
         let mut feature_cvterm_map: HashMap<i32, Rc<FeatureCvterm>> = HashMap::new();
         let mut feature_relationship_map: HashMap<i32, Rc<FeatureRelationship>> = HashMap::new();
@@ -492,19 +495,31 @@ impl Raw {
             feature_map.insert(feature_id, rc_feature);
         }
 
-        for row in &conn.query("SELECT feature_id, type_id, value FROM featureprop", &[]).await? {
+        for row in &conn.query("SELECT feature_id, type_id, value, featureprop_id FROM featureprop", &[]).await? {
             let feature_id: i32 = row.get(0);
             let feature = get_feature(&mut feature_map, feature_id);
             let type_id: i32 = row.get(1);
             let value: Option<String> = row.get(2);
+            let featureprop_id: i32 = row.get(3);
             let featureprop = Featureprop {
                 feature: feature.clone(),
                 prop_type: get_cvterm(&mut cvterm_map, type_id),
                 value: value.map(|s| s.to_shared_str()),
+                featureprop_pubs: RefCell::new(vec![]),
             };
             let rc_featureprop = Rc::new(featureprop);
             ret.featureprops.push(rc_featureprop.clone());
             feature.featureprops.borrow_mut().push(rc_featureprop.clone());
+            featureprop_map.insert(featureprop_id, rc_featureprop);
+        }
+
+        for row in &conn.query("SELECT featureprop_id, pub_id FROM featureprop_pub", &[]).await? {
+            let featureprop_id: i32 = row.get(0);
+            let featureprop = featureprop_map[&featureprop_id].clone();
+            let publication_id: i32 = row.get(1);
+            let publication = publication_map[&publication_id].clone();
+
+            featureprop.featureprop_pubs.borrow_mut().push(publication);
         }
 
         for row in &conn.query("SELECT feature_id, pub_id FROM feature_pub", &[]).await? {

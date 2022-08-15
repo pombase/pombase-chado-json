@@ -78,6 +78,7 @@ fn make_test_featureprop(featureprops: &mut Vec<Rc<Featureprop>>, feature: &Rc<F
         feature: feature.clone(),
         prop_type: type_cvterm.clone(),
         value: value,
+        featureprop_pubs: RefCell::new(vec![]),
     });
     feature.featureprops.borrow_mut().push(featureprop.clone());
     featureprops.push(featureprop.clone());
