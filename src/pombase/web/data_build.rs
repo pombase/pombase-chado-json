@@ -1816,6 +1816,7 @@ impl <'a> WebDataBuild<'a> {
     fn store_allele_details(&mut self, feat: &Feature) {
         let mut allele_type = None;
         let mut description = None;
+        let mut comments = vec![];
 
         for prop in feat.featureprops.borrow().iter() {
             match &prop.prop_type.name as &str {
@@ -1823,6 +1824,9 @@ impl <'a> WebDataBuild<'a> {
                     allele_type = prop.value.clone(),
                 "description" =>
                     description = prop.value.clone(),
+                "comment" => if let Some(ref comment) = prop.value {
+                    comments.push(comment.clone())
+                },
                 _ => ()
             }
         }
@@ -1834,6 +1838,7 @@ impl <'a> WebDataBuild<'a> {
                                                     &feat.name,
                                                     &allele_type,
                                                     &description,
+                                                    &comments,
                                                     gene_details.into());
             self.alleles.insert(feat.uniquename.clone(), allele_details);
         } else {

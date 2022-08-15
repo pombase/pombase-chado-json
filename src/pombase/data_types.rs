@@ -1439,6 +1439,9 @@ pub struct AlleleDetails {
     // the phenotypes of those genotypes
     pub phenotypes: Vec<TermShort>,
 
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub comments: Vec<FlexStr>,
+
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
 }
 
@@ -1447,6 +1450,7 @@ impl AlleleDetails {
                name: &Option<FlexStr>,
                allele_type: &str,
                description: &Option<FlexStr>,
+               comments: &Vec<FlexStr>,
                gene: GeneShort) -> AlleleDetails {
         let encoded_name_and_type =
             allele_encoded_name_and_type(name, allele_type, description);
@@ -1460,6 +1464,7 @@ impl AlleleDetails {
             synonyms: vec![],
             genotypes: vec![],
             phenotypes: vec![],
+            comments: comments.clone(),
             alleles_by_uniquename: HashMap::new(),
         }
     }
