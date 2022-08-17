@@ -102,6 +102,11 @@ pub struct GeneListNode {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct TargetOfNode {
+    pub genes: Vec<GeneShort>,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct HasOrthologNode {
     pub taxonid: u32,
 }
@@ -179,6 +184,8 @@ pub struct QueryNode {
     pub subset: Option<SubsetNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub gene_list: Option<GeneListNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub target_of: Option<TargetOfNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub has_ortholog: Option<HasOrthologNode>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -291,6 +298,23 @@ fn exec_gene_list(genes: &[GeneShort])
 
     for gene in genes {
         ret.push(gene.uniquename.clone());
+    }
+
+    Ok(ret)
+}
+
+
+fn exec_target_of(api_data: &APIData, genes: &[GeneShort])
+                  -> GeneUniquenameVecResult
+{
+    let mut ret = vec![];
+
+    for gene in genes {
+        let gene_details = api_data.get_gene_details(&gene.uniquename)
+            .expect(&format!("failed to find gene_details for {}", gene.uniquename));
+        for target_of_annotation in &gene_details.target_of_annotations {
+            ret.push(target_of_annotation.gene.clone());
+        }
     }
 
     Ok(ret)
@@ -492,6 +516,7 @@ impl QueryNode {
             term: None,
             subset: None,
             gene_list: None,
+            target_of: None,
             has_ortholog: None,
             int_range: None,
             float_range: None,
@@ -528,6 +553,9 @@ impl QueryNode {
         }
         if let Some(ref gene_list_node) = self.gene_list {
             return exec_gene_list(&gene_list_node.genes);
+        }
+        if let Some(ref target_of_node) = self.target_of {
+            return exec_target_of(api_data, &target_of_node.genes);
         }
         if let Some(ref has_ortholog_node) = self.has_ortholog {
             return exec_has_ortholog(api_data, has_ortholog_node.taxonid);
