@@ -37,9 +37,9 @@ dependencies = [
 
 [[package]]
 name = "anyhow"
-version = "1.0.62"
+version = "1.0.63"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1485d4d2cc45e7b201ee3767015c96faa5904387c9d87c6efdd0fb511f12d305"
+checksum = "a26fa4d7e3f2eebadf743988fc8aec9fa9a9e82611acafd77c1462ed6262440a"
 
 [[package]]
 name = "async-recursion"
@@ -1384,7 +1384,7 @@ checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket.git#cbe4dcb4b5f823e2018d9068b1f9aeed0b1ebe6a"
+source = "git+https://github.com/SergioBenitez/Rocket.git#13732f8a6b273b2987fb021c0c58e81b179c60a7"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1422,7 +1422,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket.git#cbe4dcb4b5f823e2018d9068b1f9aeed0b1ebe6a"
+source = "git+https://github.com/SergioBenitez/Rocket.git#13732f8a6b273b2987fb021c0c58e81b179c60a7"
 dependencies = [
  "devise",
  "glob",
@@ -1437,7 +1437,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.2"
-source = "git+https://github.com/SergioBenitez/Rocket.git#cbe4dcb4b5f823e2018d9068b1f9aeed0b1ebe6a"
+source = "git+https://github.com/SergioBenitez/Rocket.git#13732f8a6b273b2987fb021c0c58e81b179c60a7"
 dependencies = [
  "cookie",
  "either",
@@ -1649,9 +1649,9 @@ checksum = "2fd0db749597d91ff862fd1d55ea87f7855a744a8425a64695b6fca237d1dad1"
 
 [[package]]
 name = "socket2"
-version = "0.4.6"
+version = "0.4.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "10c98bba371b9b22a71a9414e420f92ddeb2369239af08200816169d5e2dd7aa"
+checksum = "02e2d2db9033d13a1567121ddd7a095ee144db4e1ca1b1bda3419bc0da294ebd"
 dependencies = [
  "libc",
  "winapi 0.3.9",
