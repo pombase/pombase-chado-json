@@ -68,3 +68,4 @@ lto = false
 [profile.dev]
 opt-level = 0
 debug = true
+incremental = true
