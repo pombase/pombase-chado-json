@@ -180,6 +180,7 @@ async fn test_output_options() {
                 protein_length_bin: None,
                 sequence: None,
                 gaf_lines: None,
+                reference_uniquenames: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             },
@@ -199,6 +200,7 @@ async fn test_output_options() {
                 tmm: None,
                 sequence: None,
                 gaf_lines: None,
+                reference_uniquenames: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             },
@@ -221,6 +223,7 @@ async fn test_output_options() {
                 tmm: None,
                 sequence: None,
                 gaf_lines: None,
+                reference_uniquenames: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             }];

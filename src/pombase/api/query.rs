@@ -877,6 +877,7 @@ impl Query {
                let mut taxonomic_distribution = None;
                let mut ortholog_taxonids = HashSet::new();
                let mut physical_interactors = HashSet::new();
+               let mut reference_uniquenames = HashSet::new();
                let mut tmm = None;
                let mut molecular_weight = None;
                let mut protein_length = None;
@@ -912,6 +913,8 @@ impl Query {
                                protein_length = gene_data.protein_length,
                            "protein_length_bin" =>
                                protein_length_bin = gene_data.protein_length_bin.clone(),
+                           "reference_uniquenames" =>
+                               reference_uniquenames = gene_data.reference_uniquenames.clone(),
                            "gene_uniquename" => (),
                            _ => {
                                if let Some(without_prefix) = field_name.strip_prefix("gene_ex_avg_copies_per_cell:") {
@@ -957,6 +960,7 @@ impl Query {
                    molecular_weight,
                    protein_length,
                    protein_length_bin,
+                   reference_uniquenames,
                    subsets,
                    gene_expression,
                }
