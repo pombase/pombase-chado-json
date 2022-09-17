@@ -1164,10 +1164,6 @@ impl <'a> WebDataBuild<'a> {
                         canto_annotation_status = Some(prop.value.clone()),
                     "canto_triage_status" =>
                         canto_triage_status = Some(prop.value.clone()),
-                    "canto_curator_role" =>
-                        canto_curator_role = Some(prop.value.clone()),
-                    "canto_curator_name" =>
-                        canto_curator_name = Some(prop.value.clone()),
                     "canto_first_approved_date" =>
                         canto_first_approved_date = Some(prop.value.clone()),
                     "canto_approved_date" =>
@@ -1177,7 +1173,7 @@ impl <'a> WebDataBuild<'a> {
                     "canto_session_submitted_date" =>
                         canto_session_submitted_date = Some(prop.value.clone()),
                     "annotation_curator" => {
-                        let curator = serde_json::from_str(&prop.value)
+                        let curator: AnnotationCurator = serde_json::from_str(&prop.value)
                             .expect(&format!("failed to parse annotation_curators pupprop: {}", prop.value));
                         annotation_curators.push(curator);
                     },
@@ -1233,6 +1229,18 @@ impl <'a> WebDataBuild<'a> {
             }
 
             let authors = pubmed_authors.or(non_pubmed_authors);
+
+            for annotation_curator in &annotation_curators {
+              if annotation_curator.community_curator {
+                canto_curator_name = Some(annotation_curator.name.clone());
+                canto_curator_role = Some(flex_str!("community"));
+              } else {
+                if canto_curator_role.is_none() {
+                  canto_curator_role = Some(self.config.database_name.clone());
+                  canto_curator_name = Some(annotation_curator.name.clone());
+                }
+              }
+            }
 
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
