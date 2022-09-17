@@ -4296,6 +4296,8 @@ impl <'a> WebDataBuild<'a> {
         for gene_details in self.genes.values() {
             let ortholog_taxonids = self.get_ortholog_taxonids(gene_details);
             let physical_interactors = self.get_physical_interactors(gene_details);
+            let reference_uniquenames =
+                 gene_details.references_by_uniquename.keys().cloned().collect();
 
             let mut cc_terms = vec![];
             let mut process_terms = vec![];
@@ -4355,6 +4357,7 @@ impl <'a> WebDataBuild<'a> {
                 molecular_weight,
                 protein_length,
                 protein_length_bin,
+                reference_uniquenames,
                 subset_termids: gene_details.subset_termids.clone(),
             };
 
