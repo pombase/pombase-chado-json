@@ -45,6 +45,8 @@ type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
 
 type UniprotIdentifier = FlexStr;
 
+type GenotypeInteractionUniquename = FlexStr;
+
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
     domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
@@ -75,6 +77,10 @@ pub struct WebDataBuild<'a> {
     loci_of_genotypes: HashMap<FlexStr, HashMap<FlexStr, GenotypeLocus>>,
     genotype_display_names: HashMap<GenotypeUniquename, FlexStr>,
 
+    // maps used to collect the genotype interaction part from the feature_relationship table
+     genotype_interaction_genotype_a: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
+     genotype_interaction_genotype_b: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
+
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
     parts_of_extensions: HashMap<TermId, Vec<ExtPart>>,
@@ -99,6 +105,8 @@ pub struct WebDataBuild<'a> {
     annotation_details: IdOntAnnotationDetailMap,
 
     ont_annotations: Vec<OntAnnotation>,
+
+    genetic_interaction_annotations: Vec<GeneticInteractionAnnotation>,
 }
 
 fn get_maps() ->
@@ -782,6 +790,8 @@ impl <'a> WebDataBuild<'a> {
             genotypes: HashMap::new(),
             genotypes_of_alleles: HashMap::new(),
             genotype_backgrounds: HashMap::new(),
+            genotype_interaction_genotype_a: HashMap::new(),
+            genotype_interaction_genotype_b: HashMap::new(),
             alleles: HashMap::new(),
             transcripts: HashMap::new(),
             other_features: HashMap::new(),
@@ -790,6 +800,7 @@ impl <'a> WebDataBuild<'a> {
             references: HashMap::new(),
             all_ont_annotations: HashMap::new(),
             all_not_ont_annotations: HashMap::new(),
+            genetic_interaction_annotations: vec![],
             recent_references: RecentReferences {
                 admin_curated: vec![],
                 community_curated: vec![],
@@ -1061,14 +1072,12 @@ impl <'a> WebDataBuild<'a> {
         gene_details.name_descriptions.push(name_description.into());
     }
 
-    fn add_annotation(&mut self, extension_relation_order: &RelationOrder,
-                      cvterm: &Cvterm, is_not: bool,
-                      annotation_template: OntAnnotationDetail) {
-        let termid =
-            match self.base_term_of_extensions.get(&cvterm.termid()) {
-                Some(base_termid) => base_termid.clone(),
-                None => cvterm.termid(),
-            };
+    fn annotation_from_template(&self,
+                                extension_relation_order: &RelationOrder,
+                                cvterm: &Cvterm,
+                                annotation_template: OntAnnotationDetail)
+        -> OntAnnotationDetail
+    {
 
         let extension_parts =
             match self.parts_of_extensions.get(&cvterm.termid()) {
@@ -1088,11 +1097,106 @@ impl <'a> WebDataBuild<'a> {
 
         new_extension.sort_by(compare_ext_part_func);
 
+        OntAnnotationDetail {
+            extension: new_extension,
+            .. annotation_template
+        }
+    }
+
+    // return the gene of a single allele
+    fn gene_from_genotype(&self, genotype_uniquename: &GenotypeUniquename)
+       -> GeneUniquename
+    {
+        let genotype_display_name =
+            self.genotype_display_names.get(genotype_uniquename).unwrap();
+
+        let genotype =
+            self.genotypes.get(genotype_display_name)
+            .expect(&format!("internal error: can't find genotype {}", genotype_uniquename));
+
+        let loci = &genotype.loci;
+
+        if loci.len() > 1 {
+            panic!("genotype has multiple loci");
+        }
+
+        let expressed_alleles = &loci[0].expressed_alleles;
+        if expressed_alleles.len() > 1 {
+            panic!("genotype is a diploid");
+        }
+
+        let allele_uniquename = &expressed_alleles[0].allele_uniquename;
+
+        let allele = self.alleles.get(allele_uniquename).unwrap();
+
+        allele.gene.uniquename.clone()
+    }
+
+    fn add_genetic_interaction(&mut self, genotype_interaction_feature: &Feature,
+                               extension_relation_order: &RelationOrder,
+                               cvterm: &Cvterm,
+                               annotation_template: OntAnnotationDetail) {
+        let genotype_interaction_uniquename = &genotype_interaction_feature.uniquename;
+        let genotype_a_uniquename =
+            self.genotype_interaction_genotype_a.get(genotype_interaction_uniquename)
+                .expect(&format!("can't find genotype_a of {}",
+                                 genotype_interaction_uniquename));
+        let genotype_a_display_name =
+            self.genotype_display_names.get(genotype_a_uniquename).unwrap().clone();
+
+        let genotype_b_uniquename =
+            self.genotype_interaction_genotype_b.get(genotype_interaction_uniquename)
+                .expect(&format!("can't find genotype_b of {}",
+                                 genotype_interaction_uniquename));
+        let genotype_b_display_name =
+            self.genotype_display_names.get(genotype_b_uniquename).unwrap().clone();
+
         let ont_annotation_detail =
-            OntAnnotationDetail {
-                extension: new_extension,
-                .. annotation_template
+            self.annotation_from_template(extension_relation_order,
+                                          cvterm, annotation_template);
+
+        let mut interaction_type = None;
+        let mut interaction_note = None;
+
+        for prop in genotype_interaction_feature.featureprops.borrow().iter() {
+            match prop.prop_type.name.as_str() {
+                "interaction_type" => interaction_type = prop.value.clone(),
+                "interaction_note" => interaction_note = prop.value.clone(),
+                _ => (),
+            }
+        }
+
+        let interaction_type =
+            interaction_type.expect(&format!("interaction_type missing for {}",
+                                             genotype_interaction_uniquename));
+
+        let interaction_annotation =
+            GeneticInteractionAnnotation {
+                gene_a_uniquename: self.gene_from_genotype(genotype_a_uniquename),
+                gene_b_uniquename: self.gene_from_genotype(genotype_b_uniquename),
+                genotype_a_uniquename: Some(genotype_a_display_name),
+                genotype_b_uniquename: Some(genotype_b_display_name),
+                reference_uniquename: ont_annotation_detail.reference,
+                throughput: ont_annotation_detail.throughput,
+                interaction_type,
+                interaction_note,
             };
+
+        self.genetic_interaction_annotations.push(interaction_annotation);
+    }
+
+    fn add_annotation(&mut self, extension_relation_order: &RelationOrder,
+                      cvterm: &Cvterm, is_not: bool,
+                      annotation_template: OntAnnotationDetail) {
+        let termid =
+            match self.base_term_of_extensions.get(&cvterm.termid()) {
+                Some(base_termid) => base_termid.clone(),
+                None => cvterm.termid(),
+            };
+
+        let ont_annotation_detail =
+            self.annotation_from_template(extension_relation_order,
+                                          cvterm, annotation_template);
 
         let annotation_map = if is_not {
             &mut self.all_not_ont_annotations
@@ -1280,7 +1384,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     // make maps from genes to transcript, transcripts to polypeptide,
-    // exon, intron, UTRs
+    // genotypes to genotype interactions, exon, intron, UTRs
     fn make_feature_rel_maps(&mut self) {
         for feature_rel in &self.raw.feature_relationships {
             let subject_type_name = &feature_rel.subject.feat_type.name;
@@ -1349,6 +1453,25 @@ impl <'a> WebDataBuild<'a> {
                 let entry = self.parts_of_transcripts.entry(object_uniquename.clone());
                 let part = make_feature_short(&self.chromosomes, &feature_rel.subject);
                 entry.or_insert_with(Vec::new).push(part);
+            }
+
+            if object_type_name == "genotype_interaction" {
+                let genotype_interaction_uniquename = object_uniquename.clone();
+
+                if rel_name == "interaction_genotype_a" {
+                    let genotype_a_uniquename = subject_uniquename.clone();
+                    self.genotype_interaction_genotype_a.insert(genotype_interaction_uniquename,
+                                                                genotype_a_uniquename);
+                } else {
+                    if rel_name == "interaction_genotype_b" {
+                        let genotype_b_uniquename = subject_uniquename.clone();
+                        self.genotype_interaction_genotype_b.insert(genotype_interaction_uniquename,
+                                                                    genotype_b_uniquename);
+                    } else {
+                        panic!("unknown relation type {} for interaction {}", rel_name,
+                               object_uniquename);
+                    }
+                }
             }
         }
     }
@@ -2104,7 +2227,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
 
-    // add interaction, ortholog and paralog annotations
+    // add physical interaction, legacy genetic interaction, ortholog and paralog annotations
     fn process_annotation_feature_rels(&mut self) {
         for feature_rel in &self.raw.feature_relationships {
             let rel_name = &feature_rel.rel_type.name;
@@ -2191,6 +2314,9 @@ impl <'a> WebDataBuild<'a> {
                         match rel_config.annotation_type {
                             FeatureRelAnnotationType::Interaction =>
                                 if !is_inferred_interaction {
+                                    let evidence =
+                                        evidence.expect(&format!("evidence missing for feature_relationship_id: {}",
+                                                                 feature_rel.feature_relationship_id));
                                     let interaction_annotation =
                                         InteractionAnnotation {
                                             gene_uniquename: gene_uniquename.clone(),
@@ -2200,16 +2326,16 @@ impl <'a> WebDataBuild<'a> {
                                             throughput,
                                             interaction_note,
                                         };
+                                    if rel_name == "interacts_genetically" {
+                                        let interaction_annotation = &interaction_annotation;
+                                        self.genetic_interaction_annotations.push(interaction_annotation.into());
+                                    } else {
                                     {
                                         let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                         if rel_name == "interacts_physically" {
                                             gene_details.physical_interactions.push(interaction_annotation.clone());
                                         } else {
-                                            if rel_name == "interacts_genetically" {
-                                                gene_details.genetic_interactions.push(interaction_annotation.clone());
-                                            } else {
-                                                panic!("unknown interaction type: {}", rel_name);
-                                            }
+                                            panic!("unknown interaction type: {}", rel_name);
                                         };
                                     }
                                     if gene_uniquename != other_gene_uniquename {
@@ -2217,11 +2343,7 @@ impl <'a> WebDataBuild<'a> {
                                         if rel_name == "interacts_physically" {
                                             other_gene_details.physical_interactions.push(interaction_annotation.clone());
                                         } else {
-                                            if rel_name == "interacts_genetically" {
-                                                other_gene_details.genetic_interactions.push(interaction_annotation.clone());
-                                            } else {
-                                                panic!("unknown interaction type: {}", rel_name);
-                                            }
+                                            panic!("unknown interaction type: {}", rel_name);
                                         };
                                     }
 
@@ -2235,12 +2357,9 @@ impl <'a> WebDataBuild<'a> {
                                         if rel_name == "interacts_physically" {
                                             ref_details.physical_interactions.push(interaction_annotation.clone());
                                         } else {
-                                            if rel_name == "interacts_genetically" {
-                                                ref_details.genetic_interactions.push(interaction_annotation.clone());
-                                            } else {
-                                                panic!("unknown interaction type: {}", rel_name);
-                                            }
+                                            panic!("unknown interaction type: {}", rel_name);
                                         };
+                                    }
                                     }
                                 },
                             FeatureRelAnnotationType::Ortholog => {
@@ -3419,6 +3538,9 @@ impl <'a> WebDataBuild<'a> {
                     "gene" | "pseudogene" => {
                         vec![feature.uniquename.clone()]
                     },
+                    "genotype_interaction" => {
+                        vec![]
+                    },
                     _ =>
                         if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
                             if let Some(gene_uniquename) =
@@ -3497,9 +3619,14 @@ impl <'a> WebDataBuild<'a> {
                 throughput,
             };
 
-            self.add_annotation(&rel_order,
-                                cvterm.borrow(), feature_cvterm.is_not,
-                                annotation_detail);
+            if &feature.feat_type.name == "genotype_interaction" {
+                self.add_genetic_interaction(&feature, &rel_order,
+                                             cvterm.borrow(), annotation_detail);
+            } else {
+                self.add_annotation(&rel_order,
+                                    cvterm.borrow(), feature_cvterm.is_not,
+                                    annotation_detail);
+            }
         }
     }
 
@@ -4408,10 +4535,10 @@ impl <'a> WebDataBuild<'a> {
                 }
                 for interaction_annotation in &gene_details.genetic_interactions {
                     let interactor_uniquename =
-                        if gene_uniquename == &interaction_annotation.gene_uniquename {
-                            interaction_annotation.interactor_uniquename.clone()
+                        if gene_uniquename == &interaction_annotation.gene_a_uniquename {
+                            interaction_annotation.gene_b_uniquename.clone()
                         } else {
-                            interaction_annotation.gene_uniquename.clone()
+                            interaction_annotation.gene_a_uniquename.clone()
                         };
                     let interactor = APIInteractor {
                         interaction_type: InteractionType::Genetic,
@@ -4787,8 +4914,7 @@ impl <'a> WebDataBuild<'a> {
                                                 transcript_uniquename);
                 }
 
-                let interaction_iter =
-                    gene_details.physical_interactions.iter().chain(&gene_details.genetic_interactions);
+                let interaction_iter = gene_details.physical_interactions.iter();
                 for interaction in interaction_iter {
                     self.add_ref_to_hash(&mut seen_references, gene_uniquename,
                                          &interaction.reference_uniquename);
@@ -4796,6 +4922,26 @@ impl <'a> WebDataBuild<'a> {
                                           &interaction.gene_uniquename);
                     self.add_gene_to_hash(&mut seen_genes, gene_uniquename,
                                           &interaction.interactor_uniquename);
+                }
+
+                let interaction_iter = gene_details.genetic_interactions.iter();
+                for interaction in interaction_iter {
+                    self.add_ref_to_hash(&mut seen_references, gene_uniquename,
+                                         &interaction.reference_uniquename);
+                    self.add_gene_to_hash(&mut seen_genes, gene_uniquename,
+                                          &interaction.gene_a_uniquename);
+                    self.add_gene_to_hash(&mut seen_genes, gene_uniquename,
+                                          &interaction.gene_b_uniquename);
+                    if let Some(ref genotype_a_uniquename) = interaction.genotype_a_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  gene_uniquename,
+                                                  genotype_a_uniquename);
+                    }
+                    if let Some(ref genotype_b_uniquename) = interaction.genotype_b_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  gene_uniquename,
+                                                  genotype_b_uniquename);
+                    }
                 }
 
                 for ortholog_annotation in &gene_details.ortholog_annotations {
@@ -5009,8 +5155,7 @@ impl <'a> WebDataBuild<'a> {
                 }
 
                 let interaction_iter =
-                    reference_details.physical_interactions.iter()
-                    .chain(&reference_details.genetic_interactions);
+                    reference_details.physical_interactions.iter();
                 for interaction in interaction_iter {
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &interaction.gene_uniquename);
@@ -5020,6 +5165,30 @@ impl <'a> WebDataBuild<'a> {
                                           &interaction.interactor_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
                                                  &interaction.interactor_uniquename);
+                }
+
+                let interaction_iter =
+                    reference_details.genetic_interactions.iter();
+                for interaction in interaction_iter {
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
+                                          &interaction.gene_a_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &interaction.gene_a_uniquename);
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
+                                          &interaction.gene_b_uniquename);
+                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                 &interaction.gene_b_uniquename);
+
+                    if let Some(ref genotype_a_uniquename) = interaction.genotype_a_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  reference_uniquename,
+                                                  genotype_a_uniquename);
+                    }
+                    if let Some(ref genotype_b_uniquename) = interaction.genotype_b_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  reference_uniquename,
+                                                  genotype_b_uniquename);
+                    }
                 }
 
                 for ortholog_annotation in &reference_details.ortholog_annotations {
@@ -5571,6 +5740,27 @@ impl <'a> WebDataBuild<'a> {
         self.references = filtered_refs;
     }
 
+    fn store_genetic_interactions(&mut self) {
+        for interaction_annotation in self.genetic_interaction_annotations.drain(0..) {
+            let gene_a_uniquename = &interaction_annotation.gene_a_uniquename;
+            let gene_a = self.genes.get_mut(gene_a_uniquename).unwrap();
+            gene_a.genetic_interactions.push(interaction_annotation.clone());
+
+            let gene_b_uniquename = &interaction_annotation.gene_b_uniquename;
+            let gene_b = self.genes.get_mut(gene_b_uniquename).unwrap();
+            gene_b.genetic_interactions.push(interaction_annotation.clone());
+
+
+            if let Some(ref reference_uniquename) =
+                interaction_annotation.reference_uniquename
+            {
+                let reference = self.references.get_mut(reference_uniquename).unwrap();
+                reference.genetic_interactions.push(interaction_annotation);
+
+            }
+        }
+    }
+
     fn make_gene_summaries(&mut self) -> (Vec<GeneSummary>, Vec<SolrGeneSummary>) {
         let mut gene_summaries = vec![];
         let mut solr_gene_summaries = vec![];
@@ -5760,7 +5950,7 @@ impl <'a> WebDataBuild<'a> {
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
         self.remove_non_curatable_refs();
-        self.set_term_details_maps();
+        self.store_genetic_interactions();        self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_gene_details_subset_termids();
         self.set_genotype_details_maps();
@@ -5816,4 +6006,3 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 }
-

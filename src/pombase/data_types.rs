@@ -533,7 +533,7 @@ pub struct ReferenceDetails {
     pub approved_date: Option<FlexStr>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
-    pub genetic_interactions: Vec<InteractionAnnotation>,
+    pub genetic_interactions: Vec<GeneticInteractionAnnotation>,
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub genes_by_uniquename: GeneShortOptionMap,
@@ -1021,7 +1021,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub physical_interactions: Vec<InteractionAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub genetic_interactions: Vec<InteractionAnnotation>,
+    pub genetic_interactions: Vec<GeneticInteractionAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -1599,12 +1599,60 @@ impl AnnotationContainer for TermDetails {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+pub struct GeneticInteractionAnnotation {
+    pub gene_a_uniquename: GeneUniquename,
+    pub gene_b_uniquename: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_a_uniquename: Option<GenotypeUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_b_uniquename: Option<GenotypeUniquename>,
+    pub interaction_type: Evidence,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub reference_uniquename: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub throughput: Option<Throughput>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub interaction_note: Option<FlexStr>,
+}
+impl Ord for GeneticInteractionAnnotation {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let order = self.interaction_type.cmp(&other.interaction_type);
+        if order != Ordering::Equal {
+            return order;
+        }
+
+        (&self.genotype_a_uniquename, &self.genotype_b_uniquename)
+            .cmp(&(&other.genotype_a_uniquename, &other.genotype_b_uniquename))
+    }
+}
+impl PartialOrd for GeneticInteractionAnnotation {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl From<&InteractionAnnotation> for GeneticInteractionAnnotation {
+    fn from(interaction: &InteractionAnnotation)
+        -> GeneticInteractionAnnotation
+    {
+        GeneticInteractionAnnotation {
+            gene_a_uniquename: interaction.gene_uniquename.clone(),
+            gene_b_uniquename: interaction.interactor_uniquename.clone(),
+            genotype_a_uniquename: None,
+            genotype_b_uniquename: None,
+            interaction_type: interaction.evidence.clone(),
+            interaction_note: interaction.interaction_note.clone(),
+            reference_uniquename: interaction.reference_uniquename.clone(),
+            throughput: interaction.throughput.clone(),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct InteractionAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub interactor_uniquename: GeneUniquename,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub evidence: Option<Evidence>,
+    pub evidence: Evidence,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1614,25 +1662,18 @@ pub struct InteractionAnnotation {
 }
 impl PartialEq for InteractionAnnotation {
     fn eq(&self, other: &Self) -> bool {
-        if let Some(ref evidence) = self.evidence {
-            if let Some(ref other_evidence) = other.evidence {
-                return evidence == other_evidence;
-            }
-        }
-        (&self.gene_uniquename, &self.interactor_uniquename) ==
-            (&other.gene_uniquename, &other.interactor_uniquename)
+        (&self.gene_uniquename, &self.interactor_uniquename,
+         &self.evidence) ==
+            (&other.gene_uniquename, &other.interactor_uniquename,
+             &other.evidence)
     }
 }
 impl Eq for InteractionAnnotation { }
 impl Ord for InteractionAnnotation {
     fn cmp(&self, other: &Self) -> Ordering {
-        if let Some(ref evidence) = self.evidence {
-            if let Some(ref other_evidence) = other.evidence {
-                let order = evidence.cmp(other_evidence);
-                if order != Ordering::Equal {
-                    return order;
-                }
-            }
+        let order = self.evidence.cmp(&other.evidence);
+        if order != Ordering::Equal {
+            return order;
         }
         (&self.gene_uniquename, &self.interactor_uniquename)
             .cmp(&(&other.gene_uniquename, &other.interactor_uniquename))
