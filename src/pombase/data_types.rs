@@ -275,6 +275,11 @@ fn one() -> usize {
     1
 }
 
+#[allow(clippy::trivially_copy_pass_by_ref)]
+fn is_true(b: &bool) -> bool {
+    *b
+}
+
 // identifiers used for autocomplete in the search box
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneSummary {
@@ -316,6 +321,7 @@ pub struct TermShort {
     pub termid: TermId,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
+    #[serde(skip_serializing_if="is_true", default)]
     pub is_obsolete: bool,
     pub gene_count: usize,
     pub genotype_count: usize,
@@ -1544,6 +1550,7 @@ pub struct TermDetails {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub multi_locus_annotated_genes: HashSet<GeneUniquename>,
 
+    #[serde(skip_serializing_if="is_true", default)]
     pub is_obsolete: bool,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub single_locus_genotype_uniquenames: HashSet<FlexStr>,
