@@ -1157,14 +1157,18 @@ impl <'a> WebDataBuild<'a> {
 
         let mut interaction_type = None;
         let mut interaction_note = None;
+        let mut rescued_phenotype_termid = None;
 
         for prop in genotype_interaction_feature.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
                 "interaction_type" => interaction_type = prop.value.clone(),
                 "interaction_note" => interaction_note = prop.value.clone(),
+                "interaction_rescued_phenotype_id" => rescued_phenotype_termid = prop.value.clone(),
                 _ => (),
             }
         }
+
+        let double_mutant_phenotype_termid  = Some(cvterm.termid());
 
         let interaction_type =
             interaction_type.expect(&format!("interaction_type missing for {}",
@@ -1176,6 +1180,8 @@ impl <'a> WebDataBuild<'a> {
                 gene_b_uniquename: self.gene_from_genotype(genotype_b_uniquename),
                 genotype_a_uniquename: Some(genotype_a_display_name),
                 genotype_b_uniquename: Some(genotype_b_display_name),
+                double_mutant_phenotype_termid,
+                rescued_phenotype_termid,
                 reference_uniquename: ont_annotation_detail.reference,
                 throughput: ont_annotation_detail.throughput,
                 interaction_type,
@@ -4942,6 +4948,15 @@ impl <'a> WebDataBuild<'a> {
                                                   gene_uniquename,
                                                   genotype_b_uniquename);
                     }
+
+                    if let Some(ref double_mutant_phenotype_termid) = interaction.double_mutant_phenotype_termid {
+                        self.add_term_to_hash(&mut seen_terms, gene_uniquename,
+                                              double_mutant_phenotype_termid);
+                    }
+                    if let Some(ref rescued_phenotype_termid) = interaction.rescued_phenotype_termid {
+                        self.add_term_to_hash(&mut seen_terms, gene_uniquename,
+                                              rescued_phenotype_termid);
+                    }
                 }
 
                 for ortholog_annotation in &gene_details.ortholog_annotations {
@@ -5188,6 +5203,15 @@ impl <'a> WebDataBuild<'a> {
                         self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                   reference_uniquename,
                                                   genotype_b_uniquename);
+                    }
+
+                    if let Some(ref double_mutant_phenotype_termid) = interaction.double_mutant_phenotype_termid {
+                        self.add_term_to_hash(&mut seen_terms, reference_uniquename,
+                                              double_mutant_phenotype_termid);
+                    }
+                    if let Some(ref rescued_phenotype_termid) = interaction.rescued_phenotype_termid {
+                        self.add_term_to_hash(&mut seen_terms, reference_uniquename,
+                                              rescued_phenotype_termid);
                     }
                 }
 
