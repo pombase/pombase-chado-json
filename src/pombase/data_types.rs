@@ -1571,6 +1571,10 @@ pub struct TermDetails {
     pub terms_by_termid: TermShortOptionMap,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub annotation_details: IdOntAnnotationDetailMap,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub genetic_interactions: Vec<GeneticInteractionAnnotation>,
+
     pub gene_count: usize,
     pub genotype_count: usize,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]

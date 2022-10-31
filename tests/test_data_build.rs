@@ -697,6 +697,7 @@ fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
         references_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
         annotation_details: HashMap::new(),
+        genetic_interactions: vec![],
         gene_count: 0,
         genotype_count: 0,
         xrefs: HashMap::new(),
