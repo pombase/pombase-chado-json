@@ -5974,7 +5974,8 @@ impl <'a> WebDataBuild<'a> {
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
         self.remove_non_curatable_refs();
-        self.store_genetic_interactions();        self.set_term_details_maps();
+        self.store_genetic_interactions();
+        self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_gene_details_subset_termids();
         self.set_genotype_details_maps();
