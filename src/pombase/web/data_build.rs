@@ -78,8 +78,9 @@ pub struct WebDataBuild<'a> {
     genotype_display_names: HashMap<GenotypeUniquename, FlexStr>,
 
     // maps used to collect the genotype interaction part from the feature_relationship table
-     genotype_interaction_genotype_a: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
-     genotype_interaction_genotype_b: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
+    genotype_interaction_double_mutant: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
+    genotype_interaction_genotype_a: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
+    genotype_interaction_genotype_b: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
@@ -792,6 +793,7 @@ impl <'a> WebDataBuild<'a> {
             genotype_backgrounds: HashMap::new(),
             genotype_interaction_genotype_a: HashMap::new(),
             genotype_interaction_genotype_b: HashMap::new(),
+            genotype_interaction_double_mutant: HashMap::new(),
             alleles: HashMap::new(),
             transcripts: HashMap::new(),
             other_features: HashMap::new(),
@@ -1151,6 +1153,17 @@ impl <'a> WebDataBuild<'a> {
         let genotype_b_display_name =
             self.genotype_display_names.get(genotype_b_uniquename).unwrap().clone();
 
+        let double_mutant_uniquename =
+            self.genotype_interaction_double_mutant.get(genotype_interaction_uniquename);
+        let double_mutant_genotype_display_name =
+            if let Some(double_genotype_uniquename) = double_mutant_uniquename {
+                let double_genotype_display_name =
+                    self.genotype_display_names.get(double_genotype_uniquename).unwrap().clone();
+                Some(double_genotype_display_name)
+            } else {
+                None
+            };
+
         let ont_annotation_detail =
             self.annotation_from_template(extension_relation_order,
                                           cvterm, annotation_template);
@@ -1202,6 +1215,7 @@ impl <'a> WebDataBuild<'a> {
                 genotype_a_uniquename: Some(genotype_a_display_name),
                 genotype_b_uniquename: Some(genotype_b_display_name),
                 double_mutant_phenotype_termid,
+                double_mutant_genotype_display_name,
                 rescued_phenotype_termid,
                 reference_uniquename: ont_annotation_detail.reference,
                 throughput: ont_annotation_detail.throughput,
@@ -1485,19 +1499,27 @@ impl <'a> WebDataBuild<'a> {
             if object_type_name == "genotype_interaction" {
                 let genotype_interaction_uniquename = object_uniquename.clone();
 
-                if rel_name == "interaction_genotype_a" {
-                    let genotype_a_uniquename = subject_uniquename.clone();
-                    self.genotype_interaction_genotype_a.insert(genotype_interaction_uniquename,
-                                                                genotype_a_uniquename);
-                } else {
-                    if rel_name == "interaction_genotype_b" {
+
+                match rel_name.as_str() {
+                    "interaction_genotype_a" => {
+                        let genotype_a_uniquename = subject_uniquename.clone();
+                        self.genotype_interaction_genotype_a.insert(genotype_interaction_uniquename,
+                                                                    genotype_a_uniquename);
+                    },
+                    "interaction_genotype_b" => {
                         let genotype_b_uniquename = subject_uniquename.clone();
                         self.genotype_interaction_genotype_b.insert(genotype_interaction_uniquename,
                                                                     genotype_b_uniquename);
-                    } else {
+                    },
+                    "interaction_double_mutant_genotype" => {
+                        let double_mutant_genotype = subject_uniquename.clone();
+                        self.genotype_interaction_double_mutant.insert(genotype_interaction_uniquename,
+                                                                       double_mutant_genotype);
+                    },
+                    _ => {
                         panic!("unknown relation type {} for interaction {}", rel_name,
                                object_uniquename);
-                    }
+                    },
                 }
             }
         }
@@ -4906,6 +4928,11 @@ impl <'a> WebDataBuild<'a> {
                                               termid,
                                               genotype_b_uniquename);
                 }
+                if let Some(ref double_mutant_genotype_display_name) = interaction.double_mutant_genotype_display_name {
+                    self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                              termid,
+                                              double_mutant_genotype_display_name);
+                }
 
                 if let Some(ref double_mutant_phenotype_termid) = interaction.double_mutant_phenotype_termid {
                     self.add_term_to_hash(&mut seen_terms, termid,
@@ -4998,6 +5025,11 @@ impl <'a> WebDataBuild<'a> {
                         self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                   gene_uniquename,
                                                   genotype_b_uniquename);
+                    }
+                    if let Some(ref double_mutant_genotype_display_name) = interaction.double_mutant_genotype_display_name {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  gene_uniquename,
+                                                  double_mutant_genotype_display_name);
                     }
 
                     if let Some(ref double_mutant_phenotype_termid) = interaction.double_mutant_phenotype_termid {
@@ -5254,6 +5286,11 @@ impl <'a> WebDataBuild<'a> {
                         self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                   reference_uniquename,
                                                   genotype_b_uniquename);
+                    }
+                    if let Some(ref double_mutant_genotype_display_name) = interaction.double_mutant_genotype_display_name {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  reference_uniquename,
+                                                  double_mutant_genotype_display_name);
                     }
 
                     if let Some(ref double_mutant_phenotype_termid) = interaction.double_mutant_phenotype_termid {

@@ -1615,12 +1615,13 @@ pub struct GeneticInteractionAnnotation {
     pub gene_a_uniquename: GeneUniquename,
     pub gene_b_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_a_uniquename: Option<GenotypeUniquename>,
+    pub genotype_a_uniquename: Option<GenotypeDisplayName>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_b_uniquename: Option<GenotypeUniquename>,
+    pub genotype_b_uniquename: Option<GenotypeDisplayName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub double_mutant_phenotype_termid: Option<TermId>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub double_mutant_genotype_display_name: Option<GenotypeDisplayName>,
     pub rescued_phenotype_termid: Option<TermId>,
     pub interaction_type: Evidence,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1655,6 +1656,7 @@ impl From<&InteractionAnnotation> for GeneticInteractionAnnotation {
             gene_b_uniquename: interaction.interactor_uniquename.clone(),
             genotype_a_uniquename: None,
             genotype_b_uniquename: None,
+            double_mutant_genotype_display_name: None,
             double_mutant_phenotype_termid: None,
             rescued_phenotype_termid: None,
             interaction_type: interaction.evidence.clone(),
