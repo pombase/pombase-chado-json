@@ -4,6 +4,7 @@ use std::fmt::Display;
 use std::fmt;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
+use serde_with::serde_as;
 
 pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
@@ -40,6 +41,8 @@ pub type GeneShortOptionMap = HashMap<GeneUniquename, Option<GeneShort>>;
 pub type ReferenceShortOptionMap = HashMap<ReferenceUniquename, Option<ReferenceShort>>;
 pub type TranscriptDetailsOptionMap =
     HashMap<TranscriptUniquename, Option<TranscriptDetails>>;
+
+pub type GeneticInteractionMap = HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>;
 
 use std::rc::Rc;
 use std::cmp::Ordering;
@@ -490,6 +493,7 @@ pub struct AnnotationCurator {
     pub orcid: Option<FlexStr>,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ReferenceDetails {
     pub uniquename: FlexStr,
@@ -539,7 +543,11 @@ pub struct ReferenceDetails {
     pub approved_date: Option<FlexStr>,
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
-    pub genetic_interactions: Vec<GeneticInteractionAnnotation>,
+
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    #[serde_as(as = "Vec<(_, _)>")]
+    pub genetic_interactions: GeneticInteractionMap,
+
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     pub paralog_annotations: Vec<ParalogAnnotation>,
     pub genes_by_uniquename: GeneShortOptionMap,
@@ -972,6 +980,7 @@ pub enum PresentAbsent {
     Unknown,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneDetails {
     pub uniquename: GeneUniquename,
@@ -1026,8 +1035,11 @@ pub struct GeneDetails {
     pub cv_annotations: OntAnnotationMap,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub physical_interactions: Vec<InteractionAnnotation>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub genetic_interactions: Vec<GeneticInteractionAnnotation>,
+
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    #[serde_as(as = "Vec<(_, _)>")]
+    pub genetic_interactions: GeneticInteractionMap,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub ortholog_annotations: Vec<OrthologAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -1515,6 +1527,7 @@ pub struct TermAndRelation {
     pub relation_name: RelName,
 }
 
+#[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermDetails {
     pub name: TermName,
@@ -1572,8 +1585,9 @@ pub struct TermDetails {
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub annotation_details: IdOntAnnotationDetailMap,
 
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub genetic_interactions: Vec<GeneticInteractionAnnotation>,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    #[serde_as(as = "Vec<(_, _)>")]
+    pub genetic_interactions: GeneticInteractionMap,
 
     pub gene_count: usize,
     pub genotype_count: usize,
@@ -1610,10 +1624,42 @@ impl AnnotationContainer for TermDetails {
     }
 }
 
+// pub type GeneticInteractionKey = (GeneUniquename, Evidence, GeneUniquename);
+
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
-pub struct GeneticInteractionAnnotation {
+pub struct GeneticInteractionKey {
     pub gene_a_uniquename: GeneUniquename,
     pub gene_b_uniquename: GeneUniquename,
+    pub interaction_type: Evidence,
+}
+impl Ord for GeneticInteractionKey {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let order = self.interaction_type.cmp(&other.interaction_type);
+        if order != Ordering::Equal {
+            return order;
+        }
+
+        (&self.gene_a_uniquename, &self.interaction_type, &self.gene_b_uniquename)
+            .cmp(&(&other.gene_a_uniquename, &other.interaction_type, &other.gene_b_uniquename))
+    }
+}
+impl PartialOrd for GeneticInteractionKey {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+impl Hash for GeneticInteractionKey {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.gene_a_uniquename.hash(state);
+        self.interaction_type.hash(state);
+        self.gene_b_uniquename.hash(state);
+    }
+}
+
+
+
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+pub struct GeneticInteractionDetail {
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype_a_uniquename: Option<GenotypeDisplayName>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1622,8 +1668,8 @@ pub struct GeneticInteractionAnnotation {
     pub double_mutant_phenotype_termid: Option<TermId>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub double_mutant_genotype_display_name: Option<GenotypeDisplayName>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub rescued_phenotype_termid: Option<TermId>,
-    pub interaction_type: Evidence,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1631,9 +1677,9 @@ pub struct GeneticInteractionAnnotation {
     #[serde(skip_serializing_if="Option::is_none")]
     pub interaction_note: Option<FlexStr>,
 }
-impl Ord for GeneticInteractionAnnotation {
+impl Ord for GeneticInteractionDetail {
     fn cmp(&self, other: &Self) -> Ordering {
-        let order = self.interaction_type.cmp(&other.interaction_type);
+        let order = self.reference_uniquename.cmp(&other.reference_uniquename);
         if order != Ordering::Equal {
             return order;
         }
@@ -1642,28 +1688,9 @@ impl Ord for GeneticInteractionAnnotation {
             .cmp(&(&other.genotype_a_uniquename, &other.genotype_b_uniquename))
     }
 }
-impl PartialOrd for GeneticInteractionAnnotation {
+impl PartialOrd for GeneticInteractionDetail {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
-    }
-}
-impl From<&InteractionAnnotation> for GeneticInteractionAnnotation {
-    fn from(interaction: &InteractionAnnotation)
-        -> GeneticInteractionAnnotation
-    {
-        GeneticInteractionAnnotation {
-            gene_a_uniquename: interaction.gene_uniquename.clone(),
-            gene_b_uniquename: interaction.interactor_uniquename.clone(),
-            genotype_a_uniquename: None,
-            genotype_b_uniquename: None,
-            double_mutant_genotype_display_name: None,
-            double_mutant_phenotype_termid: None,
-            rescued_phenotype_termid: None,
-            interaction_type: interaction.evidence.clone(),
-            interaction_note: interaction.interaction_note.clone(),
-            reference_uniquename: interaction.reference_uniquename.clone(),
-            throughput: interaction.throughput.clone(),
-        }
     }
 }
 

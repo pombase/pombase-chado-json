@@ -483,7 +483,7 @@ fn make_test_gene() -> GeneDetails {
         )]),
         cv_annotations: HashMap::new(),
         physical_interactions: vec![],
-        genetic_interactions: vec![],
+        genetic_interactions: HashMap::new(),
         ortholog_annotations: vec![],
         paralog_annotations: vec![],
         target_of_annotations: vec![],
