@@ -179,6 +179,17 @@ impl fmt::Display for ExtPart {
 }
 */
 
+
+// used to parse Canto format extension stored as strings in prop values
+#[derive(Deserialize, Debug)]
+#[serde(rename_all = "camelCase")]
+pub struct CantoExtPart {
+    pub range_display_name: Option<FlexStr>,
+    pub range_type: Option<FlexStr>,
+    pub range_value: FlexStr,
+    pub relation: FlexStr,
+}
+
 // minimal information about a gene used in other objects
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneShort {
@@ -1666,10 +1677,14 @@ pub struct GeneticInteractionDetail {
     pub genotype_b_uniquename: Option<GenotypeDisplayName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub double_mutant_phenotype_termid: Option<TermId>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub double_mutant_extension: Vec<ExtPart>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub double_mutant_genotype_display_name: Option<GenotypeDisplayName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub rescued_phenotype_termid: Option<TermId>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub rescued_phenotype_extension: Vec<ExtPart>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]

@@ -1134,6 +1134,54 @@ impl <'a> WebDataBuild<'a> {
         allele.gene.uniquename.clone()
     }
 
+    fn parse_extension_prop(&self, annotation_termid: &TermId, extension_string: &str) -> Vec<ExtPart> {
+        let ext: Vec<Vec<CantoExtPart>> =
+            serde_json::from_str(extension_string)
+            .expect(&format!("failed to parse Canto extension from property: {}", extension_string));
+
+        if ext.len() > 1 {
+            eprintln!("\
+currently we can't handle extensions with multiple parts for single allele
+phenotypes, so just the first part of this extension will be used:
+{}", extension_string);
+        }
+
+        if ext.len() == 0 {
+            return vec![];
+        }
+
+        let inner = ext.get(0).unwrap();
+
+        if inner.len() == 0 {
+            return vec![];
+        }
+
+        let to_parsed = |part: &CantoExtPart| {
+            let ext_range =
+                if let Some(ref range_type) = part.range_type {
+                    match range_type.as_str() {
+                       "Ontology" => ExtRange::Term(part.range_value.clone()),
+                       "Gene" => ExtRange::Gene(part.range_value.clone()),
+                       _ => ExtRange::Misc(part.range_value.clone()),
+                    }
+                } else {
+                    ExtRange::Term(part.range_value.clone())
+                };
+
+            let rel_type_display_name =
+                self.get_ext_rel_display_name(annotation_termid, &part.relation);
+
+            ExtPart {
+                rel_type_name: part.relation.clone(),
+                rel_type_display_name,
+                rel_type_id: None,
+                ext_range,
+            }
+        };
+
+        inner.iter().map(|part: &CantoExtPart| to_parsed(part)).collect()
+    }
+
     fn add_genetic_interaction(&mut self, genotype_interaction_feature: &Feature,
                                extension_relation_order: &RelationOrder,
                                cvterm: &Cvterm,
@@ -1164,6 +1212,8 @@ impl <'a> WebDataBuild<'a> {
                 None
             };
 
+        let termid = cvterm.termid();
+
         let ont_annotation_detail =
             self.annotation_from_template(extension_relation_order,
                                           cvterm, annotation_template);
@@ -1171,12 +1221,16 @@ impl <'a> WebDataBuild<'a> {
         let mut interaction_type = None;
         let mut interaction_note = None;
         let mut rescued_phenotype_termid = None;
+        let mut rescued_phenotype_extension = vec![];
 
         for prop in genotype_interaction_feature.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
                 "interaction_type" => interaction_type = prop.value.clone(),
                 "interaction_note" => interaction_note = prop.value.clone(),
                 "interaction_rescued_phenotype_id" => rescued_phenotype_termid = prop.value.clone(),
+                "interaction_rescued_phenotype_extension" => if let Some(ref value) = prop.value {
+                    rescued_phenotype_extension = self.parse_extension_prop(&termid, value);
+                },
                 _ => (),
             }
         }
@@ -1224,8 +1278,10 @@ impl <'a> WebDataBuild<'a> {
                 genotype_b_uniquename: Some(genotype_b_display_name),
                 reference_uniquename: ont_annotation_detail.reference,
                 double_mutant_phenotype_termid,
+                double_mutant_extension: ont_annotation_detail.extension,
                 double_mutant_genotype_display_name,
                 rescued_phenotype_termid,
+                rescued_phenotype_extension,
                 interaction_note,
                 throughput: ont_annotation_detail.throughput,
             };
@@ -2302,8 +2358,10 @@ impl <'a> WebDataBuild<'a> {
                 genotype_b_uniquename: None,
                 reference_uniquename: interaction.reference_uniquename,
                 double_mutant_phenotype_termid: None,
+                double_mutant_extension: vec![],
                 double_mutant_genotype_display_name: None,
                 rescued_phenotype_termid: None,
+                rescued_phenotype_extension: vec![],
                 interaction_note: interaction.interaction_note,
                 throughput: interaction.throughput,
             };
@@ -4772,27 +4830,8 @@ impl <'a> WebDataBuild<'a> {
                                                       gene_product_form_id);
                             }
                         }
-                    for ext_part in &annotation_detail.extension {
-                        match ext_part.ext_range {
-                            ExtRange::Term(ref range_termid) |
-                            ExtRange::GeneProduct(ref range_termid) =>
-                                self.add_term_to_hash(seen_terms, identifier,
-                                                      range_termid),
-                            ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { ref gene_uniquename, ref product }) => {
-                                self.add_gene_to_hash(seen_genes, identifier, gene_uniquename);
-                                self.add_term_to_hash(seen_terms, identifier, product);
-                            },
-                            ExtRange::Gene(ref gene_uniquename) |
-                            ExtRange::Promoter(ref gene_uniquename) =>
-                                self.add_gene_to_hash(seen_genes, identifier,
-                                                      gene_uniquename),
-                            ExtRange::Transcript(ref transcript_uniquename) =>
-                                self.add_transcript_to_hashes(seen_transcripts, seen_genes,
-                                                            identifier,
-                                                            transcript_uniquename),
-                            _ => {},
-                        }
-                    }
+                    self.add_extension_to_maps(&annotation_detail.extension, seen_genes,
+                                               seen_transcripts, seen_terms, identifier);
                     if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
                                                   identifier, genotype_uniquename);
@@ -4816,6 +4855,34 @@ impl <'a> WebDataBuild<'a> {
                         }
                     }
                 }
+            }
+        }
+    }
+
+    fn add_extension_to_maps(&self, extension: &Vec<ExtPart>,
+                             seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                             seen_transcripts: &mut HashMap<FlexStr, TranscriptDetailsOptionMap>,
+                             seen_terms: &mut HashMap<FlexStr, TermShortOptionMap>,
+                             map_key: &FlexStr) {
+        for ext_part in extension {
+            match ext_part.ext_range {
+                ExtRange::Term(ref range_termid) |
+                ExtRange::GeneProduct(ref range_termid) =>
+                    self.add_term_to_hash(seen_terms, map_key,
+                                          range_termid),
+                ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { ref gene_uniquename, ref product }) => {
+                    self.add_gene_to_hash(seen_genes, map_key, gene_uniquename);
+                    self.add_term_to_hash(seen_terms, map_key, product);
+                },
+                ExtRange::Gene(ref gene_uniquename) |
+                ExtRange::Promoter(ref gene_uniquename) =>
+                    self.add_gene_to_hash(seen_genes, map_key,
+                                          gene_uniquename),
+                ExtRange::Transcript(ref transcript_uniquename) =>
+                    self.add_transcript_to_hashes(seen_transcripts, seen_genes,
+                                                map_key,
+                                                transcript_uniquename),
+                _ => {},
             }
         }
     }
@@ -5086,6 +5153,10 @@ impl <'a> WebDataBuild<'a> {
                         self.add_term_to_hash(&mut seen_terms, gene_uniquename,
                                               rescued_phenotype_termid);
                     }
+                    self.add_extension_to_maps(&interaction_detail.rescued_phenotype_extension,
+                                               &mut seen_genes, &mut seen_transcripts, &mut seen_terms,
+                                               gene_uniquename)
+
                     }
                 }
 
