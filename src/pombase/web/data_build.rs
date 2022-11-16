@@ -258,6 +258,41 @@ pub fn make_genotype_display_uniquename(loci: &[GenotypeLocus],
     clean_display_name.to_shared_str()
 }
 
+fn make_genotype_display_name(loci: &[GenotypeLocus],
+                              allele_map: &UniquenameAlleleDetailsMap) -> FlexStr {
+    let mut locus_display_names: Vec<String> =
+        loci.iter().map(|locus| {
+            let mut allele_display_names: Vec<String> =
+                locus.expressed_alleles.iter().map(|expressed_allele| {
+                    let allele_details = allele_map.get(&expressed_allele.allele_uniquename).unwrap();
+                    let allele_short: AlleleShort = allele_details.into();
+                    let allele_display_name = allele_short.display_name();
+
+                    if let Some(ref expression) = expressed_allele.expression {
+                        if expression == "Not assayed" ||
+                            allele_details.allele_type == "deletion" &&
+                            expression == "Null"
+                        {
+                           allele_display_name.to_string()
+                        } else {
+                           format!("{}[{}]", allele_display_name, expression)
+                        }
+
+                    } else {
+                        allele_display_name.to_string()
+                    }
+                }).collect();
+            allele_display_names.sort();
+            allele_display_names.join("/")
+        }).collect();
+
+    locus_display_names.sort();
+
+    let joined_alleles = locus_display_names.join(" ");
+
+    joined_alleles.to_shared_str()
+}
+
 fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
     if let Some(phase) = feature_loc.phase {
         match phase {
@@ -1998,6 +2033,10 @@ phenotypes, so just the first part of this extension will be used:
         let genotype_display_uniquename =
             make_genotype_display_uniquename(&loci, &self.alleles);
 
+        // example: "aps1delta asp1-H397A(aa)"
+        let display_name =
+            make_genotype_display_name(&loci, &self.alleles);
+
         self.genotype_display_uniquenames.insert(genotype_uniquename.clone(),
                                            genotype_display_uniquename.clone());
 
@@ -2047,6 +2086,7 @@ phenotypes, so just the first part of this extension will be used:
         self.genotypes.insert(display_uniquename.clone(),
                               GenotypeDetails {
                                   display_uniquename,
+                                  display_name,
                                   name: feat.name.as_ref().map(|s| s.to_shared_str()),
                                   taxonid: organism.taxonid,
                                   loci,
@@ -3368,11 +3408,7 @@ phenotypes, so just the first part of this extension will be used:
 
     fn make_genotype_short(&self, genotype_display_uniquename: &FlexStr) -> GenotypeShort {
         if let Some(details) = self.genotypes.get(genotype_display_uniquename) {
-            GenotypeShort {
-                display_uniquename: details.display_uniquename.clone(),
-                name: details.name.clone(),
-                loci: details.loci.clone(),
-            }
+            details.into()
         } else {
             panic!("can't find genotype {}", genotype_display_uniquename);
         }

@@ -419,6 +419,7 @@ fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
                      loci: Vec<GenotypeLocus>) -> GenotypeDetails {
     GenotypeDetails {
         display_uniquename: display_uniquename.into(),
+        display_name: display_uniquename.into(),
         name: name.map(|s| s.to_shared_str()),
         taxonid: 4896,
         loci: loci,

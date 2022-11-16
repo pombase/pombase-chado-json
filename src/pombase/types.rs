@@ -28,6 +28,7 @@ pub type AlleleUniquename = FlexStr;
 pub type AlleleName = FlexStr;
 
 pub type GenotypeDisplayUniquename = FlexStr;
+pub type GenotypeDisplayName = FlexStr;
 
 pub type OrganismTaxonId = u32;
 

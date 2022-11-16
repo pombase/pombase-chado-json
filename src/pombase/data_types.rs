@@ -3,6 +3,8 @@ use std::collections::{HashMap, HashSet, BTreeMap};
 use std::fmt::Display;
 use std::fmt;
 
+use regex::Regex;
+
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 use serde_with::serde_as;
 
@@ -1299,7 +1301,8 @@ pub struct GenotypeLocus {
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct GenotypeShort {
-    pub display_uniquename: GenotypeUniquename,
+    pub display_uniquename: GenotypeDisplayUniquename,
+    pub display_name: GenotypeDisplayName,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
     pub loci: Vec<GenotypeLocus>,
@@ -1319,6 +1322,7 @@ impl GenotypeShort {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GenotypeDetails {
     pub display_uniquename: GenotypeUniquename,
+    pub display_name: GenotypeDisplayName,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
     pub taxonid: u32,
@@ -1353,6 +1357,7 @@ impl From<&GenotypeDetails> for GenotypeShort {
     fn from(details: &GenotypeDetails) -> GenotypeShort {
         GenotypeShort {
             display_uniquename: details.display_uniquename.clone(),
+            display_name: details.display_name.clone(),
             name: details.name.clone(),
             loci: details.loci.clone(),
         }
@@ -1406,6 +1411,85 @@ pub struct AlleleShort {
     pub gene_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
+}
+
+ lazy_static! {
+     static ref MUTATION_DESC_RE: Regex = Regex::new(r"\w+\d+\w+$").unwrap();
+     static ref ENDS_WITH_INTEGER_RE: Regex = Regex::new(r"\d+$").unwrap();
+ }
+
+fn description_with_residue_type(allele: &AlleleShort) -> FlexStr {
+    let description = allele.description.clone();
+    let allele_type = &allele.allele_type;
+
+    if let Some(description) = description {
+
+        if description.len() == 0 {
+            return allele_type.clone();
+        }
+
+        if allele_type.ends_with("mutation") {
+            if MUTATION_DESC_RE.is_match(description.as_str()) {
+                if allele_type.contains("amino_acid") {
+                    return description + " aa";
+                } else {
+                    if allele_type.contains("nucleotide") {
+                        return description + " nt";
+                    }
+                }
+            }
+        }
+
+        description
+    } else {
+        allele_type.clone()
+    }
+}
+
+impl AlleleShort {
+    pub fn display_name(&self) -> FlexStr {
+        let name = self.name.clone().unwrap_or_else(|| flex_str!("unnamed"));
+        let allele_type = &self.allele_type;
+        let mut description =
+            self.description.as_ref().unwrap_or_else(|| allele_type).clone();
+
+        if allele_type == "deletion" &&
+            (name.ends_with("Δ") || name.ends_with("delta")) ||
+            allele_type == "wild_type" && name.ends_with("+") {
+                if name.ends_with(description.as_str()) || allele_type == description {
+                    return name;
+                } else {
+                    return flex_fmt!("{}({})", name, description);
+                }
+            }
+
+        if name.contains(description.as_str()) {
+            if allele_type.contains("amino_acid") || allele_type.contains("amino acid") {
+                return name + "(aa)";
+            } else {
+                if allele_type.contains("nucleotide") {
+                    return name + "(nt)";
+                } else {
+                    return name;
+                }
+            }
+        }
+
+        description = description_with_residue_type(self);
+
+        if allele_type.starts_with("partial") &&
+            ENDS_WITH_INTEGER_RE.is_match(description.as_str()) {
+                if allele_type == "partial_amino_acid_deletion" {
+                    description = description + " Δaa";
+                } else {
+                    if allele_type == "partial_nucleotide_deletion" {
+                        description = description + " Δnt";
+                    }
+                }
+            }
+
+        flex_fmt!("{}({})", name, description)
+    }
 }
 
 fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str,
