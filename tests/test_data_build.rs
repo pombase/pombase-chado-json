@@ -506,7 +506,7 @@ fn get_test_genes_map() -> UniquenameGeneMap {
 }
 
 #[allow(dead_code)]
-fn get_test_genotypes_map() -> UniquenameGenotypeMap {
+fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
     let mut ret = HashMap::new();
 
     ret.insert("e674fe7ceba478aa-genotype-2".to_shared_str(),
@@ -762,19 +762,19 @@ fn test_cmp_ont_annotation_detail() {
         "ubs-i_ii-f18a,f21a,w26a,l40a,w41a,w45a-amino_acid_mutation-expression-not_assayed"]
         .iter().map(|s| str::to_string(s)).collect();
 
-    let mut result_genotype_display_names =
+    let mut result_genotype_display_uniquenames =
         details_vec.drain(0..)
         .map(|detail_id| {
             let detail = annotation_details_maps.get(&detail_id).unwrap();
             let genotype_uniquename = detail.clone().genotype.unwrap();
             let genotype = genotypes.get(&genotype_uniquename).unwrap();
-            pombase::web::data_build::make_genotype_display_name(&genotype.loci, &alleles)
+            pombase::web::data_build::make_genotype_display_uniquename(&genotype.loci, &alleles)
                 .to_lowercase()
         }).collect::<Vec<String>>();
 
-    result_genotype_display_names.sort();
+    result_genotype_display_uniquenames.sort();
 
-    assert_eq!(result_genotype_display_names, expected);
+    assert_eq!(result_genotype_display_uniquenames, expected);
 
     let test_term_annotations = get_test_annotations();
     let mut extension_details_vec = test_term_annotations[1].annotations.clone();

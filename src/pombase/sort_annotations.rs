@@ -124,7 +124,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                                  detail1: &OntAnnotationDetail,
                                  detail2: &OntAnnotationDetail,
                                  genes: &UniquenameGeneMap,
-                                 genotypes: &UniquenameGenotypeMap,
+                                 genotypes: &DisplayUniquenameGenotypeMap,
                                  terms: &TermIdDetailsMap) -> Result<Ordering, String> {
     if let Some(ref detail1_genotype_uniquename) = detail1.genotype {
         if let Some(ref detail2_genotype_uniquename) = detail2.genotype {
@@ -182,7 +182,7 @@ pub fn sort_cv_annotation_details<T: AnnotationContainer>
     (container: &mut T,
      config: &Config,
      gene_map: &UniquenameGeneMap,
-     genotype_map: &UniquenameGenotypeMap,
+     genotype_map: &DisplayUniquenameGenotypeMap,
      term_map: &TermIdDetailsMap,
      annotation_details_map: &IdOntAnnotationDetailMap)
 {

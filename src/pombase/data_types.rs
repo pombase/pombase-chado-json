@@ -18,7 +18,7 @@ pub type UniquenameReferenceMap =
     HashMap<TermId, ReferenceDetails>;
 
 pub type UniquenameAlleleDetailsMap = HashMap<AlleleUniquename, AlleleDetails>;
-pub type UniquenameGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
+pub type DisplayUniquenameGenotypeMap = HashMap<GenotypeDisplayUniquename, GenotypeDetails>;
 pub type UniquenameFeatureShortMap = HashMap<FlexStr, FeatureShort>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
 pub type ChrNameDetailsMap = BTreeMap<ChromosomeName, ChromosomeDetails>;
@@ -1672,15 +1672,15 @@ impl Hash for GeneticInteractionKey {
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct GeneticInteractionDetail {
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_a_uniquename: Option<GenotypeDisplayName>,
+    pub genotype_a_uniquename: Option<GenotypeDisplayUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub genotype_b_uniquename: Option<GenotypeDisplayName>,
+    pub genotype_b_uniquename: Option<GenotypeDisplayUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub double_mutant_phenotype_termid: Option<TermId>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub double_mutant_extension: Vec<ExtPart>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub double_mutant_genotype_display_name: Option<GenotypeDisplayName>,
+    pub double_mutant_genotype_display_uniquename: Option<GenotypeDisplayUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub rescued_phenotype_termid: Option<TermId>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

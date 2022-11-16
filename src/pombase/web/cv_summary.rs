@@ -18,7 +18,7 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
      include_gene: bool, include_genotype: bool,
      gene_map: &UniquenameGeneMap,
-     genotype_map: &UniquenameGenotypeMap,
+     genotype_map: &DisplayUniquenameGenotypeMap,
      annotation_details: &IdOntAnnotationDetailMap) {
     for (cv_name, mut term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name(cv_name);
@@ -442,7 +442,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                    include_gene: bool, include_genotype: bool,
                    term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
                    genes: &UniquenameGeneMap,
-                   genotypes: &UniquenameGenotypeMap,
+                   genotypes: &DisplayUniquenameGenotypeMap,
                    annotation_details: &IdOntAnnotationDetailMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let mut rows = vec![];

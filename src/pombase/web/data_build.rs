@@ -55,7 +55,7 @@ pub struct WebDataBuild<'a> {
     config: &'a Config,
 
     genes: UniquenameGeneMap,
-    genotypes: UniquenameGenotypeMap,
+    genotypes: DisplayUniquenameGenotypeMap,
     genotypes_of_alleles: HashMap<AlleleUniquename, HashSet<GenotypeUniquename>>,
     genotype_backgrounds: HashMap<GenotypeUniquename, FlexStr>,
     alleles: UniquenameAlleleDetailsMap,
@@ -75,7 +75,7 @@ pub struct WebDataBuild<'a> {
     parts_of_transcripts: HashMap<FlexStr, Vec<FeatureShort>>,
     genes_of_alleles: HashMap<FlexStr, FlexStr>,
     loci_of_genotypes: HashMap<FlexStr, HashMap<FlexStr, GenotypeLocus>>,
-    genotype_display_names: HashMap<GenotypeUniquename, FlexStr>,
+    genotype_display_uniquenames: HashMap<GenotypeUniquename, GenotypeDisplayUniquename>,
 
     // maps used to collect the genotype interaction part from the feature_relationship table
     genotype_interaction_double_mutant: HashMap<GenotypeInteractionUniquename, GenotypeUniquename>,
@@ -224,7 +224,7 @@ lazy_static! {
         Regex::new(r"[% /&;?]").unwrap();
 }
 
-pub fn make_genotype_display_name(loci: &[GenotypeLocus],
+pub fn make_genotype_display_uniquename(loci: &[GenotypeLocus],
                                   allele_map: &UniquenameAlleleDetailsMap) -> FlexStr {
     let mut locus_display_names: Vec<String> =
         loci.iter().map(|locus| {
@@ -818,7 +818,7 @@ impl <'a> WebDataBuild<'a> {
             parts_of_transcripts: HashMap::new(),
             genes_of_alleles: HashMap::new(),
             loci_of_genotypes: HashMap::new(),
-            genotype_display_names: HashMap::new(),
+            genotype_display_uniquenames: HashMap::new(),
 
             parts_of_extensions: HashMap::new(),
 
@@ -1109,11 +1109,11 @@ impl <'a> WebDataBuild<'a> {
     fn gene_from_genotype(&self, genotype_uniquename: &GenotypeUniquename)
        -> GeneUniquename
     {
-        let genotype_display_name =
-            self.genotype_display_names.get(genotype_uniquename).unwrap();
+        let genotype_display_uniquename =
+            self.genotype_display_uniquenames.get(genotype_uniquename).unwrap();
 
         let genotype =
-            self.genotypes.get(genotype_display_name)
+            self.genotypes.get(genotype_display_uniquename)
             .expect(&format!("internal error: can't find genotype {}", genotype_uniquename));
 
         let loci = &genotype.loci;
@@ -1191,23 +1191,23 @@ phenotypes, so just the first part of this extension will be used:
             self.genotype_interaction_genotype_a.get(genotype_interaction_uniquename)
                 .expect(&format!("can't find genotype_a of {}",
                                  genotype_interaction_uniquename));
-        let genotype_a_display_name =
-            self.genotype_display_names.get(genotype_a_uniquename).unwrap().clone();
+        let genotype_a_display_uniquename =
+            self.genotype_display_uniquenames.get(genotype_a_uniquename).unwrap().clone();
 
         let genotype_b_uniquename =
             self.genotype_interaction_genotype_b.get(genotype_interaction_uniquename)
                 .expect(&format!("can't find genotype_b of {}",
                                  genotype_interaction_uniquename));
-        let genotype_b_display_name =
-            self.genotype_display_names.get(genotype_b_uniquename).unwrap().clone();
+        let genotype_b_display_uniquename =
+            self.genotype_display_uniquenames.get(genotype_b_uniquename).unwrap().clone();
 
         let double_mutant_uniquename =
             self.genotype_interaction_double_mutant.get(genotype_interaction_uniquename);
-        let double_mutant_genotype_display_name =
+        let double_mutant_genotype_display_uniquename =
             if let Some(double_genotype_uniquename) = double_mutant_uniquename {
-                let double_genotype_display_name =
-                    self.genotype_display_names.get(double_genotype_uniquename).unwrap().clone();
-                Some(double_genotype_display_name)
+                let double_genotype_display_uniquename =
+                    self.genotype_display_uniquenames.get(double_genotype_uniquename).unwrap().clone();
+                Some(double_genotype_display_uniquename)
             } else {
                 None
             };
@@ -1274,12 +1274,12 @@ phenotypes, so just the first part of this extension will be used:
 
         let interaction_annotation =
             GeneticInteractionDetail {
-                genotype_a_uniquename: Some(genotype_a_display_name),
-                genotype_b_uniquename: Some(genotype_b_display_name),
+                genotype_a_uniquename: Some(genotype_a_display_uniquename),
+                genotype_b_uniquename: Some(genotype_b_display_uniquename),
                 reference_uniquename: ont_annotation_detail.reference,
                 double_mutant_phenotype_termid,
                 double_mutant_extension: ont_annotation_detail.extension,
-                double_mutant_genotype_display_name,
+                double_mutant_genotype_display_uniquename,
                 rescued_phenotype_termid,
                 rescued_phenotype_extension,
                 interaction_note,
@@ -1993,10 +1993,12 @@ phenotypes, so just the first part of this extension will be used:
         let mut loci: Vec<_> =
             self.loci_of_genotypes[genotype_uniquename]
             .values().cloned().collect();
-        let genotype_display_uniquename =
-            make_genotype_display_name(&loci, &self.alleles);
 
-        self.genotype_display_names.insert(genotype_uniquename.clone(),
+        // example: "aps1delta__asp1-H397A-H397A-amino_acid_mutation-expression-not_assayed"
+        let genotype_display_uniquename =
+            make_genotype_display_uniquename(&loci, &self.alleles);
+
+        self.genotype_display_uniquenames.insert(genotype_uniquename.clone(),
                                            genotype_display_uniquename.clone());
 
         let mut ploidiness = Ploidiness::Haploid;
@@ -2040,11 +2042,11 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
-        let rc_display_name = genotype_display_uniquename.to_shared_str();
+        let display_uniquename = genotype_display_uniquename.to_shared_str();
 
-        self.genotypes.insert(rc_display_name.clone(),
+        self.genotypes.insert(display_uniquename.clone(),
                               GenotypeDetails {
-                                  display_uniquename: rc_display_name,
+                                  display_uniquename,
                                   name: feat.name.as_ref().map(|s| s.to_shared_str()),
                                   taxonid: organism.taxonid,
                                   loci,
@@ -2234,7 +2236,7 @@ phenotypes, so just the first part of this extension will be used:
                 for genotype_uniquename in genotype_uniquenames {
 
                     let genotype_display_uniquename =
-                        self.genotype_display_names.get(genotype_uniquename).unwrap();
+                        self.genotype_display_uniquenames.get(genotype_uniquename).unwrap();
 
                     if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
                         for term_annotations in genotype_details.cv_annotations.values() {
@@ -2359,7 +2361,7 @@ phenotypes, so just the first part of this extension will be used:
                 reference_uniquename: interaction.reference_uniquename,
                 double_mutant_phenotype_termid: None,
                 double_mutant_extension: vec![],
-                double_mutant_genotype_display_name: None,
+                double_mutant_genotype_display_uniquename: None,
                 rescued_phenotype_termid: None,
                 rescued_phenotype_extension: vec![],
                 interaction_note: interaction.interaction_note,
@@ -3364,15 +3366,15 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    fn make_genotype_short(&self, genotype_display_name: &FlexStr) -> GenotypeShort {
-        if let Some(details) = self.genotypes.get(genotype_display_name) {
+    fn make_genotype_short(&self, genotype_display_uniquename: &FlexStr) -> GenotypeShort {
+        if let Some(details) = self.genotypes.get(genotype_display_uniquename) {
             GenotypeShort {
                 display_uniquename: details.display_uniquename.clone(),
                 name: details.name.clone(),
                 loci: details.loci.clone(),
             }
         } else {
-            panic!("can't find genotype {}", genotype_display_name);
+            panic!("can't find genotype {}", genotype_display_uniquename);
         }
     }
 
@@ -3659,9 +3661,9 @@ phenotypes, so just the first part of this extension will be used:
                         let loci: Vec<_> =
                             self.loci_of_genotypes[&feature.uniquename]
                             .values().cloned().collect();
-                        let genotype_display_name =
-                            make_genotype_display_name(&loci, &self.alleles);
-                        maybe_genotype_uniquename = Some(genotype_display_name);
+                        let genotype_display_uniquename =
+                            make_genotype_display_uniquename(&loci, &self.alleles);
+                        maybe_genotype_uniquename = Some(genotype_display_uniquename);
                         genotype_background =
                             self.genotype_backgrounds.get(&feature.uniquename)
                             .cloned();
@@ -5034,10 +5036,10 @@ phenotypes, so just the first part of this extension will be used:
                                               termid,
                                               genotype_b_uniquename);
                 }
-                if let Some(ref double_mutant_genotype_display_name) = interaction_detail.double_mutant_genotype_display_name {
+                if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
                     self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                               termid,
-                                              double_mutant_genotype_display_name);
+                                              double_mutant_genotype_display_uniquename);
                 }
 
                 if let Some(ref double_mutant_phenotype_termid) = interaction_detail.double_mutant_phenotype_termid {
@@ -5139,10 +5141,10 @@ phenotypes, so just the first part of this extension will be used:
                                                   gene_uniquename,
                                                   genotype_b_uniquename);
                     }
-                    if let Some(ref double_mutant_genotype_display_name) = interaction_detail.double_mutant_genotype_display_name {
+                    if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
                         self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                   gene_uniquename,
-                                                  double_mutant_genotype_display_name);
+                                                  double_mutant_genotype_display_uniquename);
                     }
 
                     if let Some(ref double_mutant_phenotype_termid) = interaction_detail.double_mutant_phenotype_termid {
@@ -5406,10 +5408,10 @@ phenotypes, so just the first part of this extension will be used:
                                                   reference_uniquename,
                                                   genotype_b_uniquename);
                     }
-                    if let Some(ref double_mutant_genotype_display_name) = interaction_detail.double_mutant_genotype_display_name {
+                    if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
                         self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
                                                   reference_uniquename,
-                                                  double_mutant_genotype_display_name);
+                                                  double_mutant_genotype_display_uniquename);
                     }
 
                     if let Some(ref double_mutant_phenotype_termid) = interaction_detail.double_mutant_phenotype_termid {
