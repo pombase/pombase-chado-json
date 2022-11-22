@@ -22,17 +22,19 @@ impl Loader {
         }
     }
 
-    pub async fn load_alleles(&mut self, alleles: &AlleleShortMap) -> Result<(), Box<dyn Error>>
+    pub async fn load_alleles(&mut self, alleles: &AlleleShortMap, mark_as_obsolete: bool)
+       -> Result<(), Box<dyn Error>>
     {
         let organism = self.processed.organism_by_taxonid(self.taxonid)
             .expect(&format!("load failed, organism not in database with taxon ID: {}", self.taxonid));
 
         let trans = self.conn.transaction().await?;
 
-        let allele_insert_sql = "INSERT INTO feature(uniquename, name, type_id, organism_id)
+        let allele_insert_sql = "INSERT INTO feature(uniquename, name, type_id, organism_id, is_obsolete)
 VALUES ($1, $2,
         (SELECT cvterm_id FROM cvterm t join cv ON cv.cv_id = t.cv_id WHERE t.name = 'allele' AND cv.name = 'sequence' LIMIT 1),
-        (SELECT organism_id FROM organism WHERE genus = $3 AND species = $4 LIMIT 1))";
+        (SELECT organism_id FROM organism WHERE genus = $3 AND species = $4 LIMIT 1),
+       $5)";
 
         let allele_smt = trans.prepare(allele_insert_sql).await?;
 
@@ -104,8 +106,10 @@ VALUES ((SELECT feature_id FROM feature f join cvterm t ON f.type_id = t.cvterm_
             let species = organism.species.as_str();
             let gene_uniquename = allele.gene_uniquename.as_str();
 
+            let is_obsolete = mark_as_obsolete;
+
             trans.query(&allele_smt,
-                        &[&allele_uniquename, &allele_name, &genus, &species]).await?;
+                        &[&allele_uniquename, &allele_name, &genus, &species, &is_obsolete]).await?;
 
             trans.query(&rel_smt, &[&allele_uniquename, &gene_uniquename]).await?;
 

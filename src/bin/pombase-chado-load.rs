@@ -14,6 +14,7 @@ use getopts::Options;
 
 use deadpool_postgres::{Pool, Manager};
 
+use getopts::ParsingStyle;
 use pombase::data_types::AlleleShortMap;
 
 use pombase::types::OrganismTaxonId;
@@ -25,11 +26,12 @@ use pombase::load::Loader;
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
-fn print_usage(program: &str, opts: Options) {
+fn print_usage(program: &str, opts: &Options) {
     let brief = format!("Usage: {} [options] [action] [file_name]", program);
     print!("{}", opts.usage(&brief));
 }
 
+// is mark_as_obsolete is true, is_obsolete will be set on new features
 fn read_allele_map(file_name: &str) -> AlleleShortMap {
     let file = match File::open(file_name) {
         Ok(file) => file,
@@ -60,6 +62,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
+    let opts = opts.parsing_style(ParsingStyle::StopAtFirstFree);
 
     opts.optflag("h", "help", "print this help message");
     opts.optopt("p", "postgresql-connection-string",
@@ -97,13 +100,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
 
-    if matches.free.len() != 2 {
+    let mut remaining_args = matches.free.clone();
+
+    if remaining_args.len() < 2 {
         println!("needs [action] and [file_name] arguments");
         print_usage(&program, opts);
         process::exit(1);
     }
 
-    let action = &matches.free[0];
+    let action = remaining_args.remove(0);
 
     if action != "allele-json" {
         println!("unknown action {}", action);
@@ -111,7 +116,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
 
-    let allele_file_name = &matches.free[1];
+    let mark_as_obsolete =
+        if let Some(first_remaining) = remaining_args.get(0) {
+            first_remaining == "--mark-as-obsolete"
+        } else {
+            false
+        };
+    if mark_as_obsolete {
+        remaining_args.remove(0);
+    }
+
+    if remaining_args.len() < 1 {
+        println!("allele-json needs a [file_name] argument");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
+
+    let allele_file_name = &remaining_args[0];
 
     let connection_string = matches.opt_str("p").unwrap();
     let taxonid_opt = matches.opt_str("t").unwrap();
@@ -136,7 +157,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let allele_map = read_allele_map(allele_file_name);
 
-    loader.load_alleles(&allele_map).await?;
+    loader.load_alleles(&allele_map, mark_as_obsolete).await?;
 
     Ok(())
 }
