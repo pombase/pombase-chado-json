@@ -81,7 +81,7 @@ VALUES ((SELECT feature_id FROM feature f join cvterm t ON f.type_id = t.cvterm_
         for allele in alleles.values() {
             if let Some(ref allele_name) = allele.name {
                 if seen_allele_names.contains(allele_name) {
-                    eprintln!("skipping allele with name that has alread been loaded: {} {}",
+                    eprintln!("skipping allele with name that has already been loaded: {} {}",
                               allele_name.as_str(),
                               allele.allele_type);
                     continue;
@@ -91,7 +91,7 @@ VALUES ((SELECT feature_id FROM feature f join cvterm t ON f.type_id = t.cvterm_
             }
 
             if self.processed.allele_by_uniquename(&allele.uniquename).is_some() {
-                panic!("allele loading failed: can't find {} in the database", allele.uniquename);
+                panic!("allele loading failed: {} is already in the database", allele.uniquename);
             }
 
             if self.processed.gene_by_uniquename(&allele.gene_uniquename).is_none() {
