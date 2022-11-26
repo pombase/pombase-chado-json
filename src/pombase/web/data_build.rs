@@ -2314,11 +2314,15 @@ phenotypes, so just the first part of this extension will be used:
         let mut genes_and_locs: Vec<GeneAndLoc> = vec![];
 
         for gene_details in self.genes.values() {
-            if let Some(ref location) = gene_details.location {
-                genes_and_locs.push(GeneAndLoc {
-                    gene_uniquename: gene_details.uniquename.clone(),
-                    loc: location.clone(),
-                });
+            // mRNA or pseudogenic_transcript
+            if gene_details.transcript_so_termid == "SO:0000234" ||
+                gene_details.transcript_so_termid == "SO:0000516" {
+                if let Some(ref location) = gene_details.location {
+                    genes_and_locs.push(GeneAndLoc {
+                        gene_uniquename: gene_details.uniquename.clone(),
+                        loc: location.clone(),
+                    });
+                }
             }
         }
 
