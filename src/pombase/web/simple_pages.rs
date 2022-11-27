@@ -14,7 +14,7 @@ fn format_page(header: &str, body: &str) -> String {
   <head>
     {}
   </head>
-  <body>
+  <body style='font-size: 140%;'>
     {}
   </body>
 </html>",
