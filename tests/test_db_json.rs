@@ -427,6 +427,51 @@ fn get_test_raw() -> Raw {
     make_test_featureprop(&mut featureprops, &par1_polypeptide, &isoelectric_point_cvterm, Some("6.85".into()));
     make_test_featureprop(&mut featureprops, &par1_polypeptide, &codon_adaptation_index_cvterm, Some("0.63".into()));
 
+
+    let pom1_mrna = make_test_feature(&mut features, &pombe_organism,
+                                      &mrna_cvterm, "SPAC2F7.03c.1", None);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &pom1_mrna, &part_of_cvterm, &pom1_gene);
+
+    let pom1_exon_1 = make_test_feature(&mut features, &pombe_organism,
+                                        &exon_cvterm, "SPAC2F7.03c.1:exon:1", None);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &pom1_exon_1, &part_of_cvterm, &pom1_mrna);
+
+    let pom1_polypeptide = make_test_feature(&mut features, &pombe_organism, &polypeptide_cvterm,
+                                             "SPAC2F7.03c:pep", None);
+    make_test_feature_rel(&mut feature_relationships, &publication,
+                          &pom1_polypeptide, &derives_from_cvterm, &pom1_mrna);
+
+    make_test_featureprop(&mut featureprops, &pom1_polypeptide, &mol_weight_cvterm, Some("102.3".into()));
+    make_test_featureprop(&mut featureprops, &pom1_polypeptide, &average_residue_weight_cvterm, Some("114.36".into()));
+    make_test_featureprop(&mut featureprops, &pom1_polypeptide, &charge_at_ph7_cvterm, Some("-3.79".into()));
+    make_test_featureprop(&mut featureprops, &pom1_polypeptide, &isoelectric_point_cvterm, Some("6.85".into()));
+    make_test_featureprop(&mut featureprops, &pom1_polypeptide, &codon_adaptation_index_cvterm, Some("0.63".into()));
+
+
+    let cdc16_mrna = make_test_feature(&mut features, &pombe_organism,
+                                      &mrna_cvterm, "SPAC6F6.08c.1", None);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &cdc16_mrna, &part_of_cvterm, &cdc16_gene);
+
+    let cdc16_exon_1 = make_test_feature(&mut features, &pombe_organism,
+                                        &exon_cvterm, "SPAC6F6.08c.1:exon:1", None);
+    make_test_feature_rel(&mut feature_relationships,  &publication,
+                          &cdc16_exon_1, &part_of_cvterm, &cdc16_mrna);
+
+    let cdc16_polypeptide = make_test_feature(&mut features, &pombe_organism, &polypeptide_cvterm,
+                                             "SPAC6F6.08c:pep", None);
+    make_test_feature_rel(&mut feature_relationships, &publication,
+                          &cdc16_polypeptide, &derives_from_cvterm, &cdc16_mrna);
+
+    make_test_featureprop(&mut featureprops, &cdc16_polypeptide, &mol_weight_cvterm, Some("102.3".into()));
+    make_test_featureprop(&mut featureprops, &cdc16_polypeptide, &average_residue_weight_cvterm, Some("114.36".into()));
+    make_test_featureprop(&mut featureprops, &cdc16_polypeptide, &charge_at_ph7_cvterm, Some("-3.79".into()));
+    make_test_featureprop(&mut featureprops, &cdc16_polypeptide, &isoelectric_point_cvterm, Some("6.85".into()));
+    make_test_featureprop(&mut featureprops, &cdc16_polypeptide, &codon_adaptation_index_cvterm, Some("0.63".into()));
+
+
     let par1_go0031030_fc =
         make_test_feature_cvterm(&mut feature_cvterms, &par1_mrna, &go0031030_cvterm, &publication);
     make_test_feature_cvtermprop(&mut feature_cvtermprops, &par1_go0031030_fc, &with_cvterm, "SPAC6F6.08c");
@@ -470,9 +515,18 @@ fn get_test_raw() -> Raw {
     }));
 
     cdc16_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
+        feature: cdc16_exon_1.clone(),
+        fmin: 35,
+        fmax: 96,
+        strand: -1,
+        srcfeature: chr_1.clone(),
+        phase: None,
+    }));
+
+    cdc16_exon_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
         feature: cdc16_gene.clone(),
-        fmin: 2746666,
-        fmax: 2748180,
+        fmin: 35,
+        fmax: 96,
         strand: -1,
         srcfeature: chr_1.clone(),
         phase: None,
@@ -480,8 +534,17 @@ fn get_test_raw() -> Raw {
 
     pom1_gene.featurelocs.borrow_mut().push(Rc::new(Featureloc {
         feature: pom1_gene.clone(),
-        fmin: 534119,
-        fmax: 537869,
+        fmin: 119,
+        fmax: 200,
+        strand: -1,
+        srcfeature: chr_1.clone(),
+        phase: None,
+    }));
+
+    pom1_exon_1.featurelocs.borrow_mut().push(Rc::new(Featureloc {
+        feature: pom1_exon_1.clone(),
+        fmin: 119,
+        fmax: 200,
         strand: -1,
         srcfeature: chr_1.clone(),
         phase: None,
@@ -822,23 +885,23 @@ fn test_locations() {
     let pom1_loc = pom1_gene.location.unwrap().clone();
 
     assert_eq!(&pom1_loc.chromosome_name, "chromosome_1");
-    assert_eq!(pom1_loc.start_pos, 534120);
-    assert_eq!(pom1_loc.end_pos, 537869);
+    assert_eq!(pom1_loc.start_pos, 120);
+    assert_eq!(pom1_loc.end_pos, 200);
     assert_eq!(pom1_loc.strand, Strand::Reverse);
 
     assert_eq!(pom1_gene.gene_neighbourhood.len(), 2);
-    assert_eq!(&pom1_gene.gene_neighbourhood[0].uniquename, "SPAC2F7.03c");
-    assert_eq!(&pom1_gene.gene_neighbourhood[1].uniquename, "SPAC6F6.08c");
+    assert_eq!(&pom1_gene.gene_neighbourhood[0].uniquename, "SPAC6F6.08c");
+    assert_eq!(&pom1_gene.gene_neighbourhood[1].uniquename, "SPAC2F7.03c");
 
     let cdc16_gene = web_data.api_maps.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
     let cdc16_loc = cdc16_gene.location.unwrap().clone();
 
     assert_eq!(&cdc16_loc.chromosome_name, "chromosome_1");
-    assert_eq!(cdc16_loc.start_pos, 2746667);
-    assert_eq!(cdc16_loc.end_pos, 2748180);
+    assert_eq!(cdc16_loc.start_pos, 36);
+    assert_eq!(cdc16_loc.end_pos, 96);
     assert_eq!(cdc16_loc.strand, Strand::Reverse);
 
     assert_eq!(cdc16_gene.gene_neighbourhood.len(), 2);
-    assert_eq!(&cdc16_gene.gene_neighbourhood[0].uniquename, "SPAC2F7.03c");
-    assert_eq!(&cdc16_gene.gene_neighbourhood[1].uniquename, "SPAC6F6.08c");
+    assert_eq!(&cdc16_gene.gene_neighbourhood[0].uniquename, "SPAC6F6.08c");
+    assert_eq!(&cdc16_gene.gene_neighbourhood[1].uniquename, "SPAC2F7.03c");
 }
