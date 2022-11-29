@@ -30,7 +30,7 @@ itertools = "0.10"
 serde_with = "2.0.1"
 
 [dependencies.zstd]
-version = "0.11"
+version = "0.12"
 features = ["zstdmt"]
 
 [dependencies.rocket]
