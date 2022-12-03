@@ -2093,6 +2093,7 @@ phenotypes, so just the first part of this extension will be used:
                                   ploidiness,
                                   comment,
                                   cv_annotations: HashMap::new(),
+                                  double_mutant_genetic_interactions: HashMap::new(),
                                   genes_by_uniquename: HashMap::new(),
                                   alleles_by_uniquename: HashMap::new(),
                                   references_by_uniquename: HashMap::new(),
@@ -5272,6 +5273,52 @@ phenotypes, so just the first part of this extension will be used:
                                             &mut seen_alleles,
                                             &mut seen_transcripts,
                                             &mut seen_terms);
+
+
+            let interaction_iter = genotype_details.double_mutant_genetic_interactions.iter();
+
+                for (interaction_key, interaction_details) in interaction_iter {
+                    self.add_gene_to_hash(&mut seen_genes, genotype_uniquename,
+                                          &interaction_key.gene_a_uniquename);
+                    self.add_gene_to_hash(&mut seen_genes, genotype_uniquename,
+                                          &interaction_key.gene_b_uniquename);
+
+                    for interaction_detail in interaction_details {
+
+                    self.add_ref_to_hash(&mut seen_references, genotype_uniquename,
+                                         &interaction_detail.reference_uniquename);
+
+                    if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  genotype_uniquename,
+                                                  genotype_a_uniquename);
+                    }
+                    if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  genotype_uniquename,
+                                                  genotype_b_uniquename);
+                    }
+                    if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                                  genotype_uniquename,
+                                                  double_mutant_genotype_display_uniquename);
+                    }
+
+                    if let Some(ref double_mutant_phenotype_termid) = interaction_detail.double_mutant_phenotype_termid {
+                        self.add_term_to_hash(&mut seen_terms, genotype_uniquename,
+                                              double_mutant_phenotype_termid);
+                    }
+                    if let Some(ref rescued_phenotype_termid) = interaction_detail.rescued_phenotype_termid {
+                        self.add_term_to_hash(&mut seen_terms, genotype_uniquename,
+                                              rescued_phenotype_termid);
+                    }
+                    self.add_extension_to_maps(&interaction_detail.rescued_phenotype_extension,
+                                               &mut seen_genes, &mut seen_transcripts, &mut seen_terms,
+                                               genotype_uniquename)
+
+                    }
+                }
+
         }
 
         for (genotype_uniquename, genotype_details) in &mut self.genotypes {
@@ -6027,8 +6074,7 @@ phenotypes, so just the first part of this extension will be used:
                                interaction_key: GeneticInteractionKey)
              -> &'a mut Vec<GeneticInteractionDetail>
         {
-            interaction_annotations.entry(interaction_key)
-               .or_insert_with(Vec::new)
+            interaction_annotations.entry(interaction_key).or_insert_with(Vec::new)
         }
 
         for (interaction_key, interaction_annotation_details) in self.genetic_interaction_annotations.drain() {
@@ -6066,6 +6112,15 @@ phenotypes, so just the first part of this extension will be used:
                 let term_details = self.terms.get_mut(rescued_phenotype_termid).unwrap();
                 get_interaction_details(&mut term_details.genetic_interactions, interaction_key.clone())
                     .push(interaction_detail.clone());
+            }
+
+            if let Some(ref double_mutant_genotype_uniquename) =
+                 interaction_detail.double_mutant_genotype_display_uniquename
+            {
+                let genotype_details = self.genotypes.get_mut(double_mutant_genotype_uniquename).unwrap();
+                get_interaction_details(&mut genotype_details.double_mutant_genetic_interactions,
+                                        interaction_key.clone())
+                                        .push(interaction_detail.clone());
             }
             }
         }
