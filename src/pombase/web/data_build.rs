@@ -5277,13 +5277,13 @@ phenotypes, so just the first part of this extension will be used:
 
             let interaction_iter = genotype_details.double_mutant_genetic_interactions.iter();
 
-                for (interaction_key, interaction_details) in interaction_iter {
-                    self.add_gene_to_hash(&mut seen_genes, genotype_uniquename,
-                                          &interaction_key.gene_a_uniquename);
-                    self.add_gene_to_hash(&mut seen_genes, genotype_uniquename,
-                                          &interaction_key.gene_b_uniquename);
+            for (interaction_key, interaction_details) in interaction_iter {
+                self.add_gene_to_hash(&mut seen_genes, genotype_uniquename,
+                                      &interaction_key.gene_a_uniquename);
+                self.add_gene_to_hash(&mut seen_genes, genotype_uniquename,
+                                      &interaction_key.gene_b_uniquename);
 
-                    for interaction_detail in interaction_details {
+                for interaction_detail in interaction_details {
 
                     self.add_ref_to_hash(&mut seen_references, genotype_uniquename,
                                          &interaction_detail.reference_uniquename);
@@ -5316,8 +5316,8 @@ phenotypes, so just the first part of this extension will be used:
                                                &mut seen_genes, &mut seen_transcripts, &mut seen_terms,
                                                genotype_uniquename)
 
-                    }
                 }
+            }
 
         }
 
@@ -6090,38 +6090,38 @@ phenotypes, so just the first part of this extension will be used:
 
 
             for interaction_detail in interaction_annotation_details {
-            if let Some(ref reference_uniquename) =
-                interaction_detail.reference_uniquename
-            {
-                let reference = self.references.get_mut(reference_uniquename).unwrap();
-                get_interaction_details(&mut reference.genetic_interactions, interaction_key.clone())
-                    .push(interaction_detail.clone());
-            }
+                if let Some(ref reference_uniquename) =
+                    interaction_detail.reference_uniquename
+                {
+                    let reference = self.references.get_mut(reference_uniquename).unwrap();
+                    get_interaction_details(&mut reference.genetic_interactions, interaction_key.clone())
+                        .push(interaction_detail.clone());
+                }
 
-            if let Some(ref double_mutant_phenotype_termid) =
-                interaction_detail.double_mutant_phenotype_termid
-            {
-                let term_details = self.terms.get_mut(double_mutant_phenotype_termid).unwrap();
-                get_interaction_details(&mut term_details.genetic_interactions, interaction_key.clone())
-                    .push(interaction_detail.clone());
-            }
+                if let Some(ref double_mutant_phenotype_termid) =
+                    interaction_detail.double_mutant_phenotype_termid
+                {
+                    let term_details = self.terms.get_mut(double_mutant_phenotype_termid).unwrap();
+                    get_interaction_details(&mut term_details.genetic_interactions, interaction_key.clone())
+                        .push(interaction_detail.clone());
+                }
 
-            if let Some(ref rescued_phenotype_termid) =
-                interaction_detail.rescued_phenotype_termid
-            {
-                let term_details = self.terms.get_mut(rescued_phenotype_termid).unwrap();
-                get_interaction_details(&mut term_details.genetic_interactions, interaction_key.clone())
-                    .push(interaction_detail.clone());
-            }
+                if let Some(ref rescued_phenotype_termid) =
+                    interaction_detail.rescued_phenotype_termid
+                {
+                    let term_details = self.terms.get_mut(rescued_phenotype_termid).unwrap();
+                    get_interaction_details(&mut term_details.genetic_interactions, interaction_key.clone())
+                        .push(interaction_detail.clone());
+                }
 
-            if let Some(ref double_mutant_genotype_uniquename) =
-                 interaction_detail.double_mutant_genotype_display_uniquename
-            {
-                let genotype_details = self.genotypes.get_mut(double_mutant_genotype_uniquename).unwrap();
-                get_interaction_details(&mut genotype_details.double_mutant_genetic_interactions,
-                                        interaction_key.clone())
-                                        .push(interaction_detail.clone());
-            }
+                if let Some(ref double_mutant_genotype_uniquename) =
+                     interaction_detail.double_mutant_genotype_display_uniquename
+                {
+                    let genotype_details = self.genotypes.get_mut(double_mutant_genotype_uniquename).unwrap();
+                    get_interaction_details(&mut genotype_details.double_mutant_genetic_interactions,
+                                            interaction_key.clone())
+                                            .push(interaction_detail.clone());
+                }
             }
         }
     }
