@@ -480,7 +480,8 @@ fn make_test_gene() -> GeneDetails {
                     phase: None,
                 }),
                 gene_uniquename: flex_str!("SPCC18B5.06"),
-                rna_seq_length: NonZeroUsize::new(730_829 - 729_054),
+                rna_seq_length_spliced: NonZeroUsize::new(1170),
+                rna_seq_length_unspliced: NonZeroUsize::new(730_829 - 729_054),
             })
         )]),
         cv_annotations: HashMap::new(),

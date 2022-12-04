@@ -1830,6 +1830,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut transcript_start = usize::MAX;
         let mut transcript_end = 0;
+        let mut rna_seq_length_spliced = 0;
 
         for part in &parts {
             if part.location.start_pos < transcript_start {
@@ -1838,7 +1839,13 @@ phenotypes, so just the first part of this extension will be used:
             if part.location.end_pos > transcript_end {
                 transcript_end = part.location.end_pos;
             }
+
+            if part.feature_type == FeatureType::Exon {
+                rna_seq_length_spliced += part.location.len();
+            }
         }
+
+        let rna_seq_length_spliced = NonZeroUsize::new(rna_seq_length_spliced);
 
         // use the first part as a template to get the chromosome details
         let transcript_location =
@@ -1849,7 +1856,7 @@ phenotypes, so just the first part of this extension will be used:
                 .. parts[0].location.clone()
             };
 
-        let (rna_seq_length, maybe_cds_location) =
+        let (rna_seq_length_unspliced, maybe_cds_location) =
             if feat.feat_type.name == "mRNA" {
                 let mut cds_start = usize::MAX;
                 let mut cds_end = 0;
@@ -1906,7 +1913,8 @@ phenotypes, so just the first part of this extension will be used:
                     protein: None,
                     cds_location: maybe_cds_location,
                     gene_uniquename: gene_uniquename.to_owned(),
-                    rna_seq_length,
+                    rna_seq_length_spliced,
+                    rna_seq_length_unspliced,
                 };
 
                 self.transcripts.insert(transcript_uniquename.clone(), transcript.clone());

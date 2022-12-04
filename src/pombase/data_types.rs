@@ -976,6 +976,12 @@ pub struct ChromosomeLocation {
     pub phase: Option<Phase>,
 }
 
+impl ChromosomeLocation {
+    pub fn len(&self) -> usize {
+        (self.end_pos + 1).saturating_sub(self.start_pos)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
 #[serde(rename_all = "snake_case")]
 pub enum DeletionViability {
@@ -1279,8 +1285,10 @@ pub struct TranscriptDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
     pub gene_uniquename: FlexStr,
+    // the CDS length or RNA length without introns - sum of lengths of exons
+    pub rna_seq_length_spliced: Option<NonZeroUsize>,
     // the CDS length (protein coding) or RNA length (non-coding) including introns
-    pub rna_seq_length: Option<NonZeroUsize>,
+    pub rna_seq_length_unspliced: Option<NonZeroUsize>,
 }
 
 impl TranscriptDetails {
