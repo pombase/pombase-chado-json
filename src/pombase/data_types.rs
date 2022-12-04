@@ -1336,6 +1336,10 @@ pub struct GenotypeDetails {
     #[serde_as(as = "Vec<(_, _)>")]
     pub double_mutant_genetic_interactions: GeneticInteractionMap,
 
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    #[serde_as(as = "Vec<(_, _)>")]
+    pub rescue_genetic_interactions: GeneticInteractionMap,
+
     pub references_by_uniquename: ReferenceShortOptionMap,
     pub genes_by_uniquename: GeneShortOptionMap,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
