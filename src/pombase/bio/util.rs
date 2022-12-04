@@ -1,4 +1,5 @@
 use std::collections::{HashSet, HashMap};
+use std::num::NonZeroUsize;
 use crate::data_types::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
                         UniquenameTranscriptMap, TranscriptDetails, FeatureShort,
                         ProteinDetails, FeatureType};
@@ -479,6 +480,7 @@ fn make_test_gene() -> GeneDetails {
                     phase: None,
                 }),
                 gene_uniquename: flex_str!("SPCC18B5.06"),
+                rna_seq_length: NonZeroUsize::new(730_829 - 729_054),
             })
         )]),
         cv_annotations: HashMap::new(),

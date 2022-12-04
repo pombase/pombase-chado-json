@@ -1,3 +1,4 @@
+use std::num::NonZeroUsize;
 use std::rc::Rc;
 use std::collections::BTreeMap;
 use std::borrow::Borrow;
@@ -1848,7 +1849,7 @@ phenotypes, so just the first part of this extension will be used:
                 .. parts[0].location.clone()
             };
 
-        let maybe_cds_location =
+        let (rna_seq_length, maybe_cds_location) =
             if feat.feat_type.name == "mRNA" {
                 let mut cds_start = usize::MAX;
                 let mut cds_end = 0;
@@ -1865,24 +1866,28 @@ phenotypes, so just the first part of this extension will be used:
                 }
 
                 if cds_end == 0 {
-                    None
+                    (None, None)
                 } else {
                     if let Some(mrna_location) = feat.featurelocs.borrow().get(0) {
                         let first_part_loc = &parts[0].location;
 
-                        Some(ChromosomeLocation {
-                            chromosome_name: first_part_loc.chromosome_name.clone(),
-                            start_pos: cds_start,
-                            end_pos: cds_end,
-                            strand: first_part_loc.strand,
-                            phase: make_phase(mrna_location),
-                        })
+                        (NonZeroUsize::new((cds_end + 1).saturating_sub(cds_start)),
+                         Some(ChromosomeLocation {
+                              chromosome_name: first_part_loc.chromosome_name.clone(),
+                              start_pos: cds_start,
+                              end_pos: cds_end,
+                              strand: first_part_loc.strand,
+                              phase: make_phase(mrna_location),
+                          }))
                     } else {
-                        None
+                        (None, None)
                     }
                 }
             } else {
-                None
+                let rna_length =
+                    (transcript_location.end_pos + 1).saturating_sub(transcript_location.start_pos);
+                let rna_length = NonZeroUsize::new(rna_length);
+                (rna_length, None)
             };
 
         if let Some(gene_uniquename) =
@@ -1901,6 +1906,7 @@ phenotypes, so just the first part of this extension will be used:
                     protein: None,
                     cds_location: maybe_cds_location,
                     gene_uniquename: gene_uniquename.to_owned(),
+                    rna_seq_length,
                 };
 
                 self.transcripts.insert(transcript_uniquename.clone(), transcript.clone());

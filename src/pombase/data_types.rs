@@ -2,6 +2,7 @@ use std::collections::{HashMap, HashSet, BTreeMap};
 
 use std::fmt::Display;
 use std::fmt;
+use std::num::NonZeroUsize;
 
 use regex::Regex;
 
@@ -1278,6 +1279,8 @@ pub struct TranscriptDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub cds_location: Option<ChromosomeLocation>,
     pub gene_uniquename: FlexStr,
+    // the CDS length (protein coding) or RNA length (non-coding) including introns
+    pub rna_seq_length: Option<NonZeroUsize>,
 }
 
 impl TranscriptDetails {
