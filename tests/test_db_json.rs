@@ -197,6 +197,9 @@ fn get_test_raw() -> Raw {
     let db_creation_datetime_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &chadoprop_types_cv, &pbo_db,
                                 "db_creation_datetime", "0017491");
+    let date_version_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &chadoprop_types_cv, &pbo_db,
+                                "date_version", "0017492");
     let is_a_cvterm =
         make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &relations_cv, &obo_rel_db,
                                 "is_a", "is_a");
@@ -346,10 +349,16 @@ fn get_test_raw() -> Raw {
                                 "0000082");
     make_test_cvterm_rel(&mut cvterm_relationships, &pbo0022440_cvterm, &is_a_cvterm, &fypo0000082_cvterm);
 
-    let chadoprops = vec![Rc::new(Chadoprop {
-        prop_type: db_creation_datetime_cvterm,
-        value: Some(flex_str!("2016-10-17 03:41:56")),
-    })];
+    let chadoprops = vec![
+        Rc::new(Chadoprop {
+            prop_type: db_creation_datetime_cvterm,
+            value: Some(flex_str!("2016-10-17 03:41:56")),
+        }),
+        Rc::new(Chadoprop {
+            prop_type: date_version_cvterm,
+            value: Some(flex_str!("2016-10-17-v2")),
+        })
+    ];
 
     let chr_1 = make_test_feature(&mut features, &pombe_organism,
                                   &chromosome_cvterm, "chromosome_1", None);
