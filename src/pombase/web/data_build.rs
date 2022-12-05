@@ -4431,10 +4431,15 @@ phenotypes, so just the first part of this extension will be used:
 
     fn make_metadata(&mut self) -> Metadata {
         let mut db_creation_datetime = None;
+        let mut date_version = None;
 
         for chadoprop in &self.raw.chadoprops {
             if chadoprop.prop_type.name == "db_creation_datetime" {
                 db_creation_datetime = chadoprop.value.clone();
+            } else {
+                if chadoprop.prop_type.name == "date_version" {
+                   date_version = chadoprop.value.clone();
+                }
             }
         }
 
@@ -4453,6 +4458,7 @@ phenotypes, so just the first part of this extension will be used:
             export_prog_name: flex_str!(PKG_NAME),
             export_prog_version: flex_str!(VERSION),
             db_creation_datetime: db_creation_datetime.unwrap(),
+            date_version: date_version.unwrap(),
             gene_count: self.genes.len(),
             term_count: self.terms.len(),
             cv_versions,

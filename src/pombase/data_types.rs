@@ -1913,6 +1913,7 @@ impl PartialOrd for ParalogAnnotation {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Metadata {
     pub db_creation_datetime: FlexStr,
+    pub date_version: FlexStr,
     pub export_prog_name: FlexStr,
     pub export_prog_version: FlexStr,
     pub gene_count: usize,
