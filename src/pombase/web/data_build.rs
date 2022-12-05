@@ -4632,6 +4632,23 @@ phenotypes, so just the first part of this extension will be used:
         return_set
     }
 
+    fn get_rna_lengths(&self, gene_details: &GeneDetails) -> (Option<usize>, Option<usize>) {
+        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+            if let Some(transcript) =
+                self.transcripts.get(transcript_uniquename) {
+                    let spliced_length = transcript.rna_seq_length_spliced.map(|i| i.get());
+                    let unspliced_length = transcript.rna_seq_length_unspliced.map(|i| i.get());
+
+                    (spliced_length, unspliced_length)
+                } else {
+                    (None, None)
+                }
+        } else {
+            (None, None)
+        }
+    }
+
+
     fn make_gene_query_data_map(&self) -> HashMap<GeneUniquename, GeneQueryData> {
         let mut gene_query_data_map = HashMap::new();
 
@@ -4685,6 +4702,8 @@ phenotypes, so just the first part of this extension will be used:
             let (molecular_weight, protein_length, protein_length_bin) =
                 self.make_protein_data(gene_details);
 
+            let (spliced_rna_length, unspliced_rna_length) = self.get_rna_lengths(gene_details);
+
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
                 deletion_viability: gene_details.deletion_viability.clone(),
@@ -4699,6 +4718,8 @@ phenotypes, so just the first part of this extension will be used:
                 molecular_weight,
                 protein_length,
                 protein_length_bin,
+                spliced_rna_length,
+                unspliced_rna_length,
                 reference_uniquenames,
                 subset_termids: gene_details.subset_termids.clone(),
             };

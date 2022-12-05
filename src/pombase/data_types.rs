@@ -2003,6 +2003,10 @@ pub struct GeneQueryData {
     // bin is None for RNA genes:
 #[serde(skip_serializing_if="Option::is_none")]
     pub protein_length_bin: Option<GeneQueryAttrName>,
+#[serde(skip_serializing_if="Option::is_none")]
+    pub spliced_rna_length: Option<usize>,
+#[serde(skip_serializing_if="Option::is_none")]
+    pub unspliced_rna_length: Option<usize>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subset_termids: HashSet<TermId>,
 }
