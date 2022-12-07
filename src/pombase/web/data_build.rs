@@ -3220,7 +3220,8 @@ phenotypes, so just the first part of this extension will be used:
                                       references_by_uniquename: HashMap::new(),
                                       terms_by_termid: HashMap::new(),
                                       annotation_details: HashMap::new(),
-                                      genetic_interactions: HashMap::new(),
+                                      double_mutant_genetic_interactions: HashMap::new(),
+                                      single_allele_genetic_interactions: HashMap::new(),
                                       gene_count: 0,
                                       genotype_count: 0,
                                       xrefs,
@@ -4983,6 +4984,63 @@ phenotypes, so just the first part of this extension will be used:
         let mut multi_locus_annotated_genes_map: HashMap<TermId, HashSet<GeneUniquename>> =
             HashMap::new();
 
+        let set_interaction_maps = |genetic_interactions: &GeneticInteractionMap,
+                                    termid: &FlexStr,
+                                    seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
+                                    seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                                    seen_genotypes: &mut HashMap<FlexStr, GenotypeShortMap>,
+                                    seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
+                                    seen_transcripts: &mut HashMap<FlexStr, TranscriptDetailsOptionMap>,
+                                    seen_terms: &mut HashMap<GeneUniquename, TermShortOptionMap>| {
+
+            let interaction_iter = genetic_interactions.iter();
+            for (interaction_key, interaction_details) in interaction_iter {
+                self.add_gene_to_hash(seen_genes, termid,
+                                      &interaction_key.gene_a_uniquename);
+                self.add_gene_to_hash(seen_genes, termid,
+                                      &interaction_key.gene_b_uniquename);
+
+                for interaction_detail in interaction_details {
+
+                    self.add_ref_to_hash(seen_references, termid,
+                                         &interaction_detail.reference_uniquename);
+
+                    if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
+                        self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  termid,
+                                                  genotype_a_uniquename);
+                    }
+                    if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
+                        self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  termid,
+                                                  genotype_b_uniquename);
+                    }
+                    if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
+                        self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  termid,
+                                                  double_mutant_genotype_display_uniquename);
+                    }
+
+                    if let Some(ref double_mutant_phenotype_termid) = interaction_detail.double_mutant_phenotype_termid {
+                        self.add_term_to_hash(seen_terms, termid,
+                                              double_mutant_phenotype_termid);
+                    }
+                    if let Some(ref rescued_phenotype_termid) = interaction_detail.rescued_phenotype_termid {
+                        self.add_term_to_hash(seen_terms, termid,
+                                              rescued_phenotype_termid);
+                    }
+
+                    self.add_extension_to_maps(&interaction_detail.double_mutant_extension,
+                                               seen_genes, seen_transcripts, seen_terms,
+                                               termid);
+
+                    self.add_extension_to_maps(&interaction_detail.rescued_phenotype_extension,
+                                               seen_genes, seen_transcripts, seen_terms,
+                                               termid);
+                }
+            }
+        };
+
         for (termid, term_details) in &self.terms {
             for xref in &term_details.definition_xrefs {
                 if xref.starts_with("PMID:") && self.references.contains_key(xref) {
@@ -5097,44 +5155,24 @@ phenotypes, so just the first part of this extension will be used:
                 }
             }
 
-            let interaction_iter = term_details.genetic_interactions.iter();
-            for (interaction_key, interaction_details) in interaction_iter {
-                self.add_gene_to_hash(&mut seen_genes, termid,
-                                      &interaction_key.gene_a_uniquename);
-                self.add_gene_to_hash(&mut seen_genes, termid,
-                                      &interaction_key.gene_b_uniquename);
 
-                for interaction_detail in interaction_details {
+            set_interaction_maps(&term_details.double_mutant_genetic_interactions,
+                                 &termid,
+                                 &mut seen_references,
+                                 &mut seen_genes,
+                                 &mut seen_genotypes,
+                                 &mut seen_alleles,
+                                 &mut seen_transcripts,
+                                 &mut seen_terms);
 
-                self.add_ref_to_hash(&mut seen_references, termid,
-                                     &interaction_detail.reference_uniquename);
-
-                if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
-                    self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
-                                              termid,
-                                              genotype_a_uniquename);
-                }
-                if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
-                    self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
-                                              termid,
-                                              genotype_b_uniquename);
-                }
-                if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
-                    self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
-                                              termid,
-                                              double_mutant_genotype_display_uniquename);
-                }
-
-                if let Some(ref double_mutant_phenotype_termid) = interaction_detail.double_mutant_phenotype_termid {
-                    self.add_term_to_hash(&mut seen_terms, termid,
-                                          double_mutant_phenotype_termid);
-                }
-                if let Some(ref rescued_phenotype_termid) = interaction_detail.rescued_phenotype_termid {
-                    self.add_term_to_hash(&mut seen_terms, termid,
-                                          rescued_phenotype_termid);
-                }
-            }
-            }
+            set_interaction_maps(&term_details.single_allele_genetic_interactions,
+                                 &termid,
+                                 &mut seen_references,
+                                 &mut seen_genes,
+                                 &mut seen_genotypes,
+                                 &mut seen_alleles,
+                                 &mut seen_transcripts,
+                                 &mut seen_terms);
         }
 
         for (termid, term_details) in &mut self.terms {
@@ -6170,7 +6208,7 @@ phenotypes, so just the first part of this extension will be used:
                     interaction_detail.double_mutant_phenotype_termid
                 {
                     let term_details = self.terms.get_mut(double_mutant_phenotype_termid).unwrap();
-                    get_interaction_details(&mut term_details.genetic_interactions, interaction_key.clone())
+                    get_interaction_details(&mut term_details.double_mutant_genetic_interactions, interaction_key.clone())
                         .push(interaction_detail.clone());
                 }
 
@@ -6178,7 +6216,7 @@ phenotypes, so just the first part of this extension will be used:
                     interaction_detail.rescued_phenotype_termid
                 {
                     let term_details = self.terms.get_mut(rescued_phenotype_termid).unwrap();
-                    get_interaction_details(&mut term_details.genetic_interactions, interaction_key.clone())
+                    get_interaction_details(&mut term_details.single_allele_genetic_interactions, interaction_key.clone())
                         .push(interaction_detail.clone());
                 }
 

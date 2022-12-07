@@ -1703,7 +1703,11 @@ pub struct TermDetails {
 
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     #[serde_as(as = "Vec<(_, _)>")]
-    pub genetic_interactions: GeneticInteractionMap,
+    pub double_mutant_genetic_interactions: GeneticInteractionMap,
+
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    #[serde_as(as = "Vec<(_, _)>")]
+    pub single_allele_genetic_interactions: GeneticInteractionMap,
 
     pub gene_count: usize,
     pub genotype_count: usize,
