@@ -1220,6 +1220,14 @@ pub enum FeatureType {
     RepeatRegion,
 #[serde(rename = "TR_box")]
     TRBox,
+#[serde(rename = "antisense_RNA")]
+    AntisenseRNA,
+#[serde(rename = "sncRNA")]
+    SncRNA,
+#[serde(rename = "lncRNA")]
+    LncRNA,
+#[serde(rename = "guide_RNA")]
+    GuideRNA,
     SNP,
 }
 
@@ -1258,6 +1266,10 @@ impl Display for FeatureType {
             FeatureType::RegionalCentromereInnerRepeatRegion => "regional_centromere_inner_repeat_region",
             FeatureType::RepeatRegion => "repeat_region",
             FeatureType::TRBox => "TR_box",
+            FeatureType::AntisenseRNA => "antisense_RNA",
+            FeatureType::SncRNA => "sncRNA",
+            FeatureType::LncRNA => "lncRNA",
+            FeatureType::GuideRNA => "guide_RNA",
             FeatureType::SNP => "SNP",
         })
     }
