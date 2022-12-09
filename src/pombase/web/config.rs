@@ -273,7 +273,7 @@ pub struct GpadGpiConfig {
     pub extension_relation_mappings: HashMap<FlexStr, Option<TermId>>,
     // A map from the SO type of a transcript to the SO type of the gene is
     // derives from
-    pub transcript_gene_so_term_map: HashMap<FlexStr, FlexStr>,
+    pub transcript_gene_so_term_map: HashMap<FlexStr, Option<FlexStr>>,
 }
 
 #[derive(Deserialize, Clone, Debug)]
@@ -510,9 +510,10 @@ pub const HAS_PART_CV_NAMES: [FlexStr; 1] = [flex_str!("fission_yeast_phenotype"
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;
 
-pub const TRANSCRIPT_FEATURE_TYPES: [&str; 8] =
-    ["snRNA", "rRNA", "mRNA", "snoRNA", "ncRNA", "tRNA", "pseudogenic_transcript",
-     "transcript"];
+pub const TRANSCRIPT_FEATURE_TYPES: [&str; 12] =
+    ["antisense_RNA", "guide_RNA", "lncRNA", "mRNA", "ncRNA",
+     "rRNA", "sncRNA", "snoRNA", "snRNA", "tRNA",
+     "pseudogenic_transcript", "transcript"];
 pub const TRANSCRIPT_PART_TYPES: [&str; 4] =
     ["five_prime_UTR", "exon", "pseudogenic_exon", "three_prime_UTR"];
 // any feature with a type not in this list or in the two TRANSCRIPT lists above

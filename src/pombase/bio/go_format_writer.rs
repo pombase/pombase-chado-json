@@ -242,12 +242,24 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 
     let db_object_synonyms_string = db_object_synonyms.join("|");
 
-    let db_object_type = config.file_exports.gpad_gpi.transcript_gene_so_term_map
-        .get(&gene_details.transcript_so_termid)
-        .unwrap_or_else(|| {
-            panic!("failed for find configuration for {} in transcript_gene_so_term_map",
-                   &gene_details.transcript_so_termid);
-        });
+    let Some(transcript_so_termid) =
+        gene_details.transcript_so_termid.as_ref() else {
+           eprintln!("no transcript_so_termid for gene: {}", db_object_id);
+           return Ok(());
+        };
+
+    let Some(db_object_type_map_val) = config.file_exports.gpad_gpi.transcript_gene_so_term_map
+        .get(transcript_so_termid)
+        else {
+            eprintln!("failed for find configuration for {} in transcript_gene_so_term_map from {}",
+                      transcript_so_termid, db_object_id);
+            return Ok(());
+        };
+
+    let Some(db_object_type) = db_object_type_map_val else {
+        // there is no available gene SO term for this transcript's SO type
+        return Ok(());
+    };
 
     let db_object_taxon =
         format!("NCBITaxon:{}",

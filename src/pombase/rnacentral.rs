@@ -167,9 +167,11 @@ fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
     let mut ret = vec![];
 
     for gene_details in genes.values() {
-        let so_term_id = &gene_details.transcript_so_termid;
+        let Some(ref transcript_so_termid) = gene_details.transcript_so_termid else {
+            continue;
+        };
 
-        if !rnacentral_config.export_so_ids.contains(so_term_id) {
+        if !rnacentral_config.export_so_ids.contains(transcript_so_termid) {
             continue;
         }
 
@@ -193,7 +195,7 @@ fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
                 taxon_id: flex_fmt!("NCBITaxon:{}", gene_details.taxonid),
                 symbol: None,
                 symbol_synonyms: vec![],
-                so_term_id: so_term_id.clone(),
+                so_term_id: transcript_so_termid.clone(),
                 sequence: uppercase_sequence.to_shared_str(),
                 url: make_url(config, gene_details),
                 gene: rnacentral_gene,

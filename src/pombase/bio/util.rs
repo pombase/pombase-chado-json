@@ -291,7 +291,7 @@ fn make_test_gene() -> GeneDetails {
         dbxrefs: HashSet::new(),
         feature_type: flex_str!("mRNA gene"),
         feature_so_termid: flex_str!("SO:0000704"),
-        transcript_so_termid: flex_str!("SO:0001217"),
+        transcript_so_termid: Some(flex_str!("SO:0001217")),
         characterisation_status: Some(flex_str!("published")),
         taxonomic_distribution: Some(flex_str!("dubious")),
         location: Some(ChromosomeLocation {

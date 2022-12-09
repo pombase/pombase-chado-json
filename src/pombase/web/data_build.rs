@@ -1764,7 +1764,7 @@ phenotypes, so just the first part of this extension will be used:
             dbxrefs,
             feature_type: feat.feat_type.name.clone(),
             feature_so_termid: feat.feat_type.termid(),
-            transcript_so_termid: feat.feat_type.termid(),
+            transcript_so_termid: None,
             characterisation_status: None,
             taxonomic_distribution: None,
             location: maybe_location,
@@ -1924,7 +1924,7 @@ phenotypes, so just the first part of this extension will be used:
                 self.transcripts.insert(transcript_uniquename.clone(), transcript.clone());
 
                 gene_details.transcripts.push(transcript_uniquename);
-                gene_details.transcript_so_termid = feat.feat_type.termid();
+                gene_details.transcript_so_termid = Some(feat.feat_type.termid());
             } else {
                 panic!("can't find gene for transcript: {}", transcript_uniquename);
             }
@@ -2335,13 +2335,15 @@ phenotypes, so just the first part of this extension will be used:
 
         for gene_details in self.genes.values() {
             // mRNA or pseudogenic_transcript
-            if gene_details.transcript_so_termid == "SO:0000234" ||
-                gene_details.transcript_so_termid == "SO:0000516" {
-                if let Some(ref location) = gene_details.location {
-                    genes_and_locs.push(GeneAndLoc {
-                        gene_uniquename: gene_details.uniquename.clone(),
-                        loc: location.clone(),
-                    });
+            if let Some(ref transcript_so_termid) = gene_details.transcript_so_termid {
+                if transcript_so_termid == "SO:0000234" ||
+                    transcript_so_termid == "SO:0000516" {
+                    if let Some(ref location) = gene_details.location {
+                        genes_and_locs.push(GeneAndLoc {
+                            gene_uniquename: gene_details.uniquename.clone(),
+                            loc: location.clone(),
+                        });
+                    }
                 }
             }
         }

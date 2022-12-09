@@ -1040,7 +1040,7 @@ pub struct GeneDetails {
     pub dbxrefs: HashSet<FlexStr>,
     pub feature_type: FlexStr,
     pub feature_so_termid: FlexStr,
-    pub transcript_so_termid: TermId,
+    pub transcript_so_termid: Option<TermId>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub characterisation_status: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
