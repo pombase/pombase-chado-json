@@ -168,6 +168,7 @@ pub struct Cvtermpath {
 pub struct Feature {
     pub uniquename: FlexStr,
     pub name: Option<FlexStr>,
+    pub is_obsolete: bool,
     pub feat_type: Rc<Cvterm>,
     pub organism: Rc<ChadoOrganism>,
     pub residues: Option<FlexStr>,
@@ -473,16 +474,18 @@ impl Raw {
         }
 
         for row in &conn.query(
-            "SELECT feature_id, uniquename, name, type_id, organism_id, residues FROM feature", &[]).await? {
+            "SELECT feature_id, uniquename, name, is_obsolete, type_id, organism_id, residues FROM feature", &[]).await? {
             let feature_id = row.get(0);
-            let type_id: i32 = row.get(3);
-            let organism_id: i32 = row.get(4);
-            let residues: Option<String> = row.get(5);
+            let type_id: i32 = row.get(4);
+            let organism_id: i32 = row.get(5);
+            let residues: Option<String> = row.get(6);
             let uniquename: String = row.get(1);
             let name: Option<String> = row.get(2);
+            let is_obsolete: bool = row.get(3);
             let feature = Feature {
                 uniquename: uniquename.to_shared_str(),
                 name: name.map(|s| s.to_shared_str()),
+                is_obsolete,
                 feat_type: get_cvterm(&mut cvterm_map, type_id),
                 organism: organism_map[&organism_id].clone(),
                 residues: residues.map(|s| s.to_shared_str()),

@@ -62,6 +62,7 @@ ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
         organism: organism.clone(),
         uniquename: uniquename.to_shared_str(),
         name: name,
+        is_obsolete: false,
         feat_type: type_cvterm.clone(),
         residues: Some(residues.into()),
         featurelocs: RefCell::new(vec![]),
