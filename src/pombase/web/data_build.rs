@@ -5874,24 +5874,35 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn make_feature_type_subsets(&self, subsets: &mut IdGeneSubsetMap) {
+        let mut add_to_subset = |subset_name: &str, gene_details: &GeneDetails| {
+            let re = Regex::new(r"[\s,:]+").unwrap();
+            let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_shared_str();
+            subsets.entry(subset_name_no_spaces.clone())
+                .or_insert(GeneSubsetDetails {
+                    name: subset_name_no_spaces,
+                    display_name: subset_name.into(),
+                    elements: HashSet::new()
+                })
+                .elements.insert(gene_details.uniquename.clone());
+        };
         for gene_details in self.genes.values() {
             if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
                 if load_organism_taxonid != gene_details.taxonid {
                     continue;
                 }
             }
-
             let subset_name =
-                flex_str!("feature_type:") + &gene_details.feature_type;
-            let re = Regex::new(r"[\s,:]+").unwrap();
-            let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_shared_str();
-            subsets.entry(subset_name_no_spaces.clone())
-                .or_insert(GeneSubsetDetails {
-                    name: subset_name_no_spaces,
-                    display_name: subset_name.clone(),
-                    elements: HashSet::new()
-                })
-                .elements.insert(gene_details.uniquename.clone());
+                format!("feature_type:{}", gene_details.feature_type);
+            add_to_subset(&subset_name, gene_details);
+
+            if let Some(parent_types) =
+               self.config.feature_sub_groups.get(gene_details.feature_type.as_ref())
+            {
+                for parent_type in parent_types.iter() {
+                    let subset_name = format!("feature_type:{}", parent_type);
+                    add_to_subset(&subset_name, gene_details);
+                }
+            }
         }
     }
 

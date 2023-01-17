@@ -373,6 +373,7 @@ pub struct Config {
     pub ortholog_taxonids: HashSet<u32>,
     pub file_exports: FileExportConfig,
     pub gene_expression: GeneExpressionConfig,
+    pub feature_sub_groups: HashMap<String, HashSet<String>>,
 }
 
 impl Config {
