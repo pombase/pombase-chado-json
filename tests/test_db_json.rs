@@ -686,6 +686,7 @@ fn get_test_config() -> Config {
         gene_expression: GeneExpressionConfig {
             datasets: vec![],
         },
+        feature_sub_groups: HashMap::new(),
     };
 
     config.file_exports.gpad_gpi.go_aspect_terms.insert(flex_str!("molecular_function"),

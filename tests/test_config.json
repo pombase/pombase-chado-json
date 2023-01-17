@@ -489,5 +489,6 @@
   },
   "gene_expression": {
     "datasets": []
-  }
+  },
+  "feature_sub_groups": {}
 }
