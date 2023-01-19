@@ -589,8 +589,7 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         all_ref_uniquenames.iter()
         .filter(|ref_uniquename| {
             let reference = references_map.get(*ref_uniquename).unwrap();
-            reference.canto_approved_date.is_some() &&
-                reference.canto_curator_role.is_some()
+            reference.canto_approved_date.is_some()
         })
         .cloned()
         .collect();
@@ -626,7 +625,7 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         let reference = references_map.get(ref_uniquename).unwrap();
 
         let ref_short = make_reference_short(references_map, ref_uniquename).unwrap();
-        if reference.canto_curator_role == Some("community".into()) {
+        if reference.canto_curator_role == "community" {
             all_community_curated.push(ref_short.clone());
             if recent_community_curated.len() <= MAX_RECENT_REFS {
                 recent_community_curated.push(ref_short);
@@ -1389,7 +1388,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut non_pubmed_abstract: Option<FlexStr> = None;
             let mut canto_annotation_status: Option<FlexStr> = None;
             let mut canto_triage_status: Option<FlexStr> = None;
-            let mut canto_curator_role: Option<FlexStr> = None;
+            let mut canto_curator_role = self.config.database_name.clone();
             let mut canto_curator_name: Option<FlexStr> = None;
             let mut canto_first_approved_date: Option<FlexStr> = None;
             let mut canto_approved_date: Option<FlexStr> = None;
@@ -1484,10 +1483,9 @@ phenotypes, so just the first part of this extension will be used:
             for annotation_curator in &annotation_curators {
               if annotation_curator.community_curator {
                 canto_curator_name = Some(annotation_curator.name.clone());
-                canto_curator_role = Some(flex_str!("community"));
+                canto_curator_role = flex_str!("community");
               } else {
-                if canto_curator_role.is_none() {
-                  canto_curator_role = Some(self.config.database_name.clone());
+                if canto_curator_name.is_none() {
                   canto_curator_name = Some(annotation_curator.name.clone());
                 }
               }

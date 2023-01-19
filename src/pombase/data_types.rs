@@ -531,8 +531,7 @@ pub struct ReferenceDetails {
     pub canto_annotation_status: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_triage_status: Option<FlexStr>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_curator_role: Option<FlexStr>,
+    pub canto_curator_role: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_curator_name: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -2158,8 +2157,7 @@ pub struct SolrReferenceSummary {
     pub canto_annotation_status: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_curator_name: Option<FlexStr>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub canto_curator_role: Option<FlexStr>,
+    pub canto_curator_role: FlexStr,
 
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub highlighting: SolrMatchHighlight,
