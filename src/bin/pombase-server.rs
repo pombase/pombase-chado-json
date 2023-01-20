@@ -4,6 +4,7 @@ extern crate getopts;
 use pombase::data_types::AlleleDetails;
 use rocket::fs::NamedFile;
 use rocket::response::content;
+use rocket::response::content::RawHtml;
 
 #[macro_use] extern crate serde_derive;
 
@@ -155,6 +156,38 @@ async fn get_index(state: &rocket::State<StaticFileState>) -> Option<NamedFile> 
     let web_root_dir = &state.web_root_dir;
     let root_dir_path = Path::new("/").join(web_root_dir);
     NamedFile::open(root_dir_path.join("index.html")).await.ok()
+}
+
+
+/*
+Return a simple HTML version a gene page for search engines
+*/
+#[get("/structure_view/<protein_id>", rank=1)]
+async fn structure_view(protein_id: String, config: &rocket::State<Config>)
+                        -> Option<content::RawHtml<String>>
+{
+    let search_url = config.server.django_url.to_owned() + "/structure_view/";
+    let params = [("protein_id", protein_id)];
+    let client = reqwest::blocking::Client::new();
+    let result = client.get(&search_url).query(&params).send();
+
+    match result {
+        Ok(res) => {
+            match res.text() {
+                Ok(text) => Some(RawHtml(text)),
+                Err(err) => {
+                    eprintln!("Error proxying to Django: {:?}", err);
+                    None
+                }
+
+            }
+        },
+        Err(err) => {
+            eprintln!("Error proxying to Django: {:?}", err);
+            None
+        }
+    }
+
 }
 
 /*
@@ -465,6 +498,7 @@ async fn rocket() -> _ {
                             seq_feature_page_features,
                             term_complete, ref_complete, allele_complete,
                             solr_search, motif_search, gene_ex_violin_plot,
+                            structure_view,
                             ping])
         .mount("/jbrowse",
                FileServer::from(Path::new("/")
