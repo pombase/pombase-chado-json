@@ -22,11 +22,11 @@ impl<T: Eq + Hash + Clone> VecSet<T> {
         }
     }
 
-    fn make_bit_set(&mut self, tvec: Vec<T>) -> BitSet {
+    fn make_bit_set(&mut self, tvec: &[T]) -> BitSet {
         let mut new_bitset = BitSet::new();
         for t in tvec {
             let mut curr = self.curr_index;
-            let index = match self.data.entry(t) {
+            let index = match self.data.entry(t.clone()) {
                 Vacant(entry) => {
                     curr += 1;
                     entry.insert(curr);
@@ -43,7 +43,7 @@ impl<T: Eq + Hash + Clone> VecSet<T> {
     }
 
     // Insert the argument set
-    pub fn insert(&mut self, tvec: Vec<T>) {
+    pub fn insert(&mut self, tvec: &[T]) {
         let new_bitset = self.make_bit_set(tvec);
         self.bit_sets.push(new_bitset);
     }
@@ -51,14 +51,14 @@ impl<T: Eq + Hash + Clone> VecSet<T> {
     // Return true iff a superset of the argument was inserted
     // with insert() earlier
     pub fn contains_superset(&mut self, tvec: &[T]) -> bool {
-        let new_bitset = self.make_bit_set(tvec.to_vec());
+        let new_bitset = self.make_bit_set(tvec);
         self.bit_sets.iter().any(|s| new_bitset.is_subset(s))
     }
 
     // Return true iff a proper superset of the argument was inserted
     // with insert() earlier
     pub fn contains_proper_superset(&mut self, tvec: &[T]) -> bool {
-        let new_bitset = self.make_bit_set(tvec.to_vec());
+        let new_bitset = self.make_bit_set(tvec);
         self.bit_sets.iter().any(|s| new_bitset.is_subset(s) && &new_bitset != s)
     }
 }
@@ -78,27 +78,27 @@ fn test_insert() {
             .map(|s| String::from(*s)).collect::<Vec<String>>();
 
     let s1 = str_data(vec!["one","two","three","four"]);
-    vec_set.insert(s1);
+    vec_set.insert(&s1);
     check(&vec_set, 4,1,4);
 
     let s2 = str_data(vec!["one","two","four","five"]);
-    vec_set.insert(s2);
+    vec_set.insert(&s2);
     check(&vec_set, 5,2,5);
 
     let s4 = str_data(vec!["one","two","three","five"]);
-    vec_set.insert(s4);
+    vec_set.insert(&s4);
     check(&vec_set, 5,3,5);
 
     let s6 = str_data(vec!["one","four"]);
-    vec_set.insert(s6);
+    vec_set.insert(&s6);
     check(&vec_set, 5,4,5);
 
     let s7 = str_data(vec!["one","six"]);
-    vec_set.insert(s7);
+    vec_set.insert(&s7);
     check(&vec_set, 6,5,6);
 
     let s8 = str_data(vec!["one"]);
-    vec_set.insert(s8);
+    vec_set.insert(&s8);
     check(&vec_set, 6,6,6);
 }
 
@@ -111,19 +111,19 @@ fn test_contains_superset() {
             .map(|s| String::from(*s)).collect::<Vec<String>>();
 
     let s0 = str_data(vec!["one","seven","three","four"]);
-    vec_set.insert(s0);
+    vec_set.insert(&s0);
     let s1 = str_data(vec!["one","two","three","four"]);
     let s2 = str_data(vec!["one","two","three"]);
     let s2_2 = str_data(vec!["one","two","five"]);
     let s3 = str_data(vec!["one"]);
-    vec_set.insert(s1.clone());
+    vec_set.insert(&s1);
     assert!(vec_set.contains_proper_superset(&s2));
-    vec_set.insert(s2.clone());
+    vec_set.insert(&s2);
     assert!(vec_set.contains_proper_superset(&s2));
-    vec_set.insert(s2_2.clone());
+    vec_set.insert(&s2_2);
     assert!(!vec_set.contains_proper_superset(&s2_2));
     assert!(vec_set.contains_superset(&s2_2));
-    vec_set.insert(s3.clone());
+    vec_set.insert(&s3);
     assert!(vec_set.contains_proper_superset(&s3));
 
     let s4 = str_data(vec!["one","two"]);

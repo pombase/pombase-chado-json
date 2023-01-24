@@ -307,7 +307,7 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 
     let mut prev = rows.remove(0);
 
-    vec_set.insert(ext_parts_wrap(&prev.extension));
+    vec_set.insert(&ext_parts_wrap(&prev.extension));
 
     current_rows.push(prev.clone());
 
@@ -323,7 +323,7 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
                 current_rows = vec![];
             }
 
-        vec_set.insert(ext_parts_wrap(&current.extension));
+        vec_set.insert(&ext_parts_wrap(&current.extension));
         current_rows.push(current.clone());
 
         prev = current;
