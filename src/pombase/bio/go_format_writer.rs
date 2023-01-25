@@ -112,6 +112,16 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
             }
         }
 
+        if let Some(ref characterisation_status) = gene_details.characterisation_status {
+            if characterisation_status == "dubious" {
+                continue;
+            }
+        }
+
+        if gene_details.feature_type == "pseudogene" {
+            continue;
+        }
+
         write_gene_to_gpi(&mut gpi_writer, config, api_maps, gene_details)?;
 
         write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,
@@ -356,16 +366,6 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     let local: DateTime<Local> = Local::now();
     let local_iso_date = local.format("%F");
     let assigned_by = &config.database_name;
-
-    if let Some(ref product) = gene_details.product {
-        if product == "dubious" {
-            return Ok(());
-        }
-    }
-
-    if gene_details.feature_type == "pseudogene" {
-        return Ok(());
-    }
 
     for aspect in GO_ASPECT_NAMES.iter() {
         let term_annotations = gene_details.cv_annotations.get(aspect);
