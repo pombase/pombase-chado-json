@@ -55,7 +55,7 @@ fn make_allele_url(q: &str) -> Option<String> {
     let mut clean_words = vec![];
 
     for word in &words {
-        clean_words.push(CLEAN_RE.replace_all(&word, "\\$1"));
+        clean_words.push(CLEAN_RE.replace_all(word, "\\$1"));
 
         url_parts.push(format!("name:({})^5.0", word));
         url_parts.push(format!("synonyms:({})^4.0", word));
@@ -77,8 +77,7 @@ fn matches_from_container(container: SolrAlleleResponseContainer) -> Vec<SolrAll
     let matches: Vec<SolrAlleleSummary> = response_container.response.docs
         .drain(0..)
         .map(|mut doc: SolrAlleleSummary| {
-            doc.highlighting = hl_by_id.remove(doc.id.as_str())
-                .unwrap_or_else(HashMap::new);
+            doc.highlighting = hl_by_id.remove(doc.id.as_str()).unwrap_or_default();
             doc
         }).collect();
     matches

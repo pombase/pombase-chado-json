@@ -93,7 +93,7 @@ impl Search {
         let search_url = self.config.django_url.to_owned() + "/motifsearch/query/";
         let params = [("scope", scope), ("pattern", pattern)];
         let client = reqwest::blocking::Client::new();
-        let result = client.get(&search_url).query(&params).send();
+        let result = client.get(search_url).query(&params).send();
 
         match result {
             Ok(res) => {
@@ -114,7 +114,7 @@ impl Search {
         let plot_url = self.config.django_url.to_owned() + "/gene_ex/gene_ex_violin/";
         let params = [("plot_size", plot_size), ("genes", genes)];
         let client = reqwest::blocking::Client::new();
-        let result = client.get(&plot_url).query(&params).send();
+        let result = client.get(plot_url).query(&params).send();
 
         match result {
             Ok(res) => {

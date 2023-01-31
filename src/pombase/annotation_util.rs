@@ -69,16 +69,16 @@ pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvCo
                             }
                         }
                         if column_config.name == "gene_uniquename" {
-                            let gene_uniquenames_string = join(&gene_uniquenames, ",");
+                            let gene_uniquenames_string = join(gene_uniquenames, ",");
                             row.push(gene_uniquenames_string);
                         }
                         if column_config.name == "gene_name" {
-                            
+
                             let filtered_gene_uniquenames = gene_uniquenames.iter()
                                 .filter_map(|uniquename| {
                                    api_maps.genes.get(uniquename).unwrap().name.clone()
                                 }).collect::<Vec<_>>();
-                       
+
                             row.push(join(&filtered_gene_uniquenames, ","));
                         }
                     }

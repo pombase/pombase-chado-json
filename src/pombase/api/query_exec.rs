@@ -69,7 +69,7 @@ impl QueryExec {
                     rows,
                 }
             },
-            Err(mess) => QueryAPIResult::new_error(&query, mess.clone()),
+            Err(mess) => QueryAPIResult::new_error(&query, mess),
         }
     }
 

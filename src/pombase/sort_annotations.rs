@@ -67,11 +67,11 @@ fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart]
     // put the extension that will be grouped in the summary at the end
     // See: https://github.com/pombase/pombase-chado/issues/636
     let (mut ext1_for_cmp, ext1_rest): (Vec<ExtPart>, Vec<ExtPart>) =
-        ext1.to_vec().into_iter().partition(&is_grouping_rel_name);
+        ext1.iter().cloned().partition(&is_grouping_rel_name);
     ext1_for_cmp.extend(ext1_rest);
 
     let (mut ext2_for_cmp, ext2_rest): (Vec<ExtPart>, Vec<ExtPart>) =
-        ext2.to_vec().into_iter().partition(&is_grouping_rel_name);
+        ext2.iter().cloned().partition(&is_grouping_rel_name);
     ext2_for_cmp.extend(ext2_rest);
 
     let iter = ext1_for_cmp.iter().zip(&ext2_for_cmp).enumerate();
@@ -211,7 +211,7 @@ pub fn sort_cv_annotation_details<T: AnnotationContainer>
         }
     };
 
-    for (_, term_annotations) in container.cv_annotations_mut() {
+    for term_annotations in container.cv_annotations_mut().values_mut() {
         for term_annotation in term_annotations {
             let termid = &term_annotation.term;
             if let Some(term_details) = term_map.get(termid) {

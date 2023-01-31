@@ -905,7 +905,7 @@ fn test_locations() {
     assert_eq!(&pom1_gene.gene_neighbourhood[1].uniquename, "SPAC2F7.03c");
 
     let cdc16_gene = web_data.api_maps.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
-    let cdc16_loc = cdc16_gene.location.unwrap().clone();
+    let cdc16_loc = cdc16_gene.location.unwrap();
 
     assert_eq!(&cdc16_loc.chromosome_name, "chromosome_1");
     assert_eq!(cdc16_loc.start_pos, 36);

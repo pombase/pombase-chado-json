@@ -315,7 +315,7 @@ fn exec_target_of(api_data: &APIData, genes: &[GeneShort])
 
     for gene in genes {
         let gene_details = api_data.get_gene_details(&gene.uniquename)
-            .expect(&format!("failed to find gene_details for {}", gene.uniquename));
+            .unwrap_or_else(|| panic!("failed to find gene_details for {}", gene.uniquename));
         for target_of_annotation in &gene_details.target_of_annotations {
             ret.push(target_of_annotation.gene.clone());
         }
@@ -545,7 +545,7 @@ async fn exec_query_id(api_data: &APIData,
                 }
             }
         } else {
-            return Err(flex_fmt!("can't find query for ID {}", id));
+            Err(flex_fmt!("can't find query for ID {}", id))
         }
     } else {
         Err(flex_fmt!("can't find query for ID {} - no database", id))

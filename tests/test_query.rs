@@ -21,7 +21,7 @@ fn get_api_data() -> APIData {
     search_maps_path.push("tests/test_search_data.json.zst");
     let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     config_path.push("tests/test_config.json");
-    let config = Config::read(&config_path.to_str().expect("config"));
+    let config = Config::read(config_path.to_str().expect("config"));
     let api_maps = api_maps_from_file(search_maps_path.to_str().expect("search maps"));
     APIData::new(&config, &api_maps)
 }
@@ -29,7 +29,7 @@ fn get_api_data() -> APIData {
 async fn check_gene_result(query: &Query, genes: Vec<&str>) {
     let api_data = get_api_data();
     let query_exec = QueryExec::new(api_data, None);
-    let result = query_exec.exec(&query).await;
+    let result = query_exec.exec(query).await;
 
     let result_genes_iter =
         result.rows.into_iter()
@@ -47,7 +47,7 @@ async fn check_gene_result_with_viability(query: &Query,
                                     expected_results: &Vec<ResultRow>) {
     let api_data = get_api_data();
     let query_exec = QueryExec::new(api_data, None);
-    let results = query_exec.exec(&query).await;
+    let results = query_exec.exec(query).await;
 
     assert_eq!(expected_results, &results.rows);
 }

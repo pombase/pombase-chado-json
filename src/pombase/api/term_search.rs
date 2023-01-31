@@ -55,8 +55,7 @@ fn container_to_matches(container: SolrTermSearchResponseContainer) -> Vec<SolrT
     let mut hl_by_id = response_container.highlighting;
     let matches: Vec<SolrTermSummary> = response_container.response.docs
         .drain(0..).map(|mut doc: SolrTermSummary| {
-            doc.highlighting = hl_by_id.remove(doc.id.as_str())
-              .unwrap_or_else(HashMap::new);
+            doc.highlighting = hl_by_id.remove(doc.id.as_str()).unwrap_or_default();
             doc
         }).collect();
     matches
@@ -111,7 +110,7 @@ pub fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
                      -> Result<Vec<SolrTermSummary>, String>
 {
     if let Some(terms_url) = make_terms_url(config, cv_name, q) {
-        match reqwest::blocking::get(&terms_url) {
+        match reqwest::blocking::get(terms_url) {
             Ok(res) => {
                 if res.status().is_success() {
                     match serde_json::from_reader(res) {
@@ -144,9 +143,9 @@ pub fn term_summary_by_id(config: &ServerConfig, termid: &str)
                           -> Result<Option<SolrTermSummary>, String>
 {
     let term_url = format!("{}/terms/select?wt=json&q=id:{}",
-                           config.solr_url.to_owned(), termid.replace(":", r"\:"));
+                           config.solr_url.to_owned(), termid.replace(':', r"\:"));
 
-    match reqwest::blocking::get(&term_url) {
+    match reqwest::blocking::get(term_url) {
         Ok(res) => {
             if res.status().is_success() {
                 match serde_json::from_reader(res) {

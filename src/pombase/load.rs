@@ -26,7 +26,7 @@ impl Loader {
        -> Result<(), Box<dyn Error>>
     {
         let organism = self.processed.organism_by_taxonid(self.taxonid)
-            .expect(&format!("load failed, organism not in database with taxon ID: {}", self.taxonid));
+            .unwrap_or_else(|| panic!("load failed, organism not in database with taxon ID: {}", self.taxonid));
 
         let trans = self.conn.transaction().await?;
 

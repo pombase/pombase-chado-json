@@ -20,10 +20,10 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      gene_map: &UniquenameGeneMap,
      genotype_map: &DisplayUniquenameGenotypeMap,
      annotation_details: &IdOntAnnotationDetailMap) {
-    for (cv_name, mut term_annotations) in container.cv_annotations_mut() {
+    for (cv_name, term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name(cv_name);
         make_cv_summary(&cv_config, children_by_termid,
-                        include_gene, include_genotype, &mut term_annotations,
+                        include_gene, include_genotype, term_annotations,
                         gene_map, genotype_map, annotation_details);
     }
 }
@@ -164,7 +164,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
 }
 
 fn sort_genotype_uniquenames(genotypes: &IdGenotypeMap,
-                             genotype_uniquenames: &mut Vec<FlexStr>) {
+                             genotype_uniquenames: &mut [FlexStr]) {
     let cmp_genotype_ploidiness =
         |genotype_a_uniquename: &FlexStr, genotype_b_uniquename: &FlexStr| {
             let genotype_a = genotypes.get(genotype_a_uniquename)

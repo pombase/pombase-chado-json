@@ -111,6 +111,7 @@ pub struct WebDataBuild<'a> {
     genetic_interaction_annotations: HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>,
 }
 
+#[allow(clippy::type_complexity)]
 fn get_maps() ->
     (HashMap<FlexStr, ReferenceShortOptionMap>,
      HashMap<FlexStr, GeneShortOptionMap>,
@@ -344,8 +345,8 @@ fn make_location(chromosome_map: &ChrNameDetailsMap,
 
 fn get_loc_residues(chr: &ChromosomeDetails,
                     loc: &ChromosomeLocation) -> Residues {
-    let start = (loc.start_pos - 1) as usize;
-    let end = loc.end_pos as usize;
+    let start = loc.start_pos - 1;
+    let end = loc.end_pos;
     let residues: Residues = chr.residues[start..end].into();
     if loc.strand == Strand::Forward {
         residues
@@ -1043,7 +1044,7 @@ impl <'a> WebDataBuild<'a> {
 
                 let transcript = self.transcripts
                     .get(transcript_uniquename)
-                    .expect(&format!("internal error, can't find transcript details for {}",
+                    .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
                                      transcript_uniquename));
 
                 let mut count = 0;
@@ -1065,7 +1066,7 @@ impl <'a> WebDataBuild<'a> {
             .iter()
             .map(|transcript_uniquename| {
                 self.transcripts.get(transcript_uniquename)
-                    .expect(&format!("internal error, failed to find transcript: {}",
+                    .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
                                     transcript_uniquename))
                     .clone()
             }).collect::<Vec<_>>();
@@ -1153,7 +1154,7 @@ impl <'a> WebDataBuild<'a> {
 
         let genotype =
             self.genotypes.get(genotype_display_uniquename)
-            .expect(&format!("internal error: can't find genotype {}", genotype_uniquename));
+            .unwrap_or_else(|| panic!("internal error: can't find genotype {}", genotype_uniquename));
 
         let loci = &genotype.loci;
 
@@ -1176,7 +1177,7 @@ impl <'a> WebDataBuild<'a> {
     fn parse_extension_prop(&self, annotation_termid: &TermId, extension_string: &str) -> Vec<ExtPart> {
         let ext: Vec<Vec<CantoExtPart>> =
             serde_json::from_str(extension_string)
-            .expect(&format!("failed to parse Canto extension from property: {}", extension_string));
+            .unwrap_or_else(|_| panic!("failed to parse Canto extension from property: {}", extension_string));
 
         if ext.len() > 1 {
             eprintln!("\
@@ -1185,13 +1186,13 @@ phenotypes, so just the first part of this extension will be used:
 {}", extension_string);
         }
 
-        if ext.len() == 0 {
+        if ext.is_empty() {
             return vec![];
         }
 
         let inner = ext.get(0).unwrap();
 
-        if inner.len() == 0 {
+        if inner.is_empty() {
             return vec![];
         }
 
@@ -1228,14 +1229,14 @@ phenotypes, so just the first part of this extension will be used:
         let genotype_interaction_uniquename = &genotype_interaction_feature.uniquename;
         let genotype_a_uniquename =
             self.genotype_interaction_genotype_a.get(genotype_interaction_uniquename)
-                .expect(&format!("can't find genotype_a of {}",
+                .unwrap_or_else(|| panic!("can't find genotype_a of {}",
                                  genotype_interaction_uniquename));
         let genotype_a_display_uniquename =
             self.genotype_display_uniquenames.get(genotype_a_uniquename).unwrap().clone();
 
         let genotype_b_uniquename =
             self.genotype_interaction_genotype_b.get(genotype_interaction_uniquename)
-                .expect(&format!("can't find genotype_b of {}",
+                .unwrap_or_else(|| panic!("can't find genotype_b of {}",
                                  genotype_interaction_uniquename));
         let genotype_b_display_uniquename =
             self.genotype_display_uniquenames.get(genotype_b_uniquename).unwrap().clone();
@@ -1298,7 +1299,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
         let interaction_type =
-            interaction_type.expect(&format!("interaction_type missing for {}",
+            interaction_type.unwrap_or_else(|| panic!("interaction_type missing for {}",
                                              genotype_interaction_uniquename));
 
         let gene_a_uniquename = self.gene_from_genotype(genotype_a_uniquename);
@@ -1306,9 +1307,9 @@ phenotypes, so just the first part of this extension will be used:
 
         let interaction_key =
             GeneticInteractionKey {
-                gene_a_uniquename: gene_a_uniquename.clone(),
-                interaction_type: interaction_type.clone(),
-                gene_b_uniquename: gene_b_uniquename.clone(),
+                gene_a_uniquename,
+                interaction_type,
+                gene_b_uniquename,
             };
 
         let interaction_annotation =
@@ -1424,7 +1425,7 @@ phenotypes, so just the first part of this extension will be used:
                         canto_session_submitted_date = Some(prop.value.clone()),
                     "annotation_curator" => {
                         let curator: AnnotationCurator = serde_json::from_str(&prop.value)
-                            .expect(&format!("failed to parse annotation_curators pupprop: {}", prop.value));
+                            .unwrap_or_else(|_| panic!("failed to parse annotation_curators pupprop: {}", prop.value));
                         annotation_curators.push(curator);
                     },
                     _ => ()
@@ -1919,7 +1920,7 @@ phenotypes, so just the first part of this extension will be used:
                     rna_seq_length_unspliced,
                 };
 
-                self.transcripts.insert(transcript_uniquename.clone(), transcript.clone());
+                self.transcripts.insert(transcript_uniquename.clone(), transcript);
 
                 gene_details.transcripts.push(transcript_uniquename);
                 gene_details.transcript_so_termid = Some(feat.feat_type.termid());
@@ -1993,7 +1994,7 @@ phenotypes, so just the first part of this extension will be used:
             if let Some(transcript_uniquename) =
                 self.transcripts_of_polypeptides.get(&protein_uniquename) {
                     self.transcripts.get_mut(transcript_uniquename)
-                        .expect(&format!("internal error, failed to find transcript: {}",
+                        .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
                                          transcript_uniquename))
                         .protein = Some(protein);
                 } else {
@@ -2301,7 +2302,7 @@ phenotypes, so just the first part of this extension will be used:
                             for term_annotation in term_annotations {
                                 let termid = &term_annotation.term;
                                 let term_details =
-                                     self.terms.get(termid).expect(&format!("missing termid {}", termid));
+                                     self.terms.get(termid).unwrap_or_else(|| panic!("missing termid {}", termid));
                                 let term_short: TermShort = term_details.into();
                                 phenotypes.insert(term_short);
                             }
@@ -2526,7 +2527,7 @@ phenotypes, so just the first part of this extension will be used:
                             FeatureRelAnnotationType::Interaction =>
                                 if !is_inferred_interaction {
                                     let evidence =
-                                        evidence.expect(&format!("evidence missing for feature_relationship_id: {}",
+                                        evidence.unwrap_or_else(|| panic!("evidence missing for feature_relationship_id: {}",
                                                                  feature_rel.feature_relationship_id));
                                     let interaction_annotation =
                                         InteractionAnnotation {
@@ -3179,7 +3180,7 @@ phenotypes, so just the first part of this extension will be used:
                 let synonyms =
                     cvterm.cvtermsynonyms.borrow().iter().map(|syn| {
                         SynonymDetails {
-                            synonym_type: (*syn).synonym_type.name.clone(),
+                            synonym_type: syn.synonym_type.name.clone(),
                             name: syn.name.clone(),
                             reference: None,
                         }
@@ -3251,11 +3252,11 @@ phenotypes, so just the first part of this extension will be used:
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                    if (*cvtermprop).prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
+                    if cvtermprop.prop_type.name.starts_with(ANNOTATION_EXT_REL_PREFIX) {
                         let ext_rel_name_str =
-                            &(*cvtermprop).prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
+                            &cvtermprop.prop_type.name[ANNOTATION_EXT_REL_PREFIX.len()..];
                         let ext_rel_name = ext_rel_name_str.to_shared_str();
-                        let ext_range = (*cvtermprop).value.clone();
+                        let ext_range = cvtermprop.value.clone();
                         let range: ExtRange = if ext_range.starts_with(&db_prefix) {
                             let db_feature_uniquename = ext_range[db_prefix.len()..].to_shared_str();
                             if let Some(captures) = PROMOTER_RE.captures(&db_feature_uniquename) {
@@ -3826,7 +3827,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
             if &feature.feat_type.name == "genotype_interaction" {
-                self.add_genetic_interaction(&feature, &rel_order,
+                self.add_genetic_interaction(feature, &rel_order,
                                              cvterm.borrow(), annotation_detail);
             } else {
                 self.add_annotation(&rel_order,
@@ -3964,7 +3965,7 @@ phenotypes, so just the first part of this extension will be used:
                 .partition(|&annotation_id| {
                     if let Some(ont_annotation_detail) =
                         self.annotation_details.get(annotation_id) {
-                            ont_annotation_detail.transcript_uniquenames.len() == 0
+                            ont_annotation_detail.transcript_uniquenames.is_empty()
                         } else {
                             panic!("can't find annotation details for {}", annotation_id);
                         }
@@ -3989,7 +3990,7 @@ phenotypes, so just the first part of this extension will be used:
                          current_annotation.transcript_uniquenames[0].clone())
                     };
                     if annotations_equal {
-                        if let Some(ref annotation_details) = self.annotation_details.get(&prev_annotation_id) {
+                        if let Some(annotation_details) = self.annotation_details.get(&prev_annotation_id) {
                             if !annotation_details.transcript_uniquenames.contains(&current_transcript_uniquename) {
                                 self.annotation_details.get_mut(&prev_annotation_id).unwrap()
                                     .transcript_uniquenames.push(current_transcript_uniquename);
@@ -4027,7 +4028,7 @@ phenotypes, so just the first part of this extension will be used:
 
         for (termid, annotations) in ont_annotation_map {
                 let new_annotations =
-                    self.make_term_annotations(termid, &annotations, is_not);
+                    self.make_term_annotations(termid, annotations, is_not);
 
                 if let Some(ref mut term_details) = self.terms.get_mut(termid) {
                     for (cv_name, new_annotation) in new_annotations {
@@ -4041,7 +4042,7 @@ phenotypes, so just the first part of this extension will be used:
 
             for annotation_id in annotations {
                 let annotation = self.annotation_details.
-                    get(&annotation_id).expect("can't find OntAnnotationDetail");
+                    get(annotation_id).expect("can't find OntAnnotationDetail");
 
                 for gene_uniquename in &annotation.genes {
                     gene_annotation_by_term.entry(gene_uniquename.clone())
@@ -4057,7 +4058,7 @@ phenotypes, so just the first part of this extension will be used:
                         .or_insert_with(HashMap::new)
                         .entry(termid.clone())
                         .or_insert_with(Vec::new);
-                    if !existing.contains(&annotation_id) {
+                    if !existing.contains(annotation_id) {
                         existing.push(*annotation_id);
                     }
                 }
@@ -4753,7 +4754,7 @@ phenotypes, so just the first part of this extension will be used:
 
                 for interaction_annotation in &gene_details.physical_interactions {
                     let interactor_uniquename =
-                        if gene_uniquename == &interaction_annotation.gene_uniquename {
+                        if gene_uniquename == interaction_annotation.gene_uniquename {
                             interaction_annotation.interactor_uniquename.clone()
                         } else {
                             interaction_annotation.gene_uniquename.clone()
@@ -4768,7 +4769,7 @@ phenotypes, so just the first part of this extension will be used:
                 }
                 for interaction_key in gene_details.genetic_interactions.keys() {
                     let interactor_uniquename =
-                        if gene_uniquename == &interaction_key.gene_a_uniquename {
+                        if gene_uniquename == interaction_key.gene_a_uniquename {
                             interaction_key.gene_b_uniquename.clone()
                         } else {
                             interaction_key.gene_a_uniquename.clone()
@@ -4937,7 +4938,7 @@ phenotypes, so just the first part of this extension will be used:
                                 self.add_gene_to_hash(seen_genes, identifier,
                                                       &gene_short.uniquename)
                             },
-                            &WithFromValue::Transcript(ref transcript_uniquename) => {
+                            WithFromValue::Transcript(transcript_uniquename) => {
                                 self.add_transcript_to_hashes(seen_transcripts, seen_genes,
                                                               identifier,  transcript_uniquename);
                             },
@@ -5148,7 +5149,7 @@ phenotypes, so just the first part of this extension will be used:
                                     self.add_gene_to_hash(&mut seen_genes, termid,
                                                           &gene_short.uniquename)
                                 },
-                                &WithFromValue::Transcript(ref transcript_uniquename) => {
+                                WithFromValue::Transcript(ref transcript_uniquename) => {
                                     self.add_transcript_to_hashes(&mut seen_transcripts, &mut seen_genes,
                                                                   termid,  transcript_uniquename);
                                 },
@@ -5161,7 +5162,7 @@ phenotypes, so just the first part of this extension will be used:
 
 
             set_interaction_maps(&term_details.double_mutant_genetic_interactions,
-                                 &termid,
+                                 termid,
                                  &mut seen_references,
                                  &mut seen_genes,
                                  &mut seen_genotypes,
@@ -5170,7 +5171,7 @@ phenotypes, so just the first part of this extension will be used:
                                  &mut seen_terms);
 
             set_interaction_maps(&term_details.single_allele_genetic_interactions,
-                                 &termid,
+                                 termid,
                                  &mut seen_references,
                                  &mut seen_genes,
                                  &mut seen_genotypes,
@@ -5413,7 +5414,7 @@ phenotypes, so just the first part of this extension will be used:
                                             &mut seen_terms);
 
             set_interaction_maps(&genotype_details.double_mutant_genetic_interactions,
-                                 &genotype_uniquename,
+                                 genotype_uniquename,
                                  &mut seen_references,
                                  &mut seen_genes,
                                  &mut seen_genotypes,
@@ -5422,7 +5423,7 @@ phenotypes, so just the first part of this extension will be used:
                                  &mut seen_terms);
 
             set_interaction_maps(&genotype_details.rescue_genetic_interactions,
-                                 &genotype_uniquename,
+                                 genotype_uniquename,
                                  &mut seen_references,
                                  &mut seen_genes,
                                  &mut seen_genotypes,

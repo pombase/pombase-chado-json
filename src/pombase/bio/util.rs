@@ -72,13 +72,11 @@ fn to_gff(chromosome_export_id: &str,
     let phase_char =
         if let Some(ref phase) = location.phase {
             phase.to_gff_str()
+        } else if feat_type == "CDS" {
+            // phase is required for CDS features
+            "0"
         } else {
-            if feat_type == "CDS" {
-                // phase is required for CDS features
-                "0"
-            } else {
-                "."
-            }
+            "."
         };
     let start_pos_str = format!("{}", location.start_pos);
     let end_pos_str = format!("{}", location.end_pos);
@@ -122,7 +120,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
         for transcript_uniquename in &gene.transcripts {
             let transcript_details = transcripts
                 .get(transcript_uniquename)
-                .expect(&format!("internal error, failed to find transcript: {}",
+                .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
                                  transcript_uniquename));
 
             ret_val.push(to_gff(chromosome_export_id,

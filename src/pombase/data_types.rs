@@ -247,10 +247,10 @@ impl Ord for GeneShort {
             if other.name.is_some() {
                 self.name.cmp(&other.name)
             } else { Ordering::Less }
+        } else if other.name.is_some() {
+            Ordering::Greater
         } else {
-            if other.name.is_some() {
-                Ordering::Greater
-            } else { self.uniquename.cmp(&other.uniquename) }
+            self.uniquename.cmp(&other.uniquename)
         }
     }
 }
@@ -979,6 +979,11 @@ impl ChromosomeLocation {
     pub fn len(&self) -> usize {
         (self.end_pos + 1).saturating_sub(self.start_pos)
     }
+
+    #[must_use]
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
@@ -1101,11 +1106,9 @@ impl Ord for GeneDetails {
             if other.name.is_some() {
                 self.name.cmp(&other.name)
             } else { Ordering::Less }
-        } else {
-            if other.name.is_some() {
-                Ordering::Greater
-            } else { self.uniquename.cmp(&other.uniquename) }
-        }
+        } else if other.name.is_some() {
+            Ordering::Greater
+        } else { self.uniquename.cmp(&other.uniquename) }
     }
 }
 impl PartialOrd for GeneDetails {
@@ -1456,19 +1459,15 @@ fn description_with_residue_type(allele: &AlleleShort) -> FlexStr {
 
     if let Some(description) = description {
 
-        if description.len() == 0 {
+        if description.is_empty() {
             return allele_type.clone();
         }
 
-        if allele_type.ends_with("mutation") {
-            if MUTATION_DESC_RE.is_match(description.as_str()) {
-                if allele_type.contains("amino_acid") {
-                    return description + " aa";
-                } else {
-                    if allele_type.contains("nucleotide") {
-                        return description + " nt";
-                    }
-                }
+        if allele_type.ends_with("mutation") && MUTATION_DESC_RE.is_match(description.as_str()) {
+            if allele_type.contains("amino_acid") {
+                return description + " aa";
+            } else if allele_type.contains("nucleotide") {
+                return description + " nt";
             }
         }
 
@@ -1483,11 +1482,11 @@ impl AlleleShort {
         let name = self.name.clone().unwrap_or_else(|| flex_str!("unnamed"));
         let allele_type = &self.allele_type;
         let mut description =
-            self.description.as_ref().unwrap_or_else(|| allele_type).clone();
+            self.description.as_ref().unwrap_or(allele_type).clone();
 
         if allele_type == "deletion" &&
-            (name.ends_with("Δ") || name.ends_with("delta")) ||
-            allele_type == "wild_type" && name.ends_with("+") {
+            (name.ends_with('Δ') || name.ends_with("delta")) ||
+            allele_type == "wild_type" && name.ends_with('+') {
                 if name.ends_with(description.as_str()) || allele_type == description {
                     return name;
                 } else {
@@ -1498,12 +1497,10 @@ impl AlleleShort {
         if name.contains(description.as_str()) {
             if allele_type.contains("amino_acid") || allele_type.contains("amino acid") {
                 return name + "(aa)";
+            } else if allele_type.contains("nucleotide") {
+                return name + "(nt)";
             } else {
-                if allele_type.contains("nucleotide") {
-                    return name + "(nt)";
-                } else {
-                    return name;
-                }
+                return name;
             }
         }
 
@@ -1513,10 +1510,8 @@ impl AlleleShort {
             ENDS_WITH_INTEGER_RE.is_match(description.as_str()) {
                 if allele_type == "partial_amino_acid_deletion" {
                     description = description + " Δaa";
-                } else {
-                    if allele_type == "partial_nucleotide_deletion" {
-                        description = description + " Δnt";
-                    }
+                } else if allele_type == "partial_nucleotide_deletion" {
+                    description = description + " Δnt";
                 }
             }
 
@@ -1548,7 +1543,7 @@ fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str
         } else {
             name + "-" + description.as_str() + "-" + &allele_type
         };
-    display_name.clone()
+    display_name
 }
 
 impl From<&AlleleDetails> for AlleleShort {
@@ -1600,7 +1595,7 @@ impl AlleleDetails {
                name: &Option<FlexStr>,
                allele_type: &str,
                description: &Option<FlexStr>,
-               comments: &Vec<CommentAndReference>,
+               comments: &[CommentAndReference],
                gene: GeneShort) -> AlleleDetails {
         let encoded_name_and_type =
             allele_encoded_name_and_type(name, allele_type, description);
@@ -1614,7 +1609,7 @@ impl AlleleDetails {
             synonyms: vec![],
             genotypes: vec![],
             phenotypes: vec![],
-            comments: comments.clone(),
+            comments: comments.to_owned(),
             alleles_by_uniquename: HashMap::new(),
         }
     }
@@ -2245,7 +2240,7 @@ impl InterMineGeneDetails {
         let transcripts = gene_details.transcripts.iter()
             .map(|transcript_uniquename|
                  transcripts_by_uniquename.get(transcript_uniquename)
-                 .expect(&format!("internal error, failed to find transcript: {}",
+                 .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
                                   transcript_uniquename))
                  .to_owned())
             .collect::<Vec<_>>();

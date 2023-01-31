@@ -126,7 +126,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         remaining_args.remove(0);
     }
 
-    if remaining_args.len() < 1 {
+    if remaining_args.is_empty() {
         println!("allele-json needs a [file_name] argument");
         print_usage(&program, opts);
         process::exit(1);
@@ -140,7 +140,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let taxonid_result = taxonid_opt.parse();
 
     let taxonid: OrganismTaxonId =
-        taxonid_result.expect(&format!("failed to parse taxon ID {}", taxonid_opt));
+        taxonid_result.unwrap_or_else(|_| panic!("failed to parse taxon ID {}", taxonid_opt));
 
     let pg_config = tokio_postgres::Config::from_str(&connection_string)?;
     let manager = Manager::new(pg_config, tokio_postgres::NoTls);

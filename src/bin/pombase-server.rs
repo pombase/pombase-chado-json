@@ -169,7 +169,7 @@ async fn structure_view(protein_id: String, config: &rocket::State<Config>)
     let search_url = config.server.django_url.to_owned() + "/structure_view/";
     let params = [("protein_id", protein_id)];
     let client = reqwest::blocking::Client::new();
-    let result = client.get(&search_url).query(&params).send();
+    let result = client.get(search_url).query(&params).send();
 
     match result {
         Ok(res) => {

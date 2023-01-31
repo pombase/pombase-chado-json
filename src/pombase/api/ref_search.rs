@@ -120,8 +120,7 @@ fn matches_from_container(container: SolrRefResponseContainer) -> Vec<SolrRefere
     let matches: Vec<SolrReferenceSummary> = response_container.response.docs
         .drain(0..)
         .map(|mut doc: SolrReferenceSummary| {
-            doc.highlighting = hl_by_id.remove(doc.id.as_str())
-                .unwrap_or_else(HashMap::new);
+            doc.highlighting = hl_by_id.remove(doc.id.as_str()).unwrap_or_default();
             doc
         }).collect();
     matches

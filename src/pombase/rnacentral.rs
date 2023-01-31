@@ -178,14 +178,14 @@ fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
         for transcript_uniquename in &gene_details.transcripts {
             let transcript_details = transcripts
                 .get(transcript_uniquename)
-                .expect(&format!("internal error, failed to find transcript: {}",
+                .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
                                  transcript_uniquename));
 
             let rnacentral_gene = make_gene_struct(config, gene_details);
 
-            let primary_id = db_uniquename(config, &transcript_uniquename);
+            let primary_id = db_uniquename(config, transcript_uniquename);
             let location = make_genome_location(config, gene_details,
-                                                &transcript_details);
+                                                transcript_details);
 
             let uppercase_sequence =
                 transcript_details.spliced_transcript_sequence().to_uppercase();

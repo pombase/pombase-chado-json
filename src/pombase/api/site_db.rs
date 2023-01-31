@@ -107,7 +107,7 @@ impl SiteDB {
             Err(e) => return Err(format!("couldn't begin transaction: {}", e)),
         };
 
-        let serde_value: String = match serde_json::value::to_value(&query) {
+        let serde_value: String = match serde_json::value::to_value(query) {
             Ok(v) => v.to_string(),
             Err(e) => return Err(format!("serde error: {}", e)),
         };

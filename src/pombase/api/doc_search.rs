@@ -57,13 +57,12 @@ pub fn search_docs(config: &ServerConfig, q: &str) -> Result<Vec<DocSearchMatch>
             Ok(container) => {
                 let response_container: SolrDocSearchResponseContainer = container;
                 let mut hl_by_id =
-                    response_container.highlighting.unwrap_or_else(HashMap::new);
+                    response_container.highlighting.unwrap_or_default();
                 let matches: Vec<DocSearchMatch> = response_container.response.docs
                     .iter().map(|doc| DocSearchMatch {
                         id: String::from(&doc.id),
                         heading: String::from(&doc.heading),
-                        hl: hl_by_id.remove(doc.id.as_str())
-                            .unwrap_or_else(HashMap::new),
+                        hl: hl_by_id.remove(doc.id.as_str()).unwrap_or_default(),
                     }).collect();
                 Ok(matches)
             },

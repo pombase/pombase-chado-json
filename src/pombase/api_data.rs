@@ -276,24 +276,17 @@ impl APIData {
 
                 let mut add_genotype_genes = false;
 
-                if annotation.is_multi && add_multi {
-                    if *query_ploidiness == annotation.ploidiness ||
-                        *query_ploidiness == Ploidiness::Any
-                    {
-                        add_genotype_genes = true;
-                    }
+                if annotation.is_multi && add_multi && (*query_ploidiness == annotation.ploidiness || *query_ploidiness == Ploidiness::Any) {
+                    add_genotype_genes = true;
                 }
 
-                if !annotation.is_multi && add_single {
-                    if (*query_ploidiness != Ploidiness::Haploid &&
-                        annotation.ploidiness == Ploidiness::Diploid) ||
-                        (annotation.ploidiness == Ploidiness::Haploid &&
+                if !annotation.is_multi && add_single &&
+                    ((*query_ploidiness != Ploidiness::Haploid &&
+                        annotation.ploidiness == Ploidiness::Diploid) || (annotation.ploidiness == Ploidiness::Haploid &&
                          (*query_ploidiness == Ploidiness::Any ||
                           (*query_ploidiness == Ploidiness::Haploid &&
-                           expression_matches(&annotation.alleles[0]))))
-                        {
-                            add_genotype_genes = true;
-                        }
+                           expression_matches(&annotation.alleles[0]))))) {
+                    add_genotype_genes = true;
                 }
 
                 if add_genotype_genes {

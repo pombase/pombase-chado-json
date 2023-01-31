@@ -31,11 +31,9 @@ pub fn cmp_residues(residue1: &Option<Residue>, residue2: &Option<Residue>) -> O
         } else {
             Ordering::Less
         }
+    } else if residue2.is_some() {
+        Ordering::Greater
     } else {
-        if residue2.is_some() {
-            Ordering::Greater
-        } else {
-            Ordering::Equal
-        }
+        Ordering::Equal
     }
 }

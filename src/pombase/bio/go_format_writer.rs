@@ -66,7 +66,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     let mut standard_gaf_writer = BufWriter::new(&standard_gaf_file);
 
     let generated_by = format!("!generated-by: {}\n", database_name);
-    let iso_date = db_creation_datetime.replace(" ", "T");
+    let iso_date = db_creation_datetime.replace(' ', "T");
     let date_generated = format!("!date-generated: {}\n", &iso_date);
     let url_header = format!("!URL: {}\n", &config.base_url);
     let funding_header = format!("!funding: {}\n", &config.funder);
@@ -469,7 +469,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                               &annotation_detail.extension);
                     let db_object_id =
                         if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id {
-                          &gene_product_form_id
+                          gene_product_form_id
                         } else {
                           &db_object_id
                         };
@@ -497,7 +497,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                   cv_name: &FlexStr)
                                   -> Result<(), io::Error>
 {
-    if !GO_ASPECT_NAMES.contains(&cv_name) {
+    if !GO_ASPECT_NAMES.contains(cv_name) {
         return Err(io::Error::new(io::ErrorKind::InvalidInput,
                                   format!("unknown CV: {}", cv_name)));
     }
@@ -508,7 +508,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         if let Some(ref gene_name) = gene_details.name {
             gene_name.as_str()
         } else {
-            &db_object_id
+            db_object_id
         };
     let mut db_object_synonyms =
         gene_details.synonyms.iter().filter(|synonym| {
@@ -532,7 +532,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
             let transcript_details = api_maps
                 .transcripts.get(transcript_uniquename)
-                .expect(&format!("internal error, failed to find transcript: {}",
+                .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
                                  transcript_uniquename));
 
             let transcript_type = transcript_details.transcript_type.as_str();
@@ -549,12 +549,10 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
     let single_letter_aspect =
         if cv_name.starts_with('b') {
             "P"
+        } else if cv_name.starts_with('c') {
+            "C"
         } else {
-            if cv_name.starts_with('c') {
-                "C"
-            } else {
-                "F"
-            }
+            "F"
         };
 
     if let Some(term_annotations) = gene_details.cv_annotations.get(cv_name) {
@@ -628,7 +626,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
                 let date =
                     if let Some(ref raw_date) = annotation_detail.date {
-                        raw_date.replace("-", "")
+                        raw_date.replace('-', "")
                     } else {
                         println!("WARNING while writing GPAD file: \
                                   date missing from annotation {}", annotation_id);
@@ -669,34 +667,32 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
             }
         }
 
-    } else {
-        if write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" {
-            let local: DateTime<Local> = Local::now();
-            let date = local.format("%Y%m%d");
-            let relation_name =
-                get_gpad_nd_relation_name_of(&api_maps.terms, cv_name);
-            let go_aspect_termid =
-                config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
-            let nd_ref = &config.file_exports.nd_reference;
-            let assigned_by = database_name.as_str();
+    } else if write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" {
+        let local: DateTime<Local> = Local::now();
+        let date = local.format("%Y%m%d");
+        let relation_name =
+            get_gpad_nd_relation_name_of(&api_maps.terms, cv_name);
+        let go_aspect_termid =
+            config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
+        let nd_ref = &config.file_exports.nd_reference;
+        let assigned_by = database_name.as_str();
 
-            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\tND\t\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t\t\n",
-                               database_name,
-                               db_object_id,
-                               db_object_symbol,
-                               relation_name,
-                               go_aspect_termid,
-                               nd_ref,
-                               single_letter_aspect,
-                               db_object_name,
-                               db_object_synonyms_string,
-                               db_object_type,
-                               gene_details.taxonid,
-                               date,
-                               assigned_by);
+        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\tND\t\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t\t\n",
+                           database_name,
+                           db_object_id,
+                           db_object_symbol,
+                           relation_name,
+                           go_aspect_termid,
+                           nd_ref,
+                           single_letter_aspect,
+                           db_object_name,
+                           db_object_synonyms_string,
+                           db_object_type,
+                           gene_details.taxonid,
+                           date,
+                           assigned_by);
 
-            writer.write_all(line.as_bytes())?;
-        }
+        writer.write_all(line.as_bytes())?;
     }
 
     Ok(())

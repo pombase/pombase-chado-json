@@ -163,8 +163,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                         annotation_detail.extension.iter()
                         .filter(|bit| {
                             bit.rel_type_name != "has_penetrance" && bit.rel_type_name != "has_severity"
-                        })
-                        .map(|bit| bit.clone())
+                        }).cloned()
                         .collect::<Vec<_>>();
 
                     let extension =
