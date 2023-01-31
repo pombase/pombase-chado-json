@@ -107,5 +107,9 @@ pub fn parse_gene_history(file_name: &str) -> HashMap<GeneUniquename, Vec<GeneHi
         };
     }
 
+    for entries in res.values_mut() {
+        entries.sort_by(|a, b| a.date.cmp(&b.date))
+    }
+
     res
 }
