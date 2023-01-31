@@ -1,10 +1,9 @@
-use std::collections::{HashSet, HashMap};
-use std::num::NonZeroUsize;
-use crate::data_types::{GeneDetails, ChromosomeLocation, DeletionViability, Strand,
-                        UniquenameTranscriptMap, TranscriptDetails, FeatureShort,
-                        ProteinDetails, FeatureType};
+use std::collections::HashMap;
+use crate::data_types::{GeneDetails, ChromosomeLocation,
+                        UniquenameTranscriptMap, FeatureShort,
+                        FeatureType};
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt, ToSharedStr};
+use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt, ToSharedStr};
 
 use crate::web::config::*;
 use crate::data_types::*;
@@ -265,7 +264,16 @@ fn test_format_gff() {
                "chromosome_3\tPomBase\tCDS\t729266\t729319\t.\t+\t0\tID=SPCC18B5.06.1:exon:2;Parent=SPCC18B5.06.1")
 }
 
-#[allow(dead_code)]
+
+#[cfg(test)]
+use std::collections::HashSet;
+#[cfg(test)]
+use std::num::NonZeroUsize;
+#[cfg(test)]
+use flexstr::shared_str as flex_str;
+#[cfg(test)]
+use crate::data_types::{DeletionViability, Strand, TranscriptDetails, ProteinDetails};
+#[cfg(test)]
 fn make_test_gene() -> GeneDetails {
     GeneDetails {
         uniquename: flex_str!("SPCC18B5.06"),
@@ -496,5 +504,6 @@ fn make_test_gene() -> GeneDetails {
         annotation_details: HashMap::new(),
         feature_publications: HashSet::new(),
         subset_termids: HashSet::new(),
+        gene_history: vec![],
     }
 }
