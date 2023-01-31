@@ -1018,7 +1018,7 @@ pub struct GeneHistoryEntry {
     pub revision: String,
     pub date: FlexStr,
     pub entry_type: GeneHistoryEntryType,
-    pub references: Vec<ReferenceUniquename>,
+    pub references: Vec<FlexStr>,
     pub comment: Option<String>,
 }
 
