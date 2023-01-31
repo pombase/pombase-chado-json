@@ -17,6 +17,7 @@ use pombase::web::config::*;
 use pombase::web::data_build::*;
 use pombase::interpro::parse_interpro;
 use pombase::pfam::parse_pfam;
+use pombase::gene_history::parse_gene_history;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -51,6 +52,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 "FILE");
     opts.optopt("", "go-eco-mapping",
                 "GO evidence code to ECO ID mapping from http://purl.obolibrary.org/obo/eco/gaf-eco-mapping.txt", "FILE");
+    opts.optopt("", "gene-history-file",
+                "The gene history file in this format: https://github.com/pombase/genome_changelog/blob/master/results/all_coordinate_changes_file_comments_no_type_change.tsv", "FILE");
     opts.optopt("d", "output-directory",
                 "Destination directory for the output", "DIR");
 
@@ -104,6 +107,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let interpro_json = matches.opt_str("i").unwrap();
     let maybe_rnacentral_json = matches.opt_str("r");
     let go_eco_mapping = GoEcoMapping::read(&matches.opt_str("go-eco-mapping").unwrap())?;
+    let gene_history_filename = matches.opt_str("gene-history-file");
+    let gene_history =
+        if let Some(gene_history_filename) = gene_history_filename {
+           Some(parse_gene_history(&gene_history_filename))
+        } else {
+           None
+        };
     let output_dir = matches.opt_str("d").unwrap();
 
     let pg_config = tokio_postgres::Config::from_str(&connection_string)?;
@@ -125,7 +135,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
             None
         };
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
-                                           &rnacentral_data, &config);
+                                           &rnacentral_data, &gene_history,
+                                           &config);
     let web_data = web_data_build.get_web_data();
 
     match web_data.write(&config, &go_eco_mapping, &doc_config, &output_dir) {

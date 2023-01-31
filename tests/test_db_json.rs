@@ -725,8 +725,9 @@ fn get_test_web_data() -> WebData {
     let interpro_data = HashMap::new();
     let rnacentral_data = Some(HashMap::new());
     let pfam_data = Some(HashMap::new());
+    let gene_history = None;
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
-                                           &rnacentral_data, &config);
+                                           &rnacentral_data, &gene_history, &config);
     web_data_build.get_web_data()
 }
 

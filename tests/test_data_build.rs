@@ -485,6 +485,7 @@ fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         annotation_details: HashMap::new(),
         feature_publications: HashSet::new(),
         subset_termids: HashSet::new(),
+        gene_history: vec![],
     }
 }
 
@@ -964,6 +965,7 @@ fn get_test_gene_short_map() -> UniquenameGeneMap {
         annotation_details: HashMap::new(),
         feature_publications: HashSet::new(),
         subset_termids: HashSet::new(),
+        gene_history: vec![],
     };
 
     ret_map.insert("SPAC977.09c".to_shared_str(),

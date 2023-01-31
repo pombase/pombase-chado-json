@@ -53,6 +53,7 @@ pub struct WebDataBuild<'a> {
     domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
     pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
     rnacentral_data: &'a Option<RNAcentralAnnotations>,
+    all_gene_history: &'a Option<HashMap<ReferenceUniquename, Vec<GeneHistoryEntry>>>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -818,6 +819,7 @@ impl <'a> WebDataBuild<'a> {
                domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
                pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
                rnacentral_data: &'a Option<RNAcentralAnnotations>,
+               all_gene_history: &'a Option<HashMap<ReferenceUniquename, Vec<GeneHistoryEntry>>>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -825,6 +827,7 @@ impl <'a> WebDataBuild<'a> {
             domain_data,
             pfam_data,
             rnacentral_data,
+            all_gene_history,
             config,
 
             genes: BTreeMap::new(),
@@ -1741,6 +1744,17 @@ phenotypes, so just the first part of this extension will be used:
                 vec![]
             };
 
+        let gene_history =
+            if let Some(all_gene_history) = self.all_gene_history {
+                if let Some(gene_history) = all_gene_history.get(&feat.uniquename) {
+                    gene_history.clone()
+                } else {
+                    vec![]
+                }
+            } else {
+                vec![]
+            };
+
         let gene_feature = GeneDetails {
             uniquename: feat.uniquename.clone(),
             name: feat.name.clone(),
@@ -1784,6 +1798,8 @@ phenotypes, so just the first part of this extension will be used:
             annotation_details: HashMap::new(),
             feature_publications: HashSet::new(),
             subset_termids: HashSet::new(),
+
+            gene_history,
         };
 
         self.genes.insert(feat.uniquename.clone(), gene_feature);

@@ -1004,6 +1004,24 @@ pub enum PresentAbsent {
     Unknown,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[serde(rename_all = "snake_case")]
+pub enum GeneHistoryEntryType {
+    Added,
+    Removed,
+    Changed,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GeneHistoryEntry {
+    #[serde(skip)]
+    pub revision: String,
+    pub date: FlexStr,
+    pub entry_type: GeneHistoryEntryType,
+    pub references: Vec<ReferenceUniquename>,
+    pub comment: Option<String>,
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneDetails {
@@ -1092,6 +1110,9 @@ pub struct GeneDetails {
     // that contains any term for any annotation in the gene is included.
     // "useful" means that the front end might need it, eg. slim term IDs
     pub subset_termids: HashSet<TermId>,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub gene_history: Vec<GeneHistoryEntry>,
 }
 
 impl PartialEq for GeneDetails {
