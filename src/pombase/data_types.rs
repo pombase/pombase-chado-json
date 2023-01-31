@@ -1016,6 +1016,8 @@ pub enum GeneHistoryEntryType {
 pub struct GeneHistoryEntry {
     #[serde(skip)]
     pub revision: String,
+    pub old_coords: Option<String>,
+    pub new_coords: Option<String>,
     pub date: FlexStr,
     pub entry_type: GeneHistoryEntryType,
     pub references: Vec<FlexStr>,
