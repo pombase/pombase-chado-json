@@ -18,6 +18,7 @@ struct GeneHistoryFileRecord {
     pombase_comments: Option<String>,
 }
 
+const FEATURE_TYPES: [&str; 8] = ["CDS", "lncRNA", "rRNA", "sncRNA", "snoRNA", "snRNA", "ncRNA", "tRNA"];
 
 pub fn parse_gene_history(file_name: &str) -> HashMap<GeneUniquename, Vec<GeneHistoryEntry>>
 {
@@ -44,7 +45,7 @@ pub fn parse_gene_history(file_name: &str) -> HashMap<GeneUniquename, Vec<GeneHi
                 panic!("failed to read gene history CSV file: {}", e);
             });
 
-        if record.feature_type != "CDS" {
+        if !FEATURE_TYPES.contains(&record.feature_type.as_ref()) {
             continue;
         }
 
