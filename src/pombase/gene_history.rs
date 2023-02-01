@@ -20,9 +20,45 @@ struct GeneHistoryFileRecord {
 
 const FEATURE_TYPES: [&str; 8] = ["CDS", "lncRNA", "rRNA", "sncRNA", "snoRNA", "snRNA", "ncRNA", "tRNA"];
 
-pub fn parse_gene_history(file_name: &str) -> HashMap<GeneUniquename, Vec<GeneHistoryEntry>>
+pub type GeneHistoryMap = HashMap<GeneUniquename, Vec<GeneHistoryEntry>>;
+
+fn add_entry(map: &mut GeneHistoryMap, record: GeneHistoryFileRecord) {
+    let (old_coords, new_coords) =
+        if record.added_or_removed == GeneHistoryEntryType::Added {
+            (None, Some(record.value))
+        } else {
+            (Some(record.value), None)
+        };
+
+    let mut references = vec![];
+
+    if let Some(reference) = record.pombase_reference {
+        references.push(reference.into())
+    }
+
+    if let Some(db_xref) = record.db_xref {
+        references.push(db_xref.into())
+    }
+
+    let entry = GeneHistoryEntry {
+        revision: record.revision,
+        old_coords,
+        new_coords,
+        date: record.date.into(),
+        entry_type: record.added_or_removed,
+        references,
+        comment: record.pombase_comments.clone(),
+    };
+
+    map.entry(record.systematic_id.into())
+        .or_insert_with(Vec::new)
+        .push(entry);
+
+}
+
+pub fn parse_gene_history(file_name: &str) -> GeneHistoryMap
 {
-    let mut res: HashMap<GeneUniquename, Vec<GeneHistoryEntry>> = HashMap::new();
+    let mut res: GeneHistoryMap = HashMap::new();
 
     let file = match File::open(file_name) {
         Ok(file) => file,
@@ -39,6 +75,8 @@ pub fn parse_gene_history(file_name: &str) -> HashMap<GeneUniquename, Vec<GeneHi
         .delimiter(b'\t')
         .from_reader(reader);
 
+    let mut removed_records = vec![];
+
     for result in csv_reader.deserialize() {
         let record: GeneHistoryFileRecord =
             result.unwrap_or_else(|e| {
@@ -49,75 +87,39 @@ pub fn parse_gene_history(file_name: &str) -> HashMap<GeneUniquename, Vec<GeneHi
             continue;
         }
 
-        let systematic_id: &str = record.systematic_id.as_ref();
+        if record.added_or_removed == GeneHistoryEntryType::Removed {
+            removed_records.push(record);
+            continue;
+        }
+
+        if record.added_or_removed != GeneHistoryEntryType::Added {
+            panic!("expected record type: {:?}", record.added_or_removed);
+        }
+
+        add_entry(&mut res, record);
+    }
+
+    for removed_record in removed_records {
+        let systematic_id: &str = removed_record.systematic_id.as_ref();
 
         let entries = res.get_mut(systematic_id);
 
         let existing_entry =
             if let Some(entries) = entries {
-                if entries.iter().filter(|entry_item| { entry_item.revision == record.revision }).count() > 1 {
-                    panic!("internal error, more than one item at revision {} for {}",
-                           record.revision, record.systematic_id);
-                }
-
                 entries.iter_mut().find(|entry_item| {
-                    entry_item.revision == record.revision
+                    entry_item.entry_type == GeneHistoryEntryType::Added &&
+                        entry_item.revision == removed_record.revision
                 })
             } else {
                 None
             };
 
         if let Some(existing_entry) = existing_entry {
-            if record.added_or_removed == GeneHistoryEntryType::Added {
-                if existing_entry.entry_type == GeneHistoryEntryType::Removed {
-                    existing_entry.entry_type = GeneHistoryEntryType::Changed;
-                    existing_entry.new_coords = Some(record.value);
-                } else {
-                    eprintln!("gene {} added twice in revision {}",
-                              record.systematic_id, record.revision);
-                }
-            } else if record.added_or_removed == GeneHistoryEntryType::Removed {
-                if existing_entry.entry_type == GeneHistoryEntryType::Added {
-                    existing_entry.entry_type = GeneHistoryEntryType::Changed;
-                    existing_entry.old_coords = Some(record.value);
-                } else {
-                    eprintln!("gene {} removed twice in revision {}",
-                              record.systematic_id, record.revision);
-                }
-            }
+            existing_entry.entry_type = GeneHistoryEntryType::Changed;
+            existing_entry.old_coords = Some(removed_record.value);
         } else {
-
-            let mut references = vec![];
-
-            if let Some(reference) = record.pombase_reference {
-                references.push(reference.into())
-            }
-
-            if let Some(db_xref) = record.db_xref {
-                references.push(db_xref.into())
-            }
-
-            let (old_coords, new_coords) =
-                if record.added_or_removed == GeneHistoryEntryType::Added {
-                    (None, Some(record.value))
-                } else {
-                    (Some(record.value), None)
-                };
-
-            let entry = GeneHistoryEntry {
-                revision: record.revision,
-                old_coords,
-                new_coords,
-                date: record.date.into(),
-                entry_type: record.added_or_removed,
-                references,
-                comment: record.pombase_comments.clone(),
-            };
-
-            res.entry(record.systematic_id.into())
-                .or_insert_with(Vec::new)
-                .push(entry);
-        };
+            add_entry(&mut res, removed_record);
+        }
     }
 
     for entries in res.values_mut() {

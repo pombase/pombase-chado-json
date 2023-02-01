@@ -12,6 +12,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::db::raw::*;
 
+use crate::gene_history::GeneHistoryMap;
 use crate::types::*;
 use crate::data_types::*;
 use crate::web::data::*;
@@ -53,7 +54,7 @@ pub struct WebDataBuild<'a> {
     domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
     pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
     rnacentral_data: &'a Option<RNAcentralAnnotations>,
-    all_gene_history: &'a Option<HashMap<ReferenceUniquename, Vec<GeneHistoryEntry>>>,
+    all_gene_history: &'a Option<GeneHistoryMap>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -819,7 +820,7 @@ impl <'a> WebDataBuild<'a> {
                domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
                pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
                rnacentral_data: &'a Option<RNAcentralAnnotations>,
-               all_gene_history: &'a Option<HashMap<ReferenceUniquename, Vec<GeneHistoryEntry>>>,
+               all_gene_history: &'a Option<GeneHistoryMap>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
