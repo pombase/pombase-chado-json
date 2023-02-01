@@ -1004,24 +1004,12 @@ pub enum PresentAbsent {
     Unknown,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
-#[serde(rename_all = "snake_case")]
-pub enum GeneHistoryEntryType {
-    Added,
-    Removed,
-    Changed,
-}
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneHistoryEntry {
-    #[serde(skip)]
-    pub revision: String,
-    pub old_coords: Option<String>,
-    pub new_coords: Option<String>,
+    pub previous_coords: String,
     pub date: FlexStr,
-    pub entry_type: GeneHistoryEntryType,
     pub references: Vec<FlexStr>,
-    pub comment: Option<String>,
+    pub comments: Option<String>,
 }
 
 #[serde_as]
