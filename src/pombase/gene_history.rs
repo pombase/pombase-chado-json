@@ -26,12 +26,18 @@ fn add_entry(map: &mut GeneHistoryMap, record: GeneHistoryFileRecord) {
 
     let mut references = vec![];
 
-    if let Some(reference) = record.pombase_reference_added {
+    if let Some(ref reference) = record.pombase_reference_added {
         references.push(reference.into())
     }
 
     if let Some(db_xref) = record.db_xref_added {
-        references.push(db_xref.into())
+        if let Some(reference) = record.pombase_reference_added {
+            if !reference.contains(&db_xref) {
+                references.push(db_xref.into())
+            }
+        } else {
+            references.push(db_xref.into())
+        }
     }
 
     let entry = GeneHistoryEntry {
