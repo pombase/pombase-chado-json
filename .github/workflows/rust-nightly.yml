@@ -1,4 +1,4 @@
-name: "Test - Rust beta"
+name: "Test - Rust nightly"
 
 on:
   push:
@@ -16,10 +16,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: install beta rust
+      - name: install nightly rust
         uses: actions-rs/toolchain@v1
         with:
-            toolchain: beta
+            toolchain: nightly
             override: true
       - uses: Swatinem/rust-cache@v1
       - name: Build
