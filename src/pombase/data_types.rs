@@ -1042,6 +1042,8 @@ pub struct GeneDetails {
     pub coiled_coil_coords: Vec<(usize, usize)>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub pdb_identifiers: Vec<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub orfeome_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

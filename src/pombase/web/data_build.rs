@@ -1668,6 +1668,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut secondary_identifier = None;
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
+        let mut pdb_identifiers = vec![];
 
         for prop in feat.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
@@ -1683,6 +1684,11 @@ phenotypes, so just the first part of this extension will be used:
                     }
                 },
                 "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
+                "pdb_identifier" => {
+                    if let Some(ref pdb_identifier) = prop.value {
+                        pdb_identifiers.push(pdb_identifier.clone());
+                    }
+                }
                 _ => (),
             }
         }
@@ -1766,6 +1772,7 @@ phenotypes, so just the first part of this extension will be used:
             secondary_identifier,
             biogrid_interactor_id,
             rnacentral_urs_identifier,
+            pdb_identifiers,
             interpro_matches,
             tm_domain_coords,
             disordered_region_coords,
