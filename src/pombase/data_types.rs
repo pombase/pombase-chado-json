@@ -1012,6 +1012,16 @@ pub struct GeneHistoryEntry {
     pub comments: Option<String>,
 }
 
+pub type PdbId = String;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PDBEntry {
+    pub pdb_id: PdbId,
+    pub experimental_method: String,
+    pub resolution: String,
+//    pub molecule_type: String,
+}
+
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneDetails {
@@ -1043,7 +1053,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub pdb_identifiers: Vec<FlexStr>,
+    pub pdb_entries: Vec<PDBEntry>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub orfeome_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

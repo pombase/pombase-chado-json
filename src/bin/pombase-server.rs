@@ -162,13 +162,13 @@ async fn get_index(state: &rocket::State<StaticFileState>) -> Option<NamedFile> 
 /*
 Return a simple HTML version a gene page for search engines
 */
-#[get("/structure_view/<structure_type>/<protein_id>", rank=1)]
-async fn structure_view(structure_type: String, protein_id: String,
+#[get("/structure_view/<structure_type>/<id>", rank=1)]
+async fn structure_view(structure_type: String, id: String,
                         config: &rocket::State<Config>)
                         -> Option<content::RawHtml<String>>
 {
     let search_url = config.server.django_url.to_owned() + "/structure_view/";
-    let params = [("structure_type", structure_type), ("protein_id", protein_id)];
+    let params = [("structure_type", structure_type), ("id", id)];
     let client = reqwest::blocking::Client::new();
     let result = client.get(search_url).query(&params).send();
 

@@ -285,7 +285,7 @@ fn make_test_gene() -> GeneDetails {
         secondary_identifier: None,
         biogrid_interactor_id: Some(275937),
         rnacentral_urs_identifier: None,
-        pdb_identifiers: vec![],
+        pdb_entries: vec![],
         interpro_matches: vec![],
         tm_domain_coords: vec![],
         disordered_region_coords: vec![],

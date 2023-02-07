@@ -10,6 +10,7 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
+use crate::bio::pdb_reader::PDBEntryMap;
 use crate::db::raw::*;
 
 use crate::gene_history::GeneHistoryMap;
@@ -55,6 +56,7 @@ pub struct WebDataBuild<'a> {
     pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
     rnacentral_data: &'a Option<RNAcentralAnnotations>,
     all_gene_history: &'a Option<GeneHistoryMap>,
+    pdb_entry_map: &'a Option<PDBEntryMap>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -821,6 +823,7 @@ impl <'a> WebDataBuild<'a> {
                pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
                rnacentral_data: &'a Option<RNAcentralAnnotations>,
                all_gene_history: &'a Option<GeneHistoryMap>,
+               pdb_gene_entry_map: &'a Option<PDBEntryMap>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -829,6 +832,7 @@ impl <'a> WebDataBuild<'a> {
             pfam_data,
             rnacentral_data,
             all_gene_history,
+            pdb_entry_map: pdb_gene_entry_map,
             config,
 
             genes: BTreeMap::new(),
@@ -1668,7 +1672,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut secondary_identifier = None;
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
-        let mut pdb_identifiers = vec![];
+        let mut pdb_entries = vec![];
 
         for prop in feat.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
@@ -1685,8 +1689,12 @@ phenotypes, so just the first part of this extension will be used:
                 },
                 "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
                 "pdb_identifier" => {
-                    if let Some(ref pdb_identifier) = prop.value {
-                        pdb_identifiers.push(pdb_identifier.clone());
+                    if let Some(ref pdb_id) = prop.value {
+                        if let Some(pdb_entry_map) = self.pdb_entry_map {
+                            if let Some(pdb_entry) = pdb_entry_map.get(pdb_id.as_ref()) {
+                               pdb_entries.push(pdb_entry.clone());
+                           }
+                        }
                     }
                 }
                 _ => (),
@@ -1772,7 +1780,7 @@ phenotypes, so just the first part of this extension will be used:
             secondary_identifier,
             biogrid_interactor_id,
             rnacentral_urs_identifier,
-            pdb_identifiers,
+            pdb_entries,
             interpro_matches,
             tm_domain_coords,
             disordered_region_coords,
