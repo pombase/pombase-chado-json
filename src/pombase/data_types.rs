@@ -1019,7 +1019,8 @@ pub struct PDBEntry {
     pub pdb_id: PdbId,
     pub experimental_method: String,
     pub resolution: String,
-//    pub molecule_type: String,
+    pub chain: String,
+    pub position: String,
 }
 
 #[serde_as]
