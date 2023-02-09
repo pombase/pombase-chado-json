@@ -2,9 +2,10 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::process;
-use crate::data_types::{PdbId, PDBEntry};
+use crate::types::GeneUniquename;
+use crate::data_types::PDBEntry;
 
-pub type PDBEntryMap = HashMap<PdbId, PDBEntry>;
+pub type PDBEntryMap = HashMap<GeneUniquename, Vec<PDBEntry>>;
 
 pub fn read_pdb_data(file_name: &str) -> PDBEntryMap {
   let mut map = HashMap::new();
@@ -30,7 +31,11 @@ pub fn read_pdb_data(file_name: &str) -> PDBEntryMap {
              panic!("failed to read PDB data file: {}", e);
          });
 
-     map.insert(record.pdb_id.clone(), record);
+     let gene_uniquename = record.gene_uniquename.clone();
+
+     map.entry(gene_uniquename)
+        .or_insert_with(Vec::new)
+        .push(record);
   }
 
   map
