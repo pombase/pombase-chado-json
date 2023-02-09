@@ -1016,7 +1016,11 @@ pub type PdbId = String;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PDBEntry {
+    pub gene_uniquename: GeneUniquename,
     pub pdb_id: PdbId,
+    pub title: String,
+    pub entry_authors: String,
+    pub entry_authors_abbrev: String,
     pub experimental_method: String,
     pub resolution: String,
     pub chain: String,

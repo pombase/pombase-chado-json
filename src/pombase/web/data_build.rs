@@ -1650,6 +1650,8 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn store_gene_details(&mut self, feat: &Feature) {
+        let gene_uniquename = feat.uniquename.clone();
+
         let maybe_location = make_location(&self.chromosomes, feat);
 
         if let Some(ref location) = maybe_location {
@@ -1672,7 +1674,16 @@ phenotypes, so just the first part of this extension will be used:
         let mut secondary_identifier = None;
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
-        let mut pdb_entries = vec![];
+        let pdb_entries =
+            if let Some(pdb_entry_map) = self.pdb_entry_map {
+                if let Some(pdb_entries) = pdb_entry_map.get(&gene_uniquename) {
+                    pdb_entries.clone()
+                } else {
+                    vec![]
+                }
+            } else {
+                vec![]
+            };
 
         for prop in feat.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
@@ -1688,15 +1699,6 @@ phenotypes, so just the first part of this extension will be used:
                     }
                 },
                 "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
-                "pdb_identifier" => {
-                    if let Some(ref pdb_id) = prop.value {
-                        if let Some(pdb_entry_map) = self.pdb_entry_map {
-                            if let Some(pdb_entry) = pdb_entry_map.get(pdb_id.as_ref()) {
-                               pdb_entries.push(pdb_entry.clone());
-                           }
-                        }
-                    }
-                }
                 _ => (),
             }
         }
@@ -1771,7 +1773,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
         let gene_feature = GeneDetails {
-            uniquename: feat.uniquename.clone(),
+            uniquename: gene_uniquename,
             name: feat.name.clone(),
             taxonid: organism.taxonid,
             product: None,
