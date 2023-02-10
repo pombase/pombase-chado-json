@@ -572,7 +572,7 @@ pub struct ReferenceDetails {
     pub annotation_details: IdOntAnnotationDetailMap,
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub pdb_entries: Vec<PDBRefEntry>,
+    pub pdb_entries: Vec<PDBEntry>,
 }
 
 impl Container for ReferenceDetails {
@@ -1015,20 +1015,6 @@ pub struct GeneHistoryEntry {
     pub comments: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct PDBGeneEntry {
-    pub gene_uniquename: GeneUniquename,
-    pub pdb_id: PdbId,
-    pub title: String,
-    pub entry_authors: String,
-    pub entry_authors_abbrev: String,
-    pub reference: ReferenceUniquename,
-    pub experimental_method: String,
-    pub resolution: String,
-    pub chain: String,
-    pub position: String,
-}
-
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PDBGeneChain {
@@ -1038,7 +1024,7 @@ pub struct PDBGeneChain {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct PDBRefEntry {
+pub struct PDBEntry {
     pub pdb_id: PdbId,
     pub gene_chains: Vec<PDBGeneChain>,
     pub title: String,
@@ -1081,7 +1067,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub pdb_entries: Vec<PDBGeneEntry>,
+    pub pdb_entries: Vec<PDBEntry>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub orfeome_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

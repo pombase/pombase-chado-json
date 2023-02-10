@@ -3,25 +3,43 @@ use std::fs::File;
 use std::io::BufReader;
 use std::process;
 use crate::types::{GeneUniquename, ReferenceUniquename, PdbId};
-use crate::data_types::{PDBGeneEntry, PDBRefEntry, PDBGeneChain};
+use crate::data_types::{PDBEntry, PDBGeneChain};
 
-pub type PDBGeneEntryMap = HashMap<GeneUniquename, Vec<PDBGeneEntry>>;
-pub type PDBRefEntryMap = HashMap<ReferenceUniquename, HashMap<PdbId, PDBRefEntry>>;
 
-fn make_ref_entry(record: &PDBGeneEntry) -> PDBRefEntry {
-    PDBRefEntry {
+#[derive(Serialize, Deserialize, Clone, Debug)]
+struct PDBSourceEntry {
+    pub gene_uniquename: GeneUniquename,
+    pub pdb_id: PdbId,
+    pub title: String,
+    pub entry_authors: String,
+    pub entry_authors_abbrev: String,
+    pub reference: ReferenceUniquename,
+    pub experimental_method: String,
+    pub resolution: String,
+    pub chain: String,
+    pub position: String,
+}
+
+
+pub type PDBGeneEntryMap = HashMap<GeneUniquename, Vec<PDBEntry>>;
+pub type PDBRefEntryMap = HashMap<ReferenceUniquename, HashMap<PdbId, PDBEntry>>;
+
+fn make_entry(record: &PDBSourceEntry) -> PDBEntry {
+    let gene_chain = make_gene_chain(record);
+
+    PDBEntry {
         pdb_id: record.pdb_id.clone(),
-        gene_chains: vec![],
+        gene_chains: vec![gene_chain],
         title: record.title.clone(),
         entry_authors: record.entry_authors.clone(),
         entry_authors_abbrev: record.entry_authors_abbrev.clone(),
         reference: record.reference.clone(),
         experimental_method: record.experimental_method.clone(),
-        resolution: record.experimental_method.clone(),
+        resolution: record.resolution.clone(),
     }
 }
 
-fn make_gene_chain(record: &PDBGeneEntry) -> PDBGeneChain {
+fn make_gene_chain(record: &PDBSourceEntry) -> PDBGeneChain {
     PDBGeneChain {
         gene_uniquename: record.gene_uniquename.clone(),
         chain: record.chain.clone(),
@@ -51,7 +69,7 @@ pub fn read_pdb_data(file_name: &str)
       .from_reader(reader);
 
   for result in csv_reader.deserialize() {
-     let record: PDBGeneEntry =
+     let record: PDBSourceEntry =
          result.unwrap_or_else(|e| {
              panic!("failed to read PDB data file: {}", e);
          });
@@ -60,14 +78,14 @@ pub fn read_pdb_data(file_name: &str)
 
      gene_entry_map.entry(gene_uniquename)
         .or_insert_with(Vec::new)
-        .push(record.clone());
+        .push(make_entry(&record));
 
      let ref_uniquename = record.reference.clone();
 
      ref_entry_map.entry(ref_uniquename)
         .or_insert_with(HashMap::new)
         .entry(record.pdb_id.clone())
-        .or_insert_with(|| make_ref_entry(&record))
+        .or_insert_with(|| make_entry(&record))
         .gene_chains.push(make_gene_chain(&record));
   }
 
