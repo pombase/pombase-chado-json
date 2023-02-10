@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use anyhow::{Result, anyhow};
+
 use reqwest::{Response, Client};
 use regex::Regex;
 
@@ -37,24 +39,21 @@ pub fn clean_words(q: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn do_solr_request(url: &str) -> Result<reqwest::blocking::Response, String> {
+pub async fn do_solr_request(url: &str) -> Result<reqwest::Response> {
     println!("do_solr_request({:?})", url);
-    match reqwest::blocking::get(url) {
-        Ok(res) => {
-            if res.status().is_success() {
-                Ok(res)
-            } else {
-                if let Some(reason) = res.status().canonical_reason() {
-                    Err(format!("HTTP request to Solr failed: {} - {}", res.status(), reason))
-                } else {
-                    Err(format!("HTTP request to Solr failed with status code: {}",
-                                res.status()))
-                }
-            }
-        },
-        Err(err) => {
-            Err(format!("Error from Reqwest: {:?} for {}", err, url))
-        }
+    let res = reqwest::get(url).await?;
+
+    if res.status().is_success() {
+        Ok(res)
+    } else {
+        let message =
+        if let Some(reason) = res.status().canonical_reason() {
+            format!("HTTP request to Solr failed: {} - {}", res.status(), reason)
+        } else {
+            format!("HTTP request to Solr failed with status code: {}",
+                        res.status())
+        };
+        Err(anyhow!(message))
     }
 }
 

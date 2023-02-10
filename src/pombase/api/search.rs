@@ -2,6 +2,8 @@ use bytes::Bytes;
 use reqwest::Client;
 use std::error::Error;
 
+use anyhow::Result;
+
 use std::io::Cursor;
 
 use rocket::response::{self, Response, Responder};
@@ -89,62 +91,41 @@ impl Search {
         }
     }
 
-    pub fn motif_search(&self, scope: &str, pattern: &str) -> Result<String, String> {
+    pub async fn motif_search(&self, scope: &str, pattern: &str) -> Result<String> {
         let search_url = self.config.django_url.to_owned() + "/motifsearch/query/";
         let params = [("scope", scope), ("pattern", pattern)];
-        let client = reqwest::blocking::Client::new();
-        let result = client.get(search_url).query(&params).send();
-
-        match result {
-            Ok(res) => {
-                match res.text() {
-                    Ok(text) => Ok(text),
-                    Err(err) => Err(format!("Error getting text from motif search: {:?}", err)),
-                }
-            },
-            Err(err) => {
-                Err(format!("Motif search error: {:?}", err))
-            }
-        }
+        let client = reqwest::Client::new();
+        let text = client.get(search_url).query(&params).send().await?.text().await?;
+        Ok(text)
     }
 
-    pub fn gene_ex_violin_plot(&self, plot_size: &str, genes: &str)
-                               -> Result<PNGPlot, String>
+    pub async fn gene_ex_violin_plot(&self, plot_size: &str, genes: &str)
+                               -> Result<PNGPlot>
     {
         let plot_url = self.config.django_url.to_owned() + "/gene_ex/gene_ex_violin/";
         let params = [("plot_size", plot_size), ("genes", genes)];
-        let client = reqwest::blocking::Client::new();
-        let result = client.get(plot_url).query(&params).send();
+        let client = reqwest::Client::new();
+        let bytes = client.get(plot_url).query(&params).send().await?.bytes().await?;
 
-        match result {
-            Ok(res) => {
-                match res.bytes() {
-                    Ok(bytes) => Ok(PNGPlot { bytes }),
-                    Err(err) => Err(format!("Error getting violin plot image: {:?}", err)),
-                }
-            },
-            Err(err) => {
-                Err(format!("Gene expression violin plot error: {:?}", err))
-            }
-        }
+        Ok(PNGPlot { bytes })
     }
 
-    pub fn term_complete(&self, cv_name: &str, q: &str)
-                         -> Result<Vec<SolrTermSummary>, String>
+    pub async fn term_complete(&self, cv_name: &str, q: &str)
+                         -> Result<Vec<SolrTermSummary>>
     {
-        term_complete(&self.config, cv_name, q)
+        Ok(term_complete(&self.config, cv_name, q).await?)
     }
 
-    pub fn term_summary_by_id(&self, termid: &str)
-                             -> Result<Option<SolrTermSummary>, String>
+    pub async fn term_summary_by_id(&self, termid: &str)
+                             -> Result<Option<SolrTermSummary>>
     {
-        term_summary_by_id(&self.config, termid)
+        Ok(term_summary_by_id(&self.config, termid).await?)
     }
 
-    pub fn ref_complete(&self, q: &str)
-                        -> Result<Vec<SolrReferenceSummary>, String>
+    pub async fn ref_complete(&self, q: &str)
+                        -> Result<Vec<SolrReferenceSummary>>
     {
-        search_refs(&self.config, q)
+        Ok(search_refs(&self.config, q).await?)
     }
 
     pub async fn allele_complete(&self, q: &str)
@@ -153,26 +134,26 @@ impl Search {
         search_alleles(&self.config, &self.reqwest_client, q).await
     }
 
-    pub fn solr_search(&self, scope: &SolrSearchScope, q: &str)
-                       -> Result<SolrSearchResult, String>
+    pub async fn solr_search(&self, scope: &SolrSearchScope, q: &str)
+                       -> Result<SolrSearchResult>
     {
         let trimmed_query = q.trim();
 
         let term_matches =
             if scope.is_term() {
-                search_terms(&self.config, trimmed_query)?
+                search_terms(&self.config, trimmed_query).await?
             } else {
                 vec![]
             };
         let ref_matches =
             if scope.is_reference() {
-                search_refs(&self.config, trimmed_query)?
+                search_refs(&self.config, trimmed_query).await?
             } else {
                 vec![]
             };
         let doc_matches =
             if scope.is_documentation() {
-                search_docs(&self.config, trimmed_query)?
+                search_docs(&self.config, trimmed_query).await?
             } else {
                 vec![]
             };

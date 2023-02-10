@@ -58,7 +58,7 @@ version = "0.8.9"
 
 [dependencies.reqwest]
 version = "0.11"
-features = ["blocking", "json"]
+features = ["json"]
 
 [profile.release]
 opt-level = 3

@@ -119,7 +119,7 @@ async fn get_term(id: String, query_exec: &rocket::State<QueryExec>) -> Option<J
 async fn get_term_summary_by_id(id: String, search: &rocket::State<Search>)
                           -> Option<Json<TermLookupResponse>>
 {
-    let res = search.term_summary_by_id(&id);
+    let res = search.term_summary_by_id(&id).await;
 
     let lookup_response =
         match res {
@@ -169,12 +169,12 @@ async fn structure_view(structure_type: String, id: String,
 {
     let search_url = config.server.django_url.to_owned() + "/structure_view/";
     let params = [("structure_type", structure_type), ("id", id)];
-    let client = reqwest::blocking::Client::new();
-    let result = client.get(search_url).query(&params).send();
+    let client = reqwest::Client::new();
+    let result = client.get(search_url).query(&params).send().await;
 
     match result {
         Ok(res) => {
-            match res.text() {
+            match res.text().await {
                 Ok(text) => Some(RawHtml(text)),
                 Err(err) => {
                     eprintln!("Error proxying to Django: {:?}", err);
@@ -257,7 +257,7 @@ struct SolrSearchResponse  {
 async fn term_complete(cv_name: String, q: String, search: &rocket::State<Search>)
               -> Option<Json<TermCompletionResponse>>
 {
-    let res = search.term_complete(&cv_name, &q);
+    let res = search.term_complete(&cv_name, &q).await;
 
     let completion_response =
         match res {
@@ -283,7 +283,7 @@ async fn term_complete(cv_name: String, q: String, search: &rocket::State<Search
 async fn ref_complete(q: String, search: &rocket::State<Search>)
                 -> Option<Json<RefCompletionResponse>>
 {
-    let res = search.ref_complete(&q);
+    let res = search.ref_complete(&q).await;
 
     let completion_response =
         match res {
@@ -337,7 +337,7 @@ async fn solr_search(scope: String, q: String, search: &rocket::State<Search>)
     -> Option<Json<SolrSearchResponse>>
 {
     if let Some(parsed_scope) = SolrSearchScope::new_from_str(&scope) {
-        let search_result = search.solr_search(&parsed_scope, &q);
+        let search_result = search.solr_search(&parsed_scope, &q).await;
 
         match search_result {
             Ok(search_all_result) => {
@@ -350,7 +350,7 @@ async fn solr_search(scope: String, q: String, search: &rocket::State<Search>)
             },
             Err(err) => {
                 Some(Json(SolrSearchResponse {
-                    status: err,
+                    status: err.to_string(),
                     term_matches: vec![],
                     ref_matches: vec![],
                     doc_matches: vec![],
@@ -371,7 +371,7 @@ async fn solr_search(scope: String, q: String, search: &rocket::State<Search>)
 async fn motif_search(scope: String, q: String, search: &rocket::State<Search>)
                 -> Option<String>
 {
-    let res = search.motif_search(&scope, &q);
+    let res = search.motif_search(&scope, &q).await;
 
     match res {
         Ok(search_result) => {
@@ -390,7 +390,7 @@ async fn gene_ex_violin_plot(plot_size: String, genes: String,
                        search: &rocket::State<Search>)
                        -> Option<PNGPlot>
 {
-    let res = search.gene_ex_violin_plot(&plot_size, &genes);
+    let res = search.gene_ex_violin_plot(&plot_size, &genes).await;
 
     match res {
         Ok(png_plot) => {

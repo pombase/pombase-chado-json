@@ -1,6 +1,8 @@
 
 use std::collections::HashMap;
 
+use anyhow::Result;
+
 use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
 use crate::api::search_utils::{do_solr_request, clean_words};
@@ -48,28 +50,22 @@ fn make_docs_url(config: &ServerConfig, q: &str) -> Option<String> {
     }
 }
 
-pub fn search_docs(config: &ServerConfig, q: &str) -> Result<Vec<DocSearchMatch>, String> {
+pub async fn search_docs(config: &ServerConfig, q: &str) -> Result<Vec<DocSearchMatch>> {
     if let Some(mut url) = make_docs_url(config, q) {
         url += "&hl=on&hl.fl=heading,content&fl=id,heading,authors_abbrev";
-        let res = do_solr_request(&url)?;
 
-        match serde_json::from_reader(res) {
-            Ok(container) => {
-                let response_container: SolrDocSearchResponseContainer = container;
-                let mut hl_by_id =
-                    response_container.highlighting.unwrap_or_default();
-                let matches: Vec<DocSearchMatch> = response_container.response.docs
-                    .iter().map(|doc| DocSearchMatch {
-                        id: String::from(&doc.id),
-                        heading: String::from(&doc.heading),
-                        hl: hl_by_id.remove(doc.id.as_str()).unwrap_or_default(),
-                    }).collect();
-                Ok(matches)
-            },
-            Err(err) => {
-                Err(format!("Error parsing response from Solr: {:?}", err))
-            }
-        }
+        let response = do_solr_request(&url).await?;
+        let res = response.json::<SolrDocSearchResponseContainer>().await?;
+
+        let mut hl_by_id =
+            res.highlighting.unwrap_or_default();
+        let matches: Vec<DocSearchMatch> = res.response.docs
+            .iter().map(|doc| DocSearchMatch {
+                id: String::from(&doc.id),
+                heading: String::from(&doc.heading),
+                hl: hl_by_id.remove(doc.id.as_str()).unwrap_or_default(),
+            }).collect();
+        Ok(matches)
     } else {
         Ok(vec![])
     }

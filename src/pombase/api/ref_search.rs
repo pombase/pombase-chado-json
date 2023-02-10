@@ -6,6 +6,8 @@ use std::collections::HashMap;
 
 use once_cell::unsync::Lazy;
 
+use anyhow::Result;
+
 use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
 use crate::api::search_utils::{do_solr_request, clean_words};
@@ -126,19 +128,15 @@ fn matches_from_container(container: SolrRefResponseContainer) -> Vec<SolrRefere
     matches
 }
 
-pub fn search_refs(config: &ServerConfig, q: &str) -> Result<Vec<SolrReferenceSummary>, String> {
+pub async fn search_refs(config: &ServerConfig, q: &str) -> Result<Vec<SolrReferenceSummary>> {
     let query_field_names =
       ["title", "citation", "authors", "pubmed_abstract", "authors_abbrev"];
     let maybe_url = make_refs_url(config, q, &query_field_names);
     if let Some(url) = maybe_url {
-        let res = do_solr_request(&url)?;
+        let res = do_solr_request(&url).await?;
 
-        match serde_json::from_reader(res) {
-            Ok(container) => Ok(matches_from_container(container)),
-            Err(err) => {
-                Err(format!("Error parsing response from Solr: {:?}", err))
-            }
-        }
+        let container = res.json::<SolrRefResponseContainer>().await?;
+        Ok(matches_from_container(container))
     } else {
         Ok(vec![])
     }

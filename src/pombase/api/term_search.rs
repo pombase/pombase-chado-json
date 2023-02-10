@@ -1,8 +1,10 @@
 use regex::Regex;
 
-use crate::data_types::SolrTermSummary;
-
 use std::collections::HashMap;
+
+use anyhow::{Result, anyhow};
+
+use crate::data_types::SolrTermSummary;
 
 use crate::web::config::ServerConfig;
 use crate::api::search_types::*;
@@ -29,22 +31,16 @@ struct SolrTermResponseContainer {
     pub response: SolrTermResponse,
 }
 
-pub fn search_terms(config: &ServerConfig, q: &str)
-                    -> Result<Vec<SolrTermSummary>, String>
+pub async fn search_terms(config: &ServerConfig, q: &str)
+                    -> Result<Vec<SolrTermSummary>>
 {
     let cv_name = &config.cv_name_for_terms_search;
 
     if let Some(url) = make_terms_url(config, cv_name, q) {
-        let res = do_solr_request(&url)?;
+        let res = do_solr_request(&url).await?;
 
-        match serde_json::from_reader(res) {
-            Ok(container) => {
-                Ok(container_to_matches(container))
-            },
-            Err(err) => {
-                Err(format!("Error parsing response from Solr: {:?}", err))
-            }
-        }
+        let container = res.json::<SolrTermSearchResponseContainer>().await?;
+        Ok(container_to_matches(container))
     } else {
         Ok(vec![])
     }
@@ -106,32 +102,19 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
     Some(terms_url)
 }
 
-pub fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
-                     -> Result<Vec<SolrTermSummary>, String>
+pub async fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
+                     -> Result<Vec<SolrTermSummary>>
 {
     if let Some(terms_url) = make_terms_url(config, cv_name, q) {
-        match reqwest::blocking::get(terms_url) {
-            Ok(res) => {
-                if res.status().is_success() {
-                    match serde_json::from_reader(res) {
-                        Ok(container) => {
-                            Ok(container_to_matches(container))
-                        },
-                        Err(err) => {
-                            Err(format!("Error parsing response from Solr: {:?}", err))
-                        }
-                    }
-                } else {
-                    if let Some(reason) = res.status().canonical_reason() {
-                        Err(format!("HTTP request to Solr failed: {} - {}", res.status(), reason))
-                    } else {
-                        Err(format!("HTTP request to Solr failed with status code: {}",
-                                    res.status()))
-                    }
-                }
-            },
-            Err(err) => {
-                Err(format!("Error from Reqwest: {:?}", err))
+        let res = reqwest::get(terms_url).await?;
+        if res.status().is_success() {
+            Ok(container_to_matches(res.json().await?))
+        } else {
+            if let Some(reason) = res.status().canonical_reason() {
+                Err(anyhow!("HTTP request to Solr failed: {} - {}", res.status(), reason))
+            } else {
+                Err(anyhow!("HTTP request to Solr failed with status code: {}",
+                            res.status()))
             }
         }
     } else {
@@ -139,44 +122,27 @@ pub fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
     }
 }
 
-pub fn term_summary_by_id(config: &ServerConfig, termid: &str)
-                          -> Result<Option<SolrTermSummary>, String>
+pub async fn term_summary_by_id(config: &ServerConfig, termid: &str)
+                          -> Result<Option<SolrTermSummary>>
 {
     let term_url = format!("{}/terms/select?wt=json&q=id:{}",
                            config.solr_url.to_owned(), termid.replace(':', r"\:"));
 
-    match reqwest::blocking::get(term_url) {
-        Ok(res) => {
-            if res.status().is_success() {
-                match serde_json::from_reader(res) {
-                    Ok(container) => {
-                        let solr_response_container: SolrTermResponseContainer = container;
-                        let summaries = solr_response_container.response.docs;
-                        if let Some(summary) = summaries.get(0) {
-                            if summary.id == termid {
-                                Ok(Some(summary.clone()))
-                            } else {
-                                Ok(None)
-                            }
-                        } else {
-                            Ok(None)
-                        }
-                    },
-                    Err(err) => {
-                        Err(format!("Error parsing response from Solr: {:?}", err))
-                    }
-                }
+    let res = reqwest::get(term_url).await?;
+
+    if res.status().is_success() {
+        let container = res.json::<SolrTermResponseContainer>().await?;
+        let summaries = container.response.docs;
+        if let Some(summary) = summaries.get(0) {
+            if summary.id == termid {
+                Ok(Some(summary.clone()))
             } else {
-                if let Some(reason) = res.status().canonical_reason() {
-                    Err(format!("HTTP request to Solr failed: {} - {}", res.status(), reason))
-                } else {
-                    Err(format!("HTTP request to Solr failed with status code: {}",
-                                res.status()))
-                }
+                Ok(None)
             }
-        },
-        Err(err) => {
-            Err(format!("Error from Reqwest: {:?}", err))
+        } else {
+            Ok(None)
         }
+    } else {
+        Err(anyhow!("failed to read from Solr: {}", res.status()))
     }
 }
