@@ -726,10 +726,10 @@ fn get_test_web_data() -> WebData {
     let rnacentral_data = Some(HashMap::new());
     let pfam_data = Some(HashMap::new());
     let gene_history = None;
-    let pdb_entry_map = None;
+
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
                                            &rnacentral_data, &gene_history,
-                                           &pdb_entry_map, &config);
+                                           &None, &None, &config);
     web_data_build.get_web_data()
 }
 

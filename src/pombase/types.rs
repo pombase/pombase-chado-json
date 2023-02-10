@@ -34,3 +34,4 @@ pub type OrganismTaxonId = u32;
 
 pub type SubSetName = FlexStr;
 
+pub type PdbId = String;

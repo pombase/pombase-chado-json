@@ -140,16 +140,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
             None
         };
 
-    let pdb_entry_map =
+    let (pdb_entry_map, pdb_ref_entry_map) =
         if let Some(ref pdb_data_file_name) = maybe_pdb_data_file_name {
-            Some(read_pdb_data(pdb_data_file_name))
+            let (pdb_entry_map, pdb_ref_entry_map) = read_pdb_data(pdb_data_file_name);
+            (Some(pdb_entry_map), Some(pdb_ref_entry_map))
         } else {
-            None
+            (None, None)
         };
 
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
                                            &rnacentral_data, &gene_history,
-                                           &pdb_entry_map,
+                                           &pdb_entry_map, &pdb_ref_entry_map,
                                            &config);
     let web_data = web_data_build.get_web_data();
 

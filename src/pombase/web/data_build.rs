@@ -10,7 +10,7 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::bio::pdb_reader::PDBEntryMap;
+use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::db::raw::*;
 
 use crate::gene_history::GeneHistoryMap;
@@ -56,7 +56,8 @@ pub struct WebDataBuild<'a> {
     pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
     rnacentral_data: &'a Option<RNAcentralAnnotations>,
     all_gene_history: &'a Option<GeneHistoryMap>,
-    pdb_entry_map: &'a Option<PDBEntryMap>,
+    pdb_gene_entry_map: &'a Option<PDBGeneEntryMap>,
+    pdb_ref_entry_map: &'a Option<PDBRefEntryMap>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -823,7 +824,8 @@ impl <'a> WebDataBuild<'a> {
                pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
                rnacentral_data: &'a Option<RNAcentralAnnotations>,
                all_gene_history: &'a Option<GeneHistoryMap>,
-               pdb_gene_entry_map: &'a Option<PDBEntryMap>,
+               pdb_gene_entry_map: &'a Option<PDBGeneEntryMap>,
+               pdb_ref_entry_map: &'a Option<PDBRefEntryMap>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -832,7 +834,8 @@ impl <'a> WebDataBuild<'a> {
             pfam_data,
             rnacentral_data,
             all_gene_history,
-            pdb_entry_map: pdb_gene_entry_map,
+            pdb_gene_entry_map,
+            pdb_ref_entry_map,
             config,
 
             genes: BTreeMap::new(),
@@ -1448,6 +1451,17 @@ phenotypes, so just the first part of this extension will be used:
                 }
             }
 
+            let pdb_entries =
+                if let Some(pdb_ref_entry_map) = self.pdb_ref_entry_map {
+                    if let Some(pdbid_entry_map) = pdb_ref_entry_map.get(reference_uniquename.as_ref()) {
+                        pdbid_entry_map.values().cloned().collect()
+                    } else {
+                        vec![]
+                    }
+                } else {
+                    vec![]
+                };
+
             let mut authors_abbrev = None;
             let mut publication_year = None;
 
@@ -1500,9 +1514,6 @@ phenotypes, so just the first part of this extension will be used:
               }
             }
 
-            let mut test_me = HashMap::new();
-            test_me.insert((1, "foo".to_owned()), "bar".to_owned());
-
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
                                        uniquename: reference_uniquename.clone(),
@@ -1536,6 +1547,8 @@ phenotypes, so just the first part of this extension will be used:
                                        terms_by_termid: HashMap::new(),
                                        annotation_details: HashMap::new(),
                                        gene_count: 0,
+
+                                       pdb_entries,
                                    });
         }
     }
@@ -1675,7 +1688,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
         let pdb_entries =
-            if let Some(pdb_entry_map) = self.pdb_entry_map {
+            if let Some(pdb_entry_map) = self.pdb_gene_entry_map {
                 if let Some(pdb_entries) = pdb_entry_map.get(&gene_uniquename) {
                     pdb_entries.clone()
                 } else {
@@ -5679,6 +5692,12 @@ phenotypes, so just the first part of this extension will be used:
                                                  &paralog_annotation.paralog_uniquename);
                 }
 
+                for pdb_ref_entry in &reference_details.pdb_entries {
+                    for pdb_gene_chain in &pdb_ref_entry.gene_chains {
+                        self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
+                                              &pdb_gene_chain.gene_uniquename);
+                    }
+                }
             }
         }
 

@@ -2,13 +2,38 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::process;
-use crate::types::GeneUniquename;
-use crate::data_types::PDBEntry;
+use crate::types::{GeneUniquename, ReferenceUniquename, PdbId};
+use crate::data_types::{PDBGeneEntry, PDBRefEntry, PDBGeneChain};
 
-pub type PDBEntryMap = HashMap<GeneUniquename, Vec<PDBEntry>>;
+pub type PDBGeneEntryMap = HashMap<GeneUniquename, Vec<PDBGeneEntry>>;
+pub type PDBRefEntryMap = HashMap<ReferenceUniquename, HashMap<PdbId, PDBRefEntry>>;
 
-pub fn read_pdb_data(file_name: &str) -> PDBEntryMap {
-  let mut map = HashMap::new();
+fn make_ref_entry(record: &PDBGeneEntry) -> PDBRefEntry {
+    PDBRefEntry {
+        pdb_id: record.pdb_id.clone(),
+        gene_chains: vec![],
+        title: record.title.clone(),
+        entry_authors: record.entry_authors.clone(),
+        entry_authors_abbrev: record.entry_authors_abbrev.clone(),
+        reference: record.reference.clone(),
+        experimental_method: record.experimental_method.clone(),
+        resolution: record.experimental_method.clone(),
+    }
+}
+
+fn make_gene_chain(record: &PDBGeneEntry) -> PDBGeneChain {
+    PDBGeneChain {
+        gene_uniquename: record.gene_uniquename.clone(),
+        chain: record.chain.clone(),
+        position: record.position.clone(),
+    }
+}
+
+pub fn read_pdb_data(file_name: &str)
+ -> (PDBGeneEntryMap, PDBRefEntryMap)
+{
+  let mut gene_entry_map = HashMap::new();
+  let mut ref_entry_map = HashMap::new();
 
   let file = match File::open(file_name) {
       Ok(file) => file,
@@ -26,17 +51,25 @@ pub fn read_pdb_data(file_name: &str) -> PDBEntryMap {
       .from_reader(reader);
 
   for result in csv_reader.deserialize() {
-     let record: PDBEntry =
+     let record: PDBGeneEntry =
          result.unwrap_or_else(|e| {
              panic!("failed to read PDB data file: {}", e);
          });
 
      let gene_uniquename = record.gene_uniquename.clone();
 
-     map.entry(gene_uniquename)
+     gene_entry_map.entry(gene_uniquename)
         .or_insert_with(Vec::new)
-        .push(record);
+        .push(record.clone());
+
+     let ref_uniquename = record.reference.clone();
+
+     ref_entry_map.entry(ref_uniquename)
+        .or_insert_with(HashMap::new)
+        .entry(record.pdb_id.clone())
+        .or_insert_with(|| make_ref_entry(&record))
+        .gene_chains.push(make_gene_chain(&record));
   }
 
-  map
+  (gene_entry_map, ref_entry_map)
 }
