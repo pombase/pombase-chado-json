@@ -8,5 +8,5 @@ cli_colors = true
 [release]
 address = "0.0.0.0"
 port = 8500
-log_level = "normal"
+log_level = "critical"
 workers = 12
