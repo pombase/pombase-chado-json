@@ -19,7 +19,7 @@ use getopts::Options;
 use rocket::serde::json::{Json, Value, json};
 use rocket::fs::FileServer;
 
-use pombase::api::query::Query as PomBaseQuery;
+use pombase::api::query::Query;
 use pombase::api::result::QueryAPIResult;
 use pombase::api::search::{Search, DocSearchMatch,
                            SolrSearchScope, PNGPlot};
@@ -221,7 +221,7 @@ async fn get_simple_term(id: String, query_exec: &rocket::State<QueryExec>,
 }
 
 #[post("/api/v1/dataset/latest/query", rank=1, data="<q>", format = "application/json")]
-async fn query_post(q: Json<PomBaseQuery>, query_exec: &rocket::State<QueryExec>)
+async fn query_post(q: Json<Query>, query_exec: &rocket::State<QueryExec>)
               -> Option<Json<QueryAPIResult>>
 {
     Some(Json(query_exec.exec(&q.into_inner()).await))
