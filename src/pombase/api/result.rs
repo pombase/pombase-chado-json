@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use crate::api::query::Query;
 use crate::data_types::{DeletionViability, PresentAbsent, GeneQueryTermData,
                         GeneQueryAttrName};
-use crate::types::{TermId, GeneUniquename, ReferenceUniquename};
+use crate::types::{TermId, GeneUniquename, ReferenceUniquename, PdbId};
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
@@ -50,6 +50,8 @@ pub struct ResultRow {
     pub gaf_lines: Option<String>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub reference_uniquenames: HashSet<ReferenceUniquename>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub pdb_ids: HashSet<PdbId>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subsets: HashSet<TermId>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

@@ -1997,6 +1997,8 @@ pub struct APIGeneSummary {
     pub exact_synonyms: Vec<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<FlexStr>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub pdb_ids: HashSet<PdbId>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -2056,6 +2058,8 @@ pub struct GeneQueryData {
     pub unspliced_rna_length: Option<usize>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subset_termids: HashSet<TermId>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub pdb_ids: HashSet<PdbId>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]

@@ -925,6 +925,7 @@ impl Query {
                let mut physical_interactors = HashSet::new();
                let mut reference_uniquenames = HashSet::new();
                let mut tmm = None;
+               let mut pdb_ids = HashSet::new();
                let mut molecular_weight = None;
                let mut protein_length = None;
                let mut protein_length_bin = None;
@@ -955,6 +956,7 @@ impl Query {
                            "go_function" =>
                                 go_function = gene_data.go_function.clone(),
                            "tmm" => tmm = gene_data.tmm.clone(),
+                           "pdb_ids" => pdb_ids = gene_data.pdb_ids.clone(),
                            "molecular_weight" =>
                                molecular_weight = gene_data.molecular_weight,
                            "protein_length" =>
@@ -1015,6 +1017,7 @@ impl Query {
                    spliced_rna_length,
                    unspliced_rna_length,
                    reference_uniquenames,
+                   pdb_ids,
                    subsets,
                    gene_expression,
                }

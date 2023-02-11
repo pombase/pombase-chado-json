@@ -1082,6 +1082,10 @@ impl <'a> WebDataBuild<'a> {
                     .clone()
             }).collect::<Vec<_>>();
 
+        let pdb_ids = gene_details.pdb_entries.iter()
+            .map(|pdb_entry| pdb_entry.pdb_id.clone())
+            .collect();
+
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
@@ -1089,6 +1093,7 @@ impl <'a> WebDataBuild<'a> {
             uniprot_identifier: gene_details.uniprot_identifier.clone(),
             exact_synonyms: synonyms,
             dbxrefs: gene_details.dbxrefs.clone(),
+            pdb_ids,
             location: gene_details.location.clone(),
             transcripts: transcript_details,
             tm_domain_count: gene_details.tm_domain_coords.len(),
@@ -4756,6 +4761,9 @@ phenotypes, so just the first part of this extension will be used:
                 self.make_protein_data(gene_details);
 
             let (spliced_rna_length, unspliced_rna_length) = self.get_rna_lengths(gene_details);
+            let pdb_ids = gene_details.pdb_entries.iter()
+                .map(|pdb_entry| pdb_entry.pdb_id.clone())
+                .collect();
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
@@ -4774,6 +4782,7 @@ phenotypes, so just the first part of this extension will be used:
                 spliced_rna_length,
                 unspliced_rna_length,
                 reference_uniquenames,
+                pdb_ids,
                 subset_termids: gene_details.subset_termids.clone(),
             };
 
