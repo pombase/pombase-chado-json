@@ -43,6 +43,8 @@ pub enum IntRangeType {
     ExonCount,
 #[serde(rename = "transcript_count")]
     TranscriptCount,
+#[serde(rename = "pdb_structure_count")]
+    PDBStructureCount,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -482,6 +484,18 @@ fn exec_transcript_count_range(api_data: &APIData,
     Ok(gene_uniquenames)
 }
 
+fn exec_pdb_id_count_range(api_data: &APIData,
+                           range_start: Option<usize>, range_end: Option<usize>)
+                       -> GeneUniquenameVecResult
+{
+    let gene_uniquenames =
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
+            (range_start.is_none() || gene.pdb_ids.len() >= range_start.unwrap()) &&
+            (range_end.is_none() || gene.pdb_ids.len() <= range_end.unwrap())
+        });
+    Ok(gene_uniquenames)
+}
+
 fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
                   start: Option<usize>, end: Option<usize>) -> GeneUniquenameVecResult {
     match *range_type {
@@ -494,6 +508,7 @@ fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
         IntRangeType::LowComplexityRegionsCount => exec_low_complexity_regions_count_range(api_data, start, end),
         IntRangeType::ExonCount => exec_exon_count_range(api_data, start, end),
         IntRangeType::TranscriptCount => exec_transcript_count_range(api_data, start, end),
+        IntRangeType::PDBStructureCount => exec_pdb_id_count_range(api_data, start, end),
     }
 }
 
