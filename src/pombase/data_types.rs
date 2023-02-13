@@ -18,7 +18,7 @@ pub type UniquenameTranscriptMap =
 pub type UniquenameProteinMap =
     HashMap<ProteinUniquename, ProteinDetails>;
 pub type UniquenameReferenceMap =
-    HashMap<TermId, ReferenceDetails>;
+    HashMap<ReferenceUniquename, ReferenceDetails>;
 
 pub type UniquenameAlleleDetailsMap = HashMap<AlleleUniquename, AlleleDetails>;
 pub type DisplayUniquenameGenotypeMap = HashMap<GenotypeDisplayUniquename, GenotypeDetails>;
@@ -1030,7 +1030,7 @@ pub struct PDBEntry {
     pub title: String,
     pub entry_authors: String,
     pub entry_authors_abbrev: String,
-    pub reference: ReferenceUniquename,
+    pub reference_uniquename: ReferenceUniquename,
     pub experimental_method: String,
     pub resolution: String,
 }

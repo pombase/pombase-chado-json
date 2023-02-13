@@ -33,7 +33,7 @@ fn make_entry(record: &PDBSourceEntry) -> PDBEntry {
         title: record.title.clone(),
         entry_authors: record.entry_authors.clone(),
         entry_authors_abbrev: record.entry_authors_abbrev.clone(),
-        reference: record.reference.clone(),
+        reference_uniquename: record.reference.clone(),
         experimental_method: record.experimental_method.clone(),
         resolution: record.resolution.clone(),
     }
