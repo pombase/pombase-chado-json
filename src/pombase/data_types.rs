@@ -1030,7 +1030,7 @@ pub struct PDBEntry {
     pub title: String,
     pub entry_authors: String,
     pub entry_authors_abbrev: String,
-    pub reference_uniquename: ReferenceUniquename,
+    pub reference_uniquename: Option<ReferenceUniquename>,
     pub experimental_method: String,
     pub resolution: String,
 }

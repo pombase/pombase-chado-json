@@ -5378,12 +5378,14 @@ phenotypes, so just the first part of this extension will be used:
                 }
 
                 for pdb_ref_entry in &gene_details.pdb_entries {
-                    if !self.references.contains_key(&pdb_ref_entry.reference_uniquename) {
-                        // we don't have publication pages for all PDB references
-                        continue;
-                    }
-                    self.add_ref_to_hash(&mut seen_references, gene_uniquename,
-                                         &Some(pdb_ref_entry.reference_uniquename.clone()));
+                    if let Some(ref reference_uniquename) = pdb_ref_entry.reference_uniquename {
+                       if !self.references.contains_key(reference_uniquename) {
+                          // we don't have publication pages for all PDB references
+                          continue;
+                      }
+                      self.add_ref_to_hash(&mut seen_references, gene_uniquename,
+                                           &Some(reference_uniquename.clone()));
+                      }
                 }
             }
         }

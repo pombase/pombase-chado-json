@@ -13,7 +13,7 @@ struct PDBSourceEntry {
     pub title: String,
     pub entry_authors: String,
     pub entry_authors_abbrev: String,
-    pub reference: ReferenceUniquename,
+    pub reference: Option<ReferenceUniquename>,
     pub experimental_method: String,
     pub resolution: String,
     pub chain: String,
@@ -25,11 +25,9 @@ pub type PDBGeneEntryMap = HashMap<GeneUniquename, Vec<PDBEntry>>;
 pub type PDBRefEntryMap = HashMap<ReferenceUniquename, HashMap<PdbId, PDBEntry>>;
 
 fn make_entry(record: &PDBSourceEntry) -> PDBEntry {
-    let gene_chain = make_gene_chain(record);
-
     PDBEntry {
         pdb_id: record.pdb_id.clone(),
-        gene_chains: vec![gene_chain],
+        gene_chains: vec![],
         title: record.title.clone(),
         entry_authors: record.entry_authors.clone(),
         entry_authors_abbrev: record.entry_authors_abbrev.clone(),
@@ -76,17 +74,20 @@ pub fn read_pdb_data(file_name: &str)
 
      let gene_uniquename = record.gene_uniquename.clone();
 
+     let mut gene_page_entry = make_entry(&record);
+     gene_page_entry.gene_chains.push(make_gene_chain(&record));
+
      gene_entry_map.entry(gene_uniquename)
         .or_insert_with(Vec::new)
-        .push(make_entry(&record));
+        .push(gene_page_entry);
 
-     let ref_uniquename = record.reference.clone();
-
-     ref_entry_map.entry(ref_uniquename)
-        .or_insert_with(HashMap::new)
-        .entry(record.pdb_id.clone())
-        .or_insert_with(|| make_entry(&record))
-        .gene_chains.push(make_gene_chain(&record));
+     if let Some(ref reference_uniquename) = record.reference {
+       ref_entry_map.entry(reference_uniquename.clone())
+          .or_insert_with(HashMap::new)
+          .entry(record.pdb_id.clone())
+          .or_insert_with(|| make_entry(&record))
+          .gene_chains.push(make_gene_chain(&record));
+     }
   }
 
   (gene_entry_map, ref_entry_map)
