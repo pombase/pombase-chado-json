@@ -528,6 +528,8 @@ pub struct ReferenceDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_session_key: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub canto_annotation_status: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_triage_status: Option<FlexStr>,

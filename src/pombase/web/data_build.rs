@@ -1403,6 +1403,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut pubmed_doi: Option<FlexStr> = None;
             let mut non_pubmed_authors: Option<FlexStr> = None;
             let mut non_pubmed_abstract: Option<FlexStr> = None;
+            let mut canto_session_key: Option<FlexStr> = None;
             let mut canto_annotation_status: Option<FlexStr> = None;
             let mut canto_triage_status: Option<FlexStr> = None;
             let mut canto_curator_role = self.config.database_name.clone();
@@ -1427,6 +1428,8 @@ phenotypes, so just the first part of this extension will be used:
                         non_pubmed_authors = Some(prop.value.clone()),
                     "abstract" =>
                         non_pubmed_abstract = Some(prop.value.clone()),
+                    "canto_session" =>
+                        canto_session_key = Some(prop.value.clone()),
                     "canto_annotation_status" =>
                         canto_annotation_status = Some(prop.value.clone()),
                     "canto_triage_status" =>
@@ -1529,6 +1532,7 @@ phenotypes, so just the first part of this extension will be used:
                                        authors,
                                        authors_abbrev,
                                        pubmed_publication_date: pubmed_publication_date.clone(),
+                                       canto_session_key,
                                        canto_annotation_status,
                                        canto_triage_status,
                                        canto_curator_role,
