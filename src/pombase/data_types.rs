@@ -2009,7 +2009,9 @@ pub struct APIGeneSummary {
     pub coiled_coil_count: usize,
     pub disordered_regions_count: usize,
     pub low_complexity_regions_count: usize,
-    pub exon_count: usize,
+    pub coding_exon_count: usize,
+    pub five_prime_exon_count: usize,
+    pub three_prime_exon_count: usize,
     pub transcript_count: usize,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,

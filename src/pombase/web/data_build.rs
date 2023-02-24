@@ -1050,24 +1050,26 @@ impl <'a> WebDataBuild<'a> {
             .filter(|synonym| synonym.synonym_type == "exact")
             .map(|synonym| synonym.name.clone())
             .collect::<Vec<FlexStr>>();
-        let exon_count =
-            if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+        let mut coding_exon_count = 0;
+        let mut five_prime_exon_count = 0;
+        let mut three_prime_exon_count = 0;
 
-                let transcript = self.transcripts
-                    .get(transcript_uniquename)
-                    .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
-                                     transcript_uniquename));
+        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+            let transcript = self.transcripts
+                .get(transcript_uniquename)
+                .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
+                                transcript_uniquename));
 
-                let mut count = 0;
-                for part in &transcript.parts {
-                    if part.feature_type == FeatureType::Exon {
-                        count += 1;
-                    }
+            for part in &transcript.parts {
+                match part.feature_type {
+                    FeatureType::Exon => coding_exon_count += 1,
+                    FeatureType::FivePrimeUtr => five_prime_exon_count += 1,
+                    FeatureType::ThreePrimeUtr => three_prime_exon_count += 1,
+                    _ => (),
                 }
-                count
-            } else {
-                0
-            };
+            }
+        }
+
         let mut ortholog_taxonids = HashSet::new();
         for ortholog_annotation in &gene_details.ortholog_annotations {
             ortholog_taxonids.insert(ortholog_annotation.ortholog_taxonid);
@@ -1100,7 +1102,9 @@ impl <'a> WebDataBuild<'a> {
             coiled_coil_count: gene_details.coiled_coil_coords.len(),
             disordered_regions_count: gene_details.disordered_region_coords.len(),
             low_complexity_regions_count: gene_details.low_complexity_region_coords.len(),
-            exon_count,
+            coding_exon_count,
+            five_prime_exon_count,
+            three_prime_exon_count,
             transcript_count: gene_details.transcripts.len(),
             ortholog_taxonids,
         }

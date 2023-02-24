@@ -122,6 +122,8 @@ pub struct IntRangeNode {
     pub range_type: IntRangeType,
     pub start: Option<usize>,
     pub end: Option<usize>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub options: HashSet<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -129,6 +131,8 @@ pub struct FloatRangeNode {
     pub range_type: FloatRangeType,
     pub start: Option<f64>,
     pub end: Option<f64>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub options: HashSet<String>,
 }
 
 impl Eq for FloatRangeNode {
@@ -461,13 +465,25 @@ fn exec_low_complexity_regions_count_range(api_data: &APIData,
 }
 
 fn exec_exon_count_range(api_data: &APIData,
-                         range_start: Option<usize>, range_end: Option<usize>)
+                         range_start: Option<usize>, range_end: Option<usize>,
+                         options: &HashSet<String>)
                          -> GeneUniquenameVecResult
 {
+
     let gene_uniquenames =
         api_data.filter_genes(&|gene: &APIGeneSummary| {
-            (range_start.is_none() || gene.exon_count >= range_start.unwrap()) &&
-            (range_end.is_none() || gene.exon_count <= range_end.unwrap())
+            let count =
+                if options.contains("five-prime-utr-exons") {
+                    gene.five_prime_exon_count
+                } else {
+                    if options.contains("three-prime-utr-exons") {
+                        gene.three_prime_exon_count
+                    } else {
+                        gene.coding_exon_count
+                    }
+                };
+            (range_start.is_none() || count >= range_start.unwrap()) &&
+            (range_end.is_none() || count <= range_end.unwrap())
         });
     Ok(gene_uniquenames)
 }
@@ -497,7 +513,8 @@ fn exec_pdb_id_count_range(api_data: &APIData,
 }
 
 fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
-                  start: Option<usize>, end: Option<usize>) -> GeneUniquenameVecResult {
+                  start: Option<usize>, end: Option<usize>,
+                  options: &HashSet<String>) -> GeneUniquenameVecResult {
     match *range_type {
         IntRangeType::ProteinLength => exec_protein_length_range(api_data, start, end),
         IntRangeType::SplicedRnaLength => exec_spliced_rna_length_range(api_data, start, end),
@@ -506,7 +523,7 @@ fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
         IntRangeType::CoiledCoilsCount => exec_coiled_coils_count_range(api_data, start, end),
         IntRangeType::DisorderedRegionsCount => exec_disordered_regions_count_range(api_data, start, end),
         IntRangeType::LowComplexityRegionsCount => exec_low_complexity_regions_count_range(api_data, start, end),
-        IntRangeType::ExonCount => exec_exon_count_range(api_data, start, end),
+        IntRangeType::ExonCount => exec_exon_count_range(api_data, start, end, options),
         IntRangeType::TranscriptCount => exec_transcript_count_range(api_data, start, end),
         IntRangeType::PDBStructureCount => exec_pdb_id_count_range(api_data, start, end),
     }
@@ -534,7 +551,8 @@ fn exec_mol_weight_range(api_data: &APIData, range_start: Option<f64>, range_end
 }
 
 fn exec_float_range(api_data: &APIData, range_type: &FloatRangeType,
-                    start: Option<f64>, end: Option<f64>) -> GeneUniquenameVecResult {
+                    start: Option<f64>, end: Option<f64>,
+                    _: &HashSet<String>) -> GeneUniquenameVecResult {
     match *range_type {
         FloatRangeType::ProteinMolWeight => exec_mol_weight_range(api_data, start, end)
     }
@@ -640,11 +658,13 @@ impl QueryNode {
         }
         if let Some(ref int_range_node) = self.int_range {
             return exec_int_range(api_data, &int_range_node.range_type,
-                                  int_range_node.start, int_range_node.end);
+                                  int_range_node.start, int_range_node.end,
+                                  &int_range_node.options);
         }
         if let Some(ref float_range_node) = self.float_range {
             return exec_float_range(api_data, &float_range_node.range_type,
-                                    float_range_node.start, float_range_node.end);
+                                    float_range_node.start, float_range_node.end,
+                                    &float_range_node.options);
         }
         if let Some(ref query_id_node) = self.query_id {
             return exec_query_id(api_data, site_db, &query_id_node.id).await;
