@@ -407,7 +407,21 @@ impl WebData {
         gene_writer.write_all(db_version.as_bytes())?;
         rna_writer.write_all(db_version.as_bytes())?;
         pseudogenes_writer.write_all(db_version.as_bytes())?;
-        all_names_writer.write_all(db_version.as_bytes())?;
+        all_names_writer.write_all(db_version.as_ref())?;
+
+        let small_header =
+            "gene_systematic_id\tgene_name\tsynonyms\n";
+        write!(pseudogenes_writer, "{}", small_header)?;
+        write!(all_names_writer, "{}", small_header)?;
+
+        let header_with_product =
+            "gene_systematic_id\tgene_name\tsynonyms\tgene_product\n";
+        write!(gene_writer, "{}", header_with_product)?;
+        write!(rna_writer, "{}", header_with_product)?;
+
+        let big_header =
+            "gene_systematic_id\tgene_systematic_id_with_prefix\tgene_name\tchromosome_id\tgene_product\tuniprot_id\tgene_type\tsynonyms\n";
+        write!(all_ids_writer, "{}", big_header)?;
 
         for gene_details in self.api_maps.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid {
@@ -499,6 +513,7 @@ impl WebData {
         rna_writer.flush()?;
         pseudogenes_writer.flush()?;
         all_names_writer.flush()?;
+        all_ids_writer.flush()?;
 
         Ok(())
     }
