@@ -16,6 +16,7 @@ struct GeneHistoryFileRecord {
     db_xref_added: Option<String>,
     pombase_reference_added: Option<String>,
     pombase_comments_added: Option<String>,
+    genome_snapshot: Option<String>,
 }
 
 const FEATURE_TYPES: [&str; 8] = ["CDS", "lncRNA", "rRNA", "sncRNA", "snoRNA", "snRNA", "ncRNA", "tRNA"];
@@ -45,6 +46,7 @@ fn add_entry(map: &mut GeneHistoryMap, record: GeneHistoryFileRecord) {
         date: record.date.into(),
         references,
         comments: record.pombase_comments_added,
+        genome_snapshot_link: record.genome_snapshot,
     };
 
     map.entry(record.systematic_id.into())

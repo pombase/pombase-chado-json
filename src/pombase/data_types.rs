@@ -1015,6 +1015,7 @@ pub struct GeneHistoryEntry {
     pub date: FlexStr,
     pub references: Vec<FlexStr>,
     pub comments: Option<String>,
+    pub genome_snapshot_link: Option<String>,
 }
 
 
