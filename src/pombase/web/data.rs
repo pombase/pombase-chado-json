@@ -1243,7 +1243,13 @@ impl WebData {
         }
 
         for ref_details in self.api_maps.references.values() {
-            if ref_details.cv_annotations.is_empty() {
+            if ref_details.cv_annotations.is_empty() &&
+               ref_details.physical_interactions.is_empty() &&
+               ref_details.genetic_interactions.is_empty() &&
+               ref_details.ortholog_annotations.is_empty() &&
+               ref_details.paralog_annotations.is_empty() &&
+               ref_details.pdb_entries.is_empty() &&
+               ref_details.canto_triage_status != Some(flex_str!("Curatable")) {
                 continue;
             }
 
