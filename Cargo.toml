@@ -28,7 +28,7 @@ deadpool = "0.9"
 anyhow = "1.0"
 itertools = "0.10"
 serde_with = "2.0.1"
-csv = "1.1.6"
+csv = "1.2.1"
 
 [dependencies.zstd]
 version = "0.12"
