@@ -1131,7 +1131,9 @@ impl <'a> WebDataBuild<'a> {
 
     fn add_name_description(&mut self, gene_uniquename: &FlexStr, name_description: &FlexStr) {
         let gene_details = self.get_gene_mut(gene_uniquename);
-        gene_details.name_descriptions.push(name_description.into());
+        if !gene_details.name_descriptions.contains(name_description) {
+          gene_details.name_descriptions.push(name_description.into());
+        }
     }
 
     fn annotation_from_template(&self,
