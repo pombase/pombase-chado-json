@@ -1,7 +1,5 @@
 use std::io::{self, BufWriter};
 
-
-
 use std::io::Write;
 use std::fs::File;
 
@@ -10,6 +8,7 @@ use flexstr::{shared_fmt as flex_fmt, ToSharedStr};
 use crate::web::config::*;
 use crate::data_types::*;
 
+use itertools::Itertools;
 
 use super::go_format_writer::GpadGafWriteMode;
 use super::util::make_extension_string;
@@ -126,7 +125,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                     let conditions =
                         annotation_detail.conditions.iter()
                         .map(|fs| fs.as_str())
-                        .collect::<Vec<_>>()
+                        .sorted()
                         .join(",");
 
                     let penetrance =
