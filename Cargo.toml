@@ -27,7 +27,7 @@ deadpool-postgres = "0.10"
 deadpool = "0.9"
 anyhow = "1.0"
 itertools = "0.10"
-serde_with = "2.3.1"
+serde_with = "2.3.2"
 csv = "1.1.6"
 
 [dependencies.zstd]
