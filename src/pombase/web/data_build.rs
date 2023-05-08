@@ -276,7 +276,7 @@ fn make_genotype_display_name(loci: &[GenotypeLocus],
                     let allele_display_name = allele_short.display_name();
 
                     if let Some(ref expression) = expressed_allele.expression {
-                        if expression == "Not assayed" ||
+                        if expression.starts_with("Not assayed") ||
                             allele_details.allele_type == "deletion" &&
                             expression == "Null"
                         {
