@@ -1486,6 +1486,8 @@ pub struct AlleleShort {
     pub gene_uniquename: GeneUniquename,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub comments: Vec<CommentAndReference>,
 }
 
  lazy_static! {
@@ -1595,6 +1597,7 @@ impl From<&AlleleDetails> for AlleleShort {
            description: details.description.clone(),
            gene_uniquename: details.gene.uniquename.clone(),
            synonyms: details.synonyms.clone(),
+           comments: details.comments.clone(),
        }
     }
 }
