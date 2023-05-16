@@ -2094,7 +2094,6 @@ pub struct APIMaps {
     pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
     pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
     pub gene_query_data_map: HashMap<GeneUniquename, GeneQueryData>,
-    pub term_summaries: HashSet<TermShort>,
     pub genes: UniquenameGeneMap,
     pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,

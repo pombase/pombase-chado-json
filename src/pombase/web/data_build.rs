@@ -4854,14 +4854,9 @@ phenotypes, so just the first part of this extension will be used:
 
         let gene_query_data_map = self.make_gene_query_data_map();
 
-        let mut term_summaries: HashSet<TermShort> = HashSet::new();
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
 
         let mut terms_for_api: HashMap<TermId, TermDetails> = HashMap::new();
-
-        for termid in self.terms.keys() {
-            term_summaries.insert(self.make_term_short(termid));
-        }
 
         let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
             self.get_api_genotype_annotation();
@@ -4913,7 +4908,6 @@ phenotypes, so just the first part of this extension will be used:
             gene_query_data_map,
             termid_genes,
             termid_genotype_annotation,
-            term_summaries,
             genes: self.genes,
             gene_name_gene_map,
             transcripts: self.transcripts,
