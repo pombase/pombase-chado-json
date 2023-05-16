@@ -6565,6 +6565,11 @@ phenotypes, so just the first part of this extension will be used:
         let all_admin_curated = self.all_admin_curated.clone();
         let ont_annotations = self.ont_annotations.clone();
 
+        let terms = self.terms.clone();
+        let genes = self.genes.clone();
+        let genotypes = self.genotypes.clone();
+        let references = self.references.clone();
+
         WebData {
             metadata,
             chromosomes,
@@ -6573,6 +6578,10 @@ phenotypes, so just the first part of this extension will be used:
             all_community_curated,
             all_admin_curated,
             api_maps: self.make_api_maps(),
+            terms,
+            genes,
+            genotypes,
+            references,
             search_gene_summaries: gene_summaries,
             solr_data,
             ont_annotations,

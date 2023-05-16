@@ -12,9 +12,13 @@ use flate2::Compression;
 use flate2::write::GzEncoder;
 use zstd::stream::Encoder;
 
+use rusqlite::Connection;
+
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
+
+use crate::constants::*;
 
 use crate::web::config::*;
 use crate::rnacentral::*;
@@ -37,6 +41,10 @@ pub struct WebData {
     pub all_community_curated: Vec<ReferenceShort>,
     pub all_admin_curated: Vec<ReferenceShort>,
     pub api_maps: APIMaps,
+    pub genes: UniquenameGeneMap,
+    pub genotypes: IdGenotypeMap,
+    pub terms: TermIdDetailsMap,
+    pub references: UniquenameReferenceMap,
     pub solr_data: SolrData,
     pub search_gene_summaries: Vec<GeneSummary>,
     pub ont_annotations: Vec<OntAnnotation>,
@@ -1438,6 +1446,55 @@ impl WebData {
         Ok(())
     }
 
+    fn write_sqlite_db(&self, output_dir: &str) -> anyhow::Result<()> {
+        let db_path = String::new() + output_dir + "/" + API_MAPS_SQLITE3_FILE_NAME;
+        let mut conn = Connection::open(db_path)?;
+
+        let tx = conn.transaction()?;
+
+        let table_names = vec!["terms", "genes", "refs", "genotypes"];
+
+        for table_name in &table_names {
+           tx.execute(
+              &format!("CREATE TABLE {} (
+                           id    TEXT PRIMARY KEY,
+                           data  TEXT NOT NULL
+                       )",
+                       table_name),
+              (),
+           )?;
+        }
+
+        for (termid, term_details) in &self.terms {
+            let json = serde_json::value::to_value(term_details)?;
+
+            tx.execute("INSERT INTO terms (id, data) VALUES (?1, ?2)",
+                       (termid.as_ref(), &json))?;
+        }
+        for (gene_uniquename, gene_details) in &self.genes {
+            let json = serde_json::value::to_value(gene_details)?;
+
+            tx.execute("INSERT INTO genes (id, data) VALUES (?1, ?2)",
+                       (gene_uniquename.as_ref(), &json))?;
+        }
+        for (ref_uniquename, reference_details) in &self.references {
+            let json = serde_json::value::to_value(reference_details)?;
+
+            tx.execute("INSERT INTO refs (id, data) VALUES (?1, ?2)",
+                       (ref_uniquename.as_ref(), &json))?;
+        }
+        for (genotype_display_uniquename, genotype_details) in &self.genotypes {
+            let json = serde_json::value::to_value(genotype_details)?;
+
+            tx.execute("INSERT INTO genotypes (id, data) VALUES (?1, ?2)",
+                       (genotype_display_uniquename.as_ref(), &json))?;
+        }
+
+        tx.commit()?;
+
+        Ok(())
+    }
+
     pub fn write(&self, config: &Config, go_eco_mappping: &GoEcoMapping,
                  doc_config: &DocConfig, output_dir: &str)
                  -> Result<(), io::Error>
@@ -1455,6 +1512,10 @@ impl WebData {
         self.write_all_community_curated(&web_json_path);
         self.write_all_admin_curated(&web_json_path);
         println!("wrote references");
+
+        self.write_sqlite_db(&output_dir).unwrap();
+        println!("wrote SQLite DB");
+
         self.write_api_maps(&web_json_path);
         println!("wrote API maps");
         self.write_solr_data(&web_json_path);
