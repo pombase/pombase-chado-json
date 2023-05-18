@@ -1,7 +1,7 @@
 use std::io::{self, BufWriter};
 
 use std::cmp::Ordering;
-use std::collections::{HashSet, HashMap};
+use std::collections::HashSet;
 
 use std::io::Write;
 use std::fs::File;
@@ -13,7 +13,6 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_f
 use crate::utils::join;
 use crate::web::config::*;
 use crate::data_types::*;
-use crate::types::TermId;
 
 use super::util::make_extension_string;
 
@@ -31,8 +30,11 @@ pub const GO_ASPECT_NAMES: [FlexStr; 3] =
 
 
 pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
+                                 data_lookup: &dyn DataLookup,
                                  db_creation_datetime: &FlexStr,
                                  go_eco_mappping: &GoEcoMapping,
+                                 genes: &UniquenameGeneMap,
+                                 transcripts: &UniquenameTranscriptMap,
                                  output_dir: &str)
         -> Result<(), io::Error>
 {
@@ -91,7 +93,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     let contact = format!("!contact: {}\n", &config.helpdesk_address);
     standard_gaf_writer.write_all(contact.as_bytes())?;
 
-    for gene_details in api_maps.genes.values() {
+    for gene_details in genes.values() {
         if gene_details.taxonid != load_org_taxonid {
             continue;
         }
@@ -124,17 +126,20 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
 
         write_gene_to_gpi(&mut gpi_writer, config, api_maps, gene_details)?;
 
-        write_gene_product_annotation(&mut gpad_writer, go_eco_mappping, config,
-                                      api_maps, gene_details)?;
+        write_gene_product_annotation(&mut gpad_writer, data_lookup, go_eco_mappping, config,
+                                      api_maps,
+                                      gene_details)?;
 
         for aspect_name in &GO_ASPECT_NAMES {
             write_go_annotation_format(&mut pombase_gaf_writer, config,
+                                       data_lookup, api_maps,
                                        GpadGafWriteMode::PomBaseGaf,
-                                       api_maps, gene_details,
+                                       gene_details, transcripts,
                                        aspect_name)?;
             write_go_annotation_format(&mut standard_gaf_writer, config,
+                                       data_lookup, api_maps,
                                        GpadGafWriteMode::StandardGaf,
-                                       api_maps, gene_details,
+                                       gene_details, transcripts,
                                        aspect_name)?;
         }
     }
@@ -190,11 +195,11 @@ fn get_gpad_relation_of(term_details: &TermDetails,
     }
 }
 
-fn get_gpad_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
+fn get_gpad_relation_name_of(data_lookup: &dyn DataLookup,
                              term_details: &TermDetails,
                              annotation_detail: &OntAnnotationDetail) -> FlexStr {
     let rel_id = get_gpad_relation_of(term_details, annotation_detail);
-    term_map.get(&rel_id)
+    data_lookup.get_term(&rel_id)
             .unwrap_or_else(|| panic!("internal error, can't find term {}", rel_id))
             .name.clone()
 }
@@ -208,10 +213,10 @@ fn get_gpad_nd_relation_of(aspect: &FlexStr) -> FlexStr {
     }
 }
 
-fn get_gpad_nd_relation_name_of(term_map: &HashMap<TermId, TermDetails>,
+fn get_gpad_nd_relation_name_of(data_lookup: &dyn DataLookup,
                                 aspect: &FlexStr) -> FlexStr {
     let rel_id = get_gpad_nd_relation_of(aspect);
-    term_map.get(&rel_id)
+    data_lookup.get_term(&rel_id)
             .unwrap_or_else(|| panic!("internal error, can't find term {}", rel_id))
             .name.clone()
 }
@@ -357,6 +362,7 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 }
 
 pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
+                                     data_lookup: &dyn DataLookup,
                                      go_eco_mappping: &GoEcoMapping, config: &Config,
                                      api_maps: &APIMaps, gene_details: &GeneDetails)
                                      -> Result<(), io::Error>
@@ -396,7 +402,8 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
         });
 
         for term_annotation in sorted_term_annotations {
-            let term = api_maps.terms.get(&term_annotation.term)
+            let maybe_term = data_lookup.get_term(&term_annotation.term);
+            let term = maybe_term
                 .unwrap_or_else(|| panic!("failed to find term summary for {}",
                                  term_annotation.term));
 
@@ -438,7 +445,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                     ""
                 };
 
-                let relation = get_gpad_relation_of(term, annotation_detail);
+                let relation = get_gpad_relation_of(term.as_ref(), annotation_detail);
 
                 let ontology_class_id = &term_annotation.term;
                 let reference_uniquename =
@@ -464,7 +471,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
                 if let Some(ref date) = annotation_detail.date {
                     let annotation_extensions =
-                        make_extension_string(config, &api_maps.terms,
+                        make_extension_string(config, data_lookup,
                                               &GpadGafWriteMode::Gpad,
                                               &annotation_detail.extension);
                     let db_object_id =
@@ -492,8 +499,11 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 }
 
 pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
+                                  data_lookup: &dyn DataLookup,
+                                  api_maps: &APIMaps,
                                   write_mode: GpadGafWriteMode,
-                                  api_maps: &APIMaps, gene_details: &GeneDetails,
+                                  gene_details: &GeneDetails,
+                                  transcripts: &UniquenameTranscriptMap,
                                   cv_name: &FlexStr)
                                   -> Result<(), io::Error>
 {
@@ -530,8 +540,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
     let db_object_type =
         if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
-            let transcript_details = api_maps
-                .transcripts.get(transcript_uniquename)
+            let transcript_details =
+                transcripts.get(transcript_uniquename)
                 .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
                                  transcript_uniquename));
 
@@ -557,7 +567,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
     if let Some(term_annotations) = gene_details.cv_annotations.get(cv_name) {
         for term_annotation in term_annotations {
-            let go_term = api_maps.terms.get(&term_annotation.term)
+            let go_term = data_lookup.get_term(&term_annotation.term)
                 .unwrap_or_else(|| panic!("failed to find term summary for {}",
                                           term_annotation.term));
 
@@ -582,8 +592,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     qualifier_parts.join("|")
                 } else {
                     let relation_name =
-                        get_gpad_relation_name_of(&api_maps.terms,
-                                                  go_term, annotation_detail)
+                        get_gpad_relation_name_of(data_lookup,
+                                                  &go_term, annotation_detail)
                                                   .to_string();
 
                     if term_annotation.is_not {
@@ -634,7 +644,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     };
 
                 let annotation_extensions =
-                    make_extension_string(config, &api_maps.terms,
+                    make_extension_string(config, data_lookup,
                                           &write_mode, &annotation_detail.extension);
 
                 let gene_product_form_id =
@@ -671,7 +681,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         let local: DateTime<Local> = Local::now();
         let date = local.format("%Y%m%d");
         let relation_name =
-            get_gpad_nd_relation_name_of(&api_maps.terms, cv_name);
+            get_gpad_nd_relation_name_of(data_lookup, cv_name);
         let go_aspect_termid =
             config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
         let nd_ref = &config.file_exports.nd_reference;

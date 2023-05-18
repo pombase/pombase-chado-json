@@ -3,6 +3,7 @@ use std::rc::Rc;
 use std::collections::BTreeMap;
 use std::borrow::Borrow;
 use std::cmp::Ordering;
+use std::sync::{Arc, RwLock};
 use std::usize;
 use std::string::ToString;
 
@@ -4802,6 +4803,22 @@ phenotypes, so just the first part of this extension will be used:
         gene_query_data_map
     }
 
+
+    fn make_secondary_identifiers_map(&self)
+                                  -> HashMap<TermId, TermId>
+    {
+        let mut ret_map = HashMap::new();
+
+        for term_details in self.terms.values() {
+            for secondary_identifier in &term_details.secondary_identifiers {
+                ret_map.insert(secondary_identifier.clone(),
+                               term_details.termid.clone());
+            }
+        }
+
+        ret_map
+    }
+
     pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
         let mut gene_name_gene_map = HashMap::new();
@@ -4856,11 +4873,6 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
 
-        let mut terms_for_api: HashMap<TermId, TermDetails> = HashMap::new();
-
-        let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
-            self.get_api_genotype_annotation();
-
         for (termid, term_details) in self.terms.drain() {
             let cv_config = &self.config.cv_config;
             if let Some(term_config) = cv_config.get(&term_details.cv_name) {
@@ -4869,9 +4881,10 @@ phenotypes, so just the first part of this extension will be used:
                                         term_details.annotated_genes.clone());
                 }
             }
-
-            terms_for_api.insert(termid.clone(), term_details);
         }
+
+        let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
+            self.get_api_genotype_annotation();
 
         let seq_feature_page_features: Vec<FeatureShort> =
             self.other_features.values()
@@ -4888,6 +4901,8 @@ phenotypes, so just the first part of this extension will be used:
                 new_feature.residues = flex_str!("");
                 new_feature
             }).collect();
+
+        let secondary_identifiers_map = self.make_secondary_identifiers_map();
 
         // avoid clone()
         let mut term_subsets = HashMap::new();
@@ -4912,7 +4927,6 @@ phenotypes, so just the first part of this extension will be used:
             gene_name_gene_map,
             transcripts: self.transcripts,
             alleles: self.alleles,
-            terms: terms_for_api,
             interactors_of_genes,
             references: self.references,
             other_features: self.other_features,
@@ -4923,6 +4937,7 @@ phenotypes, so just the first part of this extension will be used:
             gene_subsets,
             children_by_termid,
             gene_expression_measurements,
+            secondary_identifiers_map,
        }
     }
 
@@ -6564,10 +6579,17 @@ phenotypes, so just the first part of this extension will be used:
         let all_admin_curated = self.all_admin_curated.clone();
         let ont_annotations = self.ont_annotations.clone();
 
-        let terms = self.terms.clone();
+        let mut terms_for_api: HashMap<TermId, TermDetails> = HashMap::new();
+
+        for (termid, term_details) in &self.terms {
+            terms_for_api.insert(termid.clone(), term_details.clone());
+        }
+
         let genes = self.genes.clone();
         let genotypes = self.genotypes.clone();
         let references = self.references.clone();
+
+        let api_maps = self.make_api_maps();
 
         WebData {
             metadata,
@@ -6576,8 +6598,8 @@ phenotypes, so just the first part of this extension will be used:
             recent_references,
             all_community_curated,
             all_admin_curated,
-            api_maps: self.make_api_maps(),
-            terms,
+            api_maps,
+            terms: terms_for_api,
             genes,
             genotypes,
             references,
@@ -6585,6 +6607,9 @@ phenotypes, so just the first part of this extension will be used:
             solr_data,
             ont_annotations,
             stats,
+
+            arc_terms: Arc::new(RwLock::new(HashMap::new())),
+            arc_genotypes: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }

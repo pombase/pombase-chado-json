@@ -887,10 +887,11 @@ impl Query {
 
         if let Some(gene_details) = maybe_gene_details {
             for aspect in aspects.iter() {
-                let result = write_go_annotation_format(&mut gaf_bytes,
-                                                        api_data.get_config(),
+                let result = write_go_annotation_format(&mut gaf_bytes, api_data.get_config(),
+                                                        api_data, api_data.get_maps(),
                                                         GpadGafWriteMode::PomBaseGaf,
-                                                        api_data.get_maps(), gene_details,
+                                                        gene_details,
+                                                        &api_data.get_maps().transcripts,
                                                         aspect);
 
                 if result.is_err() {

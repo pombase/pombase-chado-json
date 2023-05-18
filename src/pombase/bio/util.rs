@@ -1,13 +1,12 @@
-use std::collections::HashMap;
+
 use crate::data_types::{GeneDetails, ChromosomeLocation,
                         UniquenameTranscriptMap, FeatureShort,
                         FeatureType};
 
 use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt, ToSharedStr};
 
-use crate::web::config::*;
+use crate::web::config::Config;
 use crate::data_types::*;
-use crate::types::TermId;
 
 use super::go_format_writer::GpadGafWriteMode;
 
@@ -157,7 +156,7 @@ pub fn format_misc_feature_gff(chromosome_export_id: &str,
     ret_val
 }
 
-pub fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDetails>,
+pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
                          write_mode: &GpadGafWriteMode, extension: &[ExtPart])
                          -> FlexStr
 {
@@ -177,7 +176,7 @@ pub fn make_extension_string(config: &Config, term_map: &HashMap<TermId, TermDet
             if *write_mode == GpadGafWriteMode::Gpad {
                 rel_term_id
             } else {
-                term_map.get(&rel_term_id)
+                data_lookup.get_term(&rel_term_id)
                     .unwrap_or_else(|| panic!("internal error, can't find term {}",
                                               rel_term_id))
                     .name.clone()
@@ -243,7 +242,7 @@ fn test_format_fasta() {
 #[test]
 fn test_format_gff() {
     let gene = make_test_gene();
-    let mut transcripts = HashMap::new();
+    let mut transcripts = std::collections::HashMap::new();
     transcripts.insert( flex_str!("SPCC18B5.06.1"),
                        gene.transcripts_by_uniquename[&flex_str!("SPCC18B5.06.1")].clone().unwrap());
     let gene_gff_lines = format_gene_gff("chromosome_3", "PomBase",
@@ -312,7 +311,7 @@ fn make_test_gene() -> GeneDetails {
         transcripts: vec![
             flex_str!("SPCC18B5.06.1"),
         ],
-        transcripts_by_uniquename: HashMap::from([
+        transcripts_by_uniquename: std::collections::HashMap::from([
             (flex_str!("SPCC18B5.06.1"),
              Some(TranscriptDetails {
                 uniquename: flex_str!("SPCC18B5.06.1"),
@@ -491,18 +490,18 @@ fn make_test_gene() -> GeneDetails {
                 rna_seq_length_unspliced: NonZeroUsize::new(730_829 - 729_054),
             })
         )]),
-        cv_annotations: HashMap::new(),
+        cv_annotations: std::collections::HashMap::new(),
         physical_interactions: vec![],
-        genetic_interactions: HashMap::new(),
+        genetic_interactions: std::collections::HashMap::new(),
         ortholog_annotations: vec![],
         paralog_annotations: vec![],
         target_of_annotations: vec![],
-        references_by_uniquename: HashMap::new(),
-        genes_by_uniquename: HashMap::new(),
-        genotypes_by_uniquename: HashMap::new(),
-        alleles_by_uniquename: HashMap::new(),
-        terms_by_termid: HashMap::new(),
-        annotation_details: HashMap::new(),
+        references_by_uniquename: std::collections::HashMap::new(),
+        genes_by_uniquename: std::collections::HashMap::new(),
+        genotypes_by_uniquename: std::collections::HashMap::new(),
+        alleles_by_uniquename: std::collections::HashMap::new(),
+        terms_by_termid: std::collections::HashMap::new(),
+        annotation_details: std::collections::HashMap::new(),
         feature_publications: HashSet::new(),
         subset_termids: HashSet::new(),
         gene_history: vec![],

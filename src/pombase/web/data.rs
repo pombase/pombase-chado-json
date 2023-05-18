@@ -6,6 +6,7 @@ use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
 use std::io;
 use std::collections::{HashMap, HashSet};
+use std::sync::{Arc, RwLock};
 use regex::Regex;
 
 use flate2::Compression;
@@ -23,7 +24,7 @@ use crate::constants::*;
 use crate::web::config::*;
 use crate::rnacentral::*;
 
-use crate::types::CvName;
+use crate::types::{CvName, TermId, GenotypeDisplayUniquename};
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
@@ -49,6 +50,43 @@ pub struct WebData {
     pub search_gene_summaries: Vec<GeneSummary>,
     pub ont_annotations: Vec<OntAnnotation>,
     pub stats: Stats,
+
+    pub arc_terms: Arc<RwLock<HashMap<TermId, Arc<TermDetails>>>>,
+    pub arc_genotypes: Arc<RwLock<HashMap<GenotypeDisplayUniquename, Arc<GenotypeDetails>>>>,
+}
+
+impl DataLookup for WebData {
+    fn get_term(&self, termid: &TermId) -> Option<Arc<TermDetails>> {
+        let mut arc_terms = self.arc_terms.write().unwrap();
+        if let Some(arc_term_details) = arc_terms.get(termid) {
+            Some(arc_term_details.to_owned())
+        } else {
+           if let Some(term_details) = self.terms.get(termid) {
+               let arc_term_details = Arc::new(term_details.to_owned());
+               arc_terms.insert(termid.to_owned(), arc_term_details.clone());
+               Some(arc_term_details)
+           } else {
+               None
+           }
+        }
+    }
+    fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
+           -> Option<Arc<GenotypeDetails>>
+    {
+        let mut arc_genotypes = self.arc_genotypes.write().unwrap();
+        if let Some(arc_genotype_details) = arc_genotypes.get(genotype_display_uniquename) {
+            Some(arc_genotype_details.to_owned())
+        } else {
+           if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
+               let arc_genotype_details = Arc::new(genotype_details.to_owned());
+               arc_genotypes.insert(genotype_display_uniquename.to_owned(),
+                                         arc_genotype_details.clone());
+               Some(arc_genotype_details)
+           } else {
+               None
+           }
+        }
+    }
 }
 
 const FASTA_SEQ_COLUMNS: usize = 60;
@@ -1156,7 +1194,7 @@ impl WebData {
                 let termid = &measurement.level_type_termid;
 
                 let term_name =
-                    if let Some(term_details) = self.api_maps.terms.get(termid) {
+                    if let Some(term_details) = self.terms.get(termid) {
                         term_details.name.as_str()
                     } else {
                         panic!("can't find term details for {}", termid);
@@ -1166,7 +1204,7 @@ impl WebData {
                 let during_termid = &measurement.during_termid;
 
                 let during_term_name =
-                    if let Some(term_details) = self.api_maps.terms.get(during_termid) {
+                    if let Some(term_details) = self.terms.get(during_termid) {
                         term_details.name.as_str()
                     } else {
                         panic!("can't find term details for {}", during_termid);
@@ -1229,7 +1267,7 @@ impl WebData {
             s += &format!("{}/gene/{}\n", base_url, gene_details.uniquename);
         }
 
-        for term_details in self.api_maps.terms.values() {
+        for term_details in self.terms.values() {
             if term_details.gene_count == 0 && term_details.genotype_count == 0 {
                 continue;
             }
@@ -1388,7 +1426,7 @@ impl WebData {
 
         let mut writer = BufWriter::new(&file);
 
-        let table = table_for_export(&self.api_maps, &self.genotypes, cv_config_map, subset_config);
+        let table = table_for_export(&self.api_maps, &self.genotypes, &self.terms, cv_config_map, subset_config);
 
         for row in table {
             let line = join(&row, "\t") + "\n";
@@ -1500,11 +1538,13 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc");
 
-        write_go_annotation_files(&self.api_maps, config, &self.metadata.db_creation_datetime,
-                                  go_eco_mappping, &misc_path)?;
+        write_go_annotation_files(&self.api_maps, config, self,
+                                  &self.metadata.db_creation_datetime,
+                                  go_eco_mappping, &self.genes,
+                                  &self.api_maps.transcripts, &misc_path)?;
 
-        write_phenotype_annotation_files(&self.api_maps, &self.genotypes, config, false, &misc_path)?;
-        write_phenotype_annotation_files(&self.api_maps, &self.genotypes, config, true, &misc_path)?;
+        write_phenotype_annotation_files(&self.api_maps, self, &self.genotypes, config, false, &misc_path)?;
+        write_phenotype_annotation_files(&self.api_maps, self, &self.genotypes, config, true, &misc_path)?;
         println!("wrote GAF and PHAF files");
 
         self.write_alleles_json(&misc_path)?;

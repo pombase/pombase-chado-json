@@ -15,6 +15,7 @@ use super::util::make_extension_string;
 
 
 pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
+                                        data_lookup: &dyn DataLookup,
                                         genotypes_map: &IdGenotypeMap,
                                         config: &Config,
                                         use_eco_evidence: bool,
@@ -107,7 +108,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
         if let Some(term_annotations) = genotype_details.cv_annotations.get(&phaf_cv_name) {
             for term_annotation in term_annotations {
                 let term =
-                    api_maps.terms.get(&term_annotation.term)
+                    data_lookup.get_term(&term_annotation.term)
                     .unwrap_or_else(|| panic!("failed to find term summary for {}",
                                               term_annotation.term));
 
@@ -135,7 +136,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                             bit.rel_type_name == "has_penetrance"
                         })
                         .map(|bit| if let ExtRange::Term(ref termid) = bit.ext_range {
-                            let bit_term = api_maps.terms.get(termid)
+                            let bit_term = data_lookup.get_term(termid)
                                 .unwrap_or_else(|| panic!("can't find term for {}", termid));
                             bit_term.name.to_string()
                         } else {
@@ -150,7 +151,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                             bit.rel_type_name == "has_severity"
                         })
                         .map(|bit| if let ExtRange::Term(ref termid) = bit.ext_range {
-                            let bit_term = api_maps.terms.get(termid)
+                            let bit_term = data_lookup.get_term(termid)
                                 .unwrap_or_else(|| panic!("can't find term for {}", termid));
                             bit_term.name.to_string()
                         } else {
@@ -167,7 +168,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                         .collect::<Vec<_>>();
 
                     let extension =
-                        make_extension_string(config, &api_maps.terms,
+                        make_extension_string(config, data_lookup,
                                               &GpadGafWriteMode::PomBaseGaf,
                                               &extension_bits);
 

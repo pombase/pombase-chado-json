@@ -4,11 +4,12 @@ use flexstr::SharedStr as FlexStr;
 
 use crate::web::config::{CvConfig, AnnotationSubsetConfig};
 use crate::types::CvName;
-use crate::data_types::{APIMaps, IdGenotypeMap};
+use crate::data_types::{APIMaps, IdGenotypeMap, TermIdDetailsMap};
 use crate::utils::join;
 
 
 pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
+                        terms: &TermIdDetailsMap,
                         cv_config_map: &HashMap<CvName, CvConfig>,
                         subset_config: &AnnotationSubsetConfig)
     -> Vec<Vec<FlexStr>>
@@ -18,7 +19,7 @@ pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
     let mut result: Vec<Vec<FlexStr>> = vec![];
 
     for termid in &subset_config.term_ids {
-        let term_details = api_maps.terms.get(termid)
+        let term_details = terms.get(termid)
             .unwrap_or_else(|| panic!("no term details found for {} for config file", termid));
 
         for (cv_name, term_annotations) in &term_details.cv_annotations {
@@ -33,7 +34,7 @@ pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
 
-                let annotation_term_details = api_maps.terms.get(termid).unwrap();
+                let annotation_term_details = terms.get(termid).unwrap();
 
                 if term_annotation.is_not {
                     continue;

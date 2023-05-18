@@ -4,7 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use std::collections::{HashSet, HashMap};
 
-use crate::api_data::APIMapsDatabase;
+use crate::api_data::APIData;
 use crate::types::*;
 use crate::data_types::*;
 use crate::web::config::*;
@@ -19,13 +19,13 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
      include_gene: bool, include_genotype: bool,
      gene_map: &UniquenameGeneMap,
-     maps_database: &APIMapsDatabase,
+     api_data: &APIData,
      annotation_details: &IdOntAnnotationDetailMap) {
     for (cv_name, term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name(cv_name);
         make_cv_summary(&cv_config, children_by_termid,
                         include_gene, include_genotype, term_annotations,
-                        gene_map, maps_database, annotation_details);
+                        gene_map, api_data, annotation_details);
     }
 }
 
@@ -164,13 +164,13 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
     *rows = ret_rows;
 }
 
-fn sort_genotype_uniquenames(maps_database: &APIMapsDatabase,
+fn sort_genotype_uniquenames(api_data: &APIData,
                              genotype_uniquenames: &mut [FlexStr]) {
     let cmp_genotype_ploidiness =
         |genotype_a_uniquename: &FlexStr, genotype_b_uniquename: &FlexStr| {
-            let genotype_a = maps_database.get_genotype(genotype_a_uniquename)
+            let genotype_a = api_data.get_genotype(genotype_a_uniquename)
                 .unwrap_or_else(|| panic!("missing genotype {}", genotype_a_uniquename));
-            let genotype_b = maps_database.get_genotype(genotype_b_uniquename)
+            let genotype_b = api_data.get_genotype(genotype_b_uniquename)
                 .unwrap_or_else(|| panic!("missing genotype {}", genotype_b_uniquename));
 
             let genotype_a_ploidiness = genotype_a.ploidiness();
@@ -191,7 +191,7 @@ fn sort_genotype_uniquenames(maps_database: &APIMapsDatabase,
 }
 
 // combine rows that have a gene or genotype but no extension into one row
-fn collect_summary_rows(genes: &UniquenameGeneMap, maps_database: &APIMapsDatabase,
+fn collect_summary_rows(genes: &UniquenameGeneMap, api_data: &APIData,
                         rows: &mut Vec<TermSummaryRow>) {
     let mut no_ext_rows = vec![];
     let mut other_rows = vec![];
@@ -230,7 +230,7 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, maps_database: &APIMapsDataba
         .map(|row| row.genotype_uniquenames[0].clone())
         .collect();
 
-    sort_genotype_uniquenames(maps_database, &mut genotype_uniquenames);
+    sort_genotype_uniquenames(api_data, &mut genotype_uniquenames);
 
     rows.clear();
 
@@ -443,7 +443,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                    include_gene: bool, include_genotype: bool,
                    term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
                    genes: &UniquenameGeneMap,
-                   maps_database: &APIMapsDatabase,
+                   api_data: &APIData,
                    annotation_details: &IdOntAnnotationDetailMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let mut rows = vec![];
@@ -492,7 +492,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                     vec![]
                 };
 
-            sort_genotype_uniquenames(maps_database, &mut genotype_uniquenames);
+            sort_genotype_uniquenames(api_data, &mut genotype_uniquenames);
 
             let summary_relations_to_hide = &cv_config.summary_relations_to_hide;
 
@@ -545,7 +545,7 @@ fn make_cv_summary(cv_config: &CvConfig,
 
     for term_and_annotations in &mut term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
-            collect_summary_rows(genes, maps_database, summary);
+            collect_summary_rows(genes, api_data, summary);
             collect_ext_summary_genes(cv_config, summary, genes);
         }
     }

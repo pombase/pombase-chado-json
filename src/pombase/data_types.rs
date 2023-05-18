@@ -3,6 +3,7 @@ use std::collections::{HashMap, HashSet, BTreeMap};
 use std::fmt::Display;
 use std::fmt;
 use std::num::NonZeroUsize;
+use std::sync::Arc;
 
 use regex::Regex;
 
@@ -57,6 +58,11 @@ use crate::types::*;
 use crate::interpro::InterProMatch;
 use crate::rnacentral::RfamAnnotation;
 
+pub trait DataLookup {
+    fn get_term(&self, termid: &TermId) -> Option<Arc<TermDetails>>;
+    fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
+           -> Option<Arc<GenotypeDetails>>;
+}
 
 pub type RNAcentralAnnotations = HashMap<FlexStr, Vec<RfamAnnotation>>;
 
@@ -2098,7 +2104,6 @@ pub struct APIMaps {
     pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,
     pub alleles: UniquenameAlleleDetailsMap,
-    pub terms: TermIdDetailsMap,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
     pub references: UniquenameReferenceMap,
     pub other_features: UniquenameFeatureShortMap,
@@ -2109,6 +2114,7 @@ pub struct APIMaps {
     pub gene_subsets: IdGeneSubsetMap,
     pub children_by_termid: HashMap<TermId, HashSet<TermId>>,
     pub gene_expression_measurements: GeneExDataSetMeasurements,
+    pub secondary_identifiers_map: HashMap<TermId, TermId>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
