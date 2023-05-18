@@ -15,6 +15,7 @@ use super::util::make_extension_string;
 
 
 pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
+                                        genotypes_map: &IdGenotypeMap,
                                         config: &Config,
                                         use_eco_evidence: bool,
                                         output_dir: &str)
@@ -51,7 +52,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
     phaf_writer.write_all(header.as_bytes())?;
 
     'GENOTYPES:
-    for genotype_details in api_maps.genotypes.values() {
+    for genotype_details in genotypes_map.values() {
         if genotype_details.taxonid != load_org_taxonid {
             continue 'GENOTYPES;
         }

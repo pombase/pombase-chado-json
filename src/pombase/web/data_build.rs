@@ -4912,7 +4912,6 @@ phenotypes, so just the first part of this extension will be used:
             gene_name_gene_map,
             transcripts: self.transcripts,
             alleles: self.alleles,
-            genotypes: self.genotypes,
             terms: terms_for_api,
             interactors_of_genes,
             references: self.references,

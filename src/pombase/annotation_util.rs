@@ -3,12 +3,13 @@ use std::collections::{HashSet, HashMap};
 use flexstr::SharedStr as FlexStr;
 
 use crate::web::config::{CvConfig, AnnotationSubsetConfig};
-use crate::types::{CvName};
-use crate::data_types::APIMaps;
+use crate::types::CvName;
+use crate::data_types::{APIMaps, IdGenotypeMap};
 use crate::utils::join;
 
 
-pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvConfig>,
+pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
+                        cv_config_map: &HashMap<CvName, CvConfig>,
                         subset_config: &AnnotationSubsetConfig)
     -> Vec<Vec<FlexStr>>
 {
@@ -47,7 +48,7 @@ pub fn table_for_export(api_maps: &APIMaps, cv_config_map: &HashMap<CvName, CvCo
 
                     let maybe_genotype_short =
                         if let Some(ref genotype_uniquename) = annotation_details.genotype {
-                            api_maps.genotypes.get(genotype_uniquename)
+                            genotypes.get(genotype_uniquename)
                         } else {
                             None
                         };

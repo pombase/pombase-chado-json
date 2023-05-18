@@ -6,6 +6,8 @@ use rocket::fs::NamedFile;
 use rocket::response::content;
 use rocket::response::content::RawHtml;
 
+use rusqlite::Connection;
+
 #[macro_use] extern crate serde_derive;
 
 extern crate pombase;
@@ -431,6 +433,7 @@ async fn rocket() -> _ {
     opts.optflag("h", "help", "print this help message");
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
+    opts.optopt("d", "api-maps-database", "SQLite3 database of API maps", "API_MAPS_DATABASE");
     opts.optopt("w", "web-root-dir", "Root web data directory", "WEB_ROOT_DIR");
     opts.optopt("s", "site-db", "Connection string for the site local databae", "SITE_DB");
 
@@ -456,6 +459,11 @@ async fn rocket() -> _ {
         print_usage(&program, opts);
         process::exit(1);
     }
+    if !matches.opt_present("api-maps-database") {
+        println!("no --api-maps-database|-d option");
+        print_usage(&program, opts);
+        process::exit(1);
+    }
     if !matches.opt_present("web-root-dir") {
         println!("no --web-root-dir|-w option");
         print_usage(&program, opts);
@@ -463,6 +471,7 @@ async fn rocket() -> _ {
     }
 
     let site_db_conn_string = matches.opt_str("s");
+    let api_maps_database_path = matches.opt_str("d").unwrap();
 
     let search_maps_filename = matches.opt_str("m").unwrap();
     println!("Reading data files ...");
@@ -470,7 +479,8 @@ async fn rocket() -> _ {
     let config_file_name = matches.opt_str("c").unwrap();
     let config = Config::read(&config_file_name);
     let api_maps = api_maps_from_file(&search_maps_filename);
-    let api_data = APIData::new(&config, &api_maps);
+    let api_maps_database_conn = Connection::open(api_maps_database_path).unwrap();
+    let api_data = APIData::new(&config, api_maps_database_conn, api_maps);
     let site_db =
         if let Some(conn_str) = site_db_conn_string {
             match SiteDB::new(&conn_str).await {

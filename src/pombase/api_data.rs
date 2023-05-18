@@ -1,6 +1,12 @@
+
 use std::process;
 use std::fs::File;
 use std::io::{Read, BufReader};
+
+use std::sync::{Mutex, Arc, RwLock};
+
+use zstd::stream::Decoder;
+use rusqlite::Connection;
 
 use serde_json;
 use std::collections::{HashMap, HashSet};
@@ -13,25 +19,70 @@ use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIMaps, ChromosomeDet
                         ReferenceDetails, ReferenceShort, ReferenceShortOptionMap,
                         TermDetails, TermShort, TermShortOptionMap,
                         TranscriptDetailsOptionMap, WithFromValue, AlleleDetails,
-                        AlleleShort};
+                        AlleleShort, IdGenotypeMap};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiLocus, QueryExpressionFilter};
 use crate::web::cv_summary::make_cv_summaries;
 
-use zstd::stream::Decoder;
-
-use crate::types::{TermId, GeneUniquename};
+use crate::types::{TermId, GeneUniquename, GenotypeDisplayUniquename};
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
 pub struct APIData {
     config: Config,
     maps: APIMaps,
+    maps_database: APIMapsDatabase,
     secondary_identifiers_map: HashMap<TermId, TermId>,
 }
 
+pub struct APIMapsDatabase {
+    api_maps_database_conn: Arc<Mutex<Connection>>,
+    genotype_cache: RwLock<IdGenotypeMap>,
+}
+
+impl APIMapsDatabase {
+    pub fn new(api_maps_database_conn: Connection) -> APIMapsDatabase {
+        APIMapsDatabase {
+            api_maps_database_conn: Arc::new(Mutex::new(api_maps_database_conn)),
+            genotype_cache: RwLock::new(HashMap::new()),
+        }
+    }
+
+    pub fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
+           -> Option<GenotypeDetails>
+    {
+        let mut cache = self.genotype_cache.write().unwrap();
+
+        if !cache.contains_key(genotype_display_uniquename) {
+            let conn = self.api_maps_database_conn.lock().unwrap();
+
+            let mut stmt = conn.prepare("SELECT data FROM genotypes WHERE id = :id").unwrap();
+
+            let mut genotypes =
+                stmt.query_map(&[(":id", genotype_display_uniquename.as_ref())],
+                               |row| {
+                                   let json: String = row.get(0)?;
+                                   let genotype_details: GenotypeDetails =
+                                       serde_json::from_str(&json).unwrap();
+                                   Ok(genotype_details)
+                               }).unwrap();
+
+            let result_genotype = genotypes.next();
+
+            let maybe_genotype = result_genotype.map(|g| g.unwrap());
+
+            if let Some(genotype_details) = maybe_genotype {
+                cache.insert(genotype_display_uniquename.clone(), genotype_details);
+            }
+        }
+
+        let genotype_value = cache.get(genotype_display_uniquename);
+
+        genotype_value.map(|g| g.to_owned())
+    }
+}
 
 fn make_secondary_identifiers_map(terms: &HashMap<TermId, TermDetails>)
                                   -> HashMap<TermId, TermId>
@@ -80,10 +131,9 @@ pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
 }
 
 impl APIData {
-    pub fn new(config: &Config, maps: &APIMaps)
+    pub fn new(config: &Config, maps_database_conn: Connection, mut maps: APIMaps)
                ->APIData
     {
-        let mut maps = maps.clone();
         let mut new_entries: IdGeneSubsetMap = HashMap::new();
 
         let prefixes_to_remove: Vec<FlexStr> =
@@ -105,10 +155,13 @@ impl APIData {
         let secondary_identifiers_map =
             make_secondary_identifiers_map(&maps.terms);
 
+        let maps_database = APIMapsDatabase::new(maps_database_conn);
+
         APIData {
             config: config.clone(),
             secondary_identifiers_map,
-            maps
+            maps,
+            maps_database,
         }
     }
 
@@ -531,11 +584,11 @@ impl APIData {
                 self.fill_reference_map(&gene.references_by_uniquename);
             sort_cv_annotation_details(&mut gene, &self.config,
                                        &self.maps.genes,
-                                       &self.maps.genotypes,
                                        &self.maps.terms,
+                                       &self.maps_database,
                                        &details_map);
             make_cv_summaries(&mut gene, &self.config, &self.maps.children_by_termid,
-                              false, true, &self.maps.genes, &self.maps.genotypes,
+                              false, true, &self.maps.genes, &self.maps_database,
                               &details_map);
 
             gene.annotation_details = details_map;
@@ -547,7 +600,7 @@ impl APIData {
 
     pub fn get_genotype_details(&self, genotype_uniquename: &str) -> Option<GenotypeDetails> {
         let genotype_uniquename = genotype_uniquename.to_shared_str();
-        if let Some(genotype_ref) = self.maps.genotypes.get(&genotype_uniquename) {
+        if let Some(genotype_ref) = self.maps_database.get_genotype(&genotype_uniquename) {
             let mut genotype = genotype_ref.clone();
             let details_map = self.detail_map_of_cv_annotations(&genotype.cv_annotations);
             genotype.terms_by_termid = self.fill_term_map(&genotype.terms_by_termid);
@@ -557,11 +610,11 @@ impl APIData {
                 self.fill_reference_map(&genotype.references_by_uniquename);
             sort_cv_annotation_details(&mut genotype, &self.config,
                                        &self.maps.genes,
-                                       &self.maps.genotypes,
                                        &self.maps.terms,
+                                       &self.maps_database,
                                        &details_map);
             make_cv_summaries(&mut genotype, &self.config, &self.maps.children_by_termid,
-                              false, false, &self.maps.genes, &self.maps.genotypes,
+                              false, false, &self.maps.genes, &self.maps_database,
                               &details_map);
             genotype.annotation_details = details_map;
             Some(genotype)
@@ -604,11 +657,11 @@ impl APIData {
             self.fill_reference_map(&term.references_by_uniquename);
         sort_cv_annotation_details(&mut term, &self.config,
                                    &self.maps.genes,
-                                   &self.maps.genotypes,
                                    &self.maps.terms,
+                                   &self.maps_database,
                                    &details_map);
         make_cv_summaries(&mut term, &self.config, &self.maps.children_by_termid,
-                          true, true, &self.maps.genes, &self.maps.genotypes,
+                          true, true, &self.maps.genes, &self.maps_database,
                           &details_map);
         term.annotation_details = details_map;
         Some(term)
@@ -640,11 +693,11 @@ impl APIData {
             reference.transcripts_by_uniquename = self.fill_transcript_map(&reference.transcripts_by_uniquename);
             sort_cv_annotation_details(&mut reference, &self.config,
                                        &self.maps.genes,
-                                       &self.maps.genotypes,
                                        &self.maps.terms,
+                                       &self.maps_database,
                                        &details_map);
             make_cv_summaries(&mut reference, &self.config, &self.maps.children_by_termid,
-                              true, true, &self.maps.genes, &self.maps.genotypes,
+                              true, true, &self.maps.genes, &self.maps_database,
                               &details_map);
             reference.annotation_details = details_map;
             Some(reference)

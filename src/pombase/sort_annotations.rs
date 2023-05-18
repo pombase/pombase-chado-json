@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 
+use crate::api_data::APIMapsDatabase;
 use crate::types::*;
 use crate::data_types::*;
 use crate::utils::join;
@@ -124,14 +125,14 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                                  detail1: &OntAnnotationDetail,
                                  detail2: &OntAnnotationDetail,
                                  genes: &UniquenameGeneMap,
-                                 genotypes: &DisplayUniquenameGenotypeMap,
-                                 terms: &TermIdDetailsMap) -> Result<Ordering, String> {
+                                 terms: &TermIdDetailsMap,
+                                 maps_database: &APIMapsDatabase,) -> Result<Ordering, String> {
     if let Some(ref detail1_genotype_uniquename) = detail1.genotype {
         if let Some(ref detail2_genotype_uniquename) = detail2.genotype {
-            let genotype1 = genotypes.get(detail1_genotype_uniquename).unwrap();
-            let genotype2 = genotypes.get(detail2_genotype_uniquename).unwrap();
+            let genotype1 = maps_database.get_genotype(detail1_genotype_uniquename).unwrap();
+            let genotype2 = maps_database.get_genotype(detail2_genotype_uniquename).unwrap();
 
-            let ord = cmp_genotypes(genotype1, genotype2);
+            let ord = cmp_genotypes(&genotype1, &genotype2);
 
             if ord == Ordering::Equal {
                 Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
@@ -182,8 +183,8 @@ pub fn sort_cv_annotation_details<T: AnnotationContainer>
     (container: &mut T,
      config: &Config,
      gene_map: &UniquenameGeneMap,
-     genotype_map: &DisplayUniquenameGenotypeMap,
      term_map: &TermIdDetailsMap,
+     maps_database: &APIMapsDatabase,
      annotation_details_map: &IdOntAnnotationDetailMap)
 {
 
@@ -202,8 +203,8 @@ pub fn sort_cv_annotation_details<T: AnnotationContainer>
                     cmp_ont_annotation_detail(cv_config,
                                               annotation1, annotation2,
                                               gene_map,
-                                              genotype_map,
-                                              term_map);
+                                              term_map,
+                                              maps_database);
                 result.unwrap_or_else(|err| panic!("error from cmp_ont_annotation_detail: {}", err))
             } else {
                 Ordering::Equal

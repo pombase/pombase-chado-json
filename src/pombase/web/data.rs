@@ -30,7 +30,7 @@ use crate::annotation_util::table_for_export;
 use crate::bio::go_format_writer::write_go_annotation_files;
 use crate::bio::phenotype_format_writer::write_phenotype_annotation_files;
 
-use crate::utils::join;
+use crate::utils::{join, make_maps_database_tables, store_maps_into_database};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -1388,7 +1388,7 @@ impl WebData {
 
         let mut writer = BufWriter::new(&file);
 
-        let table = table_for_export(&self.api_maps, cv_config_map, subset_config);
+        let table = table_for_export(&self.api_maps, &self.genotypes, cv_config_map, subset_config);
 
         for row in table {
             let line = join(&row, "\t") + "\n";
@@ -1450,47 +1450,10 @@ impl WebData {
         let db_path = String::new() + output_dir + "/" + API_MAPS_SQLITE3_FILE_NAME;
         let mut conn = Connection::open(db_path)?;
 
-        let tx = conn.transaction()?;
+        make_maps_database_tables(&mut conn)?;
 
-        let table_names = vec!["terms", "genes", "refs", "genotypes"];
-
-        for table_name in &table_names {
-           tx.execute(
-              &format!("CREATE TABLE {} (
-                           id    TEXT PRIMARY KEY,
-                           data  TEXT NOT NULL
-                       )",
-                       table_name),
-              (),
-           )?;
-        }
-
-        for (termid, term_details) in &self.terms {
-            let json = serde_json::value::to_value(term_details)?;
-
-            tx.execute("INSERT INTO terms (id, data) VALUES (?1, ?2)",
-                       (termid.as_ref(), &json))?;
-        }
-        for (gene_uniquename, gene_details) in &self.genes {
-            let json = serde_json::value::to_value(gene_details)?;
-
-            tx.execute("INSERT INTO genes (id, data) VALUES (?1, ?2)",
-                       (gene_uniquename.as_ref(), &json))?;
-        }
-        for (ref_uniquename, reference_details) in &self.references {
-            let json = serde_json::value::to_value(reference_details)?;
-
-            tx.execute("INSERT INTO refs (id, data) VALUES (?1, ?2)",
-                       (ref_uniquename.as_ref(), &json))?;
-        }
-        for (genotype_display_uniquename, genotype_details) in &self.genotypes {
-            let json = serde_json::value::to_value(genotype_details)?;
-
-            tx.execute("INSERT INTO genotypes (id, data) VALUES (?1, ?2)",
-                       (genotype_display_uniquename.as_ref(), &json))?;
-        }
-
-        tx.commit()?;
+        store_maps_into_database(&mut conn, &self.terms, &self.genes, &self.references,
+                                 &self.genotypes)?;
 
         Ok(())
     }
@@ -1540,8 +1503,8 @@ impl WebData {
         write_go_annotation_files(&self.api_maps, config, &self.metadata.db_creation_datetime,
                                   go_eco_mappping, &misc_path)?;
 
-        write_phenotype_annotation_files(&self.api_maps, config, false, &misc_path)?;
-        write_phenotype_annotation_files(&self.api_maps, config, true, &misc_path)?;
+        write_phenotype_annotation_files(&self.api_maps, &self.genotypes, config, false, &misc_path)?;
+        write_phenotype_annotation_files(&self.api_maps, &self.genotypes, config, true, &misc_path)?;
         println!("wrote GAF and PHAF files");
 
         self.write_alleles_json(&misc_path)?;

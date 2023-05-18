@@ -1,0 +1,338 @@
+use std::collections::{HashMap, BTreeMap, HashSet};
+
+use flexstr::ToSharedStr;
+
+use pombase::data_types::{UniquenameReferenceMap, UniquenameGeneMap, TermIdDetailsMap, IdGenotypeMap, GenotypeDetails, GenotypeLocus, Ploidiness, GeneDetails, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, AlleleDetails, UniquenameAlleleDetailsMap, TermDetails};
+use pombase::utils::{make_maps_database_tables, store_maps_into_database};
+use rusqlite::Connection;
+
+pub fn setup_test_maps_database(mut conn: &mut Connection,
+                                terms: &TermIdDetailsMap,
+                                genes: &UniquenameGeneMap,
+                                references: &UniquenameReferenceMap,
+                                genotypes: &IdGenotypeMap) {
+    make_maps_database_tables(conn).unwrap();
+
+    store_maps_into_database(&mut conn, terms, genes, references,
+                             genotypes).unwrap();
+}
+
+
+pub fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
+                     loci: Vec<GenotypeLocus>) -> GenotypeDetails {
+    GenotypeDetails {
+        display_uniquename: display_uniquename.into(),
+        display_name: display_uniquename.into(),
+        name: name.map(|s| s.to_shared_str()),
+        taxonid: 4896,
+        loci: loci,
+        ploidiness: Ploidiness::Haploid,
+        comment: None,
+        cv_annotations: HashMap::new(),
+        double_mutant_genetic_interactions: HashMap::new(),
+        rescue_genetic_interactions: HashMap::new(),
+        references_by_uniquename: HashMap::new(),
+        genes_by_uniquename: HashMap::new(),
+        alleles_by_uniquename: HashMap::new(),
+        transcripts_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
+        terms_by_termid: HashMap::new(),
+        annotation_details: HashMap::new(),
+        annotation_count: 0,
+    }
+}
+
+pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
+    GeneDetails {
+        uniquename: uniquename.into(),
+        name: name.map(|s| s.to_shared_str()),
+        taxonid: 4896,
+        product: None,
+        deletion_viability: DeletionViability::Unknown,
+        uniprot_identifier: None,
+        secondary_identifier: None,
+        biogrid_interactor_id: None,
+        rnacentral_urs_identifier: None,
+        pdb_entries: vec![],
+        interpro_matches: vec![],
+        tm_domain_coords: vec![],
+        disordered_region_coords: vec![],
+        low_complexity_region_coords: vec![],
+        coiled_coil_coords: vec![],
+        rfam_annotations: vec![],
+        orfeome_identifier: None,
+        name_descriptions: vec![],
+        synonyms: vec![],
+        dbxrefs: HashSet::new(),
+        feature_type: "gene".to_shared_str(),
+        feature_so_termid: "SO:0000704".to_shared_str(),
+        transcript_so_termid: Some("SO:0001217".to_shared_str()),
+        characterisation_status: None,
+        taxonomic_distribution: None,
+        location: None,
+        gene_neighbourhood: vec![],
+        transcripts: vec![],
+        transcripts_by_uniquename: HashMap::new(),
+        cv_annotations: HashMap::new(),
+        physical_interactions: vec![],
+        genetic_interactions: HashMap::new(),
+        ortholog_annotations: vec![],
+        paralog_annotations: vec![],
+        target_of_annotations: vec![],
+        references_by_uniquename: HashMap::new(),
+        genes_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
+        alleles_by_uniquename: HashMap::new(),
+        terms_by_termid: HashMap::new(),
+        annotation_details: HashMap::new(),
+        feature_publications: HashSet::new(),
+        subset_termids: HashSet::new(),
+        gene_history: vec![],
+    }
+}
+
+pub fn get_test_genes_map() -> UniquenameGeneMap {
+    let mut ret = BTreeMap::new();
+
+    let gene_data =
+        vec![("SPBC11B10.09", Some("cdc2")),
+             ("SPAC144.13c", Some("srw1")),
+             ("SPAC25G10.07c", Some("cut7")),
+             ("SPBC146.03c", Some("cut3")),
+             ("SPBC32F12.09", None),
+             ("SPBC646.13", Some("sds23")),
+             ("SPBC6B1.04", Some("mde4")),
+             ("SPBC776.02c", Some("dis2"))];
+
+    for (uniquename, name) in gene_data {
+        ret.insert(uniquename.into(), make_test_gene(uniquename, name));
+    }
+
+    ret
+}
+
+pub fn get_test_references_map() -> UniquenameReferenceMap {
+    HashMap::new()
+}
+
+pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
+    let mut ret = HashMap::new();
+
+    ret.insert("e674fe7ceba478aa-genotype-2".to_shared_str(),
+               make_one_genotype(
+                   "G799D(G799D)",
+                   Some("test genotype name"),
+                   vec![
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPBC16A3.11:allele-7".to_shared_str(),
+                               }
+                           ]
+                       }
+                   ]
+               ));
+
+    ret.insert("d6c914796c35e3b5-genotype-4".to_shared_str(),
+               make_one_genotype(
+                   "C-terminal truncation 940-1516(940-1516)",
+                   None,
+                   vec![
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-5".to_shared_str(),
+                               }
+                           ]
+                       }
+                   ]
+               ));
+
+    ret.insert("65c76fa511461156-genotype-3".to_shared_str(),
+               make_one_genotype(
+                   "cdc25-22(c532y)",
+                   None,
+                   vec![
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPAC24H6.05:allele-3".to_shared_str(),
+                               }
+                           ]
+                       }
+                   ]
+               ));
+
+    ret.insert("d6c914796c35e3b5-genotype-2".to_shared_str(),
+               make_one_genotype(
+                   "ATPase dead mutant(unknown)",
+                   Some("ZZ-name"),
+                   vec![
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-4".to_shared_str(),
+                               }
+                           ]
+                       }
+                   ]
+               ));
+
+    ret.insert("d6c914796c35e3b5-genotype-3".to_shared_str(),
+               make_one_genotype(
+                   "C-terminal truncation(1320-1516)",
+                   None,
+                   vec![
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPCC1919.10c:allele-6".to_shared_str(),
+                               }
+                           ]
+                       }
+                   ]
+               ));
+
+    ret.insert("fd4f3f52f1d38106-genotype-4".to_shared_str(),
+               make_one_genotype(
+                   "K418R(K418R)",
+                   None,
+                   vec![
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some("Wild type product level".to_shared_str()),
+                                   allele_uniquename: "SPAC25A8.01c:allele-5".to_shared_str(),
+                               }
+                           ]
+                       }
+                   ]
+               ));
+
+    ret.insert("a6d8f45c20c2227d-genotype-9".to_shared_str(),
+               make_one_genotype(
+                   "UBS-I&II(F18A,F21A,W26A,L40A,W41A,W45A)",
+                   None,
+                   vec![
+                       GenotypeLocus {
+                           expressed_alleles: vec![
+                               ExpressedAllele {
+                                   expression: Some("Not assayed".to_shared_str()),
+                                   allele_uniquename: "SPAC3G6.02:allele-7".to_shared_str(),
+                               }
+                           ]
+                       }
+                   ]
+               ));
+
+    ret
+}
+
+pub fn make_one_allele_details(uniquename: &str, name: &str, allele_type: &str,
+                           description: Option<&str>, gene_uniquename: &str) -> AlleleDetails {
+     let ref gene = make_test_gene(gene_uniquename, None);
+     AlleleDetails::new(
+        uniquename.into(),
+        &Some(name.into()),
+        allele_type,
+        &description.map(|s| s.to_shared_str()),
+        &vec![],
+        gene.into(),
+    )
+}
+
+pub fn get_test_alleles_map() -> UniquenameAlleleDetailsMap {
+    let mut ret = HashMap::new();
+
+    ret.insert("SPCC1919.10c:allele-4".to_shared_str(),
+               make_one_allele_details("SPCC1919.10c:allele-4", "ATPase dead mutant", "unknown", None, "SPCC1919.10c"));
+
+    ret.insert("SPCC1919.10c:allele-5".to_shared_str(),
+               make_one_allele_details("SPCC1919.10c:allele-5", "C-terminal truncation 940-1516", "partial_amino_acid_deletion",
+                                     Some("940-1516"), "SPCC1919.10c"));
+
+    ret.insert("SPCC1919.10c:allele-6".to_shared_str(),
+               make_one_allele_details("SPCC1919.10c:allele-6", "C-terminal truncation", "partial_amino_acid_deletion", Some("1320-1516"),
+                                     "SPCC1919.10c"));
+
+    ret.insert("SPBC16A3.11:allele-7".to_shared_str(),
+               make_one_allele_details("SPBC16A3.11:allele-7", "G799D", "amino_acid_mutation", Some("G799D"), "SPBC16A3.11"));
+
+
+    ret.insert("SPAC25A8.01c:allele-5".to_shared_str(),
+               make_one_allele_details("SPAC25A8.01c:allele-5", "K418R", "amino_acid_mutation", Some("K418R"), "SPAC25A8.01c"));
+
+    ret.insert("SPAC3G6.02:allele-7".to_shared_str(),
+               make_one_allele_details("SPAC3G6.02:allele-7", "UBS-I&II", "amino_acid_mutation", Some("F18A,F21A,W26A,L40A,W41A,W45A"), "SPAC3G6.02"));
+
+    ret.insert("SPAC24H6.05:allele-3".to_shared_str(),
+               make_one_allele_details("SPAC24H6.05:allele-3", "cdc25-22", "amino_acid_mutation", Some("C532Y"), "SPAC24H6.05"));
+
+    ret
+}
+
+pub fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetails {
+    TermDetails {
+        termid: id.into(),
+        name: name.into(),
+        cv_name: cv_name.into(),
+        annotation_feature_type: "gene".to_shared_str(),
+        interesting_parent_ids: HashSet::new(),
+        interesting_parent_details: HashSet::new(),
+        in_subsets: HashSet::from_iter(vec!["goslim_pombe".to_shared_str()]),
+        synonyms: vec![],
+        definition: None,
+        direct_ancestors: vec![],
+        definition_xrefs: HashSet::new(),
+        secondary_identifiers: HashSet::new(),
+        annotated_genes: HashSet::new(),
+        single_locus_annotated_genes: HashSet::new(),
+        multi_locus_annotated_genes: HashSet::new(),
+        is_obsolete: false,
+        single_locus_genotype_uniquenames: HashSet::new(),
+        cv_annotations: HashMap::new(),
+        genes_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
+        alleles_by_uniquename: HashMap::new(),
+        transcripts_by_uniquename: HashMap::new(),
+        references_by_uniquename: HashMap::new(),
+        terms_by_termid: HashMap::new(),
+        annotation_details: HashMap::new(),
+        double_mutant_genetic_interactions: HashMap::new(),
+        single_allele_genetic_interactions: HashMap::new(),
+        gene_count: 0,
+        genotype_count: 0,
+        xrefs: HashMap::new(),
+        pombase_gene_id: None,
+    }
+}
+
+pub fn get_test_terms_map() -> TermIdDetailsMap {
+    let mut ret = HashMap::new();
+
+    let term_data = vec![
+        ("GO:0022403", "cell cycle phase", "biological_process"),
+        ("GO:0051318", "G1 phase", "biological_process"),
+        ("GO:0000080", "mitotic G1 phase", "biological_process"),
+        ("GO:0088888", "fake child of mitotic G1 phase", "biological_process"),
+        ("GO:0000089", "mitotic metaphase", "biological_process"),
+        ("GO:0099999", "fake child of  mitotic metaphase term", "biological_process"),
+        ("GO:0042307", "positive regulation of protein import into nucleus", "biological_process"),
+        ("GO:0098783", "correction of merotelic kinetochore attachment, mitotic", "biological_process"),
+        ("GO:1902845", "negative regulation of mitotic spindle elongation", "biological_process"),
+        ("GO:1903380", "positive regulation of mitotic chromosome condensation", "biological_process"),
+        ("GO:1903693", "regulation of mitotic G1 cell cycle arrest in response to nitrogen starvation", "biological_process"),
+        ("GO:1905785", "negative regulation of anaphase-promoting complex-dependent catabolic process", "biological_process"),
+    ];
+
+    for (id, name, cv_name) in term_data {
+        ret.insert(id.into(), make_test_term_details(id, name, cv_name));
+    }
+
+    ret
+}
