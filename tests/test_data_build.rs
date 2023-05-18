@@ -1,4 +1,3 @@
-use std::collections::BTreeMap;
 use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 
@@ -9,7 +8,7 @@ extern crate flexstr;
 
 mod util;
 
-use crate::util::{setup_test_maps_database, get_test_genes_map, get_test_genotypes_map, get_test_alleles_map, get_test_terms_map, get_test_references_map};
+use crate::util::{setup_test_maps_database, get_test_genes_map, get_test_genotypes_map, get_test_alleles_map, get_test_terms_map, get_test_references_map, get_api_data};
 
 use self::pombase::types::*;
 use self::pombase::data_types::*;
@@ -17,7 +16,7 @@ use self::pombase::web::config::*;
 use self::pombase::web::cv_summary::*;
 
 use flexstr::{ToSharedStr, shared_str as flex_str};
-use pombase::api_data::APIMapsDatabase;
+
 use rusqlite::Connection;
 
 #[allow(dead_code)]
@@ -433,16 +432,18 @@ fn test_cmp_ont_annotation_detail() {
     let mut maps_db_conn = Connection::open_in_memory().unwrap();
     setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &references,
                              &genotypes);
-    let maps_database = APIMapsDatabase::new(maps_db_conn);
+
+    let config = get_test_config();
+    let api_data = get_api_data();
 
     let cmp_detail_with_genotypes =
         |id1: &i32, id2: &i32| {
             let annotation1 = annotation_details_maps.get(id1).expect(&format!("{}", id1));
             let annotation2 = annotation_details_maps.get(id2).expect(&format!("{}", id2));
-            let cv_config = &get_test_config().cv_config_by_name(&flex_str!("molecular_function"));
+            let cv_config = &config.cv_config_by_name(&flex_str!("molecular_function"));
             pombase::sort_annotations::cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2,
-                                      &maps_database).unwrap()
+                                      &api_data).unwrap()
         };
 
     details_vec.sort_by(&cmp_detail_with_genotypes);
@@ -608,91 +609,6 @@ fn test_remove_redundant_summaries() {
 }
 
 
-fn get_test_gene_short_map() -> UniquenameGeneMap {
-    let mut ret_map = BTreeMap::new();
-
-    let base_details = GeneDetails {
-        uniquename: "".to_shared_str(),
-        name: Some("".to_shared_str()),
-        product: Some("".to_shared_str()),
-        taxonid: 4896,
-        deletion_viability: DeletionViability::Viable,
-        uniprot_identifier: Some("".to_shared_str()),
-        secondary_identifier: None,
-        biogrid_interactor_id: None,
-        rnacentral_urs_identifier: None,
-        pdb_entries: vec![],
-        interpro_matches: vec![],
-        tm_domain_coords: vec![],
-        disordered_region_coords: vec![],
-        low_complexity_region_coords: vec![],
-        coiled_coil_coords: vec![],
-        rfam_annotations: vec![],
-        orfeome_identifier: Some("".to_shared_str()),
-        name_descriptions: vec![],
-        synonyms: vec![],
-        dbxrefs: HashSet::new(),
-        feature_type: "".to_shared_str(),
-        feature_so_termid: "".to_shared_str(),
-        transcript_so_termid: None,
-        characterisation_status: Some("".to_shared_str()),
-        taxonomic_distribution: Some("".to_shared_str()),
-        location: None,
-        gene_neighbourhood: vec![],
-        transcripts: vec![],
-        transcripts_by_uniquename: HashMap::new(),
-        cv_annotations: HashMap::new(),
-        physical_interactions: vec![],
-        genetic_interactions: HashMap::new(),
-        ortholog_annotations: vec![],
-        paralog_annotations: vec![],
-        target_of_annotations: vec![],
-        references_by_uniquename: HashMap::new(),
-        genes_by_uniquename: HashMap::new(),
-        genotypes_by_uniquename: HashMap::new(),
-        alleles_by_uniquename: HashMap::new(),
-        terms_by_termid: HashMap::new(),
-        annotation_details: HashMap::new(),
-        feature_publications: HashSet::new(),
-        subset_termids: HashSet::new(),
-        gene_history: vec![],
-    };
-
-    ret_map.insert("SPAC977.09c".to_shared_str(),
-                   GeneDetails {
-                       uniquename: "SPAC977.09c".to_shared_str(),
-                       name: None,
-                       product: Some("phospholipase (predicted)".to_shared_str()),
-                       .. base_details.clone()
-                   });
-    ret_map.insert("SPAC3G9.09c".to_shared_str(),
-                   GeneDetails {
-                       uniquename: "SPAC3G9.09c".to_shared_str(),
-                       name: Some("tif211".to_shared_str()),
-                       product: Some("translation initiation factor eIF2 alpha subunit".to_shared_str()),
-                       .. base_details.clone()
-                   });
-    ret_map.insert("SPAC16.01".to_shared_str(),
-                   GeneDetails {
-                       uniquename: "SPAC16.01".to_shared_str(),
-                       name: Some("rho2".to_shared_str()),
-                       product: Some("Rho family GTPase Rho2".to_shared_str()),
-                       .. base_details.clone()
-                   });
-    ret_map.insert("SPAC24C9.02c".to_shared_str(),
-                   GeneDetails {
-                       uniquename: "SPAC24C9.02c".to_shared_str(),
-                       name: Some("cyt2".to_shared_str()),
-                       product: Some("cytochrome c1 heme lyase Cyt2 (predicted)".to_shared_str()),
-                       .. base_details
-                   });
-
-    ret_map
-}
-
-
-
-
 #[test]
 fn test_merge_ext_part_ranges() {
     let ext_part1 = ExtPart {
@@ -708,8 +624,9 @@ fn test_merge_ext_part_ranges() {
         ext_range: ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_shared_str()]]),
     };
 
-    let gene_short_map = get_test_gene_short_map();
-    let res = merge_ext_part_ranges(&ext_part1, &ext_part2, &gene_short_map);
+    let api_data = get_api_data();
+
+    let res = merge_ext_part_ranges(&ext_part1, &ext_part2, &api_data);
 
     assert_eq!(res.ext_range,
                ExtRange::SummaryGenes(vec![vec!["SPAC24C9.02c".to_shared_str()],
@@ -900,10 +817,10 @@ fn test_collect_ext_summary_genes() {
     let mut rows = get_test_summary_rows();
     assert_eq!(rows.len(), 13);
 
-    let gene_short_map = get_test_gene_short_map();
+    let api_data = get_api_data();
 
     pombase::web::cv_summary::collect_ext_summary_genes(&config.cv_config_by_name(&flex_str!("molecular_function")),
-                                                        &mut rows, &gene_short_map);
+                                                        &mut rows, &api_data);
     assert_eq!(rows.len(), 11);
 
     let collected_ext = rows.get(6).unwrap();

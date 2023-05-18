@@ -13,6 +13,8 @@ use self::pombase::web::config::*;
 use self::pombase::web::data_build::*;
 use self::pombase::web::data::*;
 
+mod util;
+
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
 fn make_test_cvterm_dbxref(cvterms: &mut Vec<Rc<Cvterm>>, dbxrefs: &mut Vec<Rc<Dbxref>>,
@@ -737,8 +739,8 @@ fn get_test_web_data() -> WebData {
 fn test_gene_details() {
     let mut web_data = get_test_web_data();
 
-    assert_eq!(web_data.api_maps.genes.len(), 3);
-    let par1_gene = web_data.api_maps.genes.remove(&flex_str!("SPCC188.02")).unwrap();
+    assert_eq!(web_data.genes.len(), 3);
+    let par1_gene = web_data.genes.remove(&flex_str!("SPCC188.02")).unwrap();
 
     let transcript_0_uniquename = &par1_gene.transcripts[0];
     let transcript_details_0 =
@@ -764,7 +766,7 @@ fn test_make_publication_short() {
     let web_data = get_test_web_data();
 
     let pmid = "PMID:11707284".to_shared_str();
-    let ref_short = web_data.api_maps.references.get(&pmid).unwrap();
+    let ref_short = web_data.references.get(&pmid).unwrap();
 
     assert_eq!(ref_short.uniquename, pmid);
 
@@ -775,20 +777,20 @@ fn test_make_publication_short() {
 #[test]
 fn test_term_gene_count() {
     let web_data = get_test_web_data();
-    let par1_gene = web_data.api_maps.genes.get(&flex_str!("SPCC188.02")).unwrap().clone();
+    let par1_gene = web_data.genes.get(&flex_str!("SPCC188.02")).unwrap().clone();
     let cv_annotations = par1_gene.cv_annotations;
     let biological_process_annotations = cv_annotations.get(&flex_str!("biological_process")).unwrap();
     assert_eq!(biological_process_annotations.len(), 1);
     let first_annotation = &biological_process_annotations[0];
     let actual_count =
-        web_data.api_maps.terms.get(&first_annotation.term).unwrap().gene_count;
+        web_data.terms.get(&first_annotation.term).unwrap().gene_count;
     assert_eq!(actual_count, 1);
 }
 
 #[test]
 fn test_gene_with() {
     let web_data = get_test_web_data();
-    let par1_gene = web_data.api_maps.genes.get(&flex_str!("SPCC188.02")).unwrap().clone();
+    let par1_gene = web_data.genes.get(&flex_str!("SPCC188.02")).unwrap().clone();
     let cv_annotations = par1_gene.cv_annotations;
     let biological_process_annotations = cv_annotations.get(&flex_str!("biological_process")).unwrap();
     assert_eq!(biological_process_annotations[0].annotations.len(), 1);
@@ -812,7 +814,7 @@ fn test_genotype_annotation() {
     // make sure that if a genotype has two allele from the same gene,
     // we get only one annotation
     let web_data = get_test_web_data();
-    let cdc16_gene = web_data.api_maps.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
+    let cdc16_gene = web_data.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
     let fypo_annotations = cdc16_gene.cv_annotations.get(&flex_str!("single_locus_phenotype")).unwrap();
 
     assert_eq!(fypo_annotations.len(), 1);
@@ -881,12 +883,12 @@ fn test_collect_duplicated_relations() {
 fn test_terms() {
     let web_data = get_test_web_data();
 
-    let go0031030_cvterm = web_data.api_maps.terms.get(&flex_str!("GO:0031030")).unwrap();
+    let go0031030_cvterm = web_data.terms.get(&flex_str!("GO:0031030")).unwrap();
     assert_eq!("negative regulation of septation initiation signaling",
                go0031030_cvterm.name.as_str());
     assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 
-    let bp_cvterm = web_data.api_maps.terms.get(&flex_str!("GO:0008150")).unwrap();
+    let bp_cvterm = web_data.terms.get(&flex_str!("GO:0008150")).unwrap();
     assert_eq!("biological_process", bp_cvterm.name.as_str());
     assert_eq!(go0031030_cvterm.cv_annotations.keys().len(), 1);
 }
@@ -895,7 +897,7 @@ fn test_terms() {
 fn test_locations() {
     let web_data = get_test_web_data();
 
-    let pom1_gene = web_data.api_maps.genes.get(&flex_str!("SPAC2F7.03c")).unwrap().clone();
+    let pom1_gene = web_data.genes.get(&flex_str!("SPAC2F7.03c")).unwrap().clone();
     let pom1_loc = pom1_gene.location.unwrap().clone();
 
     assert_eq!(&pom1_loc.chromosome_name, "chromosome_1");
@@ -907,7 +909,7 @@ fn test_locations() {
     assert_eq!(&pom1_gene.gene_neighbourhood[0].uniquename, "SPAC6F6.08c");
     assert_eq!(&pom1_gene.gene_neighbourhood[1].uniquename, "SPAC2F7.03c");
 
-    let cdc16_gene = web_data.api_maps.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
+    let cdc16_gene = web_data.genes.get(&flex_str!("SPAC6F6.08c")).unwrap().clone();
     let cdc16_loc = cdc16_gene.location.unwrap();
 
     assert_eq!(&cdc16_loc.chromosome_name, "chromosome_1");

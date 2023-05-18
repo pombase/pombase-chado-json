@@ -1,48 +1,23 @@
 extern crate flexstr;
 
 use pombase;
-use rusqlite::Connection;
 
 use std::iter::Iterator;
 
 use std::collections::HashSet;
 
-use crate::util::get_test_alleles_map;
-use crate::util::get_test_genes_map;
-use crate::util::get_test_genotypes_map;
-use crate::util::get_test_references_map;
-use crate::util::get_test_terms_map;
-use crate::util::setup_test_maps_database;
+use crate::util::get_api_data;
 
 use self::pombase::api::query::*;
 use self::pombase::api::result::*;
 use self::pombase::api::query_exec::*;
-use self::pombase::web::config::{Config, TermAndName};
+use self::pombase::web::config::TermAndName;
 use self::pombase::data_types::{GeneShort, DeletionViability, GeneQueryTermData};
-use self::pombase::api_data::*;
 use self::pombase::bio::go_format_writer::GO_ASPECT_NAMES;
 
 mod util;
 
 use flexstr::{ToSharedStr};
-
-fn get_api_data() -> APIData {
-    use std::path::PathBuf;
-    let mut search_maps_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    search_maps_path.push("tests/test_search_data.json.zst");
-    let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
-    config_path.push("tests/test_config.json");
-    let config = Config::read(config_path.to_str().expect("config"));
-    let api_maps = api_maps_from_file(search_maps_path.to_str().expect("search maps"));
-    let mut maps_db_conn = Connection::open_in_memory().unwrap();
-    let genes = get_test_genes_map();
-    let genotypes = get_test_genotypes_map();
-    let _alleles = get_test_alleles_map();
-    let terms = get_test_terms_map();
-    let references = get_test_references_map();
-    setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &references, &genotypes);
-    APIData::new(&config, maps_db_conn, api_maps)
-}
 
 async fn check_gene_result(query: &Query, genes: Vec<&str>) {
     let api_data = get_api_data();
@@ -415,6 +390,7 @@ async fn test_gene_gaf() {
     let query = Query::new(qp1, opts);
 
     let api_data = get_api_data();
+
     let query_exec = QueryExec::new(api_data, None);
     let result = query_exec.exec(&query).await;
 
@@ -426,5 +402,5 @@ async fn test_gene_gaf() {
         }
     }
 
-    assert_eq!(gaf_lines, "PomBase\tSPAC27E2.05\tSPAC27E2.05\t\tGO:0044237\tPB_REF:0000001\tISS\t\tP\t\t\tprotein\ttaxon:4893\t20090213\tPomBase\t\t\n");
+    assert_eq!(gaf_lines, "PomBase\tSPAC27E2.05\tSPAC27E2.05\t\tGO:0044237\tPB_REF:0000001\tISS\t\tP\t\t\tprotein\ttaxon:4896\t20090213\tPomBase\t\t\n");
 }

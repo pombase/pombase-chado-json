@@ -2,10 +2,13 @@ use std::collections::{HashMap, BTreeMap, HashSet};
 
 use flexstr::ToSharedStr;
 
+use pombase::api_data::{APIData, api_maps_from_file};
 use pombase::data_types::{UniquenameReferenceMap, UniquenameGeneMap, TermIdDetailsMap, IdGenotypeMap, GenotypeDetails, GenotypeLocus, Ploidiness, GeneDetails, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, AlleleDetails, UniquenameAlleleDetailsMap, TermDetails};
 use pombase::utils::{make_maps_database_tables, store_maps_into_database};
+use pombase::web::config::Config;
 use rusqlite::Connection;
 
+#[allow(dead_code)]
 pub fn setup_test_maps_database(mut conn: &mut Connection,
                                 terms: &TermIdDetailsMap,
                                 genes: &UniquenameGeneMap,
@@ -17,7 +20,26 @@ pub fn setup_test_maps_database(mut conn: &mut Connection,
                              genotypes).unwrap();
 }
 
+#[allow(dead_code)]
+pub fn get_api_data() -> APIData {
+    use std::path::PathBuf;
+    let mut search_maps_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    search_maps_path.push("tests/test_search_data.json.zst");
+    let mut config_path = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+    config_path.push("tests/test_config.json");
+    let config = Config::read(config_path.to_str().expect("config"));
+    let api_maps = api_maps_from_file(search_maps_path.to_str().expect("search maps"));
+    let mut maps_db_conn = Connection::open_in_memory().unwrap();
+    let genes = get_test_genes_map();
+    let genotypes = get_test_genotypes_map();
+    let _alleles = get_test_alleles_map();
+    let terms = get_test_terms_map();
+    let references = get_test_references_map();
+    setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &references, &genotypes);
+    APIData::new(&config, maps_db_conn, api_maps)
+}
 
+#[warn(dead_code)]
 pub fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
                      loci: Vec<GenotypeLocus>) -> GenotypeDetails {
     GenotypeDetails {
@@ -42,6 +64,7 @@ pub fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
     }
 }
 
+#[warn(dead_code)]
 pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
     GeneDetails {
         uniquename: uniquename.into(),
@@ -91,7 +114,10 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
     }
 }
 
+#[cfg(test)]
 pub fn get_test_genes_map() -> UniquenameGeneMap {
+    use pombase::data_types::OntTermAnnotations;
+
     let mut ret = BTreeMap::new();
 
     let gene_data =
@@ -102,11 +128,41 @@ pub fn get_test_genes_map() -> UniquenameGeneMap {
              ("SPBC32F12.09", None),
              ("SPBC646.13", Some("sds23")),
              ("SPBC6B1.04", Some("mde4")),
-             ("SPBC776.02c", Some("dis2"))];
+             ("SPBC776.02c", Some("dis2")),
+             ("SPAC3G9.09c", Some("tif211")),
+             ("SPAC977.09c", Some("plb4")),
+             ("SPAC16.01", Some("rho2")),
+             ("SPAC24C9.02c", Some("cyt2")),
+             ("SPAC24B11.06c", None),
+             ("SPAC19G12.03", None),
+             ("SPAC2F3.09", None)];
 
     for (uniquename, name) in gene_data {
         ret.insert(uniquename.into(), make_test_gene(uniquename, name));
     }
+
+    let gene_spac27e2_05 = make_test_gene("SPAC27E2.05", None);
+
+    let mut cv_annotations = HashMap::new();
+    cv_annotations.insert("biological_process".into(),
+                          vec![OntTermAnnotations {
+                              term: "GO:0044237".into(),
+                              is_not: false,
+                              rel_names: HashSet::new(),
+                              annotations: vec![10000],
+                              summary: Some(vec![]),
+                          }]);
+    let mut transcripts_by_uniquename = HashMap::new();
+    transcripts_by_uniquename.insert("SPBC11C11.05.1".into(), None);
+
+    ret.insert("SPAC27E2.05".into(),
+               GeneDetails {
+                 deletion_viability: DeletionViability::DependsOnConditions,
+                 cv_annotations,
+                 transcripts: vec!["SPBC11C11.05.1".into()],
+                 transcripts_by_uniquename,
+                 ..gene_spac27e2_05
+               });
 
     ret
 }
@@ -115,6 +171,7 @@ pub fn get_test_references_map() -> UniquenameReferenceMap {
     HashMap::new()
 }
 
+#[cfg(test)]
 pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
     let mut ret = HashMap::new();
 
@@ -333,6 +390,18 @@ pub fn get_test_terms_map() -> TermIdDetailsMap {
     for (id, name, cv_name) in term_data {
         ret.insert(id.into(), make_test_term_details(id, name, cv_name));
     }
+
+    // this term is used to test querying:
+    let term_0044237 = make_test_term_details("GO:0044237", "cellular metabolic process",
+                                              "biological_process");
+
+    ret.insert("GO:0044237".into(), TermDetails {
+      is_obsolete: false,
+      gene_count: 10,
+      genotype_count: 0,
+      annotation_feature_type: "gene".into(),
+      ..term_0044237
+    });
 
     ret
 }
