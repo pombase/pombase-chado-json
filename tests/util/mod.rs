@@ -3,7 +3,8 @@ use std::collections::{HashMap, BTreeMap, HashSet};
 use flexstr::ToSharedStr;
 
 use pombase::api_data::{APIData, api_maps_from_file};
-use pombase::data_types::{UniquenameReferenceMap, UniquenameGeneMap, TermIdDetailsMap, IdGenotypeMap, GenotypeDetails, GenotypeLocus, Ploidiness, GeneDetails, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, AlleleDetails, UniquenameAlleleDetailsMap, TermDetails};
+use pombase::data_types::{UniquenameReferenceMap, UniquenameGeneMap, TermIdDetailsMap, IdGenotypeMap, GenotypeDetails, GenotypeLocus, Ploidiness, GeneDetails, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, AlleleDetails, UniquenameAlleleDetailsMap, TermDetails, APIGenotypeAnnotation};
+use pombase::types::TermId;
 use pombase::utils::{make_maps_database_tables, store_maps_into_database};
 use pombase::web::config::Config;
 use rusqlite::Connection;
@@ -13,11 +14,12 @@ pub fn setup_test_maps_database(mut conn: &mut Connection,
                                 terms: &TermIdDetailsMap,
                                 genes: &UniquenameGeneMap,
                                 references: &UniquenameReferenceMap,
-                                genotypes: &IdGenotypeMap) {
+                                genotypes: &IdGenotypeMap,
+                                termid_genotype_annotation: &HashMap<TermId, Vec<APIGenotypeAnnotation>>) {
     make_maps_database_tables(conn).unwrap();
 
     store_maps_into_database(&mut conn, terms, genes, references,
-                             genotypes).unwrap();
+                             genotypes, termid_genotype_annotation).unwrap();
 }
 
 #[allow(dead_code)]
@@ -35,7 +37,9 @@ pub fn get_api_data() -> APIData {
     let _alleles = get_test_alleles_map();
     let terms = get_test_terms_map();
     let references = get_test_references_map();
-    setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &references, &genotypes);
+    let termid_genotype_annotation = HashMap::new();
+    setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &references, &genotypes,
+                             &termid_genotype_annotation);
     APIData::new(&config, maps_db_conn, api_maps)
 }
 

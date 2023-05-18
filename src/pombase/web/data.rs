@@ -46,6 +46,8 @@ pub struct WebData {
     pub genotypes: IdGenotypeMap,
     pub terms: TermIdDetailsMap,
     pub references: UniquenameReferenceMap,
+    pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
+
     pub solr_data: SolrData,
     pub search_gene_summaries: Vec<GeneSummary>,
     pub ont_annotations: Vec<OntAnnotation>,
@@ -1529,7 +1531,7 @@ impl WebData {
         make_maps_database_tables(&mut conn)?;
 
         store_maps_into_database(&mut conn, &self.terms, &self.genes, &self.references,
-                                 &self.genotypes)?;
+                                 &self.genotypes, &self.termid_genotype_annotation)?;
 
         Ok(())
     }

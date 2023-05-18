@@ -2102,7 +2102,6 @@ pub type GeneExDataSetMeasurements =
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
-    pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
     pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
     pub gene_query_data_map: HashMap<GeneUniquename, GeneQueryData>,
     pub transcripts: UniquenameTranscriptMap,

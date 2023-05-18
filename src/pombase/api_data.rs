@@ -20,7 +20,7 @@ use crate::data_types::{DataLookup,
                         ReferenceDetails, ReferenceShort, ReferenceShortOptionMap,
                         TermDetails, TermShort, TermShortOptionMap,
                         TranscriptDetailsOptionMap, WithFromValue, AlleleDetails,
-                        AlleleShort};
+                        AlleleShort, APIGenotypeAnnotation};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
@@ -35,6 +35,14 @@ pub struct APIData {
     config: Config,
     maps: APIMaps,
     maps_database: APIMapsDatabase,
+}
+
+impl APIData {
+    fn get_termid_genotype_annotation(&self, termid: &TermId)
+           -> Option<Arc<Vec<APIGenotypeAnnotation>>>
+    {
+        self.maps_database.get_termid_genotype_annotation(termid)
+    }
 }
 
 impl DataLookup for APIData {
@@ -65,6 +73,7 @@ pub struct APIMapsDatabase {
     term_cache: RwLock<HashMap<TermId, Arc<TermDetails>>>,
     reference_cache: RwLock<HashMap<ReferenceUniquename, Arc<ReferenceDetails>>>,
     gene_cache: RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>,
+    termid_genotype_annotation_cache: RwLock<HashMap<TermId, Arc<Vec<APIGenotypeAnnotation>>>>,
 }
 
 impl APIMapsDatabase {
@@ -75,6 +84,7 @@ impl APIMapsDatabase {
             term_cache: RwLock::new(HashMap::new()),
             reference_cache: RwLock::new(HashMap::new()),
             gene_cache: RwLock::new(HashMap::new()),
+            termid_genotype_annotation_cache: RwLock::new(HashMap::new()),
         }
     }
 
@@ -209,6 +219,41 @@ impl APIMapsDatabase {
 
         gene_value.map(|t| t.to_owned())
     }
+
+    pub fn get_termid_genotype_annotation(&self, termid: &TermId)
+           -> Option<Arc<Vec<APIGenotypeAnnotation>>>
+    {
+        let mut cache = self.termid_genotype_annotation_cache.write().unwrap();
+
+        if !cache.contains_key(termid) {
+            let conn = self.api_maps_database_conn.lock().unwrap();
+
+            let mut stmt = conn.prepare("SELECT data FROM termid_genotype_annotations WHERE id = :id").unwrap();
+
+            let mut termid_genotype_annotations =
+                stmt.query_map(&[(":id", termid.as_ref())],
+                               |row| {
+                                   let json: String = row.get(0)?;
+                                   let termid_genotype_annotations: Vec<APIGenotypeAnnotation> =
+                                       serde_json::from_str(&json).unwrap();
+                                   Ok(termid_genotype_annotations)
+                               }).unwrap();
+
+            let result_termid_genotype_annotations = termid_genotype_annotations.next();
+
+            let maybe_termid_genotype_annotations =
+                result_termid_genotype_annotations.map(|v| v.unwrap());
+
+            if let Some(termid_genotype_annotations) = maybe_termid_genotype_annotations {
+                cache.insert(termid.clone(), Arc::new(termid_genotype_annotations));
+            }
+        }
+
+        let term_value = cache.get(termid);
+
+        term_value.map(|t| t.to_owned())
+    }
+
 }
 
 pub fn api_maps_from_file(search_maps_file_name: &str) -> APIMaps
@@ -361,9 +406,9 @@ impl APIData {
                               excluded_conditions_filter: &HashSet<TermAndName>)
                               -> Vec<GeneUniquename>
     {
-        if let Some(annotations) = self.maps.termid_genotype_annotation.get(term_id) {
+        if let Some(annotations) = self.get_termid_genotype_annotation(term_id) {
             let mut genes: HashSet<GeneUniquename> = HashSet::new();
-            for annotation in annotations {
+            for annotation in annotations.as_ref() {
 
                 let mut add_single = false;
                 let mut add_multi = false;

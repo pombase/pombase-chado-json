@@ -4883,9 +4883,6 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
-        let termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>> =
-            self.get_api_genotype_annotation();
-
         let seq_feature_page_features: Vec<FeatureShort> =
             self.other_features.values()
             .filter(|feature_short| {
@@ -4922,7 +4919,6 @@ phenotypes, so just the first part of this extension will be used:
             gene_summaries,
             gene_query_data_map,
             termid_genes,
-            termid_genotype_annotation,
             gene_name_gene_map,
             transcripts: self.transcripts,
             alleles: self.alleles,
@@ -6587,6 +6583,8 @@ phenotypes, so just the first part of this extension will be used:
         let genotypes = self.genotypes.clone();
         let references = self.references.clone();
 
+        let termid_genotype_annotation = self.get_api_genotype_annotation();
+
         let api_maps = self.make_api_maps();
 
         WebData {
@@ -6601,6 +6599,7 @@ phenotypes, so just the first part of this extension will be used:
             genes,
             genotypes,
             references,
+            termid_genotype_annotation,
             search_gene_summaries: gene_summaries,
             solr_data,
             ont_annotations,
