@@ -63,6 +63,8 @@ pub trait DataLookup {
 
     fn get_gene(&self, gene_uniquename: &GeneUniquename) -> Option<Arc<GeneDetails>>;
 
+    fn get_reference(&self, reference_uniquename: &ReferenceUniquename) -> Option<Arc<ReferenceDetails>>;
+
     fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
            -> Option<Arc<GenotypeDetails>>;
 }
@@ -2107,7 +2109,6 @@ pub struct APIMaps {
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,
     pub alleles: UniquenameAlleleDetailsMap,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
-    pub references: UniquenameReferenceMap,
     pub other_features: UniquenameFeatureShortMap,
     pub seq_feature_page_features: Vec<FeatureShort>,
     pub annotation_details: IdOntAnnotationDetailMap,

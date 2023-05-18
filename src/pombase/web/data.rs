@@ -24,7 +24,7 @@ use crate::constants::*;
 use crate::web::config::*;
 use crate::rnacentral::*;
 
-use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename};
+use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename, ReferenceUniquename};
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
@@ -53,6 +53,7 @@ pub struct WebData {
 
     pub arc_terms: Arc<RwLock<HashMap<TermId, Arc<TermDetails>>>>,
     pub arc_genes: Arc<RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>>,
+    pub arc_references: Arc<RwLock<HashMap<ReferenceUniquename, Arc<ReferenceDetails>>>>,
     pub arc_genotypes: Arc<RwLock<HashMap<GenotypeDisplayUniquename, Arc<GenotypeDetails>>>>,
 }
 
@@ -81,6 +82,21 @@ impl DataLookup for WebData {
                let arc_gene_details = Arc::new(gene_details.to_owned());
                arc_genes.insert(gene_uniquename.to_owned(), arc_gene_details.clone());
                Some(arc_gene_details)
+           } else {
+               None
+           }
+        }
+    }
+
+    fn get_reference(&self, reference_uniquename: &ReferenceUniquename) -> Option<Arc<ReferenceDetails>> {
+        let mut arc_references = self.arc_references.write().unwrap();
+        if let Some(arc_reference_details) = arc_references.get(reference_uniquename) {
+            Some(arc_reference_details.to_owned())
+        } else {
+           if let Some(reference_details) = self.references.get(reference_uniquename) {
+               let arc_reference_details = Arc::new(reference_details.to_owned());
+               arc_references.insert(reference_uniquename.to_owned(), arc_reference_details.clone());
+               Some(arc_reference_details)
            } else {
                None
            }
@@ -1197,7 +1213,7 @@ impl WebData {
                 let ref_uniquename = &measurement.reference_uniquename;
 
                 let ref_authors_abbrev =
-                    if let Some(ref_details) = self.api_maps.references.get(ref_uniquename) {
+                    if let Some(ref_details) = self.references.get(ref_uniquename) {
                         if let Some(ref authors_abbrev) = ref_details.authors_abbrev {
                             authors_abbrev.split(char::is_whitespace).next().unwrap_or("NA")
                         } else {
@@ -1262,7 +1278,8 @@ impl WebData {
         Ok(())
     }
 
-    fn write_site_map_txt(&self, config: &Config, doc_config: &DocConfig, output_dir: &str)
+    fn write_site_map_txt(&self, config: &Config, doc_config: &DocConfig,
+                          references: &UniquenameReferenceMap, output_dir: &str)
                           -> Result<(), io::Error>
     {
         let base_url = &config.base_url;
@@ -1305,7 +1322,7 @@ impl WebData {
             s += &format!("{}/term/{}\n", base_url, term_details.termid);
         }
 
-        for ref_details in self.api_maps.references.values() {
+        for ref_details in references.values() {
             if ref_details.cv_annotations.is_empty() &&
                ref_details.physical_interactions.is_empty() &&
                ref_details.genetic_interactions.is_empty() &&
@@ -1454,10 +1471,13 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write_apicuron_files(&self, output_dir: &str) -> Result<(), io::Error> {
+    pub fn write_apicuron_files(&self, references: &UniquenameReferenceMap,
+                                output_dir: &str)
+             -> Result<(), io::Error>
+    {
         let mut curator_details = HashMap::new();
 
-        for ref_details in self.api_maps.references.values() {
+        for ref_details in references.values() {
             if ref_details.cv_annotations.is_empty() {
                 continue;
             }
@@ -1577,13 +1597,13 @@ impl WebData {
         self.write_slim_ids_and_names(config, &misc_path)?;
         self.write_transmembrane_domains(config, &misc_path)?;
         self.write_gene_expression_table(&misc_path)?;
-        self.write_site_map_txt(config, doc_config, &misc_path)?;
+        self.write_site_map_txt(config, doc_config, &self.references, &misc_path)?;
         self.write_allele_tsv(&misc_path)?;
         self.write_disease_association(config, &misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
 
-        self.write_apicuron_files(&misc_path)?;
+        self.write_apicuron_files(&self.references, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 

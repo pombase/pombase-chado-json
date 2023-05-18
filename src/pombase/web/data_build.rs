@@ -4927,7 +4927,6 @@ phenotypes, so just the first part of this extension will be used:
             transcripts: self.transcripts,
             alleles: self.alleles,
             interactors_of_genes,
-            references: self.references,
             other_features: self.other_features,
             seq_feature_page_features,
             annotation_details: self.annotation_details,
@@ -6607,8 +6606,10 @@ phenotypes, so just the first part of this extension will be used:
             ont_annotations,
             stats,
 
+            // used to implement the DataLookup trait:
             arc_terms: Arc::new(RwLock::new(HashMap::new())),
             arc_genes: Arc::new(RwLock::new(HashMap::new())),
+            arc_references: Arc::new(RwLock::new(HashMap::new())),
             arc_genotypes: Arc::new(RwLock::new(HashMap::new())),
         }
     }

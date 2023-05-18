@@ -27,7 +27,7 @@ use crate::web::config::{Config, TermAndName};
 use crate::api::query::{SingleOrMultiLocus, QueryExpressionFilter};
 use crate::web::cv_summary::make_cv_summaries;
 
-use crate::types::{TermId, GeneUniquename, GenotypeDisplayUniquename, GenotypeUniquename};
+use crate::types::{TermId, GeneUniquename, GenotypeDisplayUniquename, GenotypeUniquename, ReferenceUniquename};
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
@@ -46,6 +46,12 @@ impl DataLookup for APIData {
         self.maps_database.get_gene(gene_uniquename)
     }
 
+    fn get_reference(&self, reference_uniquename: &ReferenceUniquename)
+           -> Option<Arc<ReferenceDetails>>
+    {
+        self.maps_database.get_reference(reference_uniquename)
+    }
+
     fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
            -> Option<Arc<GenotypeDetails>>
     {
@@ -57,6 +63,7 @@ pub struct APIMapsDatabase {
     api_maps_database_conn: Arc<Mutex<Connection>>,
     genotype_cache: RwLock<HashMap<GenotypeUniquename, Arc<GenotypeDetails>>>,
     term_cache: RwLock<HashMap<TermId, Arc<TermDetails>>>,
+    reference_cache: RwLock<HashMap<ReferenceUniquename, Arc<ReferenceDetails>>>,
     gene_cache: RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>,
 }
 
@@ -66,6 +73,7 @@ impl APIMapsDatabase {
             api_maps_database_conn: Arc::new(Mutex::new(api_maps_database_conn)),
             genotype_cache: RwLock::new(HashMap::new()),
             term_cache: RwLock::new(HashMap::new()),
+            reference_cache: RwLock::new(HashMap::new()),
             gene_cache: RwLock::new(HashMap::new()),
         }
     }
@@ -134,6 +142,39 @@ impl APIMapsDatabase {
         let term_value = cache.get(termid);
 
         term_value.map(|t| t.to_owned())
+    }
+
+    pub fn get_reference(&self, reference_uniquename: &ReferenceUniquename)
+           -> Option<Arc<ReferenceDetails>>
+    {
+        let mut cache = self.reference_cache.write().unwrap();
+
+        if !cache.contains_key(reference_uniquename) {
+            let conn = self.api_maps_database_conn.lock().unwrap();
+
+            let mut stmt = conn.prepare("SELECT data FROM references WHERE id = :id").unwrap();
+
+            let mut references =
+                stmt.query_map(&[(":id", reference_uniquename.as_ref())],
+                               |row| {
+                                   let json: String = row.get(0)?;
+                                   let reference_details: ReferenceDetails =
+                                       serde_json::from_str(&json).unwrap();
+                                   Ok(reference_details)
+                               }).unwrap();
+
+            let result_reference = references.next();
+
+            let maybe_reference = result_reference.map(|g| g.unwrap());
+
+            if let Some(reference_details) = maybe_reference {
+                cache.insert(reference_uniquename.clone(), Arc::new(reference_details));
+            }
+        }
+
+        let reference_value = cache.get(reference_uniquename);
+
+        reference_value.map(|t| t.to_owned())
     }
 
     pub fn get_gene(&self, gene_uniquename: &GeneUniquename)
@@ -631,7 +672,8 @@ impl APIData {
     fn fill_reference_map(&self, reference_map: &ReferenceShortOptionMap) -> ReferenceShortOptionMap {
         let mut ret = reference_map.clone();
         for reference_uniquename in reference_map.keys() {
-            let reference_details = &self.maps.references[reference_uniquename];
+            let reference_arc = &self.get_reference(reference_uniquename).unwrap();
+            let reference_details = reference_arc.as_ref();
             let reference_short = ReferenceShort::from_reference_details(reference_details);
             ret.insert(reference_uniquename.clone(), Some(reference_short));
         }
@@ -746,8 +788,8 @@ impl APIData {
 
     pub fn get_reference_details(&self, reference_uniquename: &str) -> Option<ReferenceDetails> {
         let reference_uniquename = reference_uniquename.to_shared_str();
-        if let Some(reference_ref) = self.maps.references.get(&reference_uniquename) {
-            let mut reference = reference_ref.clone();
+        if let Some(reference_ref) = self.get_reference(&reference_uniquename) {
+            let mut reference = reference_ref.as_ref().to_owned();
             let details_map = self.detail_map_of_cv_annotations(&reference.cv_annotations);
             reference.terms_by_termid = self.fill_term_map(&reference.terms_by_termid);
             reference.genes_by_uniquename = self.fill_gene_map(&reference.genes_by_uniquename);
