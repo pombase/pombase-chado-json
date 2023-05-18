@@ -41,6 +41,11 @@ impl DataLookup for APIData {
     fn get_term(&self, termid: &TermId) -> Option<Arc<TermDetails>> {
         self.maps_database.get_term(termid)
     }
+
+    fn get_gene(&self, gene_uniquename: &GeneUniquename) -> Option<Arc<GeneDetails>> {
+        self.maps_database.get_gene(gene_uniquename)
+    }
+
     fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
            -> Option<Arc<GenotypeDetails>>
     {
@@ -52,6 +57,7 @@ pub struct APIMapsDatabase {
     api_maps_database_conn: Arc<Mutex<Connection>>,
     genotype_cache: RwLock<HashMap<GenotypeUniquename, Arc<GenotypeDetails>>>,
     term_cache: RwLock<HashMap<TermId, Arc<TermDetails>>>,
+    gene_cache: RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>,
 }
 
 impl APIMapsDatabase {
@@ -60,6 +66,7 @@ impl APIMapsDatabase {
             api_maps_database_conn: Arc::new(Mutex::new(api_maps_database_conn)),
             genotype_cache: RwLock::new(HashMap::new()),
             term_cache: RwLock::new(HashMap::new()),
+            gene_cache: RwLock::new(HashMap::new()),
         }
     }
 
@@ -127,6 +134,39 @@ impl APIMapsDatabase {
         let term_value = cache.get(termid);
 
         term_value.map(|t| t.to_owned())
+    }
+
+    pub fn get_gene(&self, gene_uniquename: &GeneUniquename)
+           -> Option<Arc<GeneDetails>>
+    {
+        let mut cache = self.gene_cache.write().unwrap();
+
+        if !cache.contains_key(gene_uniquename) {
+            let conn = self.api_maps_database_conn.lock().unwrap();
+
+            let mut stmt = conn.prepare("SELECT data FROM genes WHERE id = :id").unwrap();
+
+            let mut genes =
+                stmt.query_map(&[(":id", gene_uniquename.as_ref())],
+                               |row| {
+                                   let json: String = row.get(0)?;
+                                   let gene_details: GeneDetails =
+                                       serde_json::from_str(&json).unwrap();
+                                   Ok(gene_details)
+                               }).unwrap();
+
+            let result_gene = genes.next();
+
+            let maybe_gene = result_gene.map(|g| g.unwrap());
+
+            if let Some(gene_details) = maybe_gene {
+                cache.insert(gene_uniquename.clone(), Arc::new(gene_details));
+            }
+        }
+
+        let gene_value = cache.get(gene_uniquename);
+
+        gene_value.map(|t| t.to_owned())
     }
 }
 
@@ -222,8 +262,8 @@ impl APIData {
         self.maps.gene_summaries.get(gene_uniquename)
     }
 
-    pub fn get_gene_details(&self, gene_uniquename: &FlexStr) -> Option<&GeneDetails> {
-        self.maps.genes.get(gene_uniquename)
+    pub fn get_gene_details(&self, gene_uniquename: &FlexStr) -> Option<Arc<GeneDetails>> {
+        self.get_gene(gene_uniquename)
     }
 
     pub fn get_gene_query_data(&self, gene_uniquename: &FlexStr) -> Option<&GeneQueryData> {
@@ -570,7 +610,8 @@ impl APIData {
     fn fill_gene_map(&self, gene_map: &GeneShortOptionMap) -> GeneShortOptionMap {
         let mut ret = gene_map.clone();
         for gene_uniquename in gene_map.keys() {
-            let gene_details = &self.maps.genes[gene_uniquename];
+            let gene_details_arc = self.get_gene(gene_uniquename).unwrap();
+            let gene_details = gene_details_arc.as_ref();
             let gene_short = GeneShort::from_gene_details(gene_details);
             ret.insert(gene_uniquename.clone(), Some(gene_short));
         }
@@ -600,8 +641,8 @@ impl APIData {
     // return a GeneDetails object with the term, genes and references maps filled in
     pub fn get_full_gene_details(&self, gene_uniquename: &str) -> Option<GeneDetails> {
         let gene_uniquename = gene_uniquename.to_shared_str();
-        if let Some(gene_ref) = self.maps.genes.get(&gene_uniquename) {
-            let mut gene = gene_ref.clone();
+        if let Some(gene_arc) = self.get_gene(&gene_uniquename) {
+            let mut gene = gene_arc.as_ref().to_owned();
             let details_map = self.detail_map_of_cv_annotations(&gene.cv_annotations);
             gene.terms_by_termid = self.fill_term_map(&gene.terms_by_termid);
             gene.genes_by_uniquename = self.fill_gene_map(&gene.genes_by_uniquename);
@@ -609,11 +650,10 @@ impl APIData {
             gene.references_by_uniquename =
                 self.fill_reference_map(&gene.references_by_uniquename);
             sort_cv_annotation_details(&mut gene, &self.config,
-                                       &self.maps.genes,
-                                       &self,
+                                       self,
                                        &details_map);
             make_cv_summaries(&mut gene, &self.config, &self.maps.children_by_termid,
-                              false, true, &self.maps.genes, self,
+                              false, true, self,
                               &details_map);
 
             gene.annotation_details = details_map;
@@ -634,11 +674,10 @@ impl APIData {
             genotype.references_by_uniquename =
                 self.fill_reference_map(&genotype.references_by_uniquename);
             sort_cv_annotation_details(&mut genotype, &self.config,
-                                       &self.maps.genes,
                                        self,
                                        &details_map);
             make_cv_summaries(&mut genotype, &self.config, &self.maps.children_by_termid,
-                              false, false, &self.maps.genes, self,
+                              false, false, self,
                               &details_map);
             genotype.annotation_details = details_map;
             Some(genotype)
@@ -680,11 +719,10 @@ impl APIData {
         term.references_by_uniquename =
             self.fill_reference_map(&term.references_by_uniquename);
         sort_cv_annotation_details(&mut term, &self.config,
-                                   &self.maps.genes,
                                    self,
                                    &details_map);
         make_cv_summaries(&mut term, &self.config, &self.maps.children_by_termid,
-                          true, true, &self.maps.genes, self,
+                          true, true, self,
                           &details_map);
         term.annotation_details = details_map;
         Some(term)
@@ -715,11 +753,10 @@ impl APIData {
             reference.genes_by_uniquename = self.fill_gene_map(&reference.genes_by_uniquename);
             reference.transcripts_by_uniquename = self.fill_transcript_map(&reference.transcripts_by_uniquename);
             sort_cv_annotation_details(&mut reference, &self.config,
-                                       &self.maps.genes,
                                        self,
                                        &details_map);
             make_cv_summaries(&mut reference, &self.config, &self.maps.children_by_termid,
-                              true, true, &self.maps.genes, self,
+                              true, true, self,
                               &details_map);
             reference.annotation_details = details_map;
             Some(reference)

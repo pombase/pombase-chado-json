@@ -57,9 +57,9 @@ fn test_remove_first_string() {
     assert_eq!(arr.len(), 0);
 }
 
-pub fn make_gene_short<'b>(gene_map: &'b UniquenameGeneMap,
-                           gene_uniquename: &'b FlexStr) -> GeneShort {
-    if let Some(gene_details) = gene_map.get(gene_uniquename) {
+pub fn make_gene_short(data_lookup: &dyn DataLookup,
+                       gene_uniquename: &FlexStr) -> GeneShort {
+    if let Some(gene_details) = data_lookup.get_gene(gene_uniquename) {
         GeneShort {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),

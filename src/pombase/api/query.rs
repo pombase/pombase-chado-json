@@ -890,7 +890,7 @@ impl Query {
                 let result = write_go_annotation_format(&mut gaf_bytes, api_data.get_config(),
                                                         api_data, api_data.get_maps(),
                                                         GpadGafWriteMode::PomBaseGaf,
-                                                        gene_details,
+                                                        gene_details.as_ref(),
                                                         &api_data.get_maps().transcripts,
                                                         aspect);
 

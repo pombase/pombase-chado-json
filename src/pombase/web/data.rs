@@ -24,7 +24,7 @@ use crate::constants::*;
 use crate::web::config::*;
 use crate::rnacentral::*;
 
-use crate::types::{CvName, TermId, GenotypeDisplayUniquename};
+use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename};
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
@@ -52,6 +52,7 @@ pub struct WebData {
     pub stats: Stats,
 
     pub arc_terms: Arc<RwLock<HashMap<TermId, Arc<TermDetails>>>>,
+    pub arc_genes: Arc<RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>>,
     pub arc_genotypes: Arc<RwLock<HashMap<GenotypeDisplayUniquename, Arc<GenotypeDetails>>>>,
 }
 
@@ -70,6 +71,22 @@ impl DataLookup for WebData {
            }
         }
     }
+
+    fn get_gene(&self, gene_uniquename: &GeneUniquename) -> Option<Arc<GeneDetails>> {
+        let mut arc_genes = self.arc_genes.write().unwrap();
+        if let Some(arc_gene_details) = arc_genes.get(gene_uniquename) {
+            Some(arc_gene_details.to_owned())
+        } else {
+           if let Some(gene_details) = self.genes.get(gene_uniquename) {
+               let arc_gene_details = Arc::new(gene_details.to_owned());
+               arc_genes.insert(gene_uniquename.to_owned(), arc_gene_details.clone());
+               Some(arc_gene_details)
+           } else {
+               None
+           }
+        }
+    }
+
     fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
            -> Option<Arc<GenotypeDetails>>
     {
@@ -254,7 +271,7 @@ impl WebData {
             };
 
         let intermine_genes: Vec<_> =
-            self.api_maps.genes.values()
+            self.genes.values()
             .filter(|gene_details| gene_details.taxonid == load_org_taxonid)
             .map(|gene_details| {
                 InterMineGeneDetails::from_gene_details(&self.api_maps.transcripts,
@@ -301,7 +318,7 @@ impl WebData {
         let mut three_prime_utrs_writer = make_seq_writer("three_prime_utrs.fa");
         let mut peptide_writer = make_seq_writer("peptide.fa");
 
-        for (gene_uniquename, gene_details) in &self.api_maps.genes {
+        for (gene_uniquename, gene_details) in &self.genes {
             if let Some(transcript_uniquename) =
                 gene_details.transcripts.get(0)
             {
@@ -469,7 +486,7 @@ impl WebData {
             "gene_systematic_id\tgene_systematic_id_with_prefix\tgene_name\tchromosome_id\tgene_product\tuniprot_id\tgene_type\tsynonyms\n";
         write!(all_ids_writer, "{}", big_header)?;
 
-        for gene_details in self.api_maps.genes.values() {
+        for gene_details in self.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid {
                 if gene_details.taxonid != load_org_taxonid {
                     continue;
@@ -622,7 +639,7 @@ impl WebData {
 
         let mut compositions_to_write = vec![];
 
-        for (gene_uniquename, gene_details) in &self.api_maps.genes {
+        for (gene_uniquename, gene_details) in &self.genes {
             if let Some(transcript_uniquename) =
                 gene_details.transcripts.get(0)
             {
@@ -751,7 +768,7 @@ impl WebData {
             let mut exon_writer = BufWriter::new(&exon_file);
 
             for gene_uniquename in &chr_details.gene_uniquenames {
-                let gene = &self.api_maps.genes[gene_uniquename];
+                let gene = &self.genes[gene_uniquename];
                 if let Some(ref gene_location) = gene.location {
                     write_line(gene_uniquename, gene_location, &mut gene_writer)?;
 
@@ -863,7 +880,7 @@ impl WebData {
                 chr_writers.insert(uniquename, make_chr_gff_writer(&chr_config.export_file_id));
             }
 
-            for gene_details in self.api_maps.genes.values() {
+            for gene_details in self.genes.values() {
                 if let Some(ref gene_loc) = gene_details.location {
                     let chromosome_name = &gene_loc.chromosome_name;
                     let chromosome_export_id =
@@ -1033,7 +1050,7 @@ impl WebData {
             let rnacentral_file = File::create(rnacentral_file_name).expect("Unable to open file");
             let mut rnacentral_writer = BufWriter::new(&rnacentral_file);
             let rnacentral_struct = make_rnacentral_struct(config, &self.api_maps.transcripts,
-                                                           &self.api_maps.genes);
+                                                           &self.genes);
             let s = serde_json::to_string(&rnacentral_struct).unwrap();
 
             rnacentral_writer.write_all(s.as_bytes())?;
@@ -1053,7 +1070,7 @@ impl WebData {
             File::create(deletion_viability_file_name).expect("Unable to open file");
         let mut deletion_viability_writer = BufWriter::new(&deletion_viability_file);
 
-        for gene_details in self.api_maps.genes.values() {
+        for gene_details in self.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid {
                 if gene_details.taxonid != load_org_taxonid {
                     continue;
@@ -1133,7 +1150,7 @@ impl WebData {
                     coords, seqs)
         };
 
-        for gene_details in self.api_maps.genes.values() {
+        for gene_details in self.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid {
                 if gene_details.taxonid != load_org_taxonid {
                     continue;
@@ -1258,7 +1275,7 @@ impl WebData {
             }
         }
 
-        for gene_details in self.api_maps.genes.values() {
+        for gene_details in self.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid {
                 if gene_details.taxonid != load_org_taxonid {
                     continue;
@@ -1368,7 +1385,7 @@ impl WebData {
         let header = "#gene_systematic_id\tgene_name\tmondo_id\treference\tdate\n";
         writer.write_all(header.as_bytes())?;
 
-        for gene_details in self.api_maps.genes.values() {
+        for gene_details in self.genes.values() {
             if gene_details.taxonid != load_org_taxonid {
                 continue;
             }
@@ -1426,7 +1443,8 @@ impl WebData {
 
         let mut writer = BufWriter::new(&file);
 
-        let table = table_for_export(&self.api_maps, &self.genotypes, &self.terms, cv_config_map, subset_config);
+        let table = table_for_export(self, &self.api_maps.annotation_details,
+                                     cv_config_map, subset_config);
 
         for row in table {
             let line = join(&row, "\t") + "\n";

@@ -4,7 +4,6 @@ use std::hash::{Hash, Hasher};
 
 use std::collections::{HashSet, HashMap};
 
-use crate::api_data::APIData;
 use crate::types::*;
 use crate::data_types::*;
 use crate::web::config::*;
@@ -18,20 +17,19 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      config: &Config,
      children_by_termid: &HashMap<TermId, HashSet<TermId>>,
      include_gene: bool, include_genotype: bool,
-     gene_map: &UniquenameGeneMap,
-     api_data: &APIData,
+     data_lookup: &dyn DataLookup,
      annotation_details: &IdOntAnnotationDetailMap) {
     for (cv_name, term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name(cv_name);
         make_cv_summary(&cv_config, children_by_termid,
                         include_gene, include_genotype, term_annotations,
-                        gene_map, api_data, annotation_details);
+                        data_lookup, annotation_details);
     }
 }
 
 // merge two ExtPart objects into one by merging ranges
 pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
-                             genes: &UniquenameGeneMap) -> ExtPart {
+                             data_lookup: &dyn DataLookup) -> ExtPart {
     if ext_part1.rel_type_display_name == ext_part2.rel_type_display_name {
         match ext_part1.ext_range {
             ExtRange::SummaryGenes(ref part1_summ_genes) => {
@@ -40,9 +38,9 @@ pub fn merge_ext_part_ranges(ext_part1: &ExtPart, ext_part2: &ExtPart,
                     let mut new_gene_uniquenames = [part1_summ_genes.clone(), part2_summ_genes.clone()].concat();
                     let cmp =
                         |vec1: &Vec<FlexStr>, vec2: &Vec<FlexStr>| {
-                            let gene1 = &genes[&vec1[0]];
-                            let gene2 = &genes[&vec2[0]];
-                            gene1.cmp(gene2)
+                            let gene1 = data_lookup.get_gene(&vec1[0]).unwrap();
+                            let gene2 = data_lookup.get_gene(&vec2[0]).unwrap();
+                            gene1.as_ref().cmp(gene2.as_ref())
                         };
                     new_gene_uniquenames.sort_by(cmp);
                     new_gene_uniquenames.dedup();
@@ -102,7 +100,7 @@ to merge_ext_part_ranges(): {:?} {:?}", ext_part1, ext_part2);
 
 // turn "has_substrate(gene1)" "has_substrate(gene2)" into "has_substrate(gene1,gene2)"
 pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
-                                 genes: &UniquenameGeneMap) {
+                                 data_lookup: &dyn DataLookup) {
 
     let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
     let merge_range_rel_p =
@@ -145,7 +143,7 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
                                 let merged_ext_parts =
                                     merge_ext_part_ranges(&prev_ext_part,
                                                           &current_ext_part,
-                                                          genes);
+                                                          data_lookup);
                                 let mut new_ext = prev_row_extension.clone();
                                 new_ext.insert(prev_removed_index, merged_ext_parts);
                                 prev_row.extension = new_ext;
@@ -164,13 +162,13 @@ pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummar
     *rows = ret_rows;
 }
 
-fn sort_genotype_uniquenames(api_data: &APIData,
+fn sort_genotype_uniquenames(data_lookup: &dyn DataLookup,
                              genotype_uniquenames: &mut [FlexStr]) {
     let cmp_genotype_ploidiness =
         |genotype_a_uniquename: &FlexStr, genotype_b_uniquename: &FlexStr| {
-            let genotype_a = api_data.get_genotype(genotype_a_uniquename)
+            let genotype_a = data_lookup.get_genotype(genotype_a_uniquename)
                 .unwrap_or_else(|| panic!("missing genotype {}", genotype_a_uniquename));
-            let genotype_b = api_data.get_genotype(genotype_b_uniquename)
+            let genotype_b = data_lookup.get_genotype(genotype_b_uniquename)
                 .unwrap_or_else(|| panic!("missing genotype {}", genotype_b_uniquename));
 
             let genotype_a_ploidiness = genotype_a.ploidiness();
@@ -191,7 +189,7 @@ fn sort_genotype_uniquenames(api_data: &APIData,
 }
 
 // combine rows that have a gene or genotype but no extension into one row
-fn collect_summary_rows(genes: &UniquenameGeneMap, api_data: &APIData,
+fn collect_summary_rows(data_lookup: &dyn DataLookup,
                         rows: &mut Vec<TermSummaryRow>) {
     let mut no_ext_rows = vec![];
     let mut other_rows = vec![];
@@ -218,9 +216,9 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, api_data: &APIData,
 
     let gene_cmp =
         |uniquename1: &FlexStr, uniquename2: &FlexStr| {
-            let gene1 = genes.get(uniquename1).unwrap();
-            let gene2 = genes.get(uniquename2).unwrap();
-            gene1.cmp(gene2)
+            let gene1 = data_lookup.get_gene(uniquename1).unwrap();
+            let gene2 = data_lookup.get_gene(uniquename2).unwrap();
+            gene1.as_ref().cmp(gene2.as_ref())
         };
     gene_uniquenames.sort_by(gene_cmp);
     gene_uniquenames.dedup();
@@ -230,7 +228,7 @@ fn collect_summary_rows(genes: &UniquenameGeneMap, api_data: &APIData,
         .map(|row| row.genotype_uniquenames[0].clone())
         .collect();
 
-    sort_genotype_uniquenames(api_data, &mut genotype_uniquenames);
+    sort_genotype_uniquenames(data_lookup, &mut genotype_uniquenames);
 
     rows.clear();
 
@@ -442,8 +440,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                    children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                    include_gene: bool, include_genotype: bool,
                    term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
-                   genes: &UniquenameGeneMap,
-                   api_data: &APIData,
+                   data_lookup: &dyn DataLookup,
                    annotation_details: &IdOntAnnotationDetailMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
         let mut rows = vec![];
@@ -492,7 +489,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                     vec![]
                 };
 
-            sort_genotype_uniquenames(api_data, &mut genotype_uniquenames);
+            sort_genotype_uniquenames(data_lookup, &mut genotype_uniquenames);
 
             let summary_relations_to_hide = &cv_config.summary_relations_to_hide;
 
@@ -545,8 +542,8 @@ fn make_cv_summary(cv_config: &CvConfig,
 
     for term_and_annotations in &mut term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
-            collect_summary_rows(genes, api_data, summary);
-            collect_ext_summary_genes(cv_config, summary, genes);
+            collect_summary_rows(data_lookup, summary);
+            collect_ext_summary_genes(cv_config, summary, data_lookup);
         }
     }
 }

@@ -4,12 +4,12 @@ use flexstr::SharedStr as FlexStr;
 
 use crate::web::config::{CvConfig, AnnotationSubsetConfig};
 use crate::types::CvName;
-use crate::data_types::{APIMaps, IdGenotypeMap, TermIdDetailsMap};
+use crate::data_types::{DataLookup, IdOntAnnotationDetailMap};
 use crate::utils::join;
 
 
-pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
-                        terms: &TermIdDetailsMap,
+pub fn table_for_export(data_lookup: &dyn DataLookup,
+                        annotation_details_map: &IdOntAnnotationDetailMap,
                         cv_config_map: &HashMap<CvName, CvConfig>,
                         subset_config: &AnnotationSubsetConfig)
     -> Vec<Vec<FlexStr>>
@@ -19,7 +19,7 @@ pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
     let mut result: Vec<Vec<FlexStr>> = vec![];
 
     for termid in &subset_config.term_ids {
-        let term_details = terms.get(termid)
+        let term_details = data_lookup.get_term(termid)
             .unwrap_or_else(|| panic!("no term details found for {} for config file", termid));
 
         for (cv_name, term_annotations) in &term_details.cv_annotations {
@@ -34,7 +34,7 @@ pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
 
-                let annotation_term_details = terms.get(termid).unwrap();
+                let annotation_term_details = data_lookup.get_term(termid).unwrap();
 
                 if term_annotation.is_not {
                     continue;
@@ -42,14 +42,14 @@ pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
 
                 for annotation_id in &term_annotation.annotations {
                     let mut row = vec![];
-                    let annotation_details = api_maps.annotation_details
+                    let annotation_details = annotation_details_map
                         .get(annotation_id).expect("can't find OntAnnotationDetail");
 
                     let gene_uniquenames = &annotation_details.genes;
 
-                    let maybe_genotype_short =
+                    let maybe_genotype_details =
                         if let Some(ref genotype_uniquename) = annotation_details.genotype {
-                            genotypes.get(genotype_uniquename)
+                            data_lookup.get_genotype(genotype_uniquename)
                         } else {
                             None
                         };
@@ -66,8 +66,8 @@ pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
                             row.push(term_name);
                         }
                         if column_config.name == "allele" {
-                            if let Some(genotype_short) = maybe_genotype_short {
-                                row.push(genotype_short.display_uniquename.clone());
+                            if let Some(ref genotype_details) = maybe_genotype_details {
+                                row.push(genotype_details.display_uniquename.clone());
                             }
                         }
                         if column_config.name == "gene_uniquename" {
@@ -78,7 +78,7 @@ pub fn table_for_export(api_maps: &APIMaps, genotypes: &IdGenotypeMap,
 
                             let filtered_gene_uniquenames = gene_uniquenames.iter()
                                 .filter_map(|uniquename| {
-                                   api_maps.genes.get(uniquename).unwrap().name.clone()
+                                   data_lookup.get_gene(uniquename).unwrap().name.clone()
                                 }).collect::<Vec<_>>();
 
                             row.push(join(&filtered_gene_uniquenames, ","));

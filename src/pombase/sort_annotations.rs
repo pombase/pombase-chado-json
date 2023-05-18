@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 
-use crate::api_data::APIData;
 use crate::types::*;
 use crate::data_types::*;
 use crate::utils::join;
@@ -19,17 +18,17 @@ fn gene_display_name(gene: &GeneDetails) -> FlexStr {
 }
 
 fn string_from_ext_range(ext_range: &ExtRange,
-                         genes: &UniquenameGeneMap, api_data: &APIData) -> FlexStr {
+                        data_lookup: &dyn DataLookup) -> FlexStr {
     match *ext_range {
         ExtRange::Gene(ref gene_uniquename) | ExtRange::Promoter(ref gene_uniquename) => {
-            let gene = genes.get(gene_uniquename)
+            let gene = data_lookup.get_gene(gene_uniquename)
                 .unwrap_or_else(|| panic!("can't find gene: {}", gene_uniquename));
-            gene_display_name(gene)
+            gene_display_name(gene.as_ref())
         },
         ExtRange::Transcript(ref transcript_uniquename) => transcript_uniquename.clone(),
         ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::SummaryTranscripts(_) => panic!("can't handle SummaryTranscripts\n"),
-        ExtRange::Term(ref termid) => api_data.get_term(termid).unwrap().name.clone(),
+        ExtRange::Term(ref termid) => data_lookup.get_term(termid).unwrap().name.clone(),
         ExtRange::ModifiedResidues(ref residue) => join(residue, ","),
         ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
         ExtRange::Misc(ref misc) => misc.clone(),
@@ -42,13 +41,12 @@ fn string_from_ext_range(ext_range: &ExtRange,
 }
 
 fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart,
-                genes: &UniquenameGeneMap,
-                api_data: &APIData) -> Ordering {
+                data_lookup: &dyn DataLookup) -> Ordering {
     let ord = ext_part1.rel_type_display_name.cmp(&ext_part2.rel_type_display_name);
 
     if ord == Ordering::Equal {
-        let ext_part1_str = string_from_ext_range(&ext_part1.ext_range, genes, api_data);
-        let ext_part2_str = string_from_ext_range(&ext_part2.ext_range, genes, api_data);
+        let ext_part1_str = string_from_ext_range(&ext_part1.ext_range, data_lookup);
+        let ext_part2_str = string_from_ext_range(&ext_part2.ext_range, data_lookup);
 
         ext_part1_str.to_lowercase().cmp(&ext_part2_str.to_lowercase())
     } else {
@@ -58,8 +56,7 @@ fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart,
 
 // compare the extension up to the last common index
 fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart],
-                        genes: &UniquenameGeneMap,
-                        api_data: &APIData) -> Ordering {
+                        data_lookup: &dyn DataLookup) -> Ordering {
     let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
 
     let is_grouping_rel_name =
@@ -77,7 +74,7 @@ fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart]
 
     let iter = ext1_for_cmp.iter().zip(&ext2_for_cmp).enumerate();
     for (_, (ext1_part, ext2_part)) in iter {
-        let ord = cmp_ext_part(ext1_part, ext2_part, genes, api_data);
+        let ord = cmp_ext_part(ext1_part, ext2_part, data_lookup);
 
         if ord != Ordering::Equal {
             return ord
@@ -88,9 +85,8 @@ fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart]
 }
 
 fn cmp_extension(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart],
-                 genes: &UniquenameGeneMap,
-                 api_data: &APIData) -> Ordering {
-    let cmp = cmp_extension_prefix(cv_config, ext1, ext2, genes, api_data);
+                 data_lookup: &dyn DataLookup) -> Ordering {
+    let cmp = cmp_extension_prefix(cv_config, ext1, ext2, data_lookup);
     if cmp == Ordering::Equal {
         ext1.len().cmp(&ext2.len())
     } else {
@@ -104,17 +100,17 @@ fn cmp_genotypes(genotype1: &GenotypeDetails, genotype2: &GenotypeDetails) -> Or
 
 
 // compare two gene vectors which must be ordered vecs
-fn cmp_gene_vec(genes: &UniquenameGeneMap,
+fn cmp_gene_vec(data_lookup: &dyn DataLookup,
                 gene_vec1: &[GeneUniquename],
                 gene_vec2: &[GeneUniquename]) -> Ordering {
 
     let gene_short_vec1: Vec<GeneShort> =
         gene_vec1.iter().map(|gene_uniquename: &FlexStr| {
-            make_gene_short(genes, gene_uniquename)
+            make_gene_short(data_lookup, gene_uniquename)
         }).collect();
     let gene_short_vec2: Vec<GeneShort> =
         gene_vec2.iter().map(|gene_uniquename: &FlexStr| {
-            make_gene_short(genes, gene_uniquename)
+            make_gene_short(data_lookup, gene_uniquename)
         }).collect();
 
     gene_short_vec1.cmp(&gene_short_vec2)
@@ -124,18 +120,17 @@ fn cmp_gene_vec(genes: &UniquenameGeneMap,
 pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                                  detail1: &OntAnnotationDetail,
                                  detail2: &OntAnnotationDetail,
-                                 genes: &UniquenameGeneMap,
-                                 api_data: &APIData) -> Result<Ordering, String> {
+                                 data_lookup: &dyn DataLookup) -> Result<Ordering, String> {
     if let Some(ref detail1_genotype_uniquename) = detail1.genotype {
         if let Some(ref detail2_genotype_uniquename) = detail2.genotype {
-            let genotype1 = api_data.get_genotype(detail1_genotype_uniquename).unwrap();
-            let genotype2 = api_data.get_genotype(detail2_genotype_uniquename).unwrap();
+            let genotype1 = data_lookup.get_genotype(detail1_genotype_uniquename).unwrap();
+            let genotype2 = data_lookup.get_genotype(detail2_genotype_uniquename).unwrap();
 
             let ord = cmp_genotypes(&genotype1, &genotype2);
 
             if ord == Ordering::Equal {
                 Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
-                                 genes, api_data))
+                                 data_lookup))
             } else {
                 Ok(ord)
             }
@@ -148,7 +143,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
             // needed to display the FYECO term pages
             Ok(Ordering::Greater)
         } else {
-            let ord = cmp_gene_vec(genes, &detail1.genes, &detail2.genes);
+            let ord = cmp_gene_vec(data_lookup, &detail1.genes, &detail2.genes);
 
             if ord == Ordering::Equal {
                 if let Some(ref sort_details_by) = cv_config.sort_details_by {
@@ -160,8 +155,8 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                             }
                         } else {
                             let res = cmp_extension(cv_config, &detail1.extension,
-                                                    &detail2.extension, genes,
-                                                    api_data);
+                                                    &detail2.extension,
+                                                    data_lookup);
                             if res != Ordering::Equal {
                                 return Ok(res);
                             }
@@ -170,7 +165,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                     Ok(Ordering::Equal)
                 } else {
                     Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
-                                     genes, api_data))
+                                     data_lookup))
                 }
             } else {
                 Ok(ord)
@@ -182,8 +177,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
 pub fn sort_cv_annotation_details<T: AnnotationContainer>
     (container: &mut T,
      config: &Config,
-     gene_map: &UniquenameGeneMap,
-     api_data: &APIData,
+     data_lookup: &dyn DataLookup,
      annotation_details_map: &IdOntAnnotationDetailMap)
 {
 
@@ -201,8 +195,7 @@ pub fn sort_cv_annotation_details<T: AnnotationContainer>
                 let result =
                     cmp_ont_annotation_detail(cv_config,
                                               annotation1, annotation2,
-                                              gene_map,
-                                              api_data);
+                                              data_lookup);
                 result.unwrap_or_else(|err| panic!("error from cmp_ont_annotation_detail: {}", err))
             } else {
                 Ordering::Equal
@@ -213,7 +206,7 @@ pub fn sort_cv_annotation_details<T: AnnotationContainer>
     for term_annotations in container.cv_annotations_mut().values_mut() {
         for term_annotation in term_annotations {
             let termid = &term_annotation.term;
-            if let Some(term_details) = api_data.get_term(termid) {
+            if let Some(term_details) = data_lookup.get_term(termid) {
                 let cmp = detail_cmp_using_cv_name(&term_details.cv_name);
                 term_annotation.annotations.sort_by(cmp);
             } else {

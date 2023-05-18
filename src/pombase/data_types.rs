@@ -60,6 +60,9 @@ use crate::rnacentral::RfamAnnotation;
 
 pub trait DataLookup {
     fn get_term(&self, termid: &TermId) -> Option<Arc<TermDetails>>;
+
+    fn get_gene(&self, gene_uniquename: &GeneUniquename) -> Option<Arc<GeneDetails>>;
+
     fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
            -> Option<Arc<GenotypeDetails>>;
 }
@@ -2100,7 +2103,6 @@ pub struct APIMaps {
     pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
     pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
     pub gene_query_data_map: HashMap<GeneUniquename, GeneQueryData>,
-    pub genes: UniquenameGeneMap,
     pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,
     pub alleles: UniquenameAlleleDetailsMap,

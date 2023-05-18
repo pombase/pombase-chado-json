@@ -4923,7 +4923,6 @@ phenotypes, so just the first part of this extension will be used:
             gene_query_data_map,
             termid_genes,
             termid_genotype_annotation,
-            genes: self.genes,
             gene_name_gene_map,
             transcripts: self.transcripts,
             alleles: self.alleles,
@@ -6609,6 +6608,7 @@ phenotypes, so just the first part of this extension will be used:
             stats,
 
             arc_terms: Arc::new(RwLock::new(HashMap::new())),
+            arc_genes: Arc::new(RwLock::new(HashMap::new())),
             arc_genotypes: Arc::new(RwLock::new(HashMap::new())),
         }
     }
