@@ -162,7 +162,7 @@ impl APIMapsDatabase {
         if !cache.contains_key(reference_uniquename) {
             let conn = self.api_maps_database_conn.lock().unwrap();
 
-            let mut stmt = conn.prepare("SELECT data FROM references WHERE id = :id").unwrap();
+            let mut stmt = conn.prepare("SELECT data FROM refs WHERE id = :id").unwrap();
 
             let mut references =
                 stmt.query_map(&[(":id", reference_uniquename.as_ref())],
