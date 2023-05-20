@@ -63,7 +63,7 @@ pub fn store_maps_into_database(conn: &mut Connection, terms: &TermIdDetailsMap,
     for (termid, genotype_annotations) in termid_genotype_annotation {
         let json = serde_json::value::to_value(genotype_annotations)?;
 
-        tx.execute("INSERT INTO termid_genotype_annotation (id, data) VALUES (?1, ?2)",
+        tx.execute("INSERT INTO termid_genotype_annotations (id, data) VALUES (?1, ?2)",
                    (termid.as_ref(), &json))?;
     }
 
