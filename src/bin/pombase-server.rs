@@ -98,30 +98,30 @@ async fn get_misc(mut path: PathBuf, state: &rocket::State<StaticFileState>,
 }
 
 #[get("/api/v1/dataset/latest/data/gene/<id>", rank=2)]
-async fn get_gene(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<GeneDetails>> {
-    query_exec.get_api_data().get_full_gene_details(&id).map(Json)
+async fn get_gene(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<GeneDetails>> {
+    query_exec.get_api_data().get_full_gene_details(id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/genotype/<id>", rank=2)]
-async fn get_genotype(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<GenotypeDetails>> {
-    query_exec.get_api_data().get_genotype_details(&id).map(Json)
+async fn get_genotype(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<GenotypeDetails>> {
+    query_exec.get_api_data().get_genotype_details(id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/allele/<id>", rank=2)]
-async fn get_allele(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<AlleleDetails>> {
-    query_exec.get_api_data().get_allele_details(&id).map(Json)
+async fn get_allele(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<AlleleDetails>> {
+    query_exec.get_api_data().get_allele_details(id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/term/<id>", rank=2)]
-async fn get_term(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<TermDetails>> {
-    query_exec.get_api_data().get_term_details(&id).map(Json)
+async fn get_term(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<TermDetails>> {
+    query_exec.get_api_data().get_term_details(id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/summary/term/<id>", rank=2)]
-async fn get_term_summary_by_id(id: String, search: &rocket::State<Search>)
+async fn get_term_summary_by_id(id: &str, search: &rocket::State<Search>)
                           -> Option<Json<TermLookupResponse>>
 {
-    let res = search.term_summary_by_id(&id).await;
+    let res = search.term_summary_by_id(id).await;
 
     let lookup_response =
         match res {
@@ -144,8 +144,8 @@ async fn get_term_summary_by_id(id: String, search: &rocket::State<Search>)
 }
 
 #[get("/api/v1/dataset/latest/data/reference/<id>", rank=2)]
-async fn get_reference(id: String, query_exec: &rocket::State<QueryExec>) -> Option<Json<ReferenceDetails>> {
-    query_exec.get_api_data().get_reference_details(&id).map(Json)
+async fn get_reference(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<ReferenceDetails>> {
+    query_exec.get_api_data().get_reference_details(id).map(Json)
 }
 
 #[get("/api/v1/dataset/latest/data/seq_feature_page_features", rank=2)]
@@ -165,7 +165,7 @@ async fn get_index(state: &rocket::State<StaticFileState>) -> Option<NamedFile> 
 Return a simple HTML version a gene page for search engines
 */
 #[get("/structure_view/<structure_type>/<id>", rank=1)]
-async fn structure_view(structure_type: String, id: String,
+async fn structure_view(structure_type: &str, id: &str,
                         config: &rocket::State<Config>)
                         -> Option<content::RawHtml<String>>
 {
@@ -197,9 +197,9 @@ async fn structure_view(structure_type: String, id: String,
 Return a simple HTML version a gene page for search engines
 */
 #[get("/simple/gene/<id>", rank=1)]
-async fn get_simple_gene(id: String, query_exec: &rocket::State<QueryExec>,
+async fn get_simple_gene(id: &str, query_exec: &rocket::State<QueryExec>,
                    config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    query_exec.get_api_data().get_full_gene_details(&id)
+    query_exec.get_api_data().get_full_gene_details(id)
         .map(|gene| content::RawHtml(render_simple_gene_page(config, &gene)))
 }
 
@@ -207,18 +207,18 @@ async fn get_simple_gene(id: String, query_exec: &rocket::State<QueryExec>,
 Return a simple HTML version a reference page for search engines
 */
 #[get("/simple/reference/<id>", rank=1)]
-async fn get_simple_reference(id: String, query_exec: &rocket::State<QueryExec>,
+async fn get_simple_reference(id: &str, query_exec: &rocket::State<QueryExec>,
                         config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    query_exec.get_api_data().get_reference_details(&id)
+    query_exec.get_api_data().get_reference_details(id)
         .map(|reference| content::RawHtml(render_simple_reference_page(config, &reference)))
 }
 /*
 Return a simple HTML version a term page for search engines
 */
 #[get("/simple/term/<id>", rank=1)]
-async fn get_simple_term(id: String, query_exec: &rocket::State<QueryExec>,
+async fn get_simple_term(id: &str, query_exec: &rocket::State<QueryExec>,
                    config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    query_exec.get_api_data().get_term_details(&id)
+    query_exec.get_api_data().get_term_details(id)
         .map(|term| content::RawHtml(render_simple_term_page(config, &term)))
 }
 
@@ -256,10 +256,10 @@ struct SolrSearchResponse  {
 }
 
 #[get ("/api/v1/dataset/latest/complete/term/<cv_name>/<q>", rank=1)]
-async fn term_complete(cv_name: String, q: String, search: &rocket::State<Search>)
+async fn term_complete(cv_name: &str, q: &str, search: &rocket::State<Search>)
               -> Option<Json<TermCompletionResponse>>
 {
-    let res = search.term_complete(&cv_name, &q).await;
+    let res = search.term_complete(cv_name, q).await;
 
     let completion_response =
         match res {
@@ -282,10 +282,10 @@ async fn term_complete(cv_name: String, q: String, search: &rocket::State<Search
 }
 
 #[get ("/api/v1/dataset/latest/complete/ref/<q>", rank=1)]
-async fn ref_complete(q: String, search: &rocket::State<Search>)
+async fn ref_complete(q: &str, search: &rocket::State<Search>)
                 -> Option<Json<RefCompletionResponse>>
 {
-    let res = search.ref_complete(&q).await;
+    let res = search.ref_complete(q).await;
 
     let completion_response =
         match res {
@@ -308,10 +308,10 @@ async fn ref_complete(q: String, search: &rocket::State<Search>)
 }
 
 #[get ("/api/v1/dataset/latest/complete/allele/<q>", rank=1)]
-async fn allele_complete(q: String, search: &rocket::State<Search>)
+async fn allele_complete(q: &str, search: &rocket::State<Search>)
                 -> Option<Json<AlleleCompletionResponse>>
 {
-    let res = search.allele_complete(&q).await;
+    let res = search.allele_complete(q).await;
 
     let completion_response =
         match res {
@@ -335,11 +335,11 @@ async fn allele_complete(q: String, search: &rocket::State<Search>)
 
 // search for terms, refs or docs that match the query
 #[get ("/api/v1/dataset/latest/search/<scope>/<q>", rank=1)]
-async fn solr_search(scope: String, q: String, search: &rocket::State<Search>)
+async fn solr_search(scope: &str, q: &str, search: &rocket::State<Search>)
     -> Option<Json<SolrSearchResponse>>
 {
-    if let Some(parsed_scope) = SolrSearchScope::new_from_str(&scope) {
-        let search_result = search.solr_search(&parsed_scope, &q).await;
+    if let Some(parsed_scope) = SolrSearchScope::new_from_str(scope) {
+        let search_result = search.solr_search(&parsed_scope, q).await;
 
         match search_result {
             Ok(search_all_result) => {
@@ -370,10 +370,10 @@ async fn solr_search(scope: String, q: String, search: &rocket::State<Search>)
 }
 
 #[get ("/api/v1/dataset/latest/motif_search/<scope>/<q>", rank=1)]
-async fn motif_search(scope: String, q: String, search: &rocket::State<Search>)
+async fn motif_search(scope: &str, q: &str, search: &rocket::State<Search>)
                 -> Option<String>
 {
-    let res = search.motif_search(&scope, &q).await;
+    let res = search.motif_search(scope, q).await;
 
     match res {
         Ok(search_result) => {
@@ -388,11 +388,11 @@ async fn motif_search(scope: String, q: String, search: &rocket::State<Search>)
 
 
 #[get ("/api/v1/dataset/latest/gene_ex_violin_plot/<plot_size>/<genes>", rank=1)]
-async fn gene_ex_violin_plot(plot_size: String, genes: String,
+async fn gene_ex_violin_plot(plot_size: &str, genes: &str,
                        search: &rocket::State<Search>)
                        -> Option<PNGPlot>
 {
-    let res = search.gene_ex_violin_plot(&plot_size, &genes).await;
+    let res = search.gene_ex_violin_plot(plot_size, genes).await;
 
     match res {
         Ok(png_plot) => {
