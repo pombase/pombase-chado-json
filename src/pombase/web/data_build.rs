@@ -2200,7 +2200,7 @@ phenotypes, so just the first part of this extension will be used:
                 "comment" => if let Some(ref comment) = prop.value {
                     let comment = CommentAndReference {
                       comment: comment.clone(),
-                      reference_uniquename:
+                      reference:
                          prop.featureprop_pubs.borrow().get(0)
                              .map(|publication| publication.uniquename.clone()),
                     };

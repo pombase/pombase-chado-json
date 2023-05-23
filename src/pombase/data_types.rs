@@ -1616,7 +1616,7 @@ impl From<&AlleleDetails> for AlleleShort {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CommentAndReference {
     pub comment: FlexStr,
-    pub reference_uniquename: Option<FlexStr>,
+    pub reference: Option<FlexStr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
