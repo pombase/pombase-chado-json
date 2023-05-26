@@ -1519,7 +1519,7 @@ checksum = "4389f1d5789befaf6029ebd9f7dac4af7f7e3d61b69d4f30e2ac02b57e7712b0"
 [[package]]
 name = "rocket"
 version = "0.5.0-rc.3"
-source = "git+https://github.com/SergioBenitez/Rocket.git#b6b060f75c5e5b5a1c2b859d458ffaa3f844b29e"
+source = "git+https://github.com/SergioBenitez/Rocket.git#be92fe648be37d76d57f2ae33825ee7868f57696"
 dependencies = [
  "async-stream",
  "async-trait",
@@ -1557,7 +1557,7 @@ dependencies = [
 [[package]]
 name = "rocket_codegen"
 version = "0.5.0-rc.3"
-source = "git+https://github.com/SergioBenitez/Rocket.git#b6b060f75c5e5b5a1c2b859d458ffaa3f844b29e"
+source = "git+https://github.com/SergioBenitez/Rocket.git#be92fe648be37d76d57f2ae33825ee7868f57696"
 dependencies = [
  "devise",
  "glob",
@@ -1572,7 +1572,7 @@ dependencies = [
 [[package]]
 name = "rocket_http"
 version = "0.5.0-rc.3"
-source = "git+https://github.com/SergioBenitez/Rocket.git#b6b060f75c5e5b5a1c2b859d458ffaa3f844b29e"
+source = "git+https://github.com/SergioBenitez/Rocket.git#be92fe648be37d76d57f2ae33825ee7868f57696"
 dependencies = [
  "cookie",
  "either",
@@ -1847,9 +1847,9 @@ dependencies = [
 
 [[package]]
 name = "state"
-version = "0.5.3"
+version = "0.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dbe866e1e51e8260c9eed836a042a5e7f6726bb2b411dffeaa712e19c388f23b"
+checksum = "2b8c4a4445d81357df8b1a650d0d0d6fbbbfe99d064aa5e02f3e4022061476d8"
 dependencies = [
  "loom",
 ]
