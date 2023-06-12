@@ -924,12 +924,14 @@ impl <'a> WebDataBuild<'a> {
                             seen_genotypes: &mut HashMap<FlexStr, GenotypeShortMap>,
                             seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
                             seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                            seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
                             identifier: &FlexStr,
                             genotype_uniquename: &FlexStr) {
         let genotype_short = self.make_genotype_short(genotype_uniquename);
         for locus in &genotype_short.loci {
             for expressed_allele in &locus.expressed_alleles {
-                self.add_allele_to_hash(seen_alleles, seen_genes, identifier,
+                self.add_allele_to_hash(seen_alleles, seen_genes,
+                                        seen_references, identifier,
                                         &expressed_allele.allele_uniquename);
             }
         }
@@ -943,10 +945,21 @@ impl <'a> WebDataBuild<'a> {
     fn add_allele_to_hash(&self,
                           seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
                           seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                          seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
                           identifier: &FlexStr,
                           allele_uniquename: &AlleleUniquename) -> AlleleShort {
         let allele_short = self.make_allele_short(allele_uniquename);
         {
+            for comment_details in &allele_short.comments {
+                self.add_ref_to_hash(seen_references, identifier,
+                                     &comment_details.reference);
+
+            }
+            for synonym_details in &allele_short.synonyms {
+                self.add_ref_to_hash(seen_references, identifier,
+                                     &synonym_details.reference);
+            }
+
             let allele_gene_uniquename = &allele_short.gene_uniquename;
             self.add_gene_to_hash(seen_genes, identifier, allele_gene_uniquename);
             seen_alleles
@@ -4993,6 +5006,7 @@ phenotypes, so just the first part of this extension will be used:
                                                seen_transcripts, seen_terms, identifier);
                     if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   identifier, genotype_uniquename);
                     }
 
@@ -5080,16 +5094,19 @@ phenotypes, so just the first part of this extension will be used:
 
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   termid,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   termid,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   termid,
                                                   double_mutant_genotype_display_uniquename);
                     }
@@ -5203,7 +5220,8 @@ phenotypes, so just the first part of this extension will be used:
                         }
                         if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                             self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
-                                                      &mut seen_genes, termid,
+                                                      &mut seen_genes,
+                                                      &mut seen_references, termid,
                                                       genotype_uniquename);
                         }
 
@@ -5326,17 +5344,23 @@ phenotypes, so just the first part of this extension will be used:
                                          &interaction_detail.reference_uniquename);
 
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   double_mutant_genotype_display_uniquename);
                     }
@@ -5376,7 +5400,9 @@ phenotypes, so just the first part of this extension will be used:
                     let target_of_gene = &target_of_annotation.gene;
                     self.add_gene_to_hash(&mut seen_genes, gene_uniquename, target_of_gene);
                     if let Some(ref annotation_genotype_uniquename) = target_of_annotation.genotype_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   annotation_genotype_uniquename)
                     }
@@ -5449,16 +5475,19 @@ phenotypes, so just the first part of this extension will be used:
 
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   genotype_uniquename,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   genotype_uniquename,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   genotype_uniquename,
                                                   double_mutant_genotype_display_uniquename);
                     }
@@ -5552,7 +5581,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
 
-        let (_, mut seen_genes, mut seen_genotypes,
+        let (mut seen_references, mut seen_genes, mut seen_genotypes,
              mut seen_alleles, mut seen_transcripts, mut seen_terms) = get_maps();
 
         {
@@ -5641,7 +5670,9 @@ phenotypes, so just the first part of this extension will be used:
 
                             if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                                 let genotype = self.make_genotype_short(genotype_uniquename);
-                                self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                          &mut seen_genes,
+                                                          &mut seen_references,
                                                           reference_uniquename,
                                                           &genotype.display_uniquename);
                             }
@@ -5676,17 +5707,23 @@ phenotypes, so just the first part of this extension will be used:
 
                     for interaction_detail in interaction_details {
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   reference_uniquename,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   reference_uniquename,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   reference_uniquename,
                                                   double_mutant_genotype_display_uniquename);
                     }
