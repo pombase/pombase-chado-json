@@ -580,6 +580,8 @@ pub struct ReferenceDetails {
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub references_by_uniquename: ReferenceShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub transcripts_by_uniquename: TranscriptDetailsOptionMap,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
@@ -1642,6 +1644,8 @@ pub struct AlleleDetails {
     pub comments: Vec<CommentAndReference>,
 
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    pub references_by_uniquename: ReferenceShortOptionMap,
+    pub genes_by_uniquename: GeneShortOptionMap,
 }
 
 impl AlleleDetails {
@@ -1665,6 +1669,8 @@ impl AlleleDetails {
             phenotypes: vec![],
             comments: comments.to_owned(),
             alleles_by_uniquename: HashMap::new(),
+            references_by_uniquename: HashMap::new(),
+            genes_by_uniquename: HashMap::new(),
         }
     }
 }

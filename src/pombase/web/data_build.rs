@@ -1572,6 +1572,7 @@ phenotypes, so just the first part of this extension will be used:
                                        genes_by_uniquename: HashMap::new(),
                                        genotypes_by_uniquename: HashMap::new(),
                                        alleles_by_uniquename: HashMap::new(),
+                                       references_by_uniquename: HashMap::new(),
                                        transcripts_by_uniquename: HashMap::new(),
                                        terms_by_termid: HashMap::new(),
                                        annotation_details: HashMap::new(),
@@ -5450,6 +5451,36 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn set_allele_details_maps(&mut self) {
+        let mut seen_alleles = HashMap::new();
+        let mut seen_genes = HashMap::new();
+        let mut seen_references = HashMap::new();
+
+        for (allele_uniquename, allele_details) in &self.alleles {
+            for genotype_short in &allele_details.genotypes {
+                for locus in &genotype_short.loci {
+                    for expressed_allele in &locus.expressed_alleles {
+                        self.add_allele_to_hash(&mut seen_alleles, &mut seen_genes,
+                                                &mut seen_references, allele_uniquename,
+                                                &expressed_allele.allele_uniquename);
+                    }
+                }
+            }
+        }
+
+        for (allele_uniquename, allele_details) in &mut self.alleles {
+            if let Some(references) = seen_references.remove(allele_uniquename) {
+                allele_details.references_by_uniquename = references;
+            }
+            if let Some(alleles) = seen_alleles.remove(allele_uniquename) {
+                allele_details.alleles_by_uniquename = alleles;
+            }
+            if let Some(genes) = seen_genes.remove(allele_uniquename) {
+                allele_details.genes_by_uniquename = genes;
+            }
+        }
+    }
+
     fn set_genotype_details_maps(&mut self) {
         let set_interaction_maps = |genetic_interactions: &GeneticInteractionMap,
                                     genotype_uniquename: &FlexStr,
@@ -5782,6 +5813,9 @@ phenotypes, so just the first part of this extension will be used:
             }
             if let Some(terms) = seen_terms.remove(reference_uniquename) {
                 reference_details.terms_by_termid = terms;
+            }
+            if let Some(references) = seen_references.remove(reference_uniquename) {
+                reference_details.references_by_uniquename = references;
             }
             if let Some(transcripts) = seen_transcripts.remove(reference_uniquename) {
                 reference_details.transcripts_by_uniquename = transcripts;
@@ -6572,6 +6606,7 @@ phenotypes, so just the first part of this extension will be used:
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_gene_details_subset_termids();
+        self.set_allele_details_maps();
         self.set_genotype_details_maps();
         self.set_reference_details_maps();
         self.set_chromosome_gene_counts();
