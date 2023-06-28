@@ -17,9 +17,13 @@ impl SiteDB {
 
         let pool = Pool::builder(manager).max_size(16).build().unwrap();
 
-        Ok(SiteDB {
+        let site_db = SiteDB {
             pool,
-        })
+        };
+
+        site_db.test_connection().await.map_err(anyhow::Error::msg)?;
+
+        Ok(site_db)
     }
 
     pub async fn query_by_id(&self, uuid: &Uuid) -> Option<Query> {
@@ -122,5 +126,28 @@ impl SiteDB {
             Ok(_) => Ok(()),
             Err(e) => Err(format!("error saving query: {}", e)),
         }
+    }
+
+    pub async fn test_connection(&self) -> Result<(), String> {
+        let mut client =
+            match self.pool.get().await {
+                Ok(client) => client,
+                Err(err) => {
+                    return Err(format!("error testing connection: {}", err));
+                },
+            };
+
+        let trans = match client.transaction().await {
+            Ok(t) => t,
+            Err(e) => return Err(format!("couldn't begin transaction: {}", e)),
+        };
+
+        match trans.execute("SELECT count(*) FROM query",
+                            &[]).await {
+            Ok(_) => (),
+            Err(e) => return Err(format!("error executing query: {}", e)),
+        };
+
+        Ok(())
     }
 }

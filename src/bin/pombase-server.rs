@@ -476,11 +476,6 @@ async fn rocket() -> _ {
     let search_maps_filename = matches.opt_str("m").unwrap();
     println!("Reading data files ...");
 
-    let config_file_name = matches.opt_str("c").unwrap();
-    let config = Config::read(&config_file_name);
-    let api_maps = api_maps_from_file(&search_maps_filename);
-    let api_maps_database_conn = Connection::open(api_maps_database_path).unwrap();
-    let api_data = APIData::new(&config, api_maps_database_conn, api_maps);
     let site_db =
         if let Some(conn_str) = site_db_conn_string {
             match SiteDB::new(&conn_str).await {
@@ -491,6 +486,11 @@ async fn rocket() -> _ {
             None
         };
 
+    let config_file_name = matches.opt_str("c").unwrap();
+    let config = Config::read(&config_file_name);
+    let api_maps = api_maps_from_file(&search_maps_filename);
+    let api_maps_database_conn = Connection::open(api_maps_database_path).unwrap();
+    let api_data = APIData::new(&config, api_maps_database_conn, api_maps);
 
     let query_exec = QueryExec::new(api_data, site_db);
     let searcher = Search::new(&config);
