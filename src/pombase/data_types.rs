@@ -2176,6 +2176,10 @@ pub struct SolrTermSummary {
     pub distant_synonym_words: FlexStr,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parent_ids: HashSet<FlexStr>,
+
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub definition_xrefs: HashSet<FlexStr>,
+
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
 

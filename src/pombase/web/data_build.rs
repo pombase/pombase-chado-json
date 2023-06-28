@@ -6521,6 +6521,7 @@ phenotypes, so just the first part of this extension will be used:
                 distant_synonyms,
                 distant_synonym_words: join(&distant_synonym_words_vec, " "),
                 interesting_parent_ids: interesting_parent_ids_for_solr,
+                definition_xrefs: term_details.definition_xrefs.clone(),
                 secondary_identifiers: term_details.secondary_identifiers.clone(),
                 annotation_count,
                 gene_count: term_details.gene_count,
