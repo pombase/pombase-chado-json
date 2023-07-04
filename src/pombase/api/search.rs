@@ -16,7 +16,7 @@ use crate::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary
 
 use crate::api::term_search::{search_terms, term_complete, term_summary_by_id};
 
-use crate::api::ref_search::{search_refs};
+use crate::api::ref_search::search_refs;
 
 use crate::api::allele_search::search_alleles;
 
