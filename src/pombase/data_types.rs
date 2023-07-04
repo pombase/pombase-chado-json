@@ -2106,6 +2106,28 @@ pub type GeneExDataSetMeasurements =
     HashMap<GeneUniquename, HashMap<GeneExDataSetName, GeneExMeasurement>>;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinViewFeature {
+    pub id: FlexStr,
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub display_name: Option<FlexStr>,
+
+    // start, end pairs:
+    pub positions: Vec<(usize, usize)>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinViewTrack {
+    pub name: FlexStr,
+    pub features: Vec<ProteinViewFeature>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinViewData {
+    pub tracks: Vec<ProteinViewTrack>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
@@ -2123,6 +2145,7 @@ pub struct APIMaps {
     pub children_by_termid: HashMap<TermId, HashSet<TermId>>,
     pub gene_expression_measurements: GeneExDataSetMeasurements,
     pub secondary_identifiers_map: HashMap<TermId, TermId>,
+    pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

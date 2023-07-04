@@ -12,6 +12,7 @@ use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
+use crate::bio::protein_view::make_protein_view_data_map;
 use crate::db::raw::*;
 
 use crate::gene_history::GeneHistoryMap;
@@ -4915,6 +4916,11 @@ phenotypes, so just the first part of this extension will be used:
 
         let secondary_identifiers_map = self.make_secondary_identifiers_map();
 
+        let protein_view_data =
+            make_protein_view_data_map(&self.genes, &self.annotation_details,
+                                       &self.genotypes, &self.alleles,
+                                       &self.config);
+
         // avoid clone()
         let mut term_subsets = HashMap::new();
         std::mem::swap(&mut term_subsets, &mut self.term_subsets);
@@ -4946,6 +4952,7 @@ phenotypes, so just the first part of this extension will be used:
             children_by_termid,
             gene_expression_measurements,
             secondary_identifiers_map,
+            protein_view_data,
        }
     }
 
