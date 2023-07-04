@@ -2,6 +2,7 @@ extern crate getopts;
 
 #[macro_use] extern crate rocket;
 use pombase::data_types::AlleleDetails;
+use pombase::data_types::ProteinViewData;
 use rocket::fs::NamedFile;
 use rocket::response::content;
 use rocket::response::content::RawHtml;
@@ -35,6 +36,8 @@ use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSumma
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
                                  render_simple_term_page};
 use pombase::web::config::Config;
+
+use flexstr::SharedStr as FlexStr;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 const VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -117,6 +120,16 @@ async fn get_term(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Jso
     query_exec.get_api_data().get_term_details(id).map(Json)
 }
 
+#[get ("/api/v1/dataset/latest/protein_features/<gene_uniquename>")]
+async fn get_protein_features(gene_uniquename: &str,
+                              query_exec: &rocket::State<QueryExec>) -> Option<Json<ProteinViewData>>
+{
+    let gene_uniquename = FlexStr::from(gene_uniquename);
+    query_exec.get_api_data().get_protein_features_of_gene(&gene_uniquename)
+              .map(|s| s.to_owned())
+              .map(Json)
+}
+
 #[get("/api/v1/dataset/latest/summary/term/<id>", rank=2)]
 async fn get_term_summary_by_id(id: &str, search: &rocket::State<Search>)
                           -> Option<Json<TermLookupResponse>>
@@ -160,10 +173,6 @@ async fn get_index(state: &rocket::State<StaticFileState>) -> Option<NamedFile> 
     NamedFile::open(root_dir_path.join("index.html")).await.ok()
 }
 
-
-/*
-Return a simple HTML version a gene page for search engines
-*/
 #[get("/structure_view/<structure_type>/<id>", rank=1)]
 async fn structure_view(structure_type: &str, id: &str,
                         config: &rocket::State<Config>)
@@ -505,7 +514,7 @@ async fn rocket() -> _ {
         .mount("/", routes![get_index, get_misc, query_post,
                             get_gene, get_genotype, get_allele, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
-                            get_term_summary_by_id,
+                            get_term_summary_by_id, get_protein_features,
                             seq_feature_page_features,
                             term_complete, ref_complete, allele_complete,
                             solr_search, motif_search, gene_ex_violin_plot,

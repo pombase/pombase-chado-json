@@ -20,7 +20,7 @@ use crate::data_types::{DataLookup,
                         ReferenceDetails, ReferenceShort, ReferenceShortOptionMap,
                         TermDetails, TermShort, TermShortOptionMap,
                         TranscriptDetailsOptionMap, WithFromValue, AlleleDetails,
-                        AlleleShort, APIGenotypeAnnotation};
+                        AlleleShort, APIGenotypeAnnotation, ProteinViewData};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
@@ -873,5 +873,11 @@ impl APIData {
 
     pub fn seq_feature_page_features(&self) -> Vec<FeatureShort> {
         self.maps.seq_feature_page_features.clone()
+    }
+
+    pub fn get_protein_features_of_gene(&self, gene_uniquename: &GeneUniquename)
+        -> Option<&ProteinViewData>
+    {
+        self.maps.protein_view_data.get(gene_uniquename)
     }
 }
