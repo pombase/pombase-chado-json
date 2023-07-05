@@ -8,7 +8,7 @@ use crate::data_types::{ProteinViewData, UniquenameGeneMap,
                         IdOntAnnotationDetailMap, DisplayUniquenameGenotypeMap,
                         UniquenameAlleleDetailsMap, AlleleShort,
                         ProteinViewFeature, ProteinViewTrack,
-                        UniquenameTranscriptMap};
+                        UniquenameTranscriptMap, GeneDetails, TermIdDetailsMap};
 use crate::web::config::Config;
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
@@ -18,7 +18,6 @@ lazy_static! {
     static ref MUTATION_DESC_RE: Regex =
        Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+)(\d+)[ARNDCQEGHILKMFPOSUTWYVBZXJ]+$").unwrap();
 }
-
 
 fn variant_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
     let Some(ref allele_description) = allele.description
@@ -55,73 +54,21 @@ fn variant_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
     Some(mutation_details)
 }
 
-fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
-    -> ProteinViewTrack
-{
-    let features =
-        feature_coords.iter().map(|(start, end)| {
-            let feature_name = flex_fmt!("{} {}..{}", track_name, start, end);
-            ProteinViewFeature {
-                 id: feature_name.clone(),
-                 display_name: None,
-                 positions: vec![(*start, *end)],
-            }
-        })
-        .collect();
-
-    ProteinViewTrack {
-        name: track_name + "s",
-        display_type: flex_str!("block"),
-        features,
-    }
+lazy_static! {
+    static ref VARIANTS_NAME: FlexStr = flex_str!("Variants");
 }
 
-
-pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
-                                  annotation_details_maps: &IdOntAnnotationDetailMap,
-                                  genotypes: &DisplayUniquenameGenotypeMap,
-                                  alleles: &UniquenameAlleleDetailsMap,
-                                  transcripts: &UniquenameTranscriptMap,
-                                  config: &Config)
-                                  -> HashMap<GeneUniquename, ProteinViewData>
-{
-    let mut gene_map = HashMap::new();
-
-    let Some(load_org_taxonid) = config.load_organism_taxonid
-    else {
-        return gene_map;
+fn make_variant_track(gene_details: &GeneDetails,
+                      annotation_details_maps: &IdOntAnnotationDetailMap,
+                      genotypes: &DisplayUniquenameGenotypeMap,
+                      alleles: &UniquenameAlleleDetailsMap) -> ProteinViewTrack {
+    let mut variant_track = ProteinViewTrack {
+        name: VARIANTS_NAME.clone(),
+        display_type: flex_str!("block"),
+        features: vec![],
     };
 
-    let variants_name = flex_str!("Variants");
-
-    for gene_details in gene_details_maps.values() {
-        if gene_details.taxonid != load_org_taxonid {
-            continue;
-        }
-
-        let Some(term_annotations) = gene_details.cv_annotations.get("single_locus_phenotype")
-        else {
-            continue;
-        };
-
-        let Some(transcript_uniquename) = gene_details.transcripts.get(0)
-        else {
-            continue;
-        };
-
-        let transcript = transcripts.get(transcript_uniquename).unwrap();
-
-        let Some(ref protein) = transcript.protein
-        else {
-            continue;
-        };
-
-        let mut variant_track = ProteinViewTrack {
-            name: variants_name.clone(),
-            display_type: flex_str!("block"),
-            features: vec![],
-        };
-
+    if let Some(term_annotations) = gene_details.cv_annotations.get("single_locus_phenotype") {
         let mut seen_alleles = HashSet::new();
 
         for term_annotation in term_annotations {
@@ -166,6 +113,67 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                 }
             }
         }
+    }
+
+    variant_track
+}
+
+fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
+    -> ProteinViewTrack
+{
+    let features =
+        feature_coords.iter().map(|(start, end)| {
+            let feature_name = flex_fmt!("{} {}..{}", track_name, start, end);
+            ProteinViewFeature {
+                 id: feature_name.clone(),
+                 display_name: None,
+                 positions: vec![(*start, *end)],
+            }
+        })
+        .collect();
+
+    ProteinViewTrack {
+        name: track_name + "s",
+        display_type: flex_str!("block"),
+        features,
+    }
+}
+
+pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
+                                  term_details_map: &TermIdDetailsMap,
+                                  annotation_details_map: &IdOntAnnotationDetailMap,
+                                  genotypes: &DisplayUniquenameGenotypeMap,
+                                  alleles: &UniquenameAlleleDetailsMap,
+                                  transcripts: &UniquenameTranscriptMap,
+                                  config: &Config)
+                                  -> HashMap<GeneUniquename, ProteinViewData>
+{
+    let mut gene_map = HashMap::new();
+
+    let Some(load_org_taxonid) = config.load_organism_taxonid
+    else {
+        return gene_map;
+    };
+
+    for gene_details in gene_details_maps.values() {
+        if gene_details.taxonid != load_org_taxonid {
+            continue;
+        }
+
+        let Some(transcript_uniquename) = gene_details.transcripts.get(0)
+        else {
+            continue;
+        };
+
+        let transcript = transcripts.get(transcript_uniquename).unwrap();
+
+        let Some(ref protein) = transcript.protein
+        else {
+            continue;
+        };
+
+        let variant_track = make_variant_track(gene_details, annotation_details_map,
+                                               genotypes, alleles);
 
         let tm_domains_track =
             make_generic_track(flex_str!("TM domain"),
@@ -181,9 +189,9 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
-            tracks: vec![tm_domains_track, disordered_regions_track,
-                         low_complexity_regions_track, coiled_coil_coords,
-                         variant_track],
+            tracks: vec![variant_track,
+                         tm_domains_track, disordered_regions_track,
+                         low_complexity_regions_track, coiled_coil_coords],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);

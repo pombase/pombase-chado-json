@@ -4884,6 +4884,13 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
+        let protein_view_data =
+            make_protein_view_data_map(&self.genes,
+                                       &self.terms,
+                                       &self.annotation_details,
+                                       &self.genotypes, &self.alleles,
+                                       &self.transcripts, &self.config);
+
         let gene_query_data_map = self.make_gene_query_data_map();
 
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
@@ -4915,11 +4922,6 @@ phenotypes, so just the first part of this extension will be used:
             }).collect();
 
         let secondary_identifiers_map = self.make_secondary_identifiers_map();
-
-        let protein_view_data =
-            make_protein_view_data_map(&self.genes, &self.annotation_details,
-                                       &self.genotypes, &self.alleles,
-                                       &self.transcripts, &self.config);
 
         // avoid clone()
         let mut term_subsets = HashMap::new();
