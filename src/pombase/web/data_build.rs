@@ -4919,7 +4919,7 @@ phenotypes, so just the first part of this extension will be used:
         let protein_view_data =
             make_protein_view_data_map(&self.genes, &self.annotation_details,
                                        &self.genotypes, &self.alleles,
-                                       &self.config);
+                                       &self.transcripts, &self.config);
 
         // avoid clone()
         let mut term_subsets = HashMap::new();

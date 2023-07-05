@@ -2119,11 +2119,13 @@ pub struct ProteinViewFeature {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinViewTrack {
     pub name: FlexStr,
+    pub display_type: FlexStr,
     pub features: Vec<ProteinViewFeature>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinViewData {
+    pub sequence: FlexStr,
     pub tracks: Vec<ProteinViewTrack>,
 }
 
