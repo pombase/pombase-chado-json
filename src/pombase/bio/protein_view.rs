@@ -20,7 +20,7 @@ lazy_static! {
 }
 
 
-fn mutations_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
+fn variants_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
     let Some(ref allele_description) = allele.description
     else {
         return None;
@@ -156,7 +156,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
                         let allele_short: AlleleShort = allele_details.into();
 
-                        let Some(variant_features) = mutations_from_allele(&allele_short)
+                        let Some(variant_features) = variants_from_allele(&allele_short)
                         else {
                             continue;
                         };
