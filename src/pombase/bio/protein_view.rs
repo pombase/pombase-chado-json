@@ -54,16 +54,12 @@ fn variant_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
     Some(mutation_details)
 }
 
-lazy_static! {
-    static ref VARIANTS_NAME: FlexStr = flex_str!("Variants");
-}
-
 fn make_variant_track(gene_details: &GeneDetails,
                       annotation_details_maps: &IdOntAnnotationDetailMap,
                       genotypes: &DisplayUniquenameGenotypeMap,
                       alleles: &UniquenameAlleleDetailsMap) -> ProteinViewTrack {
     let mut variant_track = ProteinViewTrack {
-        name: VARIANTS_NAME.clone(),
+        name: flex_str!("Variants"),
         display_type: flex_str!("block"),
         features: vec![],
     };
@@ -121,8 +117,6 @@ fn make_variant_track(gene_details: &GeneDetails,
 lazy_static! {
     static ref MODIFICATION_RESIDUE_RE: Regex =
         Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+(\d+))$").unwrap();
-
-    static ref MODIFICATIONS_NAME: FlexStr = flex_str!("Modifications");
 }
 
 
@@ -179,7 +173,7 @@ fn make_modification_track(gene_details: &GeneDetails,
     }
 
     ProteinViewTrack {
-        name: MODIFICATIONS_NAME.clone(),
+        name: flex_str!("Modifications"),
         display_type: flex_str!("pin"),
         features,
     }
