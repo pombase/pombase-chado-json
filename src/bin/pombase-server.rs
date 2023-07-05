@@ -202,6 +202,35 @@ async fn structure_view(structure_type: &str, id: &str,
 
 }
 
+#[get("/protein_feature_view/<full_or_widget>/<gene_uniquename>", rank=1)]
+async fn protein_feature_view(full_or_widget: &str, gene_uniquename: &str,
+                              config: &rocket::State<Config>)
+   -> Option<content::RawHtml<String>>
+{
+    let search_url = config.server.django_url.to_owned() + "/protein_feature_view/";
+    let params = [("full_or_widget", full_or_widget),
+                  ("gene_uniquename", gene_uniquename)];
+    let client = reqwest::Client::new();
+    let result = client.get(search_url).query(&params).send().await;
+
+    match result {
+        Ok(res) => {
+            match res.text().await {
+                Ok(text) => Some(RawHtml(text)),
+                Err(err) => {
+                    eprintln!("Error proxying to Django: {:?}", err);
+                    None
+                }
+
+            }
+        },
+        Err(err) => {
+            eprintln!("Error proxying to Django: {:?}", err);
+            None
+        }
+    }
+}
+
 /*
 Return a simple HTML version a gene page for search engines
 */
@@ -518,7 +547,7 @@ async fn rocket() -> _ {
                             seq_feature_page_features,
                             term_complete, ref_complete, allele_complete,
                             solr_search, motif_search, gene_ex_violin_plot,
-                            structure_view,
+                            structure_view, protein_feature_view,
                             ping])
         .mount("/jbrowse",
                FileServer::from(Path::new("/")
