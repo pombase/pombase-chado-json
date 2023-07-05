@@ -118,6 +118,73 @@ fn make_variant_track(gene_details: &GeneDetails,
     variant_track
 }
 
+lazy_static! {
+    static ref MODIFICATION_RESIDUE_RE: Regex =
+        Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+(\d+))$").unwrap();
+
+    static ref MODIFICATIONS_NAME: FlexStr = flex_str!("Modifications");
+}
+
+
+fn make_modification_track(gene_details: &GeneDetails,
+                           term_details_map: &TermIdDetailsMap,
+                           annotation_details_map: &IdOntAnnotationDetailMap) -> ProteinViewTrack {
+    let mut features = vec![];
+
+    if let Some(term_annotations) = gene_details.cv_annotations.get("PSI-MOD") {
+        let mut seen_modifications = HashSet::new();
+
+        for term_annotation in term_annotations {
+            let ref term_name = term_details_map
+                .get(&term_annotation.term)
+                .expect(&format!("term: {}", &term_annotation.term)).name;
+            let annotations = term_annotation.annotations.clone();
+
+            for annotation_id in annotations {
+                let annotation_detail = annotation_details_map.get(&annotation_id)
+                    .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                if let Some(ref residue_str) = annotation_detail.residue {
+                    let Some(captures) = MODIFICATION_RESIDUE_RE.captures(residue_str.as_str())
+                    else {
+                        continue;
+                    };
+
+                    let (Some(residue_match), Some(pos_match)) = (captures.get(1), captures.get(2))
+                    else {
+                        continue;
+                    };
+
+                    let Ok(residue_pos) = pos_match.as_str().parse::<usize>()
+                    else {
+                        continue;
+                    };
+
+                    let description = flex_fmt!("{}: {}", term_name, residue_match.as_str());
+
+                    if !seen_modifications.contains(&description) {
+                        seen_modifications.insert(description.clone());
+
+                        let feature = ProteinViewFeature {
+                            id: description.clone(),
+                            display_name: Some(description),
+                            positions: vec![(residue_pos, residue_pos)],
+                        };
+
+                        features.push(feature);
+                    }
+                }
+            }
+        }
+    }
+
+    ProteinViewTrack {
+        name: MODIFICATIONS_NAME.clone(),
+        display_type: flex_str!("pin"),
+        features,
+    }
+}
+
 fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
     -> ProteinViewTrack
 {
@@ -175,6 +242,9 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let variant_track = make_variant_track(gene_details, annotation_details_map,
                                                genotypes, alleles);
 
+        let modification_track =
+            make_modification_track(gene_details, term_details_map, annotation_details_map);
+
         let tm_domains_track =
             make_generic_track(flex_str!("TM domain"),
                                &gene_details.tm_domain_coords);
@@ -189,7 +259,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
-            tracks: vec![variant_track,
+            tracks: vec![variant_track, modification_track,
                          tm_domains_track, disordered_regions_track,
                          low_complexity_regions_track, coiled_coil_coords],
         };
