@@ -179,6 +179,37 @@ fn make_modification_track(gene_details: &GeneDetails,
     }
 }
 
+fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
+    let mut features = vec![];
+
+    for interpro_match in &gene_details.interpro_matches {
+        if interpro_match.dbname == "PFAM" {
+            let positions = interpro_match
+                .locations
+                .iter()
+                .map(|loc| (loc.start, loc.end))
+                .collect();
+
+            let display_name =
+                flex_fmt!("{}: {}", interpro_match.id, interpro_match.name);
+
+            let feature = ProteinViewFeature {
+                id: interpro_match.id.clone(),
+                display_name: Some(display_name),
+                positions,
+            };
+
+            features.push(feature);
+        }
+    }
+
+    ProteinViewTrack {
+        name: flex_str!("Pfam families"),
+        display_type: flex_str!("block"),
+        features,
+    }
+}
+
 fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
     -> ProteinViewTrack
 {
@@ -239,6 +270,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let modification_track =
             make_modification_track(gene_details, term_details_map, annotation_details_map);
 
+        let pfam_track = make_pfam_track(gene_details);
+
         let tm_domains_track =
             make_generic_track(flex_str!("TM domain"),
                                &gene_details.tm_domain_coords);
@@ -253,7 +286,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
-            tracks: vec![variant_track, modification_track,
+            tracks: vec![variant_track, modification_track, pfam_track,
                          tm_domains_track, disordered_regions_track,
                          low_complexity_regions_track, coiled_coil_coords],
         };
