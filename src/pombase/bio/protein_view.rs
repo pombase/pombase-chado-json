@@ -97,6 +97,10 @@ fn make_variant_track(gene_details: &GeneDetails,
                             continue;
                         };
 
+                        if allele_details.allele_type != "amino_acid_mutation" {
+                            continue;
+                        }
+
                         let allele_short: AlleleShort = allele_details.into();
 
                         let Some(variant_features) = variant_from_allele(&allele_short)
