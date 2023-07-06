@@ -59,7 +59,7 @@ fn make_variant_track(gene_details: &GeneDetails,
                       genotypes: &DisplayUniquenameGenotypeMap,
                       alleles: &UniquenameAlleleDetailsMap) -> ProteinViewTrack {
     let mut variant_track = ProteinViewTrack {
-        name: flex_str!("Variants"),
+        name: flex_str!("Mutants"),
         display_type: flex_str!("block"),
         features: vec![],
     };
