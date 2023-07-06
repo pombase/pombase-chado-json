@@ -225,7 +225,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
         .collect();
 
     ProteinViewTrack {
-        name: track_name + "s",
+        name: track_name,
         display_type: flex_str!("block"),
         features,
     }
@@ -273,16 +273,16 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let pfam_track = make_pfam_track(gene_details);
 
         let tm_domains_track =
-            make_generic_track(flex_str!("TM domain"),
+            make_generic_track(flex_str!("TM domains"),
                                &gene_details.tm_domain_coords);
         let disordered_regions_track =
-            make_generic_track(flex_str!("Disordered region"),
+            make_generic_track(flex_str!("Disordered regions"),
                                &gene_details.disordered_region_coords);
         let low_complexity_regions_track =
-            make_generic_track(flex_str!("Low complexity region"),
+            make_generic_track(flex_str!("Low complexity"),
                                &gene_details.low_complexity_region_coords);
         let coiled_coil_coords =
-            make_generic_track(flex_str!("Coiled coil"), &gene_details.coiled_coil_coords);
+            make_generic_track(flex_str!("Coiled coils"), &gene_details.coiled_coil_coords);
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
