@@ -20,17 +20,7 @@ lazy_static! {
        Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+)-?(\d+)-?[ARNDCQEGHILKMFPOSUTWYVBZXJ]+$").unwrap();
 }
 
-fn feature_from_mutation_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeature> {
-    let allele: AlleleShort = allele_details.into();
-
-    let Some(ref allele_description) = allele.description
-    else {
-        return None;
-    };
-
-    let mut positions = vec![];
-
-    for desc_part in allele_description.split(",") {
+fn parse_mutation_postion(desc_part: &str) -> Option<(FlexStr, usize, usize)> {
         let Some(captures) = MUTATION_DESC_RE.captures(desc_part)
         else {
             return None;
@@ -48,7 +38,67 @@ fn feature_from_mutation_allele(allele_details: &AlleleDetails) -> Option<Protei
 
         let end_pos = pos + amino_acids.len() - 1;
         let pos_name = flex_fmt!("{}-{}..{}", desc_part, pos, end_pos);
-        positions.push((pos_name, pos, end_pos));
+
+        Some((pos_name, pos, end_pos))
+}
+
+lazy_static! {
+    static ref DELETION_DESC_RE: Regex =
+       Regex::new(r"^(\d+)-(\d+)$").unwrap();
+}
+
+fn parse_deletion_postion(desc_part: &str) -> Option<(FlexStr, usize, usize)> {
+    let Some(captures) = DELETION_DESC_RE.captures(desc_part)
+    else {
+        return None;
+    };
+
+    let (Some(start), Some(end)) = (captures.get(1), captures.get(2))
+    else {
+        return None;
+    };
+
+    let Ok(start) = start.as_str().parse::<usize>()
+    else {
+        return None;
+    };
+
+    let Ok(end) = end.as_str().parse::<usize>()
+    else {
+        return None;
+    };
+
+    let pos_name = flex_fmt!("{}-{}..{}", desc_part, start, end);
+
+    Some((pos_name, start, end))
+}
+
+fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeature> {
+    let allele: AlleleShort = allele_details.into();
+
+    let Some(ref allele_description) = allele.description
+    else {
+        return None;
+    };
+
+    if allele_details.allele_type != "amino_acid_mutation" &&
+       allele_details.allele_type != "partial_amino_acid_deletion" {
+        return None;
+    }
+
+    let mut positions = vec![];
+
+    for desc_part in allele_description.split(",") {
+        if let Some(mutation_position) = parse_mutation_postion(desc_part) {
+            positions.push(mutation_position);
+            continue;
+        }
+        /*
+        if let Some(deletion_position) = parse_deletion_postion(desc_part) {
+            positions.push(deletion_position);
+            continue;
+        }
+        */
     }
 
     let mutation_details = ProteinViewFeature {
@@ -103,15 +153,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
                             continue;
                         };
 
-                        let maybe_feature =
-                            match allele_details.allele_type.as_str() {
-                                "amino_acid_mutation" => {
-                                    feature_from_mutation_allele(&allele_details)
-                                },
-                                _ => None,
-                            };
-
-                        if let Some(feature) = maybe_feature {
+                        if let Some(feature) = feature_from_allele(&allele_details) {
                             track.features.push(feature);
                         }
                     }
