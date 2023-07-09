@@ -14,6 +14,11 @@ use crate::web::config::Config;
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
 
+#[derive(PartialEq)]
+enum TrackType {
+    PartialDeletions,
+    AminoAcidMutations,
+}
 
 lazy_static! {
     static ref MUTATION_DESC_RE: Regex =
@@ -81,11 +86,6 @@ fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeat
         return None;
     };
 
-    if allele_details.allele_type != "amino_acid_mutation" &&
-       allele_details.allele_type != "partial_amino_acid_deletion" {
-        return None;
-    }
-
     let mut positions = vec![];
 
     for desc_part in allele_description.split(",") {
@@ -93,12 +93,10 @@ fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeat
             positions.push(mutation_position);
             continue;
         }
-        /*
         if let Some(deletion_position) = parse_deletion_postion(desc_part) {
             positions.push(deletion_position);
             continue;
         }
-        */
     }
 
     let mutation_details = ProteinViewFeature {
@@ -111,11 +109,16 @@ fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeat
 }
 
 fn make_mutants_track(gene_details: &GeneDetails,
+                      track_type: TrackType,
                       annotation_details_maps: &IdOntAnnotationDetailMap,
                       genotypes: &DisplayUniquenameGenotypeMap,
                       alleles: &UniquenameAlleleDetailsMap) -> ProteinViewTrack {
     let mut track = ProteinViewTrack {
-        name: flex_str!("Mutants"),
+        name: if track_type == TrackType::AminoAcidMutations {
+            flex_str!("Mutants")
+        } else {
+            flex_str!("Partial deletions")
+        },
         display_type: flex_str!("block"),
         features: vec![],
     };
@@ -152,6 +155,22 @@ fn make_mutants_track(gene_details: &GeneDetails,
                         else {
                             continue;
                         };
+
+                        match allele_details.allele_type.as_str() {
+                            "amino_acid_mutation" => {
+                                if track_type != TrackType::AminoAcidMutations {
+                                    continue;
+                                }
+                            },
+                            "partial_amino_acid_deletion" => {
+                                if track_type != TrackType::PartialDeletions {
+                                    continue;
+                                }
+                            },
+                            _ => {
+                                continue;
+                            }
+                        }
 
                         if let Some(feature) = feature_from_allele(&allele_details) {
                             track.features.push(feature);
@@ -316,8 +335,13 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
             continue;
         };
 
-        let variant_track = make_mutants_track(gene_details, annotation_details_map,
+        let mutants_track = make_mutants_track(gene_details, TrackType::AminoAcidMutations,
+                                               annotation_details_map,
                                                genotypes, alleles);
+
+        let deletions_track = make_mutants_track(gene_details, TrackType::PartialDeletions,
+                                                annotation_details_map,
+                                                genotypes, alleles);
 
         let modification_track =
             make_modification_track(gene_details, term_details_map, annotation_details_map);
@@ -338,7 +362,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
-            tracks: vec![variant_track, modification_track, pfam_track,
+            tracks: vec![mutants_track, deletions_track,
+                         modification_track, pfam_track,
                          tm_domains_track, disordered_regions_track,
                          low_complexity_regions_track, coiled_coil_coords],
         };
