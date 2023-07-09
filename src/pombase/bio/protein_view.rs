@@ -17,7 +17,7 @@ use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_f
 
 lazy_static! {
     static ref MUTATION_DESC_RE: Regex =
-       Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+)(\d+)[ARNDCQEGHILKMFPOSUTWYVBZXJ]+$").unwrap();
+       Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+)-?(\d+)-?[ARNDCQEGHILKMFPOSUTWYVBZXJ]+$").unwrap();
 }
 
 fn feature_from_mutation_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeature> {
