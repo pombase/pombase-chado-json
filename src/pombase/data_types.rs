@@ -2113,7 +2113,7 @@ pub struct ProteinViewFeature {
     pub display_name: Option<FlexStr>,
 
     // start, end pairs:
-    pub positions: Vec<(usize, usize)>,
+    pub positions: Vec<(FlexStr, usize, usize)>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

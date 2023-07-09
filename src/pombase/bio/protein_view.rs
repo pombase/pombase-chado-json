@@ -25,25 +25,28 @@ fn variant_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
         return None;
     };
 
-    let Some(captures) = MUTATION_DESC_RE.captures(allele_description.as_str())
-    else {
-        return None;
-    };
-
-    let (Some(amino_acids), Some(pos_match)) = (captures.get(1), captures.get(2))
-    else {
-        return None;
-    };
-
     let mut positions = vec![];
 
-    let Ok(pos) = pos_match.as_str().parse::<usize>()
-    else {
-        return None;
-    };
+    for desc_part in allele_description.split(",") {
+        let Some(captures) = MUTATION_DESC_RE.captures(desc_part)
+        else {
+            return None;
+        };
 
-    let end_pos = pos + amino_acids.len() - 1;
-    positions.push((pos, end_pos));
+        let (Some(amino_acids), Some(pos_match)) = (captures.get(1), captures.get(2))
+        else {
+            return None;
+        };
+
+        let Ok(pos) = pos_match.as_str().parse::<usize>()
+        else {
+            return None;
+        };
+
+        let end_pos = pos + amino_acids.len() - 1;
+        let pos_name = flex_fmt!("{}-{}..{}", desc_part, pos, end_pos);
+        positions.push((pos_name, pos, end_pos));
+    }
 
     let mutation_details = ProteinViewFeature {
          id: allele.uniquename.clone(),
@@ -165,8 +168,8 @@ fn make_modification_track(gene_details: &GeneDetails,
 
                         let feature = ProteinViewFeature {
                             id: description.clone(),
-                            display_name: Some(description),
-                            positions: vec![(residue_pos, residue_pos)],
+                            display_name: Some(description.clone()),
+                            positions: vec![(description, residue_pos, residue_pos)],
                         };
 
                         features.push(feature);
@@ -191,7 +194,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
             let positions = interpro_match
                 .locations
                 .iter()
-                .map(|loc| (loc.start, loc.end))
+                .map(|loc| (flex_fmt!("{}-{}..{}", interpro_match.name, loc.start, loc.end), loc.start, loc.end))
                 .collect();
 
             let display_name =
@@ -220,10 +223,11 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
     let features =
         feature_coords.iter().map(|(start, end)| {
             let feature_name = flex_fmt!("{} {}..{}", track_name, start, end);
+            let feature_pos_name = flex_fmt!("{}-{}..{}", track_name, start, end);
             ProteinViewFeature {
                  id: feature_name.clone(),
                  display_name: None,
-                 positions: vec![(*start, *end)],
+                 positions: vec![(feature_pos_name, *start, *end)],
             }
         })
         .collect();
