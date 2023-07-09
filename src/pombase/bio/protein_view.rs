@@ -8,7 +8,8 @@ use crate::data_types::{ProteinViewData, UniquenameGeneMap,
                         IdOntAnnotationDetailMap, DisplayUniquenameGenotypeMap,
                         UniquenameAlleleDetailsMap, AlleleShort,
                         ProteinViewFeature, ProteinViewTrack,
-                        UniquenameTranscriptMap, GeneDetails, TermIdDetailsMap};
+                        UniquenameTranscriptMap, GeneDetails,
+                        TermIdDetailsMap, AlleleDetails};
 use crate::web::config::Config;
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
@@ -19,7 +20,9 @@ lazy_static! {
        Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+)(\d+)[ARNDCQEGHILKMFPOSUTWYVBZXJ]+$").unwrap();
 }
 
-fn variant_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
+fn feature_from_mutation_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeature> {
+    let allele: AlleleShort = allele_details.into();
+
     let Some(ref allele_description) = allele.description
     else {
         return None;
@@ -57,11 +60,11 @@ fn variant_from_allele(allele: &AlleleShort) -> Option<ProteinViewFeature> {
     Some(mutation_details)
 }
 
-fn make_variant_track(gene_details: &GeneDetails,
+fn make_mutants_track(gene_details: &GeneDetails,
                       annotation_details_maps: &IdOntAnnotationDetailMap,
                       genotypes: &DisplayUniquenameGenotypeMap,
                       alleles: &UniquenameAlleleDetailsMap) -> ProteinViewTrack {
-    let mut variant_track = ProteinViewTrack {
+    let mut track = ProteinViewTrack {
         name: flex_str!("Mutants"),
         display_type: flex_str!("block"),
         features: vec![],
@@ -100,25 +103,24 @@ fn make_variant_track(gene_details: &GeneDetails,
                             continue;
                         };
 
-                        if allele_details.allele_type != "amino_acid_mutation" {
-                            continue;
+                        let maybe_feature =
+                            match allele_details.allele_type.as_str() {
+                                "amino_acid_mutation" => {
+                                    feature_from_mutation_allele(&allele_details)
+                                },
+                                _ => None,
+                            };
+
+                        if let Some(feature) = maybe_feature {
+                            track.features.push(feature);
                         }
-
-                        let allele_short: AlleleShort = allele_details.into();
-
-                        let Some(variant_features) = variant_from_allele(&allele_short)
-                        else {
-                            continue;
-                        };
-
-                        variant_track.features.push(variant_features);
                     }
                 }
             }
         }
     }
 
-    variant_track
+    track
 }
 
 lazy_static! {
@@ -272,7 +274,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
             continue;
         };
 
-        let variant_track = make_variant_track(gene_details, annotation_details_map,
+        let variant_track = make_mutants_track(gene_details, annotation_details_map,
                                                genotypes, alleles);
 
         let modification_track =
