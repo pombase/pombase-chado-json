@@ -22,29 +22,29 @@ enum TrackType {
 
 lazy_static! {
     static ref MUTATION_DESC_RE: Regex =
-       Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+)-?(\d+)-?[ARNDCQEGHILKMFPOSUTWYVBZXJ]+$").unwrap();
+        Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+)-?(\d+)-?[ARNDCQEGHILKMFPOSUTWYVBZXJ]+$").unwrap();
 }
 
 fn parse_mutation_postion(desc_part: &str) -> Option<(FlexStr, usize, usize)> {
-        let Some(captures) = MUTATION_DESC_RE.captures(desc_part)
-        else {
-            return None;
-        };
+    let Some(captures) = MUTATION_DESC_RE.captures(desc_part)
+    else {
+        return None;
+    };
 
-        let (Some(amino_acids), Some(pos_match)) = (captures.get(1), captures.get(2))
-        else {
-            return None;
-        };
+    let (Some(amino_acids), Some(pos_match)) = (captures.get(1), captures.get(2))
+    else {
+        return None;
+    };
 
-        let Ok(pos) = pos_match.as_str().parse::<usize>()
-        else {
-            return None;
-        };
+    let Ok(pos) = pos_match.as_str().parse::<usize>()
+    else {
+        return None;
+    };
 
-        let end_pos = pos + amino_acids.len() - 1;
-        let pos_name = flex_fmt!("{}-{}..{}", desc_part, pos, end_pos);
+    let end_pos = pos + amino_acids.len() - 1;
+    let pos_name = flex_fmt!("{}-{}..{}", desc_part, pos, end_pos);
 
-        Some((pos_name, pos, end_pos))
+    Some((pos_name, pos, end_pos))
 }
 
 lazy_static! {
@@ -100,9 +100,9 @@ fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeat
     }
 
     let mutation_details = ProteinViewFeature {
-         id: allele.uniquename.clone(),
-         display_name: Some(allele.display_name()),
-         positions,
+        id: allele.uniquename.clone(),
+        display_name: Some(allele.display_name()),
+        positions,
     };
 
     Some(mutation_details)
@@ -288,9 +288,9 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
             let feature_name = flex_fmt!("{} {}..{}", track_name, start, end);
             let feature_pos_name = flex_fmt!("{}-{}..{}", track_name, start, end);
             ProteinViewFeature {
-                 id: feature_name.clone(),
-                 display_name: None,
-                 positions: vec![(feature_pos_name, *start, *end)],
+                id: feature_name.clone(),
+                display_name: None,
+                positions: vec![(feature_pos_name, *start, *end)],
             }
         })
         .collect();
@@ -340,8 +340,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                                genotypes, alleles);
 
         let deletions_track = make_mutants_track(gene_details, TrackType::PartialDeletions,
-                                                annotation_details_map,
-                                                genotypes, alleles);
+                                                 annotation_details_map,
+                                                 genotypes, alleles);
 
         let modification_track =
             make_modification_track(gene_details, term_details_map, annotation_details_map);
