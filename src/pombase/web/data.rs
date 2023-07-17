@@ -1486,7 +1486,7 @@ impl WebData {
 
             for annotation_curator in &ref_details.annotation_curators {
                 if let Some(ref curator_orcid) = annotation_curator.orcid {
-                    let mut curator =
+                    let curator =
                         curator_details
                             .entry(&annotation_curator.name)
                             .or_insert_with(|| ApicuronCuratorDetails {
