@@ -99,13 +99,15 @@ fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeat
         }
     }
 
-    let mutation_details = ProteinViewFeature {
-        id: allele.uniquename.clone(),
-        display_name: Some(allele.display_name()),
-        positions,
-    };
-
-    Some(mutation_details)
+    if positions.len() > 0 {
+        Some(ProteinViewFeature {
+            id: allele.uniquename.clone(),
+            display_name: Some(allele.display_name()),
+            positions,
+        })
+    } else {
+        None
+    }
 }
 
 fn make_mutants_track(gene_details: &GeneDetails,
