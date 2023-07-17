@@ -36,7 +36,20 @@ impl<'a> Responder<'a, 'a> for PNGPlot {
     fn respond_to(self, _: &Request) -> response::Result<'a> {
         Response::build()
             .sized_body(self.bytes.len(), Cursor::new(self.bytes))
-            .header(ContentType::new("image", "png"))
+            .header(ContentType::new("image", "svg+xml"))
+            .ok()
+    }
+}
+
+pub struct SVGPlot {
+    pub bytes: Bytes
+}
+
+impl<'a> Responder<'a, 'a> for SVGPlot {
+    fn respond_to(self, _: &Request) -> response::Result<'a> {
+        Response::build()
+            .sized_body(self.bytes.len(), Cursor::new(self.bytes))
+            .header(ContentType::new("image", "svg+xml"))
             .ok()
     }
 }
@@ -100,14 +113,14 @@ impl Search {
     }
 
     pub async fn gene_ex_violin_plot(&self, plot_size: &str, genes: &str)
-                               -> Result<PNGPlot>
+                               -> Result<SVGPlot>
     {
         let plot_url = self.config.django_url.to_owned() + "/gene_ex/gene_ex_violin/";
         let params = [("plot_size", plot_size), ("genes", genes)];
         let client = reqwest::Client::new();
         let bytes = client.get(plot_url).query(&params).send().await?.bytes().await?;
 
-        Ok(PNGPlot { bytes })
+        Ok(SVGPlot { bytes })
     }
 
     pub async fn term_complete(&self, cv_name: &str, q: &str)

@@ -25,7 +25,7 @@ use rocket::fs::FileServer;
 use pombase::api::query::Query;
 use pombase::api::result::QueryAPIResult;
 use pombase::api::search::{Search, DocSearchMatch,
-                           SolrSearchScope, PNGPlot};
+                           SolrSearchScope, SVGPlot};
 use pombase::api::query_exec::QueryExec;
 use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
@@ -428,13 +428,13 @@ async fn motif_search(scope: &str, q: &str, search: &rocket::State<Search>)
 #[get ("/api/v1/dataset/latest/gene_ex_violin_plot/<plot_size>/<genes>", rank=1)]
 async fn gene_ex_violin_plot(plot_size: &str, genes: &str,
                        search: &rocket::State<Search>)
-                       -> Option<PNGPlot>
+                       -> Option<SVGPlot>
 {
     let res = search.gene_ex_violin_plot(plot_size, genes).await;
 
     match res {
-        Ok(png_plot) => {
-            Some(png_plot)
+        Ok(svg_plot) => {
+            Some(svg_plot)
         },
         Err(err) => {
             println!("Motif search error: {:?}", err);
