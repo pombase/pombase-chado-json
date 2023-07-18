@@ -3,6 +3,7 @@ extern crate getopts;
 #[macro_use] extern crate rocket;
 use pombase::data_types::AlleleDetails;
 use pombase::data_types::ProteinViewData;
+use pombase::data_types::ProteinViewType;
 use rocket::fs::NamedFile;
 use rocket::response::content;
 use rocket::response::content::RawHtml;
@@ -120,12 +121,22 @@ async fn get_term(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Jso
     query_exec.get_api_data().get_term_details(id).map(Json)
 }
 
-#[get ("/api/v1/dataset/latest/protein_features/<gene_uniquename>")]
-async fn get_protein_features(gene_uniquename: &str,
+#[get ("/api/v1/dataset/latest/protein_features/<full_or_widget>/<gene_uniquename>")]
+async fn get_protein_features(full_or_widget: &str, gene_uniquename: &str,
                               query_exec: &rocket::State<QueryExec>) -> Option<Json<ProteinViewData>>
 {
+    let full_or_widget =
+        match ProteinViewType::try_from(full_or_widget) {
+            Ok(val) => val,
+            Err(err) => {
+                eprintln!("get_protein_features(): {}", err);
+                return None;
+            }
+        };
+
     let gene_uniquename = FlexStr::from(gene_uniquename);
-    query_exec.get_api_data().get_protein_features_of_gene(&gene_uniquename)
+
+    query_exec.get_api_data().get_protein_features_of_gene(full_or_widget, &gene_uniquename)
               .map(|s| s.to_owned())
               .map(Json)
 }

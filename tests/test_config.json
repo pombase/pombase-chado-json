@@ -490,5 +490,8 @@
   "gene_expression": {
     "datasets": []
   },
-  "feature_sub_groups": {}
+  "feature_sub_groups": {},
+  "protein_feature_view": {
+    "widget_track_names": []
+  }
 }

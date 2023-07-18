@@ -2105,6 +2105,23 @@ pub type GeneExDataSetName = FlexStr;
 pub type GeneExDataSetMeasurements =
     HashMap<GeneUniquename, HashMap<GeneExDataSetName, GeneExMeasurement>>;
 
+#[derive(PartialEq)]
+pub enum ProteinViewType {
+    Full,
+    Widget,
+}
+
+impl TryFrom<&str> for ProteinViewType {
+    type Error = String;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "full" => Ok(ProteinViewType::Full),
+            "widget" => Ok(ProteinViewType::Widget),
+            _ => Err(format!("unknown protein view type: {}", value)),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinViewFeature {
     pub id: FlexStr,

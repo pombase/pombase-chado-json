@@ -128,6 +128,9 @@ fn get_test_config() -> Config {
             datasets: vec![],
         },
         feature_sub_groups: HashMap::new(),
+        protein_feature_view: ProteinFeatureViewConfig {
+            widget_track_names: HashSet::new(),
+        }
     };
 
     config.file_exports.gpad_gpi.go_aspect_terms.insert("molecular_function".to_shared_str(),

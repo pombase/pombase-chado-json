@@ -20,7 +20,7 @@ use crate::data_types::{DataLookup,
                         ReferenceDetails, ReferenceShort, ReferenceShortOptionMap,
                         TermDetails, TermShort, TermShortOptionMap,
                         TranscriptDetailsOptionMap, WithFromValue, AlleleDetails,
-                        AlleleShort, APIGenotypeAnnotation, ProteinViewData};
+                        AlleleShort, APIGenotypeAnnotation, ProteinViewData, ProteinViewType};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
@@ -875,9 +875,27 @@ impl APIData {
         self.maps.seq_feature_page_features.clone()
     }
 
-    pub fn get_protein_features_of_gene(&self, gene_uniquename: &GeneUniquename)
-        -> Option<&ProteinViewData>
+    pub fn get_protein_features_of_gene(&self, full_or_widget: ProteinViewType,
+                                        gene_uniquename: &GeneUniquename)
+        -> Option<ProteinViewData>
     {
-        self.maps.protein_view_data.get(gene_uniquename)
+        let data = self.maps.protein_view_data.get(gene_uniquename)?;
+
+        let filtered_tracks = data.tracks
+            .iter()
+            .filter(|track| {
+                if full_or_widget == ProteinViewType::Widget {
+                    self.config.protein_feature_view.widget_track_names.contains(&track.name)
+                } else {
+                    true
+                }
+            })
+            .map(Clone::clone)
+            .collect();
+
+        Some(ProteinViewData {
+            sequence: data.sequence.clone(),
+            tracks: filtered_tracks
+        })
     }
 }
