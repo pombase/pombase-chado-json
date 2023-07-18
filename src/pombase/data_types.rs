@@ -1080,6 +1080,7 @@ pub struct GeneDetails {
     pub low_complexity_region_coords: Vec<(usize, usize)>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub coiled_coil_coords: Vec<(usize, usize)>,
+    pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

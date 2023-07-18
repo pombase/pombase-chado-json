@@ -819,6 +819,22 @@ fn validate_transcript_parts(transcript_uniquename: &FlexStr, parts: &[FeatureSh
     }
 }
 
+fn set_has_protein_features(genes: &mut UniquenameGeneMap, protein_view_data: &HashMap<GeneUniquename, ProteinViewData>) {
+    for (gene_uniquename, protein_feature_data) in protein_view_data {
+        if let Some(gene_details) = genes.get_mut(gene_uniquename) {
+            let mut has_protein_features = false;
+
+            for track in &protein_feature_data.tracks {
+                if track.features.len() > 0 {
+                    has_protein_features = true;
+                    break;
+                }
+            }
+
+            gene_details.has_protein_features = has_protein_features;
+        }
+    }
+}
 
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
@@ -1832,6 +1848,7 @@ phenotypes, so just the first part of this extension will be used:
             disordered_region_coords,
             low_complexity_region_coords,
             coiled_coil_coords,
+            has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
             name_descriptions: vec![],
@@ -6661,13 +6678,15 @@ phenotypes, so just the first part of this extension will be used:
             terms_for_api.insert(termid.clone(), term_details.clone());
         }
 
-        let genes = self.genes.clone();
+        let mut genes = self.genes.clone();
         let genotypes = self.genotypes.clone();
         let references = self.references.clone();
 
         let termid_genotype_annotation = self.get_api_genotype_annotation();
 
         let api_maps = self.make_api_maps();
+
+        set_has_protein_features(&mut genes, &api_maps.protein_view_data);
 
         WebData {
             metadata,
