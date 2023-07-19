@@ -492,6 +492,7 @@
   },
   "feature_sub_groups": {},
   "protein_feature_view": {
-    "widget_track_names": []
+    "widget_track_names": [],
+    "full_display_excluded": []
   }
 }
