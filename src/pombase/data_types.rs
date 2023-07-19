@@ -2123,6 +2123,8 @@ impl TryFrom<&str> for ProteinViewType {
     }
 }
 
+pub type ProteinViewFeaturePos = (FlexStr, usize, usize);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinViewFeature {
     pub id: FlexStr,
@@ -2131,7 +2133,7 @@ pub struct ProteinViewFeature {
     pub display_name: Option<FlexStr>,
 
     // start, end pairs:
-    pub positions: Vec<(FlexStr, usize, usize)>,
+    pub positions: Vec<ProteinViewFeaturePos>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
