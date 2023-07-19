@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::collections::{HashMap, HashSet};
 
 use regex::Regex;
@@ -378,6 +379,24 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
     }
 }
 
+fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
+    let sorter = |f1: &ProteinViewFeature, f2: &ProteinViewFeature| {
+        if let (Some(f1_first_pos), Some(f2_first_pos)) =
+             (f1.positions.get(0), f2.positions.get(0)) {
+           let first_pos_cmp = f1_first_pos.1.cmp(&f2_first_pos.1);
+           if first_pos_cmp == Ordering::Equal {
+              return f1_first_pos.2.cmp(&f2_first_pos.2);
+           } else {
+              return first_pos_cmp;
+           }
+        }
+
+        Ordering::Equal
+    };
+
+    deletions_track.features.sort_by(sorter);
+}
+
 pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                   term_details_map: &TermIdDetailsMap,
                                   annotation_details_map: &IdOntAnnotationDetailMap,
@@ -418,10 +437,11 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let mutant_summary_track = make_mutant_summary(&mutants_track);
 
-        let deletions_track = make_mutants_track(gene_details, protein,
+        let mut deletions_track = make_mutants_track(gene_details, protein,
                                                  TrackType::PartialDeletions,
                                                  annotation_details_map,
                                                  genotypes, alleles);
+        sort_deletions(&mut deletions_track);
 
         let modification_track =
             make_modification_track(gene_details, term_details_map, annotation_details_map);
