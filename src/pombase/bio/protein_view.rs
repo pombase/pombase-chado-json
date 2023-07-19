@@ -9,7 +9,7 @@ use crate::data_types::{ProteinViewData, UniquenameGeneMap,
                         UniquenameAlleleDetailsMap, AlleleShort,
                         ProteinViewFeature, ProteinViewTrack,
                         UniquenameTranscriptMap, GeneDetails,
-                        TermIdDetailsMap, AlleleDetails};
+                        TermIdDetailsMap, AlleleDetails, ProteinDetails};
 use crate::web::config::Config;
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
@@ -52,7 +52,9 @@ lazy_static! {
        Regex::new(r"^(\d+)-(\d+)$").unwrap();
 }
 
-fn parse_deletion_postion(desc_part: &str) -> Option<(FlexStr, usize, usize)> {
+fn parse_deletion_postion(desc_part: &str)
+        -> Option<(FlexStr, usize, usize)>
+{
     let Some(captures) = DELETION_DESC_RE.captures(desc_part)
     else {
         return None;
@@ -78,7 +80,37 @@ fn parse_deletion_postion(desc_part: &str) -> Option<(FlexStr, usize, usize)> {
     Some((pos_name, start, end))
 }
 
-fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeature> {
+lazy_static! {
+    static ref TRUNCATION_DESC_RE: Regex =
+       Regex::new(r"^[ARNDCQEGHILKMFPOSUTWYVBZXJ](\d+)\*$").unwrap();
+}
+
+fn parse_truncation_postion(desc_part: &str, seq_lenth: usize)
+        -> Option<(FlexStr, usize, usize)>
+{
+    let Some(captures) = TRUNCATION_DESC_RE.captures(desc_part)
+    else {
+        return None;
+    };
+
+    let Some(start) = captures.get(1)
+    else {
+        return None;
+    };
+
+    let Ok(start) = start.as_str().parse::<usize>()
+    else {
+        return None;
+    };
+
+    let pos_name = flex_fmt!("{}-{}..{}", desc_part, start, seq_lenth);
+
+    Some((pos_name, start, seq_lenth))
+}
+
+fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
+       -> Option<ProteinViewFeature>
+{
     let allele: AlleleShort = allele_details.into();
 
     let Some(ref allele_description) = allele.description
@@ -96,6 +128,11 @@ fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeat
         if let Some(deletion_position) = parse_deletion_postion(desc_part) {
             positions.push(deletion_position);
             continue;
+        } else {
+            if let Some(deletion_position) = parse_truncation_postion(desc_part, seq_length) {
+                positions.push(deletion_position);
+                continue;
+            }
         }
     }
 
@@ -145,6 +182,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
 }
 
 fn make_mutants_track(gene_details: &GeneDetails,
+                      protein: &ProteinDetails,
                       track_type: TrackType,
                       annotation_details_maps: &IdOntAnnotationDetailMap,
                       genotypes: &DisplayUniquenameGenotypeMap,
@@ -208,7 +246,9 @@ fn make_mutants_track(gene_details: &GeneDetails,
                             }
                         }
 
-                        if let Some(feature) = feature_from_allele(&allele_details) {
+                        let sequence_length = protein.sequence.len();
+
+                        if let Some(feature) = feature_from_allele(&allele_details, sequence_length) {
                             track.features.push(feature);
                         }
                     }
@@ -371,13 +411,15 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
             continue;
         };
 
-        let mutants_track = make_mutants_track(gene_details, TrackType::AminoAcidMutations,
+        let mutants_track = make_mutants_track(gene_details, protein,
+                                               TrackType::AminoAcidMutations,
                                                annotation_details_map,
                                                genotypes, alleles);
 
         let mutant_summary_track = make_mutant_summary(&mutants_track);
 
-        let deletions_track = make_mutants_track(gene_details, TrackType::PartialDeletions,
+        let deletions_track = make_mutants_track(gene_details, protein,
+                                                 TrackType::PartialDeletions,
                                                  annotation_details_map,
                                                  genotypes, alleles);
 
