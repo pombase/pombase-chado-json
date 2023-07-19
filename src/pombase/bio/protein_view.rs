@@ -110,6 +110,40 @@ fn feature_from_allele(allele_details: &AlleleDetails) -> Option<ProteinViewFeat
     }
 }
 
+fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
+    let mut summary_features = HashMap::new();
+
+    for mutant_feat in &mutants_track.features {
+        for (_, feat_start, feat_end) in &mutant_feat.positions {
+            let key = (*feat_start, *feat_end);
+            summary_features.entry(key)
+               .or_insert_with(|| {});
+        }
+    }
+
+    let features = summary_features.keys()
+        .map(|(start, end)| {
+            let pos_str = if start == end {
+                flex_fmt!("{}", start)
+            } else {
+                flex_fmt!("{}..{}", start, end)
+            };
+            let pos_display_name = flex_fmt!("AA {}", pos_str);
+            ProteinViewFeature {
+               id: pos_str.clone(),
+               display_name: Some(pos_display_name),
+               positions: vec![(pos_str, *start, *end)],
+            }
+         })
+         .collect();
+
+    ProteinViewTrack {
+        name: flex_str!("Mutant positions"),
+        display_type: flex_str!("block"),
+        features,
+    }
+}
+
 fn make_mutants_track(gene_details: &GeneDetails,
                       track_type: TrackType,
                       annotation_details_maps: &IdOntAnnotationDetailMap,
@@ -341,6 +375,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                                annotation_details_map,
                                                genotypes, alleles);
 
+        let mutant_summary_track = make_mutant_summary(&mutants_track);
+
         let deletions_track = make_mutants_track(gene_details, TrackType::PartialDeletions,
                                                  annotation_details_map,
                                                  genotypes, alleles);
@@ -364,7 +400,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
-            tracks: vec![mutants_track, deletions_track,
+            tracks: vec![mutant_summary_track, mutants_track, deletions_track,
                          modification_track, pfam_track,
                          tm_domains_track, disordered_regions_track,
                          low_complexity_regions_track, coiled_coil_coords],
