@@ -884,10 +884,11 @@ impl APIData {
         let filtered_tracks = data.tracks
             .iter()
             .filter(|track| {
+                let prot_feat_conf = &self.config.protein_feature_view;
                 if full_or_widget == ProteinViewType::Widget {
-                    self.config.protein_feature_view.widget_track_names.contains(&track.name)
+                    prot_feat_conf.widget_track_names.contains(&track.name)
                 } else {
-                    true
+                    !prot_feat_conf.full_display_excluded.contains(&track.name)
                 }
             })
             .map(Clone::clone)
