@@ -247,7 +247,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
                             }
                         }
 
-                        let sequence_length = protein.sequence.len();
+                        let sequence_length = protein.sequence_length();
 
                         if let Some(feature) = feature_from_allele(&allele_details, sequence_length) {
                             track.features.push(feature);

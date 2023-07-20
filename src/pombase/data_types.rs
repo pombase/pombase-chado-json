@@ -1221,6 +1221,16 @@ pub struct ProteinDetails {
     pub codon_adaptation_index: f32,
 }
 
+impl ProteinDetails {
+    pub fn sequence_length(&self) -> usize {
+        if self.sequence.ends_with("*") {
+            self.sequence.len() - 1
+        } else {
+            self.sequence.len()
+        }
+    }
+}
+
 pub type Residues = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
