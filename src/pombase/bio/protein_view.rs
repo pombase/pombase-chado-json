@@ -10,7 +10,7 @@ use crate::data_types::{ProteinViewData, UniquenameGeneMap,
                         UniquenameAlleleDetailsMap, AlleleShort,
                         ProteinViewFeature, ProteinViewTrack,
                         UniquenameTranscriptMap, GeneDetails,
-                        TermIdDetailsMap, AlleleDetails, ProteinDetails};
+                        TermIdDetailsMap, AlleleDetails, ProteinDetails, ProteinViewFeaturePos};
 use crate::web::config::Config;
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
@@ -380,15 +380,23 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
 }
 
 fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
+    let sort_helper = |(_, p1_start, p1_end): &ProteinViewFeaturePos,
+                       (_, p2_start, p2_end): &ProteinViewFeaturePos| {
+        let first_pos_cmp = p1_start.cmp(&p2_start);
+        if first_pos_cmp == Ordering::Equal {
+            p1_end.cmp(&p2_end)
+        } else {
+            first_pos_cmp
+        }
+    };
+
     let sorter = |f1: &ProteinViewFeature, f2: &ProteinViewFeature| {
-        if let (Some(f1_first_pos), Some(f2_first_pos)) =
-             (f1.positions.get(0), f2.positions.get(0)) {
-           let first_pos_cmp = f1_first_pos.1.cmp(&f2_first_pos.1);
-           if first_pos_cmp == Ordering::Equal {
-              return f1_first_pos.2.cmp(&f2_first_pos.2);
-           } else {
-              return first_pos_cmp;
-           }
+        for (p1, p2) in f1.positions.iter().zip(f2.positions.iter()) {
+            let cmp = sort_helper(p1, p2);
+
+            if cmp != Ordering::Equal {
+                return cmp;
+            }
         }
 
         Ordering::Equal
