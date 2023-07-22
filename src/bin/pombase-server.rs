@@ -278,6 +278,15 @@ async fn query_post(q: Json<Query>, query_exec: &rocket::State<QueryExec>)
     Some(Json(query_exec.exec(&q.into_inner()).await))
 }
 
+#[get("/api/v1/dataset/latest/query/<q_str>", rank=1)]
+async fn query_get(q_str: &str, query_exec: &rocket::State<QueryExec>)
+              -> Option<Json<QueryAPIResult>>
+{
+    let q: Query = serde_json::from_str(q_str).ok()?;
+
+    Some(Json(query_exec.exec(&q).await))
+}
+
 #[derive(Serialize, Debug)]
 struct TermCompletionResponse {
     status: String,
@@ -551,7 +560,7 @@ async fn rocket() -> _ {
 
     println!("Starting server ...");
     rocket::build()
-        .mount("/", routes![get_index, get_misc, query_post,
+        .mount("/", routes![get_index, get_misc, query_post, query_get,
                             get_gene, get_genotype, get_allele, get_term, get_reference,
                             get_simple_gene, get_simple_reference, get_simple_term,
                             get_term_summary_by_id, get_protein_features,
