@@ -202,8 +202,6 @@ fn make_mutants_track(gene_details: &GeneDetails,
         features: vec![],
     };
 
-    println!("{}", gene_details.uniquename);
-
     let mut all_categories = HashSet::new();
 
     if let Some(term_filter) = pheno_type_config.filters.iter().find(|cat| cat.filter_name == "term") {
@@ -214,15 +212,11 @@ fn make_mutants_track(gene_details: &GeneDetails,
         }
     }
 
-    println!("HERE1");
-
     let mut allele_terms = HashMap::new();
 
     if let Some(term_annotations) = gene_details.cv_annotations.get("single_locus_phenotype") {
 
         for term_annotation in term_annotations {
-            println!("TERM: {}", term_annotation.term);
-
             let Some(term_details) = term_details_map.get(&term_annotation.term)
             else {
                 continue;
