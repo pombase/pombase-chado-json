@@ -129,6 +129,7 @@ fn get_test_config() -> Config {
         },
         feature_sub_groups: HashMap::new(),
         protein_feature_view: ProteinFeatureViewConfig {
+            modification_extension_rel_types: HashSet::new(),
             widget_track_names: HashSet::new(),
             full_display_excluded: HashSet::new(),
         }
