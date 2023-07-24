@@ -325,9 +325,10 @@ fn make_modification_track(gene_details: &GeneDetails,
         let mut seen_modifications = HashSet::new();
 
         for term_annotation in term_annotations {
+            let termid = &term_annotation.term;
             let ref term_name = term_details_map
-                .get(&term_annotation.term)
-                .expect(&format!("term: {}", &term_annotation.term)).name;
+                .get(termid)
+                .expect(&format!("term: {}", termid)).name;
             let annotations = term_annotation.annotations.clone();
 
             for annotation_id in annotations {
@@ -355,10 +356,17 @@ fn make_modification_track(gene_details: &GeneDetails,
                     if !seen_modifications.contains(&description) {
                         seen_modifications.insert(description.clone());
 
+                        let mut annotated_terms = HashSet::new();
+                        let name_and_id = TermNameAndId {
+                            name: term_name.clone(),
+                            id: termid.clone(),
+                        };
+                        annotated_terms.insert(name_and_id);
+
                         let feature = ProteinViewFeature {
                             id: description.clone(),
                             display_name: Some(description.clone()),
-                            annotated_terms: HashSet::new(),
+                            annotated_terms,
                             positions: vec![(description, residue_pos, residue_pos)],
                         };
 
