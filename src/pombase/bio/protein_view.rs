@@ -10,8 +10,8 @@ use crate::data_types::{ProteinViewData, UniquenameGeneMap,
                         UniquenameAlleleDetailsMap, AlleleShort,
                         ProteinViewFeature, ProteinViewTrack,
                         UniquenameTranscriptMap, GeneDetails,
-                        TermIdDetailsMap, AlleleDetails, ProteinDetails, ProteinViewFeaturePos};
-use crate::web::config::Config;
+                        TermIdDetailsMap, AlleleDetails, ProteinDetails, ProteinViewFeaturePos, TermNameAndId};
+use crate::web::config::{Config, CvConfig};
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
 
@@ -141,6 +141,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
         Some(ProteinViewFeature {
             id: allele.uniquename.clone(),
             display_name: Some(allele.display_name()),
+            annotated_terms: HashSet::new(),
             positions,
         })
     } else {
@@ -170,6 +171,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
             ProteinViewFeature {
                id: pos_str.clone(),
                display_name: Some(pos_display_name),
+               annotated_terms: HashSet::new(),
                positions: vec![(pos_str, *start, *end)],
             }
          })
@@ -183,9 +185,11 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
 }
 
 fn make_mutants_track(gene_details: &GeneDetails,
+                      pheno_type_config: &CvConfig,
                       protein: &ProteinDetails,
                       track_type: TrackType,
                       annotation_details_maps: &IdOntAnnotationDetailMap,
+                      term_details_map: &TermIdDetailsMap,
                       genotypes: &DisplayUniquenameGenotypeMap,
                       alleles: &UniquenameAlleleDetailsMap) -> ProteinViewTrack {
     let mut track = ProteinViewTrack {
@@ -198,13 +202,41 @@ fn make_mutants_track(gene_details: &GeneDetails,
         features: vec![],
     };
 
+    println!("{}", gene_details.uniquename);
+
+    let mut all_categories = HashSet::new();
+
+    if let Some(term_filter) = pheno_type_config.filters.iter().find(|cat| cat.filter_name == "term") {
+        for term_category in &term_filter.term_categories {
+            for ancestor in &term_category.ancestors {
+                all_categories.insert(ancestor.clone());
+            }
+        }
+    }
+
+    println!("HERE1");
+
+    let mut allele_terms = HashMap::new();
+
     if let Some(term_annotations) = gene_details.cv_annotations.get("single_locus_phenotype") {
-        let mut seen_alleles = HashSet::new();
 
         for term_annotation in term_annotations {
-            let annotations = term_annotation.annotations.clone();
+            println!("TERM: {}", term_annotation.term);
 
-            for annotation_id in annotations {
+            let Some(term_details) = term_details_map.get(&term_annotation.term)
+            else {
+                continue;
+            };
+
+            let mut term_category_ids = HashSet::new();
+
+            for category_termid in all_categories.iter() {
+                if term_details.interesting_parent_ids.contains(category_termid) {
+                    term_category_ids.insert(category_termid);
+                }
+            }
+
+            for annotation_id in &term_annotation.annotations {
                 let annotation_detail = annotation_details_maps.get(&annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
@@ -220,41 +252,64 @@ fn make_mutants_track(gene_details: &GeneDetails,
 
                 for locus in &genotype.loci {
                     for expressed_allele in &locus.expressed_alleles {
-                        if seen_alleles.contains(&expressed_allele.allele_uniquename) {
+                        if allele_terms.contains_key(&expressed_allele.allele_uniquename) {
                             continue;
                         }
 
-                        seen_alleles.insert(expressed_allele.allele_uniquename.clone());
+                        let allele_categories =
+                            allele_terms
+                            .entry(expressed_allele.allele_uniquename.clone())
+                            .or_insert_with(HashSet::new);
 
-                        let Some(allele_details) = alleles.get(&expressed_allele.allele_uniquename)
-                        else {
-                            continue;
-                        };
-
-                        match allele_details.allele_type.as_str() {
-                            "amino_acid_mutation" => {
-                                if track_type != TrackType::AminoAcidMutations {
-                                    continue;
-                                }
-                            },
-                            "partial_amino_acid_deletion" => {
-                                if track_type != TrackType::PartialDeletions {
-                                    continue;
-                                }
-                            },
-                            _ => {
-                                continue;
-                            }
-                        }
-
-                        let sequence_length = protein.sequence_length();
-
-                        if let Some(feature) = feature_from_allele(&allele_details, sequence_length) {
-                            track.features.push(feature);
-                        }
+                        allele_categories.extend(term_category_ids.iter());
                     }
                 }
             }
+        }
+    }
+
+
+
+    for (allele_uniquename, allele_categories) in &allele_terms {
+
+        let Some(allele_details) = alleles.get(allele_uniquename)
+        else {
+            continue;
+        };
+
+        match allele_details.allele_type.as_str() {
+            "amino_acid_mutation" => {
+                if track_type != TrackType::AminoAcidMutations {
+                    continue;
+                }
+            },
+            "partial_amino_acid_deletion" => {
+                if track_type != TrackType::PartialDeletions {
+                    continue;
+                }
+            },
+            _ => {
+                continue;
+            }
+        }
+
+        let sequence_length = protein.sequence_length();
+
+        if let Some(mut feature) = feature_from_allele(&allele_details, sequence_length) {
+            let categories_with_names = allele_categories
+                .iter()
+                .filter_map(|cat_term_id: &&FlexStr| {
+                    let term_details = term_details_map.get(*cat_term_id)?;
+
+                    Some(TermNameAndId {
+                        id: (*cat_term_id).clone(),
+                        name: term_details.name.clone(),
+                    })
+                });
+
+            feature.annotated_terms.extend(categories_with_names);
+
+            track.features.push(feature);
         }
     }
 
@@ -309,6 +364,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                         let feature = ProteinViewFeature {
                             id: description.clone(),
                             display_name: Some(description.clone()),
+                            annotated_terms: HashSet::new(),
                             positions: vec![(description, residue_pos, residue_pos)],
                         };
 
@@ -343,6 +399,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
             let feature = ProteinViewFeature {
                 id: interpro_match.id.clone(),
                 display_name: Some(display_name),
+                annotated_terms: HashSet::new(),
                 positions,
             };
 
@@ -367,6 +424,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
             ProteinViewFeature {
                 id: feature_name.clone(),
                 display_name: None,
+                annotated_terms: HashSet::new(),
                 positions: vec![(feature_pos_name, *start, *end)],
             }
         })
@@ -421,6 +479,11 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         return gene_map;
     };
 
+    let Some(phenotype_config) = config.cv_config.get("fission_yeast_phenotype")
+    else {
+        return gene_map;
+    };
+
     for gene_details in gene_details_maps.values() {
         if gene_details.taxonid != load_org_taxonid {
             continue;
@@ -438,16 +501,18 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
             continue;
         };
 
-        let mutants_track = make_mutants_track(gene_details, protein,
+        let mutants_track = make_mutants_track(gene_details, phenotype_config, protein,
                                                TrackType::AminoAcidMutations,
                                                annotation_details_map,
+                                               term_details_map,
                                                genotypes, alleles);
 
         let mutant_summary_track = make_mutant_summary(&mutants_track);
 
-        let mut deletions_track = make_mutants_track(gene_details, protein,
+        let mut deletions_track = make_mutants_track(gene_details, phenotype_config, protein,
                                                  TrackType::PartialDeletions,
                                                  annotation_details_map,
+                                                 term_details_map,
                                                  genotypes, alleles);
         sort_deletions(&mut deletions_track);
 

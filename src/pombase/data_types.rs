@@ -2133,6 +2133,12 @@ impl TryFrom<&str> for ProteinViewType {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct TermNameAndId {
+    pub name: TermName,
+    pub id: TermId,
+}
+
 pub type ProteinViewFeaturePos = (FlexStr, usize, usize);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -2141,6 +2147,9 @@ pub struct ProteinViewFeature {
 
     #[serde(skip_serializing_if="Option::is_none")]
     pub display_name: Option<FlexStr>,
+
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub annotated_terms: HashSet<TermNameAndId>,
 
     // start, end pairs:
     pub positions: Vec<ProteinViewFeaturePos>,
