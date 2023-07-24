@@ -340,6 +340,7 @@ pub struct GeneExpressionConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct ProteinFeatureViewConfig {
+    pub modification_extension_rel_types: HashSet<FlexStr>,
     pub widget_track_names: HashSet<FlexStr>,
     pub full_display_excluded: HashSet<FlexStr>,
 }

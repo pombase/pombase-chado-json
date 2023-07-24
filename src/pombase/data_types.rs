@@ -2151,6 +2151,9 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub annotated_terms: HashSet<TermNameAndId>,
 
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub display_extension: Vec<ExtPart>,
+
     // start, end pairs:
     pub positions: Vec<ProteinViewFeaturePos>,
 }
