@@ -142,7 +142,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
         Some(ProteinViewFeature {
             id: allele.uniquename.clone(),
             display_name: Some(allele.display_name()),
-            annotated_terms: HashSet::new(),
+            annotated_terms: vec![],
             display_extension: vec![],
             positions,
         })
@@ -173,7 +173,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
             ProteinViewFeature {
                id: pos_str.clone(),
                display_name: Some(pos_display_name),
-               annotated_terms: HashSet::new(),
+               annotated_terms: vec![],
                display_extension: vec![],
                positions: vec![(pos_str, *start, *end)],
             }
@@ -293,7 +293,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
         let sequence_length = protein.sequence_length();
 
         if let Some(mut feature) = feature_from_allele(&allele_details, sequence_length) {
-            let categories_with_names = allele_categories
+            let mut categories_with_names: Vec<_> = allele_categories
                 .iter()
                 .filter_map(|cat_term_id: &&FlexStr| {
                     let term_details = term_details_map.get(*cat_term_id)?;
@@ -302,7 +302,10 @@ fn make_mutants_track(gene_details: &GeneDetails,
                         id: (*cat_term_id).clone(),
                         name: term_details.name.clone(),
                     })
-                });
+                })
+                .collect();
+
+            categories_with_names.sort_by(|c1, c2| c1.cmp(c2));
 
             feature.annotated_terms.extend(categories_with_names);
 
@@ -343,7 +346,7 @@ fn make_mod_extension(extension: &Vec<ExtPart>,
         }
     };
 
-    let display_extension: Vec<FlexStr> = extension
+    let mut display_extension: Vec<FlexStr> = extension
         .iter()
         .filter(|ext_part| {
             ext_rel_types.contains(&ext_part.rel_type_name)
@@ -353,6 +356,8 @@ fn make_mod_extension(extension: &Vec<ExtPart>,
             flex_fmt!("{} {}", ext_part.rel_type_display_name, range_str)
         })
         .collect();
+
+    display_extension.sort_by(|s1, s2| s1.cmp(s2));
 
     display_extension
 }
@@ -406,12 +411,11 @@ fn make_modification_track(gene_details: &GeneDetails,
                     if !seen_modifications.contains(&description) {
                         seen_modifications.insert(description.clone());
 
-                        let mut annotated_terms = HashSet::new();
                         let name_and_id = TermNameAndId {
                             name: term_name.clone(),
                             id: termid.clone(),
                         };
-                        annotated_terms.insert(name_and_id);
+                        let annotated_terms = vec![name_and_id];
 
                         let display_extension =
                             make_mod_extension(&annotation_detail.extension, ext_rel_types,
@@ -456,7 +460,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
             let feature = ProteinViewFeature {
                 id: interpro_match.id.clone(),
                 display_name: Some(display_name),
-                annotated_terms: HashSet::new(),
+                annotated_terms: vec![],
                 display_extension: vec![],
                 positions,
             };
@@ -482,7 +486,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
             ProteinViewFeature {
                 id: feature_name.clone(),
                 display_name: None,
-                annotated_terms: HashSet::new(),
+                annotated_terms: vec![],
                 display_extension: vec![],
                 positions: vec![(feature_pos_name, *start, *end)],
             }

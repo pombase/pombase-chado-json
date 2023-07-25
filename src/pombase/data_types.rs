@@ -2149,6 +2149,17 @@ pub struct TermNameAndId {
     pub id: TermId,
 }
 
+impl Ord for TermNameAndId {
+    fn cmp(&self, other: &TermNameAndId) -> Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+impl PartialOrd for TermNameAndId {
+    fn partial_cmp(&self, other: &TermNameAndId) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 pub type ProteinViewFeaturePos = (FlexStr, usize, usize);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -2158,8 +2169,8 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="Option::is_none")]
     pub display_name: Option<FlexStr>,
 
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub annotated_terms: HashSet<TermNameAndId>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub annotated_terms: Vec<TermNameAndId>,
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub display_extension: Vec<FlexStr>,
