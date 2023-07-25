@@ -1148,6 +1148,16 @@ pub struct GeneDetails {
     pub gene_history: Vec<GeneHistoryEntry>,
 }
 
+impl GeneDetails {
+    pub fn display_name(&self) -> FlexStr {
+        if let Some(ref name) = self.name {
+            flex_fmt!("{} ({})", name, self.uniquename)
+        } else {
+            self.uniquename.clone()
+        }
+    }
+}
+
 impl PartialEq for GeneDetails {
     fn eq(&self, other: &GeneDetails) -> bool {
         self.uniquename == other.uniquename
@@ -2152,7 +2162,7 @@ pub struct ProteinViewFeature {
     pub annotated_terms: HashSet<TermNameAndId>,
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub display_extension: Vec<ExtPart>,
+    pub display_extension: Vec<FlexStr>,
 
     // start, end pairs:
     pub positions: Vec<ProteinViewFeaturePos>,

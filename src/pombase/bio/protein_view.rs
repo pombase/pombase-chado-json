@@ -11,7 +11,7 @@ use crate::data_types::{ProteinViewData, UniquenameGeneMap,
                         ProteinViewFeature, ProteinViewTrack,
                         UniquenameTranscriptMap, GeneDetails,
                         TermIdDetailsMap, AlleleDetails, ProteinDetails,
-                        ProteinViewFeaturePos, TermNameAndId, ExtPart};
+                        ProteinViewFeaturePos, TermNameAndId, ExtPart, ExtRange};
 use crate::web::config::{Config, CvConfig};
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
@@ -313,14 +313,58 @@ fn make_mutants_track(gene_details: &GeneDetails,
     track
 }
 
+fn make_mod_extension(extension: &Vec<ExtPart>,
+                      ext_rel_types: &HashSet<FlexStr>,
+                      gene_details_maps: &UniquenameGeneMap,
+                      term_details_map: &TermIdDetailsMap) -> Vec<FlexStr> {
+
+    let ext_display_range = |ext_part: &ExtPart| {
+        match &ext_part.ext_range {
+            ExtRange::GeneAndGeneProduct(gene_and_prod) => {
+                if let Some(gene_details) = gene_details_maps.get(&gene_and_prod.gene_uniquename) {
+                    let gene_display_name = gene_details.display_name();
+                    flex_fmt!("{} / {}", gene_display_name, gene_and_prod.product)
+                } else {
+                    flex_fmt!("{} / {}", gene_and_prod.gene_uniquename, gene_and_prod.product)
+                }
+            },
+            ExtRange::Term(termid) => {
+                let term_details = term_details_map.get(termid).unwrap();
+                flex_fmt!("{} ({})", term_details.name, termid)
+            },
+            ExtRange::Gene(gene_uniquename) => {
+                if let Some(gene_details) = gene_details_maps.get(gene_uniquename) {
+                    gene_details.display_name()
+                } else {
+                    gene_uniquename.clone()
+                }
+            },
+            _ => { panic!("unknown relation: {:#?}", ext_part)}
+        }
+    };
+
+    let display_extension: Vec<FlexStr> = extension
+        .iter()
+        .filter(|ext_part| {
+            ext_rel_types.contains(&ext_part.rel_type_name)
+        })
+        .map(|ext_part| {
+            let range_str = ext_display_range(ext_part);
+            flex_fmt!("{} {}", ext_part.rel_type_display_name, range_str)
+        })
+        .collect();
+
+    display_extension
+}
+
 lazy_static! {
     static ref MODIFICATION_RESIDUE_RE: Regex =
         Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+(\d+))$").unwrap();
 }
 
-
 fn make_modification_track(gene_details: &GeneDetails,
                            config: &Config,
+                           gene_details_maps: &UniquenameGeneMap,
                            term_details_map: &TermIdDetailsMap,
                            annotation_details_map: &IdOntAnnotationDetailMap) -> ProteinViewTrack {
     let mut features = vec![];
@@ -369,13 +413,9 @@ fn make_modification_track(gene_details: &GeneDetails,
                         };
                         annotated_terms.insert(name_and_id);
 
-                        let display_extension: Vec<ExtPart> = annotation_detail.extension
-                            .iter()
-                            .filter(|ext_part| {
-                                ext_rel_types.contains(&ext_part.rel_type_name)
-                            })
-                            .map(|ext_part| ext_part.clone())
-                            .collect();
+                        let display_extension =
+                            make_mod_extension(&annotation_detail.extension, ext_rel_types,
+                                               gene_details_maps, term_details_map);
 
                         let feature = ProteinViewFeature {
                             id: description.clone(),
@@ -536,7 +576,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         sort_deletions(&mut deletions_track);
 
         let modification_track =
-            make_modification_track(gene_details, config, term_details_map, annotation_details_map);
+            make_modification_track(gene_details, config, gene_details_maps, term_details_map,
+                                    annotation_details_map);
 
         let pfam_track = make_pfam_track(gene_details);
 
