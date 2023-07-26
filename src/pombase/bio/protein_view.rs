@@ -181,7 +181,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
          .collect();
 
     ProteinViewTrack {
-        name: flex_str!("AA substitutions"),
+        name: flex_str!("AA substitution positions"),
         display_type: flex_str!("block"),
         features,
     }
@@ -197,7 +197,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
                       alleles: &UniquenameAlleleDetailsMap) -> ProteinViewTrack {
     let mut track = ProteinViewTrack {
         name: if track_type == TrackType::AminoAcidMutations {
-            flex_str!("Mutants")
+            flex_str!("AA substitution alleles")
         } else {
             flex_str!("Partial deletions")
         },
