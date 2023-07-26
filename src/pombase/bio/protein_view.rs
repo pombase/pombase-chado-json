@@ -181,7 +181,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
          .collect();
 
     ProteinViewTrack {
-        name: flex_str!("Mutant positions"),
+        name: flex_str!("AA substitutions"),
         display_type: flex_str!("block"),
         features,
     }
@@ -470,7 +470,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
     }
 
     ProteinViewTrack {
-        name: flex_str!("Pfam families"),
+        name: flex_str!("Pfam domains"),
         display_type: flex_str!("block"),
         features,
     }
