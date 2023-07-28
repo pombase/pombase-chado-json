@@ -152,30 +152,26 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
 }
 
 fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
-    let mut summary_features = HashMap::new();
+    let mut summary_features = HashSet::new();
 
     for mutant_feat in &mutants_track.features {
-        for (_, feat_start, feat_end) in &mutant_feat.positions {
-            let key = (*feat_start, *feat_end);
-            summary_features.entry(key)
-               .or_insert_with(|| {});
+        for (id, feat_start, feat_end) in &mutant_feat.positions {
+            for (residue, pos) in id.chars().zip(*feat_start..*feat_end+1) {
+                let key = (flex_fmt!("{}{}", residue, pos), pos);
+
+                summary_features.insert(key);
+            }
         }
     }
 
-    let features = summary_features.keys()
-        .map(|(start, end)| {
-            let pos_str = if start == end {
-                flex_fmt!("{}", start)
-            } else {
-                flex_fmt!("{}..{}", start, end)
-            };
-            let pos_display_name = flex_fmt!("AA {}", pos_str);
+    let features: Vec<_> = summary_features.into_iter()
+        .map(|(residue_and_pos, pos)| {
             ProteinViewFeature {
-               id: pos_str.clone(),
-               display_name: Some(pos_display_name),
+               id: residue_and_pos.clone(),
+               display_name: Some(residue_and_pos.clone()),
                annotated_terms: vec![],
                display_extension: vec![],
-               positions: vec![(pos_str, *start, *end)],
+               positions: vec![(residue_and_pos, pos, pos)],
             }
          })
          .collect();
