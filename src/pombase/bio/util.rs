@@ -134,7 +134,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
             to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
                    "gene", gene_loc, None);
 
-        ret_val.push(format!("{};biotype={}", gene_gff_line, gene_type));
+        ret_val.push(format!("{};so_term_name={}", gene_gff_line, gene_type));
 
         for transcript_uniquename in &gene.transcripts {
             let transcript_details = transcripts
