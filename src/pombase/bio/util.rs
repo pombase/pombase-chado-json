@@ -104,6 +104,21 @@ fn to_gff(chromosome_export_id: &str,
     ret_val
 }
 
+fn get_gff_gene_type(gene: &GeneDetails) -> &'static str {
+    match gene.feature_type.as_ref() {
+        "gene" => "gene",
+        "lncRNA gene" => "lncRNA_gene",
+        "mRNA gene" => "protein_coding_gene",
+        "ncRNA gene" => "ncRNA_gene",
+        "pseudogene" => "pseudogene",
+        "rRNA gene" => "rRNA_gene",
+        "snRNA gene" => "snRNA_gene",
+        "sncRNA gene" => "sncRNA_gene",
+        "snoRNA gene" => "snoRNA_gene",
+        "tRNA gene" => "tRNA_gene",
+        _ => panic!("unknown gene feature_type: {}", gene.feature_type),
+    }
+}
 
 pub fn format_gene_gff(chromosome_export_id: &str,
                        source: &str, transcripts: &UniquenameTranscriptMap,
@@ -113,8 +128,14 @@ pub fn format_gene_gff(chromosome_export_id: &str,
         let maybe_gene_name =
             gene.name.as_ref().map(|gene_name| gene_name as &str);
 
-        ret_val.push(to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
-                            "gene", gene_loc, None));
+        let gene_type = get_gff_gene_type(gene);
+
+        let gene_gff_line =
+            to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
+                   "gene", gene_loc, None);
+
+        ret_val.push(format!("{};biotype={}", gene_gff_line, gene_type));
+
         for transcript_uniquename in &gene.transcripts {
             let transcript_details = transcripts
                 .get(transcript_uniquename)
