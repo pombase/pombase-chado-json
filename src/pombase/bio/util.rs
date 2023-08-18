@@ -274,7 +274,7 @@ fn test_format_gff() {
 
     assert_eq!(gene_gff_lines.len(), 13);
     assert_eq!(gene_gff_lines[0],
-               "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34");
+               "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34;so_term_name=protein_coding_gene");
     assert_eq!(gene_gff_lines[1],
                "chromosome_3\tPomBase\tmRNA\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06.1;Parent=SPCC18B5.06");
     assert_eq!(gene_gff_lines[2],
