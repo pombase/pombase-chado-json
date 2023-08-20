@@ -6,11 +6,13 @@ use std::collections::HashSet;
 
 use async_recursion::async_recursion;
 
+use itertools::Itertools;
 use uuid::Uuid;
 
 use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
+use crate::data_types::DataLookup;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand, Ploidiness};
 use crate::web::config::TermAndName;
@@ -95,6 +97,11 @@ pub struct TermNode {
     pub conditions: HashSet<TermAndName>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub excluded_conditions: HashSet<TermAndName>,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct RefGenesNode {
+    pub reference_uniquename: FlexStr,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -190,6 +197,8 @@ pub struct QueryNode {
     pub not: Option<NotNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub term: Option<TermNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub ref_genes: Option<RefGenesNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub subset: Option<SubsetNode>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -294,6 +303,14 @@ fn exec_termid(api_data: &APIData, term_id: &FlexStr,
         Ok(genes)
     } else {
         Ok(api_data.genes_of_termid(term_id))
+    }
+}
+
+fn exec_ref_genes(api_data: &APIData, reference_uniquename: &FlexStr) -> GeneUniquenameVecResult {
+    if let Some(reference) = api_data.get_reference(reference_uniquename) {
+        Ok(reference.genes_by_uniquename.keys().cloned().collect_vec())
+    } else {
+        Err(format!("no such reference: {}", reference_uniquename).into())
     }
 }
 
@@ -593,6 +610,7 @@ impl QueryNode {
             and: None,
             not: None,
             term: None,
+            ref_genes: None,
             subset: None,
             gene_list: None,
             target_of: None,
@@ -626,6 +644,9 @@ impl QueryNode {
                                &term.ploidiness,
                                &term.expression, &term.conditions,
                                &term.excluded_conditions);
+        }
+        if let Some(ref ref_genes) = self.ref_genes {
+            return exec_ref_genes(api_data, &ref_genes.reference_uniquename);
         }
         if let Some(ref subset_node) = self.subset {
             return exec_subset(api_data, &subset_node.subset_name);
