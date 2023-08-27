@@ -876,10 +876,12 @@ impl APIData {
     }
 
     pub fn get_protein_features_of_gene(&self, full_or_widget: ProteinViewType,
-                                        gene_uniquename: &GeneUniquename)
+                                        gene_uniquename: &str)
         -> Option<ProteinViewData>
     {
-        let data = self.maps.protein_view_data.get(gene_uniquename)?;
+        let gene_uniquename = FlexStr::from(gene_uniquename);
+
+        let data = self.maps.protein_view_data.get(&gene_uniquename)?;
 
         let filtered_tracks = data.tracks
             .iter()

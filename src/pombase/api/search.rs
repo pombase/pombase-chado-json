@@ -4,12 +4,6 @@ use std::error::Error;
 
 use anyhow::Result;
 
-use std::io::Cursor;
-
-use rocket::response::{self, Response, Responder};
-use rocket::request::Request;
-use rocket::http::ContentType;
-
 use crate::web::config::{Config, ServerConfig};
 
 use crate::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary};
@@ -28,30 +22,9 @@ pub struct Search {
     reqwest_client: Client,
 }
 
-pub struct PNGPlot {
-    pub bytes: Bytes
-}
-
-impl<'a> Responder<'a, 'a> for PNGPlot {
-    fn respond_to(self, _: &Request) -> response::Result<'a> {
-        Response::build()
-            .sized_body(self.bytes.len(), Cursor::new(self.bytes))
-            .header(ContentType::new("image", "svg+xml"))
-            .ok()
-    }
-}
 
 pub struct SVGPlot {
     pub bytes: Bytes
-}
-
-impl<'a> Responder<'a, 'a> for SVGPlot {
-    fn respond_to(self, _: &Request) -> response::Result<'a> {
-        Response::build()
-            .sized_body(self.bytes.len(), Cursor::new(self.bytes))
-            .header(ContentType::new("image", "svg+xml"))
-            .ok()
-    }
 }
 
 
