@@ -305,10 +305,13 @@ async fn query_post(State(all_state): State<Arc<AllState>>, Json(q): Json<Query>
     Json(all_state.query_exec.exec(&q).await)
 }
 
-async fn query_get(State(all_state): State<Arc<AllState>>, Json(q): Json<Query>)
+async fn query_get(State(all_state): State<Arc<AllState>>, Path(q): Path<String>)
               -> impl IntoResponse
 {
-    Json(all_state.query_exec.exec(&q).await)
+    match serde_json::from_str::<Query>(&q) {
+        Ok(q) => Ok(Json(all_state.query_exec.exec(&q).await)),
+        Err(err) => Err((StatusCode::BAD_REQUEST, err.to_string()))
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -605,8 +608,8 @@ async fn main() {
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/:plot_size/:genes", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/motif_search/:scope/:q", get(motif_search))
         .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
+        .route("/api/v1/dataset/latest/query/:q", get(query_get))
         .route("/api/v1/dataset/latest/query", post(query_post))
-        .route("/api/v1/dataset/latest/query/:q_str", get(query_get))
         .route("/api/v1/dataset/latest/search/:scope/:q", get(solr_search))
         .route("/api/v1/dataset/latest/summary/term/:id", get(get_term_summary_by_id))
         .route("/ping", get(ping))
