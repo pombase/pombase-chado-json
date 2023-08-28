@@ -515,6 +515,7 @@ async fn main() {
 
     opts.optflag("h", "help", "print this help message");
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
+    opts.optopt("b", "bind-address-and-port", "The address:port to bind to", "BIND_ADDRESS_AND_PORT");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
     opts.optopt("d", "api-maps-database", "SQLite3 database of API maps", "API_MAPS_DATABASE");
     opts.optopt("w", "web-root-dir", "Root web data directory", "WEB_ROOT_DIR");
@@ -531,7 +532,6 @@ async fn main() {
         print_usage(&program, opts);
         process::exit(0);
     }
-
     if !matches.opt_present("config-file") {
         println!("no -c|--config-file option");
         print_usage(&program, opts);
@@ -552,6 +552,17 @@ async fn main() {
         print_usage(&program, opts);
         process::exit(1);
     }
+
+    let bind_address_and_port = matches.opt_str("bind-address-and-port");
+    let socket_addr =
+        if let Some(bind_address_and_port) = bind_address_and_port {
+            match bind_address_and_port.parse() {
+                Ok(sock) => sock,
+                Err(err) => panic!("{}", err)
+            }
+        } else {
+           "0.0.0.0:8500".parse().unwrap()
+        };
 
     let site_db_conn_string = matches.opt_str("s");
     let api_maps_database_path = matches.opt_str("d").unwrap();
@@ -623,7 +634,7 @@ async fn main() {
         .fallback(not_found)
         .with_state(Arc::new(all_state));
 
-    axum::Server::bind(&"127.0.0.1:8400".parse().unwrap())
+    axum::Server::bind(&socket_addr)
         .serve(app.into_make_service())
         .await
         .unwrap();
