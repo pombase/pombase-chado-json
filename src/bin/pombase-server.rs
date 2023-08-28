@@ -452,13 +452,16 @@ async fn solr_search(Path((scope, q)): Path<(String, String)>, State(all_state):
 }
 
 async fn motif_search(Path((scope, q)): Path<(String, String)>, State(all_state): State<Arc<AllState>>)
-                -> Result<Json<String>, StatusCode>
+                -> Result<(HeaderMap, String), StatusCode>
 {
     let res = all_state.search.motif_search(&scope, &q).await;
 
     match res {
         Ok(search_result) => {
-            Ok(Json(search_result))
+            let mut headers = HeaderMap::new();
+            headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
+            Ok((headers, search_result))
+
         },
         Err(err) => {
             println!("Motif search error: {:?}", err);
