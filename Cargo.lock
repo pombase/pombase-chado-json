@@ -1163,6 +1163,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "once_cell",
+ "percent-encoding",
  "r2d2",
  "r2d2_postgres",
  "regex",

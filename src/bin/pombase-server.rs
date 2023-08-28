@@ -5,13 +5,20 @@ use axum::{
     Json, Router, extract::{State, Path},
     http::{StatusCode, Response, Uri, Request, HeaderMap, header}, response::{Html, IntoResponse},
     body::{boxed, BoxBody, Body, Full},
+    ServiceExt,
 };
 
-use bytes::Bytes;
-use tower::ServiceExt;
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
 
+const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
+
+use bytes::Bytes;
+
+use tower::layer::Layer;
 
 use tower_http::services::ServeDir;
+use tower_http::normalize_path::NormalizePathLayer;
+
 use serde::Serialize;
 use serde_json::{json, Value};
 
@@ -55,11 +62,12 @@ struct TermLookupResponse {
 }
 
 async fn get_static_file(path: &str) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    let path = utf8_percent_encode(path, FRAGMENT).to_string();
     let uri: Uri = path.parse().unwrap();
-
     let req = Request::builder().uri(uri).body(Body::empty()).unwrap();
 
-    // `ServeDir` implements `tower::Service` so we can call it with `tower::ServiceExt::oneshot`
+    use tower::ServiceExt;
+
     match ServeDir::new("/").oneshot(req).await {
         Ok(res) => Ok(res.map(boxed)),
         Err(err) => Err((
@@ -627,15 +635,13 @@ async fn main() {
         .route("/api/v1/dataset/latest/search/:scope/:q", get(solr_search))
         .route("/api/v1/dataset/latest/summary/term/:id", get(get_term_summary_by_id))
         .route("/ping", get(ping))
-        .route_service("/jbrowse",
-               ServeDir::new(std::path::Path::new("/")
-                             .join(&web_root_dir)
-                             .join("jbrowse")))
         .fallback(not_found)
         .with_state(Arc::new(all_state));
 
+    let app = NormalizePathLayer::trim_trailing_slash().layer(app).into_make_service();
+
     axum::Server::bind(&socket_addr)
-        .serve(app.into_make_service())
+        .serve(app)
         .await
         .unwrap();
 }
