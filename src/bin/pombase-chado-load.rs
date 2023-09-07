@@ -31,7 +31,13 @@ fn print_usage(program: &str, opts: &Options) {
     print!("{}", opts.usage(&brief));
 }
 
-// is mark_as_obsolete is true, is_obsolete will be set on new features
+// if mark_as_obsolete is true, is_obsolete will be set on new features
+//
+// later when the allele is read (in the Perl code) from any other source,
+// the is_obsolete flag will be set to true
+//
+// See PhenotypeFeatureFinder.pm
+//
 fn read_allele_map(file_name: &str) -> AlleleShortMap {
     let file = match File::open(file_name) {
         Ok(file) => file,
