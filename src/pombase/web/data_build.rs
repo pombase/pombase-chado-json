@@ -1314,8 +1314,6 @@ phenotypes, so just the first part of this extension will be used:
                 None
             };
 
-        let termid = cvterm.termid();
-
         let ont_annotation_detail =
             self.annotation_from_template(extension_relation_order,
                                           cvterm, annotation_template);
@@ -1323,16 +1321,15 @@ phenotypes, so just the first part of this extension will be used:
         let mut interaction_type = None;
         let mut interaction_note = None;
         let mut rescued_phenotype_termid = None;
-        let mut rescued_phenotype_extension = vec![];
+        let mut rescued_phenotype_extension_value = None;
 
         for prop in genotype_interaction_feature.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
                 "interaction_type" => interaction_type = prop.value.clone(),
                 "interaction_note" => interaction_note = prop.value.clone(),
                 "interaction_rescued_phenotype_id" => rescued_phenotype_termid = prop.value.clone(),
-                "interaction_rescued_phenotype_extension" => if let Some(ref value) = prop.value {
-                    rescued_phenotype_extension = self.parse_extension_prop(&termid, value);
-                },
+                "interaction_rescued_phenotype_extension" =>
+                    rescued_phenotype_extension_value = prop.value.clone(),
                 _ => (),
             }
         }
@@ -1358,6 +1355,15 @@ phenotypes, so just the first part of this extension will be used:
                 }
             } else {
                 None
+            };
+
+        let rescued_phenotype_extension =
+            if let (Some(ref termid), Some(ref ext)) =
+                (&rescued_phenotype_termid, &rescued_phenotype_extension_value)
+            {
+                self.parse_extension_prop(&termid, ext)
+            } else {
+                vec![]
             };
 
         let interaction_type =
