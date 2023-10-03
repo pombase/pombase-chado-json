@@ -693,6 +693,9 @@ fn get_test_config() -> Config {
             modification_extension_rel_types: HashSet::new(),
             widget_track_names: HashSet::new(),
             full_display_excluded: HashSet::new(),
+        },
+        apicuron: ApicuronConfig {
+            resource_id: flex_str!("pombase"),
         }
     };
 
