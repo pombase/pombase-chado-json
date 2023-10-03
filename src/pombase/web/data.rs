@@ -15,7 +15,7 @@ use zstd::stream::Encoder;
 
 use rusqlite::Connection;
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
@@ -1473,36 +1473,48 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write_apicuron_files(&self, references: &UniquenameReferenceMap,
+    pub fn write_apicuron_files(&self, config: &Config,
+                                references: &UniquenameReferenceMap,
                                 output_dir: &str)
              -> Result<(), io::Error>
     {
-        let mut curator_details = HashMap::new();
+        let mut curation_reports = vec![];
 
         for ref_details in references.values() {
             if ref_details.cv_annotations.is_empty() {
                 continue;
             }
 
+            let Some(ref canto_approved_date) = ref_details.canto_approved_date
+            else {
+                continue
+            };
+
+            let mut approved_parts = canto_approved_date.split(" ");
+            let Some(approved_date) = approved_parts.next()
+            else {
+                continue;
+            };
+
+            let approved_time = approved_parts.next().unwrap_or_else(|| "00:00:00");
+
+            let timestamp = flex_fmt!("{}T{}.000Z", approved_date, approved_time);
+
             for annotation_curator in &ref_details.annotation_curators {
                 if let Some(ref curator_orcid) = annotation_curator.orcid {
-                    let curator =
-                        curator_details
-                            .entry(&annotation_curator.name)
-                            .or_insert_with(|| ApicuronCuratorDetails {
-                                 curator_name: annotation_curator.name.clone(),
-                                 curator_orcid: curator_orcid.clone(),
-                                 curated_publication_count: 0,
-                            });
-
-                    curator.curated_publication_count += 1;
+                    curation_reports.push(ApicuronReport {
+                        activity_term: flex_str!("publication_curated"),
+                        curator_orcid: curator_orcid.clone(),
+                        timestamp: timestamp.clone(),
+                        entity_uri: flex_fmt!("{}/reference/{}", config.base_url, ref_details.uniquename),
+                    });
                 }
-
             }
         }
 
         let apicuron_data = ApicuronData {
-            curator_details: curator_details.values().cloned().collect(),
+            resource_id: config.apicuron.resource_id.clone(),
+            reports: curation_reports,
         };
 
         let s = serde_json::to_string(&apicuron_data).unwrap();
@@ -1605,7 +1617,7 @@ impl WebData {
 
         self.write_annotation_subsets(config, &misc_path)?;
 
-        self.write_apicuron_files(&self.references, &misc_path)?;
+        self.write_apicuron_files(config, &self.references, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 

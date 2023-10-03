@@ -346,6 +346,11 @@ pub struct ProteinFeatureViewConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ApicuronConfig {
+    pub resource_id: FlexStr,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: FlexStr,
     pub database_long_name: FlexStr,
@@ -382,6 +387,7 @@ pub struct Config {
     pub gene_expression: GeneExpressionConfig,
     pub feature_sub_groups: HashMap<String, HashSet<String>>,
     pub protein_feature_view: ProteinFeatureViewConfig,
+    pub apicuron: ApicuronConfig,
 }
 
 impl Config {

@@ -2481,13 +2481,15 @@ pub struct Stats {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ApicuronCuratorDetails {
-    pub curator_name: FlexStr,
+pub struct ApicuronReport {
+    pub activity_term: FlexStr,
+    pub timestamp: FlexStr,
     pub curator_orcid: FlexStr,
-    pub curated_publication_count: usize,
+    pub entity_uri: FlexStr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ApicuronData {
-    pub curator_details: Vec<ApicuronCuratorDetails>,
+    pub resource_id: FlexStr,
+    pub reports: Vec<ApicuronReport>,
 }
