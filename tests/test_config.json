@@ -495,5 +495,8 @@
     "modification_extension_rel_types": [],
     "widget_track_names": [],
     "full_display_excluded": []
+  },
+  "apicuron": {
+    "resource_id": "pombase"
   }
 }
