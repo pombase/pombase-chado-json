@@ -471,18 +471,21 @@ impl WebData {
         let pseudogenes_file_name = output_dir.to_owned() + "/pseudogeneIDs.tsv";
         let all_names_file_name = output_dir.to_owned() + "/gene_IDs_names.tsv";
         let all_ids_file_name = output_dir.to_owned() + "/gene_IDs_names_products.tsv";
+        let uniprot_ids_file_name = output_dir.to_owned() + "/uniprot_ids.tsv";
 
         let gene_file = File::create(gene_file_name).expect("Unable to open file");
         let rna_file = File::create(rna_file_name).expect("Unable to open file");
         let pseudogenes_file = File::create(pseudogenes_file_name).expect("Unable to open file");
         let all_names_file = File::create(all_names_file_name).expect("Unable to open file");
         let all_ids_file = File::create(all_ids_file_name).expect("Unable to open file");
+        let uniprot_ids_file = File::create(uniprot_ids_file_name).expect("Unable to open file");
 
         let mut gene_writer = BufWriter::new(&gene_file);
         let mut rna_writer = BufWriter::new(&rna_file);
         let mut pseudogenes_writer = BufWriter::new(&pseudogenes_file);
         let mut all_names_writer = BufWriter::new(&all_names_file);
         let mut all_ids_writer = BufWriter::new(&all_ids_file);
+        let mut uniprot_ids_writer = BufWriter::new(&uniprot_ids_file);
 
         let db_version = format!("# Chado database date: {}\n", self.metadata.db_creation_datetime);
         gene_writer.write_all(db_version.as_bytes())?;
@@ -563,6 +566,15 @@ impl WebData {
                     ""
                 };
 
+
+            if uniprot_id.len() > 0 && gene_details.feature_type == "mRNA gene" {
+                let uniprot_ids_line = format!("{}\t{}\t{}\n",
+                                               uniprot_id,
+                                               gene_details.uniquename,
+                                               gene_name);
+                uniprot_ids_writer.write_all(uniprot_ids_line.as_bytes())?;
+            }
+
             let chromosome_name =
                 if let Some(ref loc) = gene_details.location {
                     &loc.chromosome_name
@@ -595,6 +607,7 @@ impl WebData {
         pseudogenes_writer.flush()?;
         all_names_writer.flush()?;
         all_ids_writer.flush()?;
+        uniprot_ids_writer.flush()?;
 
         Ok(())
     }
