@@ -568,10 +568,16 @@ impl WebData {
 
 
             if uniprot_id.len() > 0 && gene_details.feature_type == "mRNA gene" {
+                let gene_name_or_dash =
+                    if gene_name.len() == 0 {
+                        "-"
+                    } else {
+                        gene_name.as_str()
+                    };
                 let uniprot_ids_line = format!("{}\t{}\t{}\n",
                                                uniprot_id,
                                                gene_details.uniquename,
-                                               gene_name);
+                                               gene_name_or_dash);
                 uniprot_ids_writer.write_all(uniprot_ids_line.as_bytes())?;
             }
 
