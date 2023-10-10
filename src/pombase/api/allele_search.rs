@@ -27,13 +27,15 @@ lazy_static! {
     static ref DELTA_RE: Regex = Regex::new(r#"[Δδ]"#).unwrap();
 }
 
-// split on spaces and tidy search string
+// tidy search string - don't split for name as there are allele synonyms that
+// contain spaces
 fn allele_words(q: &str) -> Vec<String> {
     let substring = |s: &str, len: usize| s.chars().take(len).collect::<String>();
     let lc_substr = substring(&q.to_lowercase(), 200);
     let q = DELTA_RE.replace_all(&lc_substr, "delta").replace("wild type", "wild_type");
 
-    q.split_whitespace().map(|s| s.to_owned()).collect()
+//    q.split_whitespace().map(|s| s.to_owned()).collect()
+    vec![q.to_owned()]
 }
 
 fn make_allele_url(q: &str) -> Option<String> {
