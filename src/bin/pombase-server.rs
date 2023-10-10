@@ -618,7 +618,7 @@ async fn main() {
         .route("/simple/gene/:id", get(get_simple_gene))
         .route("/simple/reference/:id", get(get_simple_reference))
         .route("/simple/term/:id", get(get_simple_term))
-        .route("/api/v1/dataset/latest/complete/allele/:q", get(allele_complete))
+        .route("/api/v1/dataset/latest/complete/allele/*q", get(allele_complete))
         .route("/api/v1/dataset/latest/complete/ref/:q", get(ref_complete))
         .route("/api/v1/dataset/latest/complete/term/:cv_name/:q", get(term_complete))
         .route("/api/v1/dataset/latest/data/allele/:id", get(get_allele))
