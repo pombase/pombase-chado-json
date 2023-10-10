@@ -55,13 +55,15 @@ fn make_allele_url(q: &str) -> Option<String> {
     let mut clean_words = vec![];
 
     for word in &words {
-        clean_words.push(CLEAN_RE.replace_all(word, "\\$1"));
+        let clean_word = CLEAN_RE.replace_all(word, "\\$1");
 
-        url_parts.push(format!("name:({})^5.0", word));
-        url_parts.push(format!("synonyms:({})^4.0", word));
-        url_parts.push(format!("allele_type:({})^4.0", word));
-        url_parts.push(format!("gene_name:({})^3.0", word));
-        url_parts.push(format!("gene_uniquename:({})^3.0", word));
+        clean_words.push(clean_word.clone());
+
+        url_parts.push(format!("name:({})^5.0", clean_word));
+        url_parts.push(format!("synonyms:({})^4.0", clean_word));
+        url_parts.push(format!("allele_type:({})^4.0", clean_word));
+        url_parts.push(format!("gene_name:({})^3.0", clean_word));
+        url_parts.push(format!("gene_uniquename:({})^3.0", clean_word));
     }
 
     for word in &clean_words {
