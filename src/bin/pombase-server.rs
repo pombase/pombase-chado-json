@@ -45,7 +45,7 @@ use pombase::api::site_db::SiteDB;
 
 use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary};
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
-                                 render_simple_term_page};
+                                 render_simple_term_page, render_simple_genotype_page};
 use pombase::web::config::Config;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -279,6 +279,18 @@ async fn get_simple_gene(Path(id): Path<String>,
                          State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
     if let Some(gene) = all_state.query_exec.get_api_data().get_full_gene_details(&id) {
         (StatusCode::OK, Html(render_simple_gene_page(&all_state.config, &gene)))
+    } else {
+        (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
+    }
+}
+
+/*
+Return a simple HTML version a genotype page for search engines
+*/
+async fn get_simple_genotype(Path(id): Path<String>,
+                             State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
+    if let Some(genotype) = all_state.query_exec.get_api_data().get_genotype_details(&id) {
+        (StatusCode::OK, Html(render_simple_genotype_page(&all_state.config, &genotype)))
     } else {
         (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
     }
@@ -616,6 +628,7 @@ async fn main() {
         .route("/structure_view/:structure_type/:id", get(structure_view))
         .route("/protein_feature_view/:full_or_widget/:gene_uniquename", get(protein_feature_view))
         .route("/simple/gene/:id", get(get_simple_gene))
+        .route("/simple/genotype/:id", get(get_simple_genotype))
         .route("/simple/reference/:id", get(get_simple_reference))
         .route("/simple/term/:id", get(get_simple_term))
         .route("/api/v1/dataset/latest/complete/allele/*q", get(allele_complete))
