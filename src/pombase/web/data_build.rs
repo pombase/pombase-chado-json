@@ -12,6 +12,7 @@ use regex::Regex;
 use std::collections::{HashMap, HashSet};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
+use crate::bio::protein_view::make_protein_view_data_map;
 use crate::db::raw::*;
 
 use crate::gene_history::GeneHistoryMap;
@@ -818,6 +819,22 @@ fn validate_transcript_parts(transcript_uniquename: &FlexStr, parts: &[FeatureSh
     }
 }
 
+fn set_has_protein_features(genes: &mut UniquenameGeneMap, protein_view_data: &HashMap<GeneUniquename, ProteinViewData>) {
+    for (gene_uniquename, protein_feature_data) in protein_view_data {
+        if let Some(gene_details) = genes.get_mut(gene_uniquename) {
+            let mut has_protein_features = false;
+
+            for track in &protein_feature_data.tracks {
+                if track.features.len() > 0 {
+                    has_protein_features = true;
+                    break;
+                }
+            }
+
+            gene_details.has_protein_features = has_protein_features;
+        }
+    }
+}
 
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
@@ -924,12 +941,14 @@ impl <'a> WebDataBuild<'a> {
                             seen_genotypes: &mut HashMap<FlexStr, GenotypeShortMap>,
                             seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
                             seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                            seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
                             identifier: &FlexStr,
                             genotype_uniquename: &FlexStr) {
         let genotype_short = self.make_genotype_short(genotype_uniquename);
         for locus in &genotype_short.loci {
             for expressed_allele in &locus.expressed_alleles {
-                self.add_allele_to_hash(seen_alleles, seen_genes, identifier,
+                self.add_allele_to_hash(seen_alleles, seen_genes,
+                                        seen_references, identifier,
                                         &expressed_allele.allele_uniquename);
             }
         }
@@ -943,10 +962,21 @@ impl <'a> WebDataBuild<'a> {
     fn add_allele_to_hash(&self,
                           seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
                           seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
+                          seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
                           identifier: &FlexStr,
                           allele_uniquename: &AlleleUniquename) -> AlleleShort {
         let allele_short = self.make_allele_short(allele_uniquename);
         {
+            for comment_details in &allele_short.comments {
+                self.add_ref_to_hash(seen_references, identifier,
+                                     &comment_details.reference);
+
+            }
+            for synonym_details in &allele_short.synonyms {
+                self.add_ref_to_hash(seen_references, identifier,
+                                     &synonym_details.reference);
+            }
+
             let allele_gene_uniquename = &allele_short.gene_uniquename;
             self.add_gene_to_hash(seen_genes, identifier, allele_gene_uniquename);
             seen_alleles
@@ -1228,7 +1258,16 @@ phenotypes, so just the first part of this extension will be used:
                        _ => ExtRange::Misc(part.range_value.clone()),
                     }
                 } else {
-                    ExtRange::Term(part.range_value.clone())
+                    if let Some(ref display_name) = part.range_display_name {
+                        ExtRange::Misc(flex_fmt!("{}({})", display_name, part.range_value))
+                    } else {
+                        let value = part.range_value.clone();
+                        if part.range_value.contains(":") {
+                            ExtRange::Term(value)
+                        } else {
+                            ExtRange::Misc(value)
+                        }
+                    }
                 };
 
             let rel_type_display_name =
@@ -1275,8 +1314,6 @@ phenotypes, so just the first part of this extension will be used:
                 None
             };
 
-        let termid = cvterm.termid();
-
         let ont_annotation_detail =
             self.annotation_from_template(extension_relation_order,
                                           cvterm, annotation_template);
@@ -1284,16 +1321,15 @@ phenotypes, so just the first part of this extension will be used:
         let mut interaction_type = None;
         let mut interaction_note = None;
         let mut rescued_phenotype_termid = None;
-        let mut rescued_phenotype_extension = vec![];
+        let mut rescued_phenotype_extension_value = None;
 
         for prop in genotype_interaction_feature.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
                 "interaction_type" => interaction_type = prop.value.clone(),
                 "interaction_note" => interaction_note = prop.value.clone(),
                 "interaction_rescued_phenotype_id" => rescued_phenotype_termid = prop.value.clone(),
-                "interaction_rescued_phenotype_extension" => if let Some(ref value) = prop.value {
-                    rescued_phenotype_extension = self.parse_extension_prop(&termid, value);
-                },
+                "interaction_rescued_phenotype_extension" =>
+                    rescued_phenotype_extension_value = prop.value.clone(),
                 _ => (),
             }
         }
@@ -1319,6 +1355,15 @@ phenotypes, so just the first part of this extension will be used:
                 }
             } else {
                 None
+            };
+
+        let rescued_phenotype_extension =
+            if let (Some(ref termid), Some(ref ext)) =
+                (&rescued_phenotype_termid, &rescued_phenotype_extension_value)
+            {
+                self.parse_extension_prop(&termid, ext)
+            } else {
+                vec![]
             };
 
         let interaction_type =
@@ -1559,6 +1604,7 @@ phenotypes, so just the first part of this extension will be used:
                                        genes_by_uniquename: HashMap::new(),
                                        genotypes_by_uniquename: HashMap::new(),
                                        alleles_by_uniquename: HashMap::new(),
+                                       references_by_uniquename: HashMap::new(),
                                        transcripts_by_uniquename: HashMap::new(),
                                        terms_by_termid: HashMap::new(),
                                        annotation_details: HashMap::new(),
@@ -1817,6 +1863,7 @@ phenotypes, so just the first part of this extension will be used:
             disordered_region_coords,
             low_complexity_region_coords,
             coiled_coil_coords,
+            has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
             name_descriptions: vec![],
@@ -2200,7 +2247,7 @@ phenotypes, so just the first part of this extension will be used:
                 "comment" => if let Some(ref comment) = prop.value {
                     let comment = CommentAndReference {
                       comment: comment.clone(),
-                      reference_uniquename:
+                      reference:
                          prop.featureprop_pubs.borrow().get(0)
                              .map(|publication| publication.uniquename.clone()),
                     };
@@ -4869,6 +4916,13 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
+        let protein_view_data =
+            make_protein_view_data_map(&self.genes,
+                                       &self.terms,
+                                       &self.annotation_details,
+                                       &self.genotypes, &self.alleles,
+                                       &self.transcripts, &self.config);
+
         let gene_query_data_map = self.make_gene_query_data_map();
 
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
@@ -4932,6 +4986,7 @@ phenotypes, so just the first part of this extension will be used:
             children_by_termid,
             gene_expression_measurements,
             secondary_identifiers_map,
+            protein_view_data,
        }
     }
 
@@ -4993,6 +5048,7 @@ phenotypes, so just the first part of this extension will be used:
                                                seen_transcripts, seen_terms, identifier);
                     if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   identifier, genotype_uniquename);
                     }
 
@@ -5080,16 +5136,19 @@ phenotypes, so just the first part of this extension will be used:
 
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   termid,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   termid,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   termid,
                                                   double_mutant_genotype_display_uniquename);
                     }
@@ -5203,7 +5262,8 @@ phenotypes, so just the first part of this extension will be used:
                         }
                         if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                             self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
-                                                      &mut seen_genes, termid,
+                                                      &mut seen_genes,
+                                                      &mut seen_references, termid,
                                                       genotype_uniquename);
                         }
 
@@ -5326,17 +5386,23 @@ phenotypes, so just the first part of this extension will be used:
                                          &interaction_detail.reference_uniquename);
 
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   double_mutant_genotype_display_uniquename);
                     }
@@ -5376,7 +5442,9 @@ phenotypes, so just the first part of this extension will be used:
                     let target_of_gene = &target_of_annotation.gene;
                     self.add_gene_to_hash(&mut seen_genes, gene_uniquename, target_of_gene);
                     if let Some(ref annotation_genotype_uniquename) = target_of_annotation.genotype_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   gene_uniquename,
                                                   annotation_genotype_uniquename)
                     }
@@ -5424,6 +5492,36 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn set_allele_details_maps(&mut self) {
+        let mut seen_alleles = HashMap::new();
+        let mut seen_genes = HashMap::new();
+        let mut seen_references = HashMap::new();
+
+        for (allele_uniquename, allele_details) in &self.alleles {
+            for genotype_short in &allele_details.genotypes {
+                for locus in &genotype_short.loci {
+                    for expressed_allele in &locus.expressed_alleles {
+                        self.add_allele_to_hash(&mut seen_alleles, &mut seen_genes,
+                                                &mut seen_references, allele_uniquename,
+                                                &expressed_allele.allele_uniquename);
+                    }
+                }
+            }
+        }
+
+        for (allele_uniquename, allele_details) in &mut self.alleles {
+            if let Some(references) = seen_references.remove(allele_uniquename) {
+                allele_details.references_by_uniquename = references;
+            }
+            if let Some(alleles) = seen_alleles.remove(allele_uniquename) {
+                allele_details.alleles_by_uniquename = alleles;
+            }
+            if let Some(genes) = seen_genes.remove(allele_uniquename) {
+                allele_details.genes_by_uniquename = genes;
+            }
+        }
+    }
+
     fn set_genotype_details_maps(&mut self) {
         let set_interaction_maps = |genetic_interactions: &GeneticInteractionMap,
                                     genotype_uniquename: &FlexStr,
@@ -5449,16 +5547,19 @@ phenotypes, so just the first part of this extension will be used:
 
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   genotype_uniquename,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   genotype_uniquename,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
                         self.add_genotype_to_hash(seen_genotypes, seen_alleles, seen_genes,
+                                                  seen_references,
                                                   genotype_uniquename,
                                                   double_mutant_genotype_display_uniquename);
                     }
@@ -5552,7 +5653,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
 
-        let (_, mut seen_genes, mut seen_genotypes,
+        let (mut seen_references, mut seen_genes, mut seen_genotypes,
              mut seen_alleles, mut seen_transcripts, mut seen_terms) = get_maps();
 
         {
@@ -5641,7 +5742,9 @@ phenotypes, so just the first part of this extension will be used:
 
                             if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                                 let genotype = self.make_genotype_short(genotype_uniquename);
-                                self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                                self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                          &mut seen_genes,
+                                                          &mut seen_references,
                                                           reference_uniquename,
                                                           &genotype.display_uniquename);
                             }
@@ -5676,17 +5779,23 @@ phenotypes, so just the first part of this extension will be used:
 
                     for interaction_detail in interaction_details {
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   reference_uniquename,
                                                   genotype_a_uniquename);
                     }
                     if let Some(ref genotype_b_uniquename) = interaction_detail.genotype_b_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   reference_uniquename,
                                                   genotype_b_uniquename);
                     }
                     if let Some(ref double_mutant_genotype_display_uniquename) = interaction_detail.double_mutant_genotype_display_uniquename {
-                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles, &mut seen_genes,
+                        self.add_genotype_to_hash(&mut seen_genotypes, &mut seen_alleles,
+                                                  &mut seen_genes,
+                                                  &mut seen_references,
                                                   reference_uniquename,
                                                   double_mutant_genotype_display_uniquename);
                     }
@@ -5745,6 +5854,9 @@ phenotypes, so just the first part of this extension will be used:
             }
             if let Some(terms) = seen_terms.remove(reference_uniquename) {
                 reference_details.terms_by_termid = terms;
+            }
+            if let Some(references) = seen_references.remove(reference_uniquename) {
+                reference_details.references_by_uniquename = references;
             }
             if let Some(transcripts) = seen_transcripts.remove(reference_uniquename) {
                 reference_details.transcripts_by_uniquename = transcripts;
@@ -6450,6 +6562,7 @@ phenotypes, so just the first part of this extension will be used:
                 distant_synonyms,
                 distant_synonym_words: join(&distant_synonym_words_vec, " "),
                 interesting_parent_ids: interesting_parent_ids_for_solr,
+                definition_xrefs: term_details.definition_xrefs.clone(),
                 secondary_identifiers: term_details.secondary_identifiers.clone(),
                 annotation_count,
                 gene_count: term_details.gene_count,
@@ -6535,6 +6648,7 @@ phenotypes, so just the first part of this extension will be used:
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_gene_details_subset_termids();
+        self.set_allele_details_maps();
         self.set_genotype_details_maps();
         self.set_reference_details_maps();
         self.set_chromosome_gene_counts();
@@ -6579,13 +6693,15 @@ phenotypes, so just the first part of this extension will be used:
             terms_for_api.insert(termid.clone(), term_details.clone());
         }
 
-        let genes = self.genes.clone();
+        let mut genes = self.genes.clone();
         let genotypes = self.genotypes.clone();
         let references = self.references.clone();
 
         let termid_genotype_annotation = self.get_api_genotype_annotation();
 
         let api_maps = self.make_api_maps();
+
+        set_has_protein_features(&mut genes, &api_maps.protein_view_data);
 
         WebData {
             metadata,

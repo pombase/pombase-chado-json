@@ -1,39 +1,51 @@
 extern crate getopts;
 
-#[macro_use] extern crate rocket;
-use pombase::data_types::AlleleDetails;
-use rocket::fs::NamedFile;
-use rocket::response::content;
-use rocket::response::content::RawHtml;
+use axum::{
+    routing::{get, post},
+    Json, Router, extract::{State, Path},
+    http::{StatusCode, Response, Uri, Request, HeaderMap, header}, response::{Html, IntoResponse},
+    body::{boxed, BoxBody, Body, Full},
+    ServiceExt,
+};
+
+use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
+
+const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
+
+use bytes::Bytes;
+
+use tower::layer::Layer;
+
+use tower_http::services::ServeDir;
+use tower_http::normalize_path::NormalizePathLayer;
+
+use serde::Serialize;
+use serde_json::{json, Value};
+
+use pombase::data_types::ProteinViewType;
 
 use rusqlite::Connection;
 
-#[macro_use] extern crate serde_derive;
+extern crate serde_derive;
 
 extern crate pombase;
 
-use std::process;
+use std::{process, sync::Arc};
 use std::env;
-use std::path::{Path, PathBuf};
 
 use getopts::Options;
 
-use rocket::serde::json::{Json, Value, json};
-use rocket::fs::FileServer;
 
 use pombase::api::query::Query;
-use pombase::api::result::QueryAPIResult;
-use pombase::api::search::{Search, DocSearchMatch,
-                           SolrSearchScope, PNGPlot};
+
+use pombase::api::search::{Search, DocSearchMatch, SolrSearchScope};
 use pombase::api::query_exec::QueryExec;
 use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
 
-use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary,
-                          GeneDetails, GenotypeDetails, FeatureShort,
-                          TermDetails, ReferenceDetails};
+use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary};
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
-                                 render_simple_term_page};
+                                 render_simple_term_page, render_simple_genotype_page};
 use pombase::web::config::Config;
 
 const PKG_NAME: &str = env!("CARGO_PKG_NAME");
@@ -49,79 +61,124 @@ struct TermLookupResponse {
     summary: Option<SolrTermSummary>,
 }
 
+async fn get_static_file(path: &str) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    let path = utf8_percent_encode(path, FRAGMENT).to_string();
+    let uri: Uri = path.parse().unwrap();
+    let req = Request::builder().uri(uri).body(Body::empty()).unwrap();
 
+    use tower::ServiceExt;
+
+    match ServeDir::new("/").oneshot(req).await {
+        Ok(res) => Ok(res.map(boxed)),
+        Err(err) => Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            format!("Something went wrong: {}", err),
+        )),
+    }
+}
+
+struct AllState {
+    query_exec: QueryExec,
+    search: Search,
+    static_file_state: StaticFileState,
+    config: Config
+}
 
 // If the path is a directory, return path+"/index.html".  Otherwise
 // try the path, then try path + ".json", then default to loading the
 // Angular app from /index.html
-#[get("/<path..>", rank=3)]
-async fn get_misc(mut path: PathBuf, state: &rocket::State<StaticFileState>,
-            config: &rocket::State<Config>)
-            -> Option<NamedFile>
+async fn get_misc(Path(mut path): Path<String>,
+                  State(all_state): State<Arc<AllState>>)
+            -> Result<Response<BoxBody>, (StatusCode, String)>
 {
-    let web_root_dir = &state.web_root_dir;
-    let root_dir_path = Path::new("/").join(web_root_dir);
+    let static_file_state = &all_state.static_file_state;
+    let config = &all_state.config;
+    let web_root_dir = &static_file_state.web_root_dir;
     let is_jbrowse_path = path.starts_with("jbrowse/");
 
-    if let Some(path_str) = path.to_str() {
-        if let Some(new_path_str) =
-            config.doc_page_aliases.get(&format!("/{}", path_str)) {
-                path = PathBuf::from(new_path_str);
-            }
+    let alias = config.doc_page_aliases.get(&format!("/{}", path));
+
+    if let Some(new_path_str) = alias {
+        path = new_path_str.clone();
     }
 
-    let full_path = root_dir_path.join(path);
+    let full_path = format!("{}/{}", web_root_dir, path);
 
-    if full_path.is_dir() {
-        let index_path = full_path.join("index.html");
-        return NamedFile::open(index_path).await.ok();
+    if std::path::Path::new(&full_path).is_dir() {
+        let index_path = format!("{}/index.html", full_path);
+        return get_static_file(&index_path).await;
     }
 
-    if full_path.exists() {
-        return NamedFile::open(full_path).await.ok();
+    if std::path::Path::new(&full_path).exists() {
+        return get_static_file(&full_path).await;
     }
 
-    let mut json_path_str = full_path.to_str().unwrap().to_owned();
-    json_path_str += ".json";
-    let json_path: PathBuf = json_path_str.into();
+    let json_path = format!("{}.json", full_path);
 
-    if json_path.exists() {
-        return NamedFile::open(json_path).await.ok();
+    if std::path::Path::new(&json_path).exists() {
+        return get_static_file(&json_path).await;
     }
 
-    // special case for missing JBrowse files - return 4044
+    // special case for missing JBrowse files - return 404
     if is_jbrowse_path {
-        return None;
+        return Err((StatusCode::NOT_FOUND, format!("File not found: {}", full_path)))
     }
 
-    NamedFile::open(root_dir_path.join("index.html")).await.ok()
+    let file_name = format!("{}/index.html", web_root_dir);
+    get_static_file(&file_name).await
 }
 
-#[get("/api/v1/dataset/latest/data/gene/<id>", rank=2)]
-async fn get_gene(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<GeneDetails>> {
-    query_exec.get_api_data().get_full_gene_details(id).map(Json)
+fn option_json_to_result<T>(id: &str, opt: Option<Json<T>>) -> Result<(StatusCode, Json<T>), (StatusCode, String)> {
+    if let Some(res) = opt {
+        Ok((StatusCode::OK, res))
+    } else {
+        Err((StatusCode::NOT_FOUND, format!("no page for: {}", id)))
+    }
 }
 
-#[get("/api/v1/dataset/latest/data/genotype/<id>", rank=2)]
-async fn get_genotype(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<GenotypeDetails>> {
-    query_exec.get_api_data().get_genotype_details(id).map(Json)
+async fn get_gene(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
+    let res = all_state.query_exec.get_api_data().get_full_gene_details(&id).map(Json);
+    option_json_to_result(&id, res)
 }
 
-#[get("/api/v1/dataset/latest/data/allele/<id>", rank=2)]
-async fn get_allele(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<AlleleDetails>> {
-    query_exec.get_api_data().get_allele_details(id).map(Json)
+async fn get_genotype(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
+    let res = all_state.query_exec.get_api_data().get_genotype_details(&id).map(Json);
+    option_json_to_result(&id, res)
 }
 
-#[get("/api/v1/dataset/latest/data/term/<id>", rank=2)]
-async fn get_term(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<TermDetails>> {
-    query_exec.get_api_data().get_term_details(id).map(Json)
+async fn get_allele(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
+    let res = all_state.query_exec.get_api_data().get_allele_details(&id).map(Json);
+    option_json_to_result(&id, res)
 }
 
-#[get("/api/v1/dataset/latest/summary/term/<id>", rank=2)]
-async fn get_term_summary_by_id(id: &str, search: &rocket::State<Search>)
-                          -> Option<Json<TermLookupResponse>>
+async fn get_term(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
+    let res = all_state.query_exec.get_api_data().get_term_details(&id).map(Json);
+    option_json_to_result(&id, res)
+}
+
+async fn get_protein_features(Path((full_or_widget, gene_uniquename)): Path<(String, String)>,
+                              State(all_state): State<Arc<AllState>>)
+       -> impl IntoResponse
 {
-    let res = search.term_summary_by_id(id).await;
+    let full_or_widget =
+        match ProteinViewType::try_from(full_or_widget.as_ref()) {
+            Ok(val) => val,
+            Err(err) => {
+                eprintln!("get_protein_features(): {}", err);
+                return Err((StatusCode::INTERNAL_SERVER_ERROR, format!("Internal error: {}", err)));
+            }
+        };
+
+    let res = all_state.query_exec.get_api_data().get_protein_features_of_gene(full_or_widget, &gene_uniquename)
+              .map(|s| s.to_owned())
+              .map(Json);
+    option_json_to_result(&gene_uniquename, res)
+}
+
+async fn get_term_summary_by_id(Path(id): Path<String>, State(all_state): State<Arc<AllState>>)
+   -> impl IntoResponse
+{
+    let res = all_state.search.term_summary_by_id(&id).await;
 
     let lookup_response =
         match res {
@@ -140,36 +197,28 @@ async fn get_term_summary_by_id(id: &str, search: &rocket::State<Search>)
             },
         };
 
-    Some(Json(lookup_response))
+    Json(lookup_response)
 }
 
-#[get("/api/v1/dataset/latest/data/reference/<id>", rank=2)]
-async fn get_reference(id: &str, query_exec: &rocket::State<QueryExec>) -> Option<Json<ReferenceDetails>> {
-    query_exec.get_api_data().get_reference_details(id).map(Json)
+async fn get_reference(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
+    let res = all_state.query_exec.get_api_data().get_reference_details(&id).map(Json);
+    option_json_to_result(&id, res)
 }
 
-#[get("/api/v1/dataset/latest/data/seq_feature_page_features", rank=2)]
-async fn seq_feature_page_features(query_exec: &rocket::State<QueryExec>) -> Json<Vec<FeatureShort>> {
-    Json(query_exec.get_api_data().seq_feature_page_features())
+async fn seq_feature_page_features(State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
+    Json(all_state.query_exec.get_api_data().seq_feature_page_features())
 }
 
-#[get("/", rank=1)]
-async fn get_index(state: &rocket::State<StaticFileState>) -> Option<NamedFile> {
-    let web_root_dir = &state.web_root_dir;
-    let root_dir_path = Path::new("/").join(web_root_dir);
-    NamedFile::open(root_dir_path.join("index.html")).await.ok()
+async fn get_index(State(all_state): State<Arc<AllState>>) -> Result<Response<BoxBody>, (StatusCode, String)> {
+    let web_root_dir = &all_state.static_file_state.web_root_dir;
+    get_static_file(&format!("{}/index.html", web_root_dir)).await
 }
 
-
-/*
-Return a simple HTML version a gene page for search engines
-*/
-#[get("/structure_view/<structure_type>/<id>", rank=1)]
-async fn structure_view(structure_type: &str, id: &str,
-                        config: &rocket::State<Config>)
-                        -> Option<content::RawHtml<String>>
+async fn structure_view(Path((structure_type, id)): Path<(String, String)>,
+                        State(all_state): State<Arc<AllState>>)
+                        -> (StatusCode, Html<String>)
 {
-    let search_url = config.server.django_url.to_owned() + "/structure_view/";
+    let search_url = all_state.config.server.django_url.to_owned() + "/structure_view/";
     let params = [("structure_type", structure_type), ("id", id)];
     let client = reqwest::Client::new();
     let result = client.get(search_url).query(&params).send().await;
@@ -177,56 +226,112 @@ async fn structure_view(structure_type: &str, id: &str,
     match result {
         Ok(res) => {
             match res.text().await {
-                Ok(text) => Some(RawHtml(text)),
+                Ok(text) => (StatusCode::OK, Html(text)),
                 Err(err) => {
-                    eprintln!("Error proxying to Django: {:?}", err);
-                    None
+                    let err_mess = format!("Error proxying to Django: {:?}", err);
+                    eprintln!("{}", err_mess);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
                 }
 
             }
         },
         Err(err) => {
             eprintln!("Error proxying to Django: {:?}", err);
-            None
+            (StatusCode::INTERNAL_SERVER_ERROR, Html(err.to_string()))
         }
     }
 
 }
 
+async fn protein_feature_view(Path((full_or_widget, gene_uniquename)): Path<(String, String)>,
+                              State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    let search_url = all_state.config.server.django_url.to_owned() + "/protein_feature_view/";
+    let params = [("full_or_widget", full_or_widget),
+                  ("gene_uniquename", gene_uniquename)];
+    let client = reqwest::Client::new();
+    let result = client.get(search_url).query(&params).send().await;
+
+    match result {
+        Ok(res) => {
+            match res.text().await {
+                Ok(text) => (StatusCode::OK, Html(text)),
+                Err(err) => {
+                    let err_mess = format!("Error proxying to Django: {:?}", err);
+                    eprintln!("{}", err_mess);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+                }
+            }
+        },
+        Err(err) => {
+            let err_mess = format!("Error proxying to Django: {:?}", err);
+            eprintln!("{}", err_mess);
+            (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+        }
+    }
+}
+
 /*
 Return a simple HTML version a gene page for search engines
 */
-#[get("/simple/gene/<id>", rank=1)]
-async fn get_simple_gene(id: &str, query_exec: &rocket::State<QueryExec>,
-                   config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    query_exec.get_api_data().get_full_gene_details(id)
-        .map(|gene| content::RawHtml(render_simple_gene_page(config, &gene)))
+async fn get_simple_gene(Path(id): Path<String>,
+                         State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
+    if let Some(gene) = all_state.query_exec.get_api_data().get_full_gene_details(&id) {
+        (StatusCode::OK, Html(render_simple_gene_page(&all_state.config, &gene)))
+    } else {
+        (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
+    }
+}
+
+/*
+Return a simple HTML version a genotype page for search engines
+*/
+async fn get_simple_genotype(Path(id): Path<String>,
+                             State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
+    if let Some(genotype) = all_state.query_exec.get_api_data().get_genotype_details(&id) {
+        (StatusCode::OK, Html(render_simple_genotype_page(&all_state.config, &genotype)))
+    } else {
+        (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
+    }
 }
 
 /*
 Return a simple HTML version a reference page for search engines
 */
-#[get("/simple/reference/<id>", rank=1)]
-async fn get_simple_reference(id: &str, query_exec: &rocket::State<QueryExec>,
-                        config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    query_exec.get_api_data().get_reference_details(id)
-        .map(|reference| content::RawHtml(render_simple_reference_page(config, &reference)))
+async fn get_simple_reference(Path(id): Path<String>,
+                              State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
+    if let Some(reference) = all_state.query_exec.get_api_data().get_reference_details(&id) {
+        (StatusCode::OK, Html(render_simple_reference_page(&all_state.config, &reference)))
+    } else {
+        (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
+    }
 }
 /*
 Return a simple HTML version a term page for search engines
 */
-#[get("/simple/term/<id>", rank=1)]
-async fn get_simple_term(id: &str, query_exec: &rocket::State<QueryExec>,
-                   config: &rocket::State<Config>) -> Option<content::RawHtml<String>> {
-    query_exec.get_api_data().get_term_details(id)
-        .map(|term| content::RawHtml(render_simple_term_page(config, &term)))
+async fn get_simple_term(Path(id): Path<String>,
+                         State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
+    if let Some(term) = all_state.query_exec.get_api_data().get_term_details(&id) {
+        (StatusCode::OK, Html(render_simple_term_page(&all_state.config, &term)))
+    } else {
+        (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
+    }
 }
 
-#[post("/api/v1/dataset/latest/query", rank=1, data="<q>", format = "application/json")]
-async fn query_post(q: Json<Query>, query_exec: &rocket::State<QueryExec>)
-              -> Option<Json<QueryAPIResult>>
+async fn query_post(State(all_state): State<Arc<AllState>>, Json(q): Json<Query>)
+              -> impl IntoResponse
 {
-    Some(Json(query_exec.exec(&q.into_inner()).await))
+    Json(all_state.query_exec.exec(&q).await)
+}
+
+async fn query_get(State(all_state): State<Arc<AllState>>, Path(q): Path<String>)
+              -> impl IntoResponse
+{
+    match serde_json::from_str::<Query>(&q) {
+        Ok(q) => Ok(Json(all_state.query_exec.exec(&q).await)),
+        Err(err) => Err((StatusCode::BAD_REQUEST, err.to_string()))
+    }
 }
 
 #[derive(Serialize, Debug)]
@@ -255,11 +360,11 @@ struct SolrSearchResponse  {
     doc_matches: Vec<DocSearchMatch>,
 }
 
-#[get ("/api/v1/dataset/latest/complete/term/<cv_name>/<q>", rank=1)]
-async fn term_complete(cv_name: &str, q: &str, search: &rocket::State<Search>)
-              -> Option<Json<TermCompletionResponse>>
+async fn term_complete(Path((cv_name, q)): Path<(String, String)>,
+                       State(all_state): State<Arc<AllState>>)
+              -> Json<TermCompletionResponse>
 {
-    let res = search.term_complete(cv_name, q).await;
+    let res = all_state.search.term_complete(&cv_name, &q).await;
 
     let completion_response =
         match res {
@@ -278,14 +383,13 @@ async fn term_complete(cv_name: &str, q: &str, search: &rocket::State<Search>)
             },
         };
 
-    Some(Json(completion_response))
+    Json(completion_response)
 }
 
-#[get ("/api/v1/dataset/latest/complete/ref/<q>", rank=1)]
-async fn ref_complete(q: &str, search: &rocket::State<Search>)
-                -> Option<Json<RefCompletionResponse>>
+async fn ref_complete(Path(q): Path<String>, State(all_state): State<Arc<AllState>>)
+                -> Json<RefCompletionResponse>
 {
-    let res = search.ref_complete(q).await;
+    let res = all_state.search.ref_complete(&q).await;
 
     let completion_response =
         match res {
@@ -304,14 +408,13 @@ async fn ref_complete(q: &str, search: &rocket::State<Search>)
             },
         };
 
-    Some(Json(completion_response))
+    Json(completion_response)
 }
 
-#[get ("/api/v1/dataset/latest/complete/allele/<q>", rank=1)]
-async fn allele_complete(q: &str, search: &rocket::State<Search>)
-                -> Option<Json<AlleleCompletionResponse>>
+async fn allele_complete(Path(q): Path<String>, State(all_state): State<Arc<AllState>>)
+                -> Json<AlleleCompletionResponse>
 {
-    let res = search.allele_complete(q).await;
+    let res = all_state.search.allele_complete(&q).await;
 
     let completion_response =
         match res {
@@ -330,92 +433,92 @@ async fn allele_complete(q: &str, search: &rocket::State<Search>)
             },
         };
 
-    Some(Json(completion_response))
+    Json(completion_response)
 }
 
 // search for terms, refs or docs that match the query
-#[get ("/api/v1/dataset/latest/search/<scope>/<q>", rank=1)]
-async fn solr_search(scope: &str, q: &str, search: &rocket::State<Search>)
-    -> Option<Json<SolrSearchResponse>>
+async fn solr_search(Path((scope, q)): Path<(String, String)>, State(all_state): State<Arc<AllState>>)
+    -> Json<SolrSearchResponse>
 {
-    if let Some(parsed_scope) = SolrSearchScope::new_from_str(scope) {
-        let search_result = search.solr_search(&parsed_scope, q).await;
+    if let Some(parsed_scope) = SolrSearchScope::new_from_str(&scope) {
+        let search_result = all_state.search.solr_search(&parsed_scope, &q).await;
 
         match search_result {
             Ok(search_all_result) => {
-                Some(Json(SolrSearchResponse {
+                Json(SolrSearchResponse {
                     status: "Ok".to_owned(),
                     term_matches: search_all_result.term_matches,
                     ref_matches: search_all_result.ref_matches,
                     doc_matches: search_all_result.doc_matches,
-                }))
+                })
             },
             Err(err) => {
-                Some(Json(SolrSearchResponse {
+                Json(SolrSearchResponse {
                     status: err.to_string(),
                     term_matches: vec![],
                     ref_matches: vec![],
                     doc_matches: vec![],
-                }))
+                })
             },
         }
     } else {
-        Some(Json(SolrSearchResponse {
+        Json(SolrSearchResponse {
             status: format!("no such search scope: {}", scope),
             term_matches: vec![],
             ref_matches: vec![],
             doc_matches: vec![],
-        }))
+        })
     }
 }
 
-#[get ("/api/v1/dataset/latest/motif_search/<scope>/<q>", rank=1)]
-async fn motif_search(scope: &str, q: &str, search: &rocket::State<Search>)
-                -> Option<String>
+async fn motif_search(Path((scope, q)): Path<(String, String)>, State(all_state): State<Arc<AllState>>)
+                -> Result<(HeaderMap, String), StatusCode>
 {
-    let res = search.motif_search(scope, q).await;
+    let res = all_state.search.motif_search(&scope, &q).await;
 
     match res {
         Ok(search_result) => {
-            Some(search_result)
+            let mut headers = HeaderMap::new();
+            headers.insert(header::CONTENT_TYPE, "application/json".parse().unwrap());
+            Ok((headers, search_result))
+
         },
         Err(err) => {
             println!("Motif search error: {:?}", err);
-            None
+            Err(StatusCode::NOT_FOUND)
         },
     }
 }
 
 
-#[get ("/api/v1/dataset/latest/gene_ex_violin_plot/<plot_size>/<genes>", rank=1)]
-async fn gene_ex_violin_plot(plot_size: &str, genes: &str,
-                       search: &rocket::State<Search>)
-                       -> Option<PNGPlot>
+async fn gene_ex_violin_plot(Path((plot_size, genes)): Path<(String, String)>,
+                             State(all_state): State<Arc<AllState>>)
+             -> Result<(HeaderMap, Full<Bytes>), StatusCode>
 {
-    let res = search.gene_ex_violin_plot(plot_size, genes).await;
+    let res = all_state.search.gene_ex_violin_plot(&plot_size, &genes).await;
 
     match res {
-        Ok(png_plot) => {
-            Some(png_plot)
+        Ok(svg_plot) => {
+            let mut headers = HeaderMap::new();
+            headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
+            Ok((headers, Full::new(svg_plot.bytes)))
         },
         Err(err) => {
             println!("Motif search error: {:?}", err);
-            None
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
         },
     }
 }
 
-#[get ("/ping", rank=1)]
-fn ping() -> Option<String> {
-    Some(String::from("OK") + " " + PKG_NAME + " " + VERSION)
+async fn ping() -> String {
+    String::from("OK") + " " + PKG_NAME + " " + VERSION
 }
 
-#[catch(404)]
-fn not_found() -> Value {
+async fn not_found() -> Json<Value> {
     json!({
         "status": "error",
         "reason": "Resource was not found."
-    })
+    }).into()
 }
 
 fn print_usage(program: &str, opts: Options) {
@@ -423,8 +526,8 @@ fn print_usage(program: &str, opts: Options) {
     print!("{}", opts.usage(&brief));
 }
 
-#[launch]
-async fn rocket() -> _ {
+#[tokio::main]
+async fn main() {
     println!("{} v{}", PKG_NAME, VERSION);
 
     let args: Vec<String> = env::args().collect();
@@ -432,6 +535,7 @@ async fn rocket() -> _ {
 
     opts.optflag("h", "help", "print this help message");
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
+    opts.optopt("b", "bind-address-and-port", "The address:port to bind to", "BIND_ADDRESS_AND_PORT");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
     opts.optopt("d", "api-maps-database", "SQLite3 database of API maps", "API_MAPS_DATABASE");
     opts.optopt("w", "web-root-dir", "Root web data directory", "WEB_ROOT_DIR");
@@ -448,7 +552,6 @@ async fn rocket() -> _ {
         print_usage(&program, opts);
         process::exit(0);
     }
-
     if !matches.opt_present("config-file") {
         println!("no -c|--config-file option");
         print_usage(&program, opts);
@@ -470,17 +573,23 @@ async fn rocket() -> _ {
         process::exit(1);
     }
 
+    let bind_address_and_port = matches.opt_str("bind-address-and-port");
+    let socket_addr =
+        if let Some(bind_address_and_port) = bind_address_and_port {
+            match bind_address_and_port.parse() {
+                Ok(sock) => sock,
+                Err(err) => panic!("{}", err)
+            }
+        } else {
+           "0.0.0.0:8500".parse().unwrap()
+        };
+
     let site_db_conn_string = matches.opt_str("s");
     let api_maps_database_path = matches.opt_str("d").unwrap();
 
     let search_maps_filename = matches.opt_str("m").unwrap();
     println!("Reading data files ...");
 
-    let config_file_name = matches.opt_str("c").unwrap();
-    let config = Config::read(&config_file_name);
-    let api_maps = api_maps_from_file(&search_maps_filename);
-    let api_maps_database_conn = Connection::open(api_maps_database_path).unwrap();
-    let api_data = APIData::new(&config, api_maps_database_conn, api_maps);
     let site_db =
         if let Some(conn_str) = site_db_conn_string {
             match SiteDB::new(&conn_str).await {
@@ -491,33 +600,61 @@ async fn rocket() -> _ {
             None
         };
 
+    let config_file_name = matches.opt_str("c").unwrap();
+    let config = Config::read(&config_file_name);
+    let api_maps = api_maps_from_file(&search_maps_filename);
+    let api_maps_database_conn = Connection::open(api_maps_database_path).unwrap();
+    let api_data = APIData::new(&config, api_maps_database_conn, api_maps);
 
     let query_exec = QueryExec::new(api_data, site_db);
-    let searcher = Search::new(&config);
+    let search = Search::new(&config);
 
     let web_root_dir = matches.opt_str("w").unwrap();
     let static_file_state = StaticFileState {
         web_root_dir: web_root_dir.clone(),
     };
 
+    let all_state = AllState {
+        query_exec,
+        search,
+        static_file_state,
+        config,
+    };
+
     println!("Starting server ...");
-    rocket::build()
-        .mount("/", routes![get_index, get_misc, query_post,
-                            get_gene, get_genotype, get_allele, get_term, get_reference,
-                            get_simple_gene, get_simple_reference, get_simple_term,
-                            get_term_summary_by_id,
-                            seq_feature_page_features,
-                            term_complete, ref_complete, allele_complete,
-                            solr_search, motif_search, gene_ex_violin_plot,
-                            structure_view,
-                            ping])
-        .mount("/jbrowse",
-               FileServer::from(Path::new("/")
-                                 .join(&web_root_dir)
-                                 .join("jbrowse")))
-        .register("/", catchers![not_found])
-        .manage(query_exec)
-        .manage(searcher)
-        .manage(static_file_state)
-        .manage(config)
+    let app = Router::new()
+        .route("/*path", get(get_misc))
+        .route("/", get(get_index))
+        .route("/structure_view/:structure_type/:id", get(structure_view))
+        .route("/protein_feature_view/:full_or_widget/:gene_uniquename", get(protein_feature_view))
+        .route("/simple/gene/:id", get(get_simple_gene))
+        .route("/simple/genotype/:id", get(get_simple_genotype))
+        .route("/simple/reference/:id", get(get_simple_reference))
+        .route("/simple/term/:id", get(get_simple_term))
+        .route("/api/v1/dataset/latest/complete/allele/*q", get(allele_complete))
+        .route("/api/v1/dataset/latest/complete/ref/:q", get(ref_complete))
+        .route("/api/v1/dataset/latest/complete/term/:cv_name/:q", get(term_complete))
+        .route("/api/v1/dataset/latest/data/allele/:id", get(get_allele))
+        .route("/api/v1/dataset/latest/data/gene/:id", get(get_gene))
+        .route("/api/v1/dataset/latest/data/genotype/:id", get(get_genotype))
+        .route("/api/v1/dataset/latest/data/reference/:id", get(get_reference))
+        .route("/api/v1/dataset/latest/data/seq_feature_page_features", get(seq_feature_page_features))
+        .route("/api/v1/dataset/latest/data/term/:id", get(get_term))
+        .route("/api/v1/dataset/latest/gene_ex_violin_plot/:plot_size/:genes", get(gene_ex_violin_plot))
+        .route("/api/v1/dataset/latest/motif_search/:scope/:q", get(motif_search))
+        .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
+        .route("/api/v1/dataset/latest/query/:q", get(query_get))
+        .route("/api/v1/dataset/latest/query", post(query_post))
+        .route("/api/v1/dataset/latest/search/:scope/:q", get(solr_search))
+        .route("/api/v1/dataset/latest/summary/term/:id", get(get_term_summary_by_id))
+        .route("/ping", get(ping))
+        .fallback(not_found)
+        .with_state(Arc::new(all_state));
+
+    let app = NormalizePathLayer::trim_trailing_slash().layer(app).into_make_service();
+
+    axum::Server::bind(&socket_addr)
+        .serve(app)
+        .await
+        .unwrap();
 }

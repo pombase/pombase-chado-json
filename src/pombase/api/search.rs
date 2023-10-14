@@ -4,19 +4,13 @@ use std::error::Error;
 
 use anyhow::Result;
 
-use std::io::Cursor;
-
-use rocket::response::{self, Response, Responder};
-use rocket::request::Request;
-use rocket::http::ContentType;
-
 use crate::web::config::{Config, ServerConfig};
 
 use crate::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary};
 
 use crate::api::term_search::{search_terms, term_complete, term_summary_by_id};
 
-use crate::api::ref_search::{search_refs};
+use crate::api::ref_search::search_refs;
 
 use crate::api::allele_search::search_alleles;
 
@@ -28,17 +22,9 @@ pub struct Search {
     reqwest_client: Client,
 }
 
-pub struct PNGPlot {
-    pub bytes: Bytes
-}
 
-impl<'a> Responder<'a, 'a> for PNGPlot {
-    fn respond_to(self, _: &Request) -> response::Result<'a> {
-        Response::build()
-            .sized_body(self.bytes.len(), Cursor::new(self.bytes))
-            .header(ContentType::new("image", "png"))
-            .ok()
-    }
+pub struct SVGPlot {
+    pub bytes: Bytes
 }
 
 
@@ -100,14 +86,14 @@ impl Search {
     }
 
     pub async fn gene_ex_violin_plot(&self, plot_size: &str, genes: &str)
-                               -> Result<PNGPlot>
+                               -> Result<SVGPlot>
     {
         let plot_url = self.config.django_url.to_owned() + "/gene_ex/gene_ex_violin/";
         let params = [("plot_size", plot_size), ("genes", genes)];
         let client = reqwest::Client::new();
         let bytes = client.get(plot_url).query(&params).send().await?.bytes().await?;
 
-        Ok(PNGPlot { bytes })
+        Ok(SVGPlot { bytes })
     }
 
     pub async fn term_complete(&self, cv_name: &str, q: &str)

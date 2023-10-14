@@ -4,8 +4,7 @@ use crate::web::config::Config;
 use crate::data_types::{GeneDetails, ReferenceDetails, TermDetails,
                         ContainerType, GenotypeShort,
                         OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer,
-                        Strand};
-
+                        Strand, GenotypeDetails, Ploidiness};
 
 fn format_page(header: &str, body: &str) -> String {
     format! ("
@@ -46,6 +45,18 @@ fn make_gene_title(config: &Config, gene_details: &GeneDetails) -> String {
     } else {
         format!("{} - {} - {}", config.database_name, feature_type, name_and_uniquename)
     }
+}
+
+fn make_genotype_title(config: &Config, genotype_details: &GenotypeDetails) -> String {
+    let genotype_and_ploidiness =
+        if genotype_details.ploidiness == Ploidiness::Haploid {
+            "Haploid genotype"
+        } else {
+            "Diploid genotype"
+        };
+
+    format!("{} - {} - {}", config.database_name, genotype_and_ploidiness,
+            genotype_details.display_name)
 }
 
 fn header(config: &Config, title: &str) -> String  {
@@ -124,6 +135,86 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
         summ += &format!("  <dt>Genomic location</dt> <dd>chromosome {}: {}..{} {}</dd>\n",
                          chr_config.short_display_name, location.start_pos,
                          location.end_pos, strand_str);
+    }
+
+    summ += "</dl>\n";
+
+    summ
+}
+
+fn genotype_alleles_summary(genotype_details: &GenotypeDetails) -> String {
+    let mut summ = String::new();
+
+    let empty_string = flex_str!("");
+
+    let locus_type_name =
+        if genotype_details.ploidiness == Ploidiness::Haploid {
+            "gene"
+        } else {
+            "locus"
+        };
+
+    summ += &format!("<table><thead><th>{locus_type_name}</th> <th>Product</th> <th>Allele name</th> <th>Description</th> <th>Type</th> <th>Expression</th></thead>");
+
+    for locus in &genotype_details.loci {
+        summ += "<tbody>";
+
+        for (idx, expressed_allele) in locus.expressed_alleles.iter().enumerate() {
+            let Some(allele) = genotype_details.get_allele(&expressed_allele.allele_uniquename)
+            else {
+                continue;
+            };
+            let Some(gene) = genotype_details.get_gene_short(&allele.gene_uniquename)
+            else {
+                continue;
+            };
+
+            summ += "<tr>";
+
+            let gene_product = gene.product.as_ref().unwrap_or_else(|| &empty_string);
+
+            let allele_expression =
+                expressed_allele.expression.as_ref().unwrap_or_else(|| &empty_string);
+            let allele_name = allele.name.as_ref().unwrap_or_else(|| &empty_string);
+            let allele_description = allele.description.as_ref().unwrap_or_else(|| &empty_string);
+
+            if idx == 0 {
+                summ += &format!("<td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
+                                 gene.display_name(), gene_product, allele_name,
+                                 allele_description,
+                                 allele.allele_type, allele_expression);
+            } else {
+                summ += &format!("<td></td><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
+                                 allele_name, allele_description, allele.allele_type,
+                                 allele_expression);
+            }
+
+            summ += "</tr>";
+        }
+
+        summ += "</tbody>";
+    }
+
+    summ += "</table>";
+
+    summ
+}
+
+fn genotype_summary(config: &Config, genotype_details: &GenotypeDetails) -> String {
+    let mut summ = String::new();
+
+    summ += "<dl>\n";
+
+    summ += &format!("  <dt>Genotype description</dt> <dd>{}</dd>\n",  genotype_details.display_name);
+
+    if let Some(genotype_organism) = config.organism_by_taxonid(genotype_details.taxonid) {
+        summ += &format!("  <dt>Organism</dt> <dd>{}\n", genotype_organism.scientific_name());
+
+        if !genotype_organism.alternative_names.is_empty() {
+            summ += &format!(" ({})", genotype_organism.alternative_names.iter()
+                         .map(FlexStr::to_string).collect::<Vec<_>>().join(", "));
+        }
+        summ += "</dd>\n";
     }
 
     summ += "</dl>\n";
@@ -358,10 +449,36 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
     body
 }
 
+fn genotype_body(config: &Config, title: &str, genotype_details: &GenotypeDetails) -> String {
+    let mut body = String::new();
+
+    body += &format!("<h1>{}</h1>\n", title);
+
+    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
+                     config.database_name, config.site_description);
+
+    body += &format!("<section><h2>Genotype summary</h2>\n{}</section>\n",
+                     genotype_summary(config, genotype_details));
+
+    body += &format!("<section><h2>Allele summary</h2>\n{}</section>\n",
+                     genotype_alleles_summary(genotype_details));
+
+    body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
+                     annotation_section(config, genotype_details));
+
+    body
+}
+
 pub fn render_simple_gene_page(config: &Config, gene_details: &GeneDetails) -> String  {
     let title = make_gene_title(config, gene_details);
 
     format_page(&header(config, &title), &gene_body(config, &title, gene_details))
+}
+
+pub fn render_simple_genotype_page(config: &Config, genotype_details: &GenotypeDetails) -> String  {
+    let title = make_genotype_title(config, genotype_details);
+
+    format_page(&header(config, &title), &genotype_body(config, &title, genotype_details))
 }
 
 fn make_reference_title(config: &Config, reference_details: &ReferenceDetails) -> String {

@@ -580,6 +580,8 @@ pub struct ReferenceDetails {
     pub genotypes_by_uniquename: HashMap<GenotypeUniquename, GenotypeShort>,
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub references_by_uniquename: ReferenceShortOptionMap,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub transcripts_by_uniquename: TranscriptDetailsOptionMap,
     pub terms_by_termid: TermShortOptionMap,
     pub annotation_details: IdOntAnnotationDetailMap,
@@ -1078,6 +1080,7 @@ pub struct GeneDetails {
     pub low_complexity_region_coords: Vec<(usize, usize)>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub coiled_coil_coords: Vec<(usize, usize)>,
+    pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -1143,6 +1146,16 @@ pub struct GeneDetails {
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_history: Vec<GeneHistoryEntry>,
+}
+
+impl GeneDetails {
+    pub fn display_name(&self) -> FlexStr {
+        if let Some(ref name) = self.name {
+            flex_fmt!("{} ({})", name, self.uniquename)
+        } else {
+            self.uniquename.clone()
+        }
+    }
 }
 
 impl PartialEq for GeneDetails {
@@ -1216,6 +1229,16 @@ pub struct ProteinDetails {
     pub charge_at_ph7: f32,
     pub isoelectric_point: f32,
     pub codon_adaptation_index: f32,
+}
+
+impl ProteinDetails {
+    pub fn sequence_length(&self) -> usize {
+        if self.sequence.ends_with("*") {
+            self.sequence.len() - 1
+        } else {
+            self.sequence.len()
+        }
+    }
 }
 
 pub type Residues = FlexStr;
@@ -1437,6 +1460,15 @@ impl GenotypeDetails {
         }
         Ploidiness::Haploid
     }
+
+    pub fn get_gene_short(&self, gene_uniquename: &GeneUniquename) -> Option<GeneShort> {
+        self.genes_by_uniquename().get(gene_uniquename)
+           .map(|opt_gene| { opt_gene.to_owned().unwrap() })
+    }
+
+    pub fn get_allele(&self, allele_uniquename: &AlleleUniquename) -> Option<&AlleleShort> {
+        self.alleles_by_uniquename.get(allele_uniquename)
+    }
 }
 
 impl From<&GenotypeDetails> for GenotypeShort {
@@ -1616,7 +1648,7 @@ impl From<&AlleleDetails> for AlleleShort {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CommentAndReference {
     pub comment: FlexStr,
-    pub reference_uniquename: Option<FlexStr>,
+    pub reference: Option<FlexStr>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1642,6 +1674,8 @@ pub struct AlleleDetails {
     pub comments: Vec<CommentAndReference>,
 
     pub alleles_by_uniquename: HashMap<AlleleUniquename, AlleleShort>,
+    pub references_by_uniquename: ReferenceShortOptionMap,
+    pub genes_by_uniquename: GeneShortOptionMap,
 }
 
 impl AlleleDetails {
@@ -1665,6 +1699,8 @@ impl AlleleDetails {
             phenotypes: vec![],
             comments: comments.to_owned(),
             alleles_by_uniquename: HashMap::new(),
+            references_by_uniquename: HashMap::new(),
+            genes_by_uniquename: HashMap::new(),
         }
     }
 }
@@ -2099,6 +2135,72 @@ pub type GeneExDataSetName = FlexStr;
 pub type GeneExDataSetMeasurements =
     HashMap<GeneUniquename, HashMap<GeneExDataSetName, GeneExMeasurement>>;
 
+#[derive(PartialEq)]
+pub enum ProteinViewType {
+    Full,
+    Widget,
+}
+
+impl TryFrom<&str> for ProteinViewType {
+    type Error = String;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "full" => Ok(ProteinViewType::Full),
+            "widget" => Ok(ProteinViewType::Widget),
+            _ => Err(format!("unknown protein view type: {}", value)),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct TermNameAndId {
+    pub name: TermName,
+    pub id: TermId,
+}
+
+impl Ord for TermNameAndId {
+    fn cmp(&self, other: &TermNameAndId) -> Ordering {
+        self.name.cmp(&other.name)
+    }
+}
+impl PartialOrd for TermNameAndId {
+    fn partial_cmp(&self, other: &TermNameAndId) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+pub type ProteinViewFeaturePos = (FlexStr, usize, usize);
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinViewFeature {
+    pub id: FlexStr,
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub display_name: Option<FlexStr>,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub annotated_terms: Vec<TermNameAndId>,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub display_extension: Vec<FlexStr>,
+
+    // start, end pairs:
+    pub positions: Vec<ProteinViewFeaturePos>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinViewTrack {
+    pub name: FlexStr,
+    pub display_type: FlexStr,
+    pub features: Vec<ProteinViewFeature>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinViewData {
+    pub sequence: FlexStr,
+    pub tracks: Vec<ProteinViewTrack>,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
@@ -2117,6 +2219,7 @@ pub struct APIMaps {
     pub children_by_termid: HashMap<TermId, HashSet<TermId>>,
     pub gene_expression_measurements: GeneExDataSetMeasurements,
     pub secondary_identifiers_map: HashMap<TermId, TermId>,
+    pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -2170,6 +2273,10 @@ pub struct SolrTermSummary {
     pub distant_synonym_words: FlexStr,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub interesting_parent_ids: HashSet<FlexStr>,
+
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub definition_xrefs: HashSet<FlexStr>,
+
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
 
@@ -2383,13 +2490,15 @@ pub struct Stats {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct ApicuronCuratorDetails {
-    pub curator_name: FlexStr,
+pub struct ApicuronReport {
+    pub activity_term: FlexStr,
+    pub timestamp: FlexStr,
     pub curator_orcid: FlexStr,
-    pub curated_publication_count: usize,
+    pub entity_uri: FlexStr,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ApicuronData {
-    pub curator_details: Vec<ApicuronCuratorDetails>,
+    pub resource_id: FlexStr,
+    pub reports: Vec<ApicuronReport>,
 }

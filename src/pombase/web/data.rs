@@ -15,7 +15,7 @@ use zstd::stream::Encoder;
 
 use rusqlite::Connection;
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
@@ -471,18 +471,21 @@ impl WebData {
         let pseudogenes_file_name = output_dir.to_owned() + "/pseudogeneIDs.tsv";
         let all_names_file_name = output_dir.to_owned() + "/gene_IDs_names.tsv";
         let all_ids_file_name = output_dir.to_owned() + "/gene_IDs_names_products.tsv";
+        let uniprot_ids_file_name = output_dir.to_owned() + "/uniprot_id_mapping.tsv";
 
         let gene_file = File::create(gene_file_name).expect("Unable to open file");
         let rna_file = File::create(rna_file_name).expect("Unable to open file");
         let pseudogenes_file = File::create(pseudogenes_file_name).expect("Unable to open file");
         let all_names_file = File::create(all_names_file_name).expect("Unable to open file");
         let all_ids_file = File::create(all_ids_file_name).expect("Unable to open file");
+        let uniprot_ids_file = File::create(uniprot_ids_file_name).expect("Unable to open file");
 
         let mut gene_writer = BufWriter::new(&gene_file);
         let mut rna_writer = BufWriter::new(&rna_file);
         let mut pseudogenes_writer = BufWriter::new(&pseudogenes_file);
         let mut all_names_writer = BufWriter::new(&all_names_file);
         let mut all_ids_writer = BufWriter::new(&all_ids_file);
+        let mut uniprot_ids_writer = BufWriter::new(&uniprot_ids_file);
 
         let db_version = format!("# Chado database date: {}\n", self.metadata.db_creation_datetime);
         gene_writer.write_all(db_version.as_bytes())?;
@@ -563,6 +566,21 @@ impl WebData {
                     ""
                 };
 
+
+            if uniprot_id.len() > 0 && gene_details.feature_type == "mRNA gene" {
+                let gene_name_or_dash =
+                    if gene_name.len() == 0 {
+                        "-"
+                    } else {
+                        gene_name.as_str()
+                    };
+                let uniprot_ids_line = format!("{}\t{}\t{}\n",
+                                               uniprot_id,
+                                               gene_details.uniquename,
+                                               gene_name_or_dash);
+                uniprot_ids_writer.write_all(uniprot_ids_line.as_bytes())?;
+            }
+
             let chromosome_name =
                 if let Some(ref loc) = gene_details.location {
                     &loc.chromosome_name
@@ -595,6 +613,7 @@ impl WebData {
         pseudogenes_writer.flush()?;
         all_names_writer.flush()?;
         all_ids_writer.flush()?;
+        uniprot_ids_writer.flush()?;
 
         Ok(())
     }
@@ -1473,36 +1492,48 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write_apicuron_files(&self, references: &UniquenameReferenceMap,
+    pub fn write_apicuron_files(&self, config: &Config,
+                                references: &UniquenameReferenceMap,
                                 output_dir: &str)
              -> Result<(), io::Error>
     {
-        let mut curator_details = HashMap::new();
+        let mut curation_reports = vec![];
 
         for ref_details in references.values() {
             if ref_details.cv_annotations.is_empty() {
                 continue;
             }
 
+            let Some(ref canto_approved_date) = ref_details.canto_approved_date
+            else {
+                continue
+            };
+
+            let mut approved_parts = canto_approved_date.split(" ");
+            let Some(approved_date) = approved_parts.next()
+            else {
+                continue;
+            };
+
+            let approved_time = approved_parts.next().unwrap_or_else(|| "00:00:00");
+
+            let timestamp = flex_fmt!("{}T{}.000Z", approved_date, approved_time);
+
             for annotation_curator in &ref_details.annotation_curators {
                 if let Some(ref curator_orcid) = annotation_curator.orcid {
-                    let mut curator =
-                        curator_details
-                            .entry(&annotation_curator.name)
-                            .or_insert_with(|| ApicuronCuratorDetails {
-                                 curator_name: annotation_curator.name.clone(),
-                                 curator_orcid: curator_orcid.clone(),
-                                 curated_publication_count: 0,
-                            });
-
-                    curator.curated_publication_count += 1;
+                    curation_reports.push(ApicuronReport {
+                        activity_term: flex_str!("publication_curated"),
+                        curator_orcid: curator_orcid.clone(),
+                        timestamp: timestamp.clone(),
+                        entity_uri: flex_fmt!("{}/reference/{}", config.base_url, ref_details.uniquename),
+                    });
                 }
-
             }
         }
 
         let apicuron_data = ApicuronData {
-            curator_details: curator_details.values().cloned().collect(),
+            resource_id: config.apicuron.resource_id.clone(),
+            reports: curation_reports,
         };
 
         let s = serde_json::to_string(&apicuron_data).unwrap();
@@ -1605,7 +1636,7 @@ impl WebData {
 
         self.write_annotation_subsets(config, &misc_path)?;
 
-        self.write_apicuron_files(&self.references, &misc_path)?;
+        self.write_apicuron_files(config, &self.references, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
 

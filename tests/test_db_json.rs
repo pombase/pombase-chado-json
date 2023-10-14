@@ -689,6 +689,14 @@ fn get_test_config() -> Config {
             datasets: vec![],
         },
         feature_sub_groups: HashMap::new(),
+        protein_feature_view: ProteinFeatureViewConfig {
+            modification_extension_rel_types: HashSet::new(),
+            widget_track_names: HashSet::new(),
+            full_display_excluded: HashSet::new(),
+        },
+        apicuron: ApicuronConfig {
+            resource_id: flex_str!("pombase"),
+        }
     };
 
     config.file_exports.gpad_gpi.go_aspect_terms.insert(flex_str!("molecular_function"),

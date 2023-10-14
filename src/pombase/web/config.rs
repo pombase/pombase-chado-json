@@ -339,6 +339,18 @@ pub struct GeneExpressionConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ProteinFeatureViewConfig {
+    pub modification_extension_rel_types: HashSet<FlexStr>,
+    pub widget_track_names: HashSet<FlexStr>,
+    pub full_display_excluded: HashSet<FlexStr>,
+}
+
+#[derive(Deserialize, Clone, Debug)]
+pub struct ApicuronConfig {
+    pub resource_id: FlexStr,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct Config {
     pub database_name: FlexStr,
     pub database_long_name: FlexStr,
@@ -374,6 +386,8 @@ pub struct Config {
     pub file_exports: FileExportConfig,
     pub gene_expression: GeneExpressionConfig,
     pub feature_sub_groups: HashMap<String, HashSet<String>>,
+    pub protein_feature_view: ProteinFeatureViewConfig,
+    pub apicuron: ApicuronConfig,
 }
 
 impl Config {

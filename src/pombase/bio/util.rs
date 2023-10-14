@@ -104,6 +104,21 @@ fn to_gff(chromosome_export_id: &str,
     ret_val
 }
 
+fn get_gff_gene_type(gene: &GeneDetails) -> &'static str {
+    match gene.feature_type.as_ref() {
+        "gene" => "gene",
+        "lncRNA gene" => "lncRNA_gene",
+        "mRNA gene" => "protein_coding_gene",
+        "ncRNA gene" => "ncRNA_gene",
+        "pseudogene" => "pseudogene",
+        "rRNA gene" => "rRNA_gene",
+        "snRNA gene" => "snRNA_gene",
+        "sncRNA gene" => "sncRNA_gene",
+        "snoRNA gene" => "snoRNA_gene",
+        "tRNA gene" => "tRNA_gene",
+        _ => panic!("unknown gene feature_type: {}", gene.feature_type),
+    }
+}
 
 pub fn format_gene_gff(chromosome_export_id: &str,
                        source: &str, transcripts: &UniquenameTranscriptMap,
@@ -113,8 +128,14 @@ pub fn format_gene_gff(chromosome_export_id: &str,
         let maybe_gene_name =
             gene.name.as_ref().map(|gene_name| gene_name as &str);
 
-        ret_val.push(to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
-                            "gene", gene_loc, None));
+        let gene_type = get_gff_gene_type(gene);
+
+        let gene_gff_line =
+            to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
+                   "gene", gene_loc, None);
+
+        ret_val.push(format!("{};so_term_name={}", gene_gff_line, gene_type));
+
         for transcript_uniquename in &gene.transcripts {
             let transcript_details = transcripts
                 .get(transcript_uniquename)
@@ -212,6 +233,9 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
             if *write_mode == GpadGafWriteMode::PomBaseGaf {
                 true
             } else {
+                if ext_part.rel_type_name == "modified_residue" {
+                    return false;
+                }
                 if let Some(map_termid) = rel_mapping.get(&ext_part.rel_type_name) {
                     map_termid.is_some()
                 } else {
@@ -250,7 +274,7 @@ fn test_format_gff() {
 
     assert_eq!(gene_gff_lines.len(), 13);
     assert_eq!(gene_gff_lines[0],
-               "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34");
+               "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34;so_term_name=protein_coding_gene");
     assert_eq!(gene_gff_lines[1],
                "chromosome_3\tPomBase\tmRNA\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06.1;Parent=SPCC18B5.06");
     assert_eq!(gene_gff_lines[2],
@@ -290,6 +314,7 @@ fn make_test_gene() -> GeneDetails {
         disordered_region_coords: vec![],
         low_complexity_region_coords: vec![],
         coiled_coil_coords: vec![],
+        has_protein_features: false,
         rfam_annotations: vec![],
         orfeome_identifier: None,
         name_descriptions: vec![],
