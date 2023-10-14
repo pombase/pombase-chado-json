@@ -2,8 +2,8 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
 use crate::web::config::Config;
 use crate::data_types::{GeneDetails, ReferenceDetails, TermDetails,
-                        ContainerType, GenotypeShort,
-                        OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer,
+                        ContainerType, OntAnnotationId, AnnotationContainer,
+                        OrthologAnnotationContainer,
                         Strand, GenotypeDetails, Ploidiness};
 
 fn format_page(header: &str, body: &str) -> String {
@@ -222,12 +222,6 @@ fn genotype_summary(config: &Config, genotype_details: &GenotypeDetails) -> Stri
     summ
 }
 
-fn genotype_display_name(genotype_short: &GenotypeShort) -> String {
-    let mut bits: Vec<_> = genotype_short.display_uniquename.split('-').collect();
-    bits.dedup();
-    bits.join(" ")
-}
-
 fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
                    container: &dyn AnnotationContainer) -> String {
     let mut ret = String::new();
@@ -284,8 +278,7 @@ fn get_annotations(ont_annotation_ids: &[OntAnnotationId],
         for uniquename in genotypes {
             if let Some(genotype_short) = genotypes_by_uniquename.get(uniquename) {
                 ret += &format!("<li><a href='/genotype/{}'>{}</a></li>\n",
-                                uniquename,
-                                genotype_display_name(genotype_short));
+                                uniquename, genotype_short.display_name);
             }
         }
         ret += "</ul>\n";
