@@ -4,8 +4,7 @@ use crate::web::config::Config;
 use crate::data_types::{GeneDetails, ReferenceDetails, TermDetails,
                         ContainerType, GenotypeShort,
                         OntAnnotationId, AnnotationContainer, OrthologAnnotationContainer,
-                        Strand, GenotypeDetails};
-
+                        Strand, GenotypeDetails, Ploidiness};
 
 fn format_page(header: &str, body: &str) -> String {
     format! ("
@@ -49,7 +48,15 @@ fn make_gene_title(config: &Config, gene_details: &GeneDetails) -> String {
 }
 
 fn make_genotype_title(config: &Config, genotype_details: &GenotypeDetails) -> String {
-    format!("{} - Genotype - {}", config.database_name, genotype_details.display_name)
+    let genotype_and_ploidiness =
+        if genotype_details.ploidiness == Ploidiness::Haploid {
+            "Haploid genotype"
+        } else {
+            "Diploid genotype"
+        };
+
+    format!("{} - {} - {}", config.database_name, genotype_and_ploidiness,
+            genotype_details.display_name)
 }
 
 fn header(config: &Config, title: &str) -> String  {
@@ -131,6 +138,64 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
     }
 
     summ += "</dl>\n";
+
+    summ
+}
+
+fn genotype_alleles_summary(genotype_details: &GenotypeDetails) -> String {
+    let mut summ = String::new();
+
+    let empty_string = flex_str!("");
+
+    let locus_type_name =
+        if genotype_details.ploidiness == Ploidiness::Haploid {
+            "gene"
+        } else {
+            "locus"
+        };
+
+    summ += &format!("<table><thead><th>{locus_type_name}</th> <th>Product</th> <th>Allele name</th> <th>Description</th> <th>Type</th> <th>Expression</th></thead>");
+
+    for locus in &genotype_details.loci {
+        summ += "<tbody>";
+
+        for (idx, expressed_allele) in locus.expressed_alleles.iter().enumerate() {
+            let Some(allele) = genotype_details.get_allele(&expressed_allele.allele_uniquename)
+            else {
+                continue;
+            };
+            let Some(gene) = genotype_details.get_gene_short(&allele.gene_uniquename)
+            else {
+                continue;
+            };
+
+            summ += "<tr>";
+
+            let gene_product = gene.product.as_ref().unwrap_or_else(|| &empty_string);
+
+            let allele_expression =
+                expressed_allele.expression.as_ref().unwrap_or_else(|| &empty_string);
+            let allele_name = allele.name.as_ref().unwrap_or_else(|| &empty_string);
+            let allele_description = allele.description.as_ref().unwrap_or_else(|| &empty_string);
+
+            if idx == 0 {
+                summ += &format!("<td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
+                                 gene.display_name(), gene_product, allele_name,
+                                 allele_description,
+                                 allele.allele_type, allele_expression);
+            } else {
+                summ += &format!("<td></td><td></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
+                                 allele_name, allele_description, allele.allele_type,
+                                 allele_expression);
+            }
+
+            summ += "</tr>";
+        }
+
+        summ += "</tbody>";
+    }
+
+    summ += "</table>";
 
     summ
 }
@@ -394,6 +459,9 @@ fn genotype_body(config: &Config, title: &str, genotype_details: &GenotypeDetail
 
     body += &format!("<section><h2>Genotype summary</h2>\n{}</section>\n",
                      genotype_summary(config, genotype_details));
+
+    body += &format!("<section><h2>Allele summary</h2>\n{}</section>\n",
+                     genotype_alleles_summary(genotype_details));
 
     body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
                      annotation_section(config, genotype_details));

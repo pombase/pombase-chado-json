@@ -1460,6 +1460,15 @@ impl GenotypeDetails {
         }
         Ploidiness::Haploid
     }
+
+    pub fn get_gene_short(&self, gene_uniquename: &GeneUniquename) -> Option<GeneShort> {
+        self.genes_by_uniquename().get(gene_uniquename)
+           .map(|opt_gene| { opt_gene.to_owned().unwrap() })
+    }
+
+    pub fn get_allele(&self, allele_uniquename: &AlleleUniquename) -> Option<&AlleleShort> {
+        self.alleles_by_uniquename.get(allele_uniquename)
+    }
 }
 
 impl From<&GenotypeDetails> for GenotypeShort {
