@@ -179,8 +179,8 @@ fn genotype_alleles_summary(genotype_details: &GenotypeDetails) -> String {
             let allele_description = allele.description.as_ref().unwrap_or_else(|| &empty_string);
 
             if idx == 0 {
-                summ += &format!("<td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
-                                 gene.display_name(), gene_product, allele_name,
+                summ += &format!("<td><a href='/gene/{}'>{}</a></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
+                                 gene.uniquename, gene.display_name(), gene_product, allele_name,
                                  allele_description,
                                  allele.allele_type, allele_expression);
             } else {
