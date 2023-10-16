@@ -59,7 +59,29 @@ fn make_genotype_title(config: &Config, genotype_details: &GenotypeDetails) -> S
             genotype_details.display_name)
 }
 
-fn header(config: &Config, title: &str) -> String  {
+fn head(config: &Config, title: &str) -> String  {
+    let style = "
+body {
+  padding: 1em 5em;
+}
+dd {
+  margin-left: 2em;
+}
+tbody:nth-child(2n+1) {
+  background-color: #f3f3f3;
+}
+th, td {
+  border: 1px solid lightgrey;
+}
+section {
+  margin-top: 1em;
+}
+h1,h2,h3,h4,h5 {
+  margin: 0.5em 0;
+}
+";
+
+
     format!(r##"
   <meta charset="utf-8">
   <title>{}</title>
@@ -73,10 +95,22 @@ fn header(config: &Config, title: &str) -> String  {
   <link rel="shortcut icon" href="/assets/favicon.ico">
   <meta name="apple-mobile-web-app-title" content="{}">
   <meta name="application-name" content="{}">
+  <link href="https://cdn.jsdelivr.net/npm/fastbootstrap@1.1.2/dist/css/fastbootstrap.min.css" rel="stylesheet" integrity="sha256-xLGBU65wCDv2/qEdq3ZYw2Qdiia/wxxeGepRyZmpQdY=" crossorigin="anonymous">
+  <style>
+{}
+  </style>
 "##,
             title, title, config.database_name, title, config.database_name,
-            config.database_name
+            config.database_name, style
     )
+}
+
+fn header(config: &Config) -> String {
+    format!("
+ <div>
+   <img src='/assets/{}' alt='{} home'>
+ </div>
+ ", config.logo_file_name, config.site_name)
 }
 
 fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
@@ -401,8 +435,9 @@ fn gene_references(gene_details: &GeneDetails) -> String {
         let ref_by_uniquename = &gene_details.references_by_uniquename;
         if let Some(ref_short_opt) = ref_by_uniquename.get(ref_uniquename) {
             if let Some(ref_short) = ref_short_opt {
-                refs_html += &format!("<dt><a href='/reference/{}'>{}</a> - {}</dt> <dd>{} {}</dd>\n",
+                refs_html += &format!("<dt><a href='/reference/{}'>{}</a> - <a href='/reference/{}'>{}</a></dt> <dd>{} {}</dd>\n",
                                       ref_short.uniquename, ref_short.uniquename,
+                                      ref_short.uniquename,
                                       ref_short.title.as_ref().unwrap_or_else(|| &unknown_title),
                                       ref_short.authors_abbrev.as_ref().unwrap_or_else(|| &empty),
                                       ref_short.citation.as_ref().unwrap_or_else(|| &empty));
@@ -417,6 +452,8 @@ fn gene_references(gene_details: &GeneDetails) -> String {
 
 fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String {
     let mut body = String::new();
+
+    body += &header(config);
 
     body += &format!("<h1>{}</h1>\n", title);
 
@@ -445,6 +482,8 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 fn genotype_body(config: &Config, title: &str, genotype_details: &GenotypeDetails) -> String {
     let mut body = String::new();
 
+    body += &header(config);
+
     body += &format!("<h1>{}</h1>\n", title);
 
     body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
@@ -465,13 +504,13 @@ fn genotype_body(config: &Config, title: &str, genotype_details: &GenotypeDetail
 pub fn render_simple_gene_page(config: &Config, gene_details: &GeneDetails) -> String  {
     let title = make_gene_title(config, gene_details);
 
-    format_page(&header(config, &title), &gene_body(config, &title, gene_details))
+    format_page(&head(config, &title), &gene_body(config, &title, gene_details))
 }
 
 pub fn render_simple_genotype_page(config: &Config, genotype_details: &GenotypeDetails) -> String  {
     let title = make_genotype_title(config, genotype_details);
 
-    format_page(&header(config, &title), &genotype_body(config, &title, genotype_details))
+    format_page(&head(config, &title), &genotype_body(config, &title, genotype_details))
 }
 
 fn make_reference_title(config: &Config, reference_details: &ReferenceDetails) -> String {
@@ -517,6 +556,8 @@ fn reference_summary(reference_details: &ReferenceDetails) -> String {
 fn reference_body(config: &Config, title: &str, reference_details: &ReferenceDetails) -> String {
     let mut body = String::new();
 
+    body += &header(config);
+
     body += &format!("<h1>{}</h1>\n", title);
 
     body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
@@ -536,7 +577,7 @@ fn reference_body(config: &Config, title: &str, reference_details: &ReferenceDet
 pub fn render_simple_reference_page(config: &Config, reference_details: &ReferenceDetails) -> String  {
     let title = make_reference_title(config, reference_details);
 
-    format_page(&header(config, &title), &reference_body(config, &title, reference_details))
+    format_page(&head(config, &title), &reference_body(config, &title, reference_details))
 }
 
 fn make_term_title(config: &Config, term_details: &TermDetails) -> String {
@@ -568,6 +609,8 @@ fn term_summary(config: &Config, term_details: &TermDetails) -> String {
 fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String {
     let mut body = String::new();
 
+    body += &header(config);
+
     body += &format!("<h1>{}</h1>\n", title);
 
     body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
@@ -585,5 +628,5 @@ fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String
 pub fn render_simple_term_page(config: &Config, term_details: &TermDetails) -> String  {
     let title = make_term_title(config, term_details);
 
-    format_page(&header(config, &title), &term_body(config, &title, term_details))
+    format_page(&head(config, &title), &term_body(config, &title, term_details))
 }

@@ -352,9 +352,11 @@ pub struct ApicuronConfig {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct Config {
+    pub site_name: FlexStr,
     pub database_name: FlexStr,
     pub database_long_name: FlexStr,
     pub database_citation: FlexStr,
+    pub logo_file_name: FlexStr,
     pub funder: FlexStr,
     pub site_description: FlexStr,
     pub load_organism_taxonid: Option<OrganismTaxonId>,
