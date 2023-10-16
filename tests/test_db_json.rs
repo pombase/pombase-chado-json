@@ -592,6 +592,8 @@ fn get_test_raw() -> Raw {
 
 fn get_test_config() -> Config {
     let mut config = Config {
+        site_name: "PomBase".into(),
+        logo_file_name: "logo.png".into(),
         load_organism_taxonid: Some(4896),
         database_name: "PomBase".into(),
         database_long_name: flex_str!("PomBase"),

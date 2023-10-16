@@ -1,8 +1,10 @@
 {
   "load_organism_taxonid": 4896,
+  "site_name": "PomBase",
   "database_name": "PomBase",
   "database_long_name": "PomBase",
   "database_citation": "PMID:22039153",
+  "logo_file_name": "logo.png",
   "funder": "Wellcome Trust",
   "helpdesk_address": "helpdesk@some.domain",
   "site_description": "PomBase",

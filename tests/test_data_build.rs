@@ -22,6 +22,8 @@ use rusqlite::Connection;
 #[allow(dead_code)]
 fn get_test_config() -> Config {
     let mut config = Config {
+        site_name: "PomBase".into(),
+        logo_file_name: "logo.png".into(),
         database_name: "PomBase".into(),
         database_long_name: "PomBase".to_shared_str(),
         database_citation: "PMID:22039153".to_shared_str(),
