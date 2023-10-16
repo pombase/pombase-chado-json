@@ -41,7 +41,7 @@ version = "1.0"
 features = ["rc"]
 
 [dependencies.zstd]
-version = "0.12"
+version = "0.13"
 features = ["zstdmt"]
 
 [dependencies.flexstr]
