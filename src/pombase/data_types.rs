@@ -558,6 +558,11 @@ pub struct ReferenceDetails {
 
     // the curators of the annotations from Canto, may be different from the canto_curator_name
     pub annotation_curators: Vec<AnnotationCurator>,
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub file_curator_name: Option<FlexStr>,
+    pub file_curator_role: FlexStr,
+
     pub annotation_file_curators: Vec<AnnotationCurator>,
 
     // count of genes from the main organism of the site (eg. pombe)
@@ -2317,6 +2322,9 @@ pub struct SolrReferenceSummary {
     pub canto_curator_name: Option<FlexStr>,
     pub canto_curator_role: FlexStr,
 
+    pub file_curator_name: Option<FlexStr>,
+    pub file_curator_role: FlexStr,
+
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub highlighting: SolrMatchHighlight,
 }
@@ -2352,6 +2360,10 @@ impl SolrReferenceSummary {
             canto_annotation_status: reference_details.canto_annotation_status.clone(),
             canto_curator_name: reference_details.canto_curator_name.clone(),
             canto_curator_role: reference_details.canto_curator_role.clone(),
+
+            file_curator_name: reference_details.file_curator_name.clone(),
+            file_curator_role: reference_details.file_curator_role.clone(),
+
             highlighting: HashMap::new(),
         }
     }

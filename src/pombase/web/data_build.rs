@@ -633,7 +633,7 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
         let reference = references_map.get(ref_uniquename).unwrap();
 
         let ref_short = make_reference_short(references_map, ref_uniquename).unwrap();
-        if reference.canto_curator_role == "community" {
+        if reference.canto_curator_role.to_lowercase() == "community" {
             all_community_curated.push(ref_short.clone());
             if recent_community_curated.len() <= MAX_RECENT_REFS {
                 recent_community_curated.push(ref_short);
@@ -1472,6 +1472,9 @@ phenotypes, so just the first part of this extension will be used:
             let mut canto_added_date: Option<FlexStr> = None;
             let mut canto_session_submitted_date: Option<FlexStr> = None;
             let mut annotation_curators = vec![];
+
+            let mut file_curator_role = self.config.database_name.clone();
+            let mut file_curator_name: Option<FlexStr> = None;
             let mut annotation_file_curators = vec![];
 
             for prop in rc_publication.publicationprops.borrow().iter() {
@@ -1585,6 +1588,17 @@ phenotypes, so just the first part of this extension will be used:
               }
             }
 
+            for annotation_curator in &annotation_file_curators {
+              if annotation_curator.community_curator {
+                file_curator_name = Some(annotation_curator.name.clone());
+                file_curator_role = flex_str!("community");
+              } else {
+                if canto_curator_name.is_none() {
+                  file_curator_name = Some(annotation_curator.name.clone());
+                }
+              }
+            }
+
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
                                        uniquename: reference_uniquename.clone(),
@@ -1605,6 +1619,8 @@ phenotypes, so just the first part of this extension will be used:
                                        canto_session_submitted_date,
                                        canto_added_date,
                                        annotation_curators,
+                                       file_curator_role,
+                                       file_curator_name,
                                        annotation_file_curators,
                                        approved_date,
                                        publication_year,
