@@ -606,6 +606,20 @@ fn term_summary(config: &Config, term_details: &TermDetails) -> String {
     summ
 }
 
+fn term_parents(term_details: &TermDetails) -> String {
+    let mut parent_string: String = "<ul>".into();
+
+    for parent in &term_details.direct_ancestors {
+        parent_string += &format!("<li><b>{}</b> <a href='/term/{}'>{}</a></li>",
+                                  parent.relation_name, parent.termid,
+                                  parent.term_name);
+    }
+
+    parent_string += "</ul>";
+
+    parent_string
+}
+
 fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String {
     let mut body = String::new();
 
@@ -618,6 +632,9 @@ fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String
 
     body += &format!("<section><h2>Term summary</h2>\n{}</section>\n",
                      term_summary(config, term_details));
+
+    body += &format!("<section><h2>Parents</h2>\n{}</section>\n",
+                     term_parents(term_details));
 
     body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
                      annotation_section(config, term_details));
