@@ -558,6 +558,7 @@ pub struct ReferenceDetails {
 
     // the curators of the annotations from Canto, may be different from the canto_curator_name
     pub annotation_curators: Vec<AnnotationCurator>,
+    pub annotation_file_curators: Vec<AnnotationCurator>,
 
     // count of genes from the main organism of the site (eg. pombe)
     pub gene_count: usize,

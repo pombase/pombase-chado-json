@@ -1519,7 +1519,7 @@ impl WebData {
 
             let timestamp = flex_fmt!("{}T{}.000Z", approved_date, approved_time);
 
-            for annotation_curator in &ref_details.annotation_curators {
+            let mut add_record = |annotation_curator: &AnnotationCurator| {
                 if let Some(ref curator_orcid) = annotation_curator.orcid {
                     curation_reports.push(ApicuronReport {
                         activity_term: flex_str!("publication_curated"),
@@ -1528,6 +1528,13 @@ impl WebData {
                         entity_uri: flex_fmt!("{}/reference/{}", config.base_url, ref_details.uniquename),
                     });
                 }
+            };
+
+            for annotation_curator in &ref_details.annotation_curators {
+                add_record(&annotation_curator);
+            }
+            for annotation_curator in &ref_details.annotation_file_curators {
+                add_record(&annotation_curator);
             }
         }
 

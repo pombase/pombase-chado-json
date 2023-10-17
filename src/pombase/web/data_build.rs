@@ -1442,6 +1442,13 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn process_references(&mut self) {
+        let parse_annotation_curator =
+            |value: &str, prop_type: &str| {
+                let curator: AnnotationCurator = serde_json::from_str(value)
+                    .unwrap_or_else(|_| panic!("failed to parse {} pupprop: {}", prop_type, value));
+                curator
+            };
+
         for rc_publication in &self.raw.publications {
             let reference_uniquename = &rc_publication.uniquename;
 
@@ -1465,6 +1472,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut canto_added_date: Option<FlexStr> = None;
             let mut canto_session_submitted_date: Option<FlexStr> = None;
             let mut annotation_curators = vec![];
+            let mut annotation_file_curators = vec![];
 
             for prop in rc_publication.publicationprops.borrow().iter() {
                 match &prop.prop_type.name as &str {
@@ -1495,9 +1503,12 @@ phenotypes, so just the first part of this extension will be used:
                     "canto_session_submitted_date" =>
                         canto_session_submitted_date = Some(prop.value.clone()),
                     "annotation_curator" => {
-                        let curator: AnnotationCurator = serde_json::from_str(&prop.value)
-                            .unwrap_or_else(|_| panic!("failed to parse annotation_curators pupprop: {}", prop.value));
-                        annotation_curators.push(curator);
+                        let curator = parse_annotation_curator(&prop.value, &prop.prop_type.name);
+                        annotation_curators.push(curator)
+                    },
+                    "annotation_file_curator" => {
+                        let curator = parse_annotation_curator(&prop.value, &prop.prop_type.name);
+                        annotation_file_curators.push(curator);
                     },
                     _ => ()
                 }
@@ -1594,6 +1605,7 @@ phenotypes, so just the first part of this extension will be used:
                                        canto_session_submitted_date,
                                        canto_added_date,
                                        annotation_curators,
+                                       annotation_file_curators,
                                        approved_date,
                                        publication_year,
                                        cv_annotations: HashMap::new(),
