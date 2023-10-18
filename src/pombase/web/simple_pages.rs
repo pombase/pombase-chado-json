@@ -40,10 +40,11 @@ fn make_gene_title(config: &Config, gene_details: &GeneDetails) -> String {
         };
 
     if let Some(ref product) = gene_details.product {
-        format!("{} - {} - {} - {}", config.database_name, feature_type,
-                name_and_uniquename, product)
+        format!("{} - {} - {} - {} - {}", config.database_name, feature_type,
+                name_and_uniquename, product, config.database_long_name)
     } else {
-        format!("{} - {} - {}", config.database_name, feature_type, name_and_uniquename)
+        format!("{} - {} - {} - {}", config.database_name, feature_type, name_and_uniquename,
+                config.database_long_name)
     }
 }
 
@@ -55,8 +56,8 @@ fn make_genotype_title(config: &Config, genotype_details: &GenotypeDetails) -> S
             "Diploid genotype"
         };
 
-    format!("{} - {} - {}", config.database_name, genotype_and_ploidiness,
-            genotype_details.display_name)
+    format!("{} - {} - {} - {}", config.database_name, genotype_and_ploidiness,
+            genotype_details.display_name, config.database_long_name)
 }
 
 fn head(config: &Config, title: &str) -> String  {
@@ -108,7 +109,7 @@ h1,h2,h3,h4,h5 {
 fn header(config: &Config) -> String {
     format!("
  <div>
-   <img src='/assets/{}' alt='{} home'>
+   <a href='/'><img src='/assets/{}' alt='{} home'></a>
  </div>
  ", config.logo_file_name, config.site_name)
 }
@@ -118,7 +119,7 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 
     summ += "<dl>\n";
     if let Some(ref name) = gene_details.name {
-        summ += &format!("  <dt>Gene standard name</dt> <dd>{}</dd>\n",  name);
+        summ += &format!("  <dt>Standard name</dt> <dd>{}</dd>\n",  name);
     }
     summ += &format!("  <dt>Systematic ID</dt> <dd>{}</dd>\n", gene_details.uniquename);
 
@@ -239,7 +240,7 @@ fn genotype_summary(config: &Config, genotype_details: &GenotypeDetails) -> Stri
 
     summ += "<dl>\n";
 
-    summ += &format!("  <dt>Genotype description</dt> <dd>{}</dd>\n",  genotype_details.display_name);
+    summ += &format!("  <dt>Description</dt> <dd>{}</dd>\n",  genotype_details.display_name);
 
     if let Some(genotype_organism) = config.organism_by_taxonid(genotype_details.taxonid) {
         summ += &format!("  <dt>Organism</dt> <dd>{}\n", genotype_organism.scientific_name());
@@ -457,9 +458,6 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
-                     config.database_name, config.site_description);
-
     body += &format!("<section><h2>Gene summary</h2>\n{}</section>\n",
                      gene_summary(config, gene_details));
 
@@ -485,9 +483,6 @@ fn genotype_body(config: &Config, title: &str, genotype_details: &GenotypeDetail
     body += &header(config);
 
     body += &format!("<h1>{}</h1>\n", title);
-
-    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
-                     config.database_name, config.site_description);
 
     body += &format!("<section><h2>Genotype summary</h2>\n{}</section>\n",
                      genotype_summary(config, genotype_details));
@@ -515,9 +510,11 @@ pub fn render_simple_genotype_page(config: &Config, genotype_details: &GenotypeD
 
 fn make_reference_title(config: &Config, reference_details: &ReferenceDetails) -> String {
     if let Some(ref title) = reference_details.title {
-        format!("{} - Reference - {} - {}", config.database_name, reference_details.uniquename, title)
+        format!("{} - Reference - {} - {} - {}", config.database_name, reference_details.uniquename,
+                title, config.database_long_name)
     } else {
-        format!("{} - Reference - {}", config.database_name, reference_details.uniquename)
+        format!("{} - Reference - {} - {}", config.database_name, reference_details.uniquename,
+                config.database_long_name)
     }
 }
 
@@ -560,9 +557,6 @@ fn reference_body(config: &Config, title: &str, reference_details: &ReferenceDet
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
-                     config.database_name, config.site_description);
-
     body += &format!("<section><h2>Reference summary</h2>\n{}</section>\n",
                      reference_summary(reference_details));
 
@@ -584,8 +578,8 @@ fn make_term_title(config: &Config, term_details: &TermDetails) -> String {
     let cv_config = config.cv_config_by_name(&term_details.cv_name);
     let cv_display_name = cv_config.display_name.unwrap_or_else(|| flex_str!("DEFAULT"));
 
-    format!("{} - Term - {} - {} - {}", config.database_name, term_details.termid,
-            term_details.name, cv_display_name)
+    format!("{} - Term - {} - {} - {} - {}", config.database_name, term_details.termid,
+            term_details.name, cv_display_name, config.database_long_name)
 }
 
 fn term_summary(config: &Config, term_details: &TermDetails) -> String {
@@ -626,9 +620,6 @@ fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String
     body += &header(config);
 
     body += &format!("<h1>{}</h1>\n", title);
-
-    body += &format!("<section><h2>Welcome to <a href='/'>{}</a></h2>\n<p>{}</p></section>\n",
-                     config.database_name, config.site_description);
 
     body += &format!("<section><h2>Term summary</h2>\n{}</section>\n",
                      term_summary(config, term_details));
