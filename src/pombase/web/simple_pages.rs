@@ -80,8 +80,10 @@ section {
 h1,h2,h3,h4,h5 {
   margin: 0.5em 0;
 }
+.summary {
+  display: none;
+}
 ";
-
 
     format!(r##"
   <meta charset="utf-8">
@@ -458,7 +460,7 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<section><h2>Gene summary</h2>\n{}</section>\n",
+    body += &format!("<section><h2 class='summary'>Gene summary</h2>\n{}</section>\n",
                      gene_summary(config, gene_details));
 
     body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
@@ -484,7 +486,7 @@ fn genotype_body(config: &Config, title: &str, genotype_details: &GenotypeDetail
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<section><h2>Genotype summary</h2>\n{}</section>\n",
+    body += &format!("<section><h2 class='summary'>Genotype summary</h2>\n{}</section>\n",
                      genotype_summary(config, genotype_details));
 
     body += &format!("<section><h2>Allele summary</h2>\n{}</section>\n",
@@ -557,7 +559,7 @@ fn reference_body(config: &Config, title: &str, reference_details: &ReferenceDet
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<section><h2>Reference summary</h2>\n{}</section>\n",
+    body += &format!("<section><h2 class='summary'>Reference summary</h2>\n{}</section>\n",
                      reference_summary(reference_details));
 
     body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
@@ -621,7 +623,7 @@ fn term_body(config: &Config, title: &str, term_details: &TermDetails) -> String
 
     body += &format!("<h1>{}</h1>\n", title);
 
-    body += &format!("<section><h2>Term summary</h2>\n{}</section>\n",
+    body += &format!("<section><h2 class='summary'>Term summary</h2>\n{}</section>\n",
                      term_summary(config, term_details));
 
     body += &format!("<section><h2>Parents</h2>\n{}</section>\n",
