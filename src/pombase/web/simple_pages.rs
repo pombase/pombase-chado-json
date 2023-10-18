@@ -73,6 +73,7 @@ tbody:nth-child(2n+1) {
 }
 th, td {
   border: 1px solid lightgrey;
+  padding: 0.2em 0.4em;
 }
 section {
   margin-top: 1em;
