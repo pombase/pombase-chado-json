@@ -1473,7 +1473,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut canto_session_submitted_date: Option<FlexStr> = None;
             let mut annotation_curators = vec![];
 
-            let mut file_curator_role = self.config.database_name.clone();
+            let mut file_curator_role = None;
             let mut file_curator_name: Option<FlexStr> = None;
             let mut annotation_file_curators = vec![];
 
@@ -1591,11 +1591,14 @@ phenotypes, so just the first part of this extension will be used:
             for annotation_curator in &annotation_file_curators {
               if annotation_curator.community_curator {
                 file_curator_name = Some(annotation_curator.name.clone());
-                file_curator_role = flex_str!("community");
-              } else {
-                if canto_curator_name.is_none() {
-                  file_curator_name = Some(annotation_curator.name.clone());
-                }
+                file_curator_role = Some(flex_str!("community"));
+              }
+            }
+
+            if let Some(first_curator) = annotation_file_curators.get(0) {
+              if file_curator_name.is_none() && file_curator_role.is_none() {
+                file_curator_name = Some(first_curator.name.clone());
+                file_curator_role = Some(self.config.database_name.clone());
               }
             }
 

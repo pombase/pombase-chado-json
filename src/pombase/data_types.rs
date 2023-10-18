@@ -561,7 +561,8 @@ pub struct ReferenceDetails {
 
     #[serde(skip_serializing_if="Option::is_none")]
     pub file_curator_name: Option<FlexStr>,
-    pub file_curator_role: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub file_curator_role: Option<FlexStr>,
 
     pub annotation_file_curators: Vec<AnnotationCurator>,
 
@@ -2322,8 +2323,10 @@ pub struct SolrReferenceSummary {
     pub canto_curator_name: Option<FlexStr>,
     pub canto_curator_role: FlexStr,
 
+    #[serde(skip_serializing_if="Option::is_none")]
     pub file_curator_name: Option<FlexStr>,
-    pub file_curator_role: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub file_curator_role: Option<FlexStr>,
 
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub highlighting: SolrMatchHighlight,
