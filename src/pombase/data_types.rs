@@ -516,6 +516,8 @@ pub struct AnnotationCurator {
     pub community_curator: bool,
     pub annotation_count: usize,
     pub orcid: Option<FlexStr>,
+    pub file_type: Option<FlexStr>,
+    pub file_name: Option<FlexStr>,
 }
 
 #[serde_as]
