@@ -589,13 +589,17 @@ fn term_summary(config: &Config, term_details: &TermDetails) -> String {
 
     summ += "<dl>\n";
 
-    summ += &format!("<dt>Term ID</dt> <dd>{}</dd>\n", term_details.termid);
-    summ += &format!("<dt>Term name</dt> <dd>{}</dd>\n", term_details.name);
+    summ += &format!("<dt>ID</dt> <dd>{}</dd>\n", term_details.termid);
+    summ += &format!("<dt>Name</dt> <dd>{}</dd>\n", term_details.name);
 
     let cv_config = config.cv_config_by_name(&term_details.cv_name);
     let cv_display_name = cv_config.display_name.unwrap_or_else(|| flex_str!("DEFAULT"));
 
-    summ += &format!("<dt>CV name</dt> <dd>{}</dd>\n", cv_display_name);
+    summ += &format!("<dt>Ontology or CV name</dt> <dd>{}</dd>\n", cv_display_name);
+
+    if let Some(ref definition) = term_details.definition {
+        summ += &format!("<dt>Definition</dt> <dd>{}</dd>\n", definition);
+    }
 
     summ += "</dl>\n";
 
