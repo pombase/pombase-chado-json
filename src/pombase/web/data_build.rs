@@ -1357,17 +1357,23 @@ phenotypes, so just the first part of this extension will be used:
                 None
             };
 
+        let ext_filter = |ext_part: &ExtPart| {
+            ext_part.rel_type_name == "has_penetrance" ||
+            ext_part.rel_type_name == "has_severity"
+        };
+
+        let filter_interaction_extension = |mut ext: Vec<ExtPart>| {
+            ext.drain(0..).filter(ext_filter)
+                .collect()
+        };
+
         let rescued_phenotype_extension =
             if let (Some(ref termid), Some(ref ext)) =
                 (&rescued_phenotype_termid, &rescued_phenotype_extension_value)
             {
-                let mut ext = self.parse_extension_prop(&termid, ext);
+                let ext = self.parse_extension_prop(&termid, ext);
                 // See: https://github.com/pombase/pombase-chado/issues/1114
-                ext.drain(0..).filter(|ext_part| {
-                    ext_part.rel_type_name == "has_penetrance" ||
-                    ext_part.rel_type_name == "has_severity"
-                })
-                .collect()
+                filter_interaction_extension(ext)
             } else {
                 vec![]
             };
@@ -1386,13 +1392,16 @@ phenotypes, so just the first part of this extension will be used:
                 gene_b_uniquename,
             };
 
+        let double_mutant_extension =
+            filter_interaction_extension(ont_annotation_detail.extension);
+
         let interaction_annotation =
             GeneticInteractionDetail {
                 genotype_a_uniquename: Some(genotype_a_display_uniquename),
                 genotype_b_uniquename: Some(genotype_b_display_uniquename),
                 reference_uniquename: ont_annotation_detail.reference,
                 double_mutant_phenotype_termid,
-                double_mutant_extension: ont_annotation_detail.extension,
+                double_mutant_extension,
                 double_mutant_genotype_display_uniquename,
                 rescued_phenotype_termid,
                 rescued_phenotype_extension,
