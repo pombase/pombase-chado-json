@@ -1361,7 +1361,13 @@ phenotypes, so just the first part of this extension will be used:
             if let (Some(ref termid), Some(ref ext)) =
                 (&rescued_phenotype_termid, &rescued_phenotype_extension_value)
             {
-                self.parse_extension_prop(&termid, ext)
+                let mut ext = self.parse_extension_prop(&termid, ext);
+                // See: https://github.com/pombase/pombase-chado/issues/1114
+                ext.drain(0..).filter(|ext_part| {
+                    ext_part.rel_type_name == "has_penetrance" ||
+                    ext_part.rel_type_name == "has_severity"
+                })
+                .collect()
             } else {
                 vec![]
             };
