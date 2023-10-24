@@ -554,6 +554,8 @@ pub struct ReferenceDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_approved_date: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_approver_orcid: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub canto_session_submitted_date: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_added_date: Option<FlexStr>,

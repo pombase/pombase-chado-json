@@ -1519,22 +1519,30 @@ impl WebData {
 
             let timestamp = flex_fmt!("{}T{}.000Z", approved_date, approved_time);
 
-            let mut add_record = |annotation_curator: &AnnotationCurator, activity_term: FlexStr| {
-                if let Some(ref curator_orcid) = annotation_curator.orcid {
-                    curation_reports.push(ApicuronReport {
-                        activity_term,
-                        curator_orcid: curator_orcid.clone(),
-                        timestamp: timestamp.clone(),
-                        entity_uri: flex_fmt!("{}/reference/{}", config.base_url, ref_details.uniquename),
-                    });
-                }
+            let mut add_record = |orcid: &FlexStr, activity_term: FlexStr| {
+                curation_reports.push(ApicuronReport {
+                    activity_term,
+                    curator_orcid: orcid.clone(),
+                    timestamp: timestamp.clone(),
+                    entity_uri: flex_fmt!("{}/reference/{}", config.base_url, ref_details.uniquename),
+                });
             };
 
+            let mut maybe_add_record =
+                |annotation_curator: &AnnotationCurator, activity_term: FlexStr| {
+                    if let Some(ref curator_orcid) = annotation_curator.orcid {
+                        add_record(curator_orcid, activity_term);
+                    }
+                };
+
             for annotation_curator in &ref_details.annotation_curators {
-                add_record(&annotation_curator, flex_str!("publication_curated"));
+                maybe_add_record(&annotation_curator, flex_str!("publication_curated"));
             }
             for annotation_curator in &ref_details.annotation_file_curators {
-                add_record(&annotation_curator, flex_str!("provided_dataset"));
+                maybe_add_record(&annotation_curator, flex_str!("provided_dataset"));
+            }
+            if let Some(ref canto_approver_orcid) = ref_details.canto_approver_orcid {
+                add_record(canto_approver_orcid, flex_str!("approved_publication"));
             }
         }
 

@@ -1484,6 +1484,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut canto_curator_name: Option<FlexStr> = None;
             let mut canto_first_approved_date: Option<FlexStr> = None;
             let mut canto_approved_date: Option<FlexStr> = None;
+            let mut canto_approver_orcid: Option<FlexStr> = None;
             let mut canto_added_date: Option<FlexStr> = None;
             let mut canto_session_submitted_date: Option<FlexStr> = None;
             let mut annotation_curators = vec![];
@@ -1516,6 +1517,8 @@ phenotypes, so just the first part of this extension will be used:
                         canto_first_approved_date = Some(prop.value.clone()),
                     "canto_approved_date" =>
                         canto_approved_date = Some(prop.value.clone()),
+                    "canto_approver_orcid" =>
+                        canto_approver_orcid = Some(prop.value.clone()),
                     "canto_added_date" =>
                         canto_added_date = Some(prop.value.clone()),
                     "canto_session_submitted_date" =>
@@ -1634,6 +1637,7 @@ phenotypes, so just the first part of this extension will be used:
                                        canto_curator_name,
                                        canto_first_approved_date,
                                        canto_approved_date,
+                                       canto_approver_orcid,
                                        canto_session_submitted_date,
                                        canto_added_date,
                                        annotation_curators,
