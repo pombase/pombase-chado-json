@@ -17,7 +17,7 @@ use self::pombase::bio::go_format_writer::GO_ASPECT_NAMES;
 
 mod util;
 
-use flexstr::{ToSharedStr};
+use flexstr::ToSharedStr;
 
 async fn check_gene_result(query: &Query, genes: Vec<&str>) {
     let api_data = get_api_data();
