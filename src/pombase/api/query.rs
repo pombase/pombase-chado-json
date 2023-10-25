@@ -381,8 +381,8 @@ fn exec_protein_length_range(api_data: &APIData,
         api_data.filter_genes(&|gene: &APIGeneSummary| {
             if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
-                    (range_start.is_none() || protein.sequence.len() >= range_start.unwrap()) &&
-                    (range_end.is_none() || protein.sequence.len() <= range_end.unwrap())
+                    (range_start.is_none() || protein.number_of_residues >= range_start.unwrap()) &&
+                    (range_end.is_none() || protein.number_of_residues <= range_end.unwrap())
                 } else {
                     false
                 }

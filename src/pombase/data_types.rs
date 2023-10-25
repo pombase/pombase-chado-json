@@ -1234,6 +1234,7 @@ impl OrthologAnnotationContainer for GeneDetails {
 pub struct ProteinDetails {
     pub uniquename: ProteinUniquename,
     pub sequence: FlexStr,
+    pub number_of_residues: usize,  // residue count not including stop codon
     pub product: Option<FlexStr>,
     pub molecular_weight: f32,
     pub average_residue_weight: f32,

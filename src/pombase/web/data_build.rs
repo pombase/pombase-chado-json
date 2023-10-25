@@ -2140,9 +2140,17 @@ phenotypes, so just the first part of this extension will be used:
                 panic!("{} has no molecular_weight", feat.uniquename)
             }
 
+            let number_of_residues =
+                if residues.ends_with("*") {
+                    residues.len() - 1
+                } else {
+                    residues.len()
+                };
+
             let protein = ProteinDetails {
                 uniquename: feat.uniquename.clone(),
                 sequence: residues.to_shared_str(),
+                number_of_residues,
                 product: None,
                 molecular_weight: molecular_weight.unwrap(),
                 average_residue_weight: average_residue_weight.unwrap(),
