@@ -242,9 +242,12 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 
     let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
     let db_object_symbol =
-        gene_details.product.clone().unwrap_or(flex_str!(""));
+        gene_details.name.clone().unwrap_or(gene_details.uniquename.clone());
+
+    let product =
+        gene_details.product.clone().unwrap_or(flex_str!("unknown product"));
     let db_object_name =
-        gene_details.name.clone().unwrap_or(flex_str!(""));
+        gene_details.product.clone().unwrap_or(db_object_symbol.clone());
 
     let mut db_object_synonyms =
         gene_details.synonyms.iter().filter(|synonym| {
@@ -288,13 +291,13 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 
     let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\tgo-annotation-summary={}\n",
                            db_object_id,
-                           db_object_name,
+                           db_object_symbol,
                            db_object_name,
                            db_object_synonyms_string,
                            db_object_type,
                            db_object_taxon,
                            db_xrefs,
-                           db_object_symbol);
+                           product);
     gpi_writer.write_all(gpi_line.as_bytes())?;
 
     let db_protein_id =
@@ -343,7 +346,7 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                     let gpi_line =
                         format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\tgo-annotation-summary={}\n",
                                 gene_product_form_id,
-                                db_object_name,
+                                db_object_symbol,
                                 db_object_name,
                                 db_object_synonyms_string,
                                 db_object_type,
@@ -351,7 +354,7 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                                 db_object_id,
                                 db_protein_id,
                                 db_xrefs,
-                                db_object_symbol);
+                                product);
                     gpi_writer.write_all(gpi_line.as_bytes())?;
                 }
             }
