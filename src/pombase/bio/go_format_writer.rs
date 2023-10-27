@@ -302,17 +302,13 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 
     let db_protein_id =
         if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
-            if let Some(maybe_transcript_details) =
-                gene_details.transcripts_by_uniquename.get(transcript_uniquename)
+            if let Some(transcript_details) =
+                api_maps.transcripts.get(transcript_uniquename)
             {
-                if let Some(transcript_details) = maybe_transcript_details {
-                    if let Some(ref protein) = transcript_details.protein {
-                        format!("{}:{}", database_name, protein.uniquename)
-                    } else {
-                        return Ok(())
-                    }
+                if let Some(ref protein) = transcript_details.protein {
+                    format!("{}:{}", database_name, protein.uniquename)
                 } else {
-                        return Ok(())
+                    return Ok(())
                 }
             } else {
                 return Ok(())
