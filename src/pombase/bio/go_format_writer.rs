@@ -184,7 +184,7 @@ fn get_gpad_relation_of(term_details: &TermDetails,
         "cellular_component" => {
             if term_details.termid == flex_str!("GO:0032991") ||
                 term_details.interesting_parent_details.iter()
-                .any(|p| p.termid == flex_str!("GO:0032991"))
+                .any(|p| p.termid == flex_str!("GO:0032991") && p.rel_name == "is_a")
             {
                 flex_str!("BFO:0000050")
             } else {
