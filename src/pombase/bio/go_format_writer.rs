@@ -80,7 +80,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     gpi_writer.write_all(url_header.as_bytes())?;
     gpi_writer.write_all(funding_header.as_bytes())?;
 
-    gpad_writer.write_all("!gpa-version: 2.0\n".as_bytes())?;
+    gpad_writer.write_all("!gpad-version: 2.0\n".as_bytes())?;
     gpad_writer.write_all(generated_by.as_bytes())?;
     gpad_writer.write_all(date_generated.as_bytes())?;
     gpad_writer.write_all(url_header.as_bytes())?;
