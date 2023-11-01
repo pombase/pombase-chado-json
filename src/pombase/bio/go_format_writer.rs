@@ -306,7 +306,8 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                 api_maps.transcripts.get(transcript_uniquename)
             {
                 if let Some(ref protein) = transcript_details.protein {
-                    format!("{}:{}", database_name, protein.uniquename)
+                    let protein_uniquename = protein.uniquename.replace(":", ".");
+                    format!("{}:{}", database_name, protein_uniquename)
                 } else {
                     return Ok(())
                 }
