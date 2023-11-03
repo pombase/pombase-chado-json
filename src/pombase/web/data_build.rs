@@ -1473,6 +1473,7 @@ phenotypes, so just the first part of this extension will be used:
 
             let mut pubmed_authors: Option<FlexStr> = None;
             let mut pubmed_publication_date: Option<FlexStr> = None;
+            let mut pubmed_entrez_date: Option<FlexStr> = None;
             let mut pubmed_abstract: Option<FlexStr> = None;
             let mut pubmed_doi: Option<FlexStr> = None;
             let mut non_pubmed_authors: Option<FlexStr> = None;
@@ -1497,6 +1498,8 @@ phenotypes, so just the first part of this extension will be used:
                 match &prop.prop_type.name as &str {
                     "pubmed_publication_date" =>
                         pubmed_publication_date = Some(prop.value.clone()),
+                    "pubmed_entrez_date" =>
+                        pubmed_entrez_date = Some(prop.value.clone()),
                     "pubmed_authors" =>
                         pubmed_authors = Some(prop.value.clone()),
                     "pubmed_abstract" =>
@@ -1629,7 +1632,8 @@ phenotypes, so just the first part of this extension will be used:
                                        pubmed_doi,
                                        authors,
                                        authors_abbrev,
-                                       pubmed_publication_date: pubmed_publication_date.clone(),
+                                       pubmed_publication_date,
+                                       pubmed_entrez_date,
                                        canto_session_key,
                                        canto_annotation_status,
                                        canto_triage_status,

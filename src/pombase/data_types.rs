@@ -539,6 +539,8 @@ pub struct ReferenceDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub pubmed_publication_date: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub pubmed_entrez_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub canto_session_key: Option<FlexStr>,
@@ -2316,6 +2318,8 @@ pub struct SolrReferenceSummary {
     #[serde(skip_serializing_if="Option::is_none")]
     pub pubmed_publication_date: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub pubmed_entrez_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub publication_year: Option<u32>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub approved_date: Option<FlexStr>,
@@ -2359,6 +2363,7 @@ impl SolrReferenceSummary {
             citation: reference_details.citation.clone(),
             publication_year: pub_year_as_int,
             pubmed_publication_date: reference_details.pubmed_publication_date.clone(),
+            pubmed_entrez_date: reference_details.pubmed_entrez_date.clone(),
             authors: reference_details.authors.clone(),
             authors_abbrev: reference_details.authors_abbrev.clone(),
             approved_date: reference_details.approved_date.clone(),

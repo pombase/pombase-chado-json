@@ -71,4 +71,3 @@ pub fn store_maps_into_database(conn: &mut Connection, terms: &TermIdDetailsMap,
 
     Ok(())
 }
-
