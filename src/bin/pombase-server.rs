@@ -42,6 +42,7 @@ use pombase::api::search::{Search, DocSearchMatch, SolrSearchScope};
 use pombase::api::query_exec::QueryExec;
 use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
+use pombase::api::stats_plot::StatsPlots;
 
 use pombase::data_types::{SolrTermSummary, SolrReferenceSummary, SolrAlleleSummary};
 use pombase::web::simple_pages::{render_simple_gene_page, render_simple_reference_page,
@@ -80,6 +81,7 @@ async fn get_static_file(path: &str) -> Result<Response<BoxBody>, (StatusCode, S
 struct AllState {
     query_exec: QueryExec,
     search: Search,
+    stats_plots: StatsPlots,
     static_file_state: StaticFileState,
     config: Config
 }
@@ -495,7 +497,7 @@ async fn gene_ex_violin_plot(Path((plot_size, genes)): Path<(String, String)>,
                              State(all_state): State<Arc<AllState>>)
              -> Result<(HeaderMap, Full<Bytes>), StatusCode>
 {
-    let res = all_state.search.gene_ex_violin_plot(&plot_size, &genes).await;
+    let res = all_state.stats_plots.gene_ex_violin_plot(&plot_size, &genes).await;
 
     match res {
         Ok(svg_plot) => {
@@ -504,7 +506,25 @@ async fn gene_ex_violin_plot(Path((plot_size, genes)): Path<(String, String)>,
             Ok((headers, Full::new(svg_plot.bytes)))
         },
         Err(err) => {
-            println!("Motif search error: {:?}", err);
+            println!("Gene expression plot error: {:?}", err);
+            Err(StatusCode::INTERNAL_SERVER_ERROR)
+        },
+    }
+}
+
+async fn cumulative_curated_by_year(State(all_state): State<Arc<AllState>>)
+                -> Result<(HeaderMap, Full<Bytes>), StatusCode>
+{
+    let res = all_state.stats_plots.cumulative_curated_by_year().await;
+
+    match res {
+        Ok(svg_plot) => {
+            let mut headers = HeaderMap::new();
+            headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
+            Ok((headers, Full::new(svg_plot.bytes)))
+        },
+        Err(err) => {
+            println!("Curated by year error: {:?}", err);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         },
     }
@@ -608,6 +628,7 @@ async fn main() {
 
     let query_exec = QueryExec::new(api_data, site_db);
     let search = Search::new(&config);
+    let stats_plots = StatsPlots::new(&config);
 
     let web_root_dir = matches.opt_str("w").unwrap();
     let static_file_state = StaticFileState {
@@ -617,6 +638,7 @@ async fn main() {
     let all_state = AllState {
         query_exec,
         search,
+        stats_plots,
         static_file_state,
         config,
     };
@@ -641,6 +663,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/seq_feature_page_features", get(seq_feature_page_features))
         .route("/api/v1/dataset/latest/data/term/:id", get(get_term))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/:plot_size/:genes", get(gene_ex_violin_plot))
+        .route("/api/v1/dataset/latest/stats/cumulative_curated_by_year", get(cumulative_curated_by_year))
         .route("/api/v1/dataset/latest/motif_search/:scope/:q", get(motif_search))
         .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
         .route("/api/v1/dataset/latest/query/:q", get(query_get))

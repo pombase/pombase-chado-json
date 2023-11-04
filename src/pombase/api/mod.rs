@@ -9,3 +9,4 @@ pub mod search_utils;
 pub mod result;
 pub mod query_exec;
 pub mod site_db;
+pub mod stats_plot;

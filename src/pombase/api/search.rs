@@ -85,17 +85,6 @@ impl Search {
         Ok(text)
     }
 
-    pub async fn gene_ex_violin_plot(&self, plot_size: &str, genes: &str)
-                               -> Result<SVGPlot>
-    {
-        let plot_url = self.config.django_url.to_owned() + "/gene_ex/gene_ex_violin/";
-        let params = [("plot_size", plot_size), ("genes", genes)];
-        let client = reqwest::Client::new();
-        let bytes = client.get(plot_url).query(&params).send().await?.bytes().await?;
-
-        Ok(SVGPlot { bytes })
-    }
-
     pub async fn term_complete(&self, cv_name: &str, q: &str)
                          -> Result<Vec<SolrTermSummary>>
     {

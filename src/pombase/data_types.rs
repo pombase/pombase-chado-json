@@ -2523,7 +2523,6 @@ pub struct PubStats {
     pub data: Vec<(YearMonth, usize, usize)>,
 }
 
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DetailedStats {
     pub curated_by_month: PubStats,
