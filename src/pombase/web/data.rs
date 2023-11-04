@@ -52,6 +52,7 @@ pub struct WebData {
     pub search_gene_summaries: Vec<GeneSummary>,
     pub ont_annotations: Vec<OntAnnotation>,
     pub stats: Stats,
+    pub detailed_stats: DetailedStats,
 
     pub arc_terms: Arc<RwLock<HashMap<TermId, Arc<TermDetails>>>>,
     pub arc_genes: Arc<RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>>,
@@ -1570,6 +1571,16 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_detailed_stats(&self, output_dir: &str) -> Result<(), io::Error> {
+        let s = serde_json::to_string(&self.detailed_stats).unwrap();
+        let file_name = String::new() + output_dir + "/detailed_stats.json";
+        let f = File::create(file_name).expect("Unable to open file");
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes()).expect("Unable to write stats.json");
+
+        Ok(())
+    }
+
     fn write_sqlite_db(&self, output_dir: &str) -> anyhow::Result<()> {
         let db_path = String::new() + output_dir + "/" + API_MAPS_SQLITE3_FILE_NAME;
         let mut conn = Connection::open(db_path)?;
@@ -1654,6 +1665,7 @@ impl WebData {
         self.write_apicuron_files(config, &self.references, &misc_path)?;
 
         self.write_stats(&web_json_path)?;
+        self.write_detailed_stats(&web_json_path)?;
 
         let gff_path = self.create_dir(output_dir, "gff");
         self.write_gff(config, &gff_path)?;

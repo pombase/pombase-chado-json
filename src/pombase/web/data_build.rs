@@ -30,6 +30,11 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_
 use crate::interpro::UniprotResult;
 use crate::pfam::PfamProteinDetails;
 
+lazy_static! {
+    static ref ISO_DATE_RE: Regex =
+        Regex::new(r"^(\d\d\d\d)-(\d\d)-(\d\d)($|\s)").unwrap();
+}
+
 fn make_organism(rc_organism: &Rc<ChadoOrganism>) -> ConfigOrganism {
     let mut maybe_taxonid: Option<u32> = None;
     for prop in rc_organism.organismprops.borrow().iter() {
@@ -6679,6 +6684,145 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn get_pub_stats_by_month(&self) -> Vec<(YearMonth, PubStats)> {
+        let mut map = HashMap::new();
+
+        let mut lowest_year = "9999".to_owned();
+        let mut highest_year = "0000".to_owned();
+
+        let stats_template = PubStats {
+            curated_publications: 0,
+            curatable_publications: 0,
+        };
+
+        for ref_details in self.references.values() {
+            let Some(ref canto_triage_status) = ref_details.canto_triage_status
+            else {
+                continue;
+            };
+
+            if canto_triage_status != "Curatable" {
+                continue;
+            }
+
+            let Some(ref pubmed_entrez_date) = ref_details.pubmed_entrez_date
+            else {
+                continue;
+            };
+
+            let Some(captures) = ISO_DATE_RE.captures(pubmed_entrez_date)
+            else {
+                continue;
+            };
+
+            let (Some(entrez_date_year), Some(entrez_date_month)) =
+                (captures.get(1), captures.get(2))
+            else {
+                continue;
+            };
+
+            let entrez_date_year = entrez_date_year.as_str();
+            if entrez_date_year.cmp(&lowest_year) == Ordering::Less {
+                lowest_year = entrez_date_year.to_owned();
+            }
+            if entrez_date_year.cmp(&highest_year) == Ordering::Greater {
+                highest_year = entrez_date_year.to_owned();
+            }
+
+            let entrez_date_year_month =
+                format!("{}-{}", entrez_date_year, entrez_date_month.as_str());
+
+            map.entry(entrez_date_year_month)
+                .or_insert(stats_template.clone())
+                .curatable_publications += 1;
+
+            let Some(ref submitted_date) = ref_details.canto_session_submitted_date
+            else {
+                continue;
+            };
+
+            let Some(captures) = ISO_DATE_RE.captures(submitted_date)
+            else {
+                continue;
+            };
+
+            let (Some(submitted_year), Some(submitted_month)) =
+                (captures.get(1), captures.get(2))
+            else {
+                continue;
+            };
+
+            let submitted_year = submitted_year.as_str();
+
+            if submitted_year.cmp(&lowest_year) == Ordering::Less {
+                lowest_year = submitted_year.to_owned();
+            }
+            if submitted_year.cmp(&highest_year) == Ordering::Greater {
+                highest_year = submitted_year.to_owned();
+            }
+
+            let submitted_year_month =
+                format!("{}-{}", submitted_year, submitted_month.as_str());
+
+            map.entry(submitted_year_month)
+                .or_insert(stats_template.clone())
+                .curated_publications += 1;
+        }
+
+        let mut year_months = vec![];
+
+        let lowest_year: usize = lowest_year.parse().unwrap();
+        let highest_year: usize = highest_year.parse().unwrap();
+        for year in lowest_year..=highest_year {
+           for month in 1..=12 {
+              year_months.push(format!("{}-{:02}", year, month));
+           }
+        }
+
+        let mut return_val = vec![];
+
+        for year_month in &year_months {
+            let stats = map.get(year_month).unwrap_or(&stats_template);
+
+            return_val.push((year_month.to_owned(), stats.to_owned()));
+        }
+
+        return_val
+    }
+
+    fn get_cumulative_pub_stats_by_month(&self, stats_by_month: &Vec<(YearMonth, PubStats)>)
+      -> Vec<(YearMonth, PubStats)>
+    {
+        if stats_by_month.len() == 0 {
+            return vec![];
+        }
+
+        let mut return_vec = vec![];
+
+        let (first_year_month, mut current_stats) = stats_by_month[0].to_owned();
+
+        return_vec.push((first_year_month, current_stats.clone()));
+
+        for (year_month, pub_stats) in &stats_by_month[1..] {
+            current_stats.curated_publications += pub_stats.curated_publications;
+            current_stats.curatable_publications += pub_stats.curatable_publications;
+            return_vec.push((year_month.to_owned(), current_stats.clone()));
+        }
+
+        return_vec
+    }
+
+    fn get_detailed_stats(&self) -> DetailedStats {
+        let pub_stats_by_month = self.get_pub_stats_by_month();
+        let cumulative_pub_stats_by_month =
+            self.get_cumulative_pub_stats_by_month(&pub_stats_by_month);
+
+        DetailedStats {
+            pub_stats_by_month,
+            cumulative_pub_stats_by_month,
+        }
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -6721,6 +6865,8 @@ phenotypes, so just the first part of this extension will be used:
         self.set_gene_expression_measurements();
 
         let stats = self.get_stats();
+
+        let detailed_stats = self.get_detailed_stats();
 
         let metadata = self.make_metadata();
 
@@ -6782,6 +6928,7 @@ phenotypes, so just the first part of this extension will be used:
             solr_data,
             ont_annotations,
             stats,
+            detailed_stats,
 
             // used to implement the DataLookup trait:
             arc_terms: Arc::new(RwLock::new(HashMap::new())),
