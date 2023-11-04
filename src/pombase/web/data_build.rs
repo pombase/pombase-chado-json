@@ -6684,16 +6684,11 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    fn get_pub_stats_by_month(&self) -> Vec<(YearMonth, PubStats)> {
+    fn get_pub_stats_by_month(&self) -> Vec<(YearMonth, usize, usize)> {
         let mut map = HashMap::new();
 
         let mut lowest_year = "9999".to_owned();
         let mut highest_year = "0000".to_owned();
-
-        let stats_template = PubStats {
-            curated_publications: 0,
-            curatable_publications: 0,
-        };
 
         for ref_details in self.references.values() {
             let Some(ref canto_triage_status) = ref_details.canto_triage_status
@@ -6733,8 +6728,8 @@ phenotypes, so just the first part of this extension will be used:
                 format!("{}-{}", entrez_date_year, entrez_date_month.as_str());
 
             map.entry(entrez_date_year_month)
-                .or_insert(stats_template.clone())
-                .curatable_publications += 1;
+                .or_insert((0, 0))
+                .0 += 1;
 
             let Some(ref submitted_date) = ref_details.canto_session_submitted_date
             else {
@@ -6765,8 +6760,8 @@ phenotypes, so just the first part of this extension will be used:
                 format!("{}-{}", submitted_year, submitted_month.as_str());
 
             map.entry(submitted_year_month)
-                .or_insert(stats_template.clone())
-                .curated_publications += 1;
+                .or_insert((0, 0))
+                .1 += 1;
         }
 
         let mut year_months = vec![];
@@ -6782,16 +6777,16 @@ phenotypes, so just the first part of this extension will be used:
         let mut return_val = vec![];
 
         for year_month in &year_months {
-            let stats = map.get(year_month).unwrap_or(&stats_template);
+            let (curatable, curated)  = map.get(year_month).unwrap_or(&(0,0));
 
-            return_val.push((year_month.to_owned(), stats.to_owned()));
+            return_val.push((year_month.to_owned(), *curatable, *curated));
         }
 
         return_val
     }
 
-    fn get_cumulative_pub_stats_by_month(&self, stats_by_month: &Vec<(YearMonth, PubStats)>)
-      -> Vec<(YearMonth, PubStats)>
+    fn get_cumulative_pub_stats_by_month(&self, stats_by_month: &Vec<(YearMonth, usize, usize)>)
+      -> Vec<(YearMonth, usize, usize)>
     {
         if stats_by_month.len() == 0 {
             return vec![];
@@ -6799,27 +6794,35 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut return_vec = vec![];
 
-        let (first_year_month, mut current_stats) = stats_by_month[0].to_owned();
+        let (first_year_month, mut curatable_sum, mut curated_sum) = stats_by_month[0].to_owned();
 
-        return_vec.push((first_year_month, current_stats.clone()));
+        return_vec.push((first_year_month, curatable_sum, curated_sum));
 
-        for (year_month, pub_stats) in &stats_by_month[1..] {
-            current_stats.curated_publications += pub_stats.curated_publications;
-            current_stats.curatable_publications += pub_stats.curatable_publications;
-            return_vec.push((year_month.to_owned(), current_stats.clone()));
+        for (year_month, this_curatable, this_curated) in &stats_by_month[1..] {
+            curatable_sum += this_curatable;
+            curated_sum += this_curated;
+            return_vec.push((year_month.to_owned(), curatable_sum, curated_sum));
         }
 
         return_vec
     }
 
     fn get_detailed_stats(&self) -> DetailedStats {
+        let header = vec!["date".to_owned(), "curatable".to_owned(), "curated".to_owned()];
+
         let pub_stats_by_month = self.get_pub_stats_by_month();
         let cumulative_pub_stats_by_month =
             self.get_cumulative_pub_stats_by_month(&pub_stats_by_month);
 
         DetailedStats {
-            pub_stats_by_month,
-            cumulative_pub_stats_by_month,
+            pub_stats_by_month: PubStats {
+                 header: header.clone(),
+                 data: pub_stats_by_month,
+            },
+            cumulative_pub_stats_by_month: PubStats {
+                 header: header.clone(),
+                 data: cumulative_pub_stats_by_month,
+            },
         }
     }
 

@@ -2511,12 +2511,6 @@ impl StatCountsByTaxon {
 pub type YearMonth = String;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct PubStats {
-    pub curated_publications: usize,
-    pub curatable_publications: usize,
-}
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Stats {
     pub by_taxon: HashMap<OrganismTaxonId, StatCountsByTaxon>,
     pub community_pubs_count: usize,
@@ -2524,9 +2518,16 @@ pub struct Stats {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PubStats {
+    pub header: Vec<String>,
+    pub data: Vec<(YearMonth, usize, usize)>,
+}
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DetailedStats {
-    pub pub_stats_by_month: Vec<(YearMonth, PubStats)>,
-    pub cumulative_pub_stats_by_month: Vec<(YearMonth, PubStats)>,
+    pub pub_stats_by_month: PubStats,
+    pub cumulative_pub_stats_by_month: PubStats,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
