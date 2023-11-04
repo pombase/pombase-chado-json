@@ -2526,8 +2526,8 @@ pub struct PubStats {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DetailedStats {
-    pub pub_stats_by_month: PubStats,
-    pub cumulative_pub_stats_by_month: PubStats,
+    pub curated_by_month: PubStats,
+    pub cumulative_curated_by_month: PubStats,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

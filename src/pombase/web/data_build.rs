@@ -6684,7 +6684,7 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    fn get_pub_stats_by_month(&self) -> Vec<(YearMonth, usize, usize)> {
+    fn get_pub_curated_stats_by_month(&self) -> Vec<(YearMonth, usize, usize)> {
         let mut map = HashMap::new();
 
         let mut lowest_year = "9999".to_owned();
@@ -6785,7 +6785,7 @@ phenotypes, so just the first part of this extension will be used:
         return_val
     }
 
-    fn get_cumulative_pub_stats_by_month(&self, stats_by_month: &Vec<(YearMonth, usize, usize)>)
+    fn get_cumulative_curated_stats_by_month(&self, stats_by_month: &Vec<(YearMonth, usize, usize)>)
       -> Vec<(YearMonth, usize, usize)>
     {
         if stats_by_month.len() == 0 {
@@ -6810,18 +6810,18 @@ phenotypes, so just the first part of this extension will be used:
     fn get_detailed_stats(&self) -> DetailedStats {
         let header = vec!["date".to_owned(), "curatable".to_owned(), "curated".to_owned()];
 
-        let pub_stats_by_month = self.get_pub_stats_by_month();
-        let cumulative_pub_stats_by_month =
-            self.get_cumulative_pub_stats_by_month(&pub_stats_by_month);
+        let curated_by_month = self.get_pub_curated_stats_by_month();
+        let cumulative_curated_by_month =
+            self.get_cumulative_curated_stats_by_month(&curated_by_month);
 
         DetailedStats {
-            pub_stats_by_month: PubStats {
+            curated_by_month: PubStats {
                  header: header.clone(),
-                 data: pub_stats_by_month,
+                 data: curated_by_month,
             },
-            cumulative_pub_stats_by_month: PubStats {
+            cumulative_curated_by_month: PubStats {
                  header: header.clone(),
-                 data: cumulative_pub_stats_by_month,
+                 data: cumulative_curated_by_month,
             },
         }
     }
