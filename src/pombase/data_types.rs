@@ -2508,7 +2508,8 @@ impl StatCountsByTaxon {
     }
 }
 
-pub type YearMonth = String;
+// could be a year, a year-month "2021-02" or a date "2021-02-14"
+pub type DateString = String;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Stats {
@@ -2520,13 +2521,15 @@ pub struct Stats {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PubStats {
     pub header: Vec<String>,
-    pub data: Vec<(YearMonth, usize, usize)>,
+    pub data: Vec<(DateString, usize, usize)>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DetailedStats {
     pub curated_by_month: PubStats,
+    pub curated_by_year: PubStats,
     pub cumulative_curated_by_month: PubStats,
+    pub cumulative_curated_by_year: PubStats,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

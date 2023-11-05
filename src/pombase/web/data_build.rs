@@ -6684,8 +6684,11 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    fn get_pub_curated_stats_by_month(&self) -> Vec<(YearMonth, usize, usize)> {
-        let mut map = HashMap::new();
+    fn get_pub_curated_stats(&self)
+        -> (Vec<(DateString, usize, usize)>, Vec<(DateString, usize, usize)>)
+    {
+        let mut year_month_map = HashMap::new();
+        let mut year_map = HashMap::new();
 
         let mut lowest_year = "9999".to_owned();
         let mut highest_year = "0000".to_owned();
@@ -6727,7 +6730,11 @@ phenotypes, so just the first part of this extension will be used:
             let entrez_date_year_month =
                 format!("{}-{}", entrez_date_year, entrez_date_month.as_str());
 
-            map.entry(entrez_date_year_month)
+            year_month_map.entry(entrez_date_year_month)
+                .or_insert((0, 0))
+                .0 += 1;
+
+            year_map.entry(entrez_date_year.to_owned())
                 .or_insert((0, 0))
                 .0 += 1;
 
@@ -6759,7 +6766,11 @@ phenotypes, so just the first part of this extension will be used:
             let submitted_year_month =
                 format!("{}-{}", submitted_year, submitted_month.as_str());
 
-            map.entry(submitted_year_month)
+            year_month_map.entry(submitted_year_month)
+                .or_insert((0, 0))
+                .1 += 1;
+
+            year_map.entry(submitted_year.to_owned())
                 .or_insert((0, 0))
                 .1 += 1;
         }
@@ -6774,34 +6785,44 @@ phenotypes, so just the first part of this extension will be used:
            }
         }
 
-        let mut return_val = vec![];
+        let mut year_month_return = vec![];
 
         for year_month in &year_months {
-            let (curatable, curated)  = map.get(year_month).unwrap_or(&(0,0));
+            let (curatable, curated)  = year_month_map.get(year_month).unwrap_or(&(0,0));
 
-            return_val.push((year_month.to_owned(), *curatable, *curated));
+            year_month_return.push((year_month.to_owned(), *curatable, *curated));
         }
 
-        return_val
+        let mut year_return = vec![];
+
+        for year in lowest_year..=highest_year {
+            let year = year.to_string();
+
+            let (curatable, curated)  = year_map.get(&year).unwrap_or(&(0,0));
+
+            year_return.push((year.to_owned(), *curatable, *curated));
+        }
+
+        (year_month_return, year_return)
     }
 
-    fn get_cumulative_curated_stats_by_month(&self, stats_by_month: &Vec<(YearMonth, usize, usize)>)
-      -> Vec<(YearMonth, usize, usize)>
+    fn get_cumulative_curated_stats(&self, stats: &Vec<(DateString, usize, usize)>)
+      -> Vec<(DateString, usize, usize)>
     {
-        if stats_by_month.len() == 0 {
+        if stats.len() == 0 {
             return vec![];
         }
 
         let mut return_vec = vec![];
 
-        let (first_year_month, mut curatable_sum, mut curated_sum) = stats_by_month[0].to_owned();
+        let (first_date_string, mut curatable_sum, mut curated_sum) = stats[0].to_owned();
 
-        return_vec.push((first_year_month, curatable_sum, curated_sum));
+        return_vec.push((first_date_string, curatable_sum, curated_sum));
 
-        for (year_month, this_curatable, this_curated) in &stats_by_month[1..] {
+        for (date_string, this_curatable, this_curated) in &stats[1..] {
             curatable_sum += this_curatable;
             curated_sum += this_curated;
-            return_vec.push((year_month.to_owned(), curatable_sum, curated_sum));
+            return_vec.push((date_string.to_owned(), curatable_sum, curated_sum));
         }
 
         return_vec
@@ -6810,9 +6831,11 @@ phenotypes, so just the first part of this extension will be used:
     fn get_detailed_stats(&self) -> DetailedStats {
         let header = vec!["date".to_owned(), "curatable".to_owned(), "curated".to_owned()];
 
-        let curated_by_month = self.get_pub_curated_stats_by_month();
+        let (curated_by_month, curated_by_year) = self.get_pub_curated_stats();
         let cumulative_curated_by_month =
-            self.get_cumulative_curated_stats_by_month(&curated_by_month);
+            self.get_cumulative_curated_stats(&curated_by_month);
+        let cumulative_curated_by_year =
+            self.get_cumulative_curated_stats(&curated_by_year);
 
         DetailedStats {
             curated_by_month: PubStats {
@@ -6822,6 +6845,14 @@ phenotypes, so just the first part of this extension will be used:
             cumulative_curated_by_month: PubStats {
                  header: header.clone(),
                  data: cumulative_curated_by_month,
+            },
+            curated_by_year: PubStats {
+                 header: header.clone(),
+                 data: curated_by_year,
+            },
+            cumulative_curated_by_year: PubStats {
+                 header: header.clone(),
+                 data: cumulative_curated_by_year,
             },
         }
     }
