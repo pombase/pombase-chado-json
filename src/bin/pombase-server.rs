@@ -512,10 +512,17 @@ async fn gene_ex_violin_plot(Path((plot_size, genes)): Path<(String, String)>,
     }
 }
 
-async fn curated_by_year(State(all_state): State<Arc<AllState>>)
+async fn get_stats(Path(graph_type): Path<String>,
+                   State(all_state): State<Arc<AllState>>)
                 -> Result<(HeaderMap, Full<Bytes>), StatusCode>
 {
-    let res = all_state.stats_plots.curated_by_year().await;
+    let res = match graph_type.as_ref() {
+        "curated_by_year" => all_state.stats_plots.curated_by_year().await,
+        "curatable_by_year" => all_state.stats_plots.curatable_by_year().await,
+        "cumulative_curated_by_year" => all_state.stats_plots.cumulative_curated_by_year().await,
+        _ => return Err(StatusCode::NOT_FOUND),
+    };
+
 
     match res {
         Ok(svg_plot) => {
@@ -524,43 +531,7 @@ async fn curated_by_year(State(all_state): State<Arc<AllState>>)
             Ok((headers, Full::new(svg_plot.bytes)))
         },
         Err(err) => {
-            println!("Curated by year error: {:?}", err);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
-    }
-}
-
-async fn curatable_by_year(State(all_state): State<Arc<AllState>>)
-                -> Result<(HeaderMap, Full<Bytes>), StatusCode>
-{
-    let res = all_state.stats_plots.curatable_by_year().await;
-
-    match res {
-        Ok(svg_plot) => {
-            let mut headers = HeaderMap::new();
-            headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
-            Ok((headers, Full::new(svg_plot.bytes)))
-        },
-        Err(err) => {
-            println!("Curatable by year error: {:?}", err);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
-        },
-    }
-}
-
-async fn cumulative_curated_by_year(State(all_state): State<Arc<AllState>>)
-                -> Result<(HeaderMap, Full<Bytes>), StatusCode>
-{
-    let res = all_state.stats_plots.cumulative_curated_by_year().await;
-
-    match res {
-        Ok(svg_plot) => {
-            let mut headers = HeaderMap::new();
-            headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
-            Ok((headers, Full::new(svg_plot.bytes)))
-        },
-        Err(err) => {
-            println!("Curated by year error: {:?}", err);
+            println!("Error getting stats graph: {:?}", err);
             Err(StatusCode::INTERNAL_SERVER_ERROR)
         },
     }
@@ -699,9 +670,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/seq_feature_page_features", get(seq_feature_page_features))
         .route("/api/v1/dataset/latest/data/term/:id", get(get_term))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/:plot_size/:genes", get(gene_ex_violin_plot))
-        .route("/api/v1/dataset/latest/stats/cumulative_curated_by_year", get(cumulative_curated_by_year))
-        .route("/api/v1/dataset/latest/stats/curated_by_year", get(curated_by_year))
-        .route("/api/v1/dataset/latest/stats/curatable_by_year", get(curatable_by_year))
+        .route("/api/v1/dataset/latest/stats/:type", get(get_stats))
         .route("/api/v1/dataset/latest/motif_search/:scope/:q", get(motif_search))
         .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
         .route("/api/v1/dataset/latest/query/:q", get(query_get))
