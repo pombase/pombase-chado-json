@@ -2521,18 +2521,31 @@ pub struct Stats {
     pub non_community_pubs_count: usize,
 }
 
+pub type StatsIntegerTableRow = (DateString, usize, usize);
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct PubStats {
+pub struct StatsIntegerTable {
     pub header: Vec<String>,
-    pub data: Vec<(DateString, usize, usize)>,
+    pub data: Vec<StatsIntegerTableRow>,
+}
+
+pub type StatsFloatTableRow = (DateString, f32);
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct StatsFloatTable {
+    pub header: Vec<String>,
+    pub data: Vec<StatsFloatTableRow>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct DetailedStats {
-    pub curated_by_month: PubStats,
-    pub curated_by_year: PubStats,
-    pub cumulative_curated_by_month: PubStats,
-    pub cumulative_curated_by_year: PubStats,
+    pub curated_by_month: StatsIntegerTable,
+    pub curated_by_year: StatsIntegerTable,
+    pub cumulative_curated_by_month: StatsIntegerTable,
+    pub cumulative_curated_by_year: StatsIntegerTable,
+    pub ltp_genes_per_pub_per_year_range: StatsFloatTable,
+    pub ltp_annotations_per_pub_per_year_range: StatsFloatTable,
+    pub htp_annotations_per_pub_per_year_range: StatsFloatTable,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

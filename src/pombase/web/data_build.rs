@@ -1,6 +1,6 @@
 use std::num::NonZeroUsize;
 use std::rc::Rc;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
@@ -6867,8 +6867,129 @@ phenotypes, so just the first part of this extension will be used:
         return_vec
     }
 
+    fn annotations_per_pub(&self)
+         -> (Vec<StatsFloatTableRow>, Vec<StatsFloatTableRow>,
+             Vec<StatsFloatTableRow>)
+    {
+        let mut ltp_gene_map = HashMap::new();
+        let mut ltp_map = HashMap::new();
+        let mut htp_map = HashMap::new();
+
+        let range_of_year = |year| {
+            let range_start = (year-1)/5*5+1;
+            let range_end = range_start + 4;
+            format!("{range_start}-{range_end}")
+        };
+
+        for reference in self.references.values() {
+            let Some(ref canto_annotation_status) = reference.canto_annotation_status
+            else {
+                continue;
+            };
+
+            if canto_annotation_status != "APPROVED" {
+                continue;
+            }
+
+            let Some(ref pub_year) = reference.publication_year
+            else {
+                continue;
+            };
+
+            let Ok(pub_year) = pub_year.parse::<usize>()
+            else {
+                continue;
+            };
+
+
+            let year_range = range_of_year(pub_year);
+
+            ltp_gene_map.entry(year_range.clone())
+                .or_insert_with(HashMap::new)
+                .insert(reference.uniquename.clone(), reference.ltp_gene_count);
+
+            let mut ltp_count = 0usize;
+            let mut htp_count = 0usize;
+
+            let mut add_count = |throughput: &Throughput| {
+                match throughput {
+                    Throughput::LowThroughput => ltp_count += 1,
+                    Throughput::HighThroughput => htp_count += 1,
+                    _ => (),
+                }
+            };
+
+            for annotation in reference.annotation_details.values() {
+                let Some(ref throughput) = annotation.throughput
+                else {
+                    continue;
+                };
+
+                add_count(throughput);
+            }
+
+            for annotation in &reference.physical_interactions {
+                let Some(ref throughput) = annotation.throughput
+                else {
+                    continue;
+                };
+
+                add_count(throughput);
+            }
+
+            for annotations in reference.genetic_interactions.values() {
+                for annotation in annotations {
+                   let Some(ref throughput) = annotation.throughput
+                    else {
+                        continue;
+                    };
+
+                    add_count(throughput);
+                }
+            }
+
+            ltp_map.entry(year_range.clone())
+            .or_insert_with(HashMap::new)
+            .insert(reference.uniquename.clone(), ltp_count);
+
+            htp_map.entry(year_range.clone())
+            .or_insert_with(HashMap::new)
+            .insert(reference.uniquename.clone(), htp_count);
+        }
+
+        let mut ranges: BTreeSet<String> = BTreeSet::new();
+
+        ranges.extend(ltp_gene_map.keys().cloned());
+        ranges.extend(ltp_map.keys().cloned());
+        ranges.extend(htp_map.keys().cloned());
+
+        let mut genes_data: Vec<StatsFloatTableRow> = vec![];
+        let mut ltp_annotations_data: Vec<StatsFloatTableRow> = vec![];
+        let mut htp_annotations_data: Vec<StatsFloatTableRow> = vec![];
+
+        for range in ranges.iter() {
+            for (map, data) in [(&mut ltp_gene_map, &mut genes_data),
+                                (&mut ltp_map, &mut ltp_annotations_data),
+                                (&mut htp_map, &mut htp_annotations_data)] {
+                if let Some(gene_ref_counts) = map.get(range) {
+                    let non_zero_values: Vec<f32> = gene_ref_counts.values()
+                       .filter(|v| **v != 0)
+                       .map(|v| *v as f32)
+                       .collect();
+                    let sum: f32 = non_zero_values.iter().sum();
+                    let average = sum / non_zero_values.len() as f32;
+                    data.push((range.to_owned(), average));
+                } else {
+                    data.push((range.to_owned(), 0.0f32))
+                }
+            }
+        }
+
+        (genes_data, ltp_annotations_data, htp_annotations_data)
+    }
+
     fn get_detailed_stats(&self) -> DetailedStats {
-        let header = vec!["date".to_owned(), "curatable".to_owned(), "curated".to_owned()];
+        let pub_stats_header = vec!["date".to_owned(), "curatable".to_owned(), "curated".to_owned()];
 
         let (curated_by_month, curated_by_year) = self.get_pub_curated_stats();
         let cumulative_curated_by_month =
@@ -6876,22 +6997,40 @@ phenotypes, so just the first part of this extension will be used:
         let cumulative_curated_by_year =
             self.get_cumulative_curated_stats(&curated_by_year);
 
+        let annotations_per_year_header =
+            vec!["year_range".to_owned(), "average_annotations_per_publication".to_owned()];
+        let (ltp_genes_per_pub_per_year_range,
+             ltp_annotations_per_year_range, htp_annotations_per_year_range) =
+            self.annotations_per_pub();
+
         DetailedStats {
-            curated_by_month: PubStats {
-                 header: header.clone(),
+            curated_by_month: StatsIntegerTable {
+                 header: pub_stats_header.clone(),
                  data: curated_by_month,
             },
-            cumulative_curated_by_month: PubStats {
-                 header: header.clone(),
+            cumulative_curated_by_month: StatsIntegerTable {
+                 header: pub_stats_header.clone(),
                  data: cumulative_curated_by_month,
             },
-            curated_by_year: PubStats {
-                 header: header.clone(),
+            curated_by_year: StatsIntegerTable {
+                 header: pub_stats_header.clone(),
                  data: curated_by_year,
             },
-            cumulative_curated_by_year: PubStats {
-                 header: header.clone(),
+            cumulative_curated_by_year: StatsIntegerTable {
+                 header: pub_stats_header.clone(),
                  data: cumulative_curated_by_year,
+            },
+            ltp_genes_per_pub_per_year_range: StatsFloatTable {
+                 header: vec!["year_range".to_owned(), "genes_per_pub".to_owned()],
+                 data: ltp_genes_per_pub_per_year_range,
+            },
+            ltp_annotations_per_pub_per_year_range: StatsFloatTable {
+                 header: annotations_per_year_header.clone(),
+                 data: ltp_annotations_per_year_range,
+            },
+            htp_annotations_per_pub_per_year_range: StatsFloatTable {
+                 header: annotations_per_year_header,
+                 data: htp_annotations_per_year_range,
             },
         }
     }
