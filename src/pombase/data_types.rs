@@ -572,8 +572,11 @@ pub struct ReferenceDetails {
 
     pub annotation_file_curators: Vec<AnnotationCurator>,
 
-    // count of genes from the main organism of the site (eg. pombe)
+    // count of genes from the main organism of the site (ie. only pombe)
     pub gene_count: usize,
+
+    // count of genes annotated in LTP experiments
+    pub ltp_gene_count: usize,
 
     // This is set to the year part of canto_first_approved_date if it is
     // not None, otherwise set to the year part of canto_approved_date, otherwise

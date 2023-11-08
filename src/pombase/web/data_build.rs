@@ -1668,6 +1668,7 @@ phenotypes, so just the first part of this extension will be used:
                                        terms_by_termid: HashMap::new(),
                                        annotation_details: HashMap::new(),
                                        gene_count: 0,
+                                       ltp_gene_count: 0,
 
                                        pdb_entries,
                                    });
@@ -5706,8 +5707,12 @@ phenotypes, so just the first part of this extension will be used:
         let mut gene_count_hash: HashMap<FlexStr, GeneShortOptionMap> =
             HashMap::new();
 
+        // counts of directly annotated genes from LTP annotations
+        let mut ltp_gene_count_hash: HashMap<FlexStr, GeneShortOptionMap> =
+            HashMap::new();
+
         let mut maybe_add_to_gene_count_hash =
-            |reference_uniquename: &FlexStr, gene_uniquename: &GeneUniquename| {
+            |reference_uniquename: &FlexStr, gene_uniquename: &GeneUniquename, ltp_only: bool| {
                 let Some(load_org_taxonid) = self.config.load_organism_taxonid
                 else {
                     return;
@@ -5719,7 +5724,12 @@ phenotypes, so just the first part of this extension will be used:
                 };
 
                 if gene_details.taxonid == load_org_taxonid {
-                    self.add_gene_to_hash(&mut gene_count_hash,
+                    let mut hash = if ltp_only {
+                        &mut ltp_gene_count_hash
+                    } else {
+                        &mut gene_count_hash
+                    };
+                    self.add_gene_to_hash(&mut hash,
                                           reference_uniquename,
                                           gene_uniquename);
                 }
@@ -5750,7 +5760,11 @@ phenotypes, so just the first part of this extension will be used:
                                 self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                                       gene_uniquename);
                                 maybe_add_to_gene_count_hash(reference_uniquename,
-                                                             gene_uniquename);
+                                                             gene_uniquename, false);
+                                if annotation_detail.throughput == Some(Throughput::LowThroughput) {
+                                    maybe_add_to_gene_count_hash(reference_uniquename,
+                                                             gene_uniquename, true);
+                                }
                             }
                             for condition_termid in &annotation_detail.conditions {
                                 self.add_term_to_hash(&mut seen_terms, reference_uniquename,
@@ -5781,7 +5795,7 @@ phenotypes, so just the first part of this extension will be used:
                                                               reference_uniquename,
                                                               gene_uniquename);
                                         maybe_add_to_gene_count_hash(reference_uniquename,
-                                                                     gene_uniquename);
+                                                                     gene_uniquename, false);
                                     },
                                     ExtRange::Transcript(ref transcript_uniquename) =>
                                         self.add_transcript_to_hashes(&mut seen_transcripts,
@@ -5802,7 +5816,7 @@ phenotypes, so just the first part of this extension will be used:
                                         self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                                               &gene_short.uniquename);
                                         maybe_add_to_gene_count_hash(reference_uniquename,
-                                                                     &gene_short.uniquename);
+                                                                     &gene_short.uniquename, false);
                                     },
                                     WithFromValue::Transcript(ref transcript_uniquename) => {
                                         self.add_transcript_to_hashes(&mut seen_transcripts, &mut seen_genes,
@@ -5831,11 +5845,19 @@ phenotypes, so just the first part of this extension will be used:
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &interaction.gene_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &interaction.gene_uniquename);
+                                                 &interaction.gene_uniquename, false);
+                    if interaction.throughput == Some(Throughput::LowThroughput) {
+                        maybe_add_to_gene_count_hash(reference_uniquename,
+                                                     &interaction.gene_uniquename, true);
+                    }
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &interaction.interactor_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &interaction.interactor_uniquename);
+                                                 &interaction.interactor_uniquename, false);
+                    if interaction.throughput == Some(Throughput::LowThroughput) {
+                        maybe_add_to_gene_count_hash(reference_uniquename,
+                                                     &interaction.interactor_uniquename, true);
+                    }
                 }
 
                 let interaction_iter =
@@ -5844,11 +5866,11 @@ phenotypes, so just the first part of this extension will be used:
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &interaction_key.gene_a_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &interaction_key.gene_a_uniquename);
+                                                 &interaction_key.gene_a_uniquename, false);
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &interaction_key.gene_b_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &interaction_key.gene_b_uniquename);
+                                                 &interaction_key.gene_b_uniquename, false);
 
                     for interaction_detail in interaction_details {
                     if let Some(ref genotype_a_uniquename) = interaction_detail.genotype_a_uniquename {
@@ -5881,29 +5903,37 @@ phenotypes, so just the first part of this extension will be used:
                         self.add_term_to_hash(&mut seen_terms, reference_uniquename,
                                               rescued_phenotype_termid);
                     }
-                }
+
+                        if interaction_detail.throughput == Some(Throughput::LowThroughput) {
+                            maybe_add_to_gene_count_hash(reference_uniquename,
+                                                         &interaction_key.gene_a_uniquename, true);
+                        }
+                        if interaction_detail.throughput == Some(Throughput::LowThroughput) {
+                            maybe_add_to_gene_count_hash(reference_uniquename,
+                                                         &interaction_key.gene_b_uniquename, true);
+                        }
+                    }
                 }
 
                 for ortholog_annotation in &reference_details.ortholog_annotations {
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &ortholog_annotation.gene_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &ortholog_annotation.gene_uniquename);
+                                                 &ortholog_annotation.gene_uniquename, false);
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &ortholog_annotation.ortholog_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &ortholog_annotation.ortholog_uniquename);
-
+                                                 &ortholog_annotation.ortholog_uniquename, false);
                 }
                 for paralog_annotation in &reference_details.paralog_annotations {
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &paralog_annotation.gene_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &paralog_annotation.gene_uniquename);
+                                                 &paralog_annotation.gene_uniquename, false);
                     self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                           &paralog_annotation.paralog_uniquename);
                     maybe_add_to_gene_count_hash(reference_uniquename,
-                                                 &paralog_annotation.paralog_uniquename);
+                                                 &paralog_annotation.paralog_uniquename, false);
                 }
 
                 for pdb_ref_entry in &reference_details.pdb_entries {
@@ -5936,6 +5966,9 @@ phenotypes, so just the first part of this extension will be used:
             }
             if let Some(gene_count_genes) = gene_count_hash.remove(reference_uniquename) {
                 reference_details.gene_count = gene_count_genes.len();
+            }
+            if let Some(ltp_gene_count_genes) = ltp_gene_count_hash.remove(reference_uniquename) {
+                reference_details.ltp_gene_count = ltp_gene_count_genes.len();
             }
         }
     }
