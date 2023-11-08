@@ -5708,14 +5708,20 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut maybe_add_to_gene_count_hash =
             |reference_uniquename: &FlexStr, gene_uniquename: &GeneUniquename| {
-                if let Some(load_org_taxonid) = self.config.load_organism_taxonid {
-                    if let Some(gene_details) = self.genes.get(gene_uniquename) {
-                        if gene_details.taxonid == load_org_taxonid {
-                            self.add_gene_to_hash(&mut gene_count_hash,
-                                                  reference_uniquename,
-                                                  gene_uniquename);
-                        }
-                    }
+                let Some(load_org_taxonid) = self.config.load_organism_taxonid
+                else {
+                    return;
+                };
+
+                let Some(gene_details) = self.genes.get(gene_uniquename)
+                else {
+                    return;
+                };
+
+                if gene_details.taxonid == load_org_taxonid {
+                    self.add_gene_to_hash(&mut gene_count_hash,
+                                          reference_uniquename,
+                                          gene_uniquename);
                 }
             };
 
