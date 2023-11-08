@@ -517,12 +517,15 @@ async fn get_stats(Path(graph_type): Path<String>,
                 -> Result<(HeaderMap, Full<Bytes>), StatusCode>
 {
     let res = match graph_type.as_ref() {
-        "curated_by_year" => all_state.stats_plots.curated_by_year().await,
-        "curatable_by_year" => all_state.stats_plots.curatable_by_year().await,
-        "cumulative_curated_by_year" => all_state.stats_plots.cumulative_curated_by_year().await,
+        "curated_by_year" |
+        "curatable_by_year" |
+        "cumulative_curated_by_year" |
+        "ltp_genes_per_pub_per_year_range" |
+        "ltp_annotations_per_pub_per_year_range" |
+        "htp_annotations_per_pub_per_year_range"
+            => all_state.stats_plots.get_svg_graph(graph_type.as_ref()).await,
         _ => return Err(StatusCode::NOT_FOUND),
     };
-
 
     match res {
         Ok(svg_plot) => {

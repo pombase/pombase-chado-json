@@ -28,31 +28,10 @@ impl StatsPlots {
         Ok(SVGPlot { bytes })
     }
 
-    pub async fn curated_by_year(&self) -> Result<SVGPlot>
+
+    pub async fn get_svg_graph(&self, graph_type: &str) -> Result<SVGPlot>
     {
-        let plot_url = self.config.django_url.to_owned() + "/stats/curated_by_year";
-        let client = reqwest::Client::new();
-        let params: &[(String, String)] = &[];
-        let bytes = client.get(plot_url).query(params).send()
-            .await?.bytes().await?;
-
-        Ok(SVGPlot { bytes })
-    }
-
-    pub async fn curatable_by_year(&self) -> Result<SVGPlot>
-    {
-        let plot_url = self.config.django_url.to_owned() + "/stats/curatable_by_year";
-        let client = reqwest::Client::new();
-        let params: &[(String, String)] = &[];
-        let bytes = client.get(plot_url).query(params).send()
-            .await?.bytes().await?;
-
-        Ok(SVGPlot { bytes })
-    }
-
-    pub async fn cumulative_curated_by_year(&self) -> Result<SVGPlot>
-    {
-        let plot_url = self.config.django_url.to_owned() + "/stats/cumulative_curated_by_year";
+        let plot_url = self.config.django_url.to_owned() + "/stats/" + graph_type;
         let client = reqwest::Client::new();
         let params: &[(String, String)] = &[];
         let bytes = client.get(plot_url).query(params).send()
