@@ -6919,13 +6919,19 @@ phenotypes, so just the first part of this extension will be used:
                 }
             };
 
-            for annotation in reference.annotation_details.values() {
-                let Some(ref throughput) = annotation.throughput
-                else {
-                    continue;
-                };
+            for term_annotations_vec in reference.cv_annotations.values() {
+                for term_annotations in term_annotations_vec {
+                    for annotation_id in &term_annotations.annotations {
+                        let annotation = self.annotation_details.get(&annotation_id).unwrap();
 
-                add_count(throughput);
+                        let Some(ref throughput) = annotation.throughput
+                        else {
+                            continue;
+                        };
+
+                        add_count(throughput);
+                    }
+                }
             }
 
             for annotation in &reference.physical_interactions {
