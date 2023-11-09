@@ -6954,13 +6954,17 @@ phenotypes, so just the first part of this extension will be used:
                 }
             }
 
-            ltp_map.entry(year_range.clone())
-            .or_insert_with(HashMap::new)
-            .insert(reference.uniquename.clone(), ltp_count);
+            if ltp_count > 0 {
+                ltp_map.entry(year_range.clone())
+                       .or_insert_with(HashMap::new)
+                       .insert(reference.uniquename.clone(), ltp_count);
+            }
 
-            htp_map.entry(year_range.clone())
-            .or_insert_with(HashMap::new)
-            .insert(reference.uniquename.clone(), htp_count);
+            if htp_count > 0 {
+                htp_map.entry(year_range.clone())
+                       .or_insert_with(HashMap::new)
+                       .insert(reference.uniquename.clone(), htp_count);
+            }
         }
 
         let mut ranges: BTreeSet<String> = BTreeSet::new();
@@ -6979,7 +6983,6 @@ phenotypes, so just the first part of this extension will be used:
                                 (&mut htp_map, &mut htp_annotations_data)] {
                 if let Some(gene_ref_counts) = map.get(range) {
                     let non_zero_values: Vec<f32> = gene_ref_counts.values()
-                       .filter(|v| **v != 0)
                        .map(|v| *v as f32)
                        .collect();
                     let sum: f32 = non_zero_values.iter().sum();
