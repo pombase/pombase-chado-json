@@ -95,6 +95,18 @@ pub enum Throughput {
     NonExperimental,
 }
 
+impl Display for Throughput {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let s = match self {
+            Self::LowThroughput => "low",
+            Self::HighThroughput => "high",
+            Self::NonExperimental => "non-experimental",
+        };
+
+        f.write_str(s)
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Hash)]
 pub struct GeneAndGeneProduct {
     pub gene_uniquename: GeneUniquename,
