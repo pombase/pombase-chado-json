@@ -3043,10 +3043,12 @@ phenotypes, so just the first part of this extension will be used:
                                                         &annotation.extension);
                         for (target_gene_uniquename, new_annotation) in new_annotations {
                            if self.genes.get(&target_gene_uniquename).is_some() {
-                               target_of_annotations
-                                   .entry(target_gene_uniquename.clone())
-                                   .or_insert_with(HashSet::new)
-                                   .insert(new_annotation);
+                               if target_gene_uniquename != new_annotation.gene {
+                                   target_of_annotations
+                                       .entry(target_gene_uniquename.clone())
+                                       .or_insert_with(HashSet::new)
+                                       .insert(new_annotation);
+                               }
                            } else {
                                eprintln!("can't find gene {} in extension for {}",
                                          target_gene_uniquename, term_details.termid);
