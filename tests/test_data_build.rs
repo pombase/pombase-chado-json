@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap, HashSet, BTreeSet};
 use std::iter::FromIterator;
 
 use std::cmp::Ordering;
@@ -402,6 +402,9 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
                    maybe_genotype_uniquename: Option<&str>, evidence: &str,
                    extension: Vec<ExtPart>,
                    conditions: HashSet<TermId>) -> OntAnnotationDetail {
+    let condition_details: BTreeSet<_> =
+        conditions.iter().map(|cond| (cond.clone(), None)).collect();
+
     OntAnnotationDetail {
         id: id,
         genes: vec![gene_uniquename.into()],
@@ -419,7 +422,8 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         qualifiers: vec![],
         extension: extension,
         gene_ex_props: None,
-        conditions: conditions,
+        conditions,
+        condition_details,
         assigned_by: Some("PomBase".to_shared_str()),
         throughput: Some(Throughput::HighThroughput),
     }

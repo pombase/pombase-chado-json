@@ -841,6 +841,27 @@ fn set_has_protein_features(genes: &mut UniquenameGeneMap, protein_view_data: &H
     }
 }
 
+
+lazy_static! {
+    static ref CONDITION_DETAIL_RE: Regex =
+        Regex::new(r"^([A-Z][\w]+:\d\d\d+)(?:\((.+)\))?$").unwrap();
+}
+
+// parse something like "FYECO:0000005(32C)" or "FYECO:0000329(2% (v/v))" into a term ID
+// and a String containers the details from the brackets
+// parse "FYECO:0000005" into (TermId, None)
+fn parse_condition_with_detail(condition_string: &str) -> (TermId, Option<String>) {
+    let captures = CONDITION_DETAIL_RE.captures(condition_string).unwrap();
+
+    let term_id = captures.get(1).as_ref().unwrap().as_str().into();
+
+    if let Some(detail) = captures.get(2) {
+        (term_id, Some(detail.as_str().into()))
+    } else {
+        (term_id, None)
+    }
+}
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
                domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
@@ -3776,6 +3797,7 @@ phenotypes, so just the first part of this extension will be used:
             let publication = &feature_cvterm.publication;
             let mut extra_props: HashMap<FlexStr, FlexStr> = HashMap::new();
             let mut conditions: HashSet<TermId> = HashSet::new();
+            let mut condition_details: BTreeSet<(TermId, Option<String>)> = BTreeSet::new();
             let mut withs: HashSet<WithFromValue> = HashSet::new();
             let mut froms: HashSet<WithFromValue> = HashSet::new();
             let mut qualifiers: Vec<Qualifier> = vec![];
@@ -3835,6 +3857,16 @@ phenotypes, so just the first part of this extension will be used:
                                 conditions.insert(value.clone());
                             } else {
                                 eprintln!(r#"ignoring condition that isn't a term ID "{}" (from annotation of {} with {})"#,
+                                          value, feature.uniquename, termid);
+                            }
+                        },
+                    "condition_detail" =>
+                        if let Some(ref value) = prop.value {
+                            if value.contains(':') {
+                                let parsed_value = parse_condition_with_detail(value);
+                                condition_details.insert(parsed_value);
+                            } else {
+                                eprintln!(r#"ignoring condition that doesn't contain a term ID "{}" (from annotation of {} with {})"#,
                                           value, feature.uniquename, termid);
                             }
                         },
@@ -3998,6 +4030,7 @@ phenotypes, so just the first part of this extension will be used:
                 evidence,
                 eco_evidence,
                 conditions,
+                condition_details,
                 extension,
                 date,
                 assigned_by,

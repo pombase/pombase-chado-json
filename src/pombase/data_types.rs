@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet, BTreeMap};
+use std::collections::{HashMap, HashSet, BTreeMap, BTreeSet};
 
 use std::fmt::Display;
 use std::fmt;
@@ -754,6 +754,8 @@ pub struct OntAnnotationDetail {
     pub genotype_background: Option<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermId>,
+    #[serde(skip_serializing_if="BTreeSet::is_empty", default)]
+    pub condition_details: BTreeSet<(TermId, Option<String>)>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub date: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
