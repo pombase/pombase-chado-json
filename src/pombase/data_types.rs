@@ -1396,6 +1396,7 @@ pub struct FeatureShort {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TranscriptDetails {
     pub uniquename: TranscriptUniquename,
+    pub name: Option<GeneName>,
     pub location: ChromosomeLocation,
     pub parts: Vec<FeatureShort>,
     pub transcript_type: FlexStr,

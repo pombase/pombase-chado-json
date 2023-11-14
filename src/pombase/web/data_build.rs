@@ -2099,8 +2099,24 @@ phenotypes, so just the first part of this extension will be used:
                     let feature_type = format!("{} {}", transcript_type, gene_details.feature_type);
                     gene_details.feature_type = feature_type.to_shared_str();
                 }
+                let name =
+                    if let Some(ref gene_name) = gene_details.name {
+                        if let Some(captures) = TRANSCRIPT_ID_RE.captures(transcript_uniquename.as_ref()) {
+                            if &captures["gene"] == gene_uniquename.as_ref() {
+                                Some(flex_fmt!("{}.{}", gene_name, &captures["suffix"]))
+                            } else {
+                                panic!("transcript uniquename ({}) doesn't start with the gene uniquename ({})",
+                                       transcript_uniquename, gene_uniquename);
+                            }
+                        } else {
+                            panic!("ID doesn't like like a transcript ID: {}", transcript_uniquename);
+                        }
+                    } else {
+                        None
+                    };
                 let transcript = TranscriptDetails {
                     uniquename: transcript_uniquename.clone(),
+                    name,
                     location: transcript_location,
                     transcript_type,
                     parts,
