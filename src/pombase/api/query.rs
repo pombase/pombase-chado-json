@@ -181,6 +181,11 @@ pub struct InteractorsNode {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct SubstratesNode {
+    pub gene_uniquename: GeneUniquename,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct QueryIdNode {
     pub id: Uuid,
 }
@@ -215,6 +220,8 @@ pub struct QueryNode {
     pub genome_range: Option<GenomeRangeNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub interactors: Option<InteractorsNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub substrates: Option<SubstratesNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub query_id: Option<QueryIdNode>,
 }
@@ -580,6 +587,15 @@ fn exec_interactors_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename
     Ok(api_data.interactors_of_genes(gene_uniquename, interaction_type))
 }
 
+fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename) -> GeneUniquenameVecResult {
+    let Some(mut substrates) = api_data.substrates_of_gene(gene_uniquename)
+    else {
+        return Ok(vec![]);
+    };
+
+    Ok(substrates.drain().collect())
+}
+
 async fn exec_query_id(api_data: &APIData,
                        maybe_site_db: &Option<SiteDB>, id: &Uuid)
                        -> GeneUniquenameVecResult
@@ -619,6 +635,7 @@ impl QueryNode {
             float_range: None,
             genome_range: None,
             interactors: None,
+            substrates: None,
             query_id: None,
         }
     }
@@ -676,6 +693,9 @@ impl QueryNode {
                 _ => Err(flex_fmt!("No such interaction type: {}",
                                    interactors_node.interaction_type))
             };
+        }
+        if let Some(ref substrates_node) = self.substrates {
+            return exec_substrates_of_gene(api_data, &substrates_node.gene_uniquename);
         }
         if let Some(ref int_range_node) = self.int_range {
             return exec_int_range(api_data, &int_range_node.range_type,

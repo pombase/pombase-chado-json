@@ -4969,10 +4969,45 @@ phenotypes, so just the first part of this extension will be used:
         ret_map
     }
 
+    fn make_api_maps_gene_substrates(&self) -> HashMap<GeneUniquename, HashSet<GeneUniquename>> {
+        let mut gene_substrates = HashMap::new();
+
+        for gene_details in self.genes.values() {
+           for term_annotations in gene_details.cv_annotations.values() {
+              for term_annotation in term_annotations {
+                 for annotation in &term_annotation.annotations {
+                    let annotation_details = self.annotation_details.get(&annotation).unwrap();
+                    for ext_part in &annotation_details.extension {
+                        let Some(ref rel_type_id) = ext_part.rel_type_id
+                        else {
+                            continue;
+                        };
+                        if rel_type_id == "RO:0002233" {
+                            match ext_part.ext_range {
+                                ExtRange::Gene(ref target_gene_uniquename) => {
+                                    let gene_uniquename = &gene_details.uniquename;
+                                    gene_substrates
+                                        .entry(gene_uniquename.clone())
+                                        .or_insert_with(HashSet::new)
+                                        .insert(target_gene_uniquename.clone());
+                                },
+                                _ => ()
+                            }
+                        }
+                    }
+                 }
+              }
+            }
+        }
+
+        gene_substrates
+    }
+
     pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
         let mut gene_name_gene_map = HashMap::new();
         let mut interactors_of_genes = HashMap::new();
+        let substrates_of_genes = self.make_api_maps_gene_substrates();
 
         for (gene_uniquename, gene_details) in &self.genes {
             if self.config.load_organism_taxonid.is_none() ||
@@ -5080,6 +5115,7 @@ phenotypes, so just the first part of this extension will be used:
             transcripts: self.transcripts,
             alleles: self.alleles,
             interactors_of_genes,
+            substrates_of_genes,
             other_features: self.other_features,
             seq_feature_page_features,
             annotation_details: self.annotation_details,

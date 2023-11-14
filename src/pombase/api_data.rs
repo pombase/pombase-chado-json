@@ -867,6 +867,14 @@ impl APIData {
         }
     }
 
+    pub fn substrates_of_gene(&self, gene_uniquename: &GeneUniquename) -> Option<HashSet<GeneUniquename>> {
+        if let Some(substrates) = self.maps.substrates_of_genes.get(gene_uniquename) {
+            Some(substrates.to_owned())
+        } else {
+            None
+        }
+    }
+
     pub fn get_chr_details(&self, chr_name: &FlexStr) -> Option<&ChromosomeDetails> {
         self.maps.chromosomes.get(chr_name)
     }
