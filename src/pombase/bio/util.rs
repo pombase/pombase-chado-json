@@ -340,6 +340,7 @@ fn make_test_gene() -> GeneDetails {
             (flex_str!("SPCC18B5.06.1"),
              Some(TranscriptDetails {
                 uniquename: flex_str!("SPCC18B5.06.1"),
+                name: Some(flex_str!("dom34.1")),
                 location: ChromosomeLocation {
                     chromosome_name: flex_str!("chromosome_3"),
                     start_pos: 729_054,
