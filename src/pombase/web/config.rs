@@ -44,7 +44,7 @@ pub struct AncestorFilterCategory {
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct FilterConfig {
-    pub filter_name: String,
+    pub filter_type: String,
     pub display_name: String,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub term_categories: Vec<AncestorFilterCategory>,

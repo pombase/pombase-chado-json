@@ -203,7 +203,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
 
     let mut all_categories = HashSet::new();
 
-    if let Some(term_filter) = pheno_type_config.filters.iter().find(|cat| cat.filter_name == "term") {
+    if let Some(term_filter) = pheno_type_config.filters.iter().find(|cat| cat.filter_type == "term") {
         for term_category in &term_filter.term_categories {
             for ancestor in &term_category.ancestors {
                 all_categories.insert(ancestor.clone());
