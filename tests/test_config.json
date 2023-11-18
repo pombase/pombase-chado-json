@@ -95,7 +95,7 @@
       "columns_to_show": ["desc-rel", "genotype", "evidence", "conditions", "reference", "extension"],
       "filters": [
         {
-          "filter_name": "term",
+          "filter_type": "term",
           "display_name": "Term",
           "scope": ["gene", "genotype", "reference"],
           "detailed_view_only": "false",
@@ -181,7 +181,7 @@
           ]
         },
         {
-          "filter_name": "evidence",
+          "filter_type": "evidence",
           "display_name": "Evidence",
           "scope": ["gene", "term", "genotype", "reference"],
           "detailed_view_only": "true",
