@@ -34,7 +34,7 @@ axum = { version = "0.6.20", features = ["macros"] }
 axum-macros = "0.3"
 tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["fs", "normalize-path", "trace"] }
-percent-encoding = "2.3.0"
+percent-encoding = "2.3.1"
 
 [dependencies.serde]
 version = "1.0"
