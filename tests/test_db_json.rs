@@ -637,6 +637,7 @@ fn get_test_config() -> Config {
             always_last: vec![],
         },
         evidence_types: HashMap::new(),
+        extension_categories: HashMap::new(),
         cv_config: HashMap::new(),
         target_of_config: TargetOfConfig {
             relation_priority: HashMap::new(),

@@ -76,6 +76,7 @@ fn get_test_config() -> Config {
                               "exists_during".to_shared_str()],
         },
         evidence_types: HashMap::new(),
+        extension_categories: HashMap::new(),
         cv_config: HashMap::new(),
         target_of_config: TargetOfConfig {
             relation_priority: HashMap::new(),
