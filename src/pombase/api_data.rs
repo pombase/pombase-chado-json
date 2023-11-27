@@ -867,8 +867,15 @@ impl APIData {
         }
     }
 
-    pub fn substrates_of_gene(&self, gene_uniquename: &GeneUniquename) -> Option<HashSet<GeneUniquename>> {
-        if let Some(substrates) = self.maps.substrates_of_genes.get(gene_uniquename) {
+    pub fn substrates_of_gene(&self, gene_uniquename: &GeneUniquename, phase_term: &TermId)
+       -> Option<HashSet<GeneUniquename>>
+    {
+        let Some(substrates_by_term) = self.maps.substrates_of_genes.get(gene_uniquename)
+        else {
+            return None;
+        };
+
+        if let Some(substrates) = substrates_by_term.get(phase_term) {
             Some(substrates.to_owned())
         } else {
             None

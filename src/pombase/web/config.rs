@@ -369,6 +369,7 @@ pub struct Config {
     pub extension_display_names: Vec<ExtensionDisplayNames>,
     pub extension_relation_order: RelationOrder,
     pub evidence_types: HashMap<ShortEvidenceCode, EvidenceDetails>,
+    pub extension_categories: HashMap<FlexStr, Vec<AncestorFilterCategory>>,
     pub cv_config: HashMap<CvName, CvConfig>,
     pub target_of_config: TargetOfConfig,
 // when creating a TermShort struct, for each of these termids if the term has

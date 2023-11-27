@@ -15,6 +15,7 @@ use crate::api::result::*;
 use crate::data_types::DataLookup;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand, Ploidiness};
+use crate::types::TermId;
 use crate::web::config::TermAndName;
 
 use crate::bio::util::rev_comp;
@@ -183,6 +184,7 @@ pub struct InteractorsNode {
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct SubstratesNode {
     pub gene_uniquename: GeneUniquename,
+    pub phase_term: TermId,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -587,8 +589,11 @@ fn exec_interactors_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename
     Ok(api_data.interactors_of_genes(gene_uniquename, interaction_type))
 }
 
-fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename) -> GeneUniquenameVecResult {
-    let Some(mut substrates) = api_data.substrates_of_gene(gene_uniquename)
+fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
+                           phase_term: &TermId)
+    -> GeneUniquenameVecResult
+{
+    let Some(mut substrates) = api_data.substrates_of_gene(gene_uniquename, phase_term)
     else {
         return Ok(vec![]);
     };
@@ -695,7 +700,8 @@ impl QueryNode {
             };
         }
         if let Some(ref substrates_node) = self.substrates {
-            return exec_substrates_of_gene(api_data, &substrates_node.gene_uniquename);
+            return exec_substrates_of_gene(api_data, &substrates_node.gene_uniquename,
+                                           &substrates_node.phase_term);
         }
         if let Some(ref int_range_node) = self.int_range {
             return exec_int_range(api_data, &int_range_node.range_type,

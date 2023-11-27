@@ -525,8 +525,10 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
             for category in &filter.term_categories {
                 add_filter_ancestor(&mut ret, category, cv_name);
             }
-            for category in &filter.extension_categories {
-                add_filter_ancestor(&mut ret, category, cv_name);
+            for category_configs in config.extension_categories.values() {
+                for cat_config in category_configs {
+                    add_filter_ancestor(&mut ret, cat_config, cv_name);
+                }
             }
         }
 
@@ -4985,7 +4987,9 @@ phenotypes, so just the first part of this extension will be used:
         ret_map
     }
 
-    fn make_api_maps_gene_substrates(&self) -> HashMap<GeneUniquename, HashSet<GeneUniquename>> {
+    fn make_api_maps_gene_substrates(&self)
+        -> HashMap<GeneUniquename, HashMap<TermId, HashSet<GeneUniquename>>>
+    {
         let mut gene_substrates = HashMap::new();
 
         for gene_details in self.genes.values() {
@@ -4993,22 +4997,48 @@ phenotypes, so just the first part of this extension will be used:
               for term_annotation in term_annotations {
                  for annotation in &term_annotation.annotations {
                     let annotation_details = self.annotation_details.get(&annotation).unwrap();
+                    let mut maybe_substrate_gene: Option<GeneUniquename> = None;
+                    let mut substrate_phase: Option<TermId> = None;
+
                     for ext_part in &annotation_details.extension {
                         let Some(ref rel_type_id) = ext_part.rel_type_id
                         else {
                             continue;
                         };
-                        if rel_type_id == "RO:0002233" {
-                            match ext_part.ext_range {
-                                ExtRange::Gene(ref target_gene_uniquename) => {
-                                    let gene_uniquename = &gene_details.uniquename;
-                                    gene_substrates
-                                        .entry(gene_uniquename.clone())
-                                        .or_insert_with(HashSet::new)
-                                        .insert(target_gene_uniquename.clone());
-                                },
-                                _ => ()
-                            }
+                        match rel_type_id.as_ref() {
+                            "RO:0002233" => {
+                                match ext_part.ext_range {
+                                    ExtRange::Gene(ref target_gene_uniquename) => {
+                                        maybe_substrate_gene = Some(target_gene_uniquename.into());
+                                    },
+                                    _ => ()
+                                }
+                            },
+                            "RO:0002092" => {
+                                match ext_part.ext_range {
+                                    ExtRange::Term(ref phase_termid) => {
+                                        substrate_phase = Some(phase_termid.into());
+                                    },
+                                    _ => ()
+                                }
+                            },
+                            _ => (),
+                        }
+                    }
+
+                    if let Some(ref substrate_gene_uniquename) = maybe_substrate_gene {
+                        let gene_uniquename = &gene_details.uniquename;
+
+                        if let Some(substrate_phase_term) = substrate_phase {
+
+
+                         gene_substrates
+                             .entry(gene_uniquename.clone())
+                             .or_insert_with(HashMap::new)
+                             .entry(substrate_phase_term.clone())
+                             .or_insert_with(HashSet::new)
+                             .insert(substrate_gene_uniquename.clone());
+
                         }
                     }
                  }
