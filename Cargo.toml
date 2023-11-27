@@ -31,7 +31,7 @@ itertools = "0.12"
 csv = "1.1.6"
 rusqlite = { version = "0.30.0", features = ["bundled", "serde_json"] }
 axum = { version = "0.6.20", features = ["macros"] }
-axum-macros = "0.3"
+axum-macros = "0.4"
 tower = "0.4.13"
 tower-http = { version = "0.4.0", features = ["fs", "normalize-path", "trace"] }
 percent-encoding = "2.3.1"
