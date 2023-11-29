@@ -320,6 +320,9 @@ fn make_test_gene() -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
+
+        flags: HashSet::new(),
+
         feature_type: flex_str!("mRNA gene"),
         feature_so_termid: flex_str!("SO:0000704"),
         transcript_so_termid: Some(flex_str!("SO:0001217")),

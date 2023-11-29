@@ -1952,6 +1952,7 @@ phenotypes, so just the first part of this extension will be used:
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
+            flags: HashSet::new(),
             feature_type: feat.feat_type.name.clone(),
             feature_so_termid: feat.feat_type.termid(),
             transcript_so_termid: None,
@@ -3189,6 +3190,31 @@ phenotypes, so just the first part of this extension will be used:
         for (gene_uniquename, status) in &gene_statuses {
             if let Some(ref mut gene_details) = self.genes.get_mut(gene_uniquename) {
                 gene_details.deletion_viability = status.clone();
+            }
+        }
+    }
+
+    fn set_gene_flags(&mut self) {
+        let mut nucleosome_genes = HashSet::new();
+
+        for gene_details in self.genes.values() {
+            if let Some(cc_annotations) = gene_details.cv_annotations.get("cellular_component") {
+                for cc_term_annotation in cc_annotations {
+                    let termid = &cc_term_annotation.term;
+                    let term_details = self.terms.get(termid).expect("term missing from terms map");
+
+                    if termid == "GO:0000786" ||
+                        term_details.interesting_parent_ids.contains("GO:0000786")
+                    {
+                        nucleosome_genes.insert(gene_details.uniquename.clone());
+                    }
+                }
+            }
+        }
+
+        for gene_details in self.genes.values_mut() {
+            if nucleosome_genes.contains(&gene_details.uniquename) {
+                gene_details.flags.insert(flex_str!("is_histone"));
             }
         }
     }
@@ -7185,6 +7211,7 @@ phenotypes, so just the first part of this extension will be used:
         self.process_annotation_feature_rels();
         self.add_target_of_annotations();
         self.set_deletion_viability();
+        self.set_gene_flags();
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
         self.remove_non_curatable_refs();

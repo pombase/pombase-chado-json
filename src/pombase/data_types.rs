@@ -226,6 +226,9 @@ pub struct GeneShort {
     pub product: Option<GeneProduct>,
     #[serde(skip_serializing_if="is_one", default = "one")]
     pub transcript_count: usize,
+
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub flags: HashSet<FlexStr>,
 }
 
 impl GeneShort {
@@ -235,6 +238,7 @@ impl GeneShort {
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
             transcript_count: gene_details.transcripts.len(),
+            flags: gene_details.flags.clone(),
         }
     }
 
@@ -254,6 +258,7 @@ impl From<&GeneDetails> for GeneShort {
             name: details.name.clone(),
             product: details.product.clone(),
             transcript_count: details.transcripts.len(),
+            flags: details.flags.clone(),
         }
     }
 }
@@ -1123,6 +1128,11 @@ pub struct GeneDetails {
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<FlexStr>,
+
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    // possible values: "is_histone"
+    pub flags: HashSet<FlexStr>,
+
     pub feature_type: FlexStr,
     pub feature_so_termid: FlexStr,
     pub transcript_so_termid: Option<TermId>,

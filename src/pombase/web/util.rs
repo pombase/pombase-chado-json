@@ -65,6 +65,7 @@ pub fn make_gene_short(data_lookup: &dyn DataLookup,
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
             transcript_count: gene_details.transcripts.len(),
+            flags: gene_details.flags.clone(),
         }
     } else {
         panic!("can't find GeneDetails for gene uniquename {}", gene_uniquename)

@@ -48,7 +48,13 @@ async fn check_gene_result_with_viability(query: &Query,
 fn make_genes(ids: Vec<&str>) -> Vec<GeneShort> {
     let mut ret = vec![];
     for id in ids {
-        ret.push(GeneShort { uniquename: id.into(), name: None, product: None, transcript_count: 1, });
+        ret.push(GeneShort {
+            uniquename: id.into(),
+            name: None,
+            product: None,
+            transcript_count: 1,
+            flags: HashSet::new(),
+         });
     }
     ret
 }
