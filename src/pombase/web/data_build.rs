@@ -5670,10 +5670,16 @@ phenotypes, so just the first part of this extension will be used:
 
                 for pdb_ref_entry in &gene_details.pdb_entries {
                     if let Some(ref reference_uniquename) = pdb_ref_entry.reference_uniquename {
-                       if !self.references.contains_key(reference_uniquename) {
+                         for chain in &pdb_ref_entry.gene_chains {
+                           self.add_gene_to_hash(&mut seen_genes, &gene_details.uniquename,
+                                                 &chain.gene_uniquename);
+                         }
+
+                        if !self.references.contains_key(reference_uniquename) {
                           // we don't have publication pages for all PDB references
                           continue;
                       }
+
                       self.add_ref_to_hash(&mut seen_references, gene_uniquename,
                                            &Some(reference_uniquename.clone()));
                       }
@@ -6081,8 +6087,13 @@ phenotypes, so just the first part of this extension will be used:
 
                 for pdb_ref_entry in &reference_details.pdb_entries {
                     for pdb_gene_chain in &pdb_ref_entry.gene_chains {
+                        let chain_gene_uniquename = &pdb_gene_chain.gene_uniquename;
                         self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
-                                              &pdb_gene_chain.gene_uniquename);
+                                              chain_gene_uniquename);
+                        maybe_add_to_gene_count_hash(&reference_details.uniquename,
+                                                     chain_gene_uniquename, false);
+                        maybe_add_to_gene_count_hash(&reference_details.uniquename,
+                                                     chain_gene_uniquename, true);
                     }
                 }
             }
