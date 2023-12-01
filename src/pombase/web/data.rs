@@ -1225,7 +1225,7 @@ impl WebData {
         let mut writer = BufWriter::new(&file);
 
         let header =
-            "reference\tfirst_author\tgene\tscale\tterm_name\tterm_id\tduring_term_id\tduring_term_name\tcopies_per_cell\taverage_copies_per_cell\n";
+            "reference\tfirst_author\tgene\tscale\tterm_name\tduring_term_id\tduring_term_name\tcopies_per_cell\taverage_copies_per_cell\n";
         writer.write_all(header.as_bytes())?;
 
         for (gene_uniquename, datasets) in &self.api_maps.gene_expression_measurements {
@@ -1282,13 +1282,12 @@ impl WebData {
                     };
 
                 let line =
-                    format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                    format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                             ref_uniquename,
                             ref_authors_abbrev,
                             gene_uniquename,
                             scale,
                             term_name,
-                            termid,
                             during_termid,
                             during_term_name,
                             copies_per_cell,
