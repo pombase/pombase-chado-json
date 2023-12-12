@@ -727,6 +727,8 @@ impl PartialOrd for WithFromValue {
     }
 }
 
+pub type CuratorOrcid = FlexStr;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
@@ -767,6 +769,8 @@ pub struct OntAnnotationDetail {
     pub assigned_by: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub throughput: Option<Throughput>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub curator: Option<CuratorOrcid>,
 }
 
 impl PartialEq for OntAnnotationDetail {

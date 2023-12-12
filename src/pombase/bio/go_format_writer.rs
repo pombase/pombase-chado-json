@@ -480,12 +480,19 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                         } else {
                           &db_object_id
                         };
-                    let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t\n",
+                    let annotation_props =
+                        if let Some(ref curator_orcid) = annotation_detail.curator {
+                            flex_fmt!("contributor-id=orcid:{}", curator_orcid)
+                        } else {
+                            flex_str!("")
+                        };
+
+                    let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t{}\n",
                                        db_object_id,
                                        not, relation, ontology_class_id,
                                        reference_uniquename, evidence_type,
                                        with_or_from, date, assigned_by,
-                                       annotation_extensions);
+                                       annotation_extensions, annotation_props);
                     gpad_writer.write_all(line.as_bytes())?;
                 } else {
                     println!("WARNING while writing GAF file: \

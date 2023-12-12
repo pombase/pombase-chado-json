@@ -3853,6 +3853,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut eco_evidence: Option<FlexStr> = None;
             let mut genotype_background: Option<FlexStr> = None;
             let mut throughput: Option<Throughput> = None;
+            let mut curator_orcid: Option<CuratorOrcid> = None;
 
             // need to get evidence first as it's used later
             // See: https://github.com/pombase/website/issues/455
@@ -3941,6 +3942,9 @@ phenotypes, so just the first part of this extension will be used:
                         if let Some(value) = prop.value.clone() {
                             froms.insert(self.make_with_or_from_value(&value));
                         }
+                    },
+                    "curator_orcid" => {
+                        curator_orcid = prop.value.clone();
                     },
                     "annotation_throughput_type" => {
                         if let Some(throughput_type) = prop.value.clone() {
@@ -4081,6 +4085,7 @@ phenotypes, so just the first part of this extension will be used:
                 date,
                 assigned_by,
                 throughput,
+                curator: curator_orcid,
             };
 
             if &feature.feat_type.name == "genotype_interaction" {
