@@ -427,6 +427,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         condition_details,
         assigned_by: Some("PomBase".to_shared_str()),
         throughput: Some(Throughput::HighThroughput),
+        curator: None,
     }
 }
 
