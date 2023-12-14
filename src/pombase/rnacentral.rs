@@ -190,6 +190,16 @@ fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
             let uppercase_sequence =
                 transcript_details.spliced_transcript_sequence().to_uppercase();
 
+            let publications = gene_details.feature_publications
+                .iter()
+                .filter(|ref_and_source| {
+                    ref_and_source.source == "contig_file_dbxref"
+                })
+                .map(|ref_and_source| {
+                    ref_and_source.reference_uniquename.clone()
+                })
+                .collect();
+
             ret.push(RNAcentralNcRNA {
                 primary_id,
                 taxon_id: flex_fmt!("NCBITaxon:{}", gene_details.taxonid),
@@ -200,7 +210,7 @@ fn make_data(config: &Config, transcripts: &UniquenameTranscriptMap,
                 url: make_url(config, gene_details),
                 gene: rnacentral_gene,
                 genome_locations: vec![location],
-                publications: gene_details.feature_publications.clone(),
+                publications,
             })
         }
     }

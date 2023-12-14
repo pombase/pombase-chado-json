@@ -3670,8 +3670,20 @@ phenotypes, so just the first part of this extension will be used:
             let publication = &feature_pub.publication;
 
             if publication.uniquename.starts_with("PMID:") {
+                let Some(source) = feature_pub.feature_pubprops.borrow()
+                    .iter().filter(|prop| prop.prop_type.name == "feature_pub_source")
+                    .map(|prop| prop.value.clone().unwrap())
+                    .next()
+                else {
+                    continue;
+                };
+
                 if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
-                    gene_details.feature_publications.insert(publication.uniquename.clone());
+                    let ref_and_source = ReferenceAndSource {
+                        reference_uniquename: publication.uniquename.clone(),
+                        source: source.clone(),
+                    };
+                    gene_details.feature_publications.insert(ref_and_source);
                 }
             }
         }
@@ -5668,9 +5680,9 @@ phenotypes, so just the first part of this extension will be used:
                                          &target_of_annotation.reference_uniquename);
                 }
 
-                for publication in &gene_details.feature_publications {
+                for pub_and_source in &gene_details.feature_publications {
                     self.add_ref_to_hash(&mut seen_references, gene_uniquename,
-                                         &Some(publication.clone()));
+                                         &Some(pub_and_source.reference_uniquename.clone()));
                 }
 
                 for pdb_ref_entry in &gene_details.pdb_entries {

@@ -1090,6 +1090,11 @@ pub struct PDBEntry {
     pub resolution: String,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub struct ReferenceAndSource {
+    pub reference_uniquename: FlexStr,
+    pub source: FlexStr,
+}
 
 #[serde_as]
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1181,7 +1186,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub annotation_details: IdOntAnnotationDetailMap,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub feature_publications: HashSet<ReferenceUniquename>,
+    pub feature_publications: HashSet<ReferenceAndSource>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     // A Vec of the term IDs of subsets for this gene.  Any useful subset
     // that contains any term for any annotation in the gene is included.

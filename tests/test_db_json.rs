@@ -580,6 +580,7 @@ fn get_test_raw() -> Raw {
         features: features,
         feature_synonyms: vec![],
         feature_pubs: vec![],
+        feature_pubprops: vec![],
         feature_dbxrefs: vec![],
         featureprops: featureprops,
         featurelocs: vec![],
