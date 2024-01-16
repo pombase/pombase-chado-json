@@ -1484,7 +1484,7 @@ phenotypes, so just the first part of this extension will be used:
         self.dbxrefs_of_features = map;
     }
 
-    fn get_pubmed_genes(&self, publication: &Publication) -> Vec<FlexStr> {
+    fn get_pubmed_keyword_genes(&self, publication: &Publication) -> Vec<FlexStr> {
         let mut ret_val = vec![];
         for feat_pub in publication.feature_publications.borrow().iter() {
             for prop in feat_pub.feature_pubprops.borrow().iter() {
@@ -1669,7 +1669,7 @@ phenotypes, so just the first part of this extension will be used:
               }
             }
 
-            let pubmed_genes = self.get_pubmed_genes(rc_publication);
+            let pubmed_keyword_genes = self.get_pubmed_keyword_genes(rc_publication);
 
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
@@ -1696,7 +1696,7 @@ phenotypes, so just the first part of this extension will be used:
                                        file_curator_role,
                                        file_curator_name,
                                        annotation_file_curators,
-                                       pubmed_genes,
+                                       pubmed_keyword_genes,
                                        approved_date,
                                        publication_year,
                                        cv_annotations: HashMap::new(),
