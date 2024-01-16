@@ -146,6 +146,7 @@ pub struct Publication {
     pub title: Option<FlexStr>,
     pub miniref: Option<FlexStr>,
     pub publicationprops: RefCell<Vec<Rc<Publicationprop>>>,
+    pub feature_publications: RefCell<Vec<Rc<FeaturePublication>>>,
 }
 pub struct Publicationprop {
     pub publication: Rc<Publication>,
@@ -433,6 +434,7 @@ impl Raw {
                 title: title.map(|s| s.to_shared_str()),
                 miniref: miniref.map(|s| s.to_shared_str()),
                 publicationprops: RefCell::new(vec![]),
+                feature_publications: RefCell::new(vec![]),
             };
             let rc_publication = Rc::new(publication);
             ret.publications.push(rc_publication.clone());
@@ -547,7 +549,8 @@ impl Raw {
             };
             let rc_feature_pub = Rc::new(feature_pub);
             ret.feature_pubs.push(rc_feature_pub.clone());
-            feature.featurepubs.borrow_mut().push(publication);
+            feature.featurepubs.borrow_mut().push(publication.clone());
+            publication.feature_publications.borrow_mut().push(rc_feature_pub.clone());
             feature_pub_map.insert(feature_pub_id, rc_feature_pub);
         }
 

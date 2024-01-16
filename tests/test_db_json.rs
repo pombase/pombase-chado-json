@@ -305,6 +305,7 @@ fn get_test_raw() -> Raw {
         pub_type: paper_cvterm,
         miniref: Some(flex_str!("FEBS Lett. 2001 Nov 9;508(1):136-42")),
         publicationprops: RefCell::new(vec![]),
+        feature_publications: RefCell::new(vec![]),
     });
 
     let publication_pub_date = Rc::new(Publicationprop {

@@ -1484,6 +1484,24 @@ phenotypes, so just the first part of this extension will be used:
         self.dbxrefs_of_features = map;
     }
 
+    fn get_pubmed_genes(&self, publication: &Publication) -> Vec<FlexStr> {
+        let mut ret_val = vec![];
+        for feat_pub in publication.feature_publications.borrow().iter() {
+            for prop in feat_pub.feature_pubprops.borrow().iter() {
+                if prop.prop_type.name == "feature_pub_source" {
+                    if let Some(ref prop_value) = prop.value {
+                        let feature = &feat_pub.feature;
+                        if prop_value == "pubmed_keyword" &&
+                           feature.feat_type.name == "gene" {
+                           ret_val.push(feature.uniquename.clone());
+                        }
+                    }
+                }
+            }
+        }
+        ret_val
+    }
+
     fn process_references(&mut self) {
         let parse_annotation_curator =
             |value: &str, prop_type: &str| {
@@ -1651,6 +1669,8 @@ phenotypes, so just the first part of this extension will be used:
               }
             }
 
+            let pubmed_genes = self.get_pubmed_genes(rc_publication);
+
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
                                        uniquename: reference_uniquename.clone(),
@@ -1676,6 +1696,7 @@ phenotypes, so just the first part of this extension will be used:
                                        file_curator_role,
                                        file_curator_name,
                                        annotation_file_curators,
+                                       pubmed_genes,
                                        approved_date,
                                        publication_year,
                                        cv_annotations: HashMap::new(),
