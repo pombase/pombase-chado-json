@@ -6134,6 +6134,13 @@ phenotypes, so just the first part of this extension will be used:
                                                      chain_gene_uniquename, true);
                     }
                 }
+
+                for pubmed_keyword_gene in &reference_details.pubmed_keyword_genes {
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
+                                          pubmed_keyword_gene);
+                    maybe_add_to_gene_count_hash(&reference_details.uniquename,
+                                                 pubmed_keyword_gene, false);
+                }
             }
         }
 
