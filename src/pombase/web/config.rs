@@ -338,11 +338,10 @@ pub struct GeneExpressionConfig {
     pub datasets: Vec<GeneExDatasetConfig>,
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinFeatureViewModGroup {
     pub termid: FlexStr,
     pub name: FlexStr,
-    pub colour: FlexStr,
 }
 
 #[derive(Deserialize, Clone, Debug)]

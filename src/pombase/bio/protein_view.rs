@@ -143,6 +143,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
             id: allele.uniquename.clone(),
             display_name: Some(allele.display_name()),
             annotated_terms: vec![],
+            feature_group: None,
             display_extension: vec![],
             positions,
         })
@@ -170,6 +171,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
                id: residue_and_pos.clone(),
                display_name: Some(residue_and_pos.clone()),
                annotated_terms: vec![],
+               feature_group: None,
                display_extension: vec![],
                positions: vec![(residue_and_pos, pos, pos)],
             }
@@ -377,9 +379,10 @@ fn make_modification_track(gene_details: &GeneDetails,
 
         for term_annotation in term_annotations {
             let termid = &term_annotation.term;
-            let ref term_name = term_details_map
+            let ref term_details = term_details_map
                 .get(termid)
-                .expect(&format!("term: {}", termid)).name;
+                .expect(&format!("term: {}", termid));
+            let term_name = &term_details.name;
             let annotations = term_annotation.annotations.clone();
 
             for annotation_id in annotations {
@@ -417,10 +420,26 @@ fn make_modification_track(gene_details: &GeneDetails,
                             make_mod_extension(&annotation_detail.extension, ext_rel_types,
                                                gene_details_maps, term_details_map);
 
+                        let mut feature_group = None;
+
+                        for mod_group in &config.protein_feature_view.modification_groups {
+                            if &mod_group.termid == termid {
+                                feature_group = Some(mod_group.clone());
+                            } else {
+                                for interesting_parent in &term_details.interesting_parent_ids {
+                                    if interesting_parent == mod_group.termid {
+                                        feature_group = Some(mod_group.clone());
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+
                         let feature = ProteinViewFeature {
                             id: description.clone(),
                             display_name: Some(description.clone()),
                             annotated_terms,
+                            feature_group,
                             display_extension,
                             positions: vec![(description, residue_pos, residue_pos)],
                         };
@@ -457,6 +476,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 id: interpro_match.id.clone(),
                 display_name: Some(display_name),
                 annotated_terms: vec![],
+                feature_group: None,
                 display_extension: vec![],
                 positions,
             };
@@ -483,6 +503,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
                 id: feature_name.clone(),
                 display_name: None,
                 annotated_terms: vec![],
+                feature_group: None,
                 display_extension: vec![],
                 positions: vec![(feature_pos_name, *start, *end)],
             }

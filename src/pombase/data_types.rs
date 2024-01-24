@@ -2235,6 +2235,11 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub annotated_terms: Vec<TermNameAndId>,
 
+    #[serde(skip_serializing_if="Option::is_none")]
+    // used for grouping modifications by type so that the different types
+    // can be coloured
+    pub feature_group: Option<ProteinFeatureViewModGroup>,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub display_extension: Vec<FlexStr>,
 
