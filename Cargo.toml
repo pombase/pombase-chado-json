@@ -62,11 +62,21 @@ version = "0.8.9"
 version = "0.11"
 features = ["json"]
 
-[profile.release]
-opt-level = 3
-lto = false
-
 [profile.dev]
 opt-level = 0
 debug = true
 incremental = true
+lto = false
+
+[profile.releasedev]
+inherits = "release"
+opt-level = 1
+debug = true
+incremental = false
+lto = false
+
+[profile.release]
+opt-level = 3
+codegen-units = 1
+debug = true
+lto = true
