@@ -1148,7 +1148,7 @@ checksum = "2900ede94e305130c13ddd391e0ab7cbaeb783945ae07a279c268cb05109c6cb"
 
 [[package]]
 name = "pombase-chado-json"
-version = "174.8.0"
+version = "175.0.0"
 dependencies = [
  "anyhow",
  "async-recursion",
