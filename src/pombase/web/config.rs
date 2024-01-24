@@ -339,9 +339,17 @@ pub struct GeneExpressionConfig {
 }
 
 #[derive(Deserialize, Clone, Debug)]
+pub struct ProteinFeatureViewModGroup {
+    pub termid: FlexStr,
+    pub name: FlexStr,
+    pub colour: FlexStr,
+}
+
+#[derive(Deserialize, Clone, Debug)]
 pub struct ProteinFeatureViewConfig {
     pub modification_extension_rel_types: HashSet<FlexStr>,
     pub widget_track_names: HashSet<FlexStr>,
+    pub modification_groups: Vec<ProteinFeatureViewModGroup>,
     pub full_display_excluded: HashSet<FlexStr>,
 }
 

@@ -548,6 +548,13 @@ fn get_possible_interesting_parents(config: &Config) -> HashSet<InterestingParen
         }
     }
 
+    for mod_group in &config.protein_feature_view.modification_groups {
+        ret.insert(InterestingParent {
+            termid: mod_group.termid.clone(),
+            rel_name: "is_a".into(),
+        });
+    }
+
     ret
 }
 

@@ -697,6 +697,7 @@ fn get_test_config() -> Config {
         protein_feature_view: ProteinFeatureViewConfig {
             modification_extension_rel_types: HashSet::new(),
             widget_track_names: HashSet::new(),
+            modification_groups: vec![],
             full_display_excluded: HashSet::new(),
         },
         apicuron: ApicuronConfig {

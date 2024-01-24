@@ -497,6 +497,7 @@
   "protein_feature_view": {
     "modification_extension_rel_types": [],
     "widget_track_names": [],
+    "modification_groups": [],
     "full_display_excluded": []
   },
   "apicuron": {
