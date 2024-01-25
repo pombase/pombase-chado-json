@@ -2966,7 +2966,11 @@ phenotypes, so just the first part of this extension will be used:
         for ext_part in extension {
             let maybe_ext_config =
                 self.matching_ext_config(annotation_termid, &ext_part.rel_type_name);
-            if let ExtRange::Gene(ref target_gene_uniquename) = ext_part.ext_range {
+            match ext_part.ext_range {
+                ExtRange::Gene(ref target_gene_uniquename) |
+                ExtRange::GeneAndGeneProduct(GeneAndGeneProduct {
+                     gene_uniquename: ref target_gene_uniquename, product: _
+                }) =>
                 if let Some(ext_config) = maybe_ext_config {
                     if let Some(reciprocal_display_name) =
                         ext_config.reciprocal_display {
@@ -2986,7 +2990,8 @@ phenotypes, so just the first part of this extension will be used:
                                               reference_uniquename: reference_uniquename.clone(),
                                           }));
                         }
-                }
+                },
+                _ => (),
             }
         }
 
