@@ -867,7 +867,7 @@ impl APIData {
         }
     }
 
-    pub fn substrates_of_gene(&self, gene_uniquename: &GeneUniquename, phase_term: &TermId)
+    pub fn substrates_of_gene(&self, gene_uniquename: &GeneUniquename, phase_term: &Option<TermId>)
        -> Option<HashSet<GeneUniquename>>
     {
         let Some(substrates_by_term) = self.maps.substrates_of_genes.get(gene_uniquename)
@@ -875,10 +875,18 @@ impl APIData {
             return None;
         };
 
-        if let Some(substrates) = substrates_by_term.get(phase_term) {
-            Some(substrates.to_owned())
+        if let Some(ref phase_term) = phase_term {
+            if let Some(substrates) = substrates_by_term.get(phase_term) {
+                Some(substrates.to_owned())
+            } else {
+                None
+            }
         } else {
-            None
+            let mut ret_substrates = HashSet::new();
+            for substrates in substrates_by_term.values() {
+                ret_substrates.extend(substrates.to_owned());
+            }
+            Some(ret_substrates)
         }
     }
 

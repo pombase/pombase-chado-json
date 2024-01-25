@@ -184,7 +184,7 @@ pub struct InteractorsNode {
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct SubstratesNode {
     pub gene_uniquename: GeneUniquename,
-    pub phase_term: TermId,
+    pub phase_term: Option<TermId>,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -590,7 +590,7 @@ fn exec_interactors_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename
 }
 
 fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
-                           phase_term: &TermId)
+                           phase_term: &Option<TermId>)
     -> GeneUniquenameVecResult
 {
     let Some(mut substrates) = api_data.substrates_of_gene(gene_uniquename, phase_term)
