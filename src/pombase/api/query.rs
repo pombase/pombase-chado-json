@@ -56,6 +56,16 @@ pub enum FloatRangeType {
     ProteinMolWeight,
 }
 
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Copy, Clone)]
+pub enum TargetOfType {
+#[serde(rename = "go")]
+    GO,
+#[serde(rename = "phenotype")]
+    Phenotype,
+#[serde(rename = "all")]
+    All,
+}
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum SingleOrMultiLocus {
 #[serde(rename = "single")]
@@ -188,6 +198,12 @@ pub struct SubstratesNode {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct GenesTargetingNode {
+    pub gene_uniquename: GeneUniquename,
+    pub target_of_type: TargetOfType,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct QueryIdNode {
     pub id: Uuid,
 }
@@ -224,6 +240,8 @@ pub struct QueryNode {
     pub interactors: Option<InteractorsNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub substrates: Option<SubstratesNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genes_targeting: Option<GenesTargetingNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub query_id: Option<QueryIdNode>,
 }
@@ -601,6 +619,15 @@ fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
     Ok(substrates.drain().collect())
 }
 
+fn exec_genes_targeting(api_data: &APIData, gene_uniquename: &GeneUniquename,
+                        target_of_type: TargetOfType)
+    -> GeneUniquenameVecResult
+{
+    let mut genes_targeting = api_data.genes_targeting(gene_uniquename, target_of_type);
+
+    Ok(genes_targeting.drain().collect())
+}
+
 async fn exec_query_id(api_data: &APIData,
                        maybe_site_db: &Option<SiteDB>, id: &Uuid)
                        -> GeneUniquenameVecResult
@@ -641,6 +668,7 @@ impl QueryNode {
             genome_range: None,
             interactors: None,
             substrates: None,
+            genes_targeting: None,
             query_id: None,
         }
     }
@@ -702,6 +730,10 @@ impl QueryNode {
         if let Some(ref substrates_node) = self.substrates {
             return exec_substrates_of_gene(api_data, &substrates_node.gene_uniquename,
                                            &substrates_node.phase_term);
+        }
+        if let Some(ref genes_targeting_node) = self.genes_targeting {
+            return exec_genes_targeting(api_data, &genes_targeting_node.gene_uniquename,
+                                        genes_targeting_node.target_of_type);
         }
         if let Some(ref int_range_node) = self.int_range {
             return exec_int_range(api_data, &int_range_node.range_type,

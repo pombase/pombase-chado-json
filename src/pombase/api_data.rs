@@ -24,7 +24,7 @@ use crate::data_types::{DataLookup,
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
-use crate::api::query::{SingleOrMultiLocus, QueryExpressionFilter};
+use crate::api::query::{QueryExpressionFilter, SingleOrMultiLocus, TargetOfType};
 use crate::web::cv_summary::make_cv_summaries;
 
 use crate::types::{TermId, GeneUniquename, GenotypeDisplayUniquename, GenotypeUniquename, ReferenceUniquename};
@@ -888,6 +888,39 @@ impl APIData {
             }
             Some(ret_substrates)
         }
+    }
+
+    pub fn genes_targeting(&self, gene_uniquename: &GeneUniquename, target_of_type: TargetOfType)
+      -> HashSet<GeneUniquename>
+    {
+        let Some(gene_arc) = self.get_gene(gene_uniquename)
+        else {
+            return HashSet::new();
+        };
+
+        let gene_details = gene_arc.as_ref();
+
+        let mut ret_hashset = HashSet::new();
+
+        let target_of_config = &self.config.target_of_config;
+        let unknown = &flex_str!("unknown");
+
+        for target_of_annotation in &gene_details.target_of_annotations {
+            let ontology_label =
+                target_of_config.ontology_labels.get(&target_of_annotation.ontology_name)
+                .unwrap_or_else(|| unknown);
+
+            if (target_of_type == TargetOfType::GO || target_of_type == TargetOfType::All) &&
+                ontology_label == "GO" {
+                ret_hashset.insert(target_of_annotation.gene.clone());
+            }
+            if (target_of_type == TargetOfType::Phenotype || target_of_type == TargetOfType::All) &&
+                ontology_label != "GO" {
+                ret_hashset.insert(target_of_annotation.gene.clone());
+            }
+        }
+
+        ret_hashset
     }
 
     pub fn get_chr_details(&self, chr_name: &FlexStr) -> Option<&ChromosomeDetails> {

@@ -367,6 +367,14 @@
     }
   },
   "target_of_config": {
+    "ontology_labels": {
+      "molecular_function": "GO",
+      "biological_process": "GO",
+      "cellular_component": "GO",
+      "fission_yeast_phenotype": "FYPO",
+      "single_locus_phenotype": "FYPO",
+      "multi_locus_phenotype": "FYPO"
+    },
     "relation_priority": {
       "directly activated by": 10,
       "directly inhibited by": 10,

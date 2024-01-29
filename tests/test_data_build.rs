@@ -80,6 +80,7 @@ fn get_test_config() -> Config {
         cv_config: HashMap::new(),
         target_of_config: TargetOfConfig {
             relation_priority: HashMap::new(),
+            ontology_labels: HashMap::new(),
         },
         interesting_parents: vec![],
         viability_terms: ViabilityTerms {
