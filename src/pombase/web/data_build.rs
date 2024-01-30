@@ -5105,17 +5105,15 @@ phenotypes, so just the first part of this extension will be used:
                     if let Some(ref substrate_gene_uniquename) = maybe_substrate_gene {
                         let gene_uniquename = &gene_details.uniquename;
 
-                        if let Some(substrate_phase_term) = substrate_phase {
-
+                        let substrate_phase_key =
+                            substrate_phase.unwrap_or(flex_str!(""));
 
                          gene_substrates
                              .entry(gene_uniquename.clone())
                              .or_insert_with(HashMap::new)
-                             .entry(substrate_phase_term.clone())
+                             .entry(substrate_phase_key.clone())
                              .or_insert_with(HashSet::new)
                              .insert(substrate_gene_uniquename.clone());
-
-                        }
                     }
                  }
               }
