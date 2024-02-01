@@ -611,12 +611,8 @@ fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
                            phase_term: &Option<TermId>)
     -> GeneUniquenameVecResult
 {
-    let Some(mut substrates) = api_data.substrates_of_gene(gene_uniquename, phase_term)
-    else {
-        return Ok(vec![]);
-    };
-
-    Ok(substrates.drain().collect())
+    Ok(api_data.substrates_of_gene(gene_uniquename, phase_term)
+        .into_iter().collect())
 }
 
 fn exec_genes_targeting(api_data: &APIData, gene_uniquename: &GeneUniquename,
