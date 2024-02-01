@@ -5068,6 +5068,17 @@ phenotypes, so just the first part of this extension will be used:
     {
         let mut gene_substrates = HashMap::new();
 
+        let Some(during_config) = self.config.extension_categories.get("during")
+        else {
+            return gene_substrates;
+        };
+
+        let mut possible_phases = HashSet::new();
+
+        for during_conf in during_config {
+            possible_phases.extend(during_conf.ancestors.iter());
+        }
+
         for gene_details in self.genes.values() {
            for term_annotations in gene_details.cv_annotations.values() {
               for term_annotation in term_annotations {
@@ -5105,15 +5116,31 @@ phenotypes, so just the first part of this extension will be used:
                     if let Some(ref substrate_gene_uniquename) = maybe_substrate_gene {
                         let gene_uniquename = &gene_details.uniquename;
 
-                        let substrate_phase_key =
-                            substrate_phase.unwrap_or(flex_str!(""));
+                        let mut substrate_phase_and_parents = vec![];
 
-                         gene_substrates
-                             .entry(gene_uniquename.clone())
-                             .or_insert_with(HashMap::new)
-                             .entry(substrate_phase_key.clone())
-                             .or_insert_with(HashSet::new)
-                             .insert(substrate_gene_uniquename.clone());
+                        if let Some(ref substrate_phase) = substrate_phase {
+                            let ref phase_term_details = self.terms.get(substrate_phase)
+                                .expect(&format!("internal error: failed to find term {}", substrate_phase));
+
+                            for parent_id in phase_term_details.interesting_parent_ids.iter() {
+                                if possible_phases.contains(parent_id) {
+                                    substrate_phase_and_parents.push(parent_id.to_owned());
+                                }
+                            }
+
+                            substrate_phase_and_parents.push(substrate_phase.to_owned());
+                        } else {
+                            substrate_phase_and_parents.push(flex_str!(""));
+                        }
+
+                        for substrate_phase_key in substrate_phase_and_parents {
+                            gene_substrates
+                                .entry(gene_uniquename.clone())
+                                .or_insert_with(HashMap::new)
+                                .entry(substrate_phase_key.clone())
+                                .or_insert_with(HashSet::new)
+                                .insert(substrate_gene_uniquename.clone());
+                        }
                     }
                  }
               }
