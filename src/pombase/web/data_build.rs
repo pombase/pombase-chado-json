@@ -3896,6 +3896,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut assigned_by: Option<FlexStr> = None;
             let mut evidence: Option<FlexStr> = None;
             let mut eco_evidence: Option<FlexStr> = None;
+            let mut annotation_phenotype_score: Option<FlexStr> = None;
             let mut genotype_background: Option<FlexStr> = None;
             let mut throughput: Option<Throughput> = None;
             let mut curator_orcid: Option<CuratorOrcid> = None;
@@ -3978,6 +3979,9 @@ phenotypes, so just the first part of this extension will be used:
                     "eco_evidence" => {
                         eco_evidence = prop.value.clone();
                     },
+                    "annotation_phenotype_score" => {
+                        annotation_phenotype_score = prop.value.clone();
+                    }
                     "with" => {
                         if let Some(value) = prop.value.clone() {
                             withs.insert(self.make_with_or_from_value(&value));
@@ -4124,6 +4128,7 @@ phenotypes, so just the first part of this extension will be used:
                 qualifiers,
                 evidence,
                 eco_evidence,
+                annotation_phenotype_score,
                 conditions,
                 condition_details,
                 extension,

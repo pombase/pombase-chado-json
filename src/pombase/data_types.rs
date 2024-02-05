@@ -744,6 +744,8 @@ pub struct OntAnnotationDetail {
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub eco_evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub annotation_phenotype_score: Option<FlexStr>,
     pub extension: Vec<ExtPart>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub withs: HashSet<WithFromValue>,
