@@ -27,7 +27,7 @@ use crate::bio::util::rev_comp;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
-use crate::interpro::UniprotResult;
+use crate::interpro::DomainData;
 use crate::pfam::PfamProteinDetails;
 
 lazy_static! {
@@ -59,7 +59,7 @@ type GenotypeInteractionUniquename = FlexStr;
 
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
-    domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+    domain_data: &'a DomainData,
     pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
     rnacentral_data: &'a Option<RNAcentralAnnotations>,
     all_gene_history: &'a Option<GeneHistoryMap>,
@@ -873,7 +873,7 @@ fn parse_condition_with_detail(condition_string: &str) -> (TermId, Option<String
 
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
-               domain_data: &'a HashMap<UniprotIdentifier, UniprotResult>,
+               domain_data: &'a DomainData,
                pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
                rnacentral_data: &'a Option<RNAcentralAnnotations>,
                all_gene_history: &'a Option<GeneHistoryMap>,
@@ -1891,7 +1891,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let (interpro_matches, tm_domain_coords) =
             if let Some(ref uniprot_identifier) = uniprot_identifier {
-                if let Some(result) = self.domain_data.get(uniprot_identifier) {
+                if let Some(result) = self.domain_data.domains_by_id.get(uniprot_identifier) {
                     let tm_domain_matches = result.tmhmm_matches.iter()
                         .map(|tm_match| (tm_match.start, tm_match.end))
                         .collect::<Vec<_>>();

@@ -12,6 +12,7 @@ use self::pombase::data_types::*;
 use self::pombase::web::config::*;
 use self::pombase::web::data_build::*;
 use self::pombase::web::data::*;
+use pombase::interpro::DomainData;
 
 mod util;
 
@@ -739,12 +740,15 @@ fn get_test_config() -> Config {
 fn get_test_web_data() -> WebData {
     let raw = get_test_raw();
     let config = get_test_config();
-    let interpro_data = HashMap::new();
+    let domain_data = DomainData {
+        interpro_version: "90.0".into(),
+        domains_by_id: HashMap::new(),
+    };
     let rnacentral_data = Some(HashMap::new());
     let pfam_data = Some(HashMap::new());
     let gene_history = None;
 
-    let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
+    let web_data_build = WebDataBuild::new(&raw, &domain_data, &pfam_data,
                                            &rnacentral_data, &gene_history,
                                            &None, &None, &config);
     web_data_build.get_web_data()

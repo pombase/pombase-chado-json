@@ -35,12 +35,18 @@ pub struct TMMatch {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct UniprotResult {
+pub struct UniProtResult {
     pub interpro_matches: Vec<InterProMatch>,
     pub tmhmm_matches: Vec<TMMatch>,
 }
 
-pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<FlexStr, UniprotResult> {
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct DomainData {
+    pub interpro_version: String,
+    pub domains_by_id: HashMap<FlexStr, UniProtResult>,
+}
+
+pub fn parse_interpro(config: &Config, file_name: &str) -> DomainData {
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {
@@ -50,7 +56,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<FlexStr, Unip
     };
     let reader = BufReader::new(file);
 
-    let uniprot_results: HashMap<FlexStr, UniprotResult> =
+    let domain_data: DomainData =
         match serde_json::from_reader(reader) {
             Ok(uniprot_results) => uniprot_results,
             Err(err) => {
@@ -59,9 +65,9 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<FlexStr, Unip
             },
         };
 
-    let mut filtered_results = HashMap::new();
+    let mut filtered_domains = HashMap::new();
 
-    for (uniprot_identifier, mut results) in uniprot_results {
+    for (uniprot_identifier, mut results) in domain_data.domains_by_id {
         let new_interpro_matches =
             results.interpro_matches.into_iter()
             .filter(|interpro_match|
@@ -69,8 +75,11 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> HashMap<FlexStr, Unip
             .collect();
 
         results.interpro_matches = new_interpro_matches;
-        filtered_results.insert(uniprot_identifier, results);
+        filtered_domains.insert(uniprot_identifier, results);
     }
 
-    filtered_results
+    DomainData {
+        interpro_version: domain_data.interpro_version,
+        domains_by_id: filtered_domains,
+    }
 }
