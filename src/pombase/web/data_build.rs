@@ -4751,12 +4751,23 @@ phenotypes, so just the first part of this extension will be used:
         let mut db_creation_datetime = None;
         let mut date_version = None;
 
+        let mut data_source_versions = HashMap::new();
+
         for chadoprop in &self.raw.chadoprops {
             if chadoprop.prop_type.name == "db_creation_datetime" {
                 db_creation_datetime = chadoprop.value.clone();
-            } else {
-                if chadoprop.prop_type.name == "date_version" {
-                   date_version = chadoprop.value.clone();
+                continue;
+            }
+            if chadoprop.prop_type.name == "date_version" {
+                date_version = chadoprop.value.clone();
+                continue;
+            }
+            if chadoprop.prop_type.name.ends_with(" version") {
+                if let Some(ref value) = chadoprop.value {
+                    let trimmed_type =
+                        chadoprop.prop_type.name.trim_end_matches(" version").to_shared_str();
+                    data_source_versions.insert(trimmed_type,
+                                                value.to_owned());
                 }
             }
         }
@@ -4771,8 +4782,6 @@ phenotypes, so just the first part of this extension will be used:
 
         const PKG_NAME: &str = env!("CARGO_PKG_NAME");
         const VERSION: &str = env!("CARGO_PKG_VERSION");
-
-        let mut data_source_versions = HashMap::new();
 
         data_source_versions.insert(flex_str!("InterPro"),
                                     self.domain_data.interpro_version.clone());
