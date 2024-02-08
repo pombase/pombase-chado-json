@@ -4774,7 +4774,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut data_source_versions = HashMap::new();
 
-        data_source_versions.insert(flex_str!("InterProp"),
+        data_source_versions.insert(flex_str!("InterPro"),
                                     self.domain_data.interpro_version.clone());
 
         Metadata {
