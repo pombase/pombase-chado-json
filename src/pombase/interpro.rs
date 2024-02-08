@@ -42,7 +42,7 @@ pub struct UniProtResult {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DomainData {
-    pub interpro_version: String,
+    pub interpro_version: FlexStr,
     pub domains_by_id: HashMap<FlexStr, UniProtResult>,
 }
 

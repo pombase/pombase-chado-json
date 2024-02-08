@@ -4772,11 +4772,17 @@ phenotypes, so just the first part of this extension will be used:
         const PKG_NAME: &str = env!("CARGO_PKG_NAME");
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+        let mut data_source_versions = HashMap::new();
+
+        data_source_versions.insert(flex_str!("InterProp"),
+                                    self.domain_data.interpro_version.clone());
+
         Metadata {
             export_prog_name: flex_str!(PKG_NAME),
             export_prog_version: flex_str!(VERSION),
             db_creation_datetime: db_creation_datetime.unwrap(),
             date_version: date_version.unwrap(),
+            data_source_versions,
             gene_count: self.genes.len(),
             term_count: self.terms.len(),
             cv_versions,

@@ -2066,12 +2066,16 @@ impl PartialOrd for ParalogAnnotation {
     }
 }
 
+type DataSourceName = FlexStr;
+type DataSourceVersion = FlexStr;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Metadata {
     pub db_creation_datetime: FlexStr,
     pub date_version: FlexStr,
     pub export_prog_name: FlexStr,
     pub export_prog_version: FlexStr,
+    pub data_source_versions: HashMap<DataSourceName, DataSourceVersion>,
     pub gene_count: usize,
     pub term_count: usize,
     pub cv_versions: HashMap<FlexStr, FlexStr>,
