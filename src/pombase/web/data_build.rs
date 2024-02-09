@@ -4762,10 +4762,13 @@ phenotypes, so just the first part of this extension will be used:
                 date_version = chadoprop.value.clone();
                 continue;
             }
-            if chadoprop.prop_type.name.ends_with(" version") {
+            if chadoprop.prop_type.name == "db_date_version" {
+                continue;
+            }
+            if chadoprop.prop_type.name.ends_with("_version") {
                 if let Some(ref value) = chadoprop.value {
                     let trimmed_type =
-                        chadoprop.prop_type.name.trim_end_matches(" version").to_shared_str();
+                        chadoprop.prop_type.name.trim_end_matches("_version").to_shared_str();
                     data_source_versions.insert(trimmed_type,
                                                 value.to_owned());
                 }
