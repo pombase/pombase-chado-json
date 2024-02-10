@@ -38,7 +38,7 @@ percent-encoding = "2.3.1"
 
 [dependencies.serde]
 version = "1.0"
-features = ["rc"]
+features = ["rc", "derive"]
 
 [dependencies.zstd]
 version = "0.13"
