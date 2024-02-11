@@ -12,6 +12,7 @@ use self::pombase::data_types::*;
 use self::pombase::web::config::*;
 use self::pombase::web::data_build::*;
 use self::pombase::web::data::*;
+use pombase::db::ChadoQueries;
 use pombase::interpro::DomainData;
 
 mod util;
@@ -747,10 +748,13 @@ fn get_test_web_data() -> WebData {
     let rnacentral_data = Some(HashMap::new());
     let pfam_data = Some(HashMap::new());
     let gene_history = None;
+    let chado_queries = ChadoQueries {
+        community_response_rates: vec![],
+    };
 
     let web_data_build = WebDataBuild::new(&raw, &domain_data, &pfam_data,
                                            &rnacentral_data, &gene_history,
-                                           &None, &None, &config);
+                                           &None, &None, &chado_queries, &config);
     web_data_build.get_web_data()
 }
 

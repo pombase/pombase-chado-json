@@ -53,6 +53,7 @@ use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
 
 use crate::api::search_types::SolrMatchHighlight;
+use crate::db::chado_queries::CommunityResponseRate;
 use crate::web::config::*;
 use crate::types::*;
 use crate::interpro::InterProMatch;
@@ -2595,6 +2596,7 @@ pub struct DetailedStats {
     pub ltp_genes_per_pub_per_year_range: StatsFloatTable,
     pub ltp_annotations_per_pub_per_year_range: StatsFloatTable,
     pub htp_annotations_per_pub_per_year_range: StatsFloatTable,
+    pub community_response_rates: Vec<CommunityResponseRate>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

@@ -13,7 +13,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
-use crate::db::raw::*;
+use crate::db::{raw::*, ChadoQueries};
 
 use crate::gene_history::GeneHistoryMap;
 use crate::types::*;
@@ -65,6 +65,7 @@ pub struct WebDataBuild<'a> {
     all_gene_history: &'a Option<GeneHistoryMap>,
     pdb_gene_entry_map: &'a Option<PDBGeneEntryMap>,
     pdb_ref_entry_map: &'a Option<PDBRefEntryMap>,
+    chado_queries: &'a ChadoQueries,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -879,6 +880,7 @@ impl <'a> WebDataBuild<'a> {
                all_gene_history: &'a Option<GeneHistoryMap>,
                pdb_gene_entry_map: &'a Option<PDBGeneEntryMap>,
                pdb_ref_entry_map: &'a Option<PDBRefEntryMap>,
+               chado_queries: &'a ChadoQueries,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -889,6 +891,7 @@ impl <'a> WebDataBuild<'a> {
             all_gene_history,
             pdb_gene_entry_map,
             pdb_ref_entry_map,
+            chado_queries,
             config,
 
             genes: BTreeMap::new(),
@@ -7300,6 +7303,7 @@ phenotypes, so just the first part of this extension will be used:
                  header: annotations_per_year_header,
                  data: htp_annotations_per_year_range,
             },
+            community_response_rates: self.chado_queries.community_response_rates.clone(),
         }
     }
 

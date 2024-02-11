@@ -2,6 +2,7 @@ extern crate getopts;
 
 use deadpool_postgres::{Pool, Manager};
 use pombase::bio::pdb_reader::read_pdb_data;
+use pombase::db::ChadoQueries;
 
 use std::str::FromStr;
 
@@ -131,6 +132,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let raw = Raw::new(&mut client).await?;
 
+    let chado_queries = ChadoQueries::new(&mut client).await?;
+
     let interpro_data = parse_interpro(&config, &interpro_json);
     let pfam_data = maybe_pfam_json.map(|pfam_json| parse_pfam(&pfam_json));
     let rnacentral_data =
@@ -151,6 +154,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
                                            &rnacentral_data, &gene_history,
                                            &pdb_entry_map, &pdb_ref_entry_map,
+                                           &chado_queries,
                                            &config);
     let web_data = web_data_build.get_web_data();
 
