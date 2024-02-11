@@ -16,25 +16,26 @@ pub struct ChadoQueries {
 }
 
 const RESPONSE_RATE_SQL: &str = "
-WITH counts as (SELECT year,
-
-  (SELECT COUNT (*)
-   FROM pombase_publication_curation_summary
-   WHERE canto_curator_role = 'community'
-   AND (canto_annotation_status = 'NEEDS_APPROVAL' OR canto_annotation_status = 'APPROVAL_IN_PROGRESS' OR canto_annotation_status = 'APPROVED')
-     AND (canto_session_submitted_date IS NOT NULL
-          AND canto_session_submitted_date <= (YEAR || '-12-30')::date)) AS submitted,
-
-  (SELECT COUNT (*)
-   FROM pombase_publication_curation_summary
-   WHERE canto_curator_role = 'community'
-   AND (canto_approved_date is not null OR canto_first_sent_to_curator_year IS NOT NULL
-     AND canto_first_sent_to_curator_year <= YEAR)) AS sent_sessions
-
-FROM generate_series(2013,
-                       (SELECT extract(YEAR
-                                       FROM CURRENT_DATE))::integer) AS YEAR)
-SELECT year, submitted, sent_sessions, trunc(100.0*submitted/sent_sessions,1)::real as response_rate from counts;
+WITH counts AS
+  (SELECT YEAR,
+     (SELECT COUNT (*)
+      FROM pombase_publication_curation_summary
+      WHERE canto_curator_role = 'community'
+        AND (canto_annotation_status = 'NEEDS_APPROVAL'
+             OR canto_annotation_status = 'APPROVAL_IN_PROGRESS'
+             OR canto_annotation_status = 'APPROVED')
+        AND (canto_session_submitted_date IS NOT NULL
+             AND canto_session_submitted_date <= (YEAR || '-12-30')::date)) AS submitted,
+     (SELECT COUNT (*)
+      FROM pombase_publication_curation_summary
+      WHERE canto_curator_role = 'community'
+        AND ((canto_first_sent_to_curator_year IS NOT NULL
+              AND canto_first_sent_to_curator_year <= YEAR)
+             OR (canto_session_accepted_year IS NOT NULL
+                 AND canto_session_accepted_year <= YEAR))) AS sent_sessions
+   FROM generate_series(2013, (SELECT extract(YEAR FROM CURRENT_DATE))::integer) AS YEAR)
+SELECT YEAR, submitted, sent_sessions, trunc(100.0*submitted/sent_sessions, 1)::real AS response_rate
+FROM counts;
 ";
 
 async fn get_community_response_rates(conn: &mut Client)
