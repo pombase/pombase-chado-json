@@ -33,7 +33,7 @@ WITH
    FROM year_series)
 SELECT year_series.year,
        submitted_or_approved_count, sent_or_accepted_count,
-       trunc(100.0* submitted_or_approved_count / sent_or_accepted_count, 1)::real AS response_rate
+       CASE WHEN sent_or_accepted_count > 0 THEN trunc(100.0* submitted_or_approved_count / sent_or_accepted_count, 1)::real ELSE 0 END AS response_rate
   FROM year_series join cumulative_years on cumulative_years.year = year_series.year;
 "#;
 
