@@ -15,28 +15,27 @@ pub struct ChadoQueries {
   pub community_response_rates: Vec<CommunityResponseRate>,
 }
 
-const RESPONSE_RATE_SQL: &str = "
-WITH counts AS
-  (SELECT YEAR,
-     (SELECT COUNT (*)
+const RESPONSE_RATE_SQL: &str = r#"
+WITH
+  session_years AS
+     (SELECT canto_session, canto_curator_role,
+          coalesce(canto_first_sent_to_curator_year, canto_session_accepted_year) AS sent_or_accepted_year,
+          coalesce(canto_session_submitted_year, canto_first_approved_year) AS submitted_or_approved_year
       FROM pombase_publication_curation_summary
-      WHERE canto_curator_role = 'community'
-        AND (canto_annotation_status = 'NEEDS_APPROVAL'
-             OR canto_annotation_status = 'APPROVAL_IN_PROGRESS'
-             OR canto_annotation_status = 'APPROVED')
-        AND (canto_session_submitted_date IS NOT NULL
-             AND canto_session_submitted_date <= (YEAR || '-12-30')::date)) AS submitted,
-     (SELECT COUNT (*)
-      FROM pombase_publication_curation_summary
-      WHERE canto_curator_role = 'community'
-        AND ((canto_first_sent_to_curator_year IS NOT NULL
-              AND canto_first_sent_to_curator_year <= YEAR)
-             OR (canto_session_accepted_year IS NOT NULL
-                 AND canto_session_accepted_year <= YEAR))) AS sent_sessions
-   FROM generate_series(2013, (SELECT extract(YEAR FROM CURRENT_DATE))::integer) AS YEAR)
-SELECT YEAR, submitted, sent_sessions, trunc(100.0*submitted/sent_sessions, 1)::real AS response_rate
-FROM counts;
-";
+      WHERE canto_curator_role = 'community'),
+  year_series AS (SELECT * FROM generate_series(2013, (SELECT extract(YEAR FROM CURRENT_DATE))::integer) YEAR),
+  cumulative_years AS
+    (SELECT year_series.year,
+        (SELECT count(*) FROM session_years WHERE session_years.submitted_or_approved_year IS NOT NULL
+     AND session_years.submitted_or_approved_year <= year_series.year) as submitted_or_approved_count,
+        (SELECT count(*) FROM session_years WHERE session_years.sent_or_accepted_year IS NOT NULL
+      AND session_years.sent_or_accepted_year <= year_series.year) as sent_or_accepted_count
+   FROM year_series)
+SELECT year_series.year,
+       submitted_or_approved_count, sent_or_accepted_count,
+       trunc(100.0* submitted_or_approved_count / sent_or_accepted_count, 1)::real AS response_rate
+  FROM year_series join cumulative_years on cumulative_years.year = year_series.year;
+"#;
 
 async fn get_community_response_rates(conn: &mut Client)
   -> Result<Vec<CommunityResponseRate>, tokio_postgres::Error>
