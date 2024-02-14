@@ -20,20 +20,20 @@ WITH
   session_years AS
      (SELECT canto_session, canto_curator_role,
           coalesce(canto_first_sent_to_curator_year, least(canto_session_accepted_year, canto_session_submitted_year, canto_first_approved_year)) AS sent_or_accepted_year,
-          coalesce(canto_session_submitted_year, canto_first_approved_year) AS submitted_or_approved_year
+          coalesce(canto_session_submitted_year, canto_first_approved_year) AS submitted_year
       FROM pombase_publication_curation_summary
       WHERE canto_curator_role = 'community'),
   year_series AS (SELECT * FROM generate_series(2013, (SELECT extract(YEAR FROM CURRENT_DATE))::integer) YEAR),
   cumulative_years AS
     (SELECT year_series.year,
-        (SELECT count(*) FROM session_years WHERE session_years.submitted_or_approved_year IS NOT NULL
-     AND session_years.submitted_or_approved_year <= year_series.year) as submitted_or_approved_count,
+        (SELECT count(*) FROM session_years WHERE session_years.submitted_year IS NOT NULL
+     AND session_years.submitted_year <= year_series.year) as submitted_count,
         (SELECT count(*) FROM session_years WHERE session_years.sent_or_accepted_year IS NOT NULL
       AND session_years.sent_or_accepted_year <= year_series.year) as sent_or_accepted_count
    FROM year_series)
 SELECT year_series.year,
-       submitted_or_approved_count, sent_or_accepted_count,
-       CASE WHEN sent_or_accepted_count > 0 THEN trunc(100.0* submitted_or_approved_count / sent_or_accepted_count, 1)::real ELSE 0 END AS response_rate
+       submitted_count, sent_or_accepted_count,
+       CASE WHEN sent_or_accepted_count > 0 THEN trunc(100.0* submitted_count / sent_or_accepted_count, 1)::real ELSE 0 END AS response_rate
   FROM year_series join cumulative_years on cumulative_years.year = year_series.year;
 "#;
 
