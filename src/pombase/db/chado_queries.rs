@@ -19,7 +19,7 @@ const RESPONSE_RATE_SQL: &str = r#"
 WITH
   session_years AS
      (SELECT canto_session, canto_curator_role,
-          coalesce(canto_first_sent_to_curator_year, canto_session_accepted_year) AS sent_or_accepted_year,
+          coalesce(canto_first_sent_to_curator_year, least(canto_session_accepted_year, canto_session_submitted_year, canto_first_approved_year)) AS sent_or_accepted_year,
           coalesce(canto_session_submitted_year, canto_first_approved_year) AS submitted_or_approved_year
       FROM pombase_publication_curation_summary
       WHERE canto_curator_role = 'community'),
