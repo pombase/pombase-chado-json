@@ -2550,6 +2550,8 @@ pub type IdGeneSubsetMap = HashMap<FlexStr, GeneSubsetDetails>;
 pub struct StatCountsByTaxon {
     pub genes: usize,
     pub annotations: usize,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub annotation_type_counts_by_year: Option<StatsIntegerTable>,
 }
 
 // could be a year, a year-month "2021-02" or a date "2021-02-14"

@@ -6981,9 +6981,17 @@ phenotypes, so just the first part of this extension will be used:
         let mut by_taxon = HashMap::new();
 
         for (taxonid, counts) in by_taxon_collector.iter() {
+            let annotation_type_counts_by_year =
+                if self.config.load_organism_taxonid == Some(*taxonid) {
+                    let annotation_counts = self.chado_queries.annotation_type_counts_by_year.clone();
+                    Some(annotation_counts)
+                } else {
+                    None
+                };
             by_taxon.insert(*taxonid, StatCountsByTaxon {
                 genes: counts.0,
                 annotations: counts.1,
+                annotation_type_counts_by_year,
             });
         }
 
