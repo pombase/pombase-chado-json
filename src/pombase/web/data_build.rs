@@ -6954,15 +6954,15 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn get_stats(&self) -> Stats {
-        let mut by_taxon = HashMap::new();
+        let mut by_taxon_collector = HashMap::new();
 
         for gene_details in self.genes.values() {
             let taxonid = gene_details.taxonid;
 
-            by_taxon
+            by_taxon_collector
                 .entry(taxonid)
-                .or_insert_with(StatCountsByTaxon::empty)
-                .genes += 1;
+                .or_insert((0,0))
+                .0 += 1;
 
             let mut annotation_count = 0;
 
@@ -6972,10 +6972,19 @@ phenotypes, so just the first part of this extension will be used:
                 }
             }
 
-            by_taxon
+            by_taxon_collector
                 .entry(taxonid)
-                .or_insert_with(StatCountsByTaxon::empty)
-                .annotations += annotation_count;
+                .or_insert((0,0))
+                .1 += annotation_count;
+        }
+
+        let mut by_taxon = HashMap::new();
+
+        for (taxonid, counts) in by_taxon_collector.iter() {
+            by_taxon.insert(*taxonid, StatCountsByTaxon {
+                genes: counts.0,
+                annotations: counts.1,
+            });
         }
 
         Stats {
@@ -6986,7 +6995,7 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn get_pub_curated_stats(&self)
-        -> (Vec<(DateString, usize, usize)>, Vec<(DateString, usize, usize)>)
+        -> (Vec<(DateString, Vec<usize>)>, Vec<(DateString, Vec<usize>)>)
     {
         let mut year_month_map = HashMap::new();
         let mut year_map = HashMap::new();
@@ -7091,7 +7100,7 @@ phenotypes, so just the first part of this extension will be used:
         for year_month in &year_months {
             let (curatable, curated)  = year_month_map.get(year_month).unwrap_or(&(0,0));
 
-            year_month_return.push((year_month.to_owned(), *curatable, *curated));
+            year_month_return.push((year_month.to_owned(), vec![*curatable, *curated]));
         }
 
         let mut year_return = vec![];
@@ -7101,14 +7110,14 @@ phenotypes, so just the first part of this extension will be used:
 
             let (curatable, curated)  = year_map.get(&year).unwrap_or(&(0,0));
 
-            year_return.push((year.to_owned(), *curatable, *curated));
+            year_return.push((year.to_owned(), vec![*curatable, *curated]));
         }
 
         (year_month_return, year_return)
     }
 
-    fn get_cumulative_curated_stats(&self, stats: &Vec<(DateString, usize, usize)>)
-      -> Vec<(DateString, usize, usize)>
+    fn get_cumulative_curated_stats(&self, stats: &Vec<(DateString, Vec<usize>)>)
+      -> Vec<(DateString, Vec<usize>)>
     {
         if stats.len() == 0 {
             return vec![];
@@ -7116,14 +7125,17 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut return_vec = vec![];
 
-        let (first_date_string, mut curatable_sum, mut curated_sum) = stats[0].to_owned();
+        let (first_date_string, sums) = stats[0].to_owned();
+        let (mut curatable_sum, mut curated_sum) = (sums[0], sums[1]);
 
-        return_vec.push((first_date_string, curatable_sum, curated_sum));
+        return_vec.push((first_date_string, vec![curatable_sum, curated_sum]));
 
-        for (date_string, this_curatable, this_curated) in &stats[1..] {
-            curatable_sum += this_curatable;
-            curated_sum += this_curated;
-            return_vec.push((date_string.to_owned(), curatable_sum, curated_sum));
+        for (date_string, counts) in &stats[1..] {
+            if let &[this_curatable, this_curated] = &counts[0..] {
+              curatable_sum += this_curatable;
+              curated_sum += this_curated;
+              return_vec.push((date_string.to_owned(), vec![curatable_sum, curated_sum]));
+            }
         }
 
         return_vec
@@ -7304,6 +7316,7 @@ phenotypes, so just the first part of this extension will be used:
                  data: htp_annotations_per_year_range,
             },
             community_response_rates: self.chado_queries.community_response_rates.clone(),
+            annotation_type_counts_by_year: self.chado_queries.annotation_type_counts_by_year.clone(),
         }
     }
 

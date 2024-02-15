@@ -2552,15 +2552,6 @@ pub struct StatCountsByTaxon {
     pub annotations: usize,
 }
 
-impl StatCountsByTaxon {
-    pub fn empty() -> Self {
-        StatCountsByTaxon {
-            genes: 0,
-            annotations: 0,
-        }
-    }
-}
-
 // could be a year, a year-month "2021-02" or a date "2021-02-14"
 pub type DateString = String;
 
@@ -2571,7 +2562,8 @@ pub struct Stats {
     pub non_community_pubs_count: usize,
 }
 
-pub type StatsIntegerTableRow = (DateString, usize, usize);
+
+pub type StatsIntegerTableRow = (DateString, Vec<usize>);
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct StatsIntegerTable {
@@ -2597,6 +2589,7 @@ pub struct DetailedStats {
     pub ltp_annotations_per_pub_per_year_range: StatsFloatTable,
     pub htp_annotations_per_pub_per_year_range: StatsFloatTable,
     pub community_response_rates: Vec<CommunityResponseRate>,
+    pub annotation_type_counts_by_year: StatsIntegerTable,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

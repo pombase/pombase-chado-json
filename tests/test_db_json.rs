@@ -750,6 +750,7 @@ fn get_test_web_data() -> WebData {
     let gene_history = None;
     let chado_queries = ChadoQueries {
         community_response_rates: vec![],
+        annotation_type_counts_by_year: StatsIntegerTable { header: vec![], data: vec![] },
     };
 
     let web_data_build = WebDataBuild::new(&raw, &domain_data, &pfam_data,

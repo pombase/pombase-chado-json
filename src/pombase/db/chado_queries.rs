@@ -1,5 +1,9 @@
 extern crate tokio_postgres;
 
+use std::collections::{BTreeSet, HashMap};
+
+use crate::data_types::StatsIntegerTable;
+
 use self::tokio_postgres::Client;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -13,6 +17,7 @@ pub struct CommunityResponseRate {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ChadoQueries {
   pub community_response_rates: Vec<CommunityResponseRate>,
+  pub annotation_type_counts_by_year: StatsIntegerTable,
 }
 
 const RESPONSE_RATE_SQL: &str = r#"
@@ -58,11 +63,80 @@ async fn get_community_response_rates(conn: &mut Client)
   Ok(ret)
 }
 
+const ANNOTATION_TYPE_COUNT_SQL: &str = r#"
+SELECT annotation_year, annotation_type, count(DISTINCT id)
+  FROM pombase_genes_annotations_dates
+ WHERE annotation_year IS NOT NULL
+   AND evidence_code <> 'Inferred from Electronic Annotation'
+ GROUP BY annotation_year, annotation_type
+ ORDER BY annotation_year, annotation_type
+"#;
+
+async fn get_annotation_type_counts(conn: &mut Client)
+    -> Result<StatsIntegerTable, tokio_postgres::Error>
+{
+  let mut res = HashMap::new();
+
+  let mut first_year: i32 = 9999;
+  let mut last_year: i32 = 0;
+  let mut annotation_types = BTreeSet::new();
+
+  let result = conn.query(ANNOTATION_TYPE_COUNT_SQL, &[]).await?;
+
+  for row in &result {
+
+    let year: i32 = row.get(0);
+    let annotation_type: String = row.get(1);
+    let count: i64 = row.get(2);
+
+    if year > last_year {
+      last_year = year;
+    }
+    if year < first_year {
+      first_year = year;
+    }
+
+    annotation_types.insert(annotation_type.clone());
+
+    res.entry(year)
+       .or_insert_with(HashMap::new)
+       .insert(annotation_type, count);
+  }
+
+  let header = annotation_types.iter().cloned().collect::<Vec<_>>();
+  let mut data = vec![];
+
+  for year in first_year..=last_year {
+    let mut data_row = vec![];
+
+    if let Some(year_data) = res.get(&year) {
+      for annotation_type in annotation_types.iter() {
+        if let Some(count) = year_data.get(annotation_type) {
+          data_row.push(*count as usize);
+        } else {
+          data_row.push(0usize);
+        }
+      }
+    } else {
+      data_row = vec![0; annotation_types.len()]
+    }
+
+    data.push((year.to_string(), data_row));
+  }
+
+  Ok(StatsIntegerTable {
+    header,
+    data,
+  })
+}
+
 impl ChadoQueries {
   pub async fn new(conn: &mut Client) -> Result<ChadoQueries, tokio_postgres::Error> {
     let community_response_rates = get_community_response_rates(conn).await?;
+    let annotation_type_counts_by_year = get_annotation_type_counts(conn).await?;
     Ok(ChadoQueries {
       community_response_rates,
+      annotation_type_counts_by_year,
     })
   }
 }
