@@ -68,7 +68,7 @@ SELECT annotation_year, annotation_type, count(DISTINCT id)
   FROM pombase_genes_annotations_dates
  WHERE annotation_year IS NOT NULL
    AND (evidence_code IS NULL OR evidence_code <> 'Inferred from Electronic Annotation')
-  AND (annotation_type NOT IN ('cat_act', 'subunit_composition', 'external_link', 'pathway'))
+  AND (annotation_type NOT IN ('kegg_pombe_pathway', 'pathway'))
   AND (annotation_source IS NULL OR annotation_source <> 'BIOGRID')
  GROUP BY annotation_year, annotation_type
  ORDER BY annotation_year, annotation_type
