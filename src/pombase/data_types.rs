@@ -2592,6 +2592,7 @@ pub struct DetailedStats {
     pub htp_annotations_per_pub_per_year_range: StatsFloatTable,
     pub community_response_rates: Vec<CommunityResponseRate>,
     pub annotation_type_counts_by_year: StatsIntegerTable,
+    pub cumulative_annotation_type_counts_by_year: StatsIntegerTable,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

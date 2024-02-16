@@ -872,6 +872,22 @@ fn parse_condition_with_detail(condition_string: &str) -> (TermId, Option<String
     }
 }
 
+fn get_cumulative_annotation_type_counts(annotation_type_counts: StatsIntegerTable)
+     -> StatsIntegerTable
+{
+    let mut cumulative_counts = annotation_type_counts;
+
+    for row_idx in 1..cumulative_counts.data.len() {
+        let prev = cumulative_counts.data[row_idx-1].1.clone();
+        let current = &mut cumulative_counts.data[row_idx].1;
+        for col_idx in 0..cumulative_counts.header.len() {
+            current[col_idx] += prev[col_idx];
+        }
+    }
+
+    cumulative_counts
+}
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
                domain_data: &'a DomainData,
@@ -7294,6 +7310,11 @@ phenotypes, so just the first part of this extension will be used:
              ltp_annotations_per_year_range, htp_annotations_per_year_range) =
             self.annotations_per_pub();
 
+        let annotation_type_counts_by_year =
+            self.chado_queries.annotation_type_counts_by_year.clone();
+        let cumulative_annotation_type_counts_by_year =
+            get_cumulative_annotation_type_counts(annotation_type_counts_by_year.clone());
+
         DetailedStats {
             curated_by_month: StatsIntegerTable {
                  header: pub_stats_header.clone(),
@@ -7324,7 +7345,8 @@ phenotypes, so just the first part of this extension will be used:
                  data: htp_annotations_per_year_range,
             },
             community_response_rates: self.chado_queries.community_response_rates.clone(),
-            annotation_type_counts_by_year: self.chado_queries.annotation_type_counts_by_year.clone(),
+            annotation_type_counts_by_year,
+            cumulative_annotation_type_counts_by_year,
         }
     }
 
