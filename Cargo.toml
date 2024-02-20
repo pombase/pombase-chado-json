@@ -29,7 +29,7 @@ deadpool = "0.10"
 anyhow = "<1.0.81"
 itertools = "0.12"
 csv = "1.1.6"
-rusqlite = { version = "0.30.0", features = ["bundled", "serde_json"] }
+rusqlite = { version = "0.31.0", features = ["bundled", "serde_json"] }
 axum = { version = "0.6.20", features = ["macros"] }
 axum-macros = "0.3"
 tower = "0.4.13"
