@@ -76,6 +76,10 @@ fn empty_string()-> FlexStr {
     flex_str!("")
 }
 
+fn is_default<T: Default + PartialEq>(t: &T) -> bool {
+    t == &T::default()
+}
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
 #[serde(rename = "haploid")]
@@ -1727,6 +1731,9 @@ pub struct AlleleDetails {
     // the phenotypes of those genotypes
     pub phenotypes: Vec<TermShort>,
 
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub is_obsolete: bool,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub comments: Vec<CommentAndReference>,
 
@@ -1741,6 +1748,7 @@ impl AlleleDetails {
                allele_type: &str,
                description: &Option<FlexStr>,
                comments: &[CommentAndReference],
+               is_obsolete: bool,
                gene: GeneShort) -> AlleleDetails {
         let encoded_name_and_type =
             allele_encoded_name_and_type(name, allele_type, description);
@@ -1754,6 +1762,7 @@ impl AlleleDetails {
             synonyms: vec![],
             genotypes: vec![],
             phenotypes: vec![],
+            is_obsolete,
             comments: comments.to_owned(),
             alleles_by_uniquename: HashMap::new(),
             references_by_uniquename: HashMap::new(),

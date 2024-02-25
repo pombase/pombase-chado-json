@@ -305,6 +305,7 @@ pub fn make_one_allele_details(uniquename: &str, name: &str, allele_type: &str,
         allele_type,
         &description.map(|s| s.to_shared_str()),
         &vec![],
+        false,
         gene.into(),
     )
 }

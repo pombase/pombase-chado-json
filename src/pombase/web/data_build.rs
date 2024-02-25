@@ -2420,6 +2420,7 @@ phenotypes, so just the first part of this extension will be used:
                                                     &allele_type,
                                                     &description,
                                                     &comments,
+                                                    feat.is_obsolete,
                                                     gene_details.into());
             self.alleles.insert(feat.uniquename.clone(), allele_details);
         } else {
