@@ -14,6 +14,8 @@ pub type TypeInteractionAnnotationMap =
     HashMap<TypeName, Vec<InteractionAnnotation>>;
 pub type UniquenameGeneMap =
     BTreeMap<GeneUniquename, GeneDetails>;
+pub type UniquenameAlleleMap =
+    BTreeMap<AlleleUniquename, AlleleDetails>;
 pub type UniquenameTranscriptMap =
     HashMap<TranscriptUniquename, TranscriptDetails>;
 pub type UniquenameProteinMap =
@@ -21,7 +23,7 @@ pub type UniquenameProteinMap =
 pub type UniquenameReferenceMap =
     HashMap<ReferenceUniquename, ReferenceDetails>;
 
-pub type UniquenameAlleleDetailsMap = HashMap<AlleleUniquename, AlleleDetails>;
+pub type UniquenameAlleleDetailsMap = BTreeMap<AlleleUniquename, AlleleDetails>;
 pub type DisplayUniquenameGenotypeMap = HashMap<GenotypeDisplayUniquename, GenotypeDetails>;
 pub type UniquenameFeatureShortMap = HashMap<FlexStr, FeatureShort>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
@@ -63,6 +65,8 @@ pub trait DataLookup {
     fn get_term(&self, termid: &TermId) -> Option<Arc<TermDetails>>;
 
     fn get_gene(&self, gene_uniquename: &GeneUniquename) -> Option<Arc<GeneDetails>>;
+
+    fn get_allele(&self, allele_unquename: &AlleleUniquename) -> Option<Arc<AlleleDetails>>;
 
     fn get_reference(&self, reference_uniquename: &ReferenceUniquename) -> Option<Arc<ReferenceDetails>>;
 
@@ -2283,7 +2287,6 @@ pub struct APIMaps {
     pub gene_query_data_map: HashMap<GeneUniquename, GeneQueryData>,
     pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,
-    pub alleles: UniquenameAlleleDetailsMap,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
     pub substrates_of_genes: HashMap<GeneUniquename, HashMap<TermId, HashSet<GeneUniquename>>>,
     pub other_features: UniquenameFeatureShortMap,

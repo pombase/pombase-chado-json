@@ -3,7 +3,10 @@ use std::collections::HashMap;
 use flexstr::SharedStr as FlexStr;
 use rusqlite::Connection;
 
-use crate::{constants::API_MAPS_TABLE_NAMES, data_types::{TermIdDetailsMap, UniquenameGeneMap, UniquenameReferenceMap, IdGenotypeMap, APIGenotypeAnnotation}, types::TermId};
+use crate::{constants::API_MAPS_TABLE_NAMES,
+            data_types::{TermIdDetailsMap, UniquenameGeneMap, UniquenameAlleleMap,
+                         UniquenameReferenceMap, IdGenotypeMap, APIGenotypeAnnotation},
+            types::TermId};
 
 pub fn join(v: &[FlexStr], connector: &str) -> FlexStr {
     let result = itertools::join(v.iter().map(FlexStr::as_ref), connector);
@@ -31,8 +34,8 @@ pub fn make_maps_database_tables(conn: &mut Connection) -> rusqlite::Result<()> 
 
 
 pub fn store_maps_into_database(conn: &mut Connection, terms: &TermIdDetailsMap,
-                                genes: &UniquenameGeneMap, references: &UniquenameReferenceMap,
-                                genotypes: &IdGenotypeMap,
+                                genes: &UniquenameGeneMap, alleles: &UniquenameAlleleMap,
+                                references: &UniquenameReferenceMap, genotypes: &IdGenotypeMap,
                                 termid_genotype_annotation: &HashMap<TermId, Vec<APIGenotypeAnnotation>>) -> anyhow::Result<()> {
     let tx = conn.transaction()?;
 
@@ -47,6 +50,12 @@ pub fn store_maps_into_database(conn: &mut Connection, terms: &TermIdDetailsMap,
 
         tx.execute("INSERT INTO genes (id, data) VALUES (?1, ?2)",
                    (gene_uniquename.as_ref(), &json))?;
+    }
+    for (allele_uniquename, allele_details) in alleles {
+        let json = serde_json::value::to_value(allele_details)?;
+
+        tx.execute("INSERT INTO alleles (id, data) VALUES (?1, ?2)",
+                   (allele_uniquename.as_ref(), &json))?;
     }
     for (ref_uniquename, reference_details) in references {
         let json = serde_json::value::to_value(reference_details)?;

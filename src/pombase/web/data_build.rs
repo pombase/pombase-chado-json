@@ -917,7 +917,7 @@ impl <'a> WebDataBuild<'a> {
             genotype_interaction_genotype_a: HashMap::new(),
             genotype_interaction_genotype_b: HashMap::new(),
             genotype_interaction_double_mutant: HashMap::new(),
-            alleles: HashMap::new(),
+            alleles: BTreeMap::new(),
             transcripts: HashMap::new(),
             other_features: HashMap::new(),
             terms: HashMap::new(),
@@ -5303,7 +5303,6 @@ phenotypes, so just the first part of this extension will be used:
             termid_genes,
             gene_name_gene_map,
             transcripts: self.transcripts,
-            alleles: self.alleles,
             interactors_of_genes,
             substrates_of_genes,
             other_features: self.other_features,
@@ -7431,6 +7430,7 @@ phenotypes, so just the first part of this extension will be used:
         }
 
         let mut genes = self.genes.clone();
+        let alleles = self.alleles.clone();
         let genotypes = self.genotypes.clone();
         let references = self.references.clone();
 
@@ -7450,6 +7450,7 @@ phenotypes, so just the first part of this extension will be used:
             api_maps,
             terms: terms_for_api,
             genes,
+            alleles,
             genotypes,
             references,
             termid_genotype_annotation,
@@ -7462,6 +7463,7 @@ phenotypes, so just the first part of this extension will be used:
             // used to implement the DataLookup trait:
             arc_terms: Arc::new(RwLock::new(HashMap::new())),
             arc_genes: Arc::new(RwLock::new(HashMap::new())),
+            arc_alleles: Arc::new(RwLock::new(HashMap::new())),
             arc_references: Arc::new(RwLock::new(HashMap::new())),
             arc_genotypes: Arc::new(RwLock::new(HashMap::new())),
         }

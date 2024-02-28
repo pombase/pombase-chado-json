@@ -24,7 +24,8 @@ use crate::constants::*;
 use crate::web::config::*;
 use crate::rnacentral::*;
 
-use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename, ReferenceUniquename};
+use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename, AlleleUniquename,
+                   ReferenceUniquename};
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
@@ -43,6 +44,7 @@ pub struct WebData {
     pub all_admin_curated: Vec<ReferenceShort>,
     pub api_maps: APIMaps,
     pub genes: UniquenameGeneMap,
+    pub alleles: UniquenameAlleleMap,
     pub genotypes: IdGenotypeMap,
     pub terms: TermIdDetailsMap,
     pub references: UniquenameReferenceMap,
@@ -56,6 +58,7 @@ pub struct WebData {
 
     pub arc_terms: Arc<RwLock<HashMap<TermId, Arc<TermDetails>>>>,
     pub arc_genes: Arc<RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>>,
+    pub arc_alleles: Arc<RwLock<HashMap<AlleleUniquename, Arc<AlleleDetails>>>>,
     pub arc_references: Arc<RwLock<HashMap<ReferenceUniquename, Arc<ReferenceDetails>>>>,
     pub arc_genotypes: Arc<RwLock<HashMap<GenotypeDisplayUniquename, Arc<GenotypeDetails>>>>,
 }
@@ -85,6 +88,21 @@ impl DataLookup for WebData {
                let arc_gene_details = Arc::new(gene_details.to_owned());
                arc_genes.insert(gene_uniquename.to_owned(), arc_gene_details.clone());
                Some(arc_gene_details)
+           } else {
+               None
+           }
+        }
+    }
+
+    fn get_allele(&self, allele_uniquename: &AlleleUniquename) -> Option<Arc<AlleleDetails>> {
+        let mut arc_alleles = self.arc_alleles.write().unwrap();
+        if let Some(arc_allele_details) = arc_alleles.get(allele_uniquename) {
+            Some(arc_allele_details.to_owned())
+        } else {
+           if let Some(allele_details) = self.alleles.get(allele_uniquename) {
+               let arc_allele_details = Arc::new(allele_details.to_owned());
+               arc_alleles.insert(allele_uniquename.to_owned(), arc_allele_details.clone());
+               Some(arc_allele_details)
            } else {
                None
            }
@@ -452,7 +470,7 @@ impl WebData {
 
     fn write_alleles_json(&self, output_dir: &str) -> Result<(), io::Error> {
         let allele_summaries: AlleleShortMap =
-            self.api_maps.alleles.iter().map(|(uniquename, details)| {
+            self.alleles.iter().map(|(uniquename, details)| {
                 (uniquename.clone(), details.into())
             }).collect();
 
@@ -1390,7 +1408,7 @@ impl WebData {
 
         let empty_string = flex_str!("");
 
-        for allele_short in self.api_maps.alleles.values() {
+        for allele_short in self.alleles.values() {
             let gene = &allele_short.gene;
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\n",
                                       gene.uniquename,
@@ -1586,7 +1604,8 @@ impl WebData {
 
         make_maps_database_tables(&mut conn)?;
 
-        store_maps_into_database(&mut conn, &self.terms, &self.genes, &self.references,
+        store_maps_into_database(&mut conn, &self.terms, &self.genes, &self.alleles,
+                                 &self.references,
                                  &self.genotypes, &self.termid_genotype_annotation)?;
 
         Ok(())

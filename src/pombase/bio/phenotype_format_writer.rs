@@ -79,7 +79,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
         let is_homozygous_diploid = genotype_details.loci[0].expressed_alleles.len() > 1;
 
         let locus_allele =
-            api_maps.alleles.get(&expressed_allele.allele_uniquename)
+            data_lookup.get_allele(&expressed_allele.allele_uniquename)
             .unwrap_or_else(|| panic!("no allele found for {}", expressed_allele.allele_uniquename));
 
         let locus_allele_synonyms =

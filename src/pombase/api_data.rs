@@ -27,7 +27,8 @@ use crate::web::config::{Config, TermAndName};
 use crate::api::query::{QueryExpressionFilter, SingleOrMultiLocus, TargetOfType};
 use crate::web::cv_summary::make_cv_summaries;
 
-use crate::types::{TermId, GeneUniquename, GenotypeDisplayUniquename, GenotypeUniquename, ReferenceUniquename};
+use crate::types::{TermId, GeneUniquename, AlleleUniquename,
+                   GenotypeDisplayUniquename, GenotypeUniquename, ReferenceUniquename};
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
 
@@ -54,6 +55,10 @@ impl DataLookup for APIData {
         self.maps_database.get_gene(gene_uniquename)
     }
 
+    fn get_allele(&self, allele_uniquename: &AlleleUniquename) -> Option<Arc<AlleleDetails>> {
+        self.maps_database.get_allele(allele_uniquename)
+    }
+
     fn get_reference(&self, reference_uniquename: &ReferenceUniquename)
            -> Option<Arc<ReferenceDetails>>
     {
@@ -73,6 +78,7 @@ pub struct APIMapsDatabase {
     term_cache: RwLock<HashMap<TermId, Arc<TermDetails>>>,
     reference_cache: RwLock<HashMap<ReferenceUniquename, Arc<ReferenceDetails>>>,
     gene_cache: RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>,
+    allele_cache: RwLock<HashMap<AlleleUniquename, Arc<AlleleDetails>>>,
     termid_genotype_annotation_cache: RwLock<HashMap<TermId, Arc<Vec<APIGenotypeAnnotation>>>>,
 }
 
@@ -84,6 +90,7 @@ impl APIMapsDatabase {
             term_cache: RwLock::new(HashMap::new()),
             reference_cache: RwLock::new(HashMap::new()),
             gene_cache: RwLock::new(HashMap::new()),
+            allele_cache: RwLock::new(HashMap::new()),
             termid_genotype_annotation_cache: RwLock::new(HashMap::new()),
         }
     }
@@ -218,6 +225,39 @@ impl APIMapsDatabase {
         let gene_value = cache.get(gene_uniquename);
 
         gene_value.map(|t| t.to_owned())
+    }
+
+    pub fn get_allele(&self, allele_uniquename: &AlleleUniquename)
+           -> Option<Arc<AlleleDetails>>
+    {
+        let mut cache = self.allele_cache.write().unwrap();
+
+        if !cache.contains_key(allele_uniquename) {
+            let conn = self.api_maps_database_conn.lock().unwrap();
+
+            let mut stmt = conn.prepare("SELECT data FROM alleles WHERE id = :id").unwrap();
+
+            let mut alleles =
+                stmt.query_map(&[(":id", allele_uniquename.as_ref())],
+                               |row| {
+                                   let json: String = row.get(0)?;
+                                   let allele_details: AlleleDetails =
+                                       serde_json::from_str(&json).unwrap();
+                                   Ok(allele_details)
+                               }).unwrap();
+
+            let result_allele = alleles.next();
+
+            let maybe_allele = result_allele.map(|g| g.unwrap());
+
+            if let Some(allele_details) = maybe_allele {
+                cache.insert(allele_uniquename.clone(), Arc::new(allele_details));
+            }
+        }
+
+        let allele_value = cache.get(allele_uniquename);
+
+        allele_value.map(|t| t.to_owned())
     }
 
     pub fn get_termid_genotype_annotation(&self, termid: &TermId)
@@ -776,25 +816,27 @@ impl APIData {
     pub fn get_allele_details(&self, allele_uniquename: &str) -> Option<AlleleDetails> {
         let allele_uniquename = allele_uniquename.to_shared_str();
 
-        let allele_ref = self.maps.alleles.get(&allele_uniquename)?;
-        let mut allele_details = allele_ref.clone();
+        if let Some(allele_arc) = self.get_allele(&allele_uniquename) {
+            let mut allele_details = allele_arc.as_ref().to_owned();
+            let mut alleles_by_uniquename = HashMap::new();
 
-        let mut alleles_by_uniquename = HashMap::new();
-
-        for genotype_short in &allele_details.genotypes {
-            for locus in &genotype_short.loci {
-                for expressed_allele in &locus.expressed_alleles {
-                    let allele_uniquename = &expressed_allele.allele_uniquename;
-                    let allele_short: AlleleShort =
-                        self.maps.alleles.get(allele_uniquename).unwrap().into();
-                    alleles_by_uniquename.insert(allele_uniquename.clone(), allele_short);
+            for genotype_short in &allele_details.genotypes {
+                for locus in &genotype_short.loci {
+                    for expressed_allele in &locus.expressed_alleles {
+                        let allele_uniquename = &expressed_allele.allele_uniquename;
+                        let allele_short: AlleleShort =
+                            self.get_allele(allele_uniquename).unwrap().as_ref().into();
+                        alleles_by_uniquename.insert(allele_uniquename.clone(), allele_short);
+                    }
                 }
             }
+
+            allele_details.alleles_by_uniquename = alleles_by_uniquename;
+
+            Some(allele_details)
+        } else {
+            None
         }
-
-        allele_details.alleles_by_uniquename = alleles_by_uniquename;
-
-        Some(allele_details)
     }
 
     fn term_details_helper(&self, term_ref: &TermDetails) -> Option<TermDetails> {
