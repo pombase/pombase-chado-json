@@ -5,7 +5,8 @@ use rusqlite::Connection;
 
 use crate::{constants::API_MAPS_TABLE_NAMES,
             data_types::{TermIdDetailsMap, UniquenameGeneMap, UniquenameAlleleMap,
-                         UniquenameReferenceMap, IdGenotypeMap, APIGenotypeAnnotation},
+                         UniquenameReferenceMap, IdGenotypeMap, APIGenotypeAnnotation,
+                         IdOntAnnotationDetailMap},
             types::TermId};
 
 pub fn join(v: &[FlexStr], connector: &str) -> FlexStr {
@@ -36,6 +37,7 @@ pub fn make_maps_database_tables(conn: &mut Connection) -> rusqlite::Result<()> 
 pub fn store_maps_into_database(conn: &mut Connection, terms: &TermIdDetailsMap,
                                 genes: &UniquenameGeneMap, alleles: &UniquenameAlleleMap,
                                 references: &UniquenameReferenceMap, genotypes: &IdGenotypeMap,
+                                annotation_details: &IdOntAnnotationDetailMap,
                                 termid_genotype_annotation: &HashMap<TermId, Vec<APIGenotypeAnnotation>>) -> anyhow::Result<()> {
     let tx = conn.transaction()?;
 
@@ -68,6 +70,12 @@ pub fn store_maps_into_database(conn: &mut Connection, terms: &TermIdDetailsMap,
 
         tx.execute("INSERT INTO genotypes (id, data) VALUES (?1, ?2)",
                    (genotype_display_uniquename.as_ref(), &json))?;
+    }
+    for (annotation_id, annotation_detail) in annotation_details {
+        let json = serde_json::value::to_value(annotation_detail)?;
+
+        tx.execute("INSERT INTO annotation_detail (id, data) VALUES (?1, ?2)",
+                   (&annotation_id, &json))?;
     }
     for (termid, genotype_annotations) in termid_genotype_annotation {
         let json = serde_json::value::to_value(genotype_annotations)?;

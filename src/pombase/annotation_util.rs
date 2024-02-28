@@ -4,12 +4,11 @@ use flexstr::SharedStr as FlexStr;
 
 use crate::web::config::{CvConfig, AnnotationSubsetConfig};
 use crate::types::CvName;
-use crate::data_types::{DataLookup, IdOntAnnotationDetailMap};
+use crate::data_types::DataLookup;
 use crate::utils::join;
 
 
 pub fn table_for_export(data_lookup: &dyn DataLookup,
-                        annotation_details_map: &IdOntAnnotationDetailMap,
                         cv_config_map: &HashMap<CvName, CvConfig>,
                         subset_config: &AnnotationSubsetConfig)
     -> Vec<Vec<FlexStr>>
@@ -42,8 +41,8 @@ pub fn table_for_export(data_lookup: &dyn DataLookup,
 
                 for annotation_id in &term_annotation.annotations {
                     let mut row = vec![];
-                    let annotation_details = annotation_details_map
-                        .get(annotation_id).expect("can't find OntAnnotationDetail");
+                    let annotation_details = data_lookup
+                        .get_annotation_detail(*annotation_id).expect("can't find OntAnnotationDetail");
 
                     let gene_uniquenames = &annotation_details.genes;
 

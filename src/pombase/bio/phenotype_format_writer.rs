@@ -14,8 +14,7 @@ use super::go_format_writer::GpadGafWriteMode;
 use super::util::make_extension_string;
 
 
-pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
-                                        data_lookup: &dyn DataLookup,
+pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                         genotypes_map: &IdGenotypeMap,
                                         config: &Config,
                                         use_eco_evidence: bool,
@@ -113,8 +112,7 @@ pub fn write_phenotype_annotation_files(api_maps: &APIMaps,
                                               term_annotation.term));
 
                 for annotation_id in &term_annotation.annotations {
-                    let annotation_detail = api_maps.annotation_details
-                        .get(annotation_id)
+                    let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                     let evidence =

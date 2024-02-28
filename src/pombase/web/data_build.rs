@@ -5307,7 +5307,6 @@ phenotypes, so just the first part of this extension will be used:
             substrates_of_genes,
             other_features: self.other_features,
             seq_feature_page_features,
-            annotation_details: self.annotation_details,
             chromosomes: self.chromosomes,
             term_subsets,
             gene_subsets,
@@ -7433,6 +7432,7 @@ phenotypes, so just the first part of this extension will be used:
         let alleles = self.alleles.clone();
         let genotypes = self.genotypes.clone();
         let references = self.references.clone();
+        let annotation_details = self.annotation_details.clone();
 
         let termid_genotype_annotation = self.get_api_genotype_annotation();
 
@@ -7453,6 +7453,7 @@ phenotypes, so just the first part of this extension will be used:
             alleles,
             genotypes,
             references,
+            annotation_details,
             termid_genotype_annotation,
             search_gene_summaries: gene_summaries,
             solr_data,
@@ -7466,6 +7467,7 @@ phenotypes, so just the first part of this extension will be used:
             arc_alleles: Arc::new(RwLock::new(HashMap::new())),
             arc_references: Arc::new(RwLock::new(HashMap::new())),
             arc_genotypes: Arc::new(RwLock::new(HashMap::new())),
+            arc_annotation_details: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 }

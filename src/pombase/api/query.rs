@@ -963,7 +963,7 @@ impl Query {
         if let Some(gene_details) = maybe_gene_details {
             for aspect in aspects.iter() {
                 let result = write_go_annotation_format(&mut gaf_bytes, api_data.get_config(),
-                                                        api_data, api_data.get_maps(),
+                                                        api_data,
                                                         GpadGafWriteMode::PomBaseGaf,
                                                         gene_details.as_ref(),
                                                         &api_data.get_maps().transcripts,
@@ -1135,7 +1135,8 @@ impl Query {
            }).collect::<Vec<_>>())
     }
 
-    pub async fn exec(&self, api_data: &APIData, site_db: &Option<SiteDB>)
+    pub async fn exec(&self, api_data: &APIData,
+                      site_db: &Option<SiteDB>)
                 -> QueryRowsResult
     {
         let genes_result = self.constraints.exec(api_data, site_db).await;

@@ -17,6 +17,7 @@ use crate::data_types::{DataLookup,
                         GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails,
                         IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType,
                         OntAnnotationDetail, OntAnnotationMap, Ploidiness,
+                        OntAnnotationId,
                         ReferenceDetails, ReferenceShort, ReferenceShortOptionMap,
                         TermDetails, TermShort, TermShortOptionMap,
                         TranscriptDetailsOptionMap, WithFromValue, AlleleDetails,
@@ -70,6 +71,11 @@ impl DataLookup for APIData {
     {
         self.maps_database.get_genotype(genotype_display_uniquename)
     }
+
+    fn get_annotation_detail(&self, annotation_id: OntAnnotationId)
+           -> Option<Arc<OntAnnotationDetail>> {
+        self.maps_database.get_annotation_detail(annotation_id)
+    }
 }
 
 pub struct APIMapsDatabase {
@@ -80,6 +86,7 @@ pub struct APIMapsDatabase {
     gene_cache: RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>,
     allele_cache: RwLock<HashMap<AlleleUniquename, Arc<AlleleDetails>>>,
     termid_genotype_annotation_cache: RwLock<HashMap<TermId, Arc<Vec<APIGenotypeAnnotation>>>>,
+    annotation_detail_cache: RwLock<HashMap<OntAnnotationId, Arc<OntAnnotationDetail>>>,
 }
 
 impl APIMapsDatabase {
@@ -92,6 +99,7 @@ impl APIMapsDatabase {
             gene_cache: RwLock::new(HashMap::new()),
             allele_cache: RwLock::new(HashMap::new()),
             termid_genotype_annotation_cache: RwLock::new(HashMap::new()),
+            annotation_detail_cache: RwLock::new(HashMap::new()),
         }
     }
 
@@ -290,6 +298,40 @@ impl APIMapsDatabase {
         }
 
         let term_value = cache.get(termid);
+
+        term_value.map(|t| t.to_owned())
+    }
+
+    pub fn get_annotation_detail(&self, annotation_id: OntAnnotationId)
+           -> Option<Arc<OntAnnotationDetail>>
+    {
+        let mut cache = self.annotation_detail_cache.write().unwrap();
+
+        if !cache.contains_key(&annotation_id) {
+            let conn = self.api_maps_database_conn.lock().unwrap();
+
+            let mut stmt = conn.prepare("SELECT data FROM annotation_detail WHERE id = :id").unwrap();
+
+            let mut annotation_detail =
+                stmt.query_map(&[(":id", &annotation_id)],
+                               |row| {
+                                   let json: String = row.get(0)?;
+                                   let annotation_details: OntAnnotationDetail =
+                                       serde_json::from_str(&json).unwrap();
+                                   Ok(annotation_details)
+                               }).unwrap();
+
+            let result_annotation_detail = annotation_detail.next();
+
+            let maybe_annotation_detail =
+                result_annotation_detail.map(|v| v.unwrap());
+
+            if let Some(annotation_detail) = maybe_annotation_detail {
+                cache.insert(annotation_id, Arc::new(annotation_detail));
+            }
+        }
+
+        let term_value = cache.get(&annotation_id);
 
         term_value.map(|t| t.to_owned())
     }
@@ -691,9 +733,10 @@ impl APIData {
                     let annotations: Vec<OntAnnotationDetail> =
                         term_annotation.annotations
                         .iter()
-                        .map(|annotation_detail_id | {
+                        .map(|annotation_detail_id| {
                             let mut annotation =
-                            self.maps.annotation_details[annotation_detail_id].clone();
+                                self.get_annotation_detail(*annotation_detail_id)
+                                    .unwrap().as_ref().to_owned();
 
                            self.maybe_move_with(&term_details, &mut annotation);
 

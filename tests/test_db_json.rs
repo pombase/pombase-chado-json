@@ -821,7 +821,7 @@ fn test_gene_with() {
     let first_process_annotation_id =
         biological_process_annotations[0].annotations[0];
     let first_process_annotation =
-        web_data.api_maps.annotation_details.get(&first_process_annotation_id).unwrap();
+        web_data.get_annotation_detail(first_process_annotation_id).unwrap();
 
     if let WithFromValue::Gene(with_gene) =
         first_process_annotation.withs.iter().next().unwrap()

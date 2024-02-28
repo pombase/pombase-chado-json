@@ -48,6 +48,7 @@ pub struct WebData {
     pub genotypes: IdGenotypeMap,
     pub terms: TermIdDetailsMap,
     pub references: UniquenameReferenceMap,
+    pub annotation_details: IdOntAnnotationDetailMap,
     pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
 
     pub solr_data: SolrData,
@@ -61,6 +62,7 @@ pub struct WebData {
     pub arc_alleles: Arc<RwLock<HashMap<AlleleUniquename, Arc<AlleleDetails>>>>,
     pub arc_references: Arc<RwLock<HashMap<ReferenceUniquename, Arc<ReferenceDetails>>>>,
     pub arc_genotypes: Arc<RwLock<HashMap<GenotypeDisplayUniquename, Arc<GenotypeDetails>>>>,
+    pub arc_annotation_details: Arc<RwLock<HashMap<OntAnnotationId, Arc<OntAnnotationDetail>>>>,
 }
 
 impl DataLookup for WebData {
@@ -136,6 +138,24 @@ impl DataLookup for WebData {
                arc_genotypes.insert(genotype_display_uniquename.to_owned(),
                                          arc_genotype_details.clone());
                Some(arc_genotype_details)
+           } else {
+               None
+           }
+        }
+    }
+
+    fn get_annotation_detail(&self, annotation_id: OntAnnotationId)
+           -> Option<Arc<OntAnnotationDetail>>
+    {
+        let mut arc_annotation_details = self.arc_annotation_details.write().unwrap();
+        if let Some(arc_annotation_detail_details) = arc_annotation_details.get(&annotation_id) {
+            Some(arc_annotation_detail_details.to_owned())
+        } else {
+           if let Some(annotation_detail_details) = self.annotation_details.get(&annotation_id) {
+               let arc_annotation_detail_details = Arc::new(annotation_detail_details.to_owned());
+               arc_annotation_details.insert(annotation_id,
+                                             arc_annotation_detail_details.clone());
+               Some(arc_annotation_detail_details)
            } else {
                None
            }
@@ -1452,7 +1472,7 @@ impl WebData {
                     let annotations = term_annotation.annotations.clone();
 
                     for annotation_id in annotations {
-                        let annotation_detail = self.api_maps.annotation_details.get(&annotation_id)
+                        let annotation_detail = self.get_annotation_detail(annotation_id)
                             .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                         let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
@@ -1499,8 +1519,7 @@ impl WebData {
 
         let mut writer = BufWriter::new(&file);
 
-        let table = table_for_export(self, &self.api_maps.annotation_details,
-                                     cv_config_map, subset_config);
+        let table = table_for_export(self, cv_config_map, subset_config);
 
         for row in table {
             let line = join(&row, "\t") + "\n";
@@ -1605,8 +1624,9 @@ impl WebData {
         make_maps_database_tables(&mut conn)?;
 
         store_maps_into_database(&mut conn, &self.terms, &self.genes, &self.alleles,
-                                 &self.references,
-                                 &self.genotypes, &self.termid_genotype_annotation)?;
+                                 &self.references, &self.genotypes,
+                                 &self.annotation_details,
+                                 &self.termid_genotype_annotation)?;
 
         Ok(())
     }
@@ -1658,8 +1678,8 @@ impl WebData {
                                   go_eco_mappping, &self.genes,
                                   &self.api_maps.transcripts, &misc_path)?;
 
-        write_phenotype_annotation_files(&self.api_maps, self, &self.genotypes, config, false, &misc_path)?;
-        write_phenotype_annotation_files(&self.api_maps, self, &self.genotypes, config, true, &misc_path)?;
+        write_phenotype_annotation_files(self, &self.genotypes, config, false, &misc_path)?;
+        write_phenotype_annotation_files(self, &self.genotypes, config, true, &misc_path)?;
         println!("wrote GAF and PHAF files");
 
         self.write_alleles_json(&misc_path)?;

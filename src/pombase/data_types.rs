@@ -72,6 +72,9 @@ pub trait DataLookup {
 
     fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
            -> Option<Arc<GenotypeDetails>>;
+
+    fn get_annotation_detail(&self, annotation_id: OntAnnotationId)
+           -> Option<Arc<OntAnnotationDetail>>;
 }
 
 pub type RNAcentralAnnotations = HashMap<FlexStr, Vec<RfamAnnotation>>;
@@ -2291,7 +2294,6 @@ pub struct APIMaps {
     pub substrates_of_genes: HashMap<GeneUniquename, HashMap<TermId, HashSet<GeneUniquename>>>,
     pub other_features: UniquenameFeatureShortMap,
     pub seq_feature_page_features: Vec<FeatureShort>,
-    pub annotation_details: IdOntAnnotationDetailMap,
     pub chromosomes: ChrNameDetailsMap,
     pub term_subsets: IdTermSubsetMap,
     pub gene_subsets: IdGeneSubsetMap,

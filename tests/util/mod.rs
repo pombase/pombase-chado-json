@@ -1,13 +1,9 @@
-use std::collections::{HashMap, BTreeMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use flexstr::ToSharedStr;
 
 use pombase::api_data::{APIData, api_maps_from_file};
-use pombase::data_types::{UniquenameReferenceMap, UniquenameGeneMap, UniquenameAlleleMap,
-                          TermIdDetailsMap, IdGenotypeMap, GenotypeDetails, GenotypeLocus,
-                          Ploidiness, GeneDetails, DeletionViability, DisplayUniquenameGenotypeMap,
-                          ExpressedAllele, AlleleDetails, UniquenameAlleleDetailsMap, TermDetails,
-                          APIGenotypeAnnotation};
+use pombase::data_types::{APIGenotypeAnnotation, AlleleDetails, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, ExtPart, ExtRange, GeneDetails, GenotypeDetails, GenotypeLocus, IdGenotypeMap, IdOntAnnotationDetailMap, OntAnnotationDetail, Ploidiness, TermDetails, TermIdDetailsMap, Throughput, UniquenameAlleleDetailsMap, UniquenameAlleleMap, UniquenameGeneMap, UniquenameReferenceMap};
 use pombase::types::TermId;
 use pombase::utils::{make_maps_database_tables, store_maps_into_database};
 use pombase::web::config::Config;
@@ -20,11 +16,12 @@ pub fn setup_test_maps_database(mut conn: &mut Connection,
                                 alleles: &UniquenameAlleleMap,
                                 references: &UniquenameReferenceMap,
                                 genotypes: &IdGenotypeMap,
+                                annotation_details: &IdOntAnnotationDetailMap,
                                 termid_genotype_annotation: &HashMap<TermId, Vec<APIGenotypeAnnotation>>) {
     make_maps_database_tables(conn).unwrap();
 
     store_maps_into_database(&mut conn, terms, genes, alleles, references,
-                             genotypes, termid_genotype_annotation).unwrap();
+                             genotypes, annotation_details, termid_genotype_annotation).unwrap();
 }
 
 #[allow(dead_code)]
@@ -42,9 +39,10 @@ pub fn get_api_data() -> APIData {
     let alleles = get_test_alleles_map();
     let terms = get_test_terms_map();
     let references = get_test_references_map();
+    let annotation_details_maps = get_test_annotation_details_map();
     let termid_genotype_annotation = HashMap::new();
     setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &alleles, &references, &genotypes,
-                             &termid_genotype_annotation);
+                             &annotation_details_maps, &termid_genotype_annotation);
     APIData::new(&config, maps_db_conn, api_maps)
 }
 
@@ -416,4 +414,175 @@ pub fn get_test_terms_map() -> TermIdDetailsMap {
     });
 
     ret
+}
+
+#[allow(dead_code)]
+fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
+                   maybe_genotype_uniquename: Option<&str>, evidence: &str,
+                   extension: Vec<ExtPart>,
+                   conditions: HashSet<TermId>) -> OntAnnotationDetail {
+    let condition_details: BTreeSet<_> =
+        conditions.iter().map(|cond| (cond.clone(), None)).collect();
+
+    OntAnnotationDetail {
+        id: id,
+        genes: vec![gene_uniquename.into()],
+        transcript_uniquenames: vec![],
+        genotype: maybe_genotype_uniquename.map(|s| s.to_shared_str()),
+        genotype_background: None,
+        reference: Some(reference_uniquename.into()),
+        evidence: Some(evidence.into()),
+        eco_evidence: Some(evidence.into()),
+        annotation_phenotype_score: None,
+        withs: HashSet::new(),
+        froms: HashSet::new(),
+        date: Some("2009-02-13".to_shared_str()),
+        residue: None,
+        gene_product_form_id: None,
+        qualifiers: vec![],
+        extension: extension,
+        gene_ex_props: None,
+        conditions,
+        condition_details,
+        assigned_by: Some("PomBase".to_shared_str()),
+        throughput: Some(Throughput::HighThroughput),
+        curator: None,
+    }
+}
+
+#[allow(dead_code)]
+pub fn make_test_ext_part(rel_type_name: &str, rel_type_display_name: &str,
+                          ext_range: ExtRange) -> ExtPart {
+    ExtPart {
+        rel_type_id: Some("RO:0000000".to_shared_str()),
+        rel_type_name: rel_type_name.into(),
+        rel_type_display_name: rel_type_display_name.into(),
+        ext_range: ext_range,
+    }
+}
+
+#[allow(dead_code)]
+pub fn get_test_annotation_details_map() -> IdOntAnnotationDetailMap {
+    let mut map = HashMap::new();
+    map.insert(188_448,
+               make_one_detail(188_448, "SPBC11B10.09", "PMID:3322810", None,
+                               "IDA", vec![], HashSet::new()));
+    map.insert(202_017,
+               make_one_detail(202_017,"SPBC11B10.09", "PMID:2665944", None,
+                               "IDA", vec![], HashSet::new()));
+
+    map.insert(10000, make_one_detail(10000, "SPAC27E2.05",
+                                     "PB_REF:0000001", None,
+                                     "ISS", vec![], HashSet::new()));
+
+    let mut test_conditions = HashSet::new();
+    test_conditions.insert("FYECO:0000103".to_shared_str());
+    test_conditions.insert("FYECO:0000137".to_shared_str());
+
+    let mut fypo_details = vec![
+        make_one_detail(41_717, "SPBC11B10.09", "PMID:9242669", None,
+                        "IDA",vec![
+                            make_test_ext_part("has_direct_input", "has substrate",
+                                               ExtRange::Gene("SPBC646.13".to_shared_str())), //  sds23
+                        ], HashSet::new()),
+        make_one_detail(41_718, "SPBC11B10.09", "PMID:11937031", None,
+                        "IDA", vec![
+                            make_test_ext_part("has_direct_input", "has substrate",
+                                               ExtRange::Gene("SPBC32F12.09".to_shared_str())), // no name
+                        ], HashSet::new()),
+        make_one_detail(187_893, "SPBC11B10.09", "PMID:19523829", None, "IMP",
+                        vec![
+                            make_test_ext_part("has_direct_input", "has substrate",
+                                               ExtRange::Gene("SPBC6B1.04".to_shared_str())), //  mde4
+                            make_test_ext_part("part_of", "involved in",
+                                               ExtRange::Term("GO:1902845".to_shared_str())),
+                            make_test_ext_part("happens_during", "during",
+                                               ExtRange::Term("GO:0000089".to_shared_str())),
+                        ],
+                        HashSet::new()),
+        make_one_detail(193_221, "SPBC11B10.09", "PMID:10921876", None, "IMP",
+                        vec![
+                            make_test_ext_part("directly_negatively_regulates", "directly inhibits",
+                                               ExtRange::Gene("SPAC144.13c".to_shared_str())), //  srw1
+                            make_test_ext_part("part_of", "involved in",
+                                               ExtRange::Term("GO:1903693".to_shared_str())),
+                            make_test_ext_part("part_of", "involved in",
+                                               ExtRange::Term("GO:1905785".to_shared_str())),
+                            make_test_ext_part("happens_during", "during",
+                                               ExtRange::Term("GO:0000080".to_shared_str())),
+                        ],
+                        HashSet::new()),
+        make_one_detail(194_213, "SPBC11B10.09", "PMID:7957097", None, "IDA",
+                        vec![
+                            make_test_ext_part("has_direct_input", "has substrate",
+                                               ExtRange::Gene("SPBC776.02c".to_shared_str())),  // dis2
+                        ],
+                        HashSet::new()),
+        make_one_detail(194_661, "SPBC11B10.09", "PMID:10485849", None, "IMP",
+                        vec![
+                            make_test_ext_part("has_direct_input", "has substrate",
+                                               ExtRange::Gene("SPBC146.03c".to_shared_str())), //  cut3
+                            make_test_ext_part("part_of", "involved in",
+                                               ExtRange::Term("GO:1903380".to_shared_str())),
+                            make_test_ext_part("part_of", "involved in",
+                                               ExtRange::Term("GO:0042307".to_shared_str())),
+                            make_test_ext_part("happens_during", "during",
+                                               ExtRange::Term("GO:0000089".to_shared_str())),
+                        ],
+                        HashSet::new()),
+        make_one_detail(223_656,
+                        "SPBC16A3.11",
+                        "PMID:23050226",
+                        Some("e674fe7ceba478aa-genotype-2"),
+                        "Cell growth assay",
+                        vec![],
+                        test_conditions.clone()),
+        make_one_detail(201_099,
+                        "SPCC1919.10c",
+                        "PMID:16421926",
+                        Some("d6c914796c35e3b5-genotype-4"),
+                        "Cell growth assay",
+                        vec![],
+                        HashSet::new()),
+        make_one_detail(201_095,
+                        "SPCC1919.10c",
+                        "PMID:16421926",
+                        Some("d6c914796c35e3b5-genotype-3"),
+                        "Cell growth assay",
+                        vec![],
+                        HashSet::new()),
+        make_one_detail(204_063,
+                        "SPAC25A8.01c",
+                        "PMID:25798942",
+                        Some("fd4f3f52f1d38106-genotype-4"),
+                        "Cell growth assay",
+                        vec![],
+                        test_conditions.clone()),
+        make_one_detail(227_452,
+                        "SPAC3G6.02",
+                        "PMID:25306921",
+                        Some("a6d8f45c20c2227d-genotype-9"),
+                        "Cell growth assay",
+                        vec![],
+                        HashSet::new()),
+        make_one_detail(201_094,
+                        "SPCC1919.10c",
+                        "PMID:16421926",
+                        Some("d6c914796c35e3b5-genotype-2"),
+                        "Cell growth assay",
+                        vec![],
+                        HashSet::new()),
+        make_one_detail(186_589,
+                        "SPAC24H6.05",
+                        "PMID:1464319",
+                        Some("65c76fa511461156-genotype-3"),
+                        "Cell growth assay",
+                        vec![],
+                        test_conditions)];
+
+    for detail in fypo_details.drain(0..) {
+        map.insert(detail.id, detail);
+    }
+
+    map
 }

@@ -124,21 +124,18 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
             continue;
         }
 
-        write_gene_to_gpi(&mut gpi_writer, config, api_maps, gene_details)?;
+        write_gene_to_gpi(&mut gpi_writer, config, api_maps, data_lookup, gene_details)?;
 
         write_gene_product_annotation(&mut gpad_writer, data_lookup, go_eco_mappping, config,
-                                      api_maps,
                                       gene_details)?;
 
         for aspect_name in &GO_ASPECT_NAMES {
             write_go_annotation_format(&mut pombase_gaf_writer, config,
-                                       data_lookup, api_maps,
-                                       GpadGafWriteMode::PomBaseGaf,
+                                       data_lookup, GpadGafWriteMode::PomBaseGaf,
                                        gene_details, transcripts,
                                        aspect_name)?;
             write_go_annotation_format(&mut standard_gaf_writer, config,
-                                       data_lookup, api_maps,
-                                       GpadGafWriteMode::StandardGaf,
+                                       data_lookup, GpadGafWriteMode::StandardGaf,
                                        gene_details, transcripts,
                                        aspect_name)?;
         }
@@ -235,6 +232,7 @@ fn compare_withs(withs1: &HashSet<WithFromValue>,
 }
 
 pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIMaps,
+                         data_lookup: &dyn DataLookup,
                          gene_details: &GeneDetails)
                          -> Result<(), io::Error>
 {
@@ -328,17 +326,21 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
         };
 
         for term_annotation in term_annotations {
-            for annotation_id in &term_annotation.annotations {
-                let annotation_detail = api_maps.annotation_details
-                    .get(annotation_id)
-                    .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+            for annotation_id in term_annotation.annotations {
+                let maybe_annotation_detail = data_lookup.get_annotation_detail(annotation_id);
+                let Some(annotation_detail) = maybe_annotation_detail.clone()
+                else {
+                    panic!("can't find annotation {}", annotation_id);
+                };
 
-                if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id {
-                    if pr_ids_seen.contains(gene_product_form_id) {
+                let gene_product_form_id = annotation_detail.gene_product_form_id.to_owned();
+
+                if let Some(gene_product_form_id) = gene_product_form_id {
+                    if pr_ids_seen.contains(&gene_product_form_id) {
                         continue;
                     }
 
-                    pr_ids_seen.insert(gene_product_form_id);
+                    pr_ids_seen.insert(gene_product_form_id.clone());
 
                     let gpi_line =
                         format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\tgo-annotation-summary={}\n",
@@ -364,7 +366,7 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                      data_lookup: &dyn DataLookup,
                                      go_eco_mappping: &GoEcoMapping, config: &Config,
-                                     api_maps: &APIMaps, gene_details: &GeneDetails)
+                                     gene_details: &GeneDetails)
                                      -> Result<(), io::Error>
 {
     let database_name = &config.database_name;
@@ -411,10 +413,10 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
             sorted_annotations.sort_by(|a1, a2| {
                 let detail1 =
-                    api_maps.annotation_details.get(a1)
+                    data_lookup.get_annotation_detail(*a1)
                     .unwrap_or_else(|| panic!("can't find annotation {}", a1));
                 let detail2 =
-                    api_maps.annotation_details.get(a2)
+                    data_lookup.get_annotation_detail(*a2)
                     .unwrap_or_else(|| panic!("can't find annotation {}", a1));
 
                 let ev_res = detail1.evidence.cmp(&detail2.evidence);
@@ -435,9 +437,8 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                 compare_withs(&detail1.withs, &detail2.withs)
             });
 
-            for annotation_id in &sorted_annotations {
-                let annotation_detail = api_maps.annotation_details
-                    .get(annotation_id)
+            for annotation_id in sorted_annotations {
+                let annotation_detail = data_lookup.get_annotation_detail(annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
                 let not = if term_annotation.is_not {
                     "NOT"
@@ -445,14 +446,14 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                     ""
                 };
 
-                let relation = get_gpad_relation_of(term.as_ref(), annotation_detail);
+                let relation = get_gpad_relation_of(term.as_ref(), annotation_detail.as_ref());
 
                 let ontology_class_id = &term_annotation.term;
                 let reference_uniquename =
                     annotation_detail.reference.clone()
                     .unwrap_or_else(|| flex_str!(""));
                 let evidence_type =
-                    eco_evidence_from_annotation(go_eco_mappping, annotation_detail);
+                    eco_evidence_from_annotation(go_eco_mappping, annotation_detail.as_ref());
 
                 let with_iter = annotation_detail.withs.iter();
                 let from_iter = annotation_detail.froms.iter();
@@ -507,7 +508,6 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
 pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                   data_lookup: &dyn DataLookup,
-                                  api_maps: &APIMaps,
                                   write_mode: GpadGafWriteMode,
                                   gene_details: &GeneDetails,
                                   transcripts: &UniquenameTranscriptMap,
@@ -579,10 +579,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                           term_annotation.term));
 
             for annotation_id in &term_annotation.annotations {
-                let annotation_detail = api_maps.annotation_details
-                    .get(annotation_id)
+                let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
-
                 let go_id = &term_annotation.term;
 
                 let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf {
@@ -600,7 +598,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                 } else {
                     let relation_name =
                         get_gpad_relation_name_of(data_lookup,
-                                                  &go_term, annotation_detail)
+                                                  &go_term, annotation_detail.as_ref())
                                                   .to_string();
 
                     if term_annotation.is_not {
