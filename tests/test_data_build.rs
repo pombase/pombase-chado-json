@@ -449,7 +449,8 @@ fn test_cmp_ont_annotation_detail() {
     let references = get_test_references_map();
     let annotation_details_maps = get_test_annotation_details_map();
     let mut maps_db_conn = Connection::open_in_memory().unwrap();
-    setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &references,
+    setup_test_maps_database(&mut maps_db_conn, &terms,
+                             &genes, &alleles, &references,
                              &genotypes, &HashMap::new());
 
     let config = get_test_config();

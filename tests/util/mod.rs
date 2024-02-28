@@ -3,7 +3,11 @@ use std::collections::{HashMap, BTreeMap, HashSet};
 use flexstr::ToSharedStr;
 
 use pombase::api_data::{APIData, api_maps_from_file};
-use pombase::data_types::{UniquenameReferenceMap, UniquenameGeneMap, TermIdDetailsMap, IdGenotypeMap, GenotypeDetails, GenotypeLocus, Ploidiness, GeneDetails, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, AlleleDetails, UniquenameAlleleDetailsMap, TermDetails, APIGenotypeAnnotation};
+use pombase::data_types::{UniquenameReferenceMap, UniquenameGeneMap, UniquenameAlleleMap,
+                          TermIdDetailsMap, IdGenotypeMap, GenotypeDetails, GenotypeLocus,
+                          Ploidiness, GeneDetails, DeletionViability, DisplayUniquenameGenotypeMap,
+                          ExpressedAllele, AlleleDetails, UniquenameAlleleDetailsMap, TermDetails,
+                          APIGenotypeAnnotation};
 use pombase::types::TermId;
 use pombase::utils::{make_maps_database_tables, store_maps_into_database};
 use pombase::web::config::Config;
@@ -13,12 +17,13 @@ use rusqlite::Connection;
 pub fn setup_test_maps_database(mut conn: &mut Connection,
                                 terms: &TermIdDetailsMap,
                                 genes: &UniquenameGeneMap,
+                                alleles: &UniquenameAlleleMap,
                                 references: &UniquenameReferenceMap,
                                 genotypes: &IdGenotypeMap,
                                 termid_genotype_annotation: &HashMap<TermId, Vec<APIGenotypeAnnotation>>) {
     make_maps_database_tables(conn).unwrap();
 
-    store_maps_into_database(&mut conn, terms, genes, references,
+    store_maps_into_database(&mut conn, terms, genes, alleles, references,
                              genotypes, termid_genotype_annotation).unwrap();
 }
 
@@ -34,11 +39,11 @@ pub fn get_api_data() -> APIData {
     let mut maps_db_conn = Connection::open_in_memory().unwrap();
     let genes = get_test_genes_map();
     let genotypes = get_test_genotypes_map();
-    let _alleles = get_test_alleles_map();
+    let alleles = get_test_alleles_map();
     let terms = get_test_terms_map();
     let references = get_test_references_map();
     let termid_genotype_annotation = HashMap::new();
-    setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &references, &genotypes,
+    setup_test_maps_database(&mut maps_db_conn, &terms, &genes, &alleles, &references, &genotypes,
                              &termid_genotype_annotation);
     APIData::new(&config, maps_db_conn, api_maps)
 }
@@ -311,7 +316,7 @@ pub fn make_one_allele_details(uniquename: &str, name: &str, allele_type: &str,
 }
 
 pub fn get_test_alleles_map() -> UniquenameAlleleDetailsMap {
-    let mut ret = HashMap::new();
+    let mut ret = BTreeMap::new();
 
     ret.insert("SPCC1919.10c:allele-4".to_shared_str(),
                make_one_allele_details("SPCC1919.10c:allele-4", "ATPase dead mutant", "unknown", None, "SPCC1919.10c"));
