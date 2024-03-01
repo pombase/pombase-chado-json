@@ -23,7 +23,7 @@ use crate::web::config::*;
 use crate::web::util::cmp_str_dates;
 use crate::utils::join;
 
-use crate::bio::util::rev_comp;
+use crate::bio::util::{compare_ext_part_with_config, rev_comp};
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
@@ -179,59 +179,6 @@ fn reference_has_annotation(reference_details: &ReferenceDetails) -> bool {
 
 fn is_gene_type(feature_type_name: &FlexStr) -> bool {
     feature_type_name == "gene" || feature_type_name == "pseudogene"
-}
-
-pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,
-                                    ep1: &ExtPart, ep2: &ExtPart) -> Ordering {
-    let rel_order_conf = extension_relation_order;
-    let order_conf = &rel_order_conf.relation_order;
-    let always_last_conf = &rel_order_conf.always_last;
-
-    let maybe_ep1_index = order_conf.iter().position(|r| *r == ep1.rel_type_name);
-    let maybe_ep2_index = order_conf.iter().position(|r| *r == ep2.rel_type_name);
-
-    if let Some(ep1_index) = maybe_ep1_index {
-        if let Some(ep2_index) = maybe_ep2_index {
-            ep1_index.cmp(&ep2_index)
-        } else {
-            Ordering::Less
-        }
-    } else {
-        if maybe_ep2_index.is_some() {
-            Ordering::Greater
-        } else {
-            let maybe_ep1_last_index = always_last_conf.iter().position(|r| *r == ep1.rel_type_name);
-            let maybe_ep2_last_index = always_last_conf.iter().position(|r| *r == ep2.rel_type_name);
-
-            if let Some(ep1_last_index) = maybe_ep1_last_index {
-                if let Some(ep2_last_index) = maybe_ep2_last_index {
-                    ep1_last_index.cmp(&ep2_last_index)
-                } else {
-                    Ordering::Greater
-                }
-            } else {
-                if maybe_ep2_last_index.is_some() {
-                    Ordering::Less
-                } else {
-                    let name_cmp = ep1.rel_type_name.cmp(&ep2.rel_type_name);
-
-                    if name_cmp == Ordering::Equal {
-                        if ep1.ext_range.is_gene() && !ep2.ext_range.is_gene() {
-                            Ordering::Less
-                        } else {
-                            if !ep1.ext_range.is_gene() && ep2.ext_range.is_gene() {
-                                Ordering::Greater
-                            } else {
-                                Ordering::Equal
-                            }
-                        }
-                    } else {
-                        name_cmp
-                    }
-                }
-            }
-        }
-    }
 }
 
 lazy_static! {

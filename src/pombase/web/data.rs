@@ -17,7 +17,8 @@ use rusqlite::Connection;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
-use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
+use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff,
+                       process_modification_ext};
 
 use crate::constants::*;
 
@@ -1495,6 +1496,72 @@ impl WebData {
         Ok(())
     }
 
+    fn write_modifications(&self, config: &Config, output_dir: &str)
+        -> Result<(), io::Error>
+    {
+        let load_org_taxonid =
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                load_org_taxonid
+            } else {
+                return Ok(())
+            };
+
+        let file_name = format!("{}/modifications.tsv", output_dir);
+        let file = File::create(file_name).expect("Unable to open file for writing");
+        let mut writer = BufWriter::new(&file);
+
+        let header = "#gene_systematic_id\tgene_name\tmodification_term_id\tevidence\tmodification\textension\treference\ttaxon_id\tdate\n";
+        writer.write_all(header.as_bytes())?;
+
+        let empty_string = flex_str!("");
+
+        for gene_details in self.genes.values() {
+            if gene_details.taxonid != load_org_taxonid {
+                continue;
+            }
+
+            if let Some(term_annotations) = gene_details.cv_annotations.get(&flex_str!("PSI-MOD")) {
+                for term_annotation in term_annotations {
+                    if term_annotation.is_not {
+                        continue;
+                    }
+                    for annotation_id in &term_annotation.annotations {
+                        let annotation_detail = self.get_annotation_detail(*annotation_id)
+                            .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                        let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+                        let mut maybe_evidence = annotation_detail.evidence.clone();
+                        if let Some(ref evidence) = maybe_evidence {
+                            if let Some(ev_config) = config.evidence_types.get(evidence) {
+                                maybe_evidence = Some(ev_config.long.to_shared_str());
+                            }
+                        }
+                        let (modification, extension) =
+                            process_modification_ext(config, self, &annotation_detail.extension);
+
+                        let reference =
+                            annotation_detail.reference.as_ref().unwrap_or(&empty_string);
+                        let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
+                        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                                           gene_details.uniquename,
+                                           gene_name,
+                                           term_annotation.term,
+                                           maybe_evidence.unwrap_or_else(|| empty_string.clone()),
+                                           modification,
+                                           extension,
+                                           reference,
+                                           load_org_taxonid,
+                                           date);
+
+                       writer.write_all(line.as_bytes())?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     // write the subsets configured using "subset_export"
     fn write_annotation_subsets(&self, config: &Config, output_dir: &str)
                                 -> Result<(), io::Error>
@@ -1697,6 +1764,7 @@ impl WebData {
         self.write_site_map_txt(config, doc_config, &self.references, &misc_path)?;
         self.write_allele_tsv(&misc_path)?;
         self.write_disease_association(config, &misc_path)?;
+        self.write_modifications(config, &misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
 

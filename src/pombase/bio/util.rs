@@ -1,7 +1,5 @@
 
-use crate::data_types::{GeneDetails, ChromosomeLocation,
-                        UniquenameTranscriptMap, FeatureShort,
-                        FeatureType};
+use crate::{data_types::{ChromosomeLocation, FeatureShort, FeatureType, GeneDetails, UniquenameTranscriptMap}, web::config::RelationOrder};
 
 use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt, ToSharedStr};
 
@@ -177,6 +175,38 @@ pub fn format_misc_feature_gff(chromosome_export_id: &str,
     ret_val
 }
 
+pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
+                                extension: &[ExtPart])
+    -> (FlexStr, FlexStr)
+{
+    let mut remaining = vec![];
+    let mut mod_res = vec![];
+
+    for ext_part in extension {
+        if ext_part.rel_type_name == "modified residue" {
+            let ExtRange::ModifiedResidues(ref modified_residues) = ext_part.ext_range
+            else {
+                panic!("unknown ext_range for: {:?}", ext_part);
+            };
+            mod_res = modified_residues.clone();
+        } else {
+            remaining.push(ext_part.clone());
+        }
+    }
+
+    let compare_ext_part_func =
+      |e1: &ExtPart, e2: &ExtPart| {
+        e1.rel_type_name.cmp(&e2.rel_type_name)
+      };
+
+    remaining.sort_by(compare_ext_part_func);
+
+    let remaining_str = make_extension_string(config, data_lookup, &GpadGafWriteMode::StandardGaf,
+                                              &remaining);
+
+    (mod_res.join(",").to_shared_str(), remaining_str)
+}
+
 pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
                          write_mode: &GpadGafWriteMode, extension: &[ExtPart])
                          -> FlexStr
@@ -248,6 +278,58 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
         .collect::<Vec<_>>().join(",").to_shared_str()
 }
 
+pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,
+                                    ep1: &ExtPart, ep2: &ExtPart) -> Ordering {
+    let rel_order_conf = extension_relation_order;
+    let order_conf = &rel_order_conf.relation_order;
+    let always_last_conf = &rel_order_conf.always_last;
+
+    let maybe_ep1_index = order_conf.iter().position(|r| *r == ep1.rel_type_name);
+    let maybe_ep2_index = order_conf.iter().position(|r| *r == ep2.rel_type_name);
+
+    if let Some(ep1_index) = maybe_ep1_index {
+        if let Some(ep2_index) = maybe_ep2_index {
+            ep1_index.cmp(&ep2_index)
+        } else {
+            Ordering::Less
+        }
+    } else {
+        if maybe_ep2_index.is_some() {
+            Ordering::Greater
+        } else {
+            let maybe_ep1_last_index = always_last_conf.iter().position(|r| *r == ep1.rel_type_name);
+            let maybe_ep2_last_index = always_last_conf.iter().position(|r| *r == ep2.rel_type_name);
+
+            if let Some(ep1_last_index) = maybe_ep1_last_index {
+                if let Some(ep2_last_index) = maybe_ep2_last_index {
+                    ep1_last_index.cmp(&ep2_last_index)
+                } else {
+                    Ordering::Greater
+                }
+            } else {
+                if maybe_ep2_last_index.is_some() {
+                    Ordering::Less
+                } else {
+                    let name_cmp = ep1.rel_type_name.cmp(&ep2.rel_type_name);
+
+                    if name_cmp == Ordering::Equal {
+                        if ep1.ext_range.is_gene() && !ep2.ext_range.is_gene() {
+                            Ordering::Less
+                        } else {
+                            if !ep1.ext_range.is_gene() && ep2.ext_range.is_gene() {
+                                Ordering::Greater
+                            } else {
+                                Ordering::Equal
+                            }
+                        }
+                    } else {
+                        name_cmp
+                    }
+                }
+            }
+        }
+    }
+}
 
 #[test]
 fn test_format_fasta() {
@@ -288,6 +370,7 @@ fn test_format_gff() {
 }
 
 
+use std::cmp::Ordering;
 #[cfg(test)]
 use std::collections::HashSet;
 #[cfg(test)]

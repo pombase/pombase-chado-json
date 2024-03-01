@@ -183,62 +183,62 @@ fn test_compare_ext_part_with_config() {
         rel_type_display_name: "NA".to_shared_str(),
         ext_range: ExtRange::Misc("misc_ext_part_2".to_shared_str()),
     };
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
     ext_part1.rel_type_name = "directly_positively_regulates".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = "has_direct_input".to_shared_str();
     ext_part2.rel_type_name = "directly_positively_regulates".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part2.rel_type_name = "absent_during".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part2.rel_type_name = "misc_rel".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = "other_misc_rel".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part1.rel_type_name = "other_misc_rel".to_shared_str();
     ext_part2.rel_type_name = "other_misc_rel".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 
     ext_part2.rel_type_name = "happens_during".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = "happens_during".to_shared_str();
     ext_part2.rel_type_name = "misc_rel".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part1.rel_type_name = "has_direct_input".to_shared_str();
     ext_part2.rel_type_name = "happens_during".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = "happens_during".to_shared_str();
     ext_part2.rel_type_name = "has_direct_input".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Greater);
 
     ext_part1.rel_type_name = "happens_during".to_shared_str();
     ext_part2.rel_type_name = "exists_during".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Less);
 
     ext_part1.rel_type_name = "happens_during".to_shared_str();
     ext_part2.rel_type_name = "happens_during".to_shared_str();
-    assert_eq!(pombase::web::data_build::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
+    assert_eq!(pombase::bio::util::compare_ext_part_with_config(&config.extension_relation_order, &ext_part1, &ext_part2),
                Ordering::Equal);
 }
 
