@@ -1,5 +1,5 @@
 
-use crate::{data_types::{ChromosomeLocation, FeatureShort, FeatureType, GeneDetails, UniquenameTranscriptMap}, web::config::RelationOrder};
+use crate::{data_types::{ChromosomeLocation, FeatureShort, FeatureType, GeneDetails, UniquenameTranscriptMap}, types::GeneUniquename, web::config::RelationOrder};
 
 use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt, ToSharedStr};
 
@@ -176,11 +176,11 @@ pub fn format_misc_feature_gff(chromosome_export_id: &str,
 }
 
 pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
-                                extension: &[ExtPart])
+                                gene_uniquename: &GeneUniquename, extension: &[ExtPart])
     -> (FlexStr, FlexStr)
 {
     let mut remaining = vec![];
-    let mut mod_res = vec![];
+    let mut mod_res: Vec<&str> = vec![];
 
     for ext_part in extension {
         if ext_part.rel_type_name == "modified residue" {
@@ -188,7 +188,29 @@ pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
             else {
                 panic!("unknown ext_range for: {:?}", ext_part);
             };
-            mod_res = modified_residues.clone();
+
+            let Some(ref cv_conf) = config.cv_config.get("PSI-MOD")
+            else {
+                panic!("no modification CV configured - can't find \"PSI-MOD\"");
+            };
+
+            for res in modified_residues {
+                let Some(mod_abbrev_config) = cv_conf.modification_abbreviations.get(gene_uniquename)
+                else {
+                    mod_res.push(res);
+                    continue;
+                };
+
+                let Some(replacement_residues) = mod_abbrev_config.get(res)
+                else {
+                    mod_res.push(res);
+                    continue;
+                };
+
+                for replacement_res in replacement_residues.split(",") {
+                    mod_res.push(replacement_res);
+                }
+            }
         } else {
             remaining.push(ext_part.clone());
         }

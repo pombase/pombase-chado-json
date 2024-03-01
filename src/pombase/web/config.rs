@@ -128,6 +128,9 @@ pub struct CvConfig {
     // there will be no Source column will be displayed
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub source_config: HashMap<FlexStr, CvSourceConfig>,
+
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub modification_abbreviations: HashMap<GeneUniquename, HashMap<FlexStr, FlexStr>>,
 }
 
 pub type ShortEvidenceCode = FlexStr;
@@ -434,6 +437,7 @@ impl Config {
                     split_by_parents: vec![],
                     summary_relations_to_hide: vec![],
                     summary_relation_ranges_to_collect: vec![],
+                    modification_abbreviations: HashMap::new(),
                     sort_details_by: None,
                     source_config: HashMap::new(),
                 };

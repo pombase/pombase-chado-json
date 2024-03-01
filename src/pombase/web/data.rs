@@ -1537,7 +1537,8 @@ impl WebData {
                             }
                         }
                         let (modification, extension) =
-                            process_modification_ext(config, self, &annotation_detail.extension);
+                            process_modification_ext(config, self, &gene_details.uniquename,
+                                                     &annotation_detail.extension);
 
                         let reference =
                             annotation_detail.reference.as_ref().unwrap_or(&empty_string);

@@ -731,6 +731,7 @@ fn get_test_config() -> Config {
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_relation_ranges_to_collect: vec![flex_str!("has_substrate")],
+                                modification_abbreviations: HashMap::new(),
                                 sort_details_by: None,
                                 source_config: HashMap::new(),
                             });
