@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
 use regex::Regex;
 
@@ -142,9 +142,9 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
         Some(ProteinViewFeature {
             id: allele.uniquename.clone(),
             display_name: Some(allele.display_name()),
-            annotated_terms: vec![],
+            annotated_terms: BTreeSet::new(),
             feature_group: None,
-            display_extension: vec![],
+            display_extension: BTreeSet::new(),
             positions,
         })
     } else {
@@ -170,9 +170,9 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
             ProteinViewFeature {
                id: residue_and_pos.clone(),
                display_name: Some(residue_and_pos.clone()),
-               annotated_terms: vec![],
+               annotated_terms: BTreeSet::new(),
                feature_group: None,
-               display_extension: vec![],
+               display_extension: BTreeSet::new(),
                positions: vec![(residue_and_pos, pos, pos)],
             }
          })
@@ -370,12 +370,11 @@ fn make_modification_track(gene_details: &GeneDetails,
                            gene_details_maps: &UniquenameGeneMap,
                            term_details_map: &TermIdDetailsMap,
                            annotation_details_map: &IdOntAnnotationDetailMap) -> ProteinViewTrack {
-    let mut features = vec![];
-
     let ext_rel_types = &config.protein_feature_view.modification_extension_rel_types;
 
+    let mut seen_modifications = HashMap::new();
+
     if let Some(term_annotations) = gene_details.cv_annotations.get("PSI-MOD") {
-        let mut seen_modifications = HashSet::new();
 
         for term_annotation in term_annotations {
             let termid = &term_annotation.term;
@@ -389,8 +388,27 @@ fn make_modification_track(gene_details: &GeneDetails,
                 let annotation_detail = annotation_details_map.get(&annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
+                let mut annotation_residues = vec![];
+
                 if let Some(ref residue_str) = annotation_detail.residue {
-                    let Some(captures) = MODIFICATION_RESIDUE_RE.captures(residue_str.as_str())
+                    if let Some(psi_mod_config) = config.cv_config.get("PSI-MOD") {
+                        let mod_abbrev_conf = &psi_mod_config.modification_abbreviations;
+                        let gene_uniquename = &gene_details.uniquename;
+
+                        if let Some(res_config) = mod_abbrev_conf.get(gene_uniquename) {
+                            if let Some(expanded_residues) = res_config.get(residue_str) {
+                                annotation_residues.extend(expanded_residues.split(","));
+                            }
+                        }
+                    }
+
+                    if annotation_residues.len() == 0 {
+                        annotation_residues.push(residue_str.as_str());
+                    }
+                };
+
+                for residue_str in &annotation_residues {
+                    let Some(captures) = MODIFICATION_RESIDUE_RE.captures(residue_str)
                     else {
                         continue;
                     };
@@ -407,49 +425,55 @@ fn make_modification_track(gene_details: &GeneDetails,
 
                     let description = flex_fmt!("{}: {}", term_name, residue_match.as_str());
 
-                    if !seen_modifications.contains(&description) {
-                        seen_modifications.insert(description.clone());
+                    let feature = seen_modifications
+                        .entry(description.clone())
+                        .or_insert_with(|| {
 
-                        let name_and_id = TermNameAndId {
-                            name: term_name.clone(),
-                            id: termid.clone(),
-                        };
-                        let annotated_terms = vec![name_and_id];
+                            let mut feature_group = None;
 
-                        let display_extension =
-                            make_mod_extension(&annotation_detail.extension, ext_rel_types,
-                                               gene_details_maps, term_details_map);
-
-                        let mut feature_group = None;
-
-                        for mod_group in &config.protein_feature_view.modification_groups {
-                            if &mod_group.termid == termid {
-                                feature_group = Some(mod_group.clone());
-                            } else {
-                                for interesting_parent in &term_details.interesting_parent_ids {
-                                    if interesting_parent == mod_group.termid {
-                                        feature_group = Some(mod_group.clone());
-                                        break;
+                            for mod_group in &config.protein_feature_view.modification_groups {
+                                if &mod_group.termid == termid {
+                                    feature_group = Some(mod_group.clone());
+                                } else {
+                                    for interesting_parent in &term_details.interesting_parent_ids {
+                                        if interesting_parent == mod_group.termid {
+                                            feature_group = Some(mod_group.clone());
+                                            break;
+                                        }
                                     }
                                 }
                             }
-                        }
 
-                        let feature = ProteinViewFeature {
-                            id: description.clone(),
-                            display_name: Some(description.clone()),
-                            annotated_terms,
-                            feature_group,
-                            display_extension,
-                            positions: vec![(description, residue_pos, residue_pos)],
-                        };
+                            ProteinViewFeature {
+                                id: description.clone(),
+                                display_name: Some(description.clone()),
+                                annotated_terms: BTreeSet::new(),
+                                feature_group,
+                                display_extension: BTreeSet::new(),
+                                positions: vec![(description, residue_pos, residue_pos)],
+                            }
+                        });
 
-                        features.push(feature);
-                    }
+                    let name_and_id = TermNameAndId {
+                        name: term_name.clone(),
+                        id: termid.clone(),
+                    };
+
+                    feature.annotated_terms.insert(name_and_id);
+
+                    let display_extension =
+                        make_mod_extension(&annotation_detail.extension, ext_rel_types,
+                                           gene_details_maps, term_details_map);
+
+                    feature.display_extension.extend(display_extension);
                 }
             }
         }
     }
+
+    let features = seen_modifications.into_iter()
+                      .map(|(_, feature)| feature)
+                      .collect();
 
     ProteinViewTrack {
         name: flex_str!("Modifications"),
@@ -475,9 +499,9 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
             let feature = ProteinViewFeature {
                 id: interpro_match.id.clone(),
                 display_name: Some(display_name),
-                annotated_terms: vec![],
+                annotated_terms: BTreeSet::new(),
                 feature_group: None,
-                display_extension: vec![],
+                display_extension: BTreeSet::new(),
                 positions,
             };
 
@@ -502,9 +526,9 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
             ProteinViewFeature {
                 id: feature_name.clone(),
                 display_name: None,
-                annotated_terms: vec![],
+                annotated_terms: BTreeSet::new(),
                 feature_group: None,
-                display_extension: vec![],
+                display_extension: BTreeSet::new(),
                 positions: vec![(feature_pos_name, *start, *end)],
             }
         })
