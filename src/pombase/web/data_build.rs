@@ -3023,12 +3023,12 @@ phenotypes, so just the first part of this extension will be used:
             let existing_rel = seen_gene_rels.get(&annotation.gene);
 
             if let Some(existing_rel) = existing_rel {
-                if *existing_rel > rel_priority {
+                if *existing_rel > *rel_priority {
                     annotation.show_in_summary = false;
                     continue;
                 }
             }
-            seen_gene_rels.insert(annotation.gene.clone(), rel_priority);
+            seen_gene_rels.insert(annotation.gene.clone(), *rel_priority);
         }
 
         processed_annotations
