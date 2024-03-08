@@ -3020,7 +3020,8 @@ phenotypes, so just the first part of this extension will be used:
             let rel_priority = priority_config.get(annotation.ext_rel_display_name.as_str())
                 .unwrap_or(&0);
 
-            let existing_rel = seen_gene_rels.get(&annotation.gene);
+            let key = flex_fmt!("{}-{}", annotation.ontology_name, annotation.gene);
+            let existing_rel = seen_gene_rels.get(&key);
 
             if let Some(existing_rel) = existing_rel {
                 if *existing_rel > *rel_priority {
@@ -3028,7 +3029,7 @@ phenotypes, so just the first part of this extension will be used:
                     continue;
                 }
             }
-            seen_gene_rels.insert(annotation.gene.clone(), *rel_priority);
+            seen_gene_rels.insert(key, *rel_priority);
         }
 
         processed_annotations
