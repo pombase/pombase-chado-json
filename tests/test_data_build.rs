@@ -161,6 +161,7 @@ fn get_test_config() -> Config {
                                 summary_relations_to_hide: vec![],
                                 summary_relation_ranges_to_collect: vec!["has_substrate".to_shared_str()],
                                 modification_abbreviations: HashMap::new(),
+                                downstream_relations: vec![],
                                 sort_details_by: None,
                                 source_config: HashMap::new(),
                             });

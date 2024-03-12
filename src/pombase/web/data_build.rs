@@ -5,7 +5,6 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
 use std::usize;
-use std::string::ToString;
 
 use regex::Regex;
 
@@ -5054,14 +5053,14 @@ phenotypes, so just the first part of this extension will be used:
         ret_map
     }
 
-    fn make_api_maps_gene_substrates(&self)
+    fn make_api_maps_downstream_genes(&self)
         -> HashMap<GeneUniquename, HashMap<TermId, HashSet<GeneUniquename>>>
     {
-        let mut gene_substrates = HashMap::new();
+        let mut downstream_genes = HashMap::new();
 
         let Some(during_config) = self.config.extension_categories.get("during")
         else {
-            return gene_substrates;
+            return downstream_genes;
         };
 
         let mut possible_phases = HashSet::new();
@@ -5071,66 +5070,73 @@ phenotypes, so just the first part of this extension will be used:
         }
 
         for gene_details in self.genes.values() {
-           for term_annotations in gene_details.cv_annotations.values() {
+           for (cv_name, term_annotations) in gene_details.cv_annotations.iter() {
+              let Some(cv_config) = self.config.cv_config.get(cv_name)
+              else {
+                continue;
+              };
+
+              let downstream_relations = &cv_config.downstream_relations;
+              if downstream_relations.len() == 0 {
+                continue;
+              }
+
               for term_annotation in term_annotations {
                  for annotation in &term_annotation.annotations {
                     let annotation_details = self.annotation_details.get(&annotation).unwrap();
-                    let mut maybe_substrate_gene: Option<GeneUniquename> = None;
-                    let mut substrate_phase: Option<TermId> = None;
+                    let mut maybe_downstream_gene: Option<GeneUniquename> = None;
+                    let mut downstream_gene_phase: Option<TermId> = None;
 
                     for ext_part in &annotation_details.extension {
                         let Some(ref rel_type_id) = ext_part.rel_type_id
                         else {
                             continue;
                         };
-                        match rel_type_id.as_ref() {
-                            "RO:0002233" => {
-                                match ext_part.ext_range {
-                                    ExtRange::Gene(ref target_gene_uniquename) => {
-                                        maybe_substrate_gene = Some(target_gene_uniquename.into());
-                                    },
-                                    _ => ()
+                        if rel_type_id == "RO:0002092" {
+                            match ext_part.ext_range {
+                                ExtRange::Term(ref phase_termid) => {
+                                    downstream_gene_phase = Some(phase_termid.into());
+                                },
+                                _ => ()
+                            }
+                        } else {
+                            if downstream_relations.contains(rel_type_id) ||
+                               downstream_relations.contains(&ext_part.rel_type_name) {
+                                if let ExtRange::Gene(ref target_gene_uniquename) = ext_part.ext_range {
+                                    maybe_downstream_gene = Some(target_gene_uniquename.into());
                                 }
-                            },
-                            "RO:0002092" => {
-                                match ext_part.ext_range {
-                                    ExtRange::Term(ref phase_termid) => {
-                                        substrate_phase = Some(phase_termid.into());
-                                    },
-                                    _ => ()
-                                }
-                            },
-                            _ => (),
+                            }
                         }
                     }
 
-                    if let Some(ref substrate_gene_uniquename) = maybe_substrate_gene {
+                    if let Some(ref downstream_gene_uniquename) = maybe_downstream_gene {
                         let gene_uniquename = &gene_details.uniquename;
 
-                        let mut substrate_phase_and_parents = vec![];
+                        let mut downstream_gene_phase_and_parents = vec![];
 
-                        if let Some(ref substrate_phase) = substrate_phase {
-                            let ref phase_term_details = self.terms.get(substrate_phase)
-                                .expect(&format!("internal error: failed to find term {}", substrate_phase));
+                        if let Some(ref downstream_gene_phase) = downstream_gene_phase {
+                            let ref phase_term_details = self.terms.get(downstream_gene_phase)
+                                .expect(&format!("internal error: failed to find term {}", downstream_gene_phase));
 
                             for parent_id in phase_term_details.interesting_parent_ids.iter() {
                                 if possible_phases.contains(parent_id) {
-                                    substrate_phase_and_parents.push(parent_id.to_owned());
+                                    downstream_gene_phase_and_parents.push(parent_id.to_owned());
                                 }
                             }
 
-                            substrate_phase_and_parents.push(substrate_phase.to_owned());
+                            downstream_gene_phase_and_parents.push(downstream_gene_phase.to_owned());
                         } else {
-                            substrate_phase_and_parents.push(flex_str!(""));
+                            downstream_gene_phase_and_parents.push(flex_str!(""));
                         }
 
-                        for substrate_phase_key in substrate_phase_and_parents {
-                            gene_substrates
-                                .entry(gene_uniquename.clone())
+                        for downstream_gene_phase_key in downstream_gene_phase_and_parents {
+                            let key = flex_fmt!("{}--{}", cv_name, gene_uniquename);
+                            downstream_genes
+                                .entry(key)
                                 .or_insert_with(HashMap::new)
-                                .entry(substrate_phase_key.clone())
+                                .entry(downstream_gene_phase_key.clone())
                                 .or_insert_with(HashSet::new)
-                                .insert(substrate_gene_uniquename.clone());
+                                .insert(downstream_gene_uniquename.clone());
                         }
                     }
                  }
@@ -5138,14 +5144,14 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
-        gene_substrates
+        downstream_genes
     }
 
     pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
         let mut gene_name_gene_map = HashMap::new();
         let mut interactors_of_genes = HashMap::new();
-        let substrates_of_genes = self.make_api_maps_gene_substrates();
+        let downstream_genes = self.make_api_maps_downstream_genes();
 
         for (gene_uniquename, gene_details) in &self.genes {
             if self.config.load_organism_taxonid.is_none() ||
@@ -5252,7 +5258,7 @@ phenotypes, so just the first part of this extension will be used:
             gene_name_gene_map,
             transcripts: self.transcripts,
             interactors_of_genes,
-            substrates_of_genes,
+            downstream_genes,
             other_features: self.other_features,
             seq_feature_page_features,
             chromosomes: self.chromosomes,

@@ -2,7 +2,6 @@ use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::process;
-use serde_json;
 
 use flexstr::SharedStr as FlexStr;
 

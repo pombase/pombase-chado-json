@@ -1,5 +1,6 @@
 
-use crate::{data_types::{ChromosomeLocation, FeatureShort, FeatureType, GeneDetails, UniquenameTranscriptMap}, types::GeneUniquename, web::config::RelationOrder};
+use crate::web::config::RelationOrder;
+use crate::types::GeneUniquename;
 
 use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt, ToSharedStr};
 
@@ -399,8 +400,6 @@ use std::collections::HashSet;
 use std::num::NonZeroUsize;
 #[cfg(test)]
 use flexstr::shared_str as flex_str;
-#[cfg(test)]
-use crate::data_types::{DeletionViability, Strand, TranscriptDetails, ProteinDetails};
 #[cfg(test)]
 fn make_test_gene() -> GeneDetails {
     GeneDetails {

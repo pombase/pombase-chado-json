@@ -1,4 +1,3 @@
-use std::iter::FromIterator;
 use std::cmp;
 use std::str;
 
@@ -15,6 +14,7 @@ use crate::api::result::*;
 use crate::data_types::DataLookup;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand, Ploidiness};
+use crate::types::CvName;
 use crate::types::TermId;
 use crate::web::config::TermAndName;
 
@@ -198,6 +198,12 @@ pub struct SubstratesNode {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct DownstreamGenesNode {
+    pub gene_uniquename: GeneUniquename,
+    pub cv_name: CvName,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct GenesTargetingNode {
     pub gene_uniquename: GeneUniquename,
     pub target_of_type: TargetOfType,
@@ -240,6 +246,8 @@ pub struct QueryNode {
     pub interactors: Option<InteractorsNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub substrates: Option<SubstratesNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub downstream_genes: Option<DownstreamGenesNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub genes_targeting: Option<GenesTargetingNode>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -611,8 +619,14 @@ fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
                            phase_term: &Option<TermId>)
     -> GeneUniquenameVecResult
 {
-    Ok(api_data.substrates_of_gene(gene_uniquename, phase_term)
+    Ok(api_data.downstream_genes("molecular_function", gene_uniquename, phase_term)
         .into_iter().collect())
+}
+
+fn exec_downstream_genes(api_data: &APIData, gene_uniquename: &GeneUniquename, cv_name: &str)
+    -> GeneUniquenameVecResult
+{
+    Ok(api_data.downstream_genes(cv_name, gene_uniquename, &None).into_iter().collect())
 }
 
 fn exec_genes_targeting(api_data: &APIData, gene_uniquename: &GeneUniquename,
@@ -664,6 +678,7 @@ impl QueryNode {
             genome_range: None,
             interactors: None,
             substrates: None,
+            downstream_genes: None,
             genes_targeting: None,
             query_id: None,
         }
@@ -726,6 +741,10 @@ impl QueryNode {
         if let Some(ref substrates_node) = self.substrates {
             return exec_substrates_of_gene(api_data, &substrates_node.gene_uniquename,
                                            &substrates_node.phase_term);
+        }
+        if let Some(ref downstream_genes_node) = self.downstream_genes {
+            return exec_downstream_genes(api_data, &downstream_genes_node.gene_uniquename,
+                                         &downstream_genes_node.cv_name);
         }
         if let Some(ref genes_targeting_node) = self.genes_targeting {
             return exec_genes_targeting(api_data, &genes_targeting_node.gene_uniquename,

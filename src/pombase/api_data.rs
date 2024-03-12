@@ -8,7 +8,6 @@ use std::sync::{Mutex, Arc, RwLock};
 use zstd::stream::Decoder;
 use rusqlite::Connection;
 
-use serde_json;
 use std::collections::{HashMap, HashSet};
 
 use crate::data_types::{DataLookup,
@@ -31,7 +30,7 @@ use crate::web::cv_summary::make_cv_summaries;
 use crate::types::{TermId, GeneUniquename, AlleleUniquename,
                    GenotypeDisplayUniquename, GenotypeUniquename, ReferenceUniquename};
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr};
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt, ToSharedStr};
 
 pub struct APIData {
     config: Config,
@@ -952,26 +951,28 @@ impl APIData {
         }
     }
 
-    pub fn substrates_of_gene(&self, gene_uniquename: &GeneUniquename, phase_term: &Option<TermId>)
+    pub fn downstream_genes(&self, cv_name: &str, gene_uniquename: &GeneUniquename,
+                             phase_term: &Option<TermId>)
        -> HashSet<GeneUniquename>
     {
-        let Some(substrates_by_term) = self.maps.substrates_of_genes.get(gene_uniquename)
+        let key = flex_fmt!("{}--{}", cv_name, gene_uniquename);
+        let Some(downstream_genes_by_term) = self.maps.downstream_genes.get(&key)
         else {
             return HashSet::new();
         };
 
         if let Some(ref phase_term) = phase_term {
-            if let Some(substrates) = substrates_by_term.get(phase_term) {
-                substrates.to_owned()
+            if let Some(downstream_genes) = downstream_genes_by_term.get(phase_term) {
+                downstream_genes.to_owned()
             } else {
                 HashSet::new()
             }
         } else {
-            let mut ret_substrates = HashSet::new();
-            for substrates in substrates_by_term.values() {
-                ret_substrates.extend(substrates.to_owned());
+            let mut ret_downstream_genes = HashSet::new();
+            for downstream_genes in downstream_genes_by_term.values() {
+                ret_downstream_genes.extend(downstream_genes.to_owned());
             }
-            ret_substrates
+            ret_downstream_genes
         }
     }
 

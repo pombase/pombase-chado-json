@@ -1,6 +1,5 @@
 use std::rc::Rc;
 use std::cell::RefCell;
-use std::iter::FromIterator;
 
 use std::collections::{HashMap, HashSet};
 
@@ -731,6 +730,7 @@ fn get_test_config() -> Config {
                                 split_by_parents: vec![],
                                 summary_relations_to_hide: vec![],
                                 summary_relation_ranges_to_collect: vec![flex_str!("has_substrate")],
+                                downstream_relations: vec![],
                                 modification_abbreviations: HashMap::new(),
                                 sort_details_by: None,
                                 source_config: HashMap::new(),

@@ -5,7 +5,6 @@ use std::fs::File;
 
 use crate::data_types::TermShort;
 use crate::types::*;
-use serde_json;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
@@ -121,6 +120,9 @@ pub struct CvConfig {
     // the field to sort by
     #[serde(skip_serializing_if="Option::is_none")]
     pub sort_details_by: Option<Vec<FlexStr>>,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub downstream_relations: Vec<FlexStr>,
 
     // This is the configuration for the "Source" column, a map from
     // source name to config
@@ -438,6 +440,7 @@ impl Config {
                     summary_relations_to_hide: vec![],
                     summary_relation_ranges_to_collect: vec![],
                     modification_abbreviations: HashMap::new(),
+                    downstream_relations: vec![],
                     sort_details_by: None,
                     source_config: HashMap::new(),
                 };

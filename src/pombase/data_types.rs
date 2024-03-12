@@ -2291,7 +2291,7 @@ pub struct APIMaps {
     pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,
     pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
-    pub substrates_of_genes: HashMap<GeneUniquename, HashMap<TermId, HashSet<GeneUniquename>>>,
+    pub downstream_genes: HashMap<FlexStr, HashMap<TermId, HashSet<GeneUniquename>>>,
     pub other_features: UniquenameFeatureShortMap,
     pub seq_feature_page_features: Vec<FeatureShort>,
     pub chromosomes: ChrNameDetailsMap,
