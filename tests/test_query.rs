@@ -2,8 +2,6 @@ extern crate flexstr;
 
 use pombase;
 
-use std::iter::Iterator;
-
 use std::collections::HashSet;
 
 use crate::util::get_api_data;
