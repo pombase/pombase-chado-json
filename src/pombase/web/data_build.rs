@@ -3840,7 +3840,11 @@ phenotypes, so just the first part of this extension will be used:
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
 
-            let termid = cvterm.termid();
+            let termid =
+                match self.base_term_of_extensions.get(&cvterm.termid()) {
+                    Some(base_termid) => base_termid.clone(),
+                    None => cvterm.termid(),
+                };
 
             let mut transcript_uniquenames = vec![];
 
@@ -3895,13 +3899,15 @@ phenotypes, so just the first part of this extension will be used:
                                 &cvterm.cv.name != "sequence"
                             {
                                 let residue = value.clone();
+                                let rel_type_name = flex_str!("residue");
                                 let display_name =
-                                    self.get_ext_rel_display_name(&termid,
-                                                                  &flex_str!("modified residue"));
+                                    self.get_ext_rel_display_name(&termid, &rel_type_name);
+
+                                println!("{} - {} - {}", termid, display_name, rel_type_name);
 
                                 let residue_range_part = ExtPart {
                                     rel_type_id: None,
-                                    rel_type_name: display_name.clone(),
+                                    rel_type_name,
                                     rel_type_display_name: display_name,
                                     ext_range: ExtRange::ModifiedResidues(vec![residue]),
                                 };

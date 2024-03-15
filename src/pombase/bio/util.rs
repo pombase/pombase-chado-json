@@ -184,7 +184,8 @@ pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
     let mut mod_res: Vec<&str> = vec![];
 
     for ext_part in extension {
-        if ext_part.rel_type_name == "modified residue" {
+        if ext_part.rel_type_name == "residue" ||
+           ext_part.rel_type_name == "modified residue" {
             let ExtRange::ModifiedResidues(ref modified_residues) = ext_part.ext_range
             else {
                 panic!("unknown ext_range for: {:?}", ext_part);
@@ -286,7 +287,8 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
             if *write_mode == GpadGafWriteMode::PomBaseGaf {
                 true
             } else {
-                if ext_part.rel_type_name == "modified_residue" {
+                if ext_part.rel_type_name == "residue" ||
+                   ext_part.rel_type_name == "modified_residue" {
                     return false;
                 }
                 if let Some(map_termid) = rel_mapping.get(&ext_part.rel_type_name) {
