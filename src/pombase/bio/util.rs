@@ -279,7 +279,7 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
         }
     };
 
-    extension.iter()
+    let mut parts = extension.iter()
         .filter(|ext_part| {
             if ext_part.rel_type_name == "binding site" {
                 return false;
@@ -300,7 +300,11 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
         })
         .map(|ext_part| format!("{}({})", get_rel_term(ext_part),
                                 get_range(ext_part)))
-        .collect::<Vec<_>>().join(",").to_shared_str()
+        .collect::<Vec<_>>();
+
+    parts.sort();
+
+    parts.join(",").to_shared_str()
 }
 
 pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,
