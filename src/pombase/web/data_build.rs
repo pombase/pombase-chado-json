@@ -2436,8 +2436,8 @@ phenotypes, so just the first part of this extension will be used:
                     None => panic!("no relation type for {} <-> {}\n",
                                    &subject_term.name, &object_term.name)
                 };
-            let rel_term_name =
-                self.make_term_short(&rel_termid).name;
+            let term_details = self.terms.get(&rel_termid);
+            let rel_term_name = term_details.unwrap().name.clone();
 
             if self.is_interesting_parent(&object_termid, &rel_term_name) {
                 interesting_parents_by_termid
