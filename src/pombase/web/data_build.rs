@@ -3733,8 +3733,8 @@ phenotypes, so just the first part of this extension will be used:
                                 if let Some(gene_uniquename) =
                                     self.genes_of_transcripts.get(transcript_uniquename) {
                                         (Some(gene_uniquename.clone()),
-                                         Some(transcript_uniquename.clone())
-)                                    } else {
+                                         Some(transcript_uniquename.clone()))
+                                    } else {
                                         (None, None)
                                     }
                             } else {
