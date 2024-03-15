@@ -3903,8 +3903,6 @@ phenotypes, so just the first part of this extension will be used:
                                 let display_name =
                                     self.get_ext_rel_display_name(&termid, &rel_type_name);
 
-                                println!("{} - {} - {}", termid, display_name, rel_type_name);
-
                                 let residue_range_part = ExtPart {
                                     rel_type_id: None,
                                     rel_type_name,
