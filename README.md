@@ -20,7 +20,7 @@ Load data into a Chado database.
 Build status
 ------------
 
-![Rust](https://github.com/pombase/pombase-chado-json/workflows/Tests/badge.svg)
+![Build status badge](https://github.com/pombase/pombase-chado-json/workflows/Test%20-%20Rust%20stable%20and%20nightly/badge.svg)
 
 
 Copyright 2016-2022 Kim Rutherford and PomBase
