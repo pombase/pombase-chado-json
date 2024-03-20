@@ -19,6 +19,7 @@ use super::util::make_extension_string;
 #[derive(Clone, PartialEq, Eq)]
 pub enum GpadGafWriteMode {
   PomBaseGaf,
+  ExtendedPomBaseGaf,
   StandardGaf,
   Gpad,
 }
@@ -54,16 +55,20 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         format!("{}/gene_product_annotation_data_taxonid_{}.tsv", output_dir,
                 load_org_taxonid);
     let pombase_gaf_file_name = format!("{}/pombase_style_gaf.tsv", output_dir);
+    let extended_pombase_gaf_file_name = format!("{}/extended_pombase_style_gaf.tsv", output_dir);
     let standard_gaf_file_name = format!("{}/go_style_gaf.tsv", output_dir);
 
     let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
     let gpad_file = File::create(gpad_file_name).expect("Unable to open file");
     let pombase_gaf_file =
         File::create(pombase_gaf_file_name).expect("Unable to open file");
+    let extended_pombase_gaf_file =
+        File::create(extended_pombase_gaf_file_name).expect("Unable to open file");
     let standard_gaf_file =
         File::create(standard_gaf_file_name).expect("Unable to open file");
     let mut gpi_writer = BufWriter::new(&gpi_file);
     let mut gpad_writer = BufWriter::new(&gpad_file);
+    let mut extended_pombase_gaf_writer = BufWriter::new(&extended_pombase_gaf_file);
     let mut pombase_gaf_writer = BufWriter::new(&pombase_gaf_file);
     let mut standard_gaf_writer = BufWriter::new(&standard_gaf_file);
 
@@ -132,6 +137,10 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         for aspect_name in &GO_ASPECT_NAMES {
             write_go_annotation_format(&mut pombase_gaf_writer, config,
                                        data_lookup, GpadGafWriteMode::PomBaseGaf,
+                                       gene_details, transcripts,
+                                       aspect_name)?;
+            write_go_annotation_format(&mut extended_pombase_gaf_writer, config,
+                                       data_lookup, GpadGafWriteMode::ExtendedPomBaseGaf,
                                        gene_details, transcripts,
                                        aspect_name)?;
             write_go_annotation_format(&mut standard_gaf_writer, config,
@@ -582,8 +591,12 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                 let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
                 let go_id = &term_annotation.term;
+                let term_details_arc = data_lookup.get_term(go_id).clone();
+                let term_details_ref = term_details_arc.as_deref().clone().unwrap();
 
-                let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf {
+                let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf ||
+                                    write_mode == GpadGafWriteMode::ExtendedPomBaseGaf
+                {
                     let mut qualifier_parts = vec![];
                     if term_annotation.is_not {
                         qualifier_parts.push("NOT");
@@ -660,12 +673,26 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     ""
                 };
 
-                let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t{}\t{}\n",
+                let line = format!("{}\t{}\t{}{}\t{}\t{}{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t{}\t{}\n",
                                    database_name,
                                    db_object_id,
                                    db_object_symbol,
+                                   if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
+                                       if let Some(ref product) = gene_details.product {
+                                           flex_fmt!("\t{}", product)
+                                       } else {
+                                           flex_str!("\t")
+                                       }
+                                   } else {
+                                       flex_str!("")
+                                   },
                                    qualifiers,
                                    go_id,
+                                   if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
+                                       flex_fmt!("\t{}", term_details_ref.name)
+                                   } else {
+                                       flex_str!("")
+                                   },
                                    reference_uniquename,
                                    evidence_code,
                                    with_or_from,

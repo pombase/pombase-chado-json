@@ -237,7 +237,8 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
 {
     let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
     let get_rel_term = |ext_part: &ExtPart| {
-        if *write_mode == GpadGafWriteMode::PomBaseGaf {
+        if *write_mode == GpadGafWriteMode::PomBaseGaf ||
+           *write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
             ext_part.rel_type_name.clone()
         } else {
             let rel_term_id =
@@ -284,7 +285,8 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
             if ext_part.rel_type_name == "binding site" {
                 return false;
             }
-            if *write_mode == GpadGafWriteMode::PomBaseGaf {
+            if *write_mode == GpadGafWriteMode::PomBaseGaf ||
+               *write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
                 true
             } else {
                 if ext_part.rel_type_name == "residue" ||
