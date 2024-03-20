@@ -194,6 +194,8 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
                                ExpressedAllele {
                                    expression: Some("Not assayed".to_shared_str()),
                                    allele_uniquename: "SPBC16A3.11:allele-7".to_shared_str(),
+                                   promoter_gene: None,
+                                   exogenous_promoter: None,
                                }
                            ]
                        }
@@ -210,6 +212,8 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
                                ExpressedAllele {
                                    expression: Some("Not assayed".to_shared_str()),
                                    allele_uniquename: "SPCC1919.10c:allele-5".to_shared_str(),
+                                   promoter_gene: None,
+                                   exogenous_promoter: None,
                                }
                            ]
                        }
@@ -226,7 +230,9 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
                                ExpressedAllele {
                                    expression: Some("Not assayed".to_shared_str()),
                                    allele_uniquename: "SPAC24H6.05:allele-3".to_shared_str(),
-                               }
+                                   promoter_gene: None,
+                                   exogenous_promoter: None,
+                                }
                            ]
                        }
                    ]
@@ -242,6 +248,8 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
                                ExpressedAllele {
                                    expression: Some("Not assayed".to_shared_str()),
                                    allele_uniquename: "SPCC1919.10c:allele-4".to_shared_str(),
+                                   promoter_gene: None,
+                                   exogenous_promoter: None,
                                }
                            ]
                        }
@@ -258,6 +266,8 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
                                ExpressedAllele {
                                    expression: Some("Not assayed".to_shared_str()),
                                    allele_uniquename: "SPCC1919.10c:allele-6".to_shared_str(),
+                                   promoter_gene: None,
+                                   exogenous_promoter: None,
                                }
                            ]
                        }
@@ -274,7 +284,9 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
                                ExpressedAllele {
                                    expression: Some("Wild type product level".to_shared_str()),
                                    allele_uniquename: "SPAC25A8.01c:allele-5".to_shared_str(),
-                               }
+                                   promoter_gene: None,
+                                   exogenous_promoter: None,
+                              }
                            ]
                        }
                    ]
@@ -290,6 +302,8 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
                                ExpressedAllele {
                                    expression: Some("Not assayed".to_shared_str()),
                                    allele_uniquename: "SPAC3G6.02:allele-7".to_shared_str(),
+                                   promoter_gene: None,
+                                   exogenous_promoter: None,
                                }
                            ]
                        }

@@ -1583,6 +1583,10 @@ type Expression = FlexStr;
 pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<Expression>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub promoter_gene: Option<GeneUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub exogenous_promoter: Option<FlexStr>,
     pub allele_uniquename: AlleleUniquename,
 }
 

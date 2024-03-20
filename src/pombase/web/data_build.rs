@@ -1,3 +1,4 @@
+use core::panic;
 use std::num::NonZeroUsize;
 use std::rc::Rc;
 use std::collections::{BTreeMap, BTreeSet};
@@ -136,25 +137,35 @@ fn get_maps() ->
      HashMap::new(), HashMap::new())
 }
 
-fn get_feat_rel_expression(feature: &Feature,
-                           feature_relationship: &FeatureRelationship) -> Option<FlexStr> {
+// returns (Option<expression>, Option<promoter gene>, Option<exogenous promoter>)
+fn get_feat_rel_expression_and_promoter(feature: &Feature,
+                                        feature_relationship: &FeatureRelationship)
+   -> (Option<FlexStr>, Option<GeneUniquename>, Option<FlexStr>)
+{
     for feature_prop in feature.featureprops.borrow().iter() {
         if feature_prop.prop_type.name == "allele_type" {
             if let Some(ref value) = feature_prop.value {
                 if value == "deletion" {
-                    return Some("Null".into());
+                    return (Some("Null".into()), None, None);
                 }
             }
         }
     }
 
+    let mut maybe_expression = None;
+    let mut maybe_promoter_gene = None;
+    let mut maybe_exogenous_promoter = None;
+
     for rel_prop in feature_relationship.feature_relationshipprops.borrow().iter() {
-        if rel_prop.prop_type.name == "expression" {
-            return rel_prop.value.clone();
+        match rel_prop.prop_type.name.as_str() {
+            "expression" => maybe_expression = rel_prop.value.clone(),
+            "promoter_gene" => maybe_promoter_gene = rel_prop.value.clone(),
+            "exogenous_promoter" => maybe_exogenous_promoter = rel_prop.value.clone(),
+            _ => (),
         }
     }
 
-    None
+    (maybe_expression, maybe_promoter_gene, maybe_exogenous_promoter)
 }
 
 fn get_feat_rel_prop_value(prop_name: &FlexStr,
@@ -1723,7 +1734,8 @@ phenotypes, so just the first part of this extension will be used:
                     }
                 if feature_rel.rel_type.name == "part_of" &&
                     object_type_name == "genotype" {
-                        let expression = get_feat_rel_expression(&feature_rel.subject, feature_rel);
+                        let (expression, promoter_gene, exogenous_promoter) =
+                            get_feat_rel_expression_and_promoter(&feature_rel.subject, feature_rel);
                         let genotype_locus_identifier =
                             get_feat_rel_prop_value(&flex_str!("genotype_locus"), feature_rel)
                             .unwrap_or_else(|| {
@@ -1736,6 +1748,8 @@ phenotypes, so just the first part of this extension will be used:
                             ExpressedAllele {
                                 allele_uniquename: allele_uniquename.clone(),
                                 expression,
+                                promoter_gene,
+                                exogenous_promoter,
                             };
 
                         let genotype_uniquename = object_uniquename;
