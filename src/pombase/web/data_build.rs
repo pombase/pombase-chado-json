@@ -961,6 +961,9 @@ impl <'a> WebDataBuild<'a> {
                 self.add_allele_to_hash(seen_alleles, seen_genes,
                                         seen_references, identifier,
                                         &expressed_allele.allele_uniquename);
+                if let Some(ref promoter_gene) = expressed_allele.promoter_gene {
+                    self.add_gene_to_hash(seen_genes, identifier, promoter_gene);
+                }
             }
         }
 
