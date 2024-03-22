@@ -6949,38 +6949,34 @@ phenotypes, so just the first part of this extension will be used:
         for gene_details in self.genes.values() {
             let taxonid = gene_details.taxonid;
 
-            by_taxon_collector
+            let count = by_taxon_collector
                 .entry(taxonid)
-                .or_insert((0,0))
-                .0 += 1;
-
-            let mut annotation_count = 0;
-
-            for term_annotations in gene_details.cv_annotations.values() {
-                for term_annotation in term_annotations {
-                    annotation_count += term_annotation.annotations.len();
-                }
-            }
-
-            by_taxon_collector
-                .entry(taxonid)
-                .or_insert((0,0))
-                .1 += annotation_count;
+                .or_insert(0);
+            *count += 1usize;
         }
 
         let mut by_taxon = HashMap::new();
 
         for (taxonid, counts) in by_taxon_collector.iter() {
+            let mut total_annotation_count = 0;
+
             let annotation_type_counts_by_year =
                 if self.config.load_organism_taxonid == Some(*taxonid) {
                     let annotation_counts = self.chado_queries.annotation_type_counts_by_year.clone();
+                    for (_, row_data) in &annotation_counts.data {
+                        for count in row_data {
+                            total_annotation_count += count;
+                        }
+                    }
                     Some(annotation_counts)
                 } else {
                     None
                 };
+
+
             by_taxon.insert(*taxonid, StatCountsByTaxon {
-                genes: counts.0,
-                annotations: counts.1,
+                genes: *counts,
+                annotations: total_annotation_count,
                 annotation_type_counts_by_year,
             });
         }
