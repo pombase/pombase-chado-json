@@ -66,8 +66,7 @@ async fn get_community_response_rates(conn: &mut Client)
 const ANNOTATION_TYPE_COUNT_SQL: &str = r#"
 SELECT annotation_year, annotation_type, count(DISTINCT id)
   FROM pombase_genes_annotations_dates
- WHERE annotation_year IS NOT NULL
-   AND (evidence_code IS NULL OR evidence_code <> 'Inferred from Electronic Annotation')
+ WHERE (evidence_code IS NULL OR evidence_code <> 'Inferred from Electronic Annotation')
   AND (annotation_type NOT IN ('kegg_pombe_pathway', 'pathway'))
   AND (annotation_source IS NULL OR annotation_source <> 'BIOGRID')
  GROUP BY annotation_year, annotation_type
@@ -87,20 +86,24 @@ async fn get_annotation_type_counts(conn: &mut Client)
 
   for row in &result {
 
-    let year: i32 = row.get(0);
+    let year_opt: Option<i32> = row.get(0);
     let annotation_type: String = row.get(1);
     let count: i64 = row.get(2);
 
-    if year > last_year {
-      last_year = year;
-    }
-    if year < first_year {
-      first_year = year;
+    if let Some(year) = year_opt {
+      if year > last_year {
+        last_year = year;
+      }
+      if year < first_year {
+        first_year = year;
+      }
     }
 
     annotation_types.insert(annotation_type.clone());
 
-    res.entry(year)
+    let year_str = year_opt.map(|y| y.to_string()).unwrap_or_else(|| "unknown".to_string());
+
+    res.entry(year_str)
        .or_insert_with(HashMap::new)
        .insert(annotation_type, count);
   }
@@ -108,7 +111,13 @@ async fn get_annotation_type_counts(conn: &mut Client)
   let header = annotation_types.iter().cloned().collect::<Vec<_>>();
   let mut data = vec![];
 
+  let mut years = vec!["unknown".to_string()];
+
   for year in first_year..=last_year {
+    years.push(year.to_string());
+  }
+
+  for year in years {
     let mut data_row = vec![];
 
     if let Some(year_data) = res.get(&year) {
@@ -123,7 +132,7 @@ async fn get_annotation_type_counts(conn: &mut Client)
       data_row = vec![0; annotation_types.len()]
     }
 
-    data.push((year.to_string(), data_row));
+    data.push((year, data_row));
   }
 
   Ok(StatsIntegerTable {
