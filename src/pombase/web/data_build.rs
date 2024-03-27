@@ -1212,7 +1212,7 @@ impl <'a> WebDataBuild<'a> {
         }
     }
 
-    // return the gene of a single allele
+    // return the gene of a single locus
     fn gene_from_genotype(&self, genotype_uniquename: &GenotypeUniquename)
        -> GeneUniquename
     {
@@ -1230,9 +1230,6 @@ impl <'a> WebDataBuild<'a> {
         }
 
         let expressed_alleles = &loci[0].expressed_alleles;
-        if expressed_alleles.len() > 1 {
-            panic!("genotype is a diploid");
-        }
 
         let allele_uniquename = &expressed_alleles[0].allele_uniquename;
 
