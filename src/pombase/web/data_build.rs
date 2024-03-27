@@ -4031,20 +4031,35 @@ phenotypes, so just the first part of this extension will be used:
                                     .map(|expressed_allele| {
                                         let allele_details =
                                             self.alleles.get(&expressed_allele.allele_uniquename).unwrap();
-
-                                        if let Some(ref promoter_gene) = expressed_allele.promoter_gene {
+                                        let allele_short: AlleleShort = allele_details.into();
+                                        let allele_display_name = allele_short.short_display_name();
+                                        let allele_uniquename =
+                                            expressed_allele.allele_uniquename.clone();
+                                        let allele_expression = expressed_allele.expression.clone();
+                                        if let Some(ref promoter_gene_uniquename) = expressed_allele.promoter_gene {
+                                            let promoter_gene: GeneShort =
+                                                self.genes.get(promoter_gene_uniquename)
+                                                    .expect(&format!("promoter gene not found: {}",
+                                                                     promoter_gene_uniquename))
+                                                    .into();
                                             allele_promoters.push(AnnotationPromoter {
+                                                allele_uniquename,
+                                                allele_display_name,
+                                                allele_expression,
                                                 allele_gene: allele_details.gene.clone(),
-                                                promoter_gene: Some(promoter_gene.clone()),
-                                                exogenous_promoter: None,
+                                                promoter: Promoter::PromoterGene(promoter_gene),
                                             })
                                         }
-                                        if let Some(ref exogenous_promoter) = expressed_allele.exogenous_promoter {
-                                            allele_promoters.push(AnnotationPromoter {
-                                                allele_gene: allele_details.gene.clone(),
-                                                promoter_gene: None,
-                                                exogenous_promoter: Some(exogenous_promoter.clone()),
-                                            })
+                                        else {
+                                            if let Some(ref exogenous_promoter) = expressed_allele.exogenous_promoter {
+                                                allele_promoters.push(AnnotationPromoter {
+                                                    allele_uniquename,
+                                                    allele_display_name,
+                                                    allele_expression,
+                                                    allele_gene: allele_details.gene.clone(),
+                                                    promoter: Promoter::ExogenousPromoter(exogenous_promoter.clone()),
+                                                })
+                                            }
                                         }
                                         allele_details.gene.uniquename.clone()
                                     })

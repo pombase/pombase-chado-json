@@ -744,13 +744,20 @@ impl PartialOrd for WithFromValue {
 
 pub type CuratorOrcid = FlexStr;
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum Promoter {
+    PromoterGene(GeneShort),
+    ExogenousPromoter(FlexStr),
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AnnotationPromoter {
+    pub allele_uniquename: FlexStr,
+    pub allele_display_name: FlexStr,
+    pub allele_expression: Option<FlexStr>,
     pub allele_gene: GeneShort,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub promoter_gene: Option<GeneUniquename>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub exogenous_promoter: Option<FlexStr>,
+    pub promoter: Promoter,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -1646,7 +1653,7 @@ fn description_with_residue_type(allele: &AlleleShort) -> FlexStr {
 }
 
 impl AlleleShort {
-    pub fn display_name(&self) -> FlexStr {
+   fn display_name_helper(&self, compact: bool) -> FlexStr {
         let name = self.name.clone().unwrap_or_else(|| flex_str!("unnamed"));
         let allele_type = &self.allele_type;
         let mut description =
@@ -1655,7 +1662,8 @@ impl AlleleShort {
         if allele_type == "deletion" &&
             (name.ends_with('Δ') || name.ends_with("delta")) ||
             allele_type == "wild_type" && name.ends_with('+') {
-                if name.ends_with(description.as_str()) || allele_type == description {
+                if name.ends_with(description.as_str()) || allele_type == description ||
+                    compact && allele_type.as_str() == &description.replace(" ", "_") {
                     return name;
                 } else {
                     return flex_fmt!("{}({})", name, description);
@@ -1684,6 +1692,14 @@ impl AlleleShort {
             }
 
         flex_fmt!("{}({})", name, description)
+    }
+
+    pub fn short_display_name(&self) -> FlexStr {
+        self.display_name_helper(true)
+    }
+
+    pub fn display_name(&self) -> FlexStr {
+        self.display_name_helper(false)
     }
 }
 
