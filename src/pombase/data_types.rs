@@ -745,6 +745,15 @@ impl PartialOrd for WithFromValue {
 pub type CuratorOrcid = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct AnnotationPromoter {
+    pub allele_gene: GeneShort,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub promoter_gene: Option<GeneUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub exogenous_promoter: Option<FlexStr>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct OntAnnotationDetail {
     pub id: i32,
     pub genes: Vec<GeneUniquename>,
@@ -776,6 +785,8 @@ pub struct OntAnnotationDetail {
     pub genotype: Option<GenotypeUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype_background: Option<FlexStr>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub allele_promoters: Vec<AnnotationPromoter>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub conditions: HashSet<TermId>,
     #[serde(skip_serializing_if="BTreeSet::is_empty", default)]

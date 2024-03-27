@@ -3883,6 +3883,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut eco_evidence: Option<FlexStr> = None;
             let mut annotation_phenotype_score: Option<FlexStr> = None;
             let mut genotype_background: Option<FlexStr> = None;
+            let mut allele_promoters = vec![];
             let mut throughput: Option<Throughput> = None;
             let mut curator_orcid: Option<CuratorOrcid> = None;
 
@@ -4023,13 +4024,29 @@ phenotypes, so just the first part of this extension will be used:
                         genotype_background =
                             self.genotype_backgrounds.get(&feature.uniquename)
                             .cloned();
+
                         loci.iter()
                             .map(|locus| {
                                 locus.expressed_alleles.iter()
                                     .map(|expressed_allele| {
-                                        let allele_short =
-                                            self.make_allele_short(&expressed_allele.allele_uniquename);
-                                        allele_short.gene_uniquename
+                                        let allele_details =
+                                            self.alleles.get(&expressed_allele.allele_uniquename).unwrap();
+
+                                        if let Some(ref promoter_gene) = expressed_allele.promoter_gene {
+                                            allele_promoters.push(AnnotationPromoter {
+                                                allele_gene: allele_details.gene.clone(),
+                                                promoter_gene: Some(promoter_gene.clone()),
+                                                exogenous_promoter: None,
+                                            })
+                                        }
+                                        if let Some(ref exogenous_promoter) = expressed_allele.exogenous_promoter {
+                                            allele_promoters.push(AnnotationPromoter {
+                                                allele_gene: allele_details.gene.clone(),
+                                                promoter_gene: None,
+                                                exogenous_promoter: Some(exogenous_promoter.clone()),
+                                            })
+                                        }
+                                        allele_details.gene.uniquename.clone()
                                     })
                                     .collect()
                             })
@@ -4105,6 +4122,7 @@ phenotypes, so just the first part of this extension will be used:
                 reference: reference_uniquename,
                 genotype: maybe_genotype_uniquename,
                 genotype_background,
+                allele_promoters,
                 withs,
                 froms,
                 residue: extra_props_clone.remove(&flex_str!("residue")),
