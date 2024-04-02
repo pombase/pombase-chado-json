@@ -374,18 +374,6 @@ dependencies = [
 
 [[package]]
 name = "deadpool"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fb84100978c1c7b37f09ed3ce3e5f843af02c2a2c431bae5b19230dad2c1b490"
-dependencies = [
- "async-trait",
- "deadpool-runtime",
- "num_cpus",
- "tokio",
-]
-
-[[package]]
-name = "deadpool"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8c380a837cb8cb747898b1be7fa5ba5b871eb1210f8881d6512946c132617f80"
@@ -402,7 +390,7 @@ version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4aa08f5c838496cbabb672e3614534444145fc6632995f102e13d30a29a25a13"
 dependencies = [
- "deadpool 0.11.0",
+ "deadpool",
  "tokio",
  "tokio-postgres",
  "tracing",
@@ -1271,7 +1259,7 @@ dependencies = [
  "bytes",
  "chrono",
  "csv",
- "deadpool 0.10.0",
+ "deadpool",
  "deadpool-postgres",
  "flate2",
  "flexstr",
