@@ -2,21 +2,16 @@ extern crate getopts;
 
 use axum::{
     routing::{get, post},
+    extract::Request,
     Json, Router, extract::{State, Path},
-    http::{StatusCode, Response, Uri, Request, HeaderMap, header}, response::{Html, IntoResponse},
-    body::{boxed, BoxBody, Body, Full},
+    http::{StatusCode, HeaderMap, header}, response::{Html, IntoResponse},
+    body::Body,
     ServiceExt,
 };
 
-use percent_encoding::{utf8_percent_encode, AsciiSet, CONTROLS};
-
-const FRAGMENT: &AsciiSet = &CONTROLS.add(b' ').add(b'"').add(b'<').add(b'>').add(b'`');
-
-use bytes::Bytes;
-
+use tokio::fs::read_to_string;
 use tower::layer::Layer;
 
-use tower_http::services::ServeDir;
 use tower_http::normalize_path::NormalizePathLayer;
 
 use serde::Serialize;
@@ -62,20 +57,15 @@ struct TermLookupResponse {
     summary: Option<SolrTermSummary>,
 }
 
-async fn get_static_file(path: &str) -> Result<Response<BoxBody>, (StatusCode, String)> {
-    let path = utf8_percent_encode(path, FRAGMENT).to_string();
-    let uri: Uri = path.parse().unwrap();
-    let req = Request::builder().uri(uri).body(Body::empty()).unwrap();
+async fn get_static_file(path: &str) -> (StatusCode, String) {
+    let res = read_to_string(path).await;
 
-    use tower::ServiceExt;
-
-    match ServeDir::new("/").oneshot(req).await {
-        Ok(res) => Ok(res.map(boxed)),
-        Err(err) => Err((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            format!("Something went wrong: {}", err),
-        )),
+    if let Ok(s) = res {
+       (StatusCode::OK, s)
+    } else {
+       (StatusCode::NOT_FOUND, "not found".to_string())
     }
+
 }
 
 struct AllState {
@@ -91,7 +81,7 @@ struct AllState {
 // Angular app from /index.html
 async fn get_misc(Path(mut path): Path<String>,
                   State(all_state): State<Arc<AllState>>)
-            -> Result<Response<BoxBody>, (StatusCode, String)>
+            -> impl IntoResponse
 {
     let static_file_state = &all_state.static_file_state;
     let config = &all_state.config;
@@ -123,7 +113,7 @@ async fn get_misc(Path(mut path): Path<String>,
 
     // special case for missing JBrowse files - return 404
     if is_jbrowse_path {
-        return Err((StatusCode::NOT_FOUND, format!("File not found: {}", full_path)))
+        return (StatusCode::NOT_FOUND, format!("File not found: {}", full_path))
     }
 
     let file_name = format!("{}/index.html", web_root_dir);
@@ -211,7 +201,7 @@ async fn seq_feature_page_features(State(all_state): State<Arc<AllState>>) -> im
     Json(all_state.query_exec.get_api_data().seq_feature_page_features())
 }
 
-async fn get_index(State(all_state): State<Arc<AllState>>) -> Result<Response<BoxBody>, (StatusCode, String)> {
+async fn get_index(State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
     let web_root_dir = &all_state.static_file_state.web_root_dir;
     get_static_file(&format!("{}/index.html", web_root_dir)).await
 }
@@ -495,26 +485,27 @@ async fn motif_search(Path((scope, q)): Path<(String, String)>, State(all_state)
 
 async fn gene_ex_violin_plot(Path((plot_size, genes)): Path<(String, String)>,
                              State(all_state): State<Arc<AllState>>)
-             -> Result<(HeaderMap, Full<Bytes>), StatusCode>
+             -> impl IntoResponse
 {
     let res = all_state.stats_plots.gene_ex_violin_plot(&plot_size, &genes).await;
 
     match res {
         Ok(svg_plot) => {
-            let mut headers = HeaderMap::new();
-            headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
-            Ok((headers, Full::new(svg_plot.bytes)))
+            (StatusCode::FOUND,
+            [(header::CONTENT_TYPE, "image/svg+xml")],
+            Body::from(svg_plot.bytes)).into_response()
         },
         Err(err) => {
-            println!("Gene expression plot error: {:?}", err);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            (StatusCode::INTERNAL_SERVER_ERROR,
+             [(header::CONTENT_TYPE, "text/plain")],
+             println!("Gene expression plot error: {:?}", err)).into_response()
         },
     }
 }
 
 async fn get_stats(Path(graph_type): Path<String>,
                    State(all_state): State<Arc<AllState>>)
-                -> Result<(HeaderMap, Full<Bytes>), StatusCode>
+          -> impl IntoResponse
 {
     let res = match graph_type.as_ref() {
         "curated_by_year" |
@@ -526,18 +517,18 @@ async fn get_stats(Path(graph_type): Path<String>,
         "community_response_rates" |
         "cumulative_annotation_type_counts_by_year"
             => all_state.stats_plots.get_svg_graph(graph_type.as_ref()).await,
-        _ => return Err(StatusCode::NOT_FOUND),
+        _ => return StatusCode::NOT_FOUND.into_response(),
     };
 
     match res {
         Ok(svg_plot) => {
-            let mut headers = HeaderMap::new();
-            headers.insert(header::CONTENT_TYPE, "image/svg+xml".parse().unwrap());
-            Ok((headers, Full::new(svg_plot.bytes)))
+            (StatusCode::FOUND,
+             [(header::CONTENT_TYPE, "image/svg+xml")],
+              Body::from(svg_plot.bytes)).into_response()
         },
         Err(err) => {
             println!("Error getting stats graph: {:?}", err);
-            Err(StatusCode::INTERNAL_SERVER_ERROR)
+            StatusCode::INTERNAL_SERVER_ERROR.into_response()
         },
     }
 }
@@ -606,14 +597,14 @@ async fn main() {
     }
 
     let bind_address_and_port = matches.opt_str("bind-address-and-port");
-    let socket_addr =
+    let listener =
         if let Some(bind_address_and_port) = bind_address_and_port {
-            match bind_address_and_port.parse() {
+            match tokio::net::TcpListener::bind(bind_address_and_port).await {
                 Ok(sock) => sock,
                 Err(err) => panic!("{}", err)
             }
         } else {
-           "0.0.0.0:8500".parse().unwrap()
+           tokio::net::TcpListener::bind("0.0.0.0:8500").await.unwrap()
         };
 
     let site_db_conn_string = matches.opt_str("s");
@@ -686,10 +677,9 @@ async fn main() {
         .fallback(not_found)
         .with_state(Arc::new(all_state));
 
-    let app = NormalizePathLayer::trim_trailing_slash().layer(app).into_make_service();
+    let app = NormalizePathLayer::trim_trailing_slash().layer(app);
 
-    axum::Server::bind(&socket_addr)
-        .serve(app)
+    axum::serve(listener, ServiceExt::<Request>::into_make_service(app))
         .await
         .unwrap();
 }
