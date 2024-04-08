@@ -193,7 +193,7 @@ fn is_gene_type(feature_type_name: &FlexStr) -> bool {
 
 lazy_static! {
     static ref BAD_GENOTYPE_NAME_CHARS_RE: Regex =
-        Regex::new(r"[% /&;?]").unwrap();
+        Regex::new(r"[% /&;?\\]").unwrap();
 }
 
 pub fn make_genotype_display_uniquename(loci: &[GenotypeLocus],
