@@ -1,15 +1,10 @@
 extern crate getopts;
 
 use axum::{
-    routing::{get, post},
-    extract::Request,
-    Json, Router, extract::{State, Path},
-    http::{StatusCode, HeaderMap, HeaderName, header}, response::{Html, IntoResponse},
-    body::Body,
-    ServiceExt,
+    body::Body, extract::{Path, Request, State}, http::{header, HeaderMap, StatusCode}, response::{Html, IntoResponse, Response}, routing::{get, post}, Json, Router, ServiceExt
 };
 
-use tokio::fs::read_to_string;
+use tokio::fs::read;
 use tower::layer::Layer;
 
 use tower_http::{normalize_path::NormalizePathLayer, trace::TraceLayer};
@@ -57,18 +52,23 @@ struct TermLookupResponse {
     summary: Option<SolrTermSummary>,
 }
 
-async fn get_static_file(path: &str) -> (StatusCode, [(HeaderName, String); 1], String) {
-    let res = read_to_string(path).await;
+async fn get_static_file(path: &str) -> Response {
+    let res = read(path).await;
 
-     let content_type = match mime_guess::from_path(&path).first_raw() {
+    let content_type = match mime_guess::from_path(&path).first_raw() {
         Some(mime) => mime,
         None => "text/plain"
     };
 
-    if let Ok(s) = res {
-       (StatusCode::OK, [(header::CONTENT_TYPE, content_type.to_string())], s)
-    } else {
-       (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string())
+    match res {
+        Ok(bytes) => {
+            eprintln!("OK: {} {}", path, content_type);
+            (StatusCode::OK, [(header::CONTENT_TYPE, content_type.to_string())], bytes).into_response()
+        },
+        Err(err) => {
+            eprintln!("NOT_FOUND: {} {} {}", err, path, content_type);
+            (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
+        }
     }
 
 }
@@ -86,7 +86,7 @@ struct AllState {
 // Angular app from /index.html
 async fn get_misc(Path(mut path): Path<String>,
                   State(all_state): State<Arc<AllState>>)
-            -> impl IntoResponse
+            -> Response
 {
     let static_file_state = &all_state.static_file_state;
     let config = &all_state.config;
@@ -119,7 +119,7 @@ async fn get_misc(Path(mut path): Path<String>,
     // special case for missing JBrowse files - return 404
     if is_jbrowse_path {
         return (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())],
-                format!("File not found: {}", full_path))
+                format!("File not found: {}", full_path)).into_response()
     }
 
     let file_name = format!("{}/index.html", web_root_dir);
@@ -207,7 +207,7 @@ async fn seq_feature_page_features(State(all_state): State<Arc<AllState>>) -> im
     Json(all_state.query_exec.get_api_data().seq_feature_page_features())
 }
 
-async fn get_index(State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
+async fn get_index(State(all_state): State<Arc<AllState>>) -> Response {
     let web_root_dir = &all_state.static_file_state.web_root_dir;
     get_static_file(&format!("{}/index.html", web_root_dir)).await
 }
