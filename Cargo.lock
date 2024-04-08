@@ -1235,6 +1235,7 @@ dependencies = [
  "http-body-util",
  "itertools",
  "lazy_static",
+ "mime_guess",
  "once_cell",
  "percent-encoding",
  "r2d2",

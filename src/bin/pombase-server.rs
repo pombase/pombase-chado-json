@@ -4,7 +4,7 @@ use axum::{
     routing::{get, post},
     extract::Request,
     Json, Router, extract::{State, Path},
-    http::{StatusCode, HeaderMap, header}, response::{Html, IntoResponse},
+    http::{StatusCode, HeaderMap, HeaderName, header}, response::{Html, IntoResponse},
     body::Body,
     ServiceExt,
 };
@@ -57,13 +57,18 @@ struct TermLookupResponse {
     summary: Option<SolrTermSummary>,
 }
 
-async fn get_static_file(path: &str) -> (StatusCode, String) {
+async fn get_static_file(path: &str) -> (StatusCode, [(HeaderName, String); 1], String) {
     let res = read_to_string(path).await;
 
+     let content_type = match mime_guess::from_path(&path).first_raw() {
+        Some(mime) => mime,
+        None => "text/plain"
+    };
+
     if let Ok(s) = res {
-       (StatusCode::OK, s)
+       (StatusCode::OK, [(header::CONTENT_TYPE, content_type.to_string())], s)
     } else {
-       (StatusCode::NOT_FOUND, "not found".to_string())
+       (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string())
     }
 
 }
@@ -113,7 +118,8 @@ async fn get_misc(Path(mut path): Path<String>,
 
     // special case for missing JBrowse files - return 404
     if is_jbrowse_path {
-        return (StatusCode::NOT_FOUND, format!("File not found: {}", full_path))
+        return (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())],
+                format!("File not found: {}", full_path))
     }
 
     let file_name = format!("{}/index.html", web_root_dir);
