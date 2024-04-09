@@ -497,7 +497,7 @@ async fn gene_ex_violin_plot(Path((plot_size, genes)): Path<(String, String)>,
 
     match res {
         Ok(svg_plot) => {
-            (StatusCode::FOUND,
+            (StatusCode::OK,
             [(header::CONTENT_TYPE, "image/svg+xml")],
             Body::from(svg_plot.bytes)).into_response()
         },
@@ -528,7 +528,7 @@ async fn get_stats(Path(graph_type): Path<String>,
 
     match res {
         Ok(svg_plot) => {
-            (StatusCode::FOUND,
+            (StatusCode::OK,
              [(header::CONTENT_TYPE, "image/svg+xml")],
               Body::from(svg_plot.bytes)).into_response()
         },
