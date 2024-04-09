@@ -605,10 +605,7 @@ async fn main() {
     let bind_address_and_port = matches.opt_str("bind-address-and-port");
     let listener =
         if let Some(bind_address_and_port) = bind_address_and_port {
-            match tokio::net::TcpListener::bind(bind_address_and_port).await {
-                Ok(sock) => sock,
-                Err(err) => panic!("{}", err)
-            }
+           tokio::net::TcpListener::bind(bind_address_and_port).await.unwrap()
         } else {
            tokio::net::TcpListener::bind("0.0.0.0:8500").await.unwrap()
         };
