@@ -62,11 +62,9 @@ async fn get_static_file(path: &str) -> Response {
 
     match res {
         Ok(bytes) => {
-            eprintln!("OK: {} {}", path, content_type);
             (StatusCode::OK, [(header::CONTENT_TYPE, content_type.to_string())], bytes).into_response()
         },
         Err(err) => {
-            eprintln!("NOT_FOUND: {} {} {}", err, path, content_type);
             (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
         }
     }
