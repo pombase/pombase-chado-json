@@ -65,7 +65,7 @@ async fn get_community_response_rates(conn: &mut Client)
 
 const ANNOTATION_TYPE_COUNT_SQL: &str = r#"
 SELECT annotation_year, annotation_type, count(DISTINCT id)
-  FROM pombase_genes_annotations_dates
+  FROM pombase_annotation_summary
  WHERE (evidence_code IS NULL OR evidence_code <> 'Inferred from Electronic Annotation')
   AND (annotation_type NOT IN ('kegg_pombe_pathway', 'pathway'))
   AND (annotation_source IS NULL OR annotation_source <> 'BIOGRID')
