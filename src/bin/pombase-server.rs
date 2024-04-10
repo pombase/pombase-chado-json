@@ -64,11 +64,10 @@ async fn get_static_file(path: &str) -> Response {
         Ok(bytes) => {
             (StatusCode::OK, [(header::CONTENT_TYPE, content_type.to_string())], bytes).into_response()
         },
-        Err(err) => {
+        Err(_) => {
             (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
         }
     }
-
 }
 
 struct AllState {
