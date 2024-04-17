@@ -33,7 +33,6 @@ pub fn clean_words(q: &str) -> Vec<String> {
 
     WORD_RE.captures_iter(&lower_q)
         .map(|cap| cap.get(1).unwrap().as_str().to_owned())
-        .map(|w| {eprintln!("word: {}", w); w})
         // fixes the "02" and "2" from gene IDs like "SPCC1620.02.2" matching
         // lots of titles and abstracts:
         .filter(|s| !SHORT_NUMBERS_RE.is_match(s))
