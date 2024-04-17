@@ -22,7 +22,7 @@ pub fn get_query_part(words: &[String]) -> String {
 }
 
 lazy_static! {
-    static ref WORD_RE: Regex = Regex::new(r"([\w\d\-]+)").unwrap();
+    static ref WORD_RE: Regex = Regex::new(r"(\w[\w\d\-]*)").unwrap();
     static ref SHORT_NUMBERS_RE: Regex = Regex::new(r"^\d\d?\d?$").unwrap();
 }
 
@@ -33,6 +33,7 @@ pub fn clean_words(q: &str) -> Vec<String> {
 
     WORD_RE.captures_iter(&lower_q)
         .map(|cap| cap.get(1).unwrap().as_str().to_owned())
+        .map(|w| {eprintln!("word: {}", w); w})
         // fixes the "02" and "2" from gene IDs like "SPCC1620.02.2" matching
         // lots of titles and abstracts:
         .filter(|s| !SHORT_NUMBERS_RE.is_match(s))
