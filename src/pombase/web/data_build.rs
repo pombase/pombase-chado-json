@@ -140,13 +140,13 @@ fn get_maps() ->
 // returns (Option<expression>, Option<promoter gene>, Option<exogenous promoter>)
 fn get_feat_rel_expression_and_promoter(feature: &Feature,
                                         feature_relationship: &FeatureRelationship)
-   -> (Option<FlexStr>, Option<GeneUniquename>, Option<FlexStr>)
+   -> (Option<FlexStr>, Option<FlexStr>)
 {
     for feature_prop in feature.featureprops.borrow().iter() {
         if feature_prop.prop_type.name == "allele_type" {
             if let Some(ref value) = feature_prop.value {
                 if value == "deletion" {
-                    return (Some("Null".into()), None, None);
+                    return (Some("Null".into()), None);
                 }
             }
         }
@@ -154,18 +154,16 @@ fn get_feat_rel_expression_and_promoter(feature: &Feature,
 
     let mut maybe_expression = None;
     let mut maybe_promoter_gene = None;
-    let mut maybe_exogenous_promoter = None;
 
     for rel_prop in feature_relationship.feature_relationshipprops.borrow().iter() {
         match rel_prop.prop_type.name.as_str() {
             "expression" => maybe_expression = rel_prop.value.clone(),
             "promoter_gene" => maybe_promoter_gene = rel_prop.value.clone(),
-            "exogenous_promoter" => maybe_exogenous_promoter = rel_prop.value.clone(),
             _ => (),
         }
     }
 
-    (maybe_expression, maybe_promoter_gene, maybe_exogenous_promoter)
+    (maybe_expression, maybe_promoter_gene)
 }
 
 fn get_feat_rel_prop_value(prop_name: &FlexStr,
@@ -961,9 +959,6 @@ impl <'a> WebDataBuild<'a> {
                 self.add_allele_to_hash(seen_alleles, seen_genes,
                                         seen_references, identifier,
                                         &expressed_allele.allele_uniquename);
-                if let Some(ref promoter_gene) = expressed_allele.promoter_gene {
-                    self.add_gene_to_hash(seen_genes, identifier, promoter_gene);
-                }
             }
         }
 
@@ -1734,7 +1729,7 @@ phenotypes, so just the first part of this extension will be used:
                     }
                 if feature_rel.rel_type.name == "part_of" &&
                     object_type_name == "genotype" {
-                        let (expression, promoter_gene, exogenous_promoter) =
+                        let (expression, promoter_gene) =
                             get_feat_rel_expression_and_promoter(&feature_rel.subject, feature_rel);
                         let genotype_locus_identifier =
                             get_feat_rel_prop_value(&flex_str!("genotype_locus"), feature_rel)
@@ -1749,7 +1744,6 @@ phenotypes, so just the first part of this extension will be used:
                                 allele_uniquename: allele_uniquename.clone(),
                                 expression,
                                 promoter_gene,
-                                exogenous_promoter,
                             };
 
                         let genotype_uniquename = object_uniquename;
@@ -4036,30 +4030,14 @@ phenotypes, so just the first part of this extension will be used:
                                         let allele_uniquename =
                                             expressed_allele.allele_uniquename.clone();
                                         let allele_expression = expressed_allele.expression.clone();
-                                        if let Some(ref promoter_gene_uniquename) = expressed_allele.promoter_gene {
-                                            let promoter_gene: GeneShort =
-                                                self.genes.get(promoter_gene_uniquename)
-                                                    .expect(&format!("promoter gene not found: {}",
-                                                                     promoter_gene_uniquename))
-                                                    .into();
+                                        if let Some(ref promoter_gene) = expressed_allele.promoter_gene {
                                             allele_promoters.push(AnnotationPromoter {
                                                 allele_uniquename,
                                                 allele_display_name,
                                                 allele_expression,
                                                 allele_gene: allele_details.gene.clone(),
-                                                promoter: Promoter::PromoterGene(promoter_gene),
+                                                promoter: promoter_gene.into(),
                                             })
-                                        }
-                                        else {
-                                            if let Some(ref exogenous_promoter) = expressed_allele.exogenous_promoter {
-                                                allele_promoters.push(AnnotationPromoter {
-                                                    allele_uniquename,
-                                                    allele_display_name,
-                                                    allele_expression,
-                                                    allele_gene: allele_details.gene.clone(),
-                                                    promoter: Promoter::ExogenousPromoter(exogenous_promoter.clone()),
-                                                })
-                                            }
                                         }
                                         allele_details.gene.uniquename.clone()
                                     })

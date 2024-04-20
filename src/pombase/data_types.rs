@@ -744,12 +744,7 @@ impl PartialOrd for WithFromValue {
 
 pub type CuratorOrcid = FlexStr;
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
-#[serde(rename_all = "snake_case")]
-pub enum Promoter {
-    PromoterGene(GeneShort),
-    ExogenousPromoter(FlexStr),
-}
+pub type Promoter = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct AnnotationPromoter {
@@ -1602,9 +1597,7 @@ pub struct ExpressedAllele {
     #[serde(skip_serializing_if="Option::is_none")]
     pub expression: Option<Expression>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub promoter_gene: Option<GeneUniquename>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub exogenous_promoter: Option<FlexStr>,
+    pub promoter_gene: Option<FlexStr>,
     pub allele_uniquename: AlleleUniquename,
 }
 
