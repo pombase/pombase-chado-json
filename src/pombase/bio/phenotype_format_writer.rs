@@ -47,7 +47,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
     let phaf_file = File::create(phaf_file_name).expect("Unable to open file");
     let mut phaf_writer = BufWriter::new(&phaf_file);
 
-    let header = "#Database name\tGene systematic ID\tFYPO ID\tAllele description\tExpression\tParental strain\tStrain name (background)\tGenotype description\tGene name\tAllele name\tAllele synonym\tAllele type\tEvidence\tCondition\tPenetrance\tSeverity\tExtension\tReference\tTaxon\tDate\tPloidy\n";
+    let header = "#Database name\tGene systematic ID\tFYPO ID\tAllele description\tExpression\tParental strain\tStrain name (background)\tGenotype description\tGene symbol\tAllele name\tAllele synonym\tAllele type\tEvidence\tCondition\tPenetrance\tSeverity\tExtension\tReference\tTaxon\tDate\tPloidy\n";
 
     phaf_writer.write_all(header.as_bytes())?;
 
