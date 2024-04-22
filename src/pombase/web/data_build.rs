@@ -1264,15 +1264,11 @@ phenotypes, so just the first part of this extension will be used:
                        _ => ExtRange::Misc(part.range_value.clone()),
                     }
                 } else {
-                    if let Some(ref display_name) = part.range_display_name {
-                        ExtRange::Misc(flex_fmt!("{}({})", display_name, part.range_value))
+                    let value = part.range_value.clone();
+                    if part.range_value.contains(":") {
+                        ExtRange::Term(value)
                     } else {
-                        let value = part.range_value.clone();
-                        if part.range_value.contains(":") {
-                            ExtRange::Term(value)
-                        } else {
-                            ExtRange::Misc(value)
-                        }
+                        ExtRange::Misc(value)
                     }
                 };
 
