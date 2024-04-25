@@ -1223,6 +1223,9 @@ pub struct GeneDetails {
     // "useful" means that the front end might need it, eg. slim term IDs
     pub subset_termids: HashSet<TermId>,
 
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub gocam_ids: HashSet<GoCamId>,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_history: Vec<GeneHistoryEntry>,
 }
@@ -2307,6 +2310,8 @@ pub struct ProteinViewData {
     pub tracks: Vec<ProteinViewTrack>,
 }
 
+pub type GoCamId = FlexStr;
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
@@ -2325,6 +2330,7 @@ pub struct APIMaps {
     pub gene_expression_measurements: GeneExDataSetMeasurements,
     pub secondary_identifiers_map: HashMap<TermId, TermId>,
     pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
+    pub gocam_data: HashMap<GeneUniquename, HashSet<GoCamId>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

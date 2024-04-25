@@ -170,6 +170,16 @@ async fn get_protein_features(Path((full_or_widget, gene_uniquename)): Path<(Str
     option_json_to_result(&gene_uniquename, res)
 }
 
+async fn get_gocam_data(Path((_full_or_widget, gene_uniquename)): Path<(String, String)>,
+                        State(all_state): State<Arc<AllState>>)
+        -> impl IntoResponse
+{
+   let res = all_state.query_exec.get_api_data().get_gocam_data_of_gene(&gene_uniquename)
+              .map(|s| s.to_owned())
+              .map(Json);
+    option_json_to_result(&gene_uniquename, res)
+}
+
 async fn get_term_summary_by_id(Path(id): Path<String>, State(all_state): State<Arc<AllState>>)
    -> impl IntoResponse
 {
@@ -669,6 +679,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/stats/:type", get(get_stats))
         .route("/api/v1/dataset/latest/motif_search/:scope/:q", get(motif_search))
         .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
+        .route("/api/v1/dataset/latest/gocam_data/:full_or_widget/:gene_uniquename", get(get_gocam_data))
         .route("/api/v1/dataset/latest/query/:q", get(query_get))
         .route("/api/v1/dataset/latest/query", post(query_post))
         .route("/api/v1/dataset/latest/search/:scope/:q", get(solr_search))

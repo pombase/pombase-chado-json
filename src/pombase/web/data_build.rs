@@ -13,6 +13,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
+use crate::bio::gocam_viz::make_gocam_data;
 use crate::db::{raw::*, ChadoQueries};
 
 use crate::gene_history::GeneHistoryMap;
@@ -1840,6 +1841,8 @@ phenotypes, so just the first part of this extension will be used:
                 vec![]
             };
 
+        let mut gocam_ids = HashSet::new();
+
         for prop in feat.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
                 "uniprot_identifier" => uniprot_identifier = prop.value.clone(),
@@ -1854,6 +1857,12 @@ phenotypes, so just the first part of this extension will be used:
                     }
                 },
                 "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
+                "gocam_id" => {
+                     if let Some(ref gocam_id) = prop.value {
+                         gocam_ids.insert(gocam_id.clone());
+                         ()
+                     }
+                 },
                 _ => (),
             }
         }
@@ -1946,6 +1955,7 @@ phenotypes, so just the first part of this extension will be used:
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
+            gocam_ids,
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
@@ -5230,6 +5240,8 @@ phenotypes, so just the first part of this extension will be used:
                                        &self.genotypes, &self.alleles,
                                        &self.transcripts, &self.config);
 
+        let gocam_data = make_gocam_data(&self.genes);
+
         let gene_query_data_map = self.make_gene_query_data_map();
 
         let mut termid_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
@@ -5293,6 +5305,7 @@ phenotypes, so just the first part of this extension will be used:
             gene_expression_measurements,
             secondary_identifiers_map,
             protein_view_data,
+            gocam_data,
        }
     }
 

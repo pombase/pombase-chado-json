@@ -432,6 +432,7 @@ fn make_test_gene() -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
+        gocam_ids: HashSet::new(),
 
         flags: HashSet::new(),
 
