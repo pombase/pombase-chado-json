@@ -4,6 +4,7 @@ use axum::{
     body::Body, extract::{Path, Request, State}, http::{header, HeaderMap, StatusCode}, response::{Html, IntoResponse, Response}, routing::{get, post}, Json, Router, ServiceExt
 };
 
+use itertools::Itertools;
 use tokio::fs::read;
 use tower::layer::Layer;
 
@@ -255,6 +256,44 @@ async fn protein_feature_view(Path((full_or_widget, gene_uniquename)): Path<(Str
     let search_url = all_state.config.server.django_url.to_owned() + "/protein_feature_view/";
     let params = [("full_or_widget", full_or_widget),
                   ("gene_uniquename", gene_uniquename)];
+    let client = reqwest::Client::new();
+    let result = client.get(search_url).query(&params).send().await;
+
+    match result {
+        Ok(res) => {
+            match res.text().await {
+                Ok(text) => (StatusCode::OK, Html(text)),
+                Err(err) => {
+                    let err_mess = format!("Error proxying to Django: {:?}", err);
+                    eprintln!("{}", err_mess);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+                }
+            }
+        },
+        Err(err) => {
+            let err_mess = format!("Error proxying to Django: {:?}", err);
+            eprintln!("{}", err_mess);
+            (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+        }
+    }
+}
+
+async fn gocam_viz(Path((_full_or_widget, gene_uniquename)): Path<(String, String)>,
+                   State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    let api_data = all_state.query_exec.get_api_data();
+
+    let Some(gocam_ids) = api_data.get_maps().gocam_data.get(gene_uniquename.as_str())
+    else {    eprintln!("not found");
+
+        return (StatusCode::NOT_FOUND, Html("No GO-CAMs found".to_string()));
+    };
+
+    let search_url = all_state.config.server.django_url.to_owned() + "/gocam_viz/";
+
+    let params = [("gene_uniquename", gene_uniquename),
+                  ("gocam_ids", gocam_ids.into_iter().join(","))];
     let client = reqwest::Client::new();
     let result = client.get(search_url).query(&params).send().await;
 
@@ -662,6 +701,7 @@ async fn main() {
         .route("/", get(get_index))
         .route("/structure_view/:structure_type/:id", get(structure_view))
         .route("/protein_feature_view/:full_or_widget/:gene_uniquename", get(protein_feature_view))
+        .route("/gocam_viz/:full_or_widget/:gene_uniquename", get(gocam_viz))
         .route("/simple/gene/:id", get(get_simple_gene))
         .route("/simple/genotype/:id", get(get_simple_genotype))
         .route("/simple/reference/:id", get(get_simple_reference))
