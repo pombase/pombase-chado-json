@@ -36,6 +36,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                  go_eco_mappping: &GoEcoMapping,
                                  genes: &UniquenameGeneMap,
                                  transcripts: &UniquenameTranscriptMap,
+                                 protein_complex_map: &ProteinComplexMap,
                                  output_dir: &str)
         -> Result<(), io::Error>
 {
@@ -148,6 +149,24 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                        gene_details, transcripts,
                                        aspect_name)?;
         }
+    }
+
+    write_complexes_to_gpi(&mut gpi_writer, protein_complex_map, config)?;
+
+    Ok(())
+}
+
+fn write_complexes_to_gpi(gpi_writer: &mut dyn io::Write, protein_complex_map: &ProteinComplexMap,
+                          config: &Config)
+      -> Result<(), io::Error>
+{
+    let db_object_taxon = make_ncbi_taxon_id(config);
+
+    for protein_complex_uniquename in protein_complex_map.keys() {
+        let gpi_line = format!("ComplexPortal:{}\t\t\t\tGO:0032991\t{}\t\t\t\t\t\n",
+                               protein_complex_uniquename,
+                               db_object_taxon);
+        gpi_writer.write_all(gpi_line.as_bytes())?;
     }
 
     Ok(())
@@ -286,9 +305,8 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
         return Ok(());
     };
 
-    let db_object_taxon =
-        format!("NCBITaxon:{}",
-                config.load_organism_taxonid.expect("internal error, no load_organism_taxonid"));
+    let db_object_taxon = make_ncbi_taxon_id(config);
+
     let db_xrefs =
         if let Some(ref uniprot_id) = gene_details.uniprot_identifier {
             flex_fmt!("UniProtKB:{}", uniprot_id)
@@ -738,5 +756,12 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
     }
 
     Ok(())
+}
+
+fn make_ncbi_taxon_id(config: &Config) -> FlexStr {
+    let taxon_str = format!("NCBITaxon:{}",
+                            config.load_organism_taxonid.expect("internal error, no load_organism_taxonid"));
+
+    taxon_str.into()
 }
 

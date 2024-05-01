@@ -1744,7 +1744,9 @@ impl WebData {
         write_go_annotation_files(&self.api_maps, config, self,
                                   &self.metadata.db_creation_datetime,
                                   go_eco_mappping, &self.genes,
-                                  &self.api_maps.transcripts, &misc_path)?;
+                                  &self.api_maps.transcripts,
+                                  &self.api_maps.protein_complexes,
+                                  &misc_path)?;
 
         write_phenotype_annotation_files(self, &self.genotypes, config, false, &misc_path)?;
         write_phenotype_annotation_files(self, &self.genotypes, config, true, &misc_path)?;

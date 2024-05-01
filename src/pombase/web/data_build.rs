@@ -82,6 +82,8 @@ pub struct WebDataBuild<'a> {
     all_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
     all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
 
+    protein_complexes: HashMap<ProteinComplexUniquename, ProteinComplexDetails>,
+
     // map from term name to term ID (ie "nucleus" -> "GO:0005634")
     term_ids_by_name: HashMap<FlexStr, TermId>,
 
@@ -876,6 +878,7 @@ impl <'a> WebDataBuild<'a> {
             alleles: BTreeMap::new(),
             transcripts: HashMap::new(),
             other_features: HashMap::new(),
+            protein_complexes: HashMap::new(),
             terms: HashMap::new(),
             chromosomes: BTreeMap::new(),
             references: HashMap::new(),
@@ -2230,6 +2233,16 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn store_protein_complex(&mut self, feat: &Feature) {
+        let complex_uniquename = feat.uniquename.clone();
+
+        let details = ProteinComplexDetails {
+            uniquename: complex_uniquename.clone()
+        };
+
+        self.protein_complexes.insert(complex_uniquename, details);
+    }
+
     fn store_chromosome_details(&mut self, feat: &Feature) {
         let mut ena_identifier = None;
 
@@ -2419,6 +2432,10 @@ phenotypes, so just the first part of this extension will be used:
         }
 
         for feat in &self.raw.features {
+            if feat.feat_type.name == "protein-containing complex" {
+                self.store_protein_complex(feat);
+            }
+
             if !TRANSCRIPT_FEATURE_TYPES.contains(&feat.feat_type.name.as_str()) &&
                 !TRANSCRIPT_PART_TYPES.contains(&feat.feat_type.name.as_str()) &&
                 !HANDLED_FEATURE_TYPES.contains(&feat.feat_type.name.as_str())
@@ -5306,6 +5323,7 @@ phenotypes, so just the first part of this extension will be used:
             secondary_identifiers_map,
             protein_view_data,
             gocam_data,
+            protein_complexes: self.protein_complexes,
        }
     }
 

@@ -552,8 +552,8 @@ pub const TRANSCRIPT_PART_TYPES: [&str; 4] =
     ["five_prime_UTR", "exon", "pseudogenic_exon", "three_prime_UTR"];
 // any feature with a type not in this list or in the two TRANSCRIPT lists above
 // will be stored in the other_features map
-pub const HANDLED_FEATURE_TYPES: [&str; 7] =
-    ["gene", "pseudogene", "intron", "genotype", "allele", "chromosome", "polypeptide"];
+pub const HANDLED_FEATURE_TYPES: [&str; 8] =
+    ["gene", "pseudogene", "intron", "genotype", "allele", "chromosome", "polypeptide", "protein-containing complex"];
 
 
 #[derive(Deserialize, Clone, Debug)]

@@ -50,6 +50,8 @@ pub type TranscriptDetailsOptionMap =
 
 pub type GeneticInteractionMap = HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>;
 
+pub type ProteinComplexMap = HashMap<ProteinComplexUniquename, ProteinComplexDetails>;
+
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -2310,6 +2312,11 @@ pub struct ProteinViewData {
     pub tracks: Vec<ProteinViewTrack>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinComplexDetails {
+    pub uniquename: FlexStr,
+}
+
 pub type GoCamId = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -2331,6 +2338,7 @@ pub struct APIMaps {
     pub secondary_identifiers_map: HashMap<TermId, TermId>,
     pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
     pub gocam_data: HashMap<GeneUniquename, HashSet<GoCamId>>,
+    pub protein_complexes: ProteinComplexMap,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
