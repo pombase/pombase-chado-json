@@ -83,6 +83,7 @@ pub struct WebDataBuild<'a> {
     all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
 
     protein_complexes: HashMap<ProteinComplexUniquename, ProteinComplexDetails>,
+    genes_of_complexes: HashMap<ProteinComplexUniquename, HashSet<GeneUniquename>>,
 
     // map from term name to term ID (ie "nucleus" -> "GO:0005634")
     term_ids_by_name: HashMap<FlexStr, TermId>,
@@ -879,6 +880,7 @@ impl <'a> WebDataBuild<'a> {
             transcripts: HashMap::new(),
             other_features: HashMap::new(),
             protein_complexes: HashMap::new(),
+            genes_of_complexes: HashMap::new(),
             terms: HashMap::new(),
             chromosomes: BTreeMap::new(),
             references: HashMap::new(),
@@ -1771,6 +1773,11 @@ phenotypes, so just the first part of this extension will be used:
                 entry.or_insert_with(Vec::new).push(part);
             }
 
+            if subject_type_name == "gene" && object_type_name == "protein-containing complex" {
+                let entry = self.genes_of_complexes.entry(object_uniquename.clone());
+                entry.or_insert_with(HashSet::new).insert(subject_uniquename.clone());
+            }
+
             if object_type_name == "genotype_interaction" {
                 let genotype_interaction_uniquename = object_uniquename.clone();
 
@@ -2237,7 +2244,9 @@ phenotypes, so just the first part of this extension will be used:
         let complex_uniquename = feat.uniquename.clone();
 
         let details = ProteinComplexDetails {
-            uniquename: complex_uniquename.clone()
+            complex_uniquename: complex_uniquename.clone(),
+            genes: self.genes_of_complexes.get(&complex_uniquename)
+              .map_or_else(HashSet::new, HashSet::clone),
         };
 
         self.protein_complexes.insert(complex_uniquename, details);

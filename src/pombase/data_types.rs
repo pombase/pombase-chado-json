@@ -2314,7 +2314,8 @@ pub struct ProteinViewData {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinComplexDetails {
-    pub uniquename: FlexStr,
+    pub complex_uniquename: FlexStr,
+    pub genes: HashSet<GeneUniquename>,
 }
 
 pub type GoCamId = FlexStr;

@@ -162,10 +162,19 @@ fn write_complexes_to_gpi(gpi_writer: &mut dyn io::Write, protein_complex_map: &
 {
     let db_object_taxon = make_ncbi_taxon_id(config);
 
-    for protein_complex_uniquename in protein_complex_map.keys() {
-        let gpi_line = format!("ComplexPortal:{}\t\t\t\tGO:0032991\t{}\t\t\t\t\t\n",
+    for (protein_complex_uniquename, complex_details) in protein_complex_map.iter() {
+        let mut genes_with_prefixes: Vec<String> =
+            complex_details.genes
+               .iter().map(|gene_uniquename| {
+                format!("{}:{}", config.database_name, gene_uniquename)
+            }).collect();
+
+        genes_with_prefixes.sort();
+
+        let gpi_line = format!("ComplexPortal:{}\t\t\t\tGO:0032991\t{}\t\t\t{}\t\t\n",
                                protein_complex_uniquename,
-                               db_object_taxon);
+                               db_object_taxon,
+                               genes_with_prefixes.join("|"));
         gpi_writer.write_all(gpi_line.as_bytes())?;
     }
 
