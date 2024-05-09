@@ -268,6 +268,15 @@ fn compare_withs(withs1: &HashSet<WithFromValue>,
     withs1_vec.cmp(&withs2_vec)
 }
 
+fn get_pr_term_name(data_lookup: &dyn DataLookup, gene_product_form_id: &FlexStr)
+    -> FlexStr
+{
+    let term_details = data_lookup.get_term(gene_product_form_id)
+        .expect(&format!("can't find details for term {}", gene_product_form_id));
+
+    term_details.name.clone()
+}
+
 pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIMaps,
                          data_lookup: &dyn DataLookup,
                          gene_details: &GeneDetails)
@@ -378,10 +387,13 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 
                     pr_ids_seen.insert(gene_product_form_id.clone());
 
+                    let pr_term_symbol =
+                        get_pr_term_name(data_lookup, &gene_product_form_id);
+
                     let gpi_line =
                         format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\tgo-annotation-summary={}\n",
                                 gene_product_form_id,
-                                db_object_symbol,
+                                pr_term_symbol,
                                 db_object_name,
                                 db_object_synonyms_string,
                                 db_object_type,
