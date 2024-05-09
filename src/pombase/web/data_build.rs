@@ -3256,6 +3256,11 @@ phenotypes, so just the first part of this extension will be used:
             if nucleosome_genes.contains(&gene_details.uniquename) {
                 gene_details.flags.insert(flex_str!("is_histone"));
             }
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
+                if gene_details.taxonid != load_organism_taxonid {
+                    gene_details.flags.insert(flex_str!("not_load_organism"));
+                }
+            }
         }
     }
 
