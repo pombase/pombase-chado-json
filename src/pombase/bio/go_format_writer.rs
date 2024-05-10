@@ -9,6 +9,7 @@ use std::fs::File;
 use chrono::prelude::{Local, DateTime};
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt};
+use regex::Regex;
 
 use crate::utils::join;
 use crate::web::config::*;
@@ -268,13 +269,30 @@ fn compare_withs(withs1: &HashSet<WithFromValue>,
     withs1_vec.cmp(&withs2_vec)
 }
 
+lazy_static! {
+    static ref POMBASE_ORIG_TERM_NAME_RE: Regex = Regex::new(r#"PomBase_original_PRO_term_name: (.*)"#).unwrap();
+}
+
 fn get_pr_term_name(data_lookup: &dyn DataLookup, gene_product_form_id: &FlexStr)
-    -> FlexStr
+    -> (FlexStr, FlexStr)
 {
     let term_details = data_lookup.get_term(gene_product_form_id)
         .expect(&format!("can't find details for term {}", gene_product_form_id));
 
-    term_details.name.clone()
+    let mut orig_term_name = term_details.name.clone();
+
+    for syn in &term_details.synonyms {
+        if syn.synonym_type == "exact" {
+            let Some(captures) = POMBASE_ORIG_TERM_NAME_RE.captures(&syn.name)
+            else {
+                continue;
+            };
+
+            orig_term_name = captures.get(1).unwrap().as_str().into();
+        }
+    }
+
+    (term_details.name.clone(), orig_term_name)
 }
 
 pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIMaps,
@@ -387,14 +405,14 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 
                     pr_ids_seen.insert(gene_product_form_id.clone());
 
-                    let pr_term_symbol =
+                    let (pr_term_symbol, pr_term_name) =
                         get_pr_term_name(data_lookup, &gene_product_form_id);
 
                     let gpi_line =
                         format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\tgo-annotation-summary={}\n",
                                 gene_product_form_id,
                                 pr_term_symbol,
-                                db_object_name,
+                                pr_term_name,
                                 db_object_synonyms_string,
                                 db_object_type,
                                 db_object_taxon,
