@@ -2315,6 +2315,7 @@ pub struct ProteinViewData {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinComplexDetails {
     pub complex_uniquename: FlexStr,
+    pub complex_name: Option<FlexStr>,
     pub genes: HashSet<GeneUniquename>,
 }
 

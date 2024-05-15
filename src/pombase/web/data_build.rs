@@ -2245,6 +2245,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let details = ProteinComplexDetails {
             complex_uniquename: complex_uniquename.clone(),
+            complex_name: feat.name.clone(),
             genes: self.genes_of_complexes.get(&complex_uniquename)
               .map_or_else(HashSet::new, HashSet::clone),
         };

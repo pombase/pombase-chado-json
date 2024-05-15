@@ -172,8 +172,13 @@ fn write_complexes_to_gpi(gpi_writer: &mut dyn io::Write, protein_complex_map: &
 
         genes_with_prefixes.sort();
 
-        let gpi_line = format!("ComplexPortal:{}\t\t\t\tGO:0032991\t{}\t\t\t{}\t\t\n",
+        let complex_name = complex_details.complex_name
+            .as_deref()
+            .unwrap_or_default();
+
+        let gpi_line = format!("ComplexPortal:{}\t{}\t\t\tGO:0032991\t{}\t\t\t{}\t\t\n",
                                protein_complex_uniquename,
+                               complex_name,
                                db_object_taxon,
                                genes_with_prefixes.join("|"));
         gpi_writer.write_all(gpi_line.as_bytes())?;
