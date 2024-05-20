@@ -36,6 +36,12 @@ lazy_static! {
         Regex::new(r"^(\d\d\d\d)-(\d\d)-(\d\d)($|\s)").unwrap();
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+enum AddToHashFlag {
+    AlleleCommentRefs,
+    AlleleSynonymRefs,
+}
+
 fn make_organism(rc_organism: &Rc<ChadoOrganism>) -> ConfigOrganism {
     let mut maybe_taxonid: Option<u32> = None;
     for prop in rc_organism.organismprops.borrow().iter() {
@@ -962,7 +968,7 @@ impl <'a> WebDataBuild<'a> {
         let genotype_short = self.make_genotype_short(genotype_uniquename);
         for locus in &genotype_short.loci {
             for expressed_allele in &locus.expressed_alleles {
-                self.add_allele_to_hash(seen_alleles, seen_genes,
+                self.add_allele_to_hash(HashSet::new(), seen_alleles, seen_genes,
                                         seen_references, identifier,
                                         &expressed_allele.allele_uniquename);
             }
@@ -975,6 +981,7 @@ impl <'a> WebDataBuild<'a> {
     }
 
     fn add_allele_to_hash(&self,
+                          flags: HashSet<AddToHashFlag>,
                           seen_alleles: &mut HashMap<FlexStr, AlleleShortMap>,
                           seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
                           seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
@@ -982,14 +989,17 @@ impl <'a> WebDataBuild<'a> {
                           allele_uniquename: &AlleleUniquename) -> AlleleShort {
         let allele_short = self.make_allele_short(allele_uniquename);
         {
-            for comment_details in &allele_short.comments {
-                self.add_ref_to_hash(seen_references, identifier,
-                                     &comment_details.reference);
-
+            if flags.contains(&AddToHashFlag::AlleleCommentRefs) {
+                for comment_details in &allele_short.comments {
+                    self.add_ref_to_hash(seen_references, identifier,
+                                         &comment_details.reference);
+                }
             }
-            for synonym_details in &allele_short.synonyms {
-                self.add_ref_to_hash(seen_references, identifier,
-                                     &synonym_details.reference);
+            if flags.contains(&AddToHashFlag::AlleleSynonymRefs) {
+                for synonym_details in &allele_short.synonyms {
+                    self.add_ref_to_hash(seen_references, identifier,
+                                         &synonym_details.reference);
+                }
             }
 
             let allele_gene_uniquename = &allele_short.gene_uniquename;
@@ -5859,7 +5869,10 @@ phenotypes, so just the first part of this extension will be used:
             for genotype_short in &allele_details.genotypes {
                 for locus in &genotype_short.loci {
                     for expressed_allele in &locus.expressed_alleles {
-                        self.add_allele_to_hash(&mut seen_alleles, &mut seen_genes,
+                        let mut flags = HashSet::new();
+                        flags.insert(AddToHashFlag::AlleleCommentRefs);
+                        flags.insert(AddToHashFlag::AlleleSynonymRefs);
+                        self.add_allele_to_hash(flags, &mut seen_alleles, &mut seen_genes,
                                                 &mut seen_references, allele_uniquename,
                                                 &expressed_allele.allele_uniquename);
                     }
