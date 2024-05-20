@@ -57,17 +57,19 @@ fn container_to_matches(container: SolrTermSearchResponseContainer) -> Vec<SolrT
     matches
 }
 
+const TERMID_RE_STRING: &str =      r"^(?P<prefix>[\w_]+):(?P<accession>\d+)$";
+const PARENT_ID_RE_STRING: &str = r"^\[(?P<prefix>[\w_]+):(?P<accession>\d+)\]$";
+
+lazy_static!{
+    static ref TERMID_RE: Regex = Regex::new(TERMID_RE_STRING).unwrap();
+    static ref PARENT_RE: Regex = Regex::new(PARENT_ID_RE_STRING).unwrap();
+}
+
 pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<String> {
     let mut terms_url =
         config.solr_url.to_owned() + "/terms/select?wt=json&hl=on&hl.fl=name,definition&q=";
 
-    let termid_re_string = r"^(?P<prefix>[\w_]+):(?P<accession>\d+)$";
-    let termid_re = Regex::new(termid_re_string).unwrap();
-
-    let parent_re_string = r"^\[".to_owned() + termid_re_string + r"\]$";
-    let parent_re = Regex::new(&parent_re_string).unwrap();
-
-    let maybe_captures = parent_re.captures(cv_name);
+    let maybe_captures = PARENT_RE.captures(cv_name);
 
     if let Some(captures) = maybe_captures {
         let prefix = captures.name("prefix").unwrap().as_str();
@@ -78,7 +80,7 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
         terms_url += &format!("cv_name:+{}^=1", cv_name);
     }
 
-    if let Some(captures) = termid_re.captures(q) {
+    if let Some(captures) = TERMID_RE.captures(q) {
         let prefix = captures.name("prefix").unwrap().as_str();
         let accession = captures.name("accession").unwrap().as_str();
         terms_url = format!(r"{} AND (id:{}\:{} OR secondary_identifiers:{}\:{})",
