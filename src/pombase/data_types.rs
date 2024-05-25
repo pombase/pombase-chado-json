@@ -1913,6 +1913,8 @@ pub struct TermDetails {
     pub xrefs: HashMap<FlexStr, TermXref>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub pombase_gene_id: Option<FlexStr>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub gocam_ids: HashSet<TermId>,
 }
 
 impl Container for TermDetails {

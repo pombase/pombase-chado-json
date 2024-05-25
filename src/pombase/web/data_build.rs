@@ -3434,10 +3434,17 @@ phenotypes, so just the first part of this extension will be used:
                 let annotation_feature_type = cv_config.feature_type.clone();
 
                 let mut pombase_gene_id = None;
+                let mut gocam_ids = HashSet::new();
 
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                  if cvtermprop.prop_type.name == "pombase_gene_id" {
-                    pombase_gene_id = Some(cvtermprop.value.clone());
+                    eprintln!("term name: {}", cvtermprop.prop_type.name);
+                    match cvtermprop.prop_type.name.as_str() {
+                        "pombase_gene_id" =>
+                             pombase_gene_id = Some(cvtermprop.value.clone()),
+                        "gocam_id" => {
+                             gocam_ids.insert(cvtermprop.value.clone());
+                        },
+                        _ => (),
                   }
                 }
 
@@ -3532,6 +3539,7 @@ phenotypes, so just the first part of this extension will be used:
                                       genotype_count: 0,
                                       xrefs,
                                       pombase_gene_id,
+                                      gocam_ids,
                                   });
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
