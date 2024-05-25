@@ -3433,11 +3433,11 @@ phenotypes, so just the first part of this extension will be used:
                 let cv_config = self.config.cv_config_by_name(&cvterm.cv.name);
                 let annotation_feature_type = cv_config.feature_type.clone();
 
-                let mut maybe_pombase_gene_id = None;
+                let mut pombase_gene_id = None;
 
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
                   if cvtermprop.prop_type.name == "pombase_gene_id" {
-                    maybe_pombase_gene_id = Some(cvtermprop.value.clone());
+                    pombase_gene_id = Some(cvtermprop.value.clone());
                   }
                 }
 
@@ -3531,7 +3531,7 @@ phenotypes, so just the first part of this extension will be used:
                                       gene_count: 0,
                                       genotype_count: 0,
                                       xrefs,
-                                      pombase_gene_id: maybe_pombase_gene_id,
+                                      pombase_gene_id,
                                   });
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
