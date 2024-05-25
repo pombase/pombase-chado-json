@@ -3437,7 +3437,6 @@ phenotypes, so just the first part of this extension will be used:
                 let mut gocam_ids = HashSet::new();
 
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                    eprintln!("term name: {}", cvtermprop.prop_type.name);
                     match cvtermprop.prop_type.name.as_str() {
                         "pombase_gene_id" =>
                              pombase_gene_id = Some(cvtermprop.value.clone()),
@@ -6993,6 +6992,7 @@ phenotypes, so just the first part of this extension will be used:
                 interesting_parent_ids: interesting_parent_ids_for_solr,
                 definition_xrefs: term_details.definition_xrefs.clone(),
                 secondary_identifiers: term_details.secondary_identifiers.clone(),
+                gocam_ids: term_details.gocam_ids.clone(),
                 annotation_count,
                 gene_count: term_details.gene_count,
                 genotype_count: term_details.genotype_count,

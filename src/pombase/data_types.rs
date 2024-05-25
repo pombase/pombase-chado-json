@@ -2403,6 +2403,9 @@ pub struct SolrTermSummary {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,
 
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub gocam_ids: HashSet<FlexStr>,
+
     pub annotation_count: usize,
     pub gene_count: usize,
     pub genotype_count: usize,
