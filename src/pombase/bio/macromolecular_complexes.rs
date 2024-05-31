@@ -13,9 +13,9 @@ pub type MacromolecularComplexData =
 
 pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
                                    config: &Config)
-     -> MacromolecularComplexData
+    -> MacromolecularComplexData
 {
-   let mut complex_data = HashMap::new();
+    let mut complex_data = HashMap::new();
 
     let no_evidence = flex_str!("NO_EVIDENCE");
 
@@ -52,7 +52,7 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
 
 pub fn write_macromolecular_complexes(ont_annotations: &Vec<OntAnnotation>,
                                       config: &Config, output_dir: &str)
-                                      -> Result<(), io::Error>
+    -> Result<(), io::Error>
 {
     let mut complex_data = macromolecular_complex_data(ont_annotations, config);
 
