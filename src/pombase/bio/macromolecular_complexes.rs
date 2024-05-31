@@ -4,16 +4,18 @@ use std::fs::File;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
-use crate::data_types::{GeneShort, OntAnnotation, TermShort};
+use crate::data_types::{GeneShort, OntAnnotation, ReferenceShort, TermShort};
 use crate::web::config::Config;
 use crate::utils::join;
 
+pub type MacromolecularComplexData =
+    HashMap<(TermShort, GeneShort, FlexStr), Vec<(Option<ReferenceShort>, Option<FlexStr>)>>;
 
-pub fn write_macromolecular_complexes(ont_annotations: &Vec<OntAnnotation>,
-                                      config: &Config, output_dir: &str)
-                                      -> Result<(), io::Error>
+pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
+                                   config: &Config)
+     -> MacromolecularComplexData
 {
-    let mut complex_data: HashMap<(TermShort, GeneShort, FlexStr), _> = HashMap::new();
+   let mut complex_data = HashMap::new();
 
     let no_evidence = flex_str!("NO_EVIDENCE");
 
@@ -44,6 +46,15 @@ pub fn write_macromolecular_complexes(ont_annotations: &Vec<OntAnnotation>,
                 .push((annotation.reference_short.clone(), annotation.assigned_by.clone()));
         }
     }
+
+    complex_data
+}
+
+pub fn write_macromolecular_complexes(ont_annotations: &Vec<OntAnnotation>,
+                                      config: &Config, output_dir: &str)
+                                      -> Result<(), io::Error>
+{
+    let mut complex_data = macromolecular_complex_data(ont_annotations, config);
 
     let complexes_file_name = format!("{}/Complex_annotation.tsv", output_dir);
     let complexes_file = File::create(complexes_file_name).expect("Unable to open file");
