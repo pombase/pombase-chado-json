@@ -19,6 +19,7 @@ pub type Evidence = FlexStr;
 pub type Residue = FlexStr;
 pub type Condition = String;
 pub type Qualifier = FlexStr;
+pub type AssignedBy = FlexStr;
 
 pub type TranscriptUniquename = FlexStr;
 pub type ProteinUniquename = FlexStr;

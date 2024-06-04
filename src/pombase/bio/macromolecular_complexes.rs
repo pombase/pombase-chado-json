@@ -1,15 +1,27 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::io::{self, Write, BufWriter};
 use std::fs::File;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
-use crate::data_types::{GeneShort, OntAnnotation, ReferenceShort, TermShort};
+use crate::data_types::{GeneShort, OntAnnotation, TermShort};
+use crate::types::{AssignedBy, Evidence, GeneUniquename, ReferenceUniquename, TermId};
 use crate::web::config::Config;
 use crate::utils::join;
 
+pub struct MacromolecularComplexGene {
+    gene_short: GeneShort,
+    annotation_details: HashSet<(Option<ReferenceUniquename>,
+                                 Option<AssignedBy>, Evidence)>
+}
+
+pub struct MacromolecularComplexTerm {
+    term_short: TermShort,
+    complex_genes: BTreeMap<GeneUniquename, MacromolecularComplexGene>
+}
+
 pub type MacromolecularComplexData =
-    HashMap<(TermShort, GeneShort, FlexStr), Vec<(Option<ReferenceShort>, Option<FlexStr>)>>;
+    HashMap<TermId, MacromolecularComplexTerm>;
 
 pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
                                    config: &Config)
@@ -19,7 +31,7 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
 
     let no_evidence = flex_str!("NO_EVIDENCE");
 
-    let make_key = |annotation: &OntAnnotation| {
+    let annotation_details = |annotation: &OntAnnotation| {
         let evidence = annotation.evidence.clone().unwrap_or_else(|| no_evidence.clone());
         (annotation.term_short.clone(), annotation.genes.iter().next().unwrap().clone(),
          evidence)
@@ -33,6 +45,13 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
             let term_short = &annotation.term_short;
             let termid = &term_short.termid;
 
+            let reference_uniquename =
+                if let Some(ref reference_short) = annotation.reference_short {
+                    Some(reference_short.uniquename.clone())
+                } else {
+                    None
+                };
+
             if complexes_config.excluded_terms.contains(termid) {
                 continue 'TERM;
             }
@@ -40,10 +59,22 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
                 continue 'TERM;
             }
 
-            let key: (TermShort, GeneShort, FlexStr) = make_key(annotation);
-            complex_data.entry(key)
-                .or_insert_with(Vec::new)
-                .push((annotation.reference_short.clone(), annotation.assigned_by.clone()));
+            let (term_short, gene_short, evidence) = annotation_details(annotation);
+
+            complex_data.entry(term_short.termid.clone())
+                .or_insert_with(|| MacromolecularComplexTerm {
+                    term_short,
+                    complex_genes: BTreeMap::new()
+                })
+                .complex_genes
+                .entry(gene_short.uniquename.clone())
+                .or_insert_with(|| MacromolecularComplexGene {
+                    gene_short,
+                    annotation_details: HashSet::new(),
+                })
+                .annotation_details
+                .insert((reference_uniquename, annotation.assigned_by.clone(),
+                          evidence));
         }
     }
 
@@ -67,39 +98,58 @@ pub fn write_macromolecular_complexes(ont_annotations: &Vec<OntAnnotation>,
 
     let mut lines = vec![];
 
-    for (key, values) in complex_data.drain() {
-        let (term_short, gene_short, evidence) = key;
-        let mut refs = HashSet::new();
-        let mut assigned_bys = HashSet::new();
-        for (maybe_ref_short, maybe_assigned_by) in values {
-            if let Some(ref_short) = maybe_ref_short {
-                refs.insert(ref_short.uniquename);
+    for (_, term_details) in complex_data.drain() {
+
+        for (_, gene_details) in term_details.complex_genes {
+
+            let mut evidence_set = BTreeSet::new();
+            let mut evidence_refs = HashMap::new();
+            let mut evidence_assigned_by = HashMap::new();
+
+            for (maybe_ref_uniquename, maybe_assigned_by, evidence) in gene_details.annotation_details {
+                evidence_set.insert(evidence.clone());
+                if let Some(ref_uniquename) = maybe_ref_uniquename {
+                    evidence_refs.entry(evidence.clone())
+                    .or_insert_with(HashSet::new)
+                    .insert(ref_uniquename);
+                }
+                if let Some(assigned_by) = maybe_assigned_by {
+                    evidence_assigned_by.entry(evidence.clone())
+                    .or_insert_with(HashSet::new)
+                    .insert(assigned_by);
+                }
             }
-            if let Some(assigned_by) = maybe_assigned_by {
-                assigned_bys.insert(assigned_by);
+
+            for evidence in evidence_set.iter() {
+
+                let mut refs_vec = evidence_refs.remove(evidence)
+                    .unwrap_or_else(HashSet::new)
+                    .into_iter().collect::<Vec<_>>();
+                refs_vec.sort();
+                let mut assigned_bys_vec = evidence_assigned_by.remove(evidence)
+                    .unwrap_or_else(HashSet::new)
+                    .into_iter().collect::<Vec<_>>();
+                assigned_bys_vec.sort();
+
+                let refs_string = join(&refs_vec, ",");
+                let assigned_by_string = join(&assigned_bys_vec, ",");
+                let gene_display_name = gene_details.gene_short.name.as_ref().map(FlexStr::as_str)
+                    .unwrap_or_else(|| gene_details.gene_short.uniquename.as_str());
+
+                let line_bits = vec![term_details.term_short.termid.as_str(),
+                                     term_details.term_short.name.as_str(),
+                                     gene_details.gene_short.uniquename.as_str(),
+                                     gene_display_name,
+                                     gene_details.gene_short.product.as_ref().map(FlexStr::as_str).unwrap_or_else(|| ""),
+                                     evidence.as_str(), refs_string.as_str(),
+                                     assigned_by_string.as_str()];
+
+                lines.push(line_bits.join("\t"));
             }
         }
-
-        let mut refs_vec = refs.into_iter().collect::<Vec<_>>();
-        refs_vec.sort();
-        let mut assigned_bys_vec = assigned_bys.into_iter().collect::<Vec<_>>();
-        assigned_bys_vec.sort();
-
-        let refs_string = join(&refs_vec, ",");
-        let assigned_by_string = join(&assigned_bys_vec, ",");
-
-        let line_bits = vec![term_short.termid.as_str(), term_short.name.as_str(),
-                             gene_short.uniquename.as_str(),
-                             gene_short.name.as_ref().map(FlexStr::as_str)
-                             .unwrap_or_else(|| gene_short.uniquename.as_str()),
-                             gene_short.product.as_ref().map(FlexStr::as_str).unwrap_or_else(|| ""),
-                             evidence.as_str(), refs_string.as_str(),
-                             assigned_by_string.as_str()];
-
-        lines.push(line_bits.join("\t"));
     }
 
-    lines.sort();
+   lines.sort();
 
     for line in lines.drain(0..) {
         complexes_writer.write_all(line.as_bytes())?;
