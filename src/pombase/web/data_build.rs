@@ -89,7 +89,6 @@ pub struct WebDataBuild<'a> {
     all_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
     all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
 
-    protein_complex_data: ProteinComplexData,
     protein_complexes: HashMap<ProteinComplexUniquename, ProteinComplexDetails>,
     genes_of_complexes: HashMap<ProteinComplexUniquename, HashSet<GeneUniquename>>,
 
@@ -887,7 +886,7 @@ impl <'a> WebDataBuild<'a> {
             alleles: BTreeMap::new(),
             transcripts: HashMap::new(),
             other_features: HashMap::new(),
-            protein_complex_data: HashMap::new(),
+
             protein_complexes: HashMap::new(),
             genes_of_complexes: HashMap::new(),
             terms: HashMap::new(),

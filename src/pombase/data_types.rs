@@ -2330,7 +2330,7 @@ pub struct ProteinComplexGene {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinComplexTerm {
-    pub term_short: TermShort,
+    pub term_name: TermName,
     pub complex_genes: BTreeMap<GeneUniquename, ProteinComplexGene>
 }
 

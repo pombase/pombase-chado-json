@@ -19,8 +19,7 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>, config:
 
     let annotation_details = |annotation: &OntAnnotation| {
         let evidence = annotation.evidence.clone().unwrap_or_else(|| no_evidence.clone());
-        (annotation.term_short.clone(), annotation.genes.iter().next().unwrap().clone(),
-         evidence)
+        (annotation.genes.iter().next().unwrap().clone(), evidence)
     };
 
     if let Some(ref complexes_config) = config.file_exports.macromolecular_complexes {
@@ -30,6 +29,7 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>, config:
         'TERM: for annotation in ont_annotations {
             let term_short = &annotation.term_short;
             let termid = &term_short.termid;
+            let term_name = &term_short.name;
 
             let reference_uniquename =
                 if let Some(ref reference_short) = annotation.reference_short {
@@ -45,11 +45,11 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>, config:
                 continue 'TERM;
             }
 
-            let (term_short, gene_short, evidence) = annotation_details(annotation);
+            let (gene_short, evidence) = annotation_details(annotation);
 
             complex_data.entry(term_short.termid.clone())
                 .or_insert_with(|| ProteinComplexTerm {
-                    term_short,
+                    term_name: term_name.to_owned(),
                     complex_genes: BTreeMap::new(),
                 })
                 .complex_genes
@@ -82,7 +82,7 @@ pub fn write_macromolecular_complexes(complex_data: &ProteinComplexData,
 
     let mut lines = vec![];
 
-    for (_, term_details) in complex_data.iter() {
+    for (termid, term_details) in complex_data.iter() {
 
         for (_, gene_details) in &term_details.complex_genes {
             let mut evidence_set = BTreeSet::new();
@@ -119,8 +119,8 @@ pub fn write_macromolecular_complexes(complex_data: &ProteinComplexData,
                 let gene_display_name = gene_details.gene_short.name.as_ref().map(FlexStr::as_str)
                     .unwrap_or_else(|| gene_details.gene_short.uniquename.as_str());
 
-                let line_bits = vec![term_details.term_short.termid.as_str(),
-                                     term_details.term_short.name.as_str(),
+                let line_bits = vec![termid.as_str(),
+                                     term_details.term_name.as_str(),
                                      gene_details.gene_short.uniquename.as_str(),
                                      gene_display_name,
                                      gene_details.gene_short.product.as_ref().map(FlexStr::as_str).unwrap_or_else(|| ""),
