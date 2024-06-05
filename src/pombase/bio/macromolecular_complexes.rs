@@ -4,27 +4,13 @@ use std::fs::File;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 
-use crate::data_types::{GeneShort, OntAnnotation, TermShort};
-use crate::types::{AssignedBy, Evidence, GeneUniquename, ReferenceUniquename, TermId};
+use crate::data_types::{OntAnnotation, ProteinComplexData, ProteinComplexTerm,
+                        ProteinComplexGene};
+
 use crate::web::config::Config;
 use crate::utils::join;
 
-pub struct ProteinComplexGene {
-    gene_short: GeneShort,
-    annotation_details: HashSet<(Option<ReferenceUniquename>,
-                                 Option<AssignedBy>, Evidence)>
-}
-
-pub struct ProteinComplexTerm {
-    term_short: TermShort,
-    complex_genes: BTreeMap<GeneUniquename, ProteinComplexGene>
-}
-
-pub type ProteinComplexData =
-    HashMap<TermId, ProteinComplexTerm>;
-
-pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
-                                   config: &Config)
+pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>, config: &Config)
     -> ProteinComplexData
 {
     let mut complex_data = HashMap::new();
@@ -64,7 +50,7 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
             complex_data.entry(term_short.termid.clone())
                 .or_insert_with(|| ProteinComplexTerm {
                     term_short,
-                    complex_genes: BTreeMap::new()
+                    complex_genes: BTreeMap::new(),
                 })
                 .complex_genes
                 .entry(gene_short.uniquename.clone())
@@ -81,12 +67,10 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
     complex_data
 }
 
-pub fn write_macromolecular_complexes(ont_annotations: &Vec<OntAnnotation>,
-                                      config: &Config, output_dir: &str)
+pub fn write_macromolecular_complexes(complex_data: &ProteinComplexData,
+                                      output_dir: &str)
     -> Result<(), io::Error>
 {
-    let mut complex_data = macromolecular_complex_data(ont_annotations, config);
-
     let complexes_file_name = format!("{}/Complex_annotation.tsv", output_dir);
     let complexes_file = File::create(complexes_file_name).expect("Unable to open file");
     let mut complexes_writer = BufWriter::new(&complexes_file);
@@ -98,25 +82,24 @@ pub fn write_macromolecular_complexes(ont_annotations: &Vec<OntAnnotation>,
 
     let mut lines = vec![];
 
-    for (_, term_details) in complex_data.drain() {
+    for (_, term_details) in complex_data.iter() {
 
-        for (_, gene_details) in term_details.complex_genes {
-
+        for (_, gene_details) in &term_details.complex_genes {
             let mut evidence_set = BTreeSet::new();
             let mut evidence_refs = HashMap::new();
             let mut evidence_assigned_by = HashMap::new();
 
-            for (maybe_ref_uniquename, maybe_assigned_by, evidence) in gene_details.annotation_details {
+            for (maybe_ref_uniquename, maybe_assigned_by, evidence) in &gene_details.annotation_details {
                 evidence_set.insert(evidence.clone());
                 if let Some(ref_uniquename) = maybe_ref_uniquename {
                     evidence_refs.entry(evidence.clone())
                     .or_insert_with(HashSet::new)
-                    .insert(ref_uniquename);
+                    .insert(ref_uniquename.to_owned());
                 }
                 if let Some(assigned_by) = maybe_assigned_by {
                     evidence_assigned_by.entry(evidence.clone())
                     .or_insert_with(HashSet::new)
-                    .insert(assigned_by);
+                    .insert(assigned_by.to_owned());
                 }
             }
 

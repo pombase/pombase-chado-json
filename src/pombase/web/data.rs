@@ -1671,7 +1671,7 @@ impl WebData {
         self.write_gene_id_table(config, &misc_path)?;
         self.write_protein_features(config, &misc_path)?;
         self.write_feature_coords(config, &misc_path)?;
-        write_macromolecular_complexes(&self.ont_annotations, config, &misc_path)?;
+        write_macromolecular_complexes(&self.api_maps.protein_complex_data, &misc_path)?;
         self.write_rnacentral(config, &misc_path)?;
         self.write_deletion_viability(config, &misc_path)?;
         self.write_slim_ids_and_names(config, &misc_path)?;

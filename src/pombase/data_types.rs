@@ -2321,6 +2321,22 @@ pub struct ProteinComplexDetails {
     pub genes: HashSet<GeneUniquename>,
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinComplexGene {
+    pub gene_short: GeneShort,
+    pub annotation_details: HashSet<(Option<ReferenceUniquename>,
+                                 Option<AssignedBy>, Evidence)>
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct ProteinComplexTerm {
+    pub term_short: TermShort,
+    pub complex_genes: BTreeMap<GeneUniquename, ProteinComplexGene>
+}
+
+pub type ProteinComplexData =
+    HashMap<TermId, ProteinComplexTerm>;
+
 pub type GoCamId = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -2342,6 +2358,11 @@ pub struct APIMaps {
     pub secondary_identifiers_map: HashMap<TermId, TermId>,
     pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
     pub gocam_data: HashMap<GeneUniquename, HashSet<GoCamId>>,
+
+    // based on annotations to "protein-containing complex" (GO:0032991):
+    pub protein_complex_data: ProteinComplexData,
+
+    // data from Complex Portal:
     pub protein_complexes: ProteinComplexMap,
 }
 

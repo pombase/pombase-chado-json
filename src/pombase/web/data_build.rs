@@ -11,6 +11,7 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
+use crate::bio::macromolecular_complexes::macromolecular_complex_data;
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
 use crate::bio::gocam_viz::make_gocam_data;
@@ -88,6 +89,7 @@ pub struct WebDataBuild<'a> {
     all_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
     all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
 
+    protein_complex_data: ProteinComplexData,
     protein_complexes: HashMap<ProteinComplexUniquename, ProteinComplexDetails>,
     genes_of_complexes: HashMap<ProteinComplexUniquename, HashSet<GeneUniquename>>,
 
@@ -885,6 +887,7 @@ impl <'a> WebDataBuild<'a> {
             alleles: BTreeMap::new(),
             transcripts: HashMap::new(),
             other_features: HashMap::new(),
+            protein_complex_data: HashMap::new(),
             protein_complexes: HashMap::new(),
             genes_of_complexes: HashMap::new(),
             terms: HashMap::new(),
@@ -5337,6 +5340,9 @@ phenotypes, so just the first part of this extension will be used:
         std::mem::swap(&mut gene_expression_measurements,
                        &mut self.gene_expression_measurements);
 
+        let protein_complex_data =
+            macromolecular_complex_data(&self.ont_annotations, &self.config);
+
         APIMaps {
             gene_summaries,
             gene_query_data_map,
@@ -5355,6 +5361,7 @@ phenotypes, so just the first part of this extension will be used:
             secondary_identifiers_map,
             protein_view_data,
             gocam_data,
+            protein_complex_data,
             protein_complexes: self.protein_complexes,
        }
     }
