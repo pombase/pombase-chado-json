@@ -9,23 +9,23 @@ use crate::types::{AssignedBy, Evidence, GeneUniquename, ReferenceUniquename, Te
 use crate::web::config::Config;
 use crate::utils::join;
 
-pub struct MacromolecularComplexGene {
+pub struct ProteinComplexGene {
     gene_short: GeneShort,
     annotation_details: HashSet<(Option<ReferenceUniquename>,
                                  Option<AssignedBy>, Evidence)>
 }
 
-pub struct MacromolecularComplexTerm {
+pub struct ProteinComplexTerm {
     term_short: TermShort,
-    complex_genes: BTreeMap<GeneUniquename, MacromolecularComplexGene>
+    complex_genes: BTreeMap<GeneUniquename, ProteinComplexGene>
 }
 
-pub type MacromolecularComplexData =
-    HashMap<TermId, MacromolecularComplexTerm>;
+pub type ProteinComplexData =
+    HashMap<TermId, ProteinComplexTerm>;
 
 pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
                                    config: &Config)
-    -> MacromolecularComplexData
+    -> ProteinComplexData
 {
     let mut complex_data = HashMap::new();
 
@@ -62,13 +62,13 @@ pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>,
             let (term_short, gene_short, evidence) = annotation_details(annotation);
 
             complex_data.entry(term_short.termid.clone())
-                .or_insert_with(|| MacromolecularComplexTerm {
+                .or_insert_with(|| ProteinComplexTerm {
                     term_short,
                     complex_genes: BTreeMap::new()
                 })
                 .complex_genes
                 .entry(gene_short.uniquename.clone())
-                .or_insert_with(|| MacromolecularComplexGene {
+                .or_insert_with(|| ProteinComplexGene {
                     gene_short,
                     annotation_details: HashSet::new(),
                 })
