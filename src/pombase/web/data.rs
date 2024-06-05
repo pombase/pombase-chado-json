@@ -1383,10 +1383,8 @@ impl WebData {
             if let Some(term_annotations) = gene_details.cv_annotations.get(&flex_str!("mondo")) {
                 for term_annotation in term_annotations {
 
-                    let annotations = term_annotation.annotations.clone();
-
-                    for annotation_id in annotations {
-                        let annotation_detail = self.get_annotation_detail(annotation_id)
+                    for annotation_id in &term_annotation.annotations {
+                        let annotation_detail = self.get_annotation_detail(*annotation_id)
                             .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                         let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
