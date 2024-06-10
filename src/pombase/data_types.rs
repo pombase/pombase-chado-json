@@ -1163,6 +1163,8 @@ pub struct GeneDetails {
     pub pdb_entries: Vec<PDBEntry>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub orfeome_identifier: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pombephosphoproteomics_unige_ch_gene: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
