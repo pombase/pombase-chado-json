@@ -429,6 +429,7 @@ fn make_test_gene() -> GeneDetails {
         has_protein_features: false,
         rfam_annotations: vec![],
         orfeome_identifier: None,
+        pombephosphoproteomics_unige_ch_gene: None,
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
