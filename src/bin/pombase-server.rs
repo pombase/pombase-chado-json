@@ -248,6 +248,35 @@ async fn structure_view(Path((structure_type, id)): Path<(String, String)>,
 
 }
 
+async fn rna_2d_structure(Path((gene_uniquename, urs_id)): Path<(String, String)>,
+                        State(all_state): State<Arc<AllState>>)
+                        -> (StatusCode, Html<String>)
+{
+    let search_url = all_state.config.server.django_url.to_owned() + "/rna_2d_structure/";
+    let params = [("gene_uniquename", gene_uniquename), ("urs_id", urs_id)];
+    let client = reqwest::Client::new();
+    let result = client.get(search_url).query(&params).send().await;
+
+    match result {
+        Ok(res) => {
+            match res.text().await {
+                Ok(text) => (StatusCode::OK, Html(text)),
+                Err(err) => {
+                    let err_mess = format!("Error proxying to Django: {:?}", err);
+                    eprintln!("{}", err_mess);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+                }
+
+            }
+        },
+        Err(err) => {
+            eprintln!("Error proxying to Django: {:?}", err);
+            (StatusCode::INTERNAL_SERVER_ERROR, Html(err.to_string()))
+        }
+    }
+
+}
+
 async fn protein_feature_view(Path((full_or_widget, gene_uniquename)): Path<(String, String)>,
                               State(all_state): State<Arc<AllState>>)
    -> (StatusCode, Html<String>)
@@ -691,6 +720,7 @@ async fn main() {
         .route("/*path", get(get_misc))
         .route("/", get(get_index))
         .route("/structure_view/:structure_type/:id", get(structure_view))
+        .route("/rna_2d_structure/:gene_uniquename/:urs_id", get(rna_2d_structure))
         .route("/protein_feature_view/:full_or_widget/:gene_uniquename", get(protein_feature_view))
         .route("/gocam_viz/:full_or_widget/:gocam_id", get(gocam_viz))
         .route("/simple/gene/:id", get(get_simple_gene))
