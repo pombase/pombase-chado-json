@@ -1164,7 +1164,9 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub orfeome_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub pombephosphoproteomics_unige_ch_gene: Option<FlexStr>,
+    pub pombephosphoproteomics_unige_ch_starvation_mating_gene: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pombephosphoproteomics_unige_ch_fusion_gene: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

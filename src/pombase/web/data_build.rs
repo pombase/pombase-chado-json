@@ -1863,7 +1863,8 @@ phenotypes, so just the first part of this extension will be used:
                 vec![]
             };
 
-        let mut pombephosphoproteomics_unige_ch_gene: Option<FlexStr> = None;
+        let mut pombephosphoproteomics_unige_ch_starvation_mating_gene: Option<FlexStr> = None;
+        let mut pombephosphoproteomics_unige_ch_fusion_gene: Option<FlexStr> = None;
 
         let mut gocam_ids = HashSet::new();
 
@@ -1880,9 +1881,11 @@ phenotypes, so just the first part of this extension will be used:
                         }
                     }
                 },
-                "pombephosphoproteomics_unige_ch_gene" =>
-                    pombephosphoproteomics_unige_ch_gene = prop.value.clone(),
-                "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
+                "pombephosphoproteomics_unige_ch_starvation_mating_gene" =>
+                    pombephosphoproteomics_unige_ch_starvation_mating_gene = prop.value.clone(),
+                "pombephosphoproteomics_unige_ch_fusion_gene" =>
+                    pombephosphoproteomics_unige_ch_fusion_gene = prop.value.clone(),
+                    "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
                 "gocam_id" => {
                      if let Some(ref gocam_id) = prop.value {
                          gocam_ids.insert(gocam_id.clone());
@@ -1981,7 +1984,8 @@ phenotypes, so just the first part of this extension will be used:
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
-            pombephosphoproteomics_unige_ch_gene,
+            pombephosphoproteomics_unige_ch_starvation_mating_gene,
+            pombephosphoproteomics_unige_ch_fusion_gene,
             gocam_ids,
             name_descriptions: vec![],
             synonyms: vec![],
