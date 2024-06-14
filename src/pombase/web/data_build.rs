@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet};
 use crate::bio::macromolecular_complexes::macromolecular_complex_data;
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
-use crate::bio::gocam_viz::make_gocam_data;
+use crate::bio::gocam_viz::{make_gocam_data_by_gene, make_gocam_data_by_id};
 use crate::db::{raw::*, ChadoQueries};
 
 use crate::gene_history::GeneHistoryMap;
@@ -5305,7 +5305,8 @@ phenotypes, so just the first part of this extension will be used:
                                        &self.genotypes, &self.alleles,
                                        &self.transcripts, &self.config);
 
-        let gocam_data = make_gocam_data(&self.genes);
+        let gocam_data_by_gene = make_gocam_data_by_gene(&self.genes);
+        let gocam_data_by_gocam_id = make_gocam_data_by_id(&self.genes, &self.terms);
 
         let gene_query_data_map = self.make_gene_query_data_map();
 
@@ -5373,7 +5374,8 @@ phenotypes, so just the first part of this extension will be used:
             gene_expression_measurements,
             secondary_identifiers_map,
             protein_view_data,
-            gocam_data,
+            gocam_data_by_gene,
+            gocam_data_by_gocam_id,
             protein_complex_data,
             protein_complexes: self.protein_complexes,
        }

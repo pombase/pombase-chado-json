@@ -10,7 +10,7 @@ use rusqlite::Connection;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIGenotypeAnnotation, APIMaps, AlleleDetails, AlleleShort, ChromosomeDetails, DataLookup, ExtPart, ExtRange, FeatureShort, GeneAndGeneProduct, GeneDetails, GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails, GoCamId, IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType, OntAnnotationDetail, OntAnnotationId, OntAnnotationMap, Ploidiness, ProteinViewData, ProteinViewType, ReferenceDetails, ReferenceShort, ReferenceShortOptionMap, TermDetails, TermShort, TermShortOptionMap, TranscriptDetailsOptionMap, WithFromValue};
+use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIGenotypeAnnotation, APIMaps, AlleleDetails, AlleleShort, ChromosomeDetails, DataLookup, ExtPart, ExtRange, FeatureShort, GeneAndGeneProduct, GeneDetails, GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails, GoCamDetails, GoCamId, IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType, OntAnnotationDetail, OntAnnotationId, OntAnnotationMap, Ploidiness, ProteinViewData, ProteinViewType, ReferenceDetails, ReferenceShort, ReferenceShortOptionMap, TermDetails, TermShort, TermShortOptionMap, TranscriptDetailsOptionMap, WithFromValue};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
@@ -1039,6 +1039,13 @@ impl APIData {
     {
         let gene_uniquename = FlexStr::from(gene_uniquename);
 
-        self.maps.gocam_data.get(&gene_uniquename).map(|d| d.to_owned())
+        self.maps.gocam_data_by_gene.get(&gene_uniquename).map(|d| d.to_owned())
+    }
+
+
+    pub fn get_all_gocam_data(&self)
+        -> Vec<GoCamDetails>
+    {
+        self.maps.gocam_data_by_gocam_id.values().cloned().collect()
     }
 }

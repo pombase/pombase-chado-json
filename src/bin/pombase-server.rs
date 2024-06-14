@@ -12,7 +12,7 @@ use tower_http::{normalize_path::NormalizePathLayer, trace::TraceLayer};
 use serde::Serialize;
 use serde_json::{json, Value};
 
-use pombase::data_types::ProteinViewType;
+use pombase::data_types::{GoCamDetails, ProteinViewType};
 
 use rusqlite::Connection;
 
@@ -178,6 +178,17 @@ async fn get_gocam_data(Path((_full_or_widget, gene_uniquename)): Path<(String, 
               .map(|s| s.to_owned())
               .map(Json);
     option_json_to_result(&gene_uniquename, res)
+}
+
+async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
+        -> impl IntoResponse
+{
+    let res = all_state.query_exec.get_api_data().get_all_gocam_data();
+
+    let res: Result<(StatusCode, Json<Vec<GoCamDetails>>), (StatusCode, String)> =
+      Ok((StatusCode::OK, Json(res)));
+
+    res
 }
 
 async fn get_term_summary_by_id(Path(id): Path<String>, State(all_state): State<Arc<AllState>>)
@@ -741,6 +752,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/motif_search/:scope/:q", get(motif_search))
         .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
         .route("/api/v1/dataset/latest/gocam_data/:full_or_widget/:gene_uniquename", get(get_gocam_data))
+        .route("/api/v1/dataset/latest/gocam_data/all", get(get_all_gocam_data))
         .route("/api/v1/dataset/latest/query/:q", get(query_get))
         .route("/api/v1/dataset/latest/query", post(query_post))
         .route("/api/v1/dataset/latest/search/:scope/:q", get(solr_search))

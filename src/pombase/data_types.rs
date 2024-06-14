@@ -2348,6 +2348,23 @@ pub type ProteinComplexData =
 pub type GoCamId = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct GoCamDetails {
+    pub gocam_id: GoCamId,
+    pub genes: HashSet<GeneUniquename>,
+    pub terms: HashSet<TermAndName>,
+}
+
+impl GoCamDetails {
+    pub fn new(gocam_id: &GoCamId) -> GoCamDetails {
+        GoCamDetails {
+            gocam_id: gocam_id.to_owned(),
+            genes: HashSet::new(),
+            terms: HashSet::new(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct APIMaps {
     pub termid_genes: HashMap<TermId, HashSet<GeneUniquename>>,
     pub gene_summaries: HashMap<GeneUniquename, APIGeneSummary>,
@@ -2365,7 +2382,8 @@ pub struct APIMaps {
     pub gene_expression_measurements: GeneExDataSetMeasurements,
     pub secondary_identifiers_map: HashMap<TermId, TermId>,
     pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
-    pub gocam_data: HashMap<GeneUniquename, HashSet<GoCamId>>,
+    pub gocam_data_by_gene: HashMap<GeneUniquename, HashSet<GoCamId>>,
+    pub gocam_data_by_gocam_id: HashMap<GoCamId, GoCamDetails>,
 
     // based on annotations to "protein-containing complex" (GO:0032991):
     pub protein_complex_data: ProteinComplexData,
