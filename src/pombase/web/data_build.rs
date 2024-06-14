@@ -1146,6 +1146,8 @@ impl <'a> WebDataBuild<'a> {
             .map(|pdb_entry| pdb_entry.pdb_id.clone())
             .collect();
 
+        let gocam_ids = gene_details.gocam_ids.clone();
+
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
@@ -1154,6 +1156,7 @@ impl <'a> WebDataBuild<'a> {
             exact_synonyms: synonyms,
             dbxrefs: gene_details.dbxrefs.clone(),
             pdb_ids,
+            gocam_ids,
             location: gene_details.location.clone(),
             transcripts: transcript_details,
             tm_domain_count: gene_details.tm_domain_coords.len(),
@@ -5104,6 +5107,7 @@ phenotypes, so just the first part of this extension will be used:
             let pdb_ids = gene_details.pdb_entries.iter()
                 .map(|pdb_entry| pdb_entry.pdb_id.clone())
                 .collect();
+            let gocam_ids = gene_details.gocam_ids.clone();
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
@@ -5123,6 +5127,7 @@ phenotypes, so just the first part of this extension will be used:
                 unspliced_rna_length,
                 reference_uniquenames,
                 pdb_ids,
+                gocam_ids,
                 subset_termids: gene_details.subset_termids.clone(),
             };
 

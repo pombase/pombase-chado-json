@@ -181,6 +181,7 @@ async fn test_output_options() {
                 gaf_lines: None,
                 reference_uniquenames: HashSet::new(),
                 pdb_ids: HashSet::new(),
+                gocam_ids: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             },
@@ -204,6 +205,7 @@ async fn test_output_options() {
                 gaf_lines: None,
                 reference_uniquenames: HashSet::new(),
                 pdb_ids: HashSet::new(),
+                gocam_ids: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             },
@@ -230,6 +232,7 @@ async fn test_output_options() {
                 gaf_lines: None,
                 reference_uniquenames: HashSet::new(),
                 pdb_ids: HashSet::new(),
+                gocam_ids: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             }];

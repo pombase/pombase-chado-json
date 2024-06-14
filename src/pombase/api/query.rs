@@ -48,6 +48,8 @@ pub enum IntRangeType {
     TranscriptCount,
 #[serde(rename = "pdb_structure_count")]
     PDBStructureCount,
+#[serde(rename = "gocam_model_count")]
+    GoCamModelCount,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -564,6 +566,18 @@ fn exec_pdb_id_count_range(api_data: &APIData,
     Ok(gene_uniquenames)
 }
 
+fn exec_gocam_model_count_range(api_data: &APIData,
+                                 range_start: Option<usize>, range_end: Option<usize>)
+                       -> GeneUniquenameVecResult
+{
+    let gene_uniquenames =
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
+            (range_start.is_none() || gene.gocam_ids.len() >= range_start.unwrap()) &&
+            (range_end.is_none() || gene.gocam_ids.len() <= range_end.unwrap())
+        });
+    Ok(gene_uniquenames)
+}
+
 fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
                   start: Option<usize>, end: Option<usize>,
                   options: &HashSet<String>) -> GeneUniquenameVecResult {
@@ -578,6 +592,7 @@ fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
         IntRangeType::ExonCount => exec_exon_count_range(api_data, start, end, options),
         IntRangeType::TranscriptCount => exec_transcript_count_range(api_data, start, end),
         IntRangeType::PDBStructureCount => exec_pdb_id_count_range(api_data, start, end),
+        IntRangeType::GoCamModelCount => exec_gocam_model_count_range(api_data, start, end),
     }
 }
 
@@ -1056,6 +1071,7 @@ impl Query {
                let mut reference_uniquenames = HashSet::new();
                let mut tmm = None;
                let mut pdb_ids = HashSet::new();
+               let mut gocam_ids = HashSet::new();
                let mut molecular_weight = None;
                let mut protein_length = None;
                let mut protein_length_bin = None;
@@ -1087,6 +1103,7 @@ impl Query {
                                 go_function = gene_data.go_function.clone(),
                            "tmm" => tmm = gene_data.tmm.clone(),
                            "pdb_ids" => pdb_ids = gene_data.pdb_ids.clone(),
+                           "gocam_ids" => gocam_ids = gene_data.gocam_ids.clone(),
                            "molecular_weight" =>
                                molecular_weight = gene_data.molecular_weight,
                            "protein_length" =>
@@ -1148,6 +1165,7 @@ impl Query {
                    unspliced_rna_length,
                    reference_uniquenames,
                    pdb_ids,
+                   gocam_ids,
                    subsets,
                    gene_expression,
                }
