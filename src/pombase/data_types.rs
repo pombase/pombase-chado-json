@@ -1230,7 +1230,7 @@ pub struct GeneDetails {
     pub subset_termids: HashSet<TermId>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub gocam_ids: HashSet<GoCamId>,
+    pub gocams: HashSet<GoCamIdAndTitle>,
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_history: Vec<GeneHistoryEntry>,
@@ -1918,7 +1918,7 @@ pub struct TermDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub pombase_gene_id: Option<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub gocam_ids: HashSet<TermId>,
+    pub gocams: HashSet<GoCamIdAndTitle>,
 }
 
 impl Container for TermDetails {
@@ -2346,18 +2346,31 @@ pub type ProteinComplexData =
     HashMap<TermId, ProteinComplexTerm>;
 
 pub type GoCamId = FlexStr;
+pub type GoCamTitle = FlexStr;
+
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
+pub struct GoCamIdAndTitle {
+    pub gocam_id: GoCamId,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub title: Option<GoCamTitle>,
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GoCamDetails {
     pub gocam_id: GoCamId,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub title: Option<FlexStr>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub genes: HashSet<GeneUniquename>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub terms: HashSet<TermAndName>,
 }
 
 impl GoCamDetails {
-    pub fn new(gocam_id: &GoCamId) -> GoCamDetails {
+    pub fn new(gocam_id: &GoCamId, gocam_title: Option<GoCamTitle>) -> GoCamDetails {
         GoCamDetails {
             gocam_id: gocam_id.to_owned(),
+            title: gocam_title,
             genes: HashSet::new(),
             terms: HashSet::new(),
         }
@@ -2451,7 +2464,7 @@ pub struct SolrTermSummary {
     pub secondary_identifiers: HashSet<TermId>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub gocam_ids: HashSet<FlexStr>,
+    pub gocam_ids: HashSet<GoCamId>,
 
     pub annotation_count: usize,
     pub gene_count: usize,

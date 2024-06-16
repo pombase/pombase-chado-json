@@ -97,7 +97,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
-        gocam_ids: HashSet::new(),
+        gocams: HashSet::new(),
         flags: HashSet::new(),
         feature_type: "gene".to_shared_str(),
         feature_so_termid: "SO:0000704".to_shared_str(),
@@ -386,7 +386,7 @@ pub fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetail
         genotype_count: 0,
         xrefs: HashMap::new(),
         pombase_gene_id: None,
-        gocam_ids: HashSet::new(),
+        gocams: HashSet::new(),
     }
 }
 

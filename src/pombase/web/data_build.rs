@@ -854,6 +854,22 @@ fn get_cumulative_annotation_type_counts(annotation_type_counts: StatsIntegerTab
     cumulative_counts
 }
 
+fn make_gocam_id_and_title_from_prop(gocam: &str) -> GoCamIdAndTitle {
+    let mut gocam_id_and_title: Vec<FlexStr> =
+                            gocam.split(":").map(|s| s.into()).collect();
+                        let gocam_id = gocam_id_and_title.remove(0);
+                        let maybe_gocam_title: Option<GoCamTitle> =
+                            if gocam_id_and_title.len() == 0 {
+                                None
+                            } else {
+                                Some(gocam_id_and_title.remove(0))
+                            };
+    GoCamIdAndTitle {
+        gocam_id,
+        title: maybe_gocam_title,
+    }
+}
+
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
                domain_data: &'a DomainData,
@@ -1146,7 +1162,8 @@ impl <'a> WebDataBuild<'a> {
             .map(|pdb_entry| pdb_entry.pdb_id.clone())
             .collect();
 
-        let gocam_ids = gene_details.gocam_ids.clone();
+        let gocam_ids =
+            gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
 
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
@@ -1869,7 +1886,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut pombephosphoproteomics_unige_ch_starvation_mating_gene: Option<FlexStr> = None;
         let mut pombephosphoproteomics_unige_ch_fusion_gene: Option<FlexStr> = None;
 
-        let mut gocam_ids = HashSet::new();
+        let mut gocams = HashSet::new();
 
         for prop in feat.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
@@ -1889,11 +1906,12 @@ phenotypes, so just the first part of this extension will be used:
                 "pombephosphoproteomics_unige_ch_fusion_gene" =>
                     pombephosphoproteomics_unige_ch_fusion_gene = prop.value.clone(),
                     "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
-                "gocam_id" => {
-                     if let Some(ref gocam_id) = prop.value {
-                         gocam_ids.insert(gocam_id.clone());
-                         ()
-                     }
+                "gocam" => {
+                    if let Some(ref gocam) = prop.value {
+                        let gocam_id_and_title = make_gocam_id_and_title_from_prop(gocam);
+                        gocams.insert(gocam_id_and_title);
+                        ()
+                    }
                  },
                 _ => (),
             }
@@ -1989,7 +2007,7 @@ phenotypes, so just the first part of this extension will be used:
             orfeome_identifier,
             pombephosphoproteomics_unige_ch_starvation_mating_gene,
             pombephosphoproteomics_unige_ch_fusion_gene,
-            gocam_ids,
+            gocams,
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
@@ -3448,14 +3466,16 @@ phenotypes, so just the first part of this extension will be used:
                 let annotation_feature_type = cv_config.feature_type.clone();
 
                 let mut pombase_gene_id = None;
-                let mut gocam_ids = HashSet::new();
+                let mut gocams = HashSet::new();
 
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
                     match cvtermprop.prop_type.name.as_str() {
                         "pombase_gene_id" =>
                              pombase_gene_id = Some(cvtermprop.value.clone()),
-                        "gocam_id" => {
-                             gocam_ids.insert(cvtermprop.value.clone());
+                        "gocam" => {
+                            let gocam_prop = cvtermprop.value.as_str();
+                            let gocam_id_and_title = make_gocam_id_and_title_from_prop(gocam_prop);
+                            gocams.insert(gocam_id_and_title);
                         },
                         _ => (),
                   }
@@ -3552,7 +3572,7 @@ phenotypes, so just the first part of this extension will be used:
                                       genotype_count: 0,
                                       xrefs,
                                       pombase_gene_id,
-                                      gocam_ids,
+                                      gocams,
                                   });
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
@@ -5107,7 +5127,8 @@ phenotypes, so just the first part of this extension will be used:
             let pdb_ids = gene_details.pdb_entries.iter()
                 .map(|pdb_entry| pdb_entry.pdb_id.clone())
                 .collect();
-            let gocam_ids = gene_details.gocam_ids.clone();
+            let gocam_ids =
+                gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
@@ -7002,6 +7023,10 @@ phenotypes, so just the first part of this extension will be used:
             let annotation_count = term_details.annotation_count();
             let interesting_parent_ids_for_solr =
                 term_details.interesting_parent_ids.clone();
+
+            let gocam_ids =
+                term_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
+
             let term_summ = SolrTermSummary {
                 id: termid.clone(),
                 cv_name: term_details.cv_name.clone(),
@@ -7014,7 +7039,7 @@ phenotypes, so just the first part of this extension will be used:
                 interesting_parent_ids: interesting_parent_ids_for_solr,
                 definition_xrefs: term_details.definition_xrefs.clone(),
                 secondary_identifiers: term_details.secondary_identifiers.clone(),
-                gocam_ids: term_details.gocam_ids.clone(),
+                gocam_ids,
                 annotation_count,
                 gene_count: term_details.gene_count,
                 genotype_count: term_details.genotype_count,
