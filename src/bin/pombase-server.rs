@@ -191,6 +191,15 @@ async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
     res
 }
 
+async fn get_all_gocam_data_by_id(Path(gocam_id): Path<String>,
+                                  State(all_state): State<Arc<AllState>>)
+        -> impl IntoResponse
+{
+    let res = all_state.query_exec.get_api_data().get_gocam_details_by_id(&gocam_id).map(Json);
+
+    option_json_to_result(&gocam_id, res)
+}
+
 async fn get_term_summary_by_id(Path(id): Path<String>, State(all_state): State<Arc<AllState>>)
    -> impl IntoResponse
 {
@@ -753,6 +762,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
         .route("/api/v1/dataset/latest/gocam_data/:full_or_widget/:gene_uniquename", get(get_gocam_data))
         .route("/api/v1/dataset/latest/gocam_data/all", get(get_all_gocam_data))
+        .route("/api/v1/dataset/latest/gocam_data/by_id/:gocam_id", get(get_all_gocam_data_by_id))
         .route("/api/v1/dataset/latest/query/:q", get(query_get))
         .route("/api/v1/dataset/latest/query", post(query_post))
         .route("/api/v1/dataset/latest/search/:scope/:q", get(solr_search))

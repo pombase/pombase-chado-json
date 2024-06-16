@@ -1042,6 +1042,11 @@ impl APIData {
         self.maps.gocam_data_by_gene.get(&gene_uniquename).map(|d| d.to_owned())
     }
 
+    pub fn get_gocam_details_by_id(&self, gocam_id: &str)
+        -> Option<GoCamDetails>
+    {
+        self.maps.gocam_data_by_gocam_id.get(gocam_id).map(|d| d.to_owned())
+    }
 
     pub fn get_all_gocam_data(&self)
         -> Vec<GoCamDetails>
