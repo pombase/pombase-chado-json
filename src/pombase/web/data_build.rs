@@ -855,15 +855,14 @@ fn get_cumulative_annotation_type_counts(annotation_type_counts: StatsIntegerTab
 }
 
 fn make_gocam_id_and_title_from_prop(gocam: &str) -> GoCamIdAndTitle {
-    let mut gocam_id_and_title: Vec<FlexStr> =
-                            gocam.split(":").map(|s| s.into()).collect();
-                        let gocam_id = gocam_id_and_title.remove(0);
-                        let maybe_gocam_title: Option<GoCamTitle> =
-                            if gocam_id_and_title.len() == 0 {
-                                None
-                            } else {
-                                Some(gocam_id_and_title.remove(0))
-                            };
+    let gocam_id_and_title: Vec<&str> = gocam.splitn(2, ":").collect();
+    let gocam_id = gocam_id_and_title[0].into();
+    let maybe_gocam_title: Option<GoCamTitle> =
+        if gocam_id_and_title.len() == 1 {
+            None
+        } else {
+            Some(gocam_id_and_title[1].into())
+        };
     GoCamIdAndTitle {
         gocam_id,
         title: maybe_gocam_title,
