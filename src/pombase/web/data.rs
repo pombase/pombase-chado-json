@@ -1337,20 +1337,24 @@ impl WebData {
         let file = File::create(file_name).expect("Unable to open file for writing");
         let mut writer = BufWriter::new(&file);
 
-        let header = "#gene_systematic_id\tgene_name\tcurrent_internal_id\tallele_name\tallele_type\tallele_description\n";
+        let header = "#gene_systematic_id\tgene_name\tcurrent_internal_id\tallele_name\tallele_type\tallele_description\nsynonyms\n";
         writer.write_all(header.as_bytes())?;
 
         let empty_string = flex_str!("");
 
         for allele_short in self.alleles.values() {
             let gene = &allele_short.gene;
-            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\n",
+            let synonyms = allele_short.synonyms
+                .iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join("|");
+
+            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                       gene.uniquename,
                                       gene.name.as_ref().unwrap_or(&empty_string),
                                       allele_short.uniquename,
                                       allele_short.name.as_ref().unwrap_or(&empty_string),
                                       allele_short.allele_type,
-                                      allele_short.description.as_ref().unwrap_or(&empty_string));
+                                      allele_short.description.as_ref().unwrap_or(&empty_string),
+                                      synonyms);
 
             writer.write_all(line.as_bytes())?;
         }
