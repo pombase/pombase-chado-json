@@ -18,7 +18,7 @@ regex = "1.10"
 bit-set = "0.5"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std", "serde"] }
 flate2 = "1.0"
-lazy_static = "1.0"
+lazy_static = "1.5"
 once_cell = "1.19"
 uuid = { version = "1.8.0", features = ["v4", "serde", ] }
 bytes = "1.6"
