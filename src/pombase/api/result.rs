@@ -51,6 +51,8 @@ pub struct ResultRow {
     pub reference_uniquenames: HashSet<ReferenceUniquename>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub pdb_ids: HashSet<PdbId>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub rnacentral_id: Option<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocam_ids: HashSet<GoCamId>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]

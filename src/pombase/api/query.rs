@@ -1071,6 +1071,7 @@ impl Query {
                let mut reference_uniquenames = HashSet::new();
                let mut tmm = None;
                let mut pdb_ids = HashSet::new();
+               let mut rnacentral_id = None;
                let mut gocam_ids = HashSet::new();
                let mut molecular_weight = None;
                let mut protein_length = None;
@@ -1103,6 +1104,7 @@ impl Query {
                                 go_function = gene_data.go_function.clone(),
                            "tmm" => tmm = gene_data.tmm.clone(),
                            "pdb_ids" => pdb_ids = gene_data.pdb_ids.clone(),
+                           "rnacentral_id" => rnacentral_id = gene_data.rnacentral_urs_identifier.clone(),
                            "gocam_ids" => gocam_ids = gene_data.gocam_ids.clone(),
                            "molecular_weight" =>
                                molecular_weight = gene_data.molecular_weight,
@@ -1125,7 +1127,7 @@ impl Query {
                                                                     &gene_uniquename);
                                    gene_expression.extend(results_measurements);
                                } else {
-                                   eprintln!("warning - no such option field: {}", field_name);
+                                   eprintln!("warning - no such field: {}", field_name);
                                }
                            }
                        }
@@ -1165,6 +1167,7 @@ impl Query {
                    unspliced_rna_length,
                    reference_uniquenames,
                    pdb_ids,
+                   rnacentral_id,
                    gocam_ids,
                    subsets,
                    gene_expression,

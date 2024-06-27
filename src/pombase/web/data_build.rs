@@ -5126,6 +5126,7 @@ phenotypes, so just the first part of this extension will be used:
             let pdb_ids = gene_details.pdb_entries.iter()
                 .map(|pdb_entry| pdb_entry.pdb_id.clone())
                 .collect();
+            let rnacentral_urs_identifier = gene_details.rnacentral_urs_identifier.clone();
             let gocam_ids =
                 gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
 
@@ -5147,6 +5148,7 @@ phenotypes, so just the first part of this extension will be used:
                 unspliced_rna_length,
                 reference_uniquenames,
                 pdb_ids,
+                rnacentral_urs_identifier,
                 gocam_ids,
                 subset_termids: gene_details.subset_termids.clone(),
             };
