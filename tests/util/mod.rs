@@ -83,6 +83,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         secondary_identifier: None,
         biogrid_interactor_id: None,
         rnacentral_urs_identifier: None,
+        rnacentral_2d_structure_id: None,
         pdb_entries: vec![],
         interpro_matches: vec![],
         tm_domain_coords: vec![],

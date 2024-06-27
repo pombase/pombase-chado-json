@@ -435,6 +435,7 @@ fn make_test_gene() -> GeneDetails {
         synonyms: vec![],
         dbxrefs: HashSet::new(),
         gocams: HashSet::new(),
+        rnacentral_2d_structure_id: None,
 
         flags: HashSet::new(),
 

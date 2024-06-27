@@ -1232,6 +1232,9 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocams: HashSet<GoCamIdAndTitle>,
 
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub rnacentral_2d_structure_id: Option<RnaUrsId>,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_history: Vec<GeneHistoryEntry>,
 }

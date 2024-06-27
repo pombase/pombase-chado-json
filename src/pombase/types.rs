@@ -36,5 +36,6 @@ pub type OrganismTaxonId = u32;
 pub type SubSetName = FlexStr;
 
 pub type PdbId = FlexStr;
+pub type RnaUrsId = FlexStr;
 
 pub type ProteinComplexUniquename = FlexStr;

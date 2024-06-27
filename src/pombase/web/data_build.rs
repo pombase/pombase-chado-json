@@ -1871,6 +1871,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut secondary_identifier = None;
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
+        let mut rnacentral_2d_structure_id = None;
         let pdb_entries =
             if let Some(pdb_entry_map) = self.pdb_gene_entry_map {
                 if let Some(pdb_entries) = pdb_entry_map.get(&gene_uniquename) {
@@ -1904,7 +1905,8 @@ phenotypes, so just the first part of this extension will be used:
                     pombephosphoproteomics_unige_ch_starvation_mating_gene = prop.value.clone(),
                 "pombephosphoproteomics_unige_ch_fusion_gene" =>
                     pombephosphoproteomics_unige_ch_fusion_gene = prop.value.clone(),
-                    "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
+                "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
+                "rnacentral_2d_structure_id" => rnacentral_2d_structure_id = prop.value.clone(),
                 "gocam" => {
                     if let Some(ref gocam) = prop.value {
                         let gocam_id_and_title = make_gocam_id_and_title_from_prop(gocam);
@@ -1995,6 +1997,7 @@ phenotypes, so just the first part of this extension will be used:
             secondary_identifier,
             biogrid_interactor_id,
             rnacentral_urs_identifier,
+            rnacentral_2d_structure_id,
             pdb_entries,
             interpro_matches,
             tm_domain_coords,
