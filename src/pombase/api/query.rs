@@ -13,7 +13,7 @@ use crate::api::site_db::SiteDB;
 use crate::api::result::*;
 use crate::data_types::DataLookup;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
-                       ChromosomeDetails, Strand, Ploidiness};
+                       ChromosomeDetails, Strand, Ploidiness, GeneQueryPropFlag};
 use crate::types::CvName;
 use crate::types::TermId;
 use crate::web::config::TermAndName;
@@ -212,6 +212,11 @@ pub struct GenesTargetingNode {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct QueryGenePropNode {
+    pub property_flags: HashSet<GeneQueryPropFlag>,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct QueryIdNode {
     pub id: Uuid,
 }
@@ -252,6 +257,8 @@ pub struct QueryNode {
     pub downstream_genes: Option<DownstreamGenesNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub genes_targeting: Option<GenesTargetingNode>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub gene_properties: Option<QueryGenePropNode>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub query_id: Option<QueryIdNode>,
 }
@@ -653,6 +660,25 @@ fn exec_genes_targeting(api_data: &APIData, gene_uniquename: &GeneUniquename,
     Ok(genes_targeting.drain().collect())
 }
 
+fn exec_gene_properties(api_data: &APIData, query_properties: &HashSet<GeneQueryPropFlag>)
+    -> GeneUniquenameVecResult
+{
+    let mut gene_list = vec![];
+
+    'GENE:
+    for gene_query_data in api_data.get_maps().gene_query_data_map.values() {
+        for query_prop in query_properties.iter() {
+            if !gene_query_data.property_flags.contains(query_prop) {
+                continue 'GENE;
+            }
+        }
+
+        gene_list.push(gene_query_data.gene_uniquename.to_owned());
+    }
+
+    Ok(gene_list)
+}
+
 async fn exec_query_id(api_data: &APIData,
                        maybe_site_db: &Option<SiteDB>, id: &Uuid)
                        -> GeneUniquenameVecResult
@@ -695,6 +721,7 @@ impl QueryNode {
             substrates: None,
             downstream_genes: None,
             genes_targeting: None,
+            gene_properties: None,
             query_id: None,
         }
     }
@@ -774,6 +801,9 @@ impl QueryNode {
             return exec_float_range(api_data, &float_range_node.range_type,
                                     float_range_node.start, float_range_node.end,
                                     &float_range_node.options);
+        }
+        if let Some(ref gene_properties_node) = self.gene_properties {
+            return exec_gene_properties(api_data, &gene_properties_node.property_flags);
         }
         if let Some(ref query_id_node) = self.query_id {
             return exec_query_id(api_data, site_db, &query_id_node.id).await;

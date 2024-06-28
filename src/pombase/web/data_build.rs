@@ -5130,8 +5130,14 @@ phenotypes, so just the first part of this extension will be used:
                 .map(|pdb_entry| pdb_entry.pdb_id.clone())
                 .collect();
             let rnacentral_urs_identifier = gene_details.rnacentral_urs_identifier.clone();
+
             let gocam_ids =
                 gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
+
+            let mut property_flags = HashSet::new();
+            if gene_details.rnacentral_2d_structure_id.is_some() {
+                property_flags.insert(GeneQueryPropFlag::Rnacentral2DStructure);
+            }
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
@@ -5154,6 +5160,8 @@ phenotypes, so just the first part of this extension will be used:
                 rnacentral_urs_identifier,
                 gocam_ids,
                 subset_termids: gene_details.subset_termids.clone(),
+
+                property_flags,
             };
 
             gene_query_data_map.insert(gene_details.uniquename.clone(), gene_query_data);

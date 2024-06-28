@@ -2194,6 +2194,12 @@ pub enum GeneQueryTermData {
 
 pub type GeneQueryAttrName = FlexStr;
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+pub enum GeneQueryPropFlag {
+    #[serde(rename = "rnacentral_2d_structure")]
+    Rnacentral2DStructure,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneQueryData {
     pub gene_uniquename: GeneUniquename,
@@ -2236,6 +2242,8 @@ pub struct GeneQueryData {
     pub rnacentral_urs_identifier: Option<FlexStr>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocam_ids: HashSet<GoCamId>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub property_flags: HashSet<GeneQueryPropFlag>,
 }
 
 #[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
