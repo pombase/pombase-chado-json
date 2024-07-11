@@ -20,7 +20,7 @@ chrono = { version = "0.4", default-features = false, features = ["clock", "std"
 flate2 = "1.0"
 lazy_static = "1.5"
 once_cell = "1.19"
-uuid = { version = "1.9.1", features = ["v4", "serde", ] }
+uuid = { version = "1.10.0", features = ["v4", "serde", ] }
 bytes = "1.6"
 tokio = { version = "^1.38.0", features = ["full"] }
 async-recursion = "1.1"
