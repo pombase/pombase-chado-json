@@ -26,7 +26,7 @@ tokio = { version = "^1.38.0", features = ["full"] }
 async-recursion = "1.1"
 deadpool-postgres = "0.14"
 deadpool = "0.12"
-anyhow = "<1.0.82"
+anyhow = "1.0"
 itertools = "0.13"
 csv = "1.1.6"
 rusqlite = { version = "0.31.0", features = ["bundled", "serde_json"] }
