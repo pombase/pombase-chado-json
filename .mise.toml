@@ -1,0 +1,2 @@
+[tasks.dev-serve]
+run = "(cd ~/git/pombase-chado-json-rust/; RUST_BACKTRACE=full CARGO_INCREMENTAL=1 cargo run --profile releasedev --bin pombase-server -- -b localhost:8400 -c ~/git/pombase-config/website/pombase_v2_config.json -m $CHADO_JSON_DIR/web-json/api_maps.json.zst -d $CHADO_JSON_DIR/api_maps.sqlite3 -w /var/www/html --site-db='postgresql://pombase:pombase@localhost:5432/pombase-website-bab')"
