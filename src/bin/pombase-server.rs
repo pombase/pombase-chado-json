@@ -555,10 +555,10 @@ async fn solr_search(Path((scope, q)): Path<(String, String)>, State(all_state):
     }
 }
 
-async fn motif_search(Path((scope, q)): Path<(String, String)>, State(all_state): State<Arc<AllState>>)
+async fn motif_search(Path((scope, q, max_gene_details)): Path<(String, String, String)>, State(all_state): State<Arc<AllState>>)
                 -> Result<(HeaderMap, String), StatusCode>
 {
-    let res = all_state.search.motif_search(&scope, &q).await;
+    let res = all_state.search.motif_search(&scope, &q, &max_gene_details).await;
 
     match res {
         Ok(search_result) => {
@@ -761,7 +761,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/by_id/:gocam_id", get(get_all_gocam_data_by_id))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/:plot_size/:genes", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/:type", get(get_stats))
-        .route("/api/v1/dataset/latest/motif_search/:scope/:q", get(motif_search))
+        .route("/api/v1/dataset/latest/motif_search/:scope/:q/:max_gene_details", get(motif_search))
         .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
         .route("/api/v1/dataset/latest/query/:q", get(query_get))
         .route("/api/v1/dataset/latest/query", post(query_post))

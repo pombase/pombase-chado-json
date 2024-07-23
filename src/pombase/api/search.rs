@@ -77,9 +77,10 @@ impl Search {
         }
     }
 
-    pub async fn motif_search(&self, scope: &str, pattern: &str) -> Result<String> {
+    pub async fn motif_search(&self, scope: &str, pattern: &str, max_gene_details: &str) -> Result<String> {
         let search_url = self.config.django_url.to_owned() + "/motifsearch/query/";
-        let params = [("scope", scope), ("pattern", pattern)];
+        let params = [("scope", scope), ("pattern", pattern),
+                      ("max_gene_details", max_gene_details)];
         let client = reqwest::Client::new();
         let text = client.get(search_url).query(&params).send().await?.text().await?;
         Ok(text)
