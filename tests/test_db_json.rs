@@ -754,9 +754,9 @@ fn get_test_web_data() -> WebData {
         annotation_type_counts_by_year: StatsIntegerTable { header: vec![], data: vec![] },
     };
 
-    let web_data_build = WebDataBuild::new(&raw, &domain_data, &pfam_data,
-                                           &rnacentral_data, &gene_history,
-                                           &None, &None, &chado_queries, &config);
+    let web_data_build = WebDataBuild::new(&raw, domain_data, pfam_data,
+                                           rnacentral_data, gene_history,
+                                           None, None, chado_queries, &config);
     web_data_build.get_web_data()
 }
 

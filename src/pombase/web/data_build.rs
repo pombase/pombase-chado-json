@@ -67,13 +67,13 @@ type GenotypeInteractionUniquename = FlexStr;
 
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
-    domain_data: &'a DomainData,
-    pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
-    rnacentral_data: &'a Option<RNAcentralAnnotations>,
-    all_gene_history: &'a Option<GeneHistoryMap>,
-    pdb_gene_entry_map: &'a Option<PDBGeneEntryMap>,
-    pdb_ref_entry_map: &'a Option<PDBRefEntryMap>,
-    chado_queries: &'a ChadoQueries,
+    domain_data: DomainData,
+    pfam_data: Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
+    rnacentral_data: Option<RNAcentralAnnotations>,
+    all_gene_history: Option<GeneHistoryMap>,
+    pdb_gene_entry_map: Option<PDBGeneEntryMap>,
+    pdb_ref_entry_map: Option<PDBRefEntryMap>,
+    chado_queries: ChadoQueries,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -871,13 +871,13 @@ fn make_gocam_id_and_title_from_prop(gocam: &str) -> GoCamIdAndTitle {
 
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
-               domain_data: &'a DomainData,
-               pfam_data: &'a Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
-               rnacentral_data: &'a Option<RNAcentralAnnotations>,
-               all_gene_history: &'a Option<GeneHistoryMap>,
-               pdb_gene_entry_map: &'a Option<PDBGeneEntryMap>,
-               pdb_ref_entry_map: &'a Option<PDBRefEntryMap>,
-               chado_queries: &'a ChadoQueries,
+               domain_data: DomainData,
+               pfam_data: Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
+               rnacentral_data: Option<RNAcentralAnnotations>,
+               all_gene_history: Option<GeneHistoryMap>,
+               pdb_gene_entry_map: Option<PDBGeneEntryMap>,
+               pdb_ref_entry_map: Option<PDBRefEntryMap>,
+               chado_queries: ChadoQueries,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -1604,7 +1604,7 @@ phenotypes, so just the first part of this extension will be used:
             }
 
             let pdb_entries =
-                if let Some(pdb_ref_entry_map) = self.pdb_ref_entry_map {
+                if let Some(ref pdb_ref_entry_map) = self.pdb_ref_entry_map {
                     if let Some(pdbid_entry_map) = pdb_ref_entry_map.get(reference_uniquename.as_ref()) {
                         pdbid_entry_map.values().cloned().collect()
                     } else {
@@ -1873,7 +1873,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut rnacentral_urs_identifier = None;
         let mut rnacentral_2d_structure_id = None;
         let pdb_entries =
-            if let Some(pdb_entry_map) = self.pdb_gene_entry_map {
+            if let Some(ref pdb_entry_map) = self.pdb_gene_entry_map {
                 if let Some(pdb_entries) = pdb_entry_map.get(&gene_uniquename) {
                     pdb_entries.clone()
                 } else {
@@ -1933,7 +1933,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
         let (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords) =
-            if let Some(pfam_data) = self.pfam_data {
+            if let Some(ref pfam_data) = self.pfam_data {
                 if let Some(ref uniprot_identifier) = uniprot_identifier {
                     if let Some(result) = pfam_data.get(uniprot_identifier) {
                         let mut disordered_region_coords = vec![];
@@ -1962,7 +1962,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
         let rfam_annotations =
-            if let Some(rnacentral_data) = self.rnacentral_data {
+            if let Some(ref rnacentral_data) = self.rnacentral_data {
                 if let Some(ref rnacentral_urs_identifier) = rnacentral_urs_identifier {
                     if let Some(result) = rnacentral_data.get(rnacentral_urs_identifier) {
                         result.clone()
@@ -1977,7 +1977,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
         let gene_history =
-            if let Some(all_gene_history) = self.all_gene_history {
+            if let Some(ref all_gene_history) = self.all_gene_history {
                 if let Some(gene_history) = all_gene_history.get(&feat.uniquename) {
                     gene_history.clone()
                 } else {

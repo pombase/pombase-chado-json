@@ -151,10 +151,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             (None, None)
         };
 
-    let web_data_build = WebDataBuild::new(&raw, &interpro_data, &pfam_data,
-                                           &rnacentral_data, &gene_history,
-                                           &pdb_entry_map, &pdb_ref_entry_map,
-                                           &chado_queries,
+    let web_data_build = WebDataBuild::new(&raw, interpro_data, pfam_data,
+                                           rnacentral_data, gene_history,
+                                           pdb_entry_map, pdb_ref_entry_map,
+                                           chado_queries,
                                            &config);
     let web_data = web_data_build.get_web_data();
 
