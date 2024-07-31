@@ -90,6 +90,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         disordered_region_coords: vec![],
         low_complexity_region_coords: vec![],
         coiled_coil_coords: vec![],
+        signal_peptide: None,
         has_protein_features: false,
         rfam_annotations: vec![],
         orfeome_identifier: None,

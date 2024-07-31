@@ -18,6 +18,7 @@ pub mod web;
 pub mod types;
 pub mod interpro;
 pub mod pfam;
+pub mod uniprot;
 pub mod api;
 pub mod bio;
 pub mod rnacentral;

@@ -90,6 +90,17 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
+pub struct PeptideRange {
+    pub start: usize,
+    pub end: usize,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SignalPeptide {
+    pub range: PeptideRange,
+}
+
+#[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
 #[serde(rename = "haploid")]
     Haploid,
@@ -1156,6 +1167,8 @@ pub struct GeneDetails {
     pub low_complexity_region_coords: Vec<(usize, usize)>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub coiled_coil_coords: Vec<(usize, usize)>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub signal_peptide: Option<SignalPeptide>,
     pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,

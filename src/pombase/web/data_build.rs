@@ -20,6 +20,7 @@ use crate::db::{raw::*, ChadoQueries};
 use crate::gene_history::GeneHistoryMap;
 use crate::types::*;
 use crate::data_types::*;
+use crate::uniprot::UniProtDataMap;
 use crate::web::data::*;
 use crate::web::config::*;
 use crate::web::util::cmp_str_dates;
@@ -69,6 +70,7 @@ pub struct WebDataBuild<'a> {
     raw: &'a Raw,
     domain_data: DomainData,
     pfam_data: Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
+    uniprot_data: Option<UniProtDataMap>,
     rnacentral_data: Option<RNAcentralAnnotations>,
     all_gene_history: Option<GeneHistoryMap>,
     pdb_gene_entry_map: Option<PDBGeneEntryMap>,
@@ -873,6 +875,7 @@ impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
                domain_data: DomainData,
                pfam_data: Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
+               uniprot_data: Option<UniProtDataMap>,
                rnacentral_data: Option<RNAcentralAnnotations>,
                all_gene_history: Option<GeneHistoryMap>,
                pdb_gene_entry_map: Option<PDBGeneEntryMap>,
@@ -884,6 +887,7 @@ impl <'a> WebDataBuild<'a> {
             raw,
             domain_data,
             pfam_data,
+            uniprot_data,
             rnacentral_data,
             all_gene_history,
             pdb_gene_entry_map,
@@ -1976,9 +1980,17 @@ phenotypes, so just the first part of this extension will be used:
                 vec![]
             };
 
+        let mut signal_peptide = None;
+
+        if let Some(ref uniprot_data) = self.uniprot_data {
+            if let Some(uniprot_data_entry) = uniprot_data.get(&gene_uniquename) {
+                signal_peptide = uniprot_data_entry.signal_peptide.clone();
+            }
+        }
+
         let gene_history =
             if let Some(ref all_gene_history) = self.all_gene_history {
-                if let Some(gene_history) = all_gene_history.get(&feat.uniquename) {
+                if let Some(gene_history) = all_gene_history.get(&gene_uniquename) {
                     gene_history.clone()
                 } else {
                     vec![]
@@ -2004,6 +2016,7 @@ phenotypes, so just the first part of this extension will be used:
             disordered_region_coords,
             low_complexity_region_coords,
             coiled_coil_coords,
+            signal_peptide,
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,

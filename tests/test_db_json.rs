@@ -8,6 +8,7 @@ extern crate flexstr;
 
 use self::pombase::db::raw::*;
 use self::pombase::data_types::*;
+use self::pombase::uniprot::*;
 use self::pombase::web::config::*;
 use self::pombase::web::data_build::*;
 use self::pombase::web::data::*;
@@ -748,6 +749,7 @@ fn get_test_web_data() -> WebData {
     };
     let rnacentral_data = Some(HashMap::new());
     let pfam_data = Some(HashMap::new());
+    let uniprot_data = Some(parse_uniprot("tests/test_uniprot_data.tsv"));
     let gene_history = None;
     let chado_queries = ChadoQueries {
         community_response_rates: vec![],
@@ -755,6 +757,7 @@ fn get_test_web_data() -> WebData {
     };
 
     let web_data_build = WebDataBuild::new(&raw, domain_data, pfam_data,
+                                           uniprot_data,
                                            rnacentral_data, gene_history,
                                            None, None, chado_queries, &config);
     web_data_build.get_web_data()
@@ -784,6 +787,9 @@ fn test_gene_details() {
     if par1_gene.cv_annotations.get(&flex_str!(POMBASE_ANN_EXT_TERM_CV_NAME)).is_some() {
         panic!("extension cv shouldn't be in the annotations");
     }
+
+    assert_eq!(par1_gene.signal_peptide.as_ref().unwrap().range.start, 1);
+    assert_eq!(par1_gene.signal_peptide.as_ref().unwrap().range.end, 22);
 }
 
 #[test]
