@@ -792,6 +792,13 @@ fn test_gene_details() {
     assert_eq!(par1_gene.signal_peptide.as_ref().unwrap().range.end, 22);
     assert_eq!(par1_gene.transit_peptide.as_ref().unwrap().range.start, 1);
     assert_eq!(par1_gene.transit_peptide.as_ref().unwrap().range.end, 24);
+
+
+    assert_eq!(par1_gene.binding_sites.len(), 2);
+    assert_eq!(par1_gene.binding_sites.iter().next().unwrap().range.end, 90);
+    assert_eq!(par1_gene.active_sites.len(), 1);
+    assert_eq!(par1_gene.active_sites.iter().next().unwrap().range.end, 159);
+    assert_eq!(par1_gene.active_sites.iter().next().unwrap().range.end, 159);
 }
 
 #[test]

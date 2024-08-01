@@ -45,13 +45,14 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref RANGE_RE: Regex = Regex::new(r"^(SIGNAL|TRANSIT|BINDING|ACT_SITE) (\d+)(?:\.\.([\?\d]+))?(;.*)?").unwrap();
+    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE) ").unwrap();
+    static ref RANGE_RE: Regex = Regex::new(r"^(\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
 
 fn get_range(cap: Captures) -> PeptideRange {
-  let start: usize = cap.get(2).unwrap().as_str().parse().unwrap();
-  if let Some(end_cap) = cap.get(3) {
+  let start: usize = cap.get(1).unwrap().as_str().parse().unwrap();
+  if let Some(end_cap) = cap.get(2) {
      if let Ok(end) = end_cap.as_str().parse() {
          PeptideRange {
             start,
@@ -82,6 +83,12 @@ fn get_ligand(rest: &str) -> FlexStr {
     flex_str!("unknown ligand")
 }
 
+fn first_field_part(field: &str) -> Option<String> {
+    let mut parts_iter = SPLIT_RE.split(field);
+    parts_iter.next();
+    parts_iter.next().map(|s| s.to_owned())
+}
+
 fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let gene_uniquename =
         if uniprot_record.gene_uniquename.ends_with(";") {
@@ -93,39 +100,65 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         };
 
     let signal_peptide =
-        RANGE_RE.captures_iter(&uniprot_record.signal_peptide).next()
-            .map(|cap| SignalPeptide {
-                range: get_range(cap),
-            });
+        if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide) {
+            eprintln!("field_part: {field_part}");
+            RANGE_RE.captures_iter(&field_part).next()
+                .map(|cap| SignalPeptide {
+                    range: get_range(cap),
+                })
+        } else {
+            None
+        };
 
     let transit_peptide =
-        RANGE_RE.captures_iter(&uniprot_record.transit_peptide).next()
-            .map(|cap| TransitPeptide {
-                range: get_range(cap),
-            });
+        if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
+            eprintln!("field_part: {field_part}");
+            RANGE_RE.captures_iter(&field_part).next()
+                .map(|cap| TransitPeptide {
+                    range: get_range(cap),
+                })
+        } else {
+            None
+        };
+
+    let mut binding_sites_parts_iter =
+        SPLIT_RE.split(&uniprot_record.binding_sites);
+    binding_sites_parts_iter.next();  // remove blank
 
     let binding_sites =
-        RANGE_RE.captures_iter(&uniprot_record.binding_sites)
-            .map(|cap| {
+        binding_sites_parts_iter.map(|field_part| {
+            if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
                 let ligand =
-                   if let Some(rest) = cap.get(4) {
-                       get_ligand(rest.as_str())
-                   } else {
-                       flex_str!("unknown ligand")
-                   };
+                    if let Some(rest) = cap.get(3) {
+                        get_ligand(rest.as_str())
+                    } else {
+                        flex_str!("unknown ligand")
+                    };
                 BindingSite {
                     ligand,
                     range: get_range(cap),
                 }
-            })
-            .collect();
+            } else {
+                panic!("failed to parse UniProt data file, no range in {}", field_part);
+            }
+        })
+        .collect();
+
+    let mut active_sites_parts_iter =
+        SPLIT_RE.split(&uniprot_record.active_sites);
+    active_sites_parts_iter.next();  // remove blank
 
     let active_sites =
-        RANGE_RE.captures_iter(&uniprot_record.active_sites)
-            .map(|cap| ActiveSite {
-                range: get_range(cap),
-            })
-            .collect();
+        active_sites_parts_iter.map(|field_part| {
+            if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
+                ActiveSite {
+                    range: get_range(cap),
+                }
+            } else {
+                panic!("failed to parse UniProt data file, no range in {}", field_part);
+            }
+        })
+        .collect();
 
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
