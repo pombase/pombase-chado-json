@@ -1981,10 +1981,12 @@ phenotypes, so just the first part of this extension will be used:
             };
 
         let mut signal_peptide = None;
+        let mut transit_peptide = None;
 
         if let Some(ref uniprot_data) = self.uniprot_data {
             if let Some(uniprot_data_entry) = uniprot_data.get(&gene_uniquename) {
                 signal_peptide = uniprot_data_entry.signal_peptide.clone();
+                transit_peptide = uniprot_data_entry.transit_peptide.clone();
             }
         }
 
@@ -2017,6 +2019,7 @@ phenotypes, so just the first part of this extension will be used:
             low_complexity_region_coords,
             coiled_coil_coords,
             signal_peptide,
+            transit_peptide,
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,

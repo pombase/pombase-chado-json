@@ -790,6 +790,8 @@ fn test_gene_details() {
 
     assert_eq!(par1_gene.signal_peptide.as_ref().unwrap().range.start, 1);
     assert_eq!(par1_gene.signal_peptide.as_ref().unwrap().range.end, 22);
+    assert_eq!(par1_gene.transit_peptide.as_ref().unwrap().range.start, 1);
+    assert_eq!(par1_gene.transit_peptide.as_ref().unwrap().range.end, 24);
 }
 
 #[test]

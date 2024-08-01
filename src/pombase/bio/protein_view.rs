@@ -648,13 +648,23 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let signal_peptide_track =
             make_generic_track(flex_str!("Signal peptide"), &signal_peptide_coords);
 
+        let mut transit_peptide_coords = vec![];
+
+        if let Some(ref transit_peptide) = gene_details.transit_peptide {
+            transit_peptide_coords.push((transit_peptide.range.start,
+                                        transit_peptide.range.end));
+        }
+
+        let transit_peptide_track =
+            make_generic_track(flex_str!("Transit peptide"), &transit_peptide_coords);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
                          modification_track, pfam_track,
                          tm_domains_track, disordered_regions_track,
                          low_complexity_regions_track, coiled_coil_coords,
-                         signal_peptide_track],
+                         signal_peptide_track, transit_peptide_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);
