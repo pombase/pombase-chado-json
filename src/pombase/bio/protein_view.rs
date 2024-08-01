@@ -541,6 +541,33 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>)
     }
 }
 
+fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
+    let track_name = flex_str!("Binding sites");
+    let features =
+        gene_details.binding_sites.iter().map(|binding_site| {
+            let ligand = &binding_site.ligand;
+            let start = binding_site.range.start;
+            let end = binding_site.range.end;
+            let feature_name = flex_fmt!("Binding site, ligand: {}", ligand);
+            let feature_id = flex_fmt!("Binding site {}..{}, ligand: {}", start, end, ligand);
+            ProteinViewFeature {
+                id: feature_id,
+                display_name: Some(feature_name.clone()),
+                annotated_terms: BTreeSet::new(),
+                feature_group: None,
+                display_extension: BTreeSet::new(),
+                positions: vec![(feature_name.clone(), start, end)],
+            }
+        })
+        .collect();
+
+    ProteinViewTrack {
+        name: track_name,
+        display_type: flex_str!("block"),
+        features,
+    }
+}
+
 fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
     let sort_helper = |(_, p1_start, p1_end): &ProteinViewFeaturePos,
                        (_, p2_start, p2_end): &ProteinViewFeaturePos| {
@@ -658,13 +685,23 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let transit_peptide_track =
             make_generic_track(flex_str!("Transit peptide"), &transit_peptide_coords);
 
+        let binding_sites_track = make_binding_sites_track(gene_details);
+
+        let active_sites_coords =
+            gene_details.active_sites.iter()
+                .map(|site| (site.range.start, site.range.end))
+                .collect();
+        let active_sites_track =
+            make_generic_track(flex_str!("Active sites"), &active_sites_coords);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
                          modification_track, pfam_track,
                          tm_domains_track, disordered_regions_track,
                          low_complexity_regions_track, coiled_coil_coords,
-                         signal_peptide_track, transit_peptide_track],
+                         signal_peptide_track, transit_peptide_track,
+                         binding_sites_track, active_sites_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);
