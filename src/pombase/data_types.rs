@@ -105,6 +105,19 @@ pub struct TransitPeptide {
     pub range: PeptideRange,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BindingSite {
+    pub ligand: FlexStr,
+    pub range: PeptideRange,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ActiveSite {
+    pub range: PeptideRange,
+}
+
+
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
 #[serde(rename = "haploid")]
@@ -1176,6 +1189,10 @@ pub struct GeneDetails {
     pub signal_peptide: Option<SignalPeptide>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub transit_peptide: Option<TransitPeptide>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub binding_sites: Vec<BindingSite>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub active_sites: Vec<ActiveSite>,
     pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,

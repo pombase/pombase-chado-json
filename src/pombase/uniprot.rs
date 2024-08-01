@@ -3,9 +3,10 @@ use std::fs::File;
 use std::io::BufReader;
 use std::process;
 
+use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
-use crate::data_types::{PeptideRange, SignalPeptide, TransitPeptide};
+use crate::data_types::{ActiveSite, BindingSite, PeptideRange, SignalPeptide, TransitPeptide};
 use crate::types::GeneUniquename;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -13,6 +14,8 @@ pub struct UniProtDataEntry {
     pub gene_uniquename: GeneUniquename,
     pub signal_peptide: Option<SignalPeptide>,
     pub transit_peptide: Option<TransitPeptide>,
+    pub binding_sites: Vec<BindingSite>,
+    pub active_sites: Vec<ActiveSite>,
 }
 pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 
@@ -27,10 +30,11 @@ struct UniProtDataRecord {
     signal_peptide: String,
     #[serde(rename = "Transit peptide")]
     transit_peptide: String,
-
+    #[serde(rename = "Binding site")]
+    binding_sites: String,
+    #[serde(rename = "Active site")]
+    active_sites: String,
 /*
- Binding site
- Active site
  Catalytic activity
  Gene Names (synonym)
  Post-translational modification
@@ -41,7 +45,8 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref RANGE_RE: Regex = Regex::new(r"^(SIGNAL|TRANSIT|BINDING|ACT_SITE) (\d+)(?:\.\.([\?\d]+))?").unwrap();
+    static ref RANGE_RE: Regex = Regex::new(r"^(SIGNAL|TRANSIT|BINDING|ACT_SITE) (\d+)(?:\.\.([\?\d]+))?(;.*)?").unwrap();
+    static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
 
 fn get_range(cap: Captures) -> PeptideRange {
@@ -67,6 +72,16 @@ fn get_range(cap: Captures) -> PeptideRange {
   }
 }
 
+fn get_ligand(rest: &str) -> FlexStr {
+    if let Some(ligand_capture) = LIGAND_RE.captures_iter(rest).next() {
+        if let Some(ligand_match) = ligand_capture.get(1) {
+            return ligand_match.as_str().into()
+        }
+    }
+
+    flex_str!("unknown ligand")
+}
+
 fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let gene_uniquename =
         if uniprot_record.gene_uniquename.ends_with(";") {
@@ -89,10 +104,35 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
                 range: get_range(cap),
             });
 
+    let binding_sites =
+        RANGE_RE.captures_iter(&uniprot_record.binding_sites)
+            .map(|cap| {
+                let ligand =
+                   if let Some(rest) = cap.get(4) {
+                       get_ligand(rest.as_str())
+                   } else {
+                       flex_str!("unknown ligand")
+                   };
+                BindingSite {
+                    ligand,
+                    range: get_range(cap),
+                }
+            })
+            .collect();
+
+    let active_sites =
+        RANGE_RE.captures_iter(&uniprot_record.active_sites)
+            .map(|cap| ActiveSite {
+                range: get_range(cap),
+            })
+            .collect();
+
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
         signal_peptide,
         transit_peptide,
+        binding_sites,
+        active_sites,
     }
 }
 
