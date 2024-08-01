@@ -3,7 +3,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::process;
 
-use regex::Regex;
+use regex::{Captures, Regex};
 
 use crate::data_types::{PeptideRange, SignalPeptide, TransitPeptide};
 use crate::types::GeneUniquename;
@@ -41,8 +41,30 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref SIGNAL_PEPTIDE_RE: Regex = Regex::new(r"^SIGNAL (\d+)\.\.(\d+)").unwrap();
-    static ref TRANSIT_PEPTIDE_RE: Regex = Regex::new(r"^TRANSIT (\d+)\.\.(\d+)").unwrap();
+    static ref RANGE_RE: Regex = Regex::new(r"^(SIGNAL|TRANSIT|BINDING|ACT_SITE) (\d+)(?:\.\.([\?\d]+))?").unwrap();
+}
+
+fn get_range(cap: Captures) -> PeptideRange {
+  let start: usize = cap.get(2).unwrap().as_str().parse().unwrap();
+  if let Some(end_cap) = cap.get(3) {
+     if let Ok(end) = end_cap.as_str().parse() {
+         PeptideRange {
+            start,
+            end,
+        }
+     } else {
+        // matched 1..?:
+        PeptideRange {
+            start,
+            end: start,
+        }
+     }
+  } else {
+     PeptideRange {
+        start,
+        end: start,
+     }
+  }
 }
 
 fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
@@ -55,33 +77,17 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
             uniprot_record.gene_uniquename.to_string()
         };
 
-    let mut signal_peptide = None;
+    let signal_peptide =
+        RANGE_RE.captures_iter(&uniprot_record.signal_peptide).next()
+            .map(|cap| SignalPeptide {
+                range: get_range(cap),
+            });
 
-    if let Some(cap) = SIGNAL_PEPTIDE_RE.captures_iter(&uniprot_record.signal_peptide).next() {
-        let start: usize = cap.get(1).unwrap().as_str().parse().unwrap();
-        let end: usize = cap.get(2).unwrap().as_str().parse().unwrap();
-
-        signal_peptide = Some(SignalPeptide {
-            range: PeptideRange {
-                start,
-                end,
-            }
-        });
-    };
-
-    let mut transit_peptide = None;
-
-    if let Some(cap) = TRANSIT_PEPTIDE_RE.captures_iter(&uniprot_record.transit_peptide).next() {
-        let start: usize = cap.get(1).unwrap().as_str().parse().unwrap();
-        let end: usize = cap.get(2).unwrap().as_str().parse().unwrap();
-
-        transit_peptide = Some(TransitPeptide {
-            range: PeptideRange {
-                start,
-                end,
-            }
-        });
-    };
+    let transit_peptide =
+        RANGE_RE.captures_iter(&uniprot_record.transit_peptide).next()
+            .map(|cap| TransitPeptide {
+                range: get_range(cap),
+            });
 
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
