@@ -638,12 +638,23 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let coiled_coil_coords =
             make_generic_track(flex_str!("Coiled coils"), &gene_details.coiled_coil_coords);
 
+        let mut signal_peptide_coords = vec![];
+
+        if let Some(ref signal_peptide) = gene_details.signal_peptide {
+            signal_peptide_coords.push((signal_peptide.range.start,
+                                        signal_peptide.range.end));
+        }
+
+        let signal_peptide_track =
+            make_generic_track(flex_str!("Signal peptide"), &signal_peptide_coords);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
                          modification_track, pfam_track,
                          tm_domains_track, disordered_regions_track,
-                         low_complexity_regions_track, coiled_coil_coords],
+                         low_complexity_regions_track, coiled_coil_coords,
+                         signal_peptide_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);
