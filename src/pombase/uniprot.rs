@@ -101,7 +101,6 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
 
     let signal_peptide =
         if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide) {
-            eprintln!("field_part: {field_part}");
             RANGE_RE.captures_iter(&field_part).next()
                 .map(|cap| SignalPeptide {
                     range: get_range(cap),
@@ -112,7 +111,6 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
 
     let transit_peptide =
         if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
-            eprintln!("field_part: {field_part}");
             RANGE_RE.captures_iter(&field_part).next()
                 .map(|cap| TransitPeptide {
                     range: get_range(cap),
