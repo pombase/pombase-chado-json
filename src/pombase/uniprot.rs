@@ -6,8 +6,8 @@ use std::process;
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
-use crate::data_types::{ActiveSite, BindingSite, PeptideRange,
-                        SignalPeptide, TransitPeptide, BetaStrand};
+use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Helix,
+                        PeptideRange, SignalPeptide, TransitPeptide};
 use crate::types::GeneUniquename;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -18,6 +18,7 @@ pub struct UniProtDataEntry {
     pub binding_sites: Vec<BindingSite>,
     pub active_sites: Vec<ActiveSite>,
     pub beta_strands: Vec<BetaStrand>,
+    pub helices: Vec<Helix>,
 }
 pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 
@@ -38,6 +39,8 @@ struct UniProtDataRecord {
     active_sites: String,
     #[serde(rename = "Beta strand")]
     beta_strands: String,
+    #[serde(rename = "Helix")]
+    helices: String,
 /*
  Catalytic activity
  Gene Names (synonym)
@@ -49,7 +52,7 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND) ").unwrap();
+    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX) ").unwrap();
     static ref RANGE_RE: Regex = Regex::new(r"^(\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
@@ -178,6 +181,21 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         })
         .collect();
 
+    let mut helices_parts_iter = SPLIT_RE.split(&uniprot_record.helices);
+    helices_parts_iter.next();  // remove blank
+
+    let helices =
+        helices_parts_iter.map(|field_part| {
+            if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
+                Helix {
+                    range: get_range(cap),
+                }
+            } else {
+                panic!("failed to parse UniProt data file, no range in {}", field_part);
+            }
+        })
+        .collect();
+
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
         signal_peptide,
@@ -185,6 +203,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         binding_sites,
         active_sites,
         beta_strands,
+        helices,
     }
 }
 

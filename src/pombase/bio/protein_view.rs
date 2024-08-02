@@ -701,6 +701,13 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let beta_strands_track =
             make_generic_track(flex_str!("Beta strands"), &beta_strand_coords);
 
+        let helix_coords =
+            gene_details.helices.iter()
+                .map(|helix| (helix.range.start, helix.range.end))
+                .collect();
+        let helix_track =
+            make_generic_track(flex_str!("Helices"), &helix_coords);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
@@ -709,7 +716,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                          low_complexity_regions_track, coiled_coil_coords,
                          signal_peptide_track, transit_peptide_track,
                          binding_sites_track, active_sites_track,
-                         beta_strands_track],
+                         beta_strands_track, helix_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);

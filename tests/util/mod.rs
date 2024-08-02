@@ -95,6 +95,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         binding_sites: vec![],
         active_sites: vec![],
         beta_strands: vec![],
+        helices: vec![],
         has_protein_features: false,
         rfam_annotations: vec![],
         orfeome_identifier: None,
