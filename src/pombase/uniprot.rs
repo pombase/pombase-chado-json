@@ -6,7 +6,8 @@ use std::process;
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
-use crate::data_types::{ActiveSite, BindingSite, PeptideRange, SignalPeptide, TransitPeptide};
+use crate::data_types::{ActiveSite, BindingSite, PeptideRange,
+                        SignalPeptide, TransitPeptide, BetaStrand};
 use crate::types::GeneUniquename;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -16,6 +17,7 @@ pub struct UniProtDataEntry {
     pub transit_peptide: Option<TransitPeptide>,
     pub binding_sites: Vec<BindingSite>,
     pub active_sites: Vec<ActiveSite>,
+    pub beta_strands: Vec<BetaStrand>,
 }
 pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 
@@ -34,6 +36,8 @@ struct UniProtDataRecord {
     binding_sites: String,
     #[serde(rename = "Active site")]
     active_sites: String,
+    #[serde(rename = "Beta strand")]
+    beta_strands: String,
 /*
  Catalytic activity
  Gene Names (synonym)
@@ -45,7 +49,7 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE) ").unwrap();
+    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND) ").unwrap();
     static ref RANGE_RE: Regex = Regex::new(r"^(\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
@@ -158,12 +162,29 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         })
         .collect();
 
+    let mut beta_strands_parts_iter =
+        SPLIT_RE.split(&uniprot_record.beta_strands);
+    beta_strands_parts_iter.next();  // remove blank
+
+    let beta_strands =
+        beta_strands_parts_iter.map(|field_part| {
+            if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
+                BetaStrand {
+                    range: get_range(cap),
+                }
+            } else {
+                panic!("failed to parse UniProt data file, no range in {}", field_part);
+            }
+        })
+        .collect();
+
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
         signal_peptide,
         transit_peptide,
         binding_sites,
         active_sites,
+        beta_strands,
     }
 }
 

@@ -116,7 +116,10 @@ pub struct ActiveSite {
     pub range: PeptideRange,
 }
 
-
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct BetaStrand {
+    pub range: PeptideRange,
+}
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
@@ -1193,6 +1196,8 @@ pub struct GeneDetails {
     pub binding_sites: Vec<BindingSite>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub active_sites: Vec<ActiveSite>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub beta_strands: Vec<BetaStrand>,
     pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,

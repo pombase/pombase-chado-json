@@ -1984,6 +1984,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut transit_peptide = None;
         let mut binding_sites = vec![];
         let mut active_sites = vec![];
+        let mut beta_strands = vec![];
 
         if let Some(ref uniprot_data) = self.uniprot_data {
             if let Some(uniprot_data_entry) = uniprot_data.get(&gene_uniquename) {
@@ -1991,6 +1992,7 @@ phenotypes, so just the first part of this extension will be used:
                 transit_peptide = uniprot_data_entry.transit_peptide.clone();
                 binding_sites = uniprot_data_entry.binding_sites.clone();
                 active_sites = uniprot_data_entry.active_sites.clone();
+                beta_strands = uniprot_data_entry.beta_strands.clone();
             }
         }
 
@@ -2026,6 +2028,7 @@ phenotypes, so just the first part of this extension will be used:
             transit_peptide,
             binding_sites,
             active_sites,
+            beta_strands,
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
