@@ -1980,24 +1980,6 @@ phenotypes, so just the first part of this extension will be used:
                 vec![]
             };
 
-        let mut signal_peptide = None;
-        let mut transit_peptide = None;
-        let mut binding_sites = vec![];
-        let mut active_sites = vec![];
-        let mut beta_strands = vec![];
-        let mut helices = vec![];
-
-        if let Some(ref uniprot_data) = self.uniprot_data {
-            if let Some(uniprot_data_entry) = uniprot_data.get(&gene_uniquename) {
-                signal_peptide = uniprot_data_entry.signal_peptide.clone();
-                transit_peptide = uniprot_data_entry.transit_peptide.clone();
-                binding_sites = uniprot_data_entry.binding_sites.clone();
-                active_sites = uniprot_data_entry.active_sites.clone();
-                beta_strands = uniprot_data_entry.beta_strands.clone();
-                helices = uniprot_data_entry.helices.clone();
-            }
-        }
-
         let gene_history =
             if let Some(ref all_gene_history) = self.all_gene_history {
                 if let Some(gene_history) = all_gene_history.get(&gene_uniquename) {
@@ -2026,12 +2008,12 @@ phenotypes, so just the first part of this extension will be used:
             disordered_region_coords,
             low_complexity_region_coords,
             coiled_coil_coords,
-            signal_peptide,
-            transit_peptide,
-            binding_sites,
-            active_sites,
-            beta_strands,
-            helices,
+            signal_peptide: None,
+            transit_peptide: None,
+            binding_sites: vec![],
+            active_sites: vec![],
+            beta_strands: vec![],
+            helices: vec![],
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
@@ -7478,6 +7460,52 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn set_gene_fields_from_uniprot(&mut self) {
+
+        let Some(ref uniprot_data) = self.uniprot_data
+        else {
+            return;
+        };
+
+
+        for (gene_uniquename, gene_details) in &mut self.genes {
+            for transcript_uniquename in &gene_details.transcripts {
+                let Some(transcript) = self.transcripts.get(transcript_uniquename)
+                else {
+                    continue;
+                };
+                let Some(ref protein) = transcript.protein
+                else {
+                    continue;
+                };
+
+                let Some(uniprot_data_entry) = uniprot_data.get(gene_uniquename)
+                else {
+                    continue;
+                };
+
+                let uniprot_sequence = &uniprot_data_entry.sequence;
+
+                gene_details.signal_peptide = uniprot_data_entry.signal_peptide.clone();
+                gene_details.transit_peptide = uniprot_data_entry.transit_peptide.clone();
+
+                if &protein.sequence != uniprot_sequence &&
+                    !(protein.sequence.ends_with("*") &&
+                      &protein.sequence[0..protein.sequence.len() - 1] ==
+                      uniprot_sequence.as_str()) {
+                    eprintln!("Sequence doesn't match Uniprot for: {}",
+                              gene_uniquename);
+                    continue;
+                }
+
+                gene_details.binding_sites = uniprot_data_entry.binding_sites.clone();
+                gene_details.active_sites = uniprot_data_entry.active_sites.clone();
+                gene_details.beta_strands = uniprot_data_entry.beta_strands.clone();
+                gene_details.helices = uniprot_data_entry.helices.clone();
+            }
+        }
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -7486,6 +7514,7 @@ phenotypes, so just the first part of this extension will be used:
         self.process_features();
         self.add_gene_neighbourhoods();
         self.process_props_from_feature_cvterms();
+        self.set_gene_fields_from_uniprot();
         self.process_allele_features();
         self.process_genotype_features();
         self.process_cvterms();

@@ -95,6 +95,16 @@ pub struct PeptideRange {
     pub end: usize,
 }
 
+impl PeptideRange {
+    pub fn len(&self) -> usize {
+        if self.start <= self.end {
+            self.end - self.start + 1
+        } else {
+            self.start - self.end + 1
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalPeptide {
     pub range: PeptideRange,

@@ -13,6 +13,7 @@ use crate::types::GeneUniquename;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UniProtDataEntry {
     pub gene_uniquename: GeneUniquename,
+    pub sequence: FlexStr,
     pub signal_peptide: Option<SignalPeptide>,
     pub transit_peptide: Option<TransitPeptide>,
     pub binding_sites: Vec<BindingSite>,
@@ -41,6 +42,8 @@ struct UniProtDataRecord {
     beta_strands: String,
     #[serde(rename = "Helix")]
     helices: String,
+    #[serde(rename = "Sequence")]
+    sequence: String,
 /*
  Catalytic activity
  Gene Names (synonym)
@@ -198,6 +201,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
 
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
+        sequence: uniprot_record.sequence.into(),
         signal_peptide,
         transit_peptide,
         binding_sites,
