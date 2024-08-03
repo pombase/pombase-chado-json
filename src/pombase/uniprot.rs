@@ -121,10 +121,19 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
 
     let transit_peptide =
         if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
-            RANGE_RE.captures_iter(&field_part).next()
-                .map(|cap| TransitPeptide {
-                    range: get_range(cap),
-                })
+            if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
+                let range = get_range(cap);
+                if range.len() == 1 {
+                    None
+                } else {
+                    Some(TransitPeptide {
+                        range,
+                    })
+                }
+            } else {
+                None
+            }
+
         } else {
             None
         };
