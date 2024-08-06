@@ -6,8 +6,9 @@ use std::process;
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
-use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Helix,
-                        PeptideRange, SignalPeptide, TransitPeptide, Turn};
+use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain,
+                        Helix, PeptideRange, Propeptide, SignalPeptide,
+                        TransitPeptide, Turn};
 use crate::types::GeneUniquename;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,6 +22,8 @@ pub struct UniProtDataEntry {
     pub beta_strands: Vec<BetaStrand>,
     pub helices: Vec<Helix>,
     pub turns: Vec<Turn>,
+    pub propeptides: Vec<Propeptide>,
+    pub chains: Vec<Chain>,
 }
 pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 
@@ -45,6 +48,11 @@ struct UniProtDataRecord {
     helices: String,
     #[serde(rename = "Turn")]
     turns: String,
+    #[serde(rename = "Chain")]
+    chains: String,
+    #[serde(rename = "Propeptide")]
+    propeptides: String,
+
     #[serde(rename = "Sequence")]
     sequence: String,
 /*
@@ -58,32 +66,27 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN) ").unwrap();
-    static ref RANGE_RE: Regex = Regex::new(r"^(\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
+    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN|PROPEP|CHAIN) ").unwrap();
+    static ref RANGE_RE: Regex = Regex::new(r"^(\?|\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
 
-fn get_range(cap: Captures) -> PeptideRange {
-  let start: usize = cap.get(1).unwrap().as_str().parse().unwrap();
-  if let Some(end_cap) = cap.get(2) {
-     if let Ok(end) = end_cap.as_str().parse() {
-         PeptideRange {
+fn get_range(cap: Captures) -> Option<PeptideRange> {
+    let start: usize = cap.get(1).unwrap().as_str().parse().ok()?;
+    if let Some(cap2) = cap.get(2) {
+        let end: usize = cap2.as_str().parse().ok()?;
+        Some(PeptideRange {
             start,
             end,
-        }
-     } else {
-        // matched 1..?:
-        PeptideRange {
+        })
+    } else {
+        // single base like:
+        // BINDING 158; /ligand="(1,3-beta-D-glucosyl)n"
+        Some(PeptideRange {
             start,
             end: start,
-        }
-     }
-  } else {
-     PeptideRange {
-        start,
-        end: start,
-     }
-  }
+        })
+    }
 }
 
 fn get_ligand(rest: &str) -> FlexStr {
@@ -102,6 +105,34 @@ fn first_field_part(field: &str) -> Option<String> {
     parts_iter.next().map(|s| s.to_owned())
 }
 
+fn get_propeptides(uniprot_record: &UniProtDataRecord) -> Vec<Propeptide> {
+    let mut propeptides_parts_iter = SPLIT_RE.split(&uniprot_record.propeptides);
+    propeptides_parts_iter.next();  // remove blank
+
+    propeptides_parts_iter.filter_map(|field_part| {
+        let cap = RANGE_RE.captures_iter(field_part).next()?;
+        let range = get_range(cap)?;
+        Some(Propeptide {
+            range,
+        })
+    })
+    .collect()
+}
+
+fn get_chains(uniprot_record: &UniProtDataRecord) -> Vec<Chain> {
+    let mut chains_parts_iter = SPLIT_RE.split(&uniprot_record.chains);
+    chains_parts_iter.next();  // remove blank
+
+    chains_parts_iter.filter_map(|field_part| {
+        let cap = RANGE_RE.captures_iter(field_part).next()?;
+        let range = get_range(cap)?;
+        Some(Chain {
+                range,
+        })
+    })
+    .collect()
+}
+
 fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let gene_uniquename =
         if uniprot_record.gene_uniquename.ends_with(";") {
@@ -112,41 +143,34 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
             uniprot_record.gene_uniquename.to_string()
         };
 
-    let signal_peptide =
-        if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide) {
-            RANGE_RE.captures_iter(&field_part).next()
-                .map(|cap| SignalPeptide {
-                    range: get_range(cap),
+    let mut signal_peptide = None;
+    if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide) {
+        if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
+            if let Some(range) = get_range(cap) {
+                signal_peptide = Some(SignalPeptide {
+                    range,
                 })
-        } else {
-            None
-        };
-
-    let transit_peptide =
-        if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
-            if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
-                let range = get_range(cap);
-                if range.len() == 1 {
-                    None
-                } else {
-                    Some(TransitPeptide {
-                        range,
-                    })
-                }
-            } else {
-                None
             }
+        }
+    }
 
-        } else {
-            None
-        };
+    let mut transit_peptide = None;
+    if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
+        if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
+            if let Some(range) = get_range(cap) {
+                transit_peptide = Some(TransitPeptide {
+                    range,
+                });
+            }
+        }
+    }
 
     let mut binding_sites_parts_iter =
         SPLIT_RE.split(&uniprot_record.binding_sites);
     binding_sites_parts_iter.next();  // remove blank
 
     let binding_sites =
-        binding_sites_parts_iter.map(|field_part| {
+        binding_sites_parts_iter.filter_map(|field_part| {
             if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
                 let ligand =
                     if let Some(rest) = cap.get(3) {
@@ -154,10 +178,11 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
                     } else {
                         flex_str!("unknown ligand")
                     };
-                BindingSite {
+                let range = get_range(cap)?;
+                Some(BindingSite {
                     ligand,
-                    range: get_range(cap),
-                }
+                    range,
+                })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
             }
@@ -169,11 +194,12 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     active_sites_parts_iter.next();  // remove blank
 
     let active_sites =
-        active_sites_parts_iter.map(|field_part| {
+        active_sites_parts_iter.filter_map(|field_part| {
             if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
-                ActiveSite {
-                    range: get_range(cap),
-                }
+                let range = get_range(cap)?;
+                Some(ActiveSite {
+                    range,
+                })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
             }
@@ -185,11 +211,12 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     beta_strands_parts_iter.next();  // remove blank
 
     let beta_strands =
-        beta_strands_parts_iter.map(|field_part| {
+        beta_strands_parts_iter.filter_map(|field_part| {
             if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
-                BetaStrand {
-                    range: get_range(cap),
-                }
+                let range = get_range(cap)?;
+                Some(BetaStrand {
+                    range,
+                })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
             }
@@ -200,11 +227,12 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     helices_parts_iter.next();  // remove blank
 
     let helices =
-        helices_parts_iter.map(|field_part| {
+        helices_parts_iter.filter_map(|field_part| {
             if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
-                Helix {
-                    range: get_range(cap),
-                }
+                let range = get_range(cap)?;
+                Some(Helix {
+                    range,
+                })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
             }
@@ -215,16 +243,20 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     turns_parts_iter.next();  // remove blank
 
     let turns =
-        turns_parts_iter.map(|field_part| {
+        turns_parts_iter.filter_map(|field_part| {
             if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
-                Turn {
-                    range: get_range(cap),
-                }
+                let range = get_range(cap)?;
+                Some(Turn {
+                    range,
+                })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
             }
         })
         .collect();
+
+    let propeptides = get_propeptides(&uniprot_record);
+    let chains = get_chains(&uniprot_record);
 
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
@@ -236,6 +268,8 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         beta_strands,
         helices,
         turns,
+        propeptides,
+        chains,
     }
 }
 

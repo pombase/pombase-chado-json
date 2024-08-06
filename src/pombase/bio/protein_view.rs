@@ -715,6 +715,20 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let turns_track =
             make_generic_track(flex_str!("Turns"), &turn_coords);
 
+        let propeptide_coords =
+            gene_details.propeptides.iter()
+                .map(|propeptide| (propeptide.range.start, propeptide.range.end))
+                .collect();
+        let propeptides_track =
+            make_generic_track(flex_str!("Propeptides"), &propeptide_coords);
+
+        let chain_coords =
+            gene_details.chains.iter()
+                .map(|chain| (chain.range.start, chain.range.end))
+                .collect();
+        let chains_track =
+            make_generic_track(flex_str!("Chains"), &chain_coords);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
@@ -723,7 +737,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                          low_complexity_regions_track, coiled_coil_coords,
                          signal_peptide_track, transit_peptide_track,
                          binding_sites_track, active_sites_track,
-                         beta_strands_track, helix_track, turns_track],
+                         beta_strands_track, helix_track, turns_track,
+                         propeptides_track, chains_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);

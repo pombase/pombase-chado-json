@@ -433,6 +433,8 @@ fn make_test_gene() -> GeneDetails {
         helices: vec![],
         beta_strands: vec![],
         turns: vec![],
+        propeptides: vec![],
+        chains: vec![],
 
         has_protein_features: false,
         rfam_annotations: vec![],

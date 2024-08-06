@@ -2015,6 +2015,8 @@ phenotypes, so just the first part of this extension will be used:
             beta_strands: vec![],
             helices: vec![],
             turns: vec![],
+            propeptides: vec![],
+            chains: vec![],
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
@@ -7504,6 +7506,8 @@ phenotypes, so just the first part of this extension will be used:
                 gene_details.beta_strands = uniprot_data_entry.beta_strands.clone();
                 gene_details.helices = uniprot_data_entry.helices.clone();
                 gene_details.turns = uniprot_data_entry.turns.clone();
+                gene_details.propeptides = uniprot_data_entry.propeptides.clone();
+                gene_details.chains = uniprot_data_entry.chains.clone();
             }
         }
     }
