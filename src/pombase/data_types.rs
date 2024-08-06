@@ -136,6 +136,11 @@ pub struct Helix {
     pub range: PeptideRange,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct Turn {
+    pub range: PeptideRange,
+}
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
 #[serde(rename = "haploid")]
@@ -1215,6 +1220,9 @@ pub struct GeneDetails {
     pub beta_strands: Vec<BetaStrand>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub helices: Vec<Helix>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub turns: Vec<Turn>,
+
     pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub rfam_annotations: Vec<RfamAnnotation>,

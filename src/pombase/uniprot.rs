@@ -7,7 +7,7 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
 use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Helix,
-                        PeptideRange, SignalPeptide, TransitPeptide};
+                        PeptideRange, SignalPeptide, TransitPeptide, Turn};
 use crate::types::GeneUniquename;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -20,6 +20,7 @@ pub struct UniProtDataEntry {
     pub active_sites: Vec<ActiveSite>,
     pub beta_strands: Vec<BetaStrand>,
     pub helices: Vec<Helix>,
+    pub turns: Vec<Turn>,
 }
 pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 
@@ -42,6 +43,8 @@ struct UniProtDataRecord {
     beta_strands: String,
     #[serde(rename = "Helix")]
     helices: String,
+    #[serde(rename = "Turn")]
+    turns: String,
     #[serde(rename = "Sequence")]
     sequence: String,
 /*
@@ -55,7 +58,7 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX) ").unwrap();
+    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN) ").unwrap();
     static ref RANGE_RE: Regex = Regex::new(r"^(\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
@@ -208,6 +211,21 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         })
         .collect();
 
+    let mut turns_parts_iter = SPLIT_RE.split(&uniprot_record.turns);
+    turns_parts_iter.next();  // remove blank
+
+    let turns =
+        turns_parts_iter.map(|field_part| {
+            if let Some(cap) = RANGE_RE.captures_iter(field_part).next() {
+                Turn {
+                    range: get_range(cap),
+                }
+            } else {
+                panic!("failed to parse UniProt data file, no range in {}", field_part);
+            }
+        })
+        .collect();
+
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
         sequence: uniprot_record.sequence.into(),
@@ -217,6 +235,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         active_sites,
         beta_strands,
         helices,
+        turns,
     }
 }
 

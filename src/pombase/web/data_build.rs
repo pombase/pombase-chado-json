@@ -2014,6 +2014,7 @@ phenotypes, so just the first part of this extension will be used:
             active_sites: vec![],
             beta_strands: vec![],
             helices: vec![],
+            turns: vec![],
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
@@ -7502,6 +7503,7 @@ phenotypes, so just the first part of this extension will be used:
                 gene_details.active_sites = uniprot_data_entry.active_sites.clone();
                 gene_details.beta_strands = uniprot_data_entry.beta_strands.clone();
                 gene_details.helices = uniprot_data_entry.helices.clone();
+                gene_details.turns = uniprot_data_entry.turns.clone();
             }
         }
     }
