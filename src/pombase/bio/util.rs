@@ -432,6 +432,8 @@ fn make_test_gene() -> GeneDetails {
         active_sites: vec![],
         helices: vec![],
         beta_strands: vec![],
+        turns: vec![],
+
         has_protein_features: false,
         rfam_annotations: vec![],
         orfeome_identifier: None,
