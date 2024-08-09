@@ -435,6 +435,8 @@ fn make_test_gene() -> GeneDetails {
         turns: vec![],
         propeptides: vec![],
         chains: vec![],
+        glycosylation_sites: vec![],
+        disulfide_bonds: vec![],
 
         has_protein_features: false,
         rfam_annotations: vec![],

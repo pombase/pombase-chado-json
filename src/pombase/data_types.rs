@@ -151,6 +151,16 @@ pub struct Chain {
     pub range: PeptideRange,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct GlycosylationSite {
+    pub range: PeptideRange,
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct DisulfideBond {
+    pub range: PeptideRange,
+}
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
 #[serde(rename = "haploid")]
@@ -1236,6 +1246,10 @@ pub struct GeneDetails {
     pub propeptides: Vec<Propeptide>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub chains: Vec<Chain>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub glycosylation_sites: Vec<GlycosylationSite>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub disulfide_bonds: Vec<DisulfideBond>,
 
     pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

@@ -729,6 +729,21 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let chains_track =
             make_generic_track(flex_str!("Chains"), &chain_coords);
 
+        let glycosylation_site_coords =
+            gene_details.glycosylation_sites.iter()
+                .map(|glycosylation_site| (glycosylation_site.range.start,
+                                           glycosylation_site.range.end))
+                .collect();
+        let glycosylation_sites_track =
+            make_generic_track(flex_str!("Glycosylation sites"), &glycosylation_site_coords);
+
+        let disulfide_bond_coords =
+            gene_details.disulfide_bonds.iter()
+                .map(|disulfide_bond| (disulfide_bond.range.start, disulfide_bond.range.end))
+                .collect();
+        let disulfide_bonds_track =
+            make_generic_track(flex_str!("Disulfide bonds"), &disulfide_bond_coords);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
@@ -738,7 +753,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                          signal_peptide_track, transit_peptide_track,
                          binding_sites_track, active_sites_track,
                          beta_strands_track, helix_track, turns_track,
-                         propeptides_track, chains_track],
+                         propeptides_track, chains_track,
+                         glycosylation_sites_track, disulfide_bonds_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);

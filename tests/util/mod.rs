@@ -99,6 +99,8 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         turns: vec![],
         propeptides: vec![],
         chains: vec![],
+        glycosylation_sites: vec![],
+        disulfide_bonds: vec![],
 
         has_protein_features: false,
         rfam_annotations: vec![],
