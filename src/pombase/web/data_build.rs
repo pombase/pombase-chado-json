@@ -2895,17 +2895,19 @@ phenotypes, so just the first part of this extension will be used:
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                         qualifier: ortholog_qualifier.clone(),
                                     };
-                                let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
-                                gene_details.ortholog_annotations.push(ortholog_annotation.clone());
-                                if let Some(ref_details) =
-                                    if let Some(ref reference_uniquename) = maybe_reference_uniquename {
-                                        self.references.get_mut(reference_uniquename)
-                                    } else {
-                                        None
+                                if Some(gene_organism_taxonid) == self.config.load_organism_taxonid {
+                                    if let Some(ref_details) =
+                                        if let Some(ref reference_uniquename) = maybe_reference_uniquename {
+                                            self.references.get_mut(reference_uniquename)
+                                        } else {
+                                            None
+                                        }
+                                    {
+                                        ref_details.ortholog_annotations.push(ortholog_annotation.clone());
                                     }
-                                {
-                                    ref_details.ortholog_annotations.push(ortholog_annotation);
                                 }
+                                let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
+                                gene_details.ortholog_annotations.push(ortholog_annotation);
                             },
                             FeatureRelAnnotationType::Paralog => {
                                 let paralog_annotation =
@@ -2948,6 +2950,17 @@ phenotypes, so just the first part of this extension will be used:
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                         qualifier: ortholog_qualifier,
                                     };
+                                if Some(other_gene_organism_taxonid) == self.config.load_organism_taxonid {
+                                    if let Some(ref_details) =
+                                        if let Some(ref reference_uniquename) = maybe_reference_uniquename {
+                                            self.references.get_mut(reference_uniquename)
+                                        } else {
+                                            None
+                                        }
+                                    {
+                                        ref_details.ortholog_annotations.push(ortholog_annotation.clone());
+                                    }
+                                }
                                 other_gene_details.ortholog_annotations.push(ortholog_annotation);
                             },
                             FeatureRelAnnotationType::Paralog => {
