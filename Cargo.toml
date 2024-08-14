@@ -30,7 +30,7 @@ anyhow = "1.0"
 itertools = "0.13"
 csv = "1.1.6"
 rusqlite = { version = "0.32.1", features = ["bundled", "serde_json"] }
-tower = { version = "0.4", features = ["util"] }
+tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.5.0", features = ["fs", "normalize-path", "trace"] }
 axum = { version = "0.7", features = ["macros"] }
 axum-macros = "0.4.1"
