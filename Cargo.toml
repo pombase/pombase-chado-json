@@ -71,7 +71,7 @@ features = ["json"]
 opt-level = 0
 debug = true
 incremental = true
-lto = false
+lto = "off"
 
 [profile.releasedev]
 inherits = "release"
@@ -79,7 +79,7 @@ opt-level = 1
 debug = true
 codegen-units = 256
 incremental = true
-lto = false
+lto = "off"
 
 [profile.release]
 opt-level = 3
