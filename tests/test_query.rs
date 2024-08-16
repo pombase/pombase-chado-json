@@ -183,6 +183,7 @@ async fn test_output_options() {
                 pdb_ids: HashSet::new(),
                 rnacentral_id: None,
                 gocam_ids: HashSet::new(),
+                paralogs: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             },
@@ -208,6 +209,7 @@ async fn test_output_options() {
                 pdb_ids: HashSet::new(),
                 rnacentral_id: None,
                 gocam_ids: HashSet::new(),
+                paralogs: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             },
@@ -236,6 +238,7 @@ async fn test_output_options() {
                 pdb_ids: HashSet::new(),
                 rnacentral_id: None,
                 gocam_ids: HashSet::new(),
+                paralogs: HashSet::new(),
                 subsets: HashSet::new(),
                 gene_expression: vec![],
             }];
