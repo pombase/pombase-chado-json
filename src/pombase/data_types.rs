@@ -2293,6 +2293,8 @@ pub type GeneQueryAttrName = FlexStr;
 pub enum GeneQueryPropFlag {
     #[serde(rename = "rnacentral_2d_structure")]
     Rnacentral2DStructure,
+    #[serde(rename = "has_paralog")]
+    HasParalog,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

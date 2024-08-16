@@ -5166,6 +5166,9 @@ phenotypes, so just the first part of this extension will be used:
             if gene_details.rnacentral_2d_structure_id.is_some() {
                 property_flags.insert(GeneQueryPropFlag::Rnacentral2DStructure);
             }
+            if !gene_details.paralog_annotations.is_empty() {
+                property_flags.insert(GeneQueryPropFlag::HasParalog);
+            }
 
             let gene_query_data = GeneQueryData {
                 gene_uniquename: gene_details.uniquename.clone(),
