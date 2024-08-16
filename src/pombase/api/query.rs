@@ -1103,6 +1103,7 @@ impl Query {
                let mut pdb_ids = HashSet::new();
                let mut rnacentral_id = None;
                let mut gocam_ids = HashSet::new();
+               let mut paralogs = HashSet::new();
                let mut molecular_weight = None;
                let mut protein_length = None;
                let mut protein_length_bin = None;
@@ -1136,6 +1137,7 @@ impl Query {
                            "pdb_ids" => pdb_ids = gene_data.pdb_ids.clone(),
                            "rnacentral_id" => rnacentral_id = gene_data.rnacentral_urs_identifier.clone(),
                            "gocam_ids" => gocam_ids = gene_data.gocam_ids.clone(),
+                           "paralogs" => paralogs = gene_data.paralogs.clone(),
                            "molecular_weight" =>
                                molecular_weight = gene_data.molecular_weight,
                            "protein_length" =>
@@ -1199,6 +1201,7 @@ impl Query {
                    pdb_ids,
                    rnacentral_id,
                    gocam_ids,
+                   paralogs,
                    subsets,
                    gene_expression,
                }

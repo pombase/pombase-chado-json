@@ -56,6 +56,8 @@ pub struct ResultRow {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocam_ids: HashSet<GoCamId>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub paralogs: HashSet<GeneUniquename>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub subsets: HashSet<TermId>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_expression: Vec<GeneExValue>,

@@ -5162,6 +5162,13 @@ phenotypes, so just the first part of this extension will be used:
             let gocam_ids =
                 gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
 
+            let paralogs =
+                gene_details.paralog_annotations.iter()
+                .map(|paralog_annotation| {
+                    paralog_annotation.paralog_uniquename.clone()
+                })
+                .collect();
+
             let mut property_flags = HashSet::new();
             if gene_details.rnacentral_2d_structure_id.is_some() {
                 property_flags.insert(GeneQueryPropFlag::Rnacentral2DStructure);
@@ -5190,6 +5197,7 @@ phenotypes, so just the first part of this extension will be used:
                 pdb_ids,
                 rnacentral_urs_identifier,
                 gocam_ids,
+                paralogs,
                 subset_termids: gene_details.subset_termids.clone(),
 
                 property_flags,

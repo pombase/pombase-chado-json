@@ -2340,6 +2340,8 @@ pub struct GeneQueryData {
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocam_ids: HashSet<GoCamId>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub paralogs: HashSet<GeneUniquename>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub property_flags: HashSet<GeneQueryPropFlag>,
 }
 
