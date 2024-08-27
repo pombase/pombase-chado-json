@@ -3114,7 +3114,15 @@ phenotypes, so just the first part of this extension will be used:
                     {
                         a_name.cmp(b_name)
                     } else {
-                        a_gene_details.uniquename.cmp(&b_gene_details.uniquename)
+                        if a_gene_details.name.is_some() {
+                            Ordering::Less
+                        } else {
+                            if b_gene_details.name.is_some() {
+                                Ordering::Greater
+                            } else {
+                                a_gene_details.uniquename.cmp(&b_gene_details.uniquename)
+                            }
+                        }
                     }
                 } else {
                     rel_name_order
