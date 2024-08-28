@@ -456,13 +456,21 @@ fn make_cv_summary(cv_config: &CvConfig,
                 annotation_details.get(id2).expect("can't find OntAnnotationDetail");
 
             if a1.extension.is_empty() || a2.extension.is_empty() {
-                // sort is stable (hopefully) so this will keep the ordering the same
-                Ordering::Equal
+                // sort is stable so this will keep the ordering the same
+                if a1.extension.is_empty() && !a2.extension.is_empty() {
+                    Ordering::Less
+                } else {
+                    if !a1.extension.is_empty() && a2.extension.is_empty() {
+                        Ordering::Greater
+                    } else {
+                        Ordering::Equal
+                    }
+                }
             } else {
                 if a1.extension[0].rel_type_display_name == a2.extension[0].rel_type_display_name {
                     a1.extension.len().cmp(&a2.extension.len())
                 } else {
-                    Ordering::Equal
+                    a1.extension[0].rel_type_display_name.cmp(&a2.extension[0].rel_type_display_name)
                 }
             }
         };
