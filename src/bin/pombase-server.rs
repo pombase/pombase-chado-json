@@ -7,7 +7,7 @@ use axum::{
 use tokio::fs::read;
 use tower::layer::Layer;
 
-use tower_http::{normalize_path::NormalizePathLayer, trace::TraceLayer};
+use tower_http::normalize_path::NormalizePathLayer;
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -769,7 +769,6 @@ async fn main() {
         .route("/api/v1/dataset/latest/summary/term/:id", get(get_term_summary_by_id))
         .route("/ping", get(ping))
         .fallback(not_found)
-        .layer(TraceLayer::new_for_http())
         .with_state(Arc::new(all_state));
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
