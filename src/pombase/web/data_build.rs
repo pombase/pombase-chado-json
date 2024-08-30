@@ -7184,6 +7184,8 @@ phenotypes, so just the first part of this extension will be used:
                 continue;
             }
 
+            let is_community_curated = ref_details.canto_curator_role == "community";
+
             let Some(ref pubmed_entrez_date) = ref_details.pubmed_entrez_date
             else {
                 continue;
@@ -7212,11 +7214,11 @@ phenotypes, so just the first part of this extension will be used:
                 format!("{}-{}", entrez_date_year, entrez_date_month.as_str());
 
             year_month_map.entry(entrez_date_year_month)
-                .or_insert((0, 0))
+                .or_insert((0, 0, 0))
                 .0 += 1;
 
             year_map.entry(entrez_date_year.to_owned())
-                .or_insert((0, 0))
+                .or_insert((0, 0, 0))
                 .0 += 1;
 
             let Some(ref submitted_date) = ref_details.canto_session_submitted_date
@@ -7247,13 +7249,21 @@ phenotypes, so just the first part of this extension will be used:
             let submitted_year_month =
                 format!("{}-{}", submitted_year, submitted_month.as_str());
 
-            year_month_map.entry(submitted_year_month)
-                .or_insert((0, 0))
-                .1 += 1;
+            let value = year_month_map.entry(submitted_year_month)
+                .or_insert((0, 0, 0));
+            if is_community_curated {
+                value.1 += 1;
+            } else {
+                value.2 += 1;
+            }
 
-            year_map.entry(submitted_year.to_owned())
-                .or_insert((0, 0))
-                .1 += 1;
+            let value = year_map.entry(submitted_year.to_owned())
+                .or_insert((0, 0, 0));
+            if is_community_curated {
+                value.1 += 1;
+            } else {
+                value.2 += 1;
+            }
         }
 
         let mut year_months = vec![];
@@ -7269,9 +7279,10 @@ phenotypes, so just the first part of this extension will be used:
         let mut year_month_return = vec![];
 
         for year_month in &year_months {
-            let (curatable, curated)  = year_month_map.get(year_month).unwrap_or(&(0,0));
+            let (curatable, community_curated, admin_curated) =
+                year_month_map.get(year_month).unwrap_or(&(0,0,0));
 
-            year_month_return.push((year_month.to_owned(), vec![*curatable, *curated]));
+            year_month_return.push((year_month.to_owned(), vec![*curatable, *community_curated, *admin_curated]));
         }
 
         let mut year_return = vec![];
@@ -7279,9 +7290,10 @@ phenotypes, so just the first part of this extension will be used:
         for year in lowest_year..=highest_year {
             let year = year.to_string();
 
-            let (curatable, curated)  = year_map.get(&year).unwrap_or(&(0,0));
+            let (curatable, community_curated, admin_curated) =
+                year_map.get(&year).unwrap_or(&(0,0,0));
 
-            year_return.push((year.to_owned(), vec![*curatable, *curated]));
+            year_return.push((year.to_owned(), vec![*curatable, *community_curated, *admin_curated]));
         }
 
         (year_month_return, year_return)
@@ -7297,15 +7309,19 @@ phenotypes, so just the first part of this extension will be used:
         let mut return_vec = vec![];
 
         let (first_date_string, sums) = stats[0].to_owned();
-        let (mut curatable_sum, mut curated_sum) = (sums[0], sums[1]);
+        let (mut curatable_sum, mut community_curated_sum, mut admin_curated_sum) =
+            (sums[0], sums[1], sums[2]);
 
-        return_vec.push((first_date_string, vec![curatable_sum, curated_sum]));
+        return_vec.push((first_date_string,
+                         vec![curatable_sum, community_curated_sum, admin_curated_sum]));
 
         for (date_string, counts) in &stats[1..] {
-            if let &[this_curatable, this_curated] = &counts[0..] {
+            if let &[this_curatable, this_community_curated, this_admin_curated] = &counts[0..] {
               curatable_sum += this_curatable;
-              curated_sum += this_curated;
-              return_vec.push((date_string.to_owned(), vec![curatable_sum, curated_sum]));
+              community_curated_sum += this_community_curated;
+              admin_curated_sum += this_admin_curated;
+              return_vec.push((date_string.to_owned(),
+                               vec![curatable_sum, community_curated_sum, admin_curated_sum]));
             }
         }
 
@@ -7443,7 +7459,9 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn get_detailed_stats(&self) -> DetailedStats {
-        let pub_stats_header = vec!["date".to_owned(), "curatable".to_owned(), "curated".to_owned()];
+        let pub_stats_header = vec!["date".to_owned(), "curatable".to_owned(),
+                                    "community_curated".to_owned(),
+                                    "admin_curated".to_owned()];
 
         let (curated_by_month, curated_by_year) = self.get_pub_curated_stats();
         let cumulative_curated_by_month =
