@@ -6,6 +6,7 @@ use std::process;
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
+use crate::bio::util::SeqRecord;
 use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond,
                         GlycosylationSite, Helix, PeptideRange, Propeptide, SignalPeptide,
                         TransitPeptide, Turn};
@@ -73,6 +74,7 @@ struct UniProtDataRecord {
 
 lazy_static! {
     static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN|PROPEP|CHAIN|CARBOHYD|DISULFID) ").unwrap();
+    static ref EVIDENCE_RE: Regex = Regex::new(r#"/evidence="([A-Z]+:\d+)[^"]*""#).unwrap();
     static ref RANGE_RE: Regex = Regex::new(r"^(\?|\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
@@ -144,10 +146,18 @@ fn get_glycosylation_sites(uniprot_record: &UniProtDataRecord) -> Vec<Glycosylat
     glycosylation_sites_parts_iter.next();  // remove blank
 
     glycosylation_sites_parts_iter.filter_map(|field_part| {
-        let cap = RANGE_RE.captures_iter(field_part).next()?;
-        let range = get_range(cap)?;
+        let range_cap = RANGE_RE.captures_iter(field_part).next()?;
+        let range = get_range(range_cap)?;
+        let evidence =
+            if let Some(capture) = EVIDENCE_RE.captures_iter(field_part).next() {
+                capture.get(1).map(|m| m.as_str().into())
+            } else {
+                None
+            };
+
         Some(GlycosylationSite {
-                range,
+            range,
+            evidence,
         })
     })
     .collect()
@@ -343,3 +353,25 @@ pub fn parse_uniprot(file_name: &str) -> UniProtDataMap {
     res
 }
 
+// return a copy of uniprot_data_map containing only those entries where the
+// sequence matches the corresponding peptide sequence from peptides:
+pub fn filter_uniprot_map(mut uniprot_data_map: UniProtDataMap,
+                          peptides: &[SeqRecord])
+          -> UniProtDataMap
+{
+    let mut return_map = HashMap::new();
+    for peptide in peptides {
+        let gene_uniquename =
+            if peptide.id.ends_with(".1:pep") {
+                &peptide.id[0..peptide.id.len()-6]
+            } else {
+                &peptide.id
+            };
+        if let Some(uniprot_data) = uniprot_data_map.remove(gene_uniquename) {
+            if true { // &peptide.sequence == uniprot_data.sequence.as_str() {
+                return_map.insert(uniprot_data.gene_uniquename.clone(), uniprot_data);
+            }
+        }
+    }
+    return_map
+}

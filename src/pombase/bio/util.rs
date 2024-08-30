@@ -3,12 +3,17 @@ use crate::web::config::RelationOrder;
 use crate::types::GeneUniquename;
 
 use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt, ToSharedStr};
+use regex::Regex;
 
 use crate::web::config::Config;
 use crate::data_types::*;
 
 use super::go_format_writer::GpadGafWriteMode;
 
+pub struct SeqRecord {
+    pub id: String,
+    pub sequence: String,
+}
 
 fn complement_char(base: char) -> char {
     match base {
@@ -362,6 +367,53 @@ pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,
     }
 }
 
+lazy_static! {
+    static ref ID_RE: Regex = Regex::new(r">(\S+)").unwrap();
+}
+
+pub fn read_fasta(input: &mut dyn std::io::Read)
+             -> Result<Vec<SeqRecord>, io::Error>
+{
+    let bufreader = BufReader::new(input);
+    let mut ret = vec![];
+
+    let mut current: Option<SeqRecord> = None;
+
+    for line in bufreader.lines() {
+        let line = line?;
+        if let Some(captures) = ID_RE.captures_iter(&line).next() {
+            let id = captures.get(1).unwrap().as_str().into();
+
+            if let Some(prev) = current {
+                ret.push(prev);
+            }
+
+            current = Some(SeqRecord {
+                id,
+                sequence: String::new(),
+            });
+        } else {
+            if let Some(ref mut seq_rec) = current {
+                seq_rec.sequence.push_str(&line);
+            } else {
+                panic!("missing header line in fasta file: {}", line);
+            }
+        }
+    }
+
+    if let Some(prev) = current {
+        ret.push(prev);
+    }
+
+    for seq_rec in &mut ret {
+        if seq_rec.sequence.ends_with("*") {
+            seq_rec.sequence.pop();
+        }
+    }
+
+    Ok(ret)
+}
+
 #[test]
 fn test_format_fasta() {
     assert!(format_fasta("id1", None, "", 8) == ">id1\n\n");
@@ -400,10 +452,36 @@ fn test_format_gff() {
                "chromosome_3\tPomBase\tCDS\t729266\t729319\t.\t+\t0\tID=SPCC18B5.06.1:exon:2;Parent=SPCC18B5.06.1")
 }
 
+#[test]
+fn test_read_seq() {
+    let fasta = ">id0
+AAAATTTCGAGATATT
+TCACTTAAATTCTTCG
+TCAACCACATTCAAT";
+    let records = read_fasta(&mut std::io::Cursor::new(fasta)).unwrap();
 
-use std::cmp::Ordering;
+    assert_eq!(records.len(), 1);
+    assert_eq!(records[0].id, "id0");
+    assert_eq!(records[0].sequence, "AAAATTTCGAGATATTTCACTTAAATTCTTCGTCAACCACATTCAAT");
+
+    let fasta = ">id0
+AAAATTTCGAGATA*
+>id1
+TCACTTAAATTCTTCG
+TCAACCACATTCAA";
+    let records = read_fasta(&mut std::io::Cursor::new(fasta)).unwrap();
+
+    assert_eq!(records.len(), 2);
+    assert_eq!(records[0].id, "id0");
+    assert_eq!(records[0].sequence, "AAAATTTCGAGATA");
+    assert_eq!(records[1].id, "id1");
+    assert_eq!(records[1].sequence, "TCACTTAAATTCTTCGTCAACCACATTCAA");
+}
+
+use std::{cmp::Ordering, io::BufRead};
 #[cfg(test)]
 use std::collections::HashSet;
+use std::io::{self, BufReader};
 #[cfg(test)]
 use std::num::NonZeroUsize;
 #[cfg(test)]

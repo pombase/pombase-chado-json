@@ -105,6 +105,16 @@ impl PeptideRange {
     }
 }
 
+impl Display for PeptideRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.len() == 1 {
+            write!(f, "{}", self.start)
+        } else {
+            write!(f, "{}..{}", self.start, self.end)
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalPeptide {
     pub range: PeptideRange,
@@ -154,6 +164,7 @@ pub struct Chain {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GlycosylationSite {
     pub range: PeptideRange,
+    pub evidence: Option<Evidence>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
