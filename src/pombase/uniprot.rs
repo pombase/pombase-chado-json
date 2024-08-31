@@ -368,7 +368,7 @@ pub fn filter_uniprot_map(mut uniprot_data_map: UniProtDataMap,
                 &peptide.id
             };
         if let Some(uniprot_data) = uniprot_data_map.remove(gene_uniquename) {
-            if true { // &peptide.sequence == uniprot_data.sequence.as_str() {
+            if &peptide.sequence == uniprot_data.sequence.as_str() {
                 return_map.insert(uniprot_data.gene_uniquename.clone(), uniprot_data);
             }
         }
