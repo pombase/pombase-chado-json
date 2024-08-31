@@ -85,7 +85,11 @@ fn main() -> Result<(), Box<dyn Error>> {
         let sub_opts = sub_opts.parsing_style(ParsingStyle::StopAtFirstFree);
 
         sub_opts.reqopt("", "glycosylation-site-termid",
-                    "The term ID to use in the output annotation if the gene has glycosylation site",
+                    "The term ID to use in glycosylation modification annotations",
+                    "TERMID");
+
+        sub_opts.reqopt("", "disulphide-bond-termid",
+                    "The term ID to use in disulphide bond annotations",
                     "TERMID");
 
         sub_opts.reqopt("", "peptide-fasta",
@@ -106,6 +110,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         let termid_map = UniProtTermidMap {
             glycosylation_site_termid: sub_matches.opt_str("glycosylation-site-termid").unwrap(),
+            disulphide_bond_termid: sub_matches.opt_str("disulphide-bond-termid").unwrap(),
         };
 
         let reference_uniquename = sub_matches.opt_str("reference").unwrap();
@@ -113,7 +118,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut peptide_file = File::open(peptide_filename)?;
         let peptides = read_fasta(&mut peptide_file)?;
 
-        let file_name = &args[3];
+        let file_name = &args[4];
 
         let uniprot_data_map = filter_uniprot_map(parse_uniprot(file_name), &peptides);
 

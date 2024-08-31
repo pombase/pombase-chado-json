@@ -170,6 +170,7 @@ pub struct GlycosylationSite {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DisulfideBond {
     pub range: PeptideRange,
+    pub evidence: Option<Evidence>,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]

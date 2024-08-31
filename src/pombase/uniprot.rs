@@ -10,7 +10,7 @@ use crate::bio::util::SeqRecord;
 use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond,
                         GlycosylationSite, Helix, PeptideRange, Propeptide, SignalPeptide,
                         TransitPeptide, Turn};
-use crate::types::GeneUniquename;
+use crate::types::{Evidence, GeneUniquename};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UniProtDataEntry {
@@ -141,6 +141,15 @@ fn get_chains(uniprot_record: &UniProtDataRecord) -> Vec<Chain> {
     .collect()
 }
 
+fn parse_evidence(text: &str) -> Option<Evidence>
+{
+    if let Some(capture) = EVIDENCE_RE.captures_iter(text).next() {
+        capture.get(1).map(|m| m.as_str().into())
+    } else {
+        None
+    }
+}
+
 fn get_glycosylation_sites(uniprot_record: &UniProtDataRecord) -> Vec<GlycosylationSite> {
     let mut glycosylation_sites_parts_iter = SPLIT_RE.split(&uniprot_record.glycosylation_sites);
     glycosylation_sites_parts_iter.next();  // remove blank
@@ -148,12 +157,7 @@ fn get_glycosylation_sites(uniprot_record: &UniProtDataRecord) -> Vec<Glycosylat
     glycosylation_sites_parts_iter.filter_map(|field_part| {
         let range_cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(range_cap)?;
-        let evidence =
-            if let Some(capture) = EVIDENCE_RE.captures_iter(field_part).next() {
-                capture.get(1).map(|m| m.as_str().into())
-            } else {
-                None
-            };
+        let evidence = parse_evidence(field_part);
 
         Some(GlycosylationSite {
             range,
@@ -170,8 +174,11 @@ fn get_disulfide_bonds(uniprot_record: &UniProtDataRecord) -> Vec<DisulfideBond>
     disulfide_bonds_parts_iter.filter_map(|field_part| {
         let cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(cap)?;
+        let evidence = parse_evidence(field_part);
+
         Some(DisulfideBond {
-                range,
+            range,
+            evidence,
         })
     })
     .collect()

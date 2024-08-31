@@ -6,6 +6,7 @@ use chrono::prelude::{Local, DateTime};
 
 pub struct UniProtTermidMap {
   pub glycosylation_site_termid: String,
+  pub disulphide_bond_termid: String,
 }
 
 pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
@@ -23,6 +24,20 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
     for site in &uniprot_data.glycosylation_sites {
       let evidence = site.evidence.as_deref().unwrap_or_default();
       let termid = &termid_map.glycosylation_site_termid;
+      let residue_extension = format!("residue({})", site.range);
+      write_generic_annotation(&mut writer,
+                               &uniprot_data.gene_uniquename,
+                               "",
+                               termid,
+                               evidence,
+                               reference_uniquename,
+                               &date,
+                               "",
+                               &residue_extension)?;
+    }
+    for site in &uniprot_data.disulfide_bonds {
+      let evidence = site.evidence.as_deref().unwrap_or_default();
+      let termid = &termid_map.disulphide_bond_termid;
       let residue_extension = format!("residue({})", site.range);
       write_generic_annotation(&mut writer,
                                &uniprot_data.gene_uniquename,
