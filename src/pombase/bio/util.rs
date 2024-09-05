@@ -204,7 +204,9 @@ pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
             for res in modified_residues {
                 let Some(mod_abbrev_config) = cv_conf.modification_abbreviations.get(gene_uniquename)
                 else {
-                    mod_res.push(res);
+                    for spl in res.split("..") {
+                        mod_res.push(spl);
+                    }
                     continue;
                 };
 
