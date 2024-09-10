@@ -173,6 +173,12 @@ pub struct DisulfideBond {
     pub evidence: Option<Evidence>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct LipidationSite {
+    pub range: PeptideRange,
+    pub evidence: Option<Evidence>,
+}
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
 #[serde(rename = "haploid")]
@@ -1262,6 +1268,8 @@ pub struct GeneDetails {
     pub glycosylation_sites: Vec<GlycosylationSite>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub disulfide_bonds: Vec<DisulfideBond>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub lipidation_sites: Vec<LipidationSite>,
 
     pub has_protein_features: bool,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

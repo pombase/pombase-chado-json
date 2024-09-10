@@ -752,6 +752,13 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let disulfide_bonds_track =
             make_generic_track(flex_str!("Disulfide bonds"), &disulfide_bond_coords, true);
 
+        let lipidation_site_coords =
+            gene_details.lipidation_sites.iter()
+                .map(|lipidation_site| (lipidation_site.range.start, lipidation_site.range.end))
+                .collect();
+        let lipidation_sites_track =
+            make_generic_track(flex_str!("Lipidation sites"), &lipidation_site_coords, true);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
@@ -763,7 +770,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                          binding_sites_track, active_sites_track,
                          beta_strands_track, helix_track, turns_track,
                          propeptides_track, chains_track,
-                         disulfide_bonds_track],
+                         disulfide_bonds_track, lipidation_sites_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);

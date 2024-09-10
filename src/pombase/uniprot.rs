@@ -7,9 +7,7 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
 use crate::bio::util::SeqRecord;
-use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond,
-                        GlycosylationSite, Helix, PeptideRange, Propeptide, SignalPeptide,
-                        TransitPeptide, Turn};
+use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond, GlycosylationSite, Helix, LipidationSite, PeptideRange, Propeptide, SignalPeptide, TransitPeptide, Turn};
 use crate::types::{Evidence, GeneUniquename};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -27,6 +25,7 @@ pub struct UniProtDataEntry {
     pub chains: Vec<Chain>,
     pub glycosylation_sites: Vec<GlycosylationSite>,
     pub disulfide_bonds: Vec<DisulfideBond>,
+    pub lipidation_sites: Vec<LipidationSite>,
 }
 pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 
@@ -59,6 +58,8 @@ struct UniProtDataRecord {
     glycosylation_sites: String,
     #[serde(rename = "Disulfide bond")]
     disulfide_bonds: String,
+    #[serde(rename = "Lipidation")]
+    lipidation_sites: String,
 
     #[serde(rename = "Sequence")]
     sequence: String,
@@ -73,8 +74,9 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN|PROPEP|CHAIN|CARBOHYD|DISULFID) ").unwrap();
+    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN|PROPEP|CHAIN|CARBOHYD|DISULFID|LIPID) ").unwrap();
     static ref EVIDENCE_RE: Regex = Regex::new(r#"/evidence="([A-Z]+:\d+)[^"]*""#).unwrap();
+    static ref NOTE_RE: Regex = Regex::new(r#"/note="([^"]+)""#).unwrap();
     static ref RANGE_RE: Regex = Regex::new(r"^(\?|\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
@@ -150,6 +152,15 @@ fn parse_evidence(text: &str) -> Option<Evidence>
     }
 }
 
+fn parse_note(text: &str) -> Option<String>
+{
+    if let Some(capture) = NOTE_RE.captures_iter(text).next() {
+        capture.get(1).map(|m| m.as_str().into())
+    } else {
+        None
+    }
+}
+
 fn get_glycosylation_sites(uniprot_record: &UniProtDataRecord) -> Vec<GlycosylationSite> {
     let mut glycosylation_sites_parts_iter = SPLIT_RE.split(&uniprot_record.glycosylation_sites);
     glycosylation_sites_parts_iter.next();  // remove blank
@@ -183,6 +194,29 @@ fn get_disulfide_bonds(uniprot_record: &UniProtDataRecord) -> Vec<DisulfideBond>
     })
     .collect()
 }
+
+fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSite> {
+    let mut lipidation_sites_parts_iter = SPLIT_RE.split(&uniprot_record.lipidation_sites);
+    lipidation_sites_parts_iter.next();  // remove blank
+
+    lipidation_sites_parts_iter.filter_map(|field_part| {
+        let cap = RANGE_RE.captures_iter(field_part).next()?;
+        let range = get_range(cap)?;
+        let evidence = parse_evidence(field_part);
+        let note = parse_note(field_part);
+
+        if let Some(note) = note {
+            println!("LIPID note: {}", note);
+        }
+
+        Some(LipidationSite {
+            range,
+            evidence,
+        })
+    })
+    .collect()
+}
+
 
 fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let gene_uniquename =
@@ -310,6 +344,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let chains = get_chains(&uniprot_record);
     let glycosylation_sites = get_glycosylation_sites(&uniprot_record);
     let disulfide_bonds = get_disulfide_bonds(&uniprot_record);
+    let lipidation_sites = get_lipidation_sites(&uniprot_record);
 
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
@@ -325,6 +360,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         chains,
         glycosylation_sites,
         disulfide_bonds,
+        lipidation_sites,
     }
 }
 

@@ -517,6 +517,7 @@ fn make_test_gene() -> GeneDetails {
         chains: vec![],
         glycosylation_sites: vec![],
         disulfide_bonds: vec![],
+        lipidation_sites: vec![],
 
         has_protein_features: false,
         rfam_annotations: vec![],

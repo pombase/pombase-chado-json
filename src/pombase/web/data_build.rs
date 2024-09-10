@@ -2019,6 +2019,7 @@ phenotypes, so just the first part of this extension will be used:
             chains: vec![],
             glycosylation_sites: vec![],
             disulfide_bonds: vec![],
+            lipidation_sites: vec![],
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
@@ -7562,6 +7563,7 @@ phenotypes, so just the first part of this extension will be used:
                 gene_details.chains = uniprot_data_entry.chains.clone();
                 gene_details.glycosylation_sites = uniprot_data_entry.glycosylation_sites.clone();
                 gene_details.disulfide_bonds = uniprot_data_entry.disulfide_bonds.clone();
+                gene_details.lipidation_sites = uniprot_data_entry.lipidation_sites.clone();
             }
         }
     }
