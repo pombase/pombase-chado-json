@@ -199,18 +199,43 @@ fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSit
     let mut lipidation_sites_parts_iter = SPLIT_RE.split(&uniprot_record.lipidation_sites);
     lipidation_sites_parts_iter.next();  // remove blank
 
+    let mut note_to_termid_map: HashMap<String, String> = HashMap::new();
+
+    note_to_termid_map.insert("GPI-anchor amidated serine".to_owned(),
+                              "MOD:00171".to_owned());
+    note_to_termid_map.insert("S-geranylgeranyl cysteine".to_owned(),
+                              "MOD:00441".to_owned());
+    note_to_termid_map.insert("S-farnesyl cysteine".to_owned(),
+                              "MOD:00111".to_owned());
+    note_to_termid_map.insert("Phosphatidylethanolamine amidated glycine".to_owned(),
+                              "MOD:00351".to_owned());
+    note_to_termid_map.insert("N-myristoyl glycine".to_owned(),
+                              "MOD:00068".to_owned());
+    note_to_termid_map.insert("S-palmitoyl cysteine".to_owned(),
+                              "MOD:00115".to_owned());
+    note_to_termid_map.insert("GPI-anchor amidated alanine".to_owned(),
+                              "MOD:00818".to_owned());
+    note_to_termid_map.insert("GPI-anchor amidated glycine".to_owned(),
+                              "MOD:00818".to_owned());
+
     lipidation_sites_parts_iter.filter_map(|field_part| {
         let cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(cap)?;
         let evidence = parse_evidence(field_part);
-        let note = parse_note(field_part);
+        let Some(ref note) = parse_note(field_part)
+        else {
+            return None;
+        };
 
-        if let Some(note) = note {
-            println!("LIPID note: {}", note);
-        }
+        let termid = note_to_termid_map.get(note.as_str());
+        let Some(termid) = termid
+        else {
+            return None;
+        };
 
         Some(LipidationSite {
             range,
+            termid: termid.into(),
             evidence,
         })
     })

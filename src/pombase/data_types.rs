@@ -176,6 +176,7 @@ pub struct DisulfideBond {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct LipidationSite {
     pub range: PeptideRange,
+    pub termid: TermId,
     pub evidence: Option<Evidence>,
 }
 
