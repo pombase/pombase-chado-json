@@ -362,7 +362,7 @@ fn make_mod_extension(extension: &Vec<ExtPart>,
 
 lazy_static! {
     static ref MODIFICATION_RESIDUE_RE: Regex =
-        Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]+(\d+))$").unwrap();
+        Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]*(\d+))$").unwrap();
 }
 
 fn make_modification_track(gene_details: &GeneDetails,
