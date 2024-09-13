@@ -431,14 +431,15 @@ fn make_modification_track(gene_details: &GeneDetails,
 
                             let mut feature_group = None;
 
-                            for mod_group in &config.protein_feature_view.modification_groups {
+                            'GROUP: for mod_group in &config.protein_feature_view.modification_groups {
                                 if &mod_group.termid == termid {
                                     feature_group = Some(mod_group.clone());
+                                    break 'GROUP;
                                 } else {
                                     for interesting_parent in &term_details.interesting_parent_ids {
                                         if interesting_parent == mod_group.termid {
                                             feature_group = Some(mod_group.clone());
-                                            break;
+                                            break 'GROUP;
                                         }
                                     }
                                 }
