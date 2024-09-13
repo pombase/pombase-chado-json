@@ -266,9 +266,7 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResi
     note_to_termid_map.insert("Tele-8alpha-FAD histidine".to_owned(),
                               "MOD:00226".to_owned());
     note_to_termid_map.insert("3,4-dihydroxyproline".to_owned(),
-                              "MOD:00000".to_owned());
-    note_to_termid_map.insert("N6-acetyl-N6-methyllysine".to_owned(),
-                              "MOD:00000".to_owned());
+                              "MOD:01402".to_owned());
     note_to_termid_map.insert("1-thioglycine".to_owned(),
                               "MOD:01625".to_owned());
     note_to_termid_map.insert("2',4',5'-topaquinone".to_owned(),
@@ -288,7 +286,7 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResi
     note_to_termid_map.insert("O-(pantetheine 4\'-phosphoryl)serine".to_owned(),
                               "MOD:00159".to_owned());
     note_to_termid_map.insert("Phosphohistidine".to_owned(),
-                              "MOD:00000".to_owned());
+                              "MOD:00890".to_owned());
     note_to_termid_map.insert("N5-methylglutamine".to_owned(),
                               "MOD:00080".to_owned());
     note_to_termid_map.insert("N6-carboxylysine".to_owned(),
