@@ -180,6 +180,13 @@ pub struct LipidationSite {
     pub evidence: Option<Evidence>,
 }
 
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct ModifiedResidue {
+    pub range: PeptideRange,
+    pub termid: TermId,
+    pub evidence: Option<Evidence>,
+}
+
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub enum Ploidiness {
 #[serde(rename = "haploid")]

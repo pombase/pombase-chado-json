@@ -533,7 +533,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>,
                 };
             ProteinViewFeature {
                 id: feature_name.clone(),
-                display_name: None,
+                display_name: Some(feature_name.clone()),
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 display_extension: BTreeSet::new(),

@@ -7,7 +7,7 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
 use crate::bio::util::SeqRecord;
-use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond, GlycosylationSite, Helix, LipidationSite, PeptideRange, Propeptide, SignalPeptide, TransitPeptide, Turn};
+use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond, GlycosylationSite, Helix, LipidationSite, ModifiedResidue, PeptideRange, Propeptide, SignalPeptide, TransitPeptide, Turn};
 use crate::types::{Evidence, GeneUniquename};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -26,6 +26,7 @@ pub struct UniProtDataEntry {
     pub glycosylation_sites: Vec<GlycosylationSite>,
     pub disulfide_bonds: Vec<DisulfideBond>,
     pub lipidation_sites: Vec<LipidationSite>,
+    pub modified_residues: Vec<ModifiedResidue>,
 }
 pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 
@@ -60,6 +61,8 @@ struct UniProtDataRecord {
     disulfide_bonds: String,
     #[serde(rename = "Lipidation")]
     lipidation_sites: String,
+    #[serde(rename = "Modified residue")]
+    modified_residues: String,
 
     #[serde(rename = "Sequence")]
     sequence: String,
@@ -74,9 +77,9 @@ struct UniProtDataRecord {
 }
 
 lazy_static! {
-    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN|PROPEP|CHAIN|CARBOHYD|DISULFID|LIPID) ").unwrap();
+    static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN|PROPEP|CHAIN|CARBOHYD|DISULFID|LIPID|MOD_RES) ").unwrap();
     static ref EVIDENCE_RE: Regex = Regex::new(r#"/evidence="([A-Z]+:\d+)[^"]*""#).unwrap();
-    static ref NOTE_RE: Regex = Regex::new(r#"/note="([^"]+)""#).unwrap();
+    static ref NOTE_RE: Regex = Regex::new(r#"/note="([^";]+).*""#).unwrap();
     static ref RANGE_RE: Regex = Regex::new(r"^(\?|\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
 }
@@ -242,6 +245,115 @@ fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSit
     .collect()
 }
 
+fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResidue> {
+    let mut modified_residues_parts_iter =
+        SPLIT_RE.split(&uniprot_record.modified_residues);
+    modified_residues_parts_iter.next();  // remove blank
+
+    let mut note_to_termid_map: HashMap<String, String> = HashMap::new();
+
+    note_to_termid_map.insert("GPI-anchor amidated serine".to_owned(),
+                              "MOD:00171".to_owned());
+
+    note_to_termid_map.insert("N5-methylarginine".to_owned(),
+                              "MOD:00310".to_owned());
+    note_to_termid_map.insert("Hypusine".to_owned(),
+                              "MOD:00125".to_owned());
+    note_to_termid_map.insert("N6-methyllysine".to_owned(),
+                              "MOD:00085".to_owned());
+    note_to_termid_map.insert("N,N,N-trimethylglycine".to_owned(),
+                              "MOD:01982".to_owned());
+    note_to_termid_map.insert("Tele-8alpha-FAD histidine".to_owned(),
+                              "MOD:00226".to_owned());
+    note_to_termid_map.insert("3,4-dihydroxyproline".to_owned(),
+                              "MOD:00000".to_owned());
+    note_to_termid_map.insert("N6-acetyl-N6-methyllysine".to_owned(),
+                              "MOD:00000".to_owned());
+    note_to_termid_map.insert("1-thioglycine".to_owned(),
+                              "MOD:01625".to_owned());
+    note_to_termid_map.insert("2',4',5'-topaquinone".to_owned(),
+                              "MOD:00156".to_owned());
+    note_to_termid_map.insert("4-aspartylphosphate".to_owned(),
+                              "MOD:00042".to_owned());
+    note_to_termid_map.insert("N6-(2-hydroxyisobutyryl)lysine".to_owned(),
+                              "MOD:02093".to_owned());
+    note_to_termid_map.insert("S-glutathionyl cysteine".to_owned(),
+                              "MOD:00234".to_owned());
+    note_to_termid_map.insert("N6-lipoyllysine".to_owned(),
+                              "MOD:00127".to_owned());
+    note_to_termid_map.insert("Lysino-D-alanine (Lys)".to_owned(),
+                              "MOD:01838".to_owned());
+    note_to_termid_map.insert("Diphthamide".to_owned(),
+                              "MOD:00049".to_owned());
+    note_to_termid_map.insert("O-(pantetheine 4\'-phosphoryl)serine".to_owned(),
+                              "MOD:00159".to_owned());
+    note_to_termid_map.insert("Phosphohistidine".to_owned(),
+                              "MOD:00000".to_owned());
+    note_to_termid_map.insert("N5-methylglutamine".to_owned(),
+                              "MOD:00080".to_owned());
+    note_to_termid_map.insert("N6-carboxylysine".to_owned(),
+                              "MOD:00123".to_owned());
+    note_to_termid_map.insert("Cysteine methyl ester".to_owned(),
+                              "MOD:00114".to_owned());
+    note_to_termid_map.insert("N6-biotinyllysine".to_owned(),
+                              "MOD:00126".to_owned());
+    note_to_termid_map.insert("N6-(pyridoxal phosphate)lysine".to_owned(),
+                              "MOD:00128".to_owned());
+    note_to_termid_map.insert("N6,N6,N6-trimethyllysine".to_owned(),
+                              "MOD:00083".to_owned());
+    note_to_termid_map.insert("Pros-8alpha-FAD histidine".to_owned(),
+                              "MOD:00153".to_owned());
+    note_to_termid_map.insert("S-(dipyrrolylmethanemethyl)cysteine".to_owned(),
+                              "MOD:00257".to_owned());
+    note_to_termid_map.insert("N6-glutaryllysine".to_owned(),
+                              "MOD:02095".to_owned());
+    note_to_termid_map.insert("N-acetylmethionine".to_owned(),
+                              "MOD:00058".to_owned());
+    note_to_termid_map.insert("N-acetylserine".to_owned(),
+                              "MOD:00060".to_owned());
+    note_to_termid_map.insert("N6,N6-dimethyllysine".to_owned(),
+                              "MOD:00084".to_owned());
+    note_to_termid_map.insert("Pyruvic acid (Ser)".to_owned(),
+                              "MOD:01154".to_owned());
+    note_to_termid_map.insert("N-acetylalanine".to_owned(),
+                              "MOD:00050".to_owned());
+    note_to_termid_map.insert("Phosphoserine".to_owned(),
+                              "MOD:00046".to_owned());
+    note_to_termid_map.insert("Phosphothreonine".to_owned(),
+                              "MOD:00047".to_owned());
+    note_to_termid_map.insert("Phosphotyrosine".to_owned(),
+                              "MOD:00048".to_owned());
+    note_to_termid_map.insert("Leucine methyl ester".to_owned(),
+                              "MOD:00304".to_owned());
+    note_to_termid_map.insert("N6-acetyllysine".to_owned(),
+                              "MOD:00064".to_owned());
+    note_to_termid_map.insert("2,3-didehydroalanine (Cys)".to_owned(),
+                              "MOD:0116".to_owned());
+
+    modified_residues_parts_iter.filter_map(|field_part| {
+        let cap = RANGE_RE.captures_iter(field_part).next()?;
+        let range = get_range(cap)?;
+        let evidence = parse_evidence(field_part);
+
+        let Some(ref note) = parse_note(field_part)
+        else {
+            return None;
+        };
+
+        let termid = note_to_termid_map.get(note.as_str());
+        let Some(termid) = termid
+        else {
+            return None;
+        };
+
+        Some(ModifiedResidue {
+            range,
+            termid: termid.into(),
+            evidence,
+        })
+    })
+    .collect()
+}
 
 fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let gene_uniquename =
@@ -370,6 +482,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let glycosylation_sites = get_glycosylation_sites(&uniprot_record);
     let disulfide_bonds = get_disulfide_bonds(&uniprot_record);
     let lipidation_sites = get_lipidation_sites(&uniprot_record);
+    let modified_residues = get_modified_residues(&uniprot_record);
 
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
@@ -386,6 +499,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
         glycosylation_sites,
         disulfide_bonds,
         lipidation_sites,
+        modified_residues,
     }
 }
 
