@@ -12,6 +12,7 @@ pub struct UniProtTermidMap {
 pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                               reference_uniquename: &str,
                               termid_map: &UniProtTermidMap,
+                              assigned_by: &str,
                               out: &mut dyn Write)
    -> Result<(), io::Error>
 {
@@ -33,7 +34,8 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                                reference_uniquename,
                                &date,
                                "",
-                               &residue_extension)?;
+                               &residue_extension,
+                               assigned_by)?;
     }
     for site in &uniprot_data.disulfide_bonds {
       let evidence = site.evidence.as_deref().unwrap_or_default();
@@ -47,7 +49,8 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                                reference_uniquename,
                                &date,
                                "",
-                               &residue_extension)?;
+                               &residue_extension,
+                               assigned_by)?;
     }
     for site in &uniprot_data.lipidation_sites {
       let evidence = site.evidence.as_deref().unwrap_or_default();
@@ -61,7 +64,8 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                                reference_uniquename,
                                &date,
                                "",
-                               &residue_extension)?;
+                               &residue_extension,
+                               assigned_by)?;
     }
     for site in &uniprot_data.modified_residues {
       let evidence = site.evidence.as_deref().unwrap_or_default();
@@ -75,7 +79,8 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                                reference_uniquename,
                                &date,
                                "",
-                               &residue_extension)?;
+                               &residue_extension,
+                               assigned_by)?;
     }
   }
 
@@ -88,11 +93,12 @@ fn write_generic_annotation(out: &mut BufWriter<&mut dyn Write>,
                             reference_uniquename: &str,
                             date: &str,
                             qualifiers: &str,
-                            extension: &str)
+                            extension: &str,
+                            assigned_by: &str)
          -> Result<(), io::Error>
 {
-  writeln!(out, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
+  writeln!(out, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
            uniquename, name, termid, evidence,
-           reference_uniquename, date, qualifiers, extension)?;
+           reference_uniquename, date, qualifiers, extension, assigned_by)?;
   Ok(())
 }
