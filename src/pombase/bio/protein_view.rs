@@ -145,6 +145,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
             annotated_terms: BTreeSet::new(),
             feature_group: None,
             display_extension: BTreeSet::new(),
+            assigned_by: None,
             positions,
         })
     } else {
@@ -173,6 +174,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
                annotated_terms: BTreeSet::new(),
                feature_group: None,
                display_extension: BTreeSet::new(),
+               assigned_by: None,
                positions: vec![(residue_and_pos, pos, pos)],
             }
          })
@@ -388,6 +390,8 @@ fn make_modification_track(gene_details: &GeneDetails,
                 let annotation_detail = annotation_details_map.get(&annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
+                let assigned_by = &annotation_detail.assigned_by;
+
                 let mut annotation_residues = vec![];
 
                 if let Some(ref residue_str) = annotation_detail.residue {
@@ -451,6 +455,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                                 annotated_terms: BTreeSet::new(),
                                 feature_group,
                                 display_extension: BTreeSet::new(),
+                                assigned_by: assigned_by.clone(),
                                 positions: vec![(description, residue_pos, residue_pos)],
                             }
                         });
@@ -502,7 +507,9 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 display_name: Some(display_name),
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
+                assigned_by: Some(flex_str!["InterPro"]),
                 display_extension: BTreeSet::new(),
+
                 positions,
             };
 
@@ -538,6 +545,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>,
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 display_extension: BTreeSet::new(),
+                assigned_by: None,
                 positions,
             }
         })
@@ -565,6 +573,7 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 display_extension: BTreeSet::new(),
+                assigned_by: None,
                 positions: vec![(feature_name.clone(), start, end)],
             }
         })

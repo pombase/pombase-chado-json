@@ -2445,6 +2445,9 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="BTreeSet::is_empty", default)]
     pub display_extension: BTreeSet<FlexStr>,
 
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub assigned_by: Option<AssignedBy>,
+
     // start, end pairs:
     pub positions: Vec<ProteinViewFeaturePos>,
 }
