@@ -580,12 +580,8 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
 fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
     let sort_helper = |(_, p1_start, p1_end): &ProteinViewFeaturePos,
                        (_, p2_start, p2_end): &ProteinViewFeaturePos| {
-        let first_pos_cmp = p1_start.cmp(&p2_start);
-        if first_pos_cmp == Ordering::Equal {
-            p1_end.cmp(&p2_end)
-        } else {
-            first_pos_cmp
-        }
+        p1_start.cmp(&p2_start)
+                .then_with(|| p1_end.cmp(&p2_end))
     };
 
     let sorter = |f1: &ProteinViewFeature, f2: &ProteinViewFeature| {
@@ -597,7 +593,7 @@ fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
             }
         }
 
-        Ordering::Equal
+        f1.positions.len().cmp(&f2.positions.len())
     };
 
     deletions_track.features.sort_by(sorter);
