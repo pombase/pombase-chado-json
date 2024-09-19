@@ -179,19 +179,17 @@ impl WebData {
         &self.chromosomes
     }
 
-    fn create_dir(&self, output_dir: &str, dir_name: &str) -> String {
+    fn create_dir(&self, output_dir: &str, dir_name: &str) -> Result<String, io::Error> {
         let path = String::new() + output_dir + "/" + dir_name;
-        create_dir_all(&path).unwrap_or_else(|why| {
-            println!("Creating output directory failed: {:?}", why.kind());
-        });
-        path
+        create_dir_all(&path)?;
+        Ok(path)
     }
 
-    fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_sizes: &[usize]) {
+    fn write_chromosome_seq_chunks(&self, output_dir: &str, chunk_sizes: &[usize]) -> Result<(), io::Error> {
         for chunk_size in chunk_sizes {
             for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
                 let new_path_part = &format!("{}/sequence/{}", chromosome_uniquename, chunk_size);
-                let chr_path = self.create_dir(output_dir, new_path_part);
+                let chr_path = self.create_dir(output_dir, new_path_part)?;
                 let mut index = 0;
                 let max_index = chromosome_details.residues.len() / chunk_size;
                 while index <= max_index {
@@ -199,123 +197,132 @@ impl WebData {
                     let end_pos = min(start_pos+chunk_size, chromosome_details.residues.len());
                     let chunk: String = chromosome_details.residues[start_pos..end_pos].into();
                     let file_name = format!("{}/chunk_{}", chr_path, index);
-                    let f = File::create(file_name).expect("Unable to open file");
+                    let f = File::create(file_name)?;
                     let mut writer = BufWriter::new(&f);
-                    writer.write_all(chunk.as_bytes()).expect("Unable to write chromosome chunk");
+                    writer.write_all(chunk.as_bytes())?;
                     index += 1;
                 }
             }
         }
+        Ok(())
     }
 
-    fn write_chromosome_json(&self, config: &Config, output_dir: &str) {
-        let new_path = self.create_dir(output_dir, "chromosome");
+    fn write_chromosome_json(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+        let new_path = self.create_dir(output_dir, "chromosome")?;
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
             let s = serde_json::to_string(&chromosome_details).unwrap();
             let file_name = format!("{}/{}.json", new_path, &chromosome_uniquename);
-            let f = File::create(file_name).expect("Unable to open file");
+            let f = File::create(file_name)?;
             let mut writer = BufWriter::new(&f);
-            writer.write_all(s.as_bytes()).expect("Unable to write chromosome JSON");
+            writer.write_all(s.as_bytes())?
         }
-        self.write_chromosome_seq_chunks(&new_path, &config.api_seq_chunk_sizes);
+        self.write_chromosome_seq_chunks(&new_path, &config.api_seq_chunk_sizes)?;
+        Ok(())
     }
 
-    fn write_gene_summaries(&self, output_dir: &str) {
+    fn write_gene_summaries(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.search_gene_summaries).unwrap();
         let file_name = String::new() + output_dir + "/gene_summaries.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write gene_summaries.json");
+        writer.write_all(s.as_bytes())?;
+        Ok(())
     }
 
-    fn write_metadata(&self, output_dir: &str) {
+    fn write_metadata(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.metadata).unwrap();
         let file_name = String::new() + output_dir + "/metadata.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write metadata.json");
+        writer.write_all(s.as_bytes())?;
+        Ok(())
     }
 
-    fn write_recent_references(&self, output_dir: &str) {
+    fn write_recent_references(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.recent_references).unwrap();
         let file_name = String::new() + output_dir + "/recent_references.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write recent references JSON");
+        writer.write_all(s.as_bytes())?;
+        Ok(())
     }
 
-    fn write_all_community_curated(&self, output_dir: &str) {
+    fn write_all_community_curated(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.all_community_curated).unwrap();
         let file_name = String::new() + output_dir + "/community_curated_references.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write recent references JSON");
+        writer.write_all(s.as_bytes())?;
+        Ok(())
     }
 
-    fn write_all_admin_curated(&self, output_dir: &str) {
+    fn write_all_admin_curated(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.all_admin_curated).unwrap();
         let file_name = String::new() + output_dir + "/admin_curated_references.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write admin curated refs JSON");
+        writer.write_all(s.as_bytes())?;
+        Ok(())
     }
 
-    fn write_api_maps(&self, output_dir: &str) {
+    fn write_api_maps(&self, output_dir: &str) -> Result<(), io::Error> {
         let file_name = String::new() + output_dir + "/api_maps.json.zst";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
 
-        let mut compressor = Encoder::new(f, 12).unwrap();
+        let mut compressor = Encoder::new(f, 12)?;
         compressor.multithread(8).unwrap();
-        compressor.long_distance_matching(true).unwrap();
+        compressor.long_distance_matching(true)?;
         serde_json::ser::to_writer(&mut compressor, &self.api_maps).unwrap();
 
-        compressor.finish().unwrap();
+        compressor.finish()?;
+
+        Ok(())
     }
 
-    fn write_solr_data(&self, output_dir: &str) {
-        let new_path = self.create_dir(output_dir, "solr_data/");
+    fn write_solr_data(&self, output_dir: &str) -> Result<(), io::Error> {
+        let new_path = self.create_dir(output_dir, "solr_data/")?;
 
         let terms = self.solr_data.term_summaries.clone();
 
         let terms_json_text = serde_json::to_string(&terms).unwrap();
         let terms_file_name = format!("{}/terms.json.gz", new_path);
-        let terms_file = File::create(terms_file_name).expect("Unable to open file");
+        let terms_file = File::create(terms_file_name)?;
 
         let mut terms_compressor = GzEncoder::new(terms_file, Compression::default());
-        terms_compressor.write_all(terms_json_text.as_bytes()).expect("Unable to write terms as JSON");
-        terms_compressor.finish().expect("Unable to write terms as JSON");
+        terms_compressor.write_all(terms_json_text.as_bytes())?;
+        terms_compressor.finish()?;
 
         let genes = self.solr_data.gene_summaries.clone();
 
         let genes_json_text = serde_json::to_string(&genes).unwrap();
         let genes_file_name = format!("{}/genes.json.gz", new_path);
-        let genes_file = File::create(genes_file_name).expect("Unable to open file");
+        let genes_file = File::create(genes_file_name)?;
 
         let mut genes_compressor = GzEncoder::new(genes_file, Compression::default());
-        genes_compressor.write_all(genes_json_text.as_bytes()).expect("Unable to write genes as JSON");
-        genes_compressor.finish().expect("Unable to write genes as JSON");
+        genes_compressor.write_all(genes_json_text.as_bytes())?;
+        genes_compressor.finish()?;
 
 
         let alleles = self.solr_data.allele_summaries.clone();
 
         let alleles_json_text = serde_json::to_string(&alleles).unwrap();
         let alleles_file_name = format!("{}/alleles.json.gz", new_path);
-        let alleles_file = File::create(alleles_file_name).expect("Unable to open alleles file for SOLR");
+        let alleles_file = File::create(alleles_file_name)?;
 
         let mut alleles_compressor = GzEncoder::new(alleles_file, Compression::default());
-        alleles_compressor.write_all(alleles_json_text.as_bytes()).expect("Unable to write alleles as JSON");
-        alleles_compressor.finish().expect("Unable to write alleles as JSON");
-
+        alleles_compressor.write_all(alleles_json_text.as_bytes())?;
+        alleles_compressor.finish()?;
 
         let references = self.solr_data.reference_summaries.clone();
 
         let references_json_text = serde_json::to_string(&references).unwrap();
         let references_file_name = format!("{}/references.json.gz", new_path);
-        let references_file = File::create(references_file_name).expect("Unable to open file");
+        let references_file = File::create(references_file_name)?;
 
         let mut references_compressor = GzEncoder::new(references_file, Compression::default());
-        references_compressor.write_all(references_json_text.as_bytes()).expect("Unable to write references as JSON");
-        references_compressor.finish().expect("Unable to write references as JSON");
+        references_compressor.write_all(references_json_text.as_bytes())?;
+        references_compressor.finish()?;
+        Ok(())
     }
 
 
@@ -348,34 +355,35 @@ impl WebData {
         Ok(())
     }
 
-    fn write_subsets(&self, output_dir: &str) {
+    fn write_subsets(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.api_maps.term_subsets).unwrap();
         let file_name = String::new() + output_dir + "/term_subsets.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write");
+        writer.write_all(s.as_bytes())?;
 
         let s = serde_json::to_string(&self.api_maps.gene_subsets).unwrap();
         let file_name = String::new() + output_dir + "/gene_subsets.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write");
+        writer.write_all(s.as_bytes())?;
+        Ok(())
     }
 
-    fn write_feature_sequences(&self, output_dir: &str) {
-        let make_seq_writer = |name: &str| {
+    fn write_feature_sequences(&self, output_dir: &str) -> Result<(), io::Error> {
+        let make_seq_writer = |name: &str| -> Result<BufWriter<File>, io::Error> {
             let file_name = String::new() + output_dir + "/" + name;
-            let file = File::create(file_name).expect("Unable to open file");
-            BufWriter::new(file)
+            let file = File::create(file_name)?;
+            Ok(BufWriter::new(file))
         };
 
-        let mut cds_writer = make_seq_writer("cds.fa");
-        let mut cds_introns_writer = make_seq_writer("cds+introns.fa");
-        let mut cds_introns_utrs_writer = make_seq_writer("cds+introns+utrs.fa");
-        let mut introns_writer = make_seq_writer("introns_within_cds.fa");
-        let mut five_prime_utrs_writer = make_seq_writer("five_prime_utrs.fa");
-        let mut three_prime_utrs_writer = make_seq_writer("three_prime_utrs.fa");
-        let mut peptide_writer = make_seq_writer("peptide.fa");
+        let mut cds_writer = make_seq_writer("cds.fa")?;
+        let mut cds_introns_writer = make_seq_writer("cds+introns.fa")?;
+        let mut cds_introns_utrs_writer = make_seq_writer("cds+introns+utrs.fa")?;
+        let mut introns_writer = make_seq_writer("introns_within_cds.fa")?;
+        let mut five_prime_utrs_writer = make_seq_writer("five_prime_utrs.fa")?;
+        let mut three_prime_utrs_writer = make_seq_writer("three_prime_utrs.fa")?;
+        let mut peptide_writer = make_seq_writer("peptide.fa")?;
 
         for (gene_uniquename, gene_details) in &self.genes {
             if let Some(transcript_uniquename) =
@@ -444,26 +452,27 @@ impl WebData {
             }
         }
 
-        cds_writer.flush().unwrap();
-        cds_introns_writer.flush().unwrap();
-        cds_introns_utrs_writer.flush().unwrap();
-        introns_writer.flush().unwrap();
-        peptide_writer.flush().unwrap();
-        five_prime_utrs_writer.flush().unwrap();
-        three_prime_utrs_writer.flush().unwrap();
+        cds_writer.flush()?;
+        cds_introns_writer.flush()?;
+        cds_introns_utrs_writer.flush()?;
+        introns_writer.flush()?;
+        peptide_writer.flush()?;
+        five_prime_utrs_writer.flush()?;
+        three_prime_utrs_writer.flush()?;
+        Ok(())
     }
 
-    pub fn write_chromosome_sequences(&self, config: &Config, output_dir: &str) {
-        let make_seq_writer = |name: &str| {
+    pub fn write_chromosome_sequences(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
+        let make_seq_writer = |name: &str| -> Result<BufWriter<File>, io::Error> {
             let file_name = String::new() + output_dir + "/" + name;
-            let file = File::create(file_name).expect("Unable to open file");
-            BufWriter::new(file)
+            let file = File::create(file_name)?;
+            Ok(BufWriter::new(file))
         };
 
         if let Some(load_org) = config.load_organism() {
             let load_org_name = load_org.full_name();
             let chromosomes_file_name = load_org_name.clone() + "_all_chromosomes.fa";
-            let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name);
+            let mut chromosomes_writer = make_seq_writer(&chromosomes_file_name)?;
 
             for (uniquename, details) in &self.chromosomes {
                 let chr_config = config.find_chromosome_config(uniquename);
@@ -471,7 +480,7 @@ impl WebData {
                                Some(load_org_name.clone()), &details.residues);
                 let this_chr_file_name =
                     load_org_name.clone() + "_" + &chr_config.export_file_id + ".fa";
-                let mut this_chr_writer = make_seq_writer(&this_chr_file_name);
+                let mut this_chr_writer = make_seq_writer(&this_chr_file_name)?;
                 write_as_fasta(&mut this_chr_writer, &chr_config.export_id,
                                Some(load_org_name.clone()), &details.residues);
                 this_chr_writer.flush().unwrap();
@@ -480,14 +489,16 @@ impl WebData {
 
             chromosomes_writer.flush().unwrap();
         }
+        Ok(())
     }
 
-    fn write_chromosome_summaries(&self, output_dir: &str) {
+    fn write_chromosome_summaries(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.chromosome_summaries).unwrap();
         let file_name = String::new() + output_dir + "/chromosome_summaries.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write chromosome_summaries.json");
+        writer.write_all(s.as_bytes())?;
+        Ok(())
     }
 
     fn write_alleles_json(&self, output_dir: &str) -> Result<(), io::Error> {
@@ -514,12 +525,12 @@ impl WebData {
         let all_ids_file_name = output_dir.to_owned() + "/gene_IDs_names_products.tsv";
         let uniprot_ids_file_name = output_dir.to_owned() + "/uniprot_id_mapping.tsv";
 
-        let gene_file = File::create(gene_file_name).expect("Unable to open file");
-        let rna_file = File::create(rna_file_name).expect("Unable to open file");
-        let pseudogenes_file = File::create(pseudogenes_file_name).expect("Unable to open file");
-        let all_names_file = File::create(all_names_file_name).expect("Unable to open file");
-        let all_ids_file = File::create(all_ids_file_name).expect("Unable to open file");
-        let uniprot_ids_file = File::create(uniprot_ids_file_name).expect("Unable to open file");
+        let gene_file = File::create(gene_file_name)?;
+        let rna_file = File::create(rna_file_name)?;
+        let pseudogenes_file = File::create(pseudogenes_file_name)?;
+        let all_names_file = File::create(all_names_file_name)?;
+        let all_ids_file = File::create(all_ids_file_name)?;
+        let uniprot_ids_file = File::create(uniprot_ids_file_name)?;
 
         let mut gene_writer = BufWriter::new(&gene_file);
         let mut rna_writer = BufWriter::new(&rna_file);
@@ -663,22 +674,22 @@ impl WebData {
                               -> Result<(), io::Error>
     {
         let peptide_stats_name = format!("{}/PeptideStats.tsv", output_dir);
-        let peptide_stats_file = File::create(peptide_stats_name).expect("Unable to open file");
+        let peptide_stats_file = File::create(peptide_stats_name)?;
         let mut peptide_stats_writer = BufWriter::new(&peptide_stats_file);
 
         let peptide_stats_header = "Systematic_ID\tMass (kDa)\tpI\tCharge\tResidues\tCAI\n";
         peptide_stats_writer.write_all(peptide_stats_header.as_bytes())?;
 
         let protein_features_name = format!("{}/ProteinFeatures.tsv", output_dir);
-        let protein_features_file = File::create(protein_features_name).expect("Unable to open file");
+        let protein_features_file = File::create(protein_features_name)?;
         let mut protein_features_writer = BufWriter::new(&protein_features_file);
 
         let disordered_regions_name = format!("{}/disordered_regions.tsv", output_dir);
-        let disordered_regions_file = File::create(disordered_regions_name).expect("Unable to open file");
+        let disordered_regions_file = File::create(disordered_regions_name)?;
         let mut disordered_regions_writer = BufWriter::new(&disordered_regions_file);
 
         let aa_composition_name = format!("{}/aa_composition.tsv", output_dir);
-        let aa_composition_file = File::create(aa_composition_name).expect("Unable to open file");
+        let aa_composition_file = File::create(aa_composition_name)?;
         let mut aa_composition_writer = BufWriter::new(&aa_composition_file);
 
         let protein_features_header =
@@ -837,9 +848,9 @@ impl WebData {
             let cds_file_name = format!("{}/{}.cds.coords.tsv", output_dir, chr_uniquename);
             let exon_file_name = format!("{}/{}.exon.coords.tsv", output_dir, chr_uniquename);
 
-            let gene_file = File::create(gene_file_name).expect("Unable to open file");
-            let cds_file = File::create(cds_file_name).expect("Unable to open file");
-            let exon_file = File::create(exon_file_name).expect("Unable to open file");
+            let gene_file = File::create(gene_file_name)?;
+            let cds_file = File::create(cds_file_name)?;
+            let exon_file = File::create(exon_file_name)?;
 
             let mut gene_writer = BufWriter::new(&gene_file);
             let mut cds_writer = BufWriter::new(&cds_file);
@@ -921,22 +932,22 @@ impl WebData {
             let load_org_name = load_org.full_name();
 
             let all_gff_name = format!("{}/{}_all_chromosomes.gff3", output_dir, load_org_name);
-            let all_gff_file = File::create(all_gff_name).expect("Unable to open file");
+            let all_gff_file = File::create(all_gff_name)?;
             let mut all_gff_writer = BufWriter::new(&all_gff_file);
 
             let forward_features_gff_name =
                 format!("{}/{}_all_chromosomes_forward_strand.gff3", output_dir, load_org_name);
-            let forward_features_gff_file = File::create(forward_features_gff_name).expect("Unable to open file");
+            let forward_features_gff_file = File::create(forward_features_gff_name)?;
             let mut forward_features_gff_writer = BufWriter::new(&forward_features_gff_file);
 
             let reverse_features_gff_name =
                 format!("{}/{}_all_chromosomes_reverse_strand.gff3", output_dir, load_org_name);
-            let reverse_features_gff_file = File::create(reverse_features_gff_name).expect("Unable to open file");
+            let reverse_features_gff_file = File::create(reverse_features_gff_name)?;
             let mut reverse_features_gff_writer = BufWriter::new(&reverse_features_gff_file);
 
             let unstranded_features_gff_name =
                 format!("{}/{}_all_chromosomes_unstranded.gff3", output_dir, load_org_name);
-            let unstranded_features_gff_file = File::create(unstranded_features_gff_name).expect("Unable to open file");
+            let unstranded_features_gff_file = File::create(unstranded_features_gff_name)?;
             let mut unstranded_features_gff_writer = BufWriter::new(&unstranded_features_gff_file);
 
             all_gff_writer.write_all(b"##gff-version 3\n")?;
@@ -946,16 +957,16 @@ impl WebData {
 
             let mut chr_writers = HashMap::new();
 
-            let make_chr_gff_writer = |export_name: &str| {
+            let make_chr_gff_writer = |export_name: &str| -> Result<BufWriter<File>, io::Error> {
                 let file_name = String::new() +
                     output_dir + "/" + &load_org_name + "_" + export_name + ".gff3";
-                let file = File::create(file_name).expect("Unable to open file");
-                BufWriter::new(file)
+                let file = File::create(file_name)?;
+                Ok(BufWriter::new(file))
             };
 
             for uniquename in self.chromosomes.keys() {
                 let chr_config = config.find_chromosome_config(uniquename);
-                chr_writers.insert(uniquename, make_chr_gff_writer(&chr_config.export_file_id));
+                chr_writers.insert(uniquename, make_chr_gff_writer(&chr_config.export_file_id)?);
             }
 
             for gene_details in self.genes.values() {
@@ -1037,7 +1048,7 @@ impl WebData {
     fn write_rnacentral(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         if config.file_exports.rnacentral.is_some() {
             let rnacentral_file_name = format!("{}/rnacentral.json", output_dir);
-            let rnacentral_file = File::create(rnacentral_file_name).expect("Unable to open file");
+            let rnacentral_file = File::create(rnacentral_file_name)?;
             let mut rnacentral_writer = BufWriter::new(&rnacentral_file);
             let rnacentral_struct = make_rnacentral_struct(config, &self.api_maps.transcripts,
                                                            &self.genes);
@@ -1057,7 +1068,7 @@ impl WebData {
     {
         let deletion_viability_file_name = output_dir.to_owned() + "/FYPOviability.tsv";
         let deletion_viability_file =
-            File::create(deletion_viability_file_name).expect("Unable to open file");
+            File::create(deletion_viability_file_name)?;
         let mut deletion_viability_writer = BufWriter::new(&deletion_viability_file);
 
         for gene_details in self.genes.values() {
@@ -1090,7 +1101,7 @@ impl WebData {
         for (slim_name, slim_config) in &config.slims {
             let slim_file_name = format!("{}/{}_ids_and_names.tsv", output_dir, slim_name);
 
-            let slim_file = File::create(slim_file_name).expect("Unable to open file");
+            let slim_file = File::create(slim_file_name)?;
             let mut slim_writer = BufWriter::new(&slim_file);
 
             for term_and_name in &slim_config.terms {
@@ -1108,7 +1119,7 @@ impl WebData {
         let tm_domain_file_name =
             output_dir.to_owned() + "/transmembrane_domain_coords_and_seqs.tsv";
         let tm_domain_file =
-            File::create(tm_domain_file_name).expect("Unable to open file");
+            File::create(tm_domain_file_name)?;
         let mut tm_domain_writer = BufWriter::new(&tm_domain_file);
 
         let coords_and_seqs = |coords: &[(usize, usize)], prot_seq: &str| {
@@ -1173,7 +1184,7 @@ impl WebData {
 
     fn write_gene_expression_table(&self, output_dir: &str) -> Result<(), io::Error> {
         let file_name = format!("{}/gene_expression_table.tsv", output_dir);
-        let file = File::create(file_name).expect("Unable to open file for writing");
+        let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
         let header =
@@ -1324,17 +1335,17 @@ impl WebData {
         }
 
         let file_name = format!("{}/sitemap.txt", output_dir);
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
 
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write sitemap.xml");
+        writer.write_all(s.as_bytes())?;
 
         Ok(())
     }
 
     fn write_allele_tsv(&self, output_dir: &str) -> Result<(), io::Error> {
         let file_name = format!("{}/all_alleles.tsv", output_dir);
-        let file = File::create(file_name).expect("Unable to open file for writing");
+        let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
         let header = "#gene_systematic_id\tgene_name\tcurrent_internal_id\tallele_name\tallele_type\tallele_description\tsynonyms\n";
@@ -1364,7 +1375,7 @@ impl WebData {
 
     fn write_disease_association(&self, config: &Config, output_dir: &str) -> Result<(), io::Error> {
         let file_name = format!("{}/disease_association.tsv", output_dir);
-        let file = File::create(file_name).expect("Unable to open file for writing");
+        let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
         let load_org_taxonid =
@@ -1422,7 +1433,7 @@ impl WebData {
             };
 
         let file_name = format!("{}/modifications.tsv", output_dir);
-        let file = File::create(file_name).expect("Unable to open file for writing");
+        let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
         let header = "#gene_systematic_id\tgene_name\tmodification_term_id\tevidence\tmodification\textension\treference\ttaxon_id\tdate\n";
@@ -1498,7 +1509,7 @@ impl WebData {
     {
         let file_name = format!("{}/{}", output_dir, subset_config.file_name);
 
-        let file = File::create(file_name).expect("Unable to open file for writing");
+        let file = File::create(file_name)?;
 
         let mut writer = BufWriter::new(&file);
 
@@ -1573,9 +1584,9 @@ impl WebData {
 
         let s = serde_json::to_string(&apicuron_data).unwrap();
         let file_name = String::new() + output_dir + "/apicuron_data.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write apicuron_data.json");
+        writer.write_all(s.as_bytes())?;
 
         Ok(())
     }
@@ -1583,9 +1594,9 @@ impl WebData {
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
         let file_name = String::new() + output_dir + "/stats.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write stats.json");
+        writer.write_all(s.as_bytes())?;
 
         Ok(())
     }
@@ -1593,9 +1604,9 @@ impl WebData {
     pub fn write_detailed_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.detailed_stats).unwrap();
         let file_name = String::new() + output_dir + "/detailed_stats.json";
-        let f = File::create(file_name).expect("Unable to open file");
+        let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes()).expect("Unable to write detailed_stats.json");
+        writer.write_all(s.as_bytes())?;
 
         Ok(())
     }
@@ -1618,43 +1629,43 @@ impl WebData {
                  doc_config: &DocConfig, output_dir: &str)
                  -> Result<(), io::Error>
     {
-        let web_json_path = self.create_dir(output_dir, "web-json");
+        let web_json_path = self.create_dir(output_dir, "web-json")?;
 
-        self.write_chromosome_json(config, &web_json_path);
+        self.write_chromosome_json(config, &web_json_path)?;
         println!("wrote {} chromosomes", self.get_chromosomes().len());
-        self.write_gene_summaries(&web_json_path);
-        self.write_chromosome_summaries(&web_json_path);
+        self.write_gene_summaries(&web_json_path)?;
+        self.write_chromosome_summaries(&web_json_path)?;
         println!("wrote summaries");
-        self.write_metadata(&web_json_path);
+        self.write_metadata(&web_json_path)?;
         println!("wrote metadata");
-        self.write_recent_references(&web_json_path);
-        self.write_all_community_curated(&web_json_path);
-        self.write_all_admin_curated(&web_json_path);
+        self.write_recent_references(&web_json_path)?;
+        self.write_all_community_curated(&web_json_path)?;
+        self.write_all_admin_curated(&web_json_path)?;
         println!("wrote references");
 
         self.write_sqlite_db(&output_dir).unwrap();
         println!("wrote SQLite DB");
 
-        self.write_api_maps(&web_json_path);
+        self.write_api_maps(&web_json_path)?;
         println!("wrote API maps");
-        self.write_solr_data(&web_json_path);
+        self.write_solr_data(&web_json_path)?;
         println!("wrote search data");
 
-        let intermine_data_path = self.create_dir(output_dir, "intermine_data");
+        let intermine_data_path = self.create_dir(output_dir, "intermine_data")?;
         self.write_intermine_data(config, &intermine_data_path)?;
         println!("wrote intermine data");
 
-        self.write_subsets(&web_json_path);
+        self.write_subsets(&web_json_path)?;
         println!("wrote subsets");
 
-        let fasta_path = self.create_dir(output_dir, "fasta");
-        let feature_sequences_path = self.create_dir(&fasta_path, "feature_sequences");
-        self.write_feature_sequences(&feature_sequences_path);
-        let chromosomes_path = self.create_dir(&fasta_path, "chromosomes");
-        self.write_chromosome_sequences(config, &chromosomes_path);
+        let fasta_path = self.create_dir(output_dir, "fasta")?;
+        let feature_sequences_path = self.create_dir(&fasta_path, "feature_sequences")?;
+        self.write_feature_sequences(&feature_sequences_path)?;
+        let chromosomes_path = self.create_dir(&fasta_path, "chromosomes")?;
+        self.write_chromosome_sequences(config, &chromosomes_path)?;
         println!("wrote fasta");
 
-        let misc_path = self.create_dir(output_dir, "misc");
+        let misc_path = self.create_dir(output_dir, "misc")?;
 
         write_go_annotation_files(&self.api_maps, config, self,
                                   &self.metadata.db_creation_datetime,
@@ -1691,7 +1702,7 @@ impl WebData {
         self.write_stats(&web_json_path)?;
         self.write_detailed_stats(&web_json_path)?;
 
-        let gff_path = self.create_dir(output_dir, "gff");
+        let gff_path = self.create_dir(output_dir, "gff")?;
         self.write_gff(config, &gff_path)?;
 
         Ok(())
