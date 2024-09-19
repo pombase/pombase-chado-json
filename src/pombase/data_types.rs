@@ -2448,6 +2448,9 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub evidence: Option<Evidence>,
+
     // start, end pairs:
     pub positions: Vec<ProteinViewFeaturePos>,
 }
