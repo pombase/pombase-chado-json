@@ -165,12 +165,14 @@ pub struct Chain {
 pub struct GlycosylationSite {
     pub range: PeptideRange,
     pub evidence: Option<Evidence>,
+    pub reference: Option<ReferenceUniquename>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DisulfideBond {
     pub range: PeptideRange,
     pub evidence: Option<Evidence>,
+    pub reference: Option<ReferenceUniquename>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -178,6 +180,7 @@ pub struct LipidationSite {
     pub range: PeptideRange,
     pub termid: TermId,
     pub evidence: Option<Evidence>,
+    pub reference: Option<ReferenceUniquename>,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -185,6 +188,7 @@ pub struct ModifiedResidue {
     pub range: PeptideRange,
     pub termid: TermId,
     pub evidence: Option<Evidence>,
+    pub reference: Option<ReferenceUniquename>,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]

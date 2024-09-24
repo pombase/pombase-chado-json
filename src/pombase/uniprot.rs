@@ -8,7 +8,7 @@ use regex::{Captures, Regex};
 
 use crate::bio::util::SeqRecord;
 use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond, GlycosylationSite, Helix, LipidationSite, ModifiedResidue, PeptideRange, Propeptide, SignalPeptide, TransitPeptide, Turn};
-use crate::types::{Evidence, GeneUniquename};
+use crate::types::{Evidence, GeneUniquename, ReferenceUniquename};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UniProtDataEntry {
@@ -78,7 +78,8 @@ struct UniProtDataRecord {
 
 lazy_static! {
     static ref SPLIT_RE: Regex = Regex::new(r"(SIGNAL|TRANSIT|BINDING|ACT_SITE|STRAND|HELIX|TURN|PROPEP|CHAIN|CARBOHYD|DISULFID|LIPID|MOD_RES) ").unwrap();
-    static ref EVIDENCE_RE: Regex = Regex::new(r#"/evidence="([A-Z]+:\d+)[^"]*""#).unwrap();
+    static ref EVIDENCE_RE: Regex = Regex::new(r#"/evidence="([^"]+)""#).unwrap();
+    static ref EVIDENCE_SPLIT_RE: Regex = Regex::new(r#",\s*"#).unwrap();
     static ref NOTE_RE: Regex = Regex::new(r#"/note="([^";]+).*""#).unwrap();
     static ref RANGE_RE: Regex = Regex::new(r"^(\?|\d+)(?:\.\.([\?\d]+))?.*?(;.*)?").unwrap();
     static ref LIGAND_RE: Regex = Regex::new(r#"/ligand="([^"]+)""#).unwrap();
@@ -146,13 +147,29 @@ fn get_chains(uniprot_record: &UniProtDataRecord) -> Vec<Chain> {
     .collect()
 }
 
-fn parse_evidence(text: &str) -> Option<Evidence>
+fn parse_evidence(text: &str) -> Vec<(Evidence, Option<ReferenceUniquename>)>
 {
-    if let Some(capture) = EVIDENCE_RE.captures_iter(text).next() {
-        capture.get(1).map(|m| m.as_str().into())
-    } else {
-        None
-    }
+    let Some(ev_capture) = EVIDENCE_RE.captures_iter(text).next()
+    else {
+        return vec![];
+    };
+    let Some(ev_value) = ev_capture.get(1).map(|m| m.as_str())
+    else {
+        return vec![];
+    };
+    let ev_parts = EVIDENCE_SPLIT_RE.split(ev_value);
+
+
+    ev_parts
+        .map(|part| {
+            let ev_and_ref: Vec<_> = part.split('|').collect();
+            if ev_and_ref.len() == 1 {
+                (ev_and_ref[0].into(), None)
+            } else {
+                (ev_and_ref[0].into(), Some(ev_and_ref[1].into()))
+            }
+        })
+        .collect()
 }
 
 fn parse_note(text: &str) -> Option<String>
@@ -171,11 +188,18 @@ fn get_glycosylation_sites(uniprot_record: &UniProtDataRecord) -> Vec<Glycosylat
     glycosylation_sites_parts_iter.filter_map(|field_part| {
         let range_cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(range_cap)?;
-        let evidence = parse_evidence(field_part);
+        let mut evidence_vec = parse_evidence(field_part);
+        let (evidence, reference) =
+            if let Some((evidence, reference)) = evidence_vec.pop() {
+                (Some(evidence.into()), reference)
+            } else {
+                (None, None)
+            };
 
         Some(GlycosylationSite {
             range,
             evidence,
+            reference,
         })
     })
     .collect()
@@ -188,11 +212,19 @@ fn get_disulfide_bonds(uniprot_record: &UniProtDataRecord) -> Vec<DisulfideBond>
     disulfide_bonds_parts_iter.filter_map(|field_part| {
         let cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(cap)?;
-        let evidence = parse_evidence(field_part);
+
+        let mut evidence_vec = parse_evidence(field_part);
+        let (evidence, reference) =
+            if let Some((evidence, reference)) = evidence_vec.pop() {
+                (Some(evidence.into()), reference)
+            } else {
+                (None, None)
+            };
 
         Some(DisulfideBond {
             range,
             evidence,
+            reference,
         })
     })
     .collect()
@@ -224,7 +256,15 @@ fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSit
     lipidation_sites_parts_iter.filter_map(|field_part| {
         let cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(cap)?;
-        let evidence = parse_evidence(field_part);
+
+        let mut evidence_vec = parse_evidence(field_part);
+        let (evidence, reference) =
+            if let Some((evidence, reference)) = evidence_vec.pop() {
+                (Some(evidence.into()), reference)
+            } else {
+                (None, None)
+            };
+
         let Some(ref note) = parse_note(field_part)
         else {
             return None;
@@ -240,6 +280,7 @@ fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSit
             range,
             termid: termid.into(),
             evidence,
+            reference,
         })
     })
     .collect()
@@ -335,7 +376,15 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResi
     modified_residues_parts_iter.filter_map(|field_part| {
         let cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(cap)?;
-        let evidence = parse_evidence(field_part);
+
+        let mut evidence_vec = parse_evidence(field_part);
+        let (evidence, reference) =
+            if let Some((evidence, reference)) = evidence_vec.pop() {
+                (Some(evidence.into()), reference)
+            } else {
+                (None, None)
+            };
+
 
         let Some(ref note) = parse_note(field_part)
         else {
@@ -352,6 +401,7 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResi
             range,
             termid: termid.into(),
             evidence,
+            reference,
         })
     })
     .collect()
