@@ -159,14 +159,14 @@ fn parse_evidence(text: &str) -> Vec<(Evidence, Option<ReferenceUniquename>)>
     };
     let ev_parts = EVIDENCE_SPLIT_RE.split(ev_value);
 
-
     ev_parts
         .map(|part| {
             let ev_and_ref: Vec<_> = part.split('|').collect();
             if ev_and_ref.len() == 1 {
                 (ev_and_ref[0].into(), None)
             } else {
-                (ev_and_ref[0].into(), Some(ev_and_ref[1].into()))
+                let reference = ev_and_ref[1].replace("PubMed:", "PMID:").into();
+                (ev_and_ref[0].into(), Some(reference))
             }
         })
         .collect()
