@@ -1375,6 +1375,14 @@ impl GeneDetails {
         }
     }
 
+    pub fn coiled_coil_aa_count(&self) -> usize {
+        let mut count = 0;
+        for (start, end) in &self.coiled_coil_coords {
+            count += end - start + 1;
+        }
+        count
+    }
+
     pub fn disordered_aa_count(&self) -> usize {
         let mut count = 0;
         for (start, end) in &self.disordered_region_coords {
@@ -2318,6 +2326,7 @@ pub struct APIGeneSummary {
     pub transcripts: Vec<TranscriptDetails>,
     pub tm_domain_count: usize,
     pub coiled_coil_count: usize,
+    pub coiled_coil_percent: usize,
     pub disordered_regions_count: usize,
     pub disordered_percent: usize,
     pub low_complexity_regions_count: usize,

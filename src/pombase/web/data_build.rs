@@ -1170,11 +1170,14 @@ impl <'a> WebDataBuild<'a> {
 
         let disordered_regions_count = gene_details.disordered_region_coords.len();
         let low_complexity_regions_count = gene_details.low_complexity_region_coords.len();
+        let mut coiled_coil_percent = 0;
         let mut disordered_percent = 0;
         let mut low_complexity_percent = 0;
 
         if let Some(ref transcript) = transcript_details.get(0) {
             if let Some(ref protein) = transcript.protein {
+                coiled_coil_percent =
+                    100usize * gene_details.coiled_coil_aa_count() / protein.sequence_length();
                 disordered_percent =
                     100usize * gene_details.disordered_aa_count() / protein.sequence_length();
                 low_complexity_percent =
@@ -1195,6 +1198,7 @@ impl <'a> WebDataBuild<'a> {
             transcripts: transcript_details,
             tm_domain_count: gene_details.tm_domain_coords.len(),
             coiled_coil_count: gene_details.coiled_coil_coords.len(),
+            coiled_coil_percent,
             disordered_regions_count,
             disordered_percent,
             low_complexity_regions_count,
