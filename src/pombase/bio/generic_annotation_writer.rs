@@ -73,7 +73,17 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
       let evidence = site.evidence.as_deref().unwrap_or_default();
       let reference = site.reference.as_deref().unwrap_or_default();
       let termid = &site.termid;
-      let residue_extension = format!("residue({})", site.range);
+      let residue_abbrev =
+          if termid == "MOD:00047" {
+            "T"
+          } else {
+            if termid == "MOD:00046" {
+              "S"
+            } else {
+              ""
+            }
+          };
+      let residue_extension = format!("residue({}{})", residue_abbrev, site.range);
       write_generic_annotation(&mut writer,
                                &uniprot_data.gene_uniquename,
                                "",
