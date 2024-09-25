@@ -1168,6 +1168,20 @@ impl <'a> WebDataBuild<'a> {
         let gocam_ids =
             gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
 
+        let disordered_regions_count = gene_details.disordered_region_coords.len();
+        let low_complexity_regions_count = gene_details.low_complexity_region_coords.len();
+        let mut disordered_regions_percent = 0;
+        let mut low_complexity_regions_percent = 0;
+
+        if let Some(ref transcript) = transcript_details.get(0) {
+            if let Some(ref protein) = transcript.protein {
+                disordered_regions_percent =
+                    100usize * gene_details.disordered_regions_aa_count() / protein.sequence_length();
+                low_complexity_regions_percent =
+                    100usize * gene_details.low_complexity_regions_aa_count() / protein.sequence_length();
+            }
+        };
+
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
@@ -1181,8 +1195,10 @@ impl <'a> WebDataBuild<'a> {
             transcripts: transcript_details,
             tm_domain_count: gene_details.tm_domain_coords.len(),
             coiled_coil_count: gene_details.coiled_coil_coords.len(),
-            disordered_regions_count: gene_details.disordered_region_coords.len(),
-            low_complexity_regions_count: gene_details.low_complexity_region_coords.len(),
+            disordered_regions_count,
+            disordered_regions_percent,
+            low_complexity_regions_count,
+            low_complexity_regions_percent,
             coding_exon_count,
             five_prime_exon_count,
             three_prime_exon_count,

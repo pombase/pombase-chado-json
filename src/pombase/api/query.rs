@@ -40,8 +40,12 @@ pub enum IntRangeType {
     CoiledCoilsCount,
 #[serde(rename = "disordered_regions_count")]
     DisorderedRegionsCount,
+#[serde(rename = "disordered_regions_percent")]
+    DisorderedRegionsPercent,
 #[serde(rename = "low_complexity_regions_count")]
     LowComplexityRegionsCount,
+#[serde(rename = "low_complexity_regions_percent")]
+    LowComplexityRegionsPercent,
 #[serde(rename = "exon_count")]
     ExonCount,
 #[serde(rename = "transcript_count")]
@@ -513,6 +517,18 @@ fn exec_disordered_regions_count_range(api_data: &APIData,
     Ok(gene_uniquenames)
 }
 
+fn exec_disordered_regions_percent_range(api_data: &APIData,
+                                         range_start: Option<usize>, range_end: Option<usize>)
+                                         -> GeneUniquenameVecResult
+{
+    let gene_uniquenames =
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
+            (range_start.is_none() || gene.disordered_regions_percent >= range_start.unwrap()) &&
+                (range_end.is_none() || gene.disordered_regions_percent <= range_end.unwrap())
+        });
+    Ok(gene_uniquenames)
+}
+
 fn exec_low_complexity_regions_count_range(api_data: &APIData,
                                            range_start: Option<usize>, range_end: Option<usize>)
                                            -> GeneUniquenameVecResult
@@ -521,6 +537,18 @@ fn exec_low_complexity_regions_count_range(api_data: &APIData,
         api_data.filter_genes(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.low_complexity_regions_count >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.low_complexity_regions_count <= range_end.unwrap())
+        });
+    Ok(gene_uniquenames)
+}
+
+fn exec_low_complexity_regions_percent_range(api_data: &APIData,
+                                             range_start: Option<usize>, range_end: Option<usize>)
+                                             -> GeneUniquenameVecResult
+{
+    let gene_uniquenames =
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
+            (range_start.is_none() || gene.low_complexity_regions_percent >= range_start.unwrap()) &&
+                (range_end.is_none() || gene.low_complexity_regions_percent <= range_end.unwrap())
         });
     Ok(gene_uniquenames)
 }
@@ -595,7 +623,9 @@ fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
         IntRangeType::TMDomainCount => exec_tm_domain_count_range(api_data, start, end),
         IntRangeType::CoiledCoilsCount => exec_coiled_coils_count_range(api_data, start, end),
         IntRangeType::DisorderedRegionsCount => exec_disordered_regions_count_range(api_data, start, end),
+        IntRangeType::DisorderedRegionsPercent => exec_disordered_regions_percent_range(api_data, start, end),
         IntRangeType::LowComplexityRegionsCount => exec_low_complexity_regions_count_range(api_data, start, end),
+        IntRangeType::LowComplexityRegionsPercent => exec_low_complexity_regions_percent_range(api_data, start, end),
         IntRangeType::ExonCount => exec_exon_count_range(api_data, start, end, options),
         IntRangeType::TranscriptCount => exec_transcript_count_range(api_data, start, end),
         IntRangeType::PDBStructureCount => exec_pdb_id_count_range(api_data, start, end),
