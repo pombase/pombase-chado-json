@@ -428,7 +428,7 @@ fn exec_protein_length_range(api_data: &APIData,
                               -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
                     (range_start.is_none() || protein.number_of_residues >= range_start.unwrap()) &&
@@ -488,7 +488,7 @@ fn exec_tm_domain_count_range(api_data: &APIData,
                                -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.tm_domain_count >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.tm_domain_count <= range_end.unwrap())
         });
@@ -500,7 +500,7 @@ fn exec_coiled_coils_count_range(api_data: &APIData,
                                  -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.coiled_coil_count >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.coiled_coil_count <= range_end.unwrap())
         });
@@ -512,7 +512,7 @@ fn exec_coiled_coils_percent_range(api_data: &APIData,
                                    -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.coiled_coil_percent >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.coiled_coil_percent <= range_end.unwrap())
         });
@@ -524,7 +524,7 @@ fn exec_disordered_regions_count_range(api_data: &APIData,
                                        -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.disordered_regions_count >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.disordered_regions_count <= range_end.unwrap())
         });
@@ -536,7 +536,7 @@ fn exec_disordered_percent_range(api_data: &APIData,
                                          -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.disordered_percent >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.disordered_percent <= range_end.unwrap())
         });
@@ -548,7 +548,7 @@ fn exec_low_complexity_regions_count_range(api_data: &APIData,
                                            -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.low_complexity_regions_count >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.low_complexity_regions_count <= range_end.unwrap())
         });
@@ -560,7 +560,7 @@ fn exec_low_complexity_percent_range(api_data: &APIData,
                                              -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             (range_start.is_none() || gene.low_complexity_percent >= range_start.unwrap()) &&
                 (range_end.is_none() || gene.low_complexity_percent <= range_end.unwrap())
         });
@@ -652,7 +652,7 @@ fn exec_mol_weight_range(api_data: &APIData, range_start: Option<f64>, range_end
                          -> GeneUniquenameVecResult
 {
     let gene_uniquenames =
-        api_data.filter_genes(&|gene: &APIGeneSummary| {
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
             if !gene.transcripts.is_empty() {
                 if let Some(ref protein) = gene.transcripts[0].protein {
                     (range_start.is_none() ||

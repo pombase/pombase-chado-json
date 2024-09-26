@@ -579,6 +579,7 @@ impl APIData {
         }
     }
 
+    // return all genes where the predicate returns true
     pub fn filter_genes(&self, p: & dyn Fn(&APIGeneSummary) -> bool)
                         -> Vec<GeneUniquename>
     {
@@ -588,6 +589,15 @@ impl APIData {
             .collect()
     }
 
+    // return protein coding genes where the predicate returns true
+    pub fn filter_proteins(&self, p: & dyn Fn(&APIGeneSummary) -> bool)
+                           -> Vec<GeneUniquename>
+    {
+        self.maps.gene_summaries.values()
+            .filter(|summ| summ.feature_type == "mRNA gene" && p(summ))
+            .map(|summ| summ.uniquename.clone())
+            .collect()
+    }
 
     fn strip_db_prefix(&self, uniquename: &FlexStr) -> FlexStr {
         if uniquename.starts_with("PomBase:SP") {

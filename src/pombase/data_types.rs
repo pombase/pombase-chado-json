@@ -2310,6 +2310,7 @@ pub struct APIGeneSummary {
     pub name: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<FlexStr>,
+    pub feature_type: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

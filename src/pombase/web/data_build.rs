@@ -1189,6 +1189,7 @@ impl <'a> WebDataBuild<'a> {
             uniquename: gene_details.uniquename.clone(),
             name: gene_details.name.clone(),
             product: gene_details.product.clone(),
+            feature_type: gene_details.feature_type.clone(),
             uniprot_identifier: gene_details.uniprot_identifier.clone(),
             exact_synonyms: synonyms,
             dbxrefs: gene_details.dbxrefs.clone(),
