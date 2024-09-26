@@ -2480,6 +2480,9 @@ pub struct ProteinViewFeature {
     pub assigned_by: Option<AssignedBy>,
 
     #[serde(skip_serializing_if="Option::is_none")]
+    pub author_and_year: Option<FlexStr>,
+
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
 
     // start, end pairs:

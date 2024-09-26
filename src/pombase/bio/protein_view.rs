@@ -5,13 +5,12 @@ use regex::Regex;
 
 
 use crate::types::GeneUniquename;
-use crate::data_types::{ProteinViewData, UniquenameGeneMap,
-                        IdOntAnnotationDetailMap, DisplayUniquenameGenotypeMap,
-                        UniquenameAlleleDetailsMap, AlleleShort,
-                        ProteinViewFeature, ProteinViewTrack,
-                        UniquenameTranscriptMap, GeneDetails,
-                        TermIdDetailsMap, AlleleDetails, ProteinDetails,
-                        ProteinViewFeaturePos, TermNameAndId, ExtPart, ExtRange};
+use crate::data_types::{AlleleDetails, AlleleShort, DisplayUniquenameGenotypeMap,
+                        ExtPart, ExtRange, GeneDetails, IdOntAnnotationDetailMap,
+                        ProteinDetails, ProteinViewData, ProteinViewFeature,
+                        ProteinViewFeaturePos, ProteinViewTrack, TermIdDetailsMap,
+                        TermNameAndId, UniquenameAlleleDetailsMap, UniquenameGeneMap,
+                        UniquenameReferenceMap, UniquenameTranscriptMap};
 use crate::web::config::{Config, CvConfig};
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
@@ -146,6 +145,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
             feature_group: None,
             display_extension: BTreeSet::new(),
             assigned_by: None,
+            author_and_year: None,
             evidence: None,
             positions,
         })
@@ -176,6 +176,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
                feature_group: None,
                display_extension: BTreeSet::new(),
                assigned_by: None,
+               author_and_year: None,
                evidence: None,
                positions: vec![(residue_and_pos, pos, pos)],
             }
@@ -373,6 +374,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                            config: &Config,
                            gene_details_maps: &UniquenameGeneMap,
                            term_details_map: &TermIdDetailsMap,
+                           references_map: &UniquenameReferenceMap,
                            annotation_details_map: &IdOntAnnotationDetailMap) -> ProteinViewTrack {
     let ext_rel_types = &config.protein_feature_view.modification_extension_rel_types;
 
@@ -393,6 +395,20 @@ fn make_modification_track(gene_details: &GeneDetails,
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                 let assigned_by = &annotation_detail.assigned_by;
+                let mut author_and_year = None;
+
+                if let Some(ref reference_uniquename) = annotation_detail.reference {
+                    if let Some(ref ref_details) = references_map.get(reference_uniquename) {
+                        if let Some(ref authors_abbrev) = ref_details.authors_abbrev {
+                            if let Some(ref year) = ref_details.publication_year {
+                                author_and_year = Some(flex_fmt!("{} ({})", authors_abbrev, year));
+                            } else {
+                                author_and_year = Some(authors_abbrev.clone());
+                            }
+                        }
+                    }
+                }
+
                 let evidence = &annotation_detail.evidence;
 
                 let mut annotation_residues = vec![];
@@ -459,6 +475,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                                 feature_group,
                                 display_extension: BTreeSet::new(),
                                 assigned_by: assigned_by.clone(),
+                                author_and_year: author_and_year.clone(),
                                 evidence: evidence.clone(),
                                 positions: vec![(description, residue_pos, residue_pos)],
                             }
@@ -513,6 +530,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 feature_group: None,
                 assigned_by: Some(flex_str!["InterPro"]),
                 evidence: None,
+                author_and_year: None,
                 display_extension: BTreeSet::new(),
 
                 positions,
@@ -551,6 +569,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>,
                 feature_group: None,
                 display_extension: BTreeSet::new(),
                 assigned_by: None,
+                author_and_year: None,
                 evidence: None,
                 positions,
             }
@@ -580,6 +599,7 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 feature_group: None,
                 display_extension: BTreeSet::new(),
                 assigned_by: None,
+                author_and_year: None,
                 evidence: None,
                 positions: vec![(feature_name.clone(), start, end)],
             }
@@ -621,6 +641,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                   genotypes: &DisplayUniquenameGenotypeMap,
                                   alleles: &UniquenameAlleleDetailsMap,
                                   transcripts: &UniquenameTranscriptMap,
+                                  references: &UniquenameReferenceMap,
                                   config: &Config)
                                   -> HashMap<GeneUniquename, ProteinViewData>
 {
@@ -670,7 +691,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let modification_track =
             make_modification_track(gene_details, config, gene_details_maps, term_details_map,
-                                    annotation_details_map);
+                                    references, annotation_details_map);
 
         let pfam_track = make_pfam_track(gene_details);
 

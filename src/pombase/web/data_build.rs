@@ -5404,7 +5404,8 @@ phenotypes, so just the first part of this extension will be used:
                                        &self.terms,
                                        &self.annotation_details,
                                        &self.genotypes, &self.alleles,
-                                       &self.transcripts, &self.config);
+                                       &self.transcripts, &self.references,
+                                       &self.config);
 
         let gocam_data_by_gene = make_gocam_data_by_gene(&self.genes);
         let gocam_data_by_gocam_id = make_gocam_data_by_id(&self.genes, &self.terms);
