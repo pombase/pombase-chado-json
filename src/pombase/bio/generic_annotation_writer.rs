@@ -10,6 +10,7 @@ pub struct UniProtTermidMap {
 }
 
 pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
+                              uniprot_pmid: &str,
                               termid_map: &UniProtTermidMap,
                               assigned_by: &str,
                               out: &mut dyn Write)
@@ -23,7 +24,7 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
   for uniprot_data in uniprot_data_map.values() {
     for site in &uniprot_data.glycosylation_sites {
       let evidence = site.evidence.as_deref().unwrap_or_default();
-      let reference = site.reference.as_deref().unwrap_or_default();
+      let reference = site.reference.as_deref().unwrap_or(uniprot_pmid);
       let termid = &termid_map.glycosylation_site_termid;
       let residue_extension = format!("residue({})", site.range);
       write_generic_annotation(&mut writer,
@@ -39,7 +40,7 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
     }
     for site in &uniprot_data.disulfide_bonds {
       let evidence = site.evidence.as_deref().unwrap_or_default();
-      let reference = site.reference.as_deref().unwrap_or_default();
+      let reference = site.reference.as_deref().unwrap_or(uniprot_pmid);
       let termid = &termid_map.disulphide_bond_termid;
       let residue_extension = format!("residue({})", site.range);
       write_generic_annotation(&mut writer,
@@ -55,7 +56,7 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
     }
     for site in &uniprot_data.lipidation_sites {
       let evidence = site.evidence.as_deref().unwrap_or_default();
-      let reference = site.reference.as_deref().unwrap_or_default();
+      let reference = site.reference.as_deref().unwrap_or(uniprot_pmid);
       let termid = &site.termid;
       let residue_extension = format!("residue({})", site.range);
       write_generic_annotation(&mut writer,
@@ -71,7 +72,7 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
     }
     for site in &uniprot_data.modified_residues {
       let evidence = site.evidence.as_deref().unwrap_or_default();
-      let reference = site.reference.as_deref().unwrap_or_default();
+      let reference = site.reference.as_deref().unwrap_or(uniprot_pmid);
       let termid = &site.termid;
       let residue_abbrev =
           if termid == "MOD:00047" {

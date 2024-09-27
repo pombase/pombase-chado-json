@@ -95,6 +95,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         sub_opts.reqopt("", "peptide-fasta",
                         "A file of peptides to compare to UniProt sequences", "FASTA_FILE");
 
+        sub_opts.reqopt("", "uniprot-reference",
+                        "The PubMed ID of the most recent UniProt publication to add to the annotations",
+                        "PMID");
+
         sub_opts.reqopt("", "assigned-by",
                         "Value for the assigned_by column", "SOURCE");
 
@@ -112,17 +116,18 @@ fn main() -> Result<(), Box<dyn Error>> {
             disulphide_bond_termid: sub_matches.opt_str("disulphide-bond-termid").unwrap(),
         };
 
+        let uniprot_pmid = sub_matches.opt_str("uniprot-reference").unwrap();
         let assigned_by = sub_matches.opt_str("assigned-by").unwrap();
         let peptide_filename = sub_matches.opt_str("peptide-fasta").unwrap();
         let mut peptide_file = File::open(peptide_filename)?;
         let peptides = read_fasta(&mut peptide_file)?;
 
-        let file_name = &args[4];
+        let file_name = &args[5];
 
         let uniprot_data_map = filter_uniprot_map(parse_uniprot(file_name), &peptides);
 
         let mut stdout = io::stdout().lock();
-        write_from_uniprot_map(&uniprot_data_map,
+        write_from_uniprot_map(&uniprot_data_map, &uniprot_pmid,
                                &termid_map, &assigned_by, &mut stdout)?;
     } else {
         eprintln!("unknown input file type: {}", input_file_type);
