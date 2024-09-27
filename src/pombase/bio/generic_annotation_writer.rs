@@ -26,7 +26,7 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
       let evidence = site.evidence.as_deref().unwrap_or_default();
       let reference = site.reference.as_deref().unwrap_or(uniprot_pmid);
       let termid = &termid_map.glycosylation_site_termid;
-      let residue_extension = format!("residue({})", site.range);
+      let residue_extension = format!("residue(N{})", site.range);
       write_generic_annotation(&mut writer,
                                &uniprot_data.gene_uniquename,
                                "",
