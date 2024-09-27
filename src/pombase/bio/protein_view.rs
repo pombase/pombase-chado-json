@@ -781,14 +781,14 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
             tracks: vec![mutant_summary_track, mutants_track, deletions_track,
-                         modification_track, pfam_track,
+                         modification_track,
+                         disulfide_bonds_track, pfam_track,
                          tm_domains_track, disordered_regions_track,
                          low_complexity_regions_track, coiled_coil_coords,
                          signal_peptide_track, transit_peptide_track,
                          binding_sites_track, active_sites_track,
                          beta_strands_track, helix_track, turns_track,
-                         propeptides_track, chains_track,
-                         disulfide_bonds_track],
+                         propeptides_track, chains_track],
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);
