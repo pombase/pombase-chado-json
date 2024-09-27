@@ -165,8 +165,12 @@ fn parse_evidence(text: &str) -> Vec<(Evidence, Option<ReferenceUniquename>)>
             if ev_and_ref.len() == 1 {
                 (ev_and_ref[0].into(), None)
             } else {
-                let reference = ev_and_ref[1].replace("PubMed:", "PMID:").into();
-                (ev_and_ref[0].into(), Some(reference))
+                if ev_and_ref[1].starts_with("PubMed:") {
+                    let reference = ev_and_ref[1].replace("PubMed:", "PMID:").into();
+                    (ev_and_ref[0].into(), Some(reference))
+                } else {
+                    (ev_and_ref[0].into(), None)
+                }
             }
         })
         .collect()
