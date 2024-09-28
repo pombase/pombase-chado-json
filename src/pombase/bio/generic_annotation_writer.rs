@@ -76,8 +76,33 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
       let termid = &site.termid;
       let residue_abbrev =
           match termid.as_str() {
-              "MOD:00047" => "T",
-              "MOD:00046" => "S",
+              "MOD:00042"
+                  => "D",
+              "MOD:00047"
+                  => "T",
+              "MOD:00048" | "MOD:00156"
+                  => "Y",
+              "MOD:00050"
+                  => "A",
+              "MOD:00046" | "MOD:00060" | "MOD:00159" | "MOD:00171"
+                  => "S",
+              "MOD:00080"
+                  => "Q",
+              "MOD:00111" | "MOD:00114" | "MOD:00115" | "MOD:00234" |
+              "MOD:00257" | "MOD:00441" | "MOD:00689"
+                  => "C",
+              "MOD:00064" | "MOD:00083" | "MOD:00084" | "MOD:00085" |
+              "MOD:00123" | "MOD:00125" | "MOD:00126" | "MOD:00127" |
+              "MOD:00128"
+                  => "K",
+              "MOD:00153" | "MOD:00226" | "MOD:00890"
+                  => "H",
+              "MOD:00304"
+                  => "L",
+              "MOD:00310"
+                  => "R",
+              "MOD:00068" | "MOD:00351" | "MOD:01625" | "MOD:01982"
+                  => "G",
               _ => "",
           };
       let residue_extension = format!("residue({}{})", residue_abbrev, site.range);
