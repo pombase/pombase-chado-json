@@ -2484,6 +2484,9 @@ pub struct ProteinViewFeature {
     pub author_and_year: Option<FlexStr>,
 
     #[serde(skip_serializing_if="Option::is_none")]
+    pub inviable_or_abnormal: Option<bool>,
+
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
 
     // start, end pairs:

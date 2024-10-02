@@ -147,6 +147,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
             assigned_by: None,
             author_and_year: None,
             evidence: None,
+            inviable_or_abnormal: None,
             positions,
         })
     } else {
@@ -178,6 +179,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
                assigned_by: None,
                author_and_year: None,
                evidence: None,
+               inviable_or_abnormal: None,
                positions: vec![(residue_and_pos, pos, pos)],
             }
          })
@@ -217,6 +219,14 @@ fn make_mutants_track(gene_details: &GeneDetails,
             }
         }
     }
+
+    let mut inviable_or_abnormal_termids = HashSet::new();
+    inviable_or_abnormal_termids.extend(["FYPO:0001985".into(), // inviable cell
+                                         "FYPO:0002059".into(), // inviable cell population
+                                         "FYPO:0000049".into(), // abnormal phenotype
+                                        ].into_iter());
+
+    all_categories.extend(inviable_or_abnormal_termids.clone());
 
     let mut allele_terms = HashMap::new();
 
@@ -296,6 +306,8 @@ fn make_mutants_track(gene_details: &GeneDetails,
         let sequence_length = protein.sequence_length();
 
         if let Some(mut feature) = feature_from_allele(&allele_details, sequence_length) {
+            let mut inviable_or_abnormal = false;
+
             let mut categories_with_names: Vec<_> = allele_categories
                 .iter()
                 .filter_map(|cat_term_id: &&FlexStr| {
@@ -308,9 +320,17 @@ fn make_mutants_track(gene_details: &GeneDetails,
                 })
                 .collect();
 
+            for cat_with_name in &categories_with_names {
+                if inviable_or_abnormal_termids.contains(&cat_with_name.id) {
+                    inviable_or_abnormal = true;
+                }
+            }
+
             categories_with_names.sort_by(|c1, c2| c1.cmp(c2));
 
             feature.annotated_terms.extend(categories_with_names);
+
+            feature.inviable_or_abnormal = Some(inviable_or_abnormal);
 
             track.features.push(feature);
         }
@@ -386,7 +406,7 @@ fn make_modification_track(gene_details: &GeneDetails,
             let termid = &term_annotation.term;
             let ref term_details = term_details_map
                 .get(termid)
-                .expect(&format!("term: {}", termid));
+                .expect(&format!("internal error, can't find term: {}", termid));
             let term_name = &term_details.name;
             let annotations = term_annotation.annotations.clone();
 
@@ -477,6 +497,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                                 assigned_by: assigned_by.clone(),
                                 author_and_year: author_and_year.clone(),
                                 evidence: evidence.clone(),
+                                inviable_or_abnormal: None,
                                 positions: vec![(description, residue_pos, residue_pos)],
                             }
                         });
@@ -532,7 +553,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 evidence: None,
                 author_and_year: None,
                 display_extension: BTreeSet::new(),
-
+                inviable_or_abnormal: None,
                 positions,
             };
 
@@ -571,6 +592,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>,
                 assigned_by: None,
                 author_and_year: None,
                 evidence: None,
+                inviable_or_abnormal: None,
                 positions,
             }
         })
@@ -601,6 +623,7 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 assigned_by: None,
                 author_and_year: None,
                 evidence: None,
+                inviable_or_abnormal: None,
                 positions: vec![(feature_name.clone(), start, end)],
             }
         })
