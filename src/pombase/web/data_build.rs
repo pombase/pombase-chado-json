@@ -7554,13 +7554,7 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    fn set_gene_fields_from_uniprot(&mut self) {
-
-        let Some(ref uniprot_data) = self.uniprot_data
-        else {
-            return;
-        };
-
+    fn set_protein_feature_fields(&mut self) {
 
         for (gene_uniquename, gene_details) in &mut self.genes {
             for transcript_uniquename in &gene_details.transcripts {
@@ -7569,6 +7563,11 @@ phenotypes, so just the first part of this extension will be used:
                     continue;
                 };
                 let Some(ref protein) = transcript.protein
+                else {
+                    continue;
+                };
+
+                let Some(ref uniprot_data) = self.uniprot_data
                 else {
                     continue;
                 };
@@ -7614,7 +7613,6 @@ phenotypes, so just the first part of this extension will be used:
         self.process_features();
         self.add_gene_neighbourhoods();
         self.process_props_from_feature_cvterms();
-        self.set_gene_fields_from_uniprot();
         self.process_allele_features();
         self.process_genotype_features();
         self.process_cvterms();
@@ -7644,6 +7642,7 @@ phenotypes, so just the first part of this extension will be used:
         self.set_reference_details_maps();
         self.set_chromosome_gene_counts();
         self.set_counts();
+        self.set_protein_feature_fields();
         self.add_genotypes_to_allele_details();
         self.make_subsets();
         self.sort_chromosome_genes();
