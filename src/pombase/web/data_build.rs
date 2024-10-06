@@ -1944,15 +1944,11 @@ phenotypes, so just the first part of this extension will be used:
         }
 
         let (interpro_matches, tm_domain_coords) =
-            if let Some(ref uniprot_identifier) = uniprot_identifier {
-                if let Some(result) = self.domain_data.domains_by_id.get(uniprot_identifier) {
-                    let tm_domain_matches = result.tmhmm_matches.iter()
-                        .map(|tm_match| (tm_match.start, tm_match.end))
-                        .collect::<Vec<_>>();
-                    (result.interpro_matches.clone(), tm_domain_matches)
-                } else {
-                    (vec![], vec![])
-                }
+            if let Some(result) = self.domain_data.domains_by_id.get(gene_uniquename.as_str()) {
+                let tm_domain_matches = result.tmhmm_matches.iter()
+                    .map(|tm_match| (tm_match.start, tm_match.end))
+                    .collect::<Vec<_>>();
+                (result.interpro_matches.clone(), tm_domain_matches)
             } else {
                 (vec![], vec![])
             };
