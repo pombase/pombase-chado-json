@@ -1947,7 +1947,13 @@ phenotypes, so just the first part of this extension will be used:
             if let Some(ref uniprot_identifier) = uniprot_identifier {
                 if let Some(result) = self.domain_data.domains_by_id.get(uniprot_identifier) {
                     let tm_domain_matches = result.tmhmm_matches.iter()
-                        .map(|tm_match| (tm_match.start, tm_match.end))
+                        .map(|tm_match| AssignedByPeptideRange {
+                            range: PeptideRange {
+                                start: tm_match.start,
+                                end: tm_match.end,
+                            },
+                            assigned_by: Some(flex_str!("TMHMM")),
+                        })
                         .collect::<Vec<_>>();
                     (result.interpro_matches.clone(), tm_domain_matches)
                 } else {
@@ -1957,6 +1963,16 @@ phenotypes, so just the first part of this extension will be used:
                 (vec![], vec![])
             };
 
+        let make_assigned_pfam_range = |start: usize, end: usize| {
+            AssignedByPeptideRange {
+                range: PeptideRange {
+                    start,
+                    end,
+                },
+                assigned_by: Some(flex_str!("Pfam")),
+            }
+        };
+
         let (disordered_region_coords, low_complexity_region_coords, coiled_coil_coords) =
             if let Some(ref pfam_data) = self.pfam_data {
                 if let Some(ref uniprot_identifier) = uniprot_identifier {
@@ -1965,13 +1981,14 @@ phenotypes, so just the first part of this extension will be used:
                         let mut low_complexity_region_coords = vec![];
                         let mut coiled_coil_coords = vec![];
                         for motif in &result.motifs {
+                            let assigned_range = make_assigned_pfam_range(motif.start, motif.end);
                             match &motif.motif_type as &str {
                                 "disorder" =>
-                                    disordered_region_coords.push((motif.start, motif.end)),
+                                    disordered_region_coords.push(assigned_range),
                                 "low_complexity" =>
-                                    low_complexity_region_coords.push((motif.start, motif.end)),
+                                    low_complexity_region_coords.push(assigned_range),
                                 "coiled_coil" =>
-                                    coiled_coil_coords.push((motif.start, motif.end)),
+                                    coiled_coil_coords.push(assigned_range),
                                 _ => (),
                             }
                         }

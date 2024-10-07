@@ -759,7 +759,9 @@ impl WebData {
                     }
 
                     for disordered_region in &gene_details.disordered_region_coords {
-                        let (start_pos, end_pos) = disordered_region;
+                        let range = &disordered_region.range;
+                        let start_pos = range.start;
+                        let end_pos = range.end;
                         let line = format!("{}\t{}\t{}\t{}\t{}\n",
                                            gene_uniquename, gene_name,
                                            protein.uniquename,
@@ -1122,13 +1124,16 @@ impl WebData {
             File::create(tm_domain_file_name)?;
         let mut tm_domain_writer = BufWriter::new(&tm_domain_file);
 
-        let coords_and_seqs = |coords: &[(usize, usize)], prot_seq: &str| {
+        let coords_and_seqs = |assigned_ranges: &[AssignedByPeptideRange], prot_seq: &str| {
             let mut coords_strings = vec![];
             let mut seqs = vec![];
-            for (start, end) in coords {
-                if prot_seq.len() >= *end {
+            for assigned_range in assigned_ranges {
+                let range = &assigned_range.range;
+                let start = range.start;
+                let end = range.end;
+                if prot_seq.len() >= end {
                     coords_strings.push(format!("{}..{}", start, end));
-                    let seq = &prot_seq[start-1..*end];
+                    let seq = &prot_seq[start-1..end];
                     seqs.push(seq.to_owned());
                 } else {
                     eprintln!("TM domain coord is outside of protein sequence, {}..{} for {}",

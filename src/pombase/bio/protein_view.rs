@@ -7,6 +7,7 @@ use regex::Regex;
 use crate::types::GeneUniquename;
 use crate::data_types::{AlleleDetails, AlleleShort, DisplayUniquenameGenotypeMap,
                         ExtPart, ExtRange, GeneDetails, IdOntAnnotationDetailMap,
+                        GenericProteinFeature,
                         ProteinDetails, ProteinViewData, ProteinViewFeature,
                         ProteinViewFeaturePos, ProteinViewTrack, TermIdDetailsMap,
                         TermNameAndId, UniquenameAlleleDetailsMap, UniquenameGeneMap,
@@ -568,20 +569,22 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
     }
 }
 
-fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>,
+fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFeature>,
                       split_start_and_end: bool)
     -> ProteinViewTrack
 {
     let features =
-        feature_coords.iter().map(|(start, end)| {
+        features.iter().map(|f| {
+            let start = f.start();
+            let end = f.end();
             let feature_name = flex_fmt!("{} {}..{}", track_name, start, end);
             let feature_pos_name = flex_fmt!("{}-{}..{}", track_name, start, end);
             let positions =
                 if split_start_and_end {
-                    vec![(feature_pos_name.clone(), *start, *start),
-                         (feature_pos_name, *end, *end)]
+                    vec![(feature_pos_name.clone(), start, start),
+                         (feature_pos_name, end, end)]
                 } else {
-                    vec![(feature_pos_name, *start, *end)]
+                    vec![(feature_pos_name, start, end)]
                 };
             ProteinViewFeature {
                 id: feature_name.clone(),
@@ -589,7 +592,7 @@ fn make_generic_track(track_name: FlexStr, feature_coords: &Vec<(usize, usize)>,
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 display_extension: BTreeSet::new(),
-                assigned_by: None,
+                assigned_by: f.assigned_by().clone(),
                 author_and_year: None,
                 evidence: None,
                 inviable_or_abnormal: None,
@@ -620,7 +623,7 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 display_extension: BTreeSet::new(),
-                assigned_by: None,
+                assigned_by: binding_site.assigned_by.clone(),
                 author_and_year: None,
                 evidence: None,
                 inviable_or_abnormal: None,
@@ -730,76 +733,46 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let coiled_coil_coords =
             make_generic_track(flex_str!("Coiled coils"), &gene_details.coiled_coil_coords, false);
 
-        let mut signal_peptide_coords = vec![];
+        let mut signal_peptides = vec![];
 
         if let Some(ref signal_peptide) = gene_details.signal_peptide {
-            signal_peptide_coords.push((signal_peptide.range.start,
-                                        signal_peptide.range.end));
+            signal_peptides.push(signal_peptide.clone());
         }
 
         let signal_peptide_track =
-            make_generic_track(flex_str!("Signal peptide"), &signal_peptide_coords, false);
+            make_generic_track(flex_str!("Signal peptide"), &signal_peptides, false);
 
-        let mut transit_peptide_coords = vec![];
+        let mut transit_peptides = vec![];
 
         if let Some(ref transit_peptide) = gene_details.transit_peptide {
-            transit_peptide_coords.push((transit_peptide.range.start,
-                                        transit_peptide.range.end));
+            transit_peptides.push(transit_peptide.clone());
         }
 
         let transit_peptide_track =
-            make_generic_track(flex_str!("Transit peptide"), &transit_peptide_coords, false);
+            make_generic_track(flex_str!("Transit peptide"), &transit_peptides, false);
 
         let binding_sites_track = make_binding_sites_track(gene_details);
 
-        let active_sites_coords =
-            gene_details.active_sites.iter()
-                .map(|site| (site.range.start, site.range.end))
-                .collect();
         let active_sites_track =
-            make_generic_track(flex_str!("Active sites"), &active_sites_coords, false);
+            make_generic_track(flex_str!("Active sites"), &gene_details.active_sites, false);
 
-        let beta_strand_coords =
-            gene_details.beta_strands.iter()
-                .map(|strand| (strand.range.start, strand.range.end))
-                .collect();
         let beta_strands_track =
-            make_generic_track(flex_str!("Beta strands"), &beta_strand_coords, false);
+            make_generic_track(flex_str!("Beta strands"), &gene_details.beta_strands, false);
 
-        let helix_coords =
-            gene_details.helices.iter()
-                .map(|helix| (helix.range.start, helix.range.end))
-                .collect();
         let helix_track =
-            make_generic_track(flex_str!("Helices"), &helix_coords, false);
+            make_generic_track(flex_str!("Helices"), &gene_details.helices, false);
 
-        let turn_coords =
-            gene_details.turns.iter()
-                .map(|turn| (turn.range.start, turn.range.end))
-                .collect();
         let turns_track =
-            make_generic_track(flex_str!("Turns"), &turn_coords, false);
+            make_generic_track(flex_str!("Turns"), &gene_details.turns, false);
 
-        let propeptide_coords =
-            gene_details.propeptides.iter()
-                .map(|propeptide| (propeptide.range.start, propeptide.range.end))
-                .collect();
         let propeptides_track =
-            make_generic_track(flex_str!("Propeptides"), &propeptide_coords, false);
+            make_generic_track(flex_str!("Propeptides"), &gene_details.propeptides, false);
 
-        let chain_coords =
-            gene_details.chains.iter()
-                .map(|chain| (chain.range.start, chain.range.end))
-                .collect();
         let chains_track =
-            make_generic_track(flex_str!("Chains"), &chain_coords, false);
+            make_generic_track(flex_str!("Chains"), &gene_details.chains, false);
 
-        let disulfide_bond_coords =
-            gene_details.disulfide_bonds.iter()
-                .map(|disulfide_bond| (disulfide_bond.range.start, disulfide_bond.range.end))
-                .collect();
         let disulfide_bonds_track =
-            make_generic_track(flex_str!("Disulfide bonds"), &disulfide_bond_coords, true);
+            make_generic_track(flex_str!("Disulfide bonds"), &gene_details.disulfide_bonds, true);
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),

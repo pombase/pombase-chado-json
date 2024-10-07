@@ -115,50 +115,214 @@ impl Display for PeptideRange {
     }
 }
 
+pub trait GenericProteinFeature {
+    fn start(&self) -> usize;
+    fn end(&self) -> usize;
+    fn assigned_by(&self) -> &Option<AssignedBy>;
+    fn length(&self) -> usize {
+        self.end() - self.start() + 1
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct AssignedByPeptideRange {
+    pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for AssignedByPeptideRange {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalPeptide {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for SignalPeptide {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransitPeptide {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for TransitPeptide {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BindingSite {
     pub ligand: FlexStr,
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for BindingSite {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActiveSite {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for ActiveSite {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BetaStrand {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for BetaStrand {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Helix {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for Helix {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Turn {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for Turn {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Propeptide {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for Propeptide {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Chain {
     pub range: PeptideRange,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for Chain {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -166,6 +330,21 @@ pub struct GlycosylationSite {
     pub range: PeptideRange,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceUniquename>,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for GlycosylationSite {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -173,6 +352,21 @@ pub struct DisulfideBond {
     pub range: PeptideRange,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceUniquename>,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for DisulfideBond {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -181,6 +375,21 @@ pub struct LipidationSite {
     pub termid: TermId,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceUniquename>,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for LipidationSite {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -189,6 +398,21 @@ pub struct ModifiedResidue {
     pub termid: TermId,
     pub evidence: Option<Evidence>,
     pub reference: Option<ReferenceUniquename>,
+    pub assigned_by: Option<AssignedBy>,
+}
+
+impl GenericProteinFeature for ModifiedResidue {
+    fn start(&self) -> usize {
+        self.range.start
+    }
+
+    fn end(&self) -> usize {
+        self.range.end
+    }
+
+    fn assigned_by(&self) -> &Option<AssignedBy> {
+        &self.assigned_by
+    }
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -1251,13 +1475,13 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub interpro_matches: Vec<InterProMatch>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub tm_domain_coords: Vec<(usize, usize)>,
+    pub tm_domain_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub disordered_region_coords: Vec<(usize, usize)>,
+    pub disordered_region_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub low_complexity_region_coords: Vec<(usize, usize)>,
+    pub low_complexity_region_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub coiled_coil_coords: Vec<(usize, usize)>,
+    pub coiled_coil_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub signal_peptide: Option<SignalPeptide>,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -1366,6 +1590,14 @@ pub struct GeneDetails {
     pub gene_history: Vec<GeneHistoryEntry>,
 }
 
+fn feature_aa_count(feats: &Vec<AssignedByPeptideRange>) -> usize {
+    let mut count = 0;
+    for feat in feats {
+        count += feat.length()
+    }
+    count
+}
+
 impl GeneDetails {
     pub fn display_name(&self) -> FlexStr {
         if let Some(ref name) = self.name {
@@ -1376,27 +1608,15 @@ impl GeneDetails {
     }
 
     pub fn coiled_coil_aa_count(&self) -> usize {
-        let mut count = 0;
-        for (start, end) in &self.coiled_coil_coords {
-            count += end - start + 1;
-        }
-        count
+        feature_aa_count(&self.coiled_coil_coords)
     }
 
     pub fn disordered_aa_count(&self) -> usize {
-        let mut count = 0;
-        for (start, end) in &self.disordered_region_coords {
-            count += end - start + 1;
-        }
-        count
+        feature_aa_count(&self.disordered_region_coords)
     }
 
     pub fn low_complexity_aa_count(&self) -> usize {
-        let mut count = 0;
-        for (start, end) in &self.low_complexity_region_coords {
-            count += end - start + 1;
-        }
-        count
+        feature_aa_count(&self.low_complexity_region_coords)
     }
 }
 
