@@ -83,7 +83,20 @@ fn get_residue_extension(uniprot_data: &UniProtDataEntry,
     let residue_abbrev = aa_for_residue(uniprot_data.sequence.as_str(),
                                         termid, range);
     if let Some(residue_abbrev) = residue_abbrev {
-        format!("residue({}{})", residue_abbrev, range)
+        if range.len() == 1 {
+            format!("residue({}{})", residue_abbrev, range.start)
+        } else {
+            if termid == "MOD:00689" {
+                // special case for disulfide crosslinked residues
+                format!("residue({}{}..{}{})",
+                        residue_abbrev, range.start,
+                        residue_abbrev, range.end)
+            } else {
+                format!("residue({}{}-{}{})",
+                        residue_abbrev, range.start,
+                        residue_abbrev, range.end)
+            }
+        }
     } else {
         "".to_owned()
     }
