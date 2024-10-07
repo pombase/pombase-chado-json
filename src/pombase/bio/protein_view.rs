@@ -1,5 +1,5 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 use regex::Regex;
 
@@ -12,6 +12,7 @@ use crate::data_types::{AlleleDetails, AlleleShort, DisplayUniquenameGenotypeMap
                         TermNameAndId, UniquenameAlleleDetailsMap, UniquenameGeneMap,
                         UniquenameReferenceMap, UniquenameTranscriptMap};
 use crate::web::config::{Config, CvConfig};
+use crate::interpro::InterProMatch;
 
 use flexstr::{shared_str as flex_str, SharedStr as FlexStr, shared_fmt as flex_fmt};
 
@@ -658,6 +659,53 @@ fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
     deletions_track.features.sort_by(sorter);
 }
 
+pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
+     -> Vec<ProteinViewTrack>
+{
+    let mut interpro_match_map = BTreeMap::new();
+
+    for interpro_match in interpro_matches {
+        interpro_match_map
+            .entry(interpro_match.dbname.clone())
+            .or_insert_with(Vec::new)
+            .push(interpro_match.clone());
+    }
+
+    interpro_match_map
+        .iter()
+        .map(|(dbname, interpro_matches)| {
+            let features = interpro_matches
+                .iter()
+                .map(|feat| {
+                    let positions = feat.locations
+                        .iter()
+                        .map(|loc| {
+                            (feat.name.clone(), loc.start, loc.end)
+                        })
+                        .collect();
+                    ProteinViewFeature {
+                        id: feat.id.clone(),
+                        display_name: Some(feat.name.clone()),
+                        annotated_terms: BTreeSet::new(),
+                        feature_group: None,
+                        display_extension: BTreeSet::new(),
+                        assigned_by: Some(flex_fmt!("InterPro / {}", dbname)),
+                        author_and_year: None,
+                        inviable_or_abnormal: None,
+                        evidence: None,
+                        positions,
+                    }
+                })
+                .collect();
+            ProteinViewTrack {
+                name: dbname.clone(),
+                display_type: flex_str!("block"),
+                features,
+            }
+        })
+        .collect()
+}
+
 pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                   term_details_map: &TermIdDetailsMap,
                                   annotation_details_map: &IdOntAnnotationDetailMap,
@@ -801,17 +849,24 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let disulfide_bonds_track =
             make_generic_track(flex_str!("Disulfide bonds"), &disulfide_bond_coords, true);
 
+        let mut tracks =
+            vec![mutant_summary_track, mutants_track, deletions_track,
+                 modification_track,
+                 disulfide_bonds_track, pfam_track,
+                 tm_domains_track, disordered_regions_track,
+                 low_complexity_regions_track, coiled_coil_coords,
+                 signal_peptide_track, transit_peptide_track,
+                 binding_sites_track, active_sites_track,
+                 beta_strands_track, helix_track, turns_track,
+                 propeptides_track, chains_track];
+
+        let interpro_tracks = tracks_from_interpro(&gene_details.interpro_matches);
+
+        tracks.extend(interpro_tracks);
+
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
-            tracks: vec![mutant_summary_track, mutants_track, deletions_track,
-                         modification_track,
-                         disulfide_bonds_track, pfam_track,
-                         tm_domains_track, disordered_regions_track,
-                         low_complexity_regions_track, coiled_coil_coords,
-                         signal_peptide_track, transit_peptide_track,
-                         binding_sites_track, active_sites_track,
-                         beta_strands_track, helix_track, turns_track,
-                         propeptides_track, chains_track],
+            tracks,
         };
 
         gene_map.insert(gene_details.uniquename.clone(), protein_view_data);
