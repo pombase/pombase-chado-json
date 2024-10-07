@@ -11,7 +11,6 @@ use flexstr::SharedStr as FlexStr;
 pub struct Location {
     pub start: usize,
     pub end: usize,
-    pub score: f32,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -19,11 +18,8 @@ pub struct InterProMatch {
     pub id: FlexStr,
     pub dbname: FlexStr,
     pub name: FlexStr,
-    pub model: Option<FlexStr>,
-    pub evidence: FlexStr,
     pub interpro_id: FlexStr,
     pub interpro_name: FlexStr,
-    pub interpro_type: FlexStr,
     pub locations: Vec<Location>,
 }
 
@@ -34,7 +30,7 @@ pub struct TMMatch {
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
-pub struct UniProtResult {
+pub struct GeneMatches {
     pub interpro_matches: Vec<InterProMatch>,
     pub tmhmm_matches: Vec<TMMatch>,
 }
@@ -42,7 +38,7 @@ pub struct UniProtResult {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DomainData {
     pub interpro_version: FlexStr,
-    pub domains_by_id: HashMap<FlexStr, UniProtResult>,
+    pub domains_by_id: HashMap<FlexStr, GeneMatches>,
 }
 
 pub fn parse_interpro(config: &Config, file_name: &str) -> DomainData {
@@ -66,7 +62,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> DomainData {
 
     let mut filtered_domains = HashMap::new();
 
-    for (uniprot_identifier, mut results) in domain_data.domains_by_id {
+    for (gene_uniquename, mut results) in domain_data.domains_by_id {
         let new_interpro_matches =
             results.interpro_matches.into_iter()
             .filter(|interpro_match|
@@ -74,7 +70,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> DomainData {
             .collect();
 
         results.interpro_matches = new_interpro_matches;
-        filtered_domains.insert(uniprot_identifier, results);
+        filtered_domains.insert(gene_uniquename, results);
     }
 
     DomainData {
