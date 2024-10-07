@@ -395,7 +395,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                            config: &Config,
                            gene_details_maps: &UniquenameGeneMap,
                            term_details_map: &TermIdDetailsMap,
-                           references_map: &UniquenameReferenceMap,
+                           _references_map: &UniquenameReferenceMap,
                            annotation_details_map: &IdOntAnnotationDetailMap) -> ProteinViewTrack {
     let ext_rel_types = &config.protein_feature_view.modification_extension_rel_types;
 
