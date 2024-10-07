@@ -416,19 +416,6 @@ fn make_modification_track(gene_details: &GeneDetails,
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                 let assigned_by = &annotation_detail.assigned_by;
-                let mut author_and_year = None;
-
-                if let Some(ref reference_uniquename) = annotation_detail.reference {
-                    if let Some(ref ref_details) = references_map.get(reference_uniquename) {
-                        if let Some(ref authors_abbrev) = ref_details.authors_abbrev {
-                            if let Some(ref year) = ref_details.publication_year {
-                                author_and_year = Some(flex_fmt!("{} ({})", authors_abbrev, year));
-                            } else {
-                                author_and_year = Some(authors_abbrev.clone());
-                            }
-                        }
-                    }
-                }
 
                 let evidence = &annotation_detail.evidence;
 
@@ -496,7 +483,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                                 feature_group,
                                 display_extension: BTreeSet::new(),
                                 assigned_by: assigned_by.clone(),
-                                author_and_year: author_and_year.clone(),
+                                author_and_year: None,
                                 evidence: evidence.clone(),
                                 inviable_or_abnormal: None,
                                 positions: vec![(description, residue_pos, residue_pos)],
