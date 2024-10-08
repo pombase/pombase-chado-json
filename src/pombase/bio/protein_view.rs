@@ -320,7 +320,6 @@ fn make_mutants_track(gene_details: &GeneDetails,
                 .collect();
 
             for cat_with_name in &categories_with_names {
-                eprintln!("{} {}", cat_with_name.name, cat_with_name.id);
                 if inviable_termids.contains(&cat_with_name.id) {
                     viability_level = ProteinViewViabilityLevel::Inviable;
                 }
