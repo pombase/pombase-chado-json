@@ -7,7 +7,7 @@ use regex::Regex;
 use crate::types::GeneUniquename;
 use crate::data_types::{AlleleDetails, AlleleShort, DisplayUniquenameGenotypeMap,
                         ExtPart, ExtRange, GeneDetails, IdOntAnnotationDetailMap,
-                        GenericProteinFeature,
+                        GenericProteinFeature, ProteinViewViabilityLevel,
                         ProteinDetails, ProteinViewData, ProteinViewFeature,
                         ProteinViewFeaturePos, ProteinViewTrack, TermIdDetailsMap,
                         TermNameAndId, UniquenameAlleleDetailsMap, UniquenameGeneMap,
@@ -148,7 +148,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
             assigned_by: None,
             author_and_year: None,
             evidence: None,
-            inviable_or_abnormal: None,
+            viability_level: ProteinViewViabilityLevel::NotApplicable,
             positions,
         })
     } else {
@@ -180,7 +180,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
                assigned_by: None,
                author_and_year: None,
                evidence: None,
-               inviable_or_abnormal: None,
+               viability_level: ProteinViewViabilityLevel::NotApplicable,
                positions: vec![(residue_and_pos, pos, pos)],
             }
          })
@@ -221,13 +221,11 @@ fn make_mutants_track(gene_details: &GeneDetails,
         }
     }
 
-    let mut inviable_or_abnormal_termids = HashSet::new();
-    inviable_or_abnormal_termids.extend(["FYPO:0001985".into(), // inviable cell
-                                         "FYPO:0002059".into(), // inviable cell population
-                                         "FYPO:0000049".into(), // abnormal phenotype
-                                        ].into_iter());
+    let inviable_termids = vec!["FYPO:0000049".into(), "FYPO:0002059".into()];
+    all_categories.extend(inviable_termids.clone());
 
-    all_categories.extend(inviable_or_abnormal_termids.clone());
+    let abnormal_phenotype = "FYPO:0001985";
+    all_categories.insert(abnormal_phenotype.into());
 
     let mut allele_terms = HashMap::new();
 
@@ -307,7 +305,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
         let sequence_length = protein.sequence_length();
 
         if let Some(mut feature) = feature_from_allele(&allele_details, sequence_length) {
-            let mut inviable_or_abnormal = false;
+            let mut viability_level = ProteinViewViabilityLevel::Normal;
 
             let mut categories_with_names: Vec<_> = allele_categories
                 .iter()
@@ -322,8 +320,14 @@ fn make_mutants_track(gene_details: &GeneDetails,
                 .collect();
 
             for cat_with_name in &categories_with_names {
-                if inviable_or_abnormal_termids.contains(&cat_with_name.id) {
-                    inviable_or_abnormal = true;
+                eprintln!("{} {}", cat_with_name.name, cat_with_name.id);
+                if inviable_termids.contains(&cat_with_name.id) {
+                    viability_level = ProteinViewViabilityLevel::Inviable;
+                }
+                if viability_level == ProteinViewViabilityLevel::Normal &&
+                    cat_with_name.id == abnormal_phenotype
+                {
+                    viability_level = ProteinViewViabilityLevel::Abnormal
                 }
             }
 
@@ -331,7 +335,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
 
             feature.annotated_terms.extend(categories_with_names);
 
-            feature.inviable_or_abnormal = Some(inviable_or_abnormal);
+            feature.viability_level = viability_level;
 
             track.features.push(feature);
         }
@@ -485,7 +489,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                                 assigned_by: assigned_by.clone(),
                                 author_and_year: None,
                                 evidence: evidence.clone(),
-                                inviable_or_abnormal: None,
+                                viability_level: ProteinViewViabilityLevel::NotApplicable,
                                 positions: vec![(description, residue_pos, residue_pos)],
                             }
                         });
@@ -541,7 +545,7 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 evidence: None,
                 author_and_year: None,
                 display_extension: BTreeSet::new(),
-                inviable_or_abnormal: None,
+                viability_level: ProteinViewViabilityLevel::NotApplicable,
                 positions,
             };
 
@@ -582,7 +586,7 @@ fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFea
                 assigned_by: f.assigned_by().clone(),
                 author_and_year: None,
                 evidence: None,
-                inviable_or_abnormal: None,
+                viability_level: ProteinViewViabilityLevel::NotApplicable,
                 positions,
             }
         })
@@ -613,7 +617,7 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 assigned_by: binding_site.assigned_by.clone(),
                 author_and_year: None,
                 evidence: None,
-                inviable_or_abnormal: None,
+                viability_level: ProteinViewViabilityLevel::NotApplicable,
                 positions: vec![(feature_name.clone(), start, end)],
             }
         })

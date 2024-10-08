@@ -2679,6 +2679,15 @@ impl PartialOrd for TermNameAndId {
 
 pub type ProteinViewFeaturePos = (FlexStr, usize, usize);
 
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum ProteinViewViabilityLevel {
+    Inviable,
+    Abnormal,
+    Normal,
+    NotApplicable,
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinViewFeature {
     pub id: FlexStr,
@@ -2703,8 +2712,7 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="Option::is_none")]
     pub author_and_year: Option<FlexStr>,
 
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub inviable_or_abnormal: Option<bool>,
+    pub viability_level: ProteinViewViabilityLevel,
 
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
