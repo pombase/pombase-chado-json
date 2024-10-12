@@ -1441,7 +1441,7 @@ impl WebData {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
-        let header = "#gene_systematic_id\tgene_name\tmodification_term_id\tevidence\tmodification\textension\treference\ttaxon_id\tdate\n";
+        let header = "#gene_systematic_id\tgene_name\tmodification_term_id\tevidence\tmodification\textension\treference\ttaxon_id\tdate\tassigned_by\n";
         writer.write_all(header.as_bytes())?;
 
         let empty_string = flex_str!("");
@@ -1474,7 +1474,8 @@ impl WebData {
                         let reference =
                             annotation_detail.reference.as_ref().unwrap_or(&empty_string);
                         let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
-                        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                        let assigned_by = annotation_detail.assigned_by.as_ref().unwrap_or(&empty_string);
+                        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                            gene_details.uniquename,
                                            gene_name,
                                            term_annotation.term,
@@ -1483,7 +1484,8 @@ impl WebData {
                                            extension,
                                            reference,
                                            load_org_taxonid,
-                                           date);
+                                           date,
+                                           assigned_by);
 
                        writer.write_all(line.as_bytes())?;
                     }
