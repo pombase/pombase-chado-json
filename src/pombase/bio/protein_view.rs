@@ -681,6 +681,7 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
         .map(|(dbname, interpro_matches)| {
             let features = interpro_matches
                 .iter()
+                .filter(|m| m.dbname != "PFAM")  // handled separately
                 .map(|feat| {
                     let feat_name =
                         feat.description.as_ref()
@@ -830,8 +831,14 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let mut tracks =
             vec![mutant_summary_track, mutants_track, deletions_track,
-                 modification_track,
-                 disulfide_bonds_track, pfam_track,
+                 modification_track, disulfide_bonds_track,
+                 pfam_track];
+
+        let interpro_tracks = tracks_from_interpro(&gene_details.interpro_matches);
+
+        tracks.extend(interpro_tracks);
+
+        let other_tracks = vec![
                  tm_domains_track, disordered_regions_track,
                  low_complexity_regions_track, coiled_coil_coords,
                  signal_peptide_track, transit_peptide_track,
@@ -839,9 +846,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                  beta_strands_track, helix_track, turns_track,
                  propeptides_track, chains_track];
 
-        let interpro_tracks = tracks_from_interpro(&gene_details.interpro_matches);
-
-        tracks.extend(interpro_tracks);
+        tracks.extend(other_tracks);
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),
