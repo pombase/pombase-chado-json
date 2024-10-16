@@ -749,7 +749,7 @@ fn get_test_web_data() -> WebData {
     let raw = get_test_raw();
     let config = get_test_config();
     let domain_data = DomainData {
-        interpro_version: "90.0".into(),
+        interproscan_version: "5.69-101.0".into(),
         domains_by_id: HashMap::new(),
     };
     let rnacentral_data = Some(HashMap::new());

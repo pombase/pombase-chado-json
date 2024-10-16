@@ -4945,7 +4945,7 @@ phenotypes, so just the first part of this extension will be used:
         const VERSION: &str = env!("CARGO_PKG_VERSION");
 
         data_source_versions.insert(flex_str!("InterPro"),
-                                    self.domain_data.interpro_version.clone());
+                                    self.domain_data.interproscan_version.clone());
 
         Metadata {
             export_prog_name: flex_str!(PKG_NAME),
@@ -6718,7 +6718,12 @@ phenotypes, so just the first part of this extension will be used:
 
                 let subset_name = String::from("interpro:") +
                      &interpro_match.dbname.clone() + ":" + &interpro_match.id;
-                new_subset_names.push((subset_name.to_shared_str(), interpro_match.name.clone()));
+                let subset_display_name =
+                    interpro_match.name.as_ref().map(|n| n.to_string())
+                    .or(interpro_match.description.as_ref().map(|d| d.to_string()))
+                    .unwrap_or_else(|| subset_name.clone())
+                    .into();
+                new_subset_names.push((subset_name.to_shared_str(), subset_display_name));
 
                 for (subset_name, display_name) in new_subset_names {
                     subsets.entry(subset_name.clone())
@@ -7257,7 +7262,7 @@ phenotypes, so just the first part of this extension will be used:
             year_map.entry(entrez_date_year.to_owned())
                 .or_insert((0, 0, 0, 0))
                 .0 += 1;
-           
+
             } else {
 
             year_month_map.entry(entrez_date_year_month)
@@ -7267,7 +7272,7 @@ phenotypes, so just the first part of this extension will be used:
             year_map.entry(entrez_date_year.to_owned())
                 .or_insert((0, 0, 0, 0))
                 .3 += 1;
-            
+
             }
             let Some(ref submitted_date) = ref_details.canto_session_submitted_date
             else {
