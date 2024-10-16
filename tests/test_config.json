@@ -504,7 +504,8 @@
   "feature_sub_groups": {},
   "protein_feature_view": {
     "modification_extension_rel_types": [],
-    "widget_track_names": [],
+    "widget_tracks": [],
+    "domains_and_features_tracks": [],
     "modification_groups": [],
     "full_display_excluded": []
   },
