@@ -384,11 +384,13 @@ fn protein_features(gene_details: &GeneDetails) -> String {
     protein_feature_html += "</tr>\n</thead>\n";
     protein_feature_html += "<tbody>\n";
 
+    let empty_str = &"".into();
+
     for interpro_match in &gene_details.interpro_matches {
         protein_feature_html +=
             &format!("<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>\n",
                      interpro_match.id,
-                     interpro_match.name,
+                     interpro_match.name.as_ref().unwrap_or_else(|| empty_str),
                      interpro_match.interpro_name,
                      interpro_match.dbname);
     }
