@@ -1017,7 +1017,7 @@ impl APIData {
         self.maps.seq_feature_page_features.clone()
     }
 
-    pub fn get_protein_features_of_gene(&self, full_or_widget: ProteinViewType,
+    pub fn get_protein_features_of_gene(&self, scope: ProteinViewType,
                                         gene_uniquename: &str)
         -> Option<ProteinViewData>
     {
@@ -1029,10 +1029,13 @@ impl APIData {
             .iter()
             .filter(|track| {
                 let prot_feat_conf = &self.config.protein_feature_view;
-                if full_or_widget == ProteinViewType::Widget {
-                    prot_feat_conf.widget_track_names.contains(&track.name)
-                } else {
-                    !prot_feat_conf.full_display_excluded.contains(&track.name)
+                match scope {
+                    ProteinViewType::Widget =>
+                        prot_feat_conf.widget_tracks.contains(&track.name),
+                    ProteinViewType::DomainsAndFeatures =>
+                        prot_feat_conf.domains_and_features_tracks.contains(&track.name),
+                    ProteinViewType::Full => 
+                        !prot_feat_conf.full_display_excluded.contains(&track.name),
                 }
             })
             .map(Clone::clone)

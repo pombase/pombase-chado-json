@@ -2647,6 +2647,7 @@ pub type GeneExDataSetMeasurements =
 pub enum ProteinViewType {
     Full,
     Widget,
+    DomainsAndFeatures,
 }
 
 impl TryFrom<&str> for ProteinViewType {
@@ -2655,6 +2656,7 @@ impl TryFrom<&str> for ProteinViewType {
         match value {
             "full" => Ok(ProteinViewType::Full),
             "widget" => Ok(ProteinViewType::Widget),
+            "domains_and_features" => Ok(ProteinViewType::DomainsAndFeatures),
             _ => Err(format!("unknown protein view type: {}", value)),
         }
     }
