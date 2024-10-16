@@ -151,12 +151,12 @@ async fn get_term(Path(id): Path<String>, State(all_state): State<Arc<AllState>>
     option_json_to_result(&id, res)
 }
 
-async fn get_protein_features(Path((full_or_widget, gene_uniquename)): Path<(String, String)>,
+async fn get_protein_features(Path((scope, gene_uniquename)): Path<(String, String)>,
                               State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
-    let full_or_widget =
-        match ProteinViewType::try_from(full_or_widget.as_ref()) {
+    let scope =
+        match ProteinViewType::try_from(scope.as_ref()) {
             Ok(val) => val,
             Err(err) => {
                 eprintln!("get_protein_features(): {}", err);
@@ -164,7 +164,7 @@ async fn get_protein_features(Path((full_or_widget, gene_uniquename)): Path<(Str
             }
         };
 
-    let res = all_state.query_exec.get_api_data().get_protein_features_of_gene(full_or_widget, &gene_uniquename)
+    let res = all_state.query_exec.get_api_data().get_protein_features_of_gene(scope, &gene_uniquename)
               .map(|s| s.to_owned())
               .map(Json);
     option_json_to_result(&gene_uniquename, res)
@@ -297,12 +297,12 @@ async fn rna_2d_structure(Path((gene_uniquename, urs_id)): Path<(String, String)
 
 }
 
-async fn protein_feature_view(Path((full_or_widget, gene_uniquename)): Path<(String, String)>,
+async fn protein_feature_view(Path((scope, gene_uniquename)): Path<(String, String)>,
                               State(all_state): State<Arc<AllState>>)
    -> (StatusCode, Html<String>)
 {
     let search_url = all_state.config.server.django_url.to_owned() + "/protein_feature_view/";
-    let params = [("full_or_widget", full_or_widget),
+    let params = [("scope", scope),
                   ("gene_uniquename", gene_uniquename)];
     let client = reqwest::Client::new();
     let result = client.get(search_url).query(&params).send().await;
@@ -741,7 +741,7 @@ async fn main() {
         .route("/", get(get_index))
         .route("/structure_view/:structure_type/:id", get(structure_view))
         .route("/rna_2d_structure/:gene_uniquename/:urs_id", get(rna_2d_structure))
-        .route("/protein_feature_view/:full_or_widget/:gene_uniquename", get(protein_feature_view))
+        .route("/protein_feature_view/:scope/:gene_uniquename", get(protein_feature_view))
         .route("/gocam_viz/:full_or_widget/:gocam_id", get(gocam_viz))
         .route("/simple/gene/:id", get(get_simple_gene))
         .route("/simple/genotype/:id", get(get_simple_genotype))
@@ -762,7 +762,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/:plot_size/:genes", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/:type", get(get_stats))
         .route("/api/v1/dataset/latest/motif_search/:scope/:q/:max_gene_details", get(motif_search))
-        .route("/api/v1/dataset/latest/protein_features/:full_or_widget/:gene_uniquename", get(get_protein_features))
+        .route("/api/v1/dataset/latest/protein_features/:scope/:gene_uniquename", get(get_protein_features))
         .route("/api/v1/dataset/latest/query/:q", get(query_get))
         .route("/api/v1/dataset/latest/query", post(query_post))
         .route("/api/v1/dataset/latest/search/:scope/:q", get(solr_search))
