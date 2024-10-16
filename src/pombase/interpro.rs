@@ -17,7 +17,8 @@ pub struct Location {
 pub struct InterProMatch {
     pub id: FlexStr,
     pub dbname: FlexStr,
-    pub name: FlexStr,
+    pub name: Option<FlexStr>,
+    pub description: Option<FlexStr>,
     pub interpro_id: FlexStr,
     pub interpro_name: FlexStr,
     pub locations: Vec<Location>,
@@ -37,7 +38,7 @@ pub struct GeneMatches {
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DomainData {
-    pub interpro_version: FlexStr,
+    pub interproscan_version: FlexStr,
     pub domains_by_id: HashMap<FlexStr, GeneMatches>,
 }
 
@@ -74,7 +75,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> DomainData {
     }
 
     DomainData {
-        interpro_version: domain_data.interpro_version,
+        interproscan_version: domain_data.interproscan_version,
         domains_by_id: filtered_domains,
     }
 }

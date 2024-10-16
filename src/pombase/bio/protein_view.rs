@@ -536,14 +536,17 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
 
     for interpro_match in &gene_details.interpro_matches {
         if interpro_match.dbname == "PFAM" {
+            let match_name = interpro_match.name.as_ref()
+                .or(interpro_match.description.as_ref())
+                .unwrap_or_else(|| &interpro_match.interpro_name);
             let positions = interpro_match
                 .locations
                 .iter()
-                .map(|loc| (flex_fmt!("{}-{}..{}", interpro_match.name, loc.start, loc.end), loc.start, loc.end))
+                .map(|loc| (flex_fmt!("{}-{}..{}", match_name, loc.start, loc.end), loc.start, loc.end))
                 .collect();
 
             let display_name =
-                flex_fmt!("{}: {}", interpro_match.id, interpro_match.name);
+                flex_fmt!("{}: {}", interpro_match.id, match_name);
 
             let feature = ProteinViewFeature {
                 id: interpro_match.id.clone(),
@@ -679,15 +682,19 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
             let features = interpro_matches
                 .iter()
                 .map(|feat| {
+                    let feat_name =
+                        feat.description.as_ref()
+                        .or(feat.name.as_ref())
+                        .unwrap_or_else(|| &feat.interpro_name);
                     let positions = feat.locations
                         .iter()
                         .map(|loc| {
-                            (feat.name.clone(), loc.start, loc.end)
+                            (feat_name.to_owned(), loc.start, loc.end)
                         })
                         .collect();
                     ProteinViewFeature {
                         id: feat.id.clone(),
-                        display_name: Some(feat.name.clone()),
+                        display_name: Some(feat_name.to_owned()),
                         annotated_terms: BTreeSet::new(),
                         feature_group: None,
                         display_extension: BTreeSet::new(),
