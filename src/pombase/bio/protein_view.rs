@@ -793,9 +793,6 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let tm_domains_track =
             make_generic_track(flex_str!("TM domains"),
                                &gene_details.tm_domain_coords, false);
-        let disordered_regions_track =
-            make_generic_track(flex_str!("Disordered regions"),
-                               &gene_details.disordered_region_coords, false);
         let low_complexity_regions_track =
             make_generic_track(flex_str!("Low complexity"),
                                &gene_details.low_complexity_region_coords, false);
@@ -854,7 +851,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         tracks.extend(interpro_tracks);
 
         let other_tracks = vec![
-                 tm_domains_track, disordered_regions_track,
+                 tm_domains_track,
                  low_complexity_regions_track, coiled_coil_coords,
                  signal_peptide_track, transit_peptide_track,
                  binding_sites_track, active_sites_track,
