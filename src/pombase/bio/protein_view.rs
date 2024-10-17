@@ -531,8 +531,11 @@ fn make_modification_track(gene_details: &GeneDetails,
     }
 }
 
-fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
+fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
+    let mut tracks = vec![];
+
     let mut features = vec![];
+    let mut feature_tracks = vec![];
 
     for interpro_match in &gene_details.interpro_matches {
         if interpro_match.dbname == "PFAM" {
@@ -561,15 +564,26 @@ fn make_pfam_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 positions,
             };
 
-            features.push(feature);
+            features.push(feature.clone());
+
+            let feature_track = ProteinViewTrack {
+                name: flex_fmt!("Pfam {}", interpro_match.id),
+                display_type: flex_str!("block"),
+                features: vec![feature],
+            };
+
+            feature_tracks.push(feature_track);
         }
     }
 
-    ProteinViewTrack {
+    tracks.push(ProteinViewTrack {
         name: flex_str!("Pfam domains"),
         display_type: flex_str!("block"),
         features,
-    }
+    });
+
+    tracks.extend(feature_tracks);
+    tracks
 }
 
 fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFeature>,
@@ -774,7 +788,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
             make_modification_track(gene_details, config, gene_details_maps, term_details_map,
                                     references, annotation_details_map);
 
-        let pfam_track = make_pfam_track(gene_details);
+        let pfam_tracks = make_pfam_tracks(gene_details);
 
         let tm_domains_track =
             make_generic_track(flex_str!("TM domains"),
@@ -831,8 +845,9 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         let mut tracks =
             vec![mutant_summary_track, mutants_track, deletions_track,
-                 modification_track, disulfide_bonds_track,
-                 pfam_track];
+                 modification_track, disulfide_bonds_track];
+
+        tracks.extend(pfam_tracks);
 
         let interpro_tracks = tracks_from_interpro(&gene_details.interpro_matches);
 
