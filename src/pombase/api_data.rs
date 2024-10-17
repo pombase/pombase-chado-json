@@ -1032,8 +1032,10 @@ impl APIData {
                 match scope {
                     ProteinViewType::Widget =>
                         prot_feat_conf.widget_tracks.contains(&track.name),
-                    ProteinViewType::DomainsAndFeatures =>
-                        prot_feat_conf.domains_and_features_tracks.contains(&track.name),
+                    ProteinViewType::DomainsAndFeatures => {
+                        track.name.to_ascii_lowercase().starts_with("pfam") ||
+                        prot_feat_conf.domains_and_features_tracks.contains(&track.name)
+                    },
                     ProteinViewType::Full => 
                         !prot_feat_conf.full_display_excluded.contains(&track.name),
                 }
