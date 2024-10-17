@@ -1959,7 +1959,7 @@ phenotypes, so just the first part of this extension will be used:
 
                 for interpro_match in result.interpro_matches.iter() {
                     let dbname = interpro_match.dbname.as_str();
-                    if dbname == "COILS" || dbname == "MOBIDB_LITE" {
+                    if dbname == "COILS" || dbname == "MOBIDB-Disorder" {
                         for loc in interpro_match.locations.iter() {
                             let range = AssignedByPeptideRange {
                                 range: PeptideRange {
