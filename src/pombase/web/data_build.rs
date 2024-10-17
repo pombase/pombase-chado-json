@@ -1943,7 +1943,7 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
-        let (interpro_matches, tm_domain_coords, coiled_coil_coords) =
+        let (interpro_matches, tm_domain_coords, coiled_coil_coords, disordered_region_coords) =
             if let Some(result) = self.domain_data.domains_by_id.get(gene_uniquename.as_str()) {
                 let tm_domain_matches = result.tmhmm_matches.iter()
                     .map(|tm_match| AssignedByPeptideRange {
@@ -1954,22 +1954,33 @@ phenotypes, so just the first part of this extension will be used:
                         assigned_by: Some(flex_str!("TMHMM")),
                     })
                     .collect::<Vec<_>>();
-                let coiled_coil_coords =
-                    if let Some(coils_matches) = result.interpro_matches.iter().find(|m| m.dbname == "COILS") {
-                        coils_matches.locations.iter().map(|loc| AssignedByPeptideRange {
-                            range: PeptideRange {
-                                start: loc.start,
-                                end: loc.end,
-                            },
-                            assigned_by: Some(flex_str!("InterProScan/COILS")),
-                        })
-                        .collect()
-                    } else {
-                        vec![]
-                    };
-                (result.interpro_matches.clone(), tm_domain_matches, coiled_coil_coords)
+                let mut coiled_coil_coords = vec![];
+                let mut disordered_region_coords = vec![];
+
+                for interpro_match in result.interpro_matches.iter() {
+                    let dbname = interpro_match.dbname.as_str();
+                    if dbname == "COILS" || dbname == "MOBIDB_LITE" {
+                        for loc in interpro_match.locations.iter() {
+                            let range = AssignedByPeptideRange {
+                                range: PeptideRange {
+                                    start: loc.start,
+                                    end: loc.end,
+                                },
+                                assigned_by: Some(flex_fmt!("InterProScan/{}", dbname)),
+                            };
+
+                            if dbname == "COILS" {
+                                coiled_coil_coords.push(range);
+                            } else {
+                                disordered_region_coords.push(range);
+                            }
+                        }
+                    }
+                }
+                (result.interpro_matches.clone(), tm_domain_matches,
+                 coiled_coil_coords, disordered_region_coords)
             } else {
-                (vec![], vec![], vec![])
+                (vec![], vec![], vec![], vec![])
             };
 
         let make_assigned_pfam_range = |start: usize, end: usize| {
@@ -1982,32 +1993,29 @@ phenotypes, so just the first part of this extension will be used:
             }
         };
 
-        let (disordered_region_coords, low_complexity_region_coords) =
+        let low_complexity_region_coords =
             if let Some(ref pfam_data) = self.pfam_data {
                 if let Some(ref uniprot_identifier) = uniprot_identifier {
                     if let Some(result) = pfam_data.get(uniprot_identifier) {
-                        let mut disordered_region_coords = vec![];
                         let mut low_complexity_region_coords = vec![];
 
                         for motif in &result.motifs {
                             let assigned_range = make_assigned_pfam_range(motif.start, motif.end);
                             match &motif.motif_type as &str {
-                                "disorder" =>
-                                    disordered_region_coords.push(assigned_range),
                                 "low_complexity" =>
                                     low_complexity_region_coords.push(assigned_range),
                                 _ => (),
                             }
                         }
-                        (disordered_region_coords, low_complexity_region_coords)
+                        low_complexity_region_coords
                     } else {
-                        (vec![], vec![])
+                        vec![]
                     }
                 } else {
-                    (vec![], vec![])
+                    vec![]
                 }
             } else {
-                (vec![], vec![])
+                vec![]
             };
 
         let rfam_annotations =
