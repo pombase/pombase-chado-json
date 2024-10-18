@@ -33,6 +33,7 @@ pub struct TMMatch {
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct GeneMatches {
     pub interpro_matches: Vec<InterProMatch>,
+    pub segmasker_matches: Vec<Location>,
     pub tmhmm_matches: Vec<TMMatch>,
 }
 
