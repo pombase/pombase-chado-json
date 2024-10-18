@@ -2650,6 +2650,7 @@ pub enum ProteinViewType {
     Full,
     Widget,
     DomainsAndFeatures,
+    Modifications,
 }
 
 impl TryFrom<&str> for ProteinViewType {
@@ -2659,6 +2660,7 @@ impl TryFrom<&str> for ProteinViewType {
             "full" => Ok(ProteinViewType::Full),
             "widget" => Ok(ProteinViewType::Widget),
             "domains_and_features" => Ok(ProteinViewType::DomainsAndFeatures),
+            "modifications" => Ok(ProteinViewType::Modifications),
             _ => Err(format!("unknown protein view type: {}", value)),
         }
     }
