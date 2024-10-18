@@ -418,7 +418,16 @@ fn make_modification_track(gene_details: &GeneDetails,
                 let annotation_detail = annotation_details_map.get(&annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
-                let assigned_by = &annotation_detail.assigned_by;
+                let assigned_by = 
+                    if let Some(ref assigned_by) = annotation_detail.assigned_by {
+                        if assigned_by == config.database_name {
+                            &None
+                        } else {
+                            &annotation_detail.assigned_by
+                        }
+                    } else {
+                        &None
+                    };
 
                 let evidence = &annotation_detail.evidence;
 
