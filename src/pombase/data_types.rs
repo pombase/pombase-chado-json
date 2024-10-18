@@ -665,6 +665,8 @@ fn is_true(b: &bool) -> bool {
     *b
 }
 
+pub type UniprotIdentifier = FlexStr;
+
 // identifiers used for autocomplete in the search box
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GeneSummary {
@@ -675,7 +677,7 @@ pub struct GeneSummary {
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub uniprot_identifier: Option<FlexStr>,
+    pub uniprot_identifier: Option<UniprotIdentifier>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub secondary_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

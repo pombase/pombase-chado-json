@@ -31,7 +31,6 @@ use crate::bio::util::{compare_ext_part_with_config, rev_comp};
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
 use crate::interpro::DomainData;
-use crate::pfam::PfamProteinDetails;
 
 lazy_static! {
     static ref ISO_DATE_RE: Regex =
@@ -62,14 +61,12 @@ fn make_organism(rc_organism: &Rc<ChadoOrganism>) -> ConfigOrganism {
 
 type TermShortOptionMap = HashMap<TermId, Option<TermShort>>;
 
-type UniprotIdentifier = FlexStr;
-
 type GenotypeInteractionUniquename = FlexStr;
 
 pub struct WebDataBuild<'a> {
     raw: &'a Raw,
     domain_data: DomainData,
-    pfam_data: Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
+
     uniprot_data: Option<UniProtDataMap>,
     rnacentral_data: Option<RNAcentralAnnotations>,
     all_gene_history: Option<GeneHistoryMap>,
@@ -874,7 +871,6 @@ fn make_gocam_id_and_title_from_prop(gocam: &str) -> GoCamIdAndTitle {
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
                domain_data: DomainData,
-               pfam_data: Option<HashMap<UniprotIdentifier, PfamProteinDetails>>,
                uniprot_data: Option<UniProtDataMap>,
                rnacentral_data: Option<RNAcentralAnnotations>,
                all_gene_history: Option<GeneHistoryMap>,
@@ -886,7 +882,7 @@ impl <'a> WebDataBuild<'a> {
         WebDataBuild {
             raw,
             domain_data,
-            pfam_data,
+
             uniprot_data,
             rnacentral_data,
             all_gene_history,
@@ -1943,7 +1939,8 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
-        let (interpro_matches, tm_domain_coords, coiled_coil_coords, disordered_region_coords) =
+        let (interpro_matches, tm_domain_coords, coiled_coil_coords,
+             disordered_region_coords, low_complexity_region_coords) =
             if let Some(result) = self.domain_data.domains_by_id.get(gene_uniquename.as_str()) {
                 let tm_domain_matches = result.tmhmm_matches.iter()
                     .map(|tm_match| AssignedByPeptideRange {
@@ -1956,7 +1953,7 @@ phenotypes, so just the first part of this extension will be used:
                     .collect::<Vec<_>>();
                 let mut coiled_coil_coords = vec![];
                 let mut disordered_region_coords = vec![];
-
+                
                 for interpro_match in result.interpro_matches.iter() {
                     let dbname = interpro_match.dbname.as_str();
                     if dbname == "COILS" || dbname == "MOBIDB-Disorder" {
@@ -1977,45 +1974,24 @@ phenotypes, so just the first part of this extension will be used:
                         }
                     }
                 }
-                (result.interpro_matches.clone(), tm_domain_matches,
-                 coiled_coil_coords, disordered_region_coords)
-            } else {
-                (vec![], vec![], vec![], vec![])
-            };
 
-        let make_assigned_pfam_range = |start: usize, end: usize| {
-            AssignedByPeptideRange {
-                range: PeptideRange {
-                    start,
-                    end,
-                },
-                assigned_by: Some(flex_str!("Pfam")),
-            }
-        };
-
-        let low_complexity_region_coords =
-            if let Some(ref pfam_data) = self.pfam_data {
-                if let Some(ref uniprot_identifier) = uniprot_identifier {
-                    if let Some(result) = pfam_data.get(uniprot_identifier) {
-                        let mut low_complexity_region_coords = vec![];
-
-                        for motif in &result.motifs {
-                            let assigned_range = make_assigned_pfam_range(motif.start, motif.end);
-                            match &motif.motif_type as &str {
-                                "low_complexity" =>
-                                    low_complexity_region_coords.push(assigned_range),
-                                _ => (),
-                            }
+                let low_complexity_region_coords = result.segmasker_matches
+                    .iter()
+                    .map(|loc| {
+                        AssignedByPeptideRange {
+                            range: PeptideRange {
+                                start: loc.start,
+                                end: loc.end,
+                            },
+                            assigned_by: Some(flex_str!("InterProScan/segmasker")),
                         }
-                        low_complexity_region_coords
-                    } else {
-                        vec![]
-                    }
-                } else {
-                    vec![]
-                }
+                    })
+                    .collect();
+
+                (result.interpro_matches.clone(), tm_domain_matches,
+                 coiled_coil_coords, disordered_region_coords, low_complexity_region_coords)
             } else {
-                vec![]
+                (vec![], vec![], vec![], vec![], vec![])
             };
 
         let rfam_annotations =
