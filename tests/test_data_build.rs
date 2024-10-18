@@ -138,6 +138,7 @@ fn get_test_config() -> Config {
             modification_groups: vec![],
             full_display_excluded: HashSet::new(),
             domains_and_features_tracks: HashSet::new(),
+            modification_section_tracks: HashSet::new(),
         },
         apicuron: ApicuronConfig {
             resource_id: flex_str!("pombase"),
