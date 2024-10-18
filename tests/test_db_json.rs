@@ -753,7 +753,6 @@ fn get_test_web_data() -> WebData {
         domains_by_id: HashMap::new(),
     };
     let rnacentral_data = Some(HashMap::new());
-    let pfam_data = Some(HashMap::new());
     let uniprot_data = Some(parse_uniprot("tests/test_uniprot_data.tsv"));
     let gene_history = None;
     let chado_queries = ChadoQueries {
@@ -761,7 +760,7 @@ fn get_test_web_data() -> WebData {
         annotation_type_counts_by_year: StatsIntegerTable { header: vec![], data: vec![] },
     };
 
-    let web_data_build = WebDataBuild::new(&raw, domain_data, pfam_data,
+    let web_data_build = WebDataBuild::new(&raw, domain_data,
                                            uniprot_data,
                                            rnacentral_data, gene_history,
                                            None, None, chado_queries, &config);
