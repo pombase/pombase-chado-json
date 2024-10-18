@@ -1036,8 +1036,11 @@ impl APIData {
                         track.name.to_ascii_lowercase().starts_with("pfam") ||
                         prot_feat_conf.domains_and_features_tracks.contains(&track.name)
                     },
+                    ProteinViewType::Modifications =>
+                        prot_feat_conf.modification_section_tracks.contains(&track.name),  
                     ProteinViewType::Full => 
                         !prot_feat_conf.full_display_excluded.contains(&track.name),
+
                 }
             })
             .map(Clone::clone)

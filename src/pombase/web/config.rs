@@ -356,6 +356,7 @@ pub struct ProteinFeatureViewConfig {
     pub modification_extension_rel_types: HashSet<FlexStr>,
     pub widget_tracks: HashSet<FlexStr>,
     pub domains_and_features_tracks: HashSet<FlexStr>,
+    pub modification_section_tracks: HashSet<FlexStr>,
     pub modification_groups: Vec<ProteinFeatureViewModGroup>,
     pub full_display_excluded: HashSet<FlexStr>,
 }
