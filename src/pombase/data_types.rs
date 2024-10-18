@@ -127,6 +127,7 @@ pub trait GenericProteinFeature {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct AssignedByPeptideRange {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -147,6 +148,7 @@ impl GenericProteinFeature for AssignedByPeptideRange {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct SignalPeptide {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -167,6 +169,7 @@ impl GenericProteinFeature for SignalPeptide {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct TransitPeptide {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -188,6 +191,7 @@ impl GenericProteinFeature for TransitPeptide {
 pub struct BindingSite {
     pub ligand: FlexStr,
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -208,6 +212,7 @@ impl GenericProteinFeature for BindingSite {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct ActiveSite {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -228,6 +233,7 @@ impl GenericProteinFeature for ActiveSite {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BetaStrand {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -248,6 +254,7 @@ impl GenericProteinFeature for BetaStrand {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Helix {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -268,6 +275,7 @@ impl GenericProteinFeature for Helix {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Turn {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -288,6 +296,7 @@ impl GenericProteinFeature for Turn {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Propeptide {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -308,6 +317,7 @@ impl GenericProteinFeature for Propeptide {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Chain {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -328,8 +338,11 @@ impl GenericProteinFeature for Chain {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct GlycosylationSite {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -350,8 +363,11 @@ impl GenericProteinFeature for GlycosylationSite {
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct DisulfideBond {
     pub range: PeptideRange,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -373,8 +389,11 @@ impl GenericProteinFeature for DisulfideBond {
 pub struct LipidationSite {
     pub range: PeptideRange,
     pub termid: TermId,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
@@ -396,8 +415,11 @@ impl GenericProteinFeature for LipidationSite {
 pub struct ModifiedResidue {
     pub range: PeptideRange,
     pub termid: TermId,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
 }
 
