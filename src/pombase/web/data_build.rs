@@ -1953,7 +1953,7 @@ phenotypes, so just the first part of this extension will be used:
                     .collect::<Vec<_>>();
                 let mut coiled_coil_coords = vec![];
                 let mut disordered_region_coords = vec![];
-                
+
                 for interpro_match in result.interpro_matches.iter() {
                     let dbname = interpro_match.dbname.as_str();
                     if dbname == "COILS" || dbname == "MOBIDB-Disorder" {
@@ -1963,7 +1963,8 @@ phenotypes, so just the first part of this extension will be used:
                                     start: loc.start,
                                     end: loc.end,
                                 },
-                                assigned_by: Some(flex_fmt!("InterProScan/{}", dbname)),
+                                // adding the DB to every range would be excessive
+                                assigned_by: None,
                             };
 
                             if dbname == "COILS" {
@@ -1983,7 +1984,8 @@ phenotypes, so just the first part of this extension will be used:
                                 start: loc.start,
                                 end: loc.end,
                             },
-                            assigned_by: Some(flex_str!("InterProScan/segmasker")),
+                            // adding "segmasker" to every struct would be excessive
+                            assigned_by: None,
                         }
                     })
                     .collect();
