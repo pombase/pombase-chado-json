@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::usize;
 
 use regex::Regex;
 
@@ -111,6 +112,27 @@ fn parse_truncation_postion(desc_part: &str, seq_lenth: usize)
     Some((pos_name, start, seq_lenth))
 }
 
+fn positions_max_min(positions: &[(FlexStr, usize, usize)]) -> (usize, usize)
+{
+    if positions.len() == 0 {
+        panic!("internal error: empty list of positions");
+    }
+
+    let mut max = 0;
+    let mut min = usize::MAX;
+
+    for pos in positions {
+        if pos.2 > max {
+            max = pos.2;
+        }
+        if pos.1 < min {
+            min = pos.1;
+        }
+    }
+
+    (min, max)
+}
+
 fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
        -> Option<ProteinViewFeature>
 {
@@ -140,6 +162,8 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
     }
 
     if positions.len() > 0 {
+        let (min, max) = positions_max_min(&positions);
+
         Some(ProteinViewFeature {
             id: allele.uniquename.clone(),
             display_name: Some(allele.display_name()),
@@ -150,6 +174,8 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
             author_and_year: None,
             evidence: None,
             viability_level: ProteinViewViabilityLevel::NotApplicable,
+            feature_start: min,
+            feature_end: max,
             positions,
         })
     } else {
@@ -182,6 +208,8 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
                author_and_year: None,
                evidence: None,
                viability_level: ProteinViewViabilityLevel::NotApplicable,
+               feature_start: pos,
+               feature_end: pos,
                positions: vec![(residue_and_pos, pos, pos)],
             }
          })
@@ -419,7 +447,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                 let annotation_detail = annotation_details_map.get(&annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
-                let assigned_by = 
+                let assigned_by =
                     if let Some(ref assigned_by) = annotation_detail.assigned_by {
                         if assigned_by == config.database_name {
                             &None
@@ -499,6 +527,8 @@ fn make_modification_track(gene_details: &GeneDetails,
                                 author_and_year: None,
                                 evidence: evidence.clone(),
                                 viability_level: ProteinViewViabilityLevel::NotApplicable,
+                                feature_start: residue_pos,
+                                feature_end: residue_pos,
                                 positions: vec![(description, residue_pos, residue_pos)],
                             }
                         });
@@ -561,6 +591,8 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
                 author_and_year: None,
                 display_extension: BTreeSet::new(),
                 viability_level: ProteinViewViabilityLevel::NotApplicable,
+                feature_start: interpro_match.match_start,
+                feature_end: interpro_match.match_end,
                 positions,
             };
 
@@ -613,6 +645,8 @@ fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFea
                 author_and_year: None,
                 evidence: None,
                 viability_level: ProteinViewViabilityLevel::NotApplicable,
+                feature_start: start,
+                feature_end: end,
                 positions,
             }
         })
@@ -644,6 +678,8 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
                 author_and_year: None,
                 evidence: None,
                 viability_level: ProteinViewViabilityLevel::NotApplicable,
+                feature_start: start,
+                feature_end: end,
                 positions: vec![(feature_name.clone(), start, end)],
             }
         })
@@ -701,12 +737,15 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
                         feat.description.as_ref()
                         .or(feat.name.as_ref())
                         .unwrap_or_else(|| &feat.interpro_name);
-                    let positions = feat.locations
+                    let positions: Vec<_> = feat.locations
                         .iter()
                         .map(|loc| {
                             (feat_name.to_owned(), loc.start, loc.end)
                         })
                         .collect();
+
+                    let (min, max) = positions_max_min(&positions);
+
                     ProteinViewFeature {
                         id: feat.id.clone(),
                         display_name: Some(feat_name.to_owned()),
@@ -717,6 +756,8 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
                         author_and_year: None,
                         viability_level: ProteinViewViabilityLevel::NotApplicable,
                         evidence: None,
+                        feature_start: min,
+                        feature_end: max,
                         positions,
                     }
                 })
