@@ -2745,6 +2745,9 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
 
+    pub feature_start: usize,
+    pub feature_end: usize,
+
     // start, end pairs:
     pub positions: Vec<ProteinViewFeaturePos>,
 }

@@ -21,6 +21,9 @@ pub struct InterProMatch {
     pub description: Option<FlexStr>,
     pub interpro_id: FlexStr,
     pub interpro_name: FlexStr,
+    pub interpro_description: FlexStr,
+    pub match_start: usize,
+    pub match_end: usize,
     pub locations: Vec<Location>,
 }
 
