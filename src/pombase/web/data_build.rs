@@ -6706,19 +6706,23 @@ phenotypes, so just the first part of this extension will be used:
 
                 let mut new_subset_names = vec![];
 
-                if !interpro_match.interpro_id.is_empty() {
-                    let subset_name =
-                        String::from("interpro:") + &interpro_match.interpro_id;
-                    new_subset_names.push((subset_name.to_shared_str(),
-                                           interpro_match.interpro_name.clone()));
+                if let (Some(interpro_id), Some(interpro_name)) =
+                    (&interpro_match.interpro_id, &interpro_match.interpro_name) {
+                    if !interpro_id.is_empty() {
+                        let subset_name =
+                            String::from("interpro:") + interpro_id;
+                        new_subset_names.push((subset_name.to_shared_str(),
+                                               interpro_name.clone()));
+                    }
                 }
 
-                let subset_name = String::from("interpro:") +
-                     &interpro_match.dbname.clone() + ":" + &interpro_match.id;
-                let subset_display_name =
-                    interpro_match.name.as_ref().map(|n| n.to_string())
-                    .or(interpro_match.description.as_ref().map(|d| d.to_string()))
-                    .unwrap_or_else(|| subset_name.clone())
+                let subset_name = format!("interpro:{}:{}",
+                                          interpro_match.dbname,
+                                          interpro_match.id);
+                let subset_display_name = interpro_match.name.as_ref()
+                    .or(interpro_match.description.as_ref())
+                    .map(|s| s.as_str())
+                    .unwrap_or(subset_name.as_str())
                     .into();
                 new_subset_names.push((subset_name.to_shared_str(), subset_display_name));
 

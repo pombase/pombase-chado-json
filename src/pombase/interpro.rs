@@ -17,11 +17,16 @@ pub struct Location {
 pub struct InterProMatch {
     pub id: FlexStr,
     pub dbname: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub description: Option<FlexStr>,
-    pub interpro_id: FlexStr,
-    pub interpro_name: FlexStr,
-    pub interpro_description: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub interpro_id: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub interpro_name: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub interpro_description: Option<FlexStr>,
     pub match_start: usize,
     pub match_end: usize,
     pub locations: Vec<Location>,

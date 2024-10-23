@@ -167,6 +167,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
         Some(ProteinViewFeature {
             id: allele.uniquename.clone(),
             display_name: Some(allele.display_name()),
+            interpro_id: None,
             annotated_terms: BTreeSet::new(),
             feature_group: None,
             display_extension: BTreeSet::new(),
@@ -201,6 +202,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
             ProteinViewFeature {
                id: residue_and_pos.clone(),
                display_name: Some(residue_and_pos.clone()),
+               interpro_id: None,
                annotated_terms: BTreeSet::new(),
                feature_group: None,
                display_extension: BTreeSet::new(),
@@ -520,6 +522,7 @@ fn make_modification_track(gene_details: &GeneDetails,
                             ProteinViewFeature {
                                 id: description.clone(),
                                 display_name: Some(description.clone()),
+                                interpro_id: None,
                                 annotated_terms: BTreeSet::new(),
                                 feature_group,
                                 display_extension: BTreeSet::new(),
@@ -571,7 +574,8 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
         if interpro_match.dbname == "PFAM" {
             let match_name = interpro_match.name.as_ref()
                 .or(interpro_match.description.as_ref())
-                .unwrap_or_else(|| &interpro_match.interpro_name);
+                .or(interpro_match.interpro_name.as_ref())
+                .unwrap_or_else(|| &interpro_match.id);
             let positions = interpro_match
                 .locations
                 .iter()
@@ -584,6 +588,7 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
             let feature = ProteinViewFeature {
                 id: interpro_match.id.clone(),
                 display_name: Some(display_name),
+                interpro_id: interpro_match.interpro_id.clone(),
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 assigned_by: Some(flex_str!["InterPro"]),
@@ -638,6 +643,7 @@ fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFea
             ProteinViewFeature {
                 id: feature_name.clone(),
                 display_name: Some(feature_name.clone()),
+                interpro_id: None,
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 display_extension: BTreeSet::new(),
@@ -671,6 +677,7 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
             ProteinViewFeature {
                 id: feature_id,
                 display_name: Some(feature_name.clone()),
+                interpro_id: None,
                 annotated_terms: BTreeSet::new(),
                 feature_group: None,
                 display_extension: BTreeSet::new(),
@@ -726,6 +733,8 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
             .push(interpro_match.clone());
     }
 
+    let empty_str = &"".into();
+
     interpro_match_map
         .iter()
         .map(|(dbname, interpro_matches)| {
@@ -734,9 +743,10 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
                 .filter(|m| m.dbname != "PFAM")  // handled separately
                 .map(|feat| {
                     let feat_name =
-                        feat.description.as_ref()
+                        feat.interpro_name.as_ref()
+                        .or(feat.description.as_ref())
                         .or(feat.name.as_ref())
-                        .unwrap_or_else(|| &feat.interpro_name);
+                        .unwrap_or(empty_str);
                     let positions: Vec<_> = feat.locations
                         .iter()
                         .map(|loc| {
@@ -746,9 +756,12 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
 
                     let (min, max) = positions_max_min(&positions);
 
+                    let display_name = flex_fmt!("{}: {}", feat.id, feat_name);
+
                     ProteinViewFeature {
                         id: feat.id.clone(),
-                        display_name: Some(feat_name.to_owned()),
+                        display_name: Some(display_name),
+                        interpro_id: feat.interpro_id.clone(),
                         annotated_terms: BTreeSet::new(),
                         feature_group: None,
                         display_extension: BTreeSet::new(),
