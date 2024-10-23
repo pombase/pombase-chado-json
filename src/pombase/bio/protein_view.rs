@@ -599,7 +599,7 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
             features.push(feature.clone());
 
             let feature_track = ProteinViewTrack {
-                name: flex_fmt!("Pfam {}", interpro_match.id),
+                name: flex_fmt!("Pfam {}", interpro_match.name.as_ref().unwrap_or_else(|| &interpro_match.id)),
                 display_type: flex_str!("block"),
                 features: vec![feature],
             };
