@@ -2723,6 +2723,9 @@ pub struct ProteinViewFeature {
     #[serde(skip_serializing_if="Option::is_none")]
     pub display_name: Option<FlexStr>,
 
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub interpro_id: Option<FlexStr>,
+
     #[serde(skip_serializing_if="BTreeSet::is_empty", default)]
     pub annotated_terms: BTreeSet<TermNameAndId>,
 

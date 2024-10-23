@@ -390,8 +390,8 @@ fn protein_features(gene_details: &GeneDetails) -> String {
         protein_feature_html +=
             &format!("<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>\n",
                      interpro_match.id,
-                     interpro_match.name.as_ref().unwrap_or_else(|| empty_str),
-                     interpro_match.interpro_name,
+                     interpro_match.name.as_ref().unwrap_or(empty_str),
+                     interpro_match.interpro_name.as_ref().unwrap_or(empty_str),
                      interpro_match.dbname);
     }
 
