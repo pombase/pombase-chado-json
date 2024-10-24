@@ -572,18 +572,24 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
 
     for interpro_match in &gene_details.interpro_matches {
         if interpro_match.dbname == "PFAM" {
-            let match_name = interpro_match.name.as_ref()
-                .or(interpro_match.description.as_ref())
+            let match_name = interpro_match.description.as_ref()
                 .or(interpro_match.interpro_name.as_ref())
-                .unwrap_or_else(|| &interpro_match.id);
+                .or(interpro_match.description.as_ref())
+                .or(interpro_match.name.as_ref());
+
             let positions = interpro_match
                 .locations
                 .iter()
-                .map(|loc| (flex_fmt!("{}-{}..{}", match_name, loc.start, loc.end), loc.start, loc.end))
+                .map(|loc| (flex_fmt!("{}-{}..{}", match_name.unwrap_or(&interpro_match.id),
+                                      loc.start, loc.end), loc.start, loc.end))
                 .collect();
 
             let display_name =
-                flex_fmt!("{}: {}", interpro_match.id, match_name);
+                if let Some(match_name) = match_name {
+                    flex_fmt!("{}: {}", interpro_match.id, match_name)
+                } else {
+                    flex_fmt!("{}", interpro_match.id)
+                };
 
             let feature = ProteinViewFeature {
                 id: interpro_match.id.clone(),
@@ -743,7 +749,8 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
                 .filter(|m| m.dbname != "PFAM")  // handled separately
                 .map(|feat| {
                     let feat_name =
-                        feat.interpro_name.as_ref()
+                        feat.interpro_description.as_ref()
+                        .or(feat.interpro_name.as_ref())
                         .or(feat.description.as_ref())
                         .or(feat.name.as_ref())
                         .unwrap_or(empty_str);
