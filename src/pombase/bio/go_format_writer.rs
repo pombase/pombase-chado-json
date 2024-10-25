@@ -348,12 +348,18 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
 
     let db_object_taxon = make_ncbi_taxon_id(config);
 
-    let db_xrefs =
-        if let Some(ref uniprot_id) = gene_details.uniprot_identifier {
-            flex_fmt!("UniProtKB:{}", uniprot_id)
-        } else {
-            flex_str!("")
-        };
+    let mut db_xrefs_vec = vec![];
+
+    if let Some(ref uniprot_id) = gene_details.uniprot_identifier {
+        db_xrefs_vec.push(flex_fmt!("UniProtKB:{}", uniprot_id))
+    };
+
+    if let Some(ref rnacentral_urs_identifier) = gene_details.rnacentral_urs_identifier {
+        db_xrefs_vec.push(flex_fmt!("RNAcentral:{}_{}", rnacentral_urs_identifier,
+                                    gene_details.taxonid))
+    }
+
+    let db_xrefs = db_xrefs_vec.join("|");
 
     let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\tgo-annotation-summary={}\n",
                            db_object_id,
