@@ -1034,6 +1034,7 @@ dependencies = [
  "flexstr",
  "getopts",
  "http-body-util",
+ "indexmap 2.6.0",
  "itertools",
  "lazy_static",
  "mime_guess",

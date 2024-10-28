@@ -1,7 +1,8 @@
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::usize;
 
+use indexmap::IndexMap;
 use regex::Regex;
 
 
@@ -736,7 +737,7 @@ pub struct InterProTracks {
 pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
      -> InterProTracks
 {
-    let mut interpro_match_map = BTreeMap::new();
+    let mut interpro_match_map = IndexMap::new();
 
     for interpro_match in interpro_matches {
         interpro_match_map
