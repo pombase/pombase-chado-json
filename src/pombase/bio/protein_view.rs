@@ -727,8 +727,14 @@ fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
     deletions_track.features.sort_by(sorter);
 }
 
+pub struct InterProTracks {
+    disordered: Vec<ProteinViewTrack>,
+    coils: Vec<ProteinViewTrack>,
+    other: Vec<ProteinViewTrack>,
+}
+
 pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
-     -> Vec<ProteinViewTrack>
+     -> InterProTracks
 {
     let mut interpro_match_map = BTreeMap::new();
 
@@ -741,54 +747,70 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
 
     let empty_str = &"".into();
 
-    interpro_match_map
-        .iter()
-        .map(|(dbname, interpro_matches)| {
-            let features = interpro_matches
-                .iter()
-                .filter(|m| m.dbname != "PFAM")  // handled separately
-                .map(|feat| {
-                    let feat_name =
-                        feat.interpro_description.as_ref()
-                        .or(feat.interpro_name.as_ref())
-                        .or(feat.description.as_ref())
-                        .or(feat.name.as_ref())
-                        .unwrap_or(empty_str);
-                    let positions: Vec<_> = feat.locations
-                        .iter()
-                        .map(|loc| {
-                            (feat_name.to_owned(), loc.start, loc.end)
-                        })
-                        .collect();
+    let mut return_val = InterProTracks {
+        coils: vec![],
+        disordered: vec![],
+        other: vec![],
+    };
 
-                    let (min, max) = positions_max_min(&positions);
+    for (dbname, interpro_matches) in interpro_match_map.iter() {
+        let features = interpro_matches
+            .iter()
+            .filter(|m| m.dbname != "PFAM")  // handled separately
+            .map(|feat| {
+                let feat_name =
+                    feat.interpro_description.as_ref()
+                    .or(feat.interpro_name.as_ref())
+                    .or(feat.description.as_ref())
+                    .or(feat.name.as_ref())
+                    .unwrap_or(empty_str);
+                let positions: Vec<_> = feat.locations
+                    .iter()
+                    .map(|loc| {
+                        (feat_name.to_owned(), loc.start, loc.end)
+                    })
+                    .collect();
 
-                    let display_name = flex_fmt!("{}: {}", feat.id, feat_name);
+                let (min, max) = positions_max_min(&positions);
 
-                    ProteinViewFeature {
-                        id: feat.id.clone(),
-                        display_name: Some(display_name),
-                        interpro_id: feat.interpro_id.clone(),
-                        annotated_terms: BTreeSet::new(),
-                        feature_group: None,
-                        display_extension: BTreeSet::new(),
-                        assigned_by: Some(flex_fmt!("InterPro / {}", dbname)),
-                        author_and_year: None,
-                        viability_level: ProteinViewViabilityLevel::NotApplicable,
-                        evidence: None,
-                        feature_start: min,
-                        feature_end: max,
-                        positions,
-                    }
-                })
-                .collect();
-            ProteinViewTrack {
-                name: dbname.clone(),
-                display_type: flex_str!("block"),
-                features,
+                let display_name = flex_fmt!("{}: {}", feat.id, feat_name);
+
+                ProteinViewFeature {
+                    id: feat.id.clone(),
+                    display_name: Some(display_name),
+                    interpro_id: feat.interpro_id.clone(),
+                    annotated_terms: BTreeSet::new(),
+                    feature_group: None,
+                    display_extension: BTreeSet::new(),
+                    assigned_by: Some(flex_fmt!("InterPro / {}", dbname)),
+                    author_and_year: None,
+                    viability_level: ProteinViewViabilityLevel::NotApplicable,
+                    evidence: None,
+                    feature_start: min,
+                    feature_end: max,
+                    positions,
+                }
+            })
+            .collect();
+
+        let track = ProteinViewTrack {
+            name: dbname.clone(),
+            display_type: flex_str!("block"),
+            features,
+        };
+
+        if dbname == "COILS" {
+            return_val.coils.push(track);
+        } else {
+            if dbname.starts_with("MOBIDB") {
+                return_val.disordered.push(track);
+            } else {
+                return_val.other.push(track);
             }
-        })
-        .collect()
+        }
+    }
+
+    return_val
 }
 
 pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
@@ -907,19 +929,20 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
 
         tracks.extend(pfam_tracks);
 
-        let interpro_tracks = tracks_from_interpro(&gene_details.interpro_matches);
+        let interpro_tracks =
+            tracks_from_interpro(&gene_details.interpro_matches);
 
-        tracks.extend(interpro_tracks);
+        tracks.extend(interpro_tracks.other);
 
-        let other_tracks = vec![
-                 tm_domains_track,
-                 low_complexity_regions_track, coiled_coil_coords,
+        tracks.push(tm_domains_track);
+        tracks.extend_from_slice(&interpro_tracks.disordered);
+        tracks.extend_from_slice(&[low_complexity_regions_track,
+                 coiled_coil_coords,
                  signal_peptide_track, transit_peptide_track,
                  binding_sites_track, active_sites_track,
                  beta_strands_track, helix_track, turns_track,
-                 propeptides_track, chains_track];
+                 propeptides_track, chains_track]);
 
-        tracks.extend(other_tracks);
 
         let protein_view_data = ProteinViewData {
             sequence: protein.sequence.clone(),

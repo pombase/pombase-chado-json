@@ -405,6 +405,7 @@ pub struct Config {
     pub file_exports: FileExportConfig,
     pub gene_expression: GeneExpressionConfig,
     pub feature_sub_groups: HashMap<String, HashSet<String>>,
+    pub protein_feature_db_order: Vec<FlexStr>,
     pub protein_feature_view: ProteinFeatureViewConfig,
     pub apicuron: ApicuronConfig,
 }
