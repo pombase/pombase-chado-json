@@ -502,6 +502,7 @@
     "datasets": []
   },
   "feature_sub_groups": {},
+  "protein_feature_db_order": [],
   "protein_feature_view": {
     "modification_extension_rel_types": [],
     "widget_tracks": [],

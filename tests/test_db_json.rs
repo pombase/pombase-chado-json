@@ -701,6 +701,7 @@ fn get_test_config() -> Config {
             datasets: vec![],
         },
         feature_sub_groups: HashMap::new(),
+        protein_feature_db_order: vec![],
         protein_feature_view: ProteinFeatureViewConfig {
             modification_extension_rel_types: HashSet::new(),
             widget_tracks: HashSet::new(),
