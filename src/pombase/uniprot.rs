@@ -295,7 +295,8 @@ fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSit
     .collect()
 }
 
-fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResidue> {
+fn get_modified_residues(uniprot_record: &UniProtDataRecord,
+                         filter_references: &[FlexStr]) -> Vec<ModifiedResidue> {
     let mut modified_residues_parts_iter =
         SPLIT_RE.split(&uniprot_record.modified_residues);
     modified_residues_parts_iter.next();  // remove blank
@@ -389,6 +390,11 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResi
         let mut evidence_vec = parse_evidence(field_part);
         let (evidence, reference) =
             if let Some((evidence, reference)) = evidence_vec.pop() {
+                if let Some(ref reference) = reference {
+                    if filter_references.contains(&reference) {
+                        return None;
+                    }
+                }
                 (Some(evidence.into()), reference)
             } else {
                 (None, None)
@@ -417,7 +423,8 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord) -> Vec<ModifiedResi
     .collect()
 }
 
-fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
+fn process_record(uniprot_record: UniProtDataRecord,
+                  filter_references: &[FlexStr]) -> UniProtDataEntry {
     let gene_uniquename =
         if uniprot_record.gene_uniquename.ends_with(";") {
             let mut uniquename = uniprot_record.gene_uniquename.to_string();
@@ -551,7 +558,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     let glycosylation_sites = get_glycosylation_sites(&uniprot_record);
     let disulfide_bonds = get_disulfide_bonds(&uniprot_record);
     let lipidation_sites = get_lipidation_sites(&uniprot_record);
-    let modified_residues = get_modified_residues(&uniprot_record);
+    let modified_residues = get_modified_residues(&uniprot_record, filter_references);
 
     UniProtDataEntry {
         gene_uniquename: gene_uniquename.into(),
@@ -572,7 +579,7 @@ fn process_record(uniprot_record: UniProtDataRecord) -> UniProtDataEntry {
     }
 }
 
-pub fn parse_uniprot(file_name: &str) -> UniProtDataMap {
+pub fn parse_uniprot(file_name: &str, filter_references: &[FlexStr]) -> UniProtDataMap {
     let file = match File::open(file_name) {
         Ok(file) => file,
         Err(err) => {
@@ -596,7 +603,7 @@ pub fn parse_uniprot(file_name: &str) -> UniProtDataMap {
                 panic!("failed to read gene history CSV file: {}", e);
             });
 
-        let entry = process_record(record);
+        let entry = process_record(record, filter_references);
 
         res.insert(entry.gene_uniquename.clone(), entry);
     }

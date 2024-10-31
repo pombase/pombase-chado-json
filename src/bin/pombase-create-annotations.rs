@@ -7,9 +7,11 @@ use std::fs::File;
 use std::io;
 use std::process;
 
+use flexstr::shared_fmt as flex_fmt;
 use getopts::Options;
 
 use getopts::ParsingStyle;
+
 use pombase::bio::generic_annotation_writer::write_from_uniprot_map;
 use pombase::bio::generic_annotation_writer::UniProtTermidMap;
 use pombase::bio::util::read_fasta;
@@ -102,10 +104,13 @@ fn main() -> Result<(), Box<dyn Error>> {
         sub_opts.reqopt("", "assigned-by",
                         "Value for the assigned_by column", "SOURCE");
 
+        sub_opts.optopt("", "filter-references",
+                        "A comma separated list of PMIDs to ignore", "PMIDs");
+
         let sub_matches = match sub_opts.parse(&args) {
             Ok(m) => m,
             Err(e) => {
-                eprint_usage(&program, opts);
+                eprint_usage(&program, sub_opts);
                 println!("\nerror: {}", e);
                 process::exit(1);
             },
@@ -121,14 +126,24 @@ fn main() -> Result<(), Box<dyn Error>> {
         let peptide_filename = sub_matches.opt_str("peptide-fasta").unwrap();
         let mut peptide_file = File::open(peptide_filename)?;
         let peptides = read_fasta(&mut peptide_file)?;
+        let filter_references: Vec<_> = sub_matches.opt_str("filter-references")
+            .unwrap_or_default()
+            .trim()
+            .split(",")
+            .map(|s| flex_fmt!("PMID:{}", s.trim_start_matches("PMID:")))
+            .collect();
 
-        let file_name = &args[5];
+        let file_name_pos = 5 + if filter_references.len() > 0 { 1 } else { 0 };
+        let file_name = &args[file_name_pos];
 
-        let uniprot_data_map = filter_uniprot_map(parse_uniprot(file_name), &peptides);
+        let uniprot_data_map =
+            filter_uniprot_map(parse_uniprot(file_name, &filter_references),
+                               &peptides);
 
         let mut stdout = io::stdout().lock();
         write_from_uniprot_map(&uniprot_data_map, &uniprot_pmid,
-                               &termid_map, &assigned_by, &mut stdout)?;
+                               &termid_map, &assigned_by,
+                               &mut stdout)?;
     } else {
         eprintln!("unknown input file type: {}", input_file_type);
         eprint_usage(&program, opts);
