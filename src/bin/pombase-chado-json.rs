@@ -115,7 +115,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let connection_string = matches.opt_str("p").unwrap();
     let maybe_uniprot_file = matches.opt_str("uniprot-data-file");
     let filter_uniprot_references: Vec<_> =
-        matches.opt_str("filter-uniprot-referencesfilter-references")
+        matches.opt_str("filter-uniprot-references")
         .unwrap_or_default()
         .trim()
         .split(",")
