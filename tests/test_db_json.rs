@@ -755,7 +755,7 @@ fn get_test_web_data() -> WebData {
         domains_by_id: HashMap::new(),
     };
     let rnacentral_data = Some(HashMap::new());
-    let uniprot_data = Some(parse_uniprot("tests/test_uniprot_data.tsv"));
+    let uniprot_data = Some(parse_uniprot("tests/test_uniprot_data.tsv", &[]));
     let gene_history = None;
     let chado_queries = ChadoQueries {
         community_response_rates: vec![],
