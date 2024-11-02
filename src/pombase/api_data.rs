@@ -1033,7 +1033,9 @@ impl APIData {
                     ProteinViewType::Widget =>
                         prot_feat_conf.widget_tracks.contains(&track.name),
                     ProteinViewType::DomainsAndFeatures => {
-                        track.name.to_ascii_lowercase().starts_with("pfam") ||
+                        let lc_track_name = track.name.to_ascii_lowercase();
+                        (lc_track_name.starts_with("pfam") &&
+                         lc_track_name != "pfam domains") ||
                         prot_feat_conf.domains_and_features_tracks.contains(&track.name)
                     },
                     ProteinViewType::Modifications =>
