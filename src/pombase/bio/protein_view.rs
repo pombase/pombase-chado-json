@@ -638,8 +638,9 @@ fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFea
         features.iter().map(|f| {
             let start = f.start();
             let end = f.end();
-            let feature_name = flex_fmt!("{} {}..{}", track_name, start, end);
-            let feature_pos_name = flex_fmt!("{}-{}..{}", track_name, start, end);
+            let feature_name_start = f.feature_type().unwrap_or(track_name.clone());
+            let feature_name = flex_fmt!("{} {}..{}", feature_name_start, start, end);
+            let feature_pos_name = flex_fmt!("{}-{}..{}", feature_name_start, start, end);
             let positions =
                 if split_start_and_end {
                     vec![(feature_pos_name.clone(), start, start),
@@ -883,23 +884,19 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let coiled_coil_coords =
             make_generic_track(flex_str!("Coiled coils"), &gene_details.coiled_coil_coords, false);
 
-        let mut signal_peptides = vec![];
+        let mut localisation_signals = vec![];
 
         if let Some(ref signal_peptide) = gene_details.signal_peptide {
-            signal_peptides.push(signal_peptide.clone());
+            localisation_signals.push(signal_peptide.clone());
         }
-
-        let signal_peptide_track =
-            make_generic_track(flex_str!("Signal peptide"), &signal_peptides, false);
-
-        let mut transit_peptides = vec![];
 
         if let Some(ref transit_peptide) = gene_details.transit_peptide {
-            transit_peptides.push(transit_peptide.clone());
+            localisation_signals.push(transit_peptide.clone());
         }
 
-        let transit_peptide_track =
-            make_generic_track(flex_str!("Transit peptide"), &transit_peptides, false);
+        let localisation_signals_track =
+            make_generic_track(flex_str!("Localization signals"),
+                               &localisation_signals, false);
 
         let binding_sites_track = make_binding_sites_track(gene_details);
 
@@ -939,7 +936,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         tracks.extend_from_slice(&interpro_tracks.disordered);
         tracks.extend_from_slice(&[low_complexity_regions_track,
                  coiled_coil_coords,
-                 signal_peptide_track, transit_peptide_track,
+                 localisation_signals_track,
                  binding_sites_track, active_sites_track,
                  beta_strands_track, helix_track, turns_track,
                  propeptides_track, chains_track]);

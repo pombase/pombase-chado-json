@@ -119,6 +119,9 @@ pub trait GenericProteinFeature {
     fn start(&self) -> usize;
     fn end(&self) -> usize;
     fn assigned_by(&self) -> &Option<AssignedBy>;
+    fn feature_type(&self) -> Option<FlexStr> {
+        None
+    }
     fn length(&self) -> usize {
         self.end() - self.start() + 1
     }
@@ -146,13 +149,14 @@ impl GenericProteinFeature for AssignedByPeptideRange {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct SignalPeptide {
+pub struct LocalisationSignal {
     pub range: PeptideRange,
     #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
+    pub feature_type: FlexStr,
 }
 
-impl GenericProteinFeature for SignalPeptide {
+impl GenericProteinFeature for LocalisationSignal {
     fn start(&self) -> usize {
         self.range.start
     }
@@ -161,25 +165,8 @@ impl GenericProteinFeature for SignalPeptide {
         self.range.end
     }
 
-    fn assigned_by(&self) -> &Option<AssignedBy> {
-        &self.assigned_by
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct TransitPeptide {
-    pub range: PeptideRange,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub assigned_by: Option<AssignedBy>,
-}
-
-impl GenericProteinFeature for TransitPeptide {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn feature_type(&self) -> Option<FlexStr> {
+        Some(self.feature_type.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -1507,9 +1494,9 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub coiled_coil_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub signal_peptide: Option<SignalPeptide>,
+    pub signal_peptide: Option<LocalisationSignal>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub transit_peptide: Option<TransitPeptide>,
+    pub transit_peptide: Option<LocalisationSignal>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub binding_sites: Vec<BindingSite>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

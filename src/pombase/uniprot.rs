@@ -7,15 +7,15 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
 use crate::bio::util::SeqRecord;
-use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond, GlycosylationSite, Helix, LipidationSite, ModifiedResidue, PeptideRange, Propeptide, SignalPeptide, TransitPeptide, Turn};
+use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond, GlycosylationSite, Helix, LipidationSite, ModifiedResidue, PeptideRange, Propeptide, LocalisationSignal, Turn};
 use crate::types::{Evidence, GeneUniquename, ReferenceUniquename};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct UniProtDataEntry {
     pub gene_uniquename: GeneUniquename,
     pub sequence: FlexStr,
-    pub signal_peptide: Option<SignalPeptide>,
-    pub transit_peptide: Option<TransitPeptide>,
+    pub signal_peptide: Option<LocalisationSignal>,
+    pub transit_peptide: Option<LocalisationSignal>,
     pub binding_sites: Vec<BindingSite>,
     pub active_sites: Vec<ActiveSite>,
     pub beta_strands: Vec<BetaStrand>,
@@ -438,9 +438,10 @@ fn process_record(uniprot_record: UniProtDataRecord,
     if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide) {
         if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
             if let Some(range) = get_range(cap) {
-                signal_peptide = Some(SignalPeptide {
+                signal_peptide = Some(LocalisationSignal {
                     range,
                     assigned_by: Some(flex_str!("UniProt")),
+                    feature_type: flex_str!("signal peptide"),
                 })
             }
         }
@@ -450,9 +451,10 @@ fn process_record(uniprot_record: UniProtDataRecord,
     if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
         if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
             if let Some(range) = get_range(cap) {
-                transit_peptide = Some(TransitPeptide {
+                transit_peptide = Some(LocalisationSignal {
                     range,
                     assigned_by: Some(flex_str!("UniProt")),
+                    feature_type: flex_str!("transit peptide"),
                 });
             }
         }
