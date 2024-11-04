@@ -281,19 +281,24 @@ impl GenericProteinFeature for Turn {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Propeptide {
+pub struct BasicProteinFeature {
     pub range: PeptideRange,
     #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
+    pub feature_type: FlexStr,
 }
 
-impl GenericProteinFeature for Propeptide {
+impl GenericProteinFeature for BasicProteinFeature {
     fn start(&self) -> usize {
         self.range.start
     }
 
     fn end(&self) -> usize {
         self.range.end
+    }
+
+    fn feature_type(&self) -> Option<FlexStr> {
+        Some(self.feature_type.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -1508,7 +1513,7 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub turns: Vec<Turn>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub propeptides: Vec<Propeptide>,
+    pub propeptides: Vec<BasicProteinFeature>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub chains: Vec<Chain>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]

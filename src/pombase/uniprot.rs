@@ -7,7 +7,9 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
 use regex::{Captures, Regex};
 
 use crate::bio::util::SeqRecord;
-use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond, GlycosylationSite, Helix, LipidationSite, ModifiedResidue, PeptideRange, Propeptide, LocalisationSignal, Turn};
+use crate::data_types::{ActiveSite, BetaStrand, BindingSite, Chain, DisulfideBond,
+                        GlycosylationSite, Helix, LipidationSite, ModifiedResidue,
+                        PeptideRange, BasicProteinFeature, LocalisationSignal, Turn};
 use crate::types::{Evidence, GeneUniquename, ReferenceUniquename};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -21,7 +23,7 @@ pub struct UniProtDataEntry {
     pub beta_strands: Vec<BetaStrand>,
     pub helices: Vec<Helix>,
     pub turns: Vec<Turn>,
-    pub propeptides: Vec<Propeptide>,
+    pub propeptides: Vec<BasicProteinFeature>,
     pub chains: Vec<Chain>,
     pub glycosylation_sites: Vec<GlycosylationSite>,
     pub disulfide_bonds: Vec<DisulfideBond>,
@@ -119,16 +121,17 @@ fn first_field_part(field: &str) -> Option<String> {
     parts_iter.next().map(|s| s.to_owned())
 }
 
-fn get_propeptides(uniprot_record: &UniProtDataRecord) -> Vec<Propeptide> {
+fn get_propeptides(uniprot_record: &UniProtDataRecord) -> Vec<BasicProteinFeature> {
     let mut propeptides_parts_iter = SPLIT_RE.split(&uniprot_record.propeptides);
     propeptides_parts_iter.next();  // remove blank
 
     propeptides_parts_iter.filter_map(|field_part| {
         let cap = RANGE_RE.captures_iter(field_part).next()?;
         let range = get_range(cap)?;
-        Some(Propeptide {
+        Some(BasicProteinFeature {
             range,
             assigned_by: Some(flex_str!("UniProt")),
+            feature_type: flex_str!("propeptide"),
         })
     })
     .collect()

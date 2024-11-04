@@ -13,7 +13,8 @@ use crate::data_types::{AlleleDetails, AlleleShort, DisplayUniquenameGenotypeMap
                         ProteinDetails, ProteinViewData, ProteinViewFeature,
                         ProteinViewFeaturePos, ProteinViewTrack, TermIdDetailsMap,
                         TermNameAndId, UniquenameAlleleDetailsMap, UniquenameGeneMap,
-                        UniquenameReferenceMap, UniquenameTranscriptMap};
+                        UniquenameReferenceMap, UniquenameTranscriptMap, PeptideRange,
+                        AnnotationContainer, BasicProteinFeature};
 use crate::web::config::{Config, CvConfig};
 use crate::interpro::InterProMatch;
 
@@ -426,6 +427,26 @@ lazy_static! {
         Regex::new(r"^([ARNDCQEGHILKMFPOSUTWYVBZXJ]*(\d+))$").unwrap();
 }
 
+fn parse_residue(residue_str: &str) -> Option<(FlexStr, usize)>
+{
+    let Some(captures) = MODIFICATION_RESIDUE_RE.captures(residue_str)
+    else {
+        return None;
+    };
+
+    let (Some(residue_match), Some(pos_match)) = (captures.get(1), captures.get(2))
+    else {
+        return None;
+    };
+
+    let Ok(residue_pos) = pos_match.as_str().parse::<usize>()
+    else {
+        return None;
+    };
+
+    Some((residue_match.as_str().into(), residue_pos))
+}
+
 fn make_modification_track(gene_details: &GeneDetails,
                            config: &Config,
                            gene_details_maps: &UniquenameGeneMap,
@@ -483,22 +504,12 @@ fn make_modification_track(gene_details: &GeneDetails,
                 };
 
                 for residue_str in &annotation_residues {
-                    let Some(captures) = MODIFICATION_RESIDUE_RE.captures(residue_str)
+                    let Some((residue_aa, residue_pos)) = parse_residue(residue_str)
                     else {
                         continue;
                     };
 
-                    let (Some(residue_match), Some(pos_match)) = (captures.get(1), captures.get(2))
-                    else {
-                        continue;
-                    };
-
-                    let Ok(residue_pos) = pos_match.as_str().parse::<usize>()
-                    else {
-                        continue;
-                    };
-
-                    let description = flex_fmt!("{}: {}", term_name, residue_match.as_str());
+                    let description = flex_fmt!("{}: {}", term_name, residue_aa.as_str());
 
                     let feature = seen_modifications
                         .entry(description.clone())
@@ -815,6 +826,101 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
     return_val
 }
 
+struct SoAnnotation {
+    range: PeptideRange,
+    assigned_by: Option<FlexStr>,
+    term_name: FlexStr,
+}
+
+fn find_so_annotations_with_position(gene_details: &GeneDetails,
+                                     term_details_map: &TermIdDetailsMap,
+                                     annotation_details_map: &IdOntAnnotationDetailMap,
+                                     so_term: &str)
+   -> Vec<SoAnnotation>
+{
+    let Some(term_annotations) = gene_details.cv_annotations().get("sequence")
+    else {
+        return vec![];
+    };
+
+    let mut ret_vec = vec![];
+
+    for term_annotation in term_annotations {
+        if term_annotation.term != so_term {
+            continue;
+        }
+        for annotation_detail_id in &term_annotation.annotations {
+            let annotation_detail = annotation_details_map
+                .get(annotation_detail_id).unwrap();
+            let Some(ref residue_str) = annotation_detail.residue
+            else {
+                continue;
+            };
+
+            let bits: Vec<_> = residue_str.split("-").collect();
+            if bits.len() > 2 {
+                continue;
+            }
+
+            let Some((_, first_pos)) = parse_residue(bits.get(0).unwrap())
+            else {
+                continue;
+            };
+
+            let second_pos;
+
+            if let Some(second_bit) = bits.get(1) {
+                let Some((_, pos)) = parse_residue(*second_bit)
+                else {
+                   continue;
+                };
+                second_pos = pos;
+            } else {
+                second_pos = first_pos
+            }
+
+            let range = PeptideRange {
+                start: first_pos,
+                end: second_pos,
+            };
+
+            let term_name = term_details_map.get(&term_annotation.term)
+                .unwrap().name.clone().replace("_", " ").into();
+
+            ret_vec.push(SoAnnotation {
+                range,
+                assigned_by: annotation_detail.assigned_by.clone(),
+                term_name,
+            })
+       }
+    }
+
+    ret_vec
+}
+
+fn make_cleavage_sites_track(gene_details: &GeneDetails,
+                             term_details_map: &TermIdDetailsMap,
+                             annotation_details: &IdOntAnnotationDetailMap)
+    -> ProteinViewTrack
+{
+    let so_term_annotations =
+        find_so_annotations_with_position(gene_details, term_details_map,
+                                          annotation_details, "SO:0100011");
+
+
+
+    let cleavage_sites = so_term_annotations.into_iter()
+        .map(|so_annotation|
+            BasicProteinFeature {
+                range: so_annotation.range,
+                assigned_by: so_annotation.assigned_by,
+                feature_type: so_annotation.term_name, 
+            })
+        .collect();
+
+   make_generic_track(flex_str!("Cleavage sites"), &cleavage_sites, false)
+}
+
 pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                   term_details_map: &TermIdDetailsMap,
                                   annotation_details_map: &IdOntAnnotationDetailMap,
@@ -915,6 +1021,10 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let propeptides_track =
             make_generic_track(flex_str!("Propeptides"), &gene_details.propeptides, false);
 
+        let cleavage_sites_track =
+            make_cleavage_sites_track(gene_details, term_details_map,
+                                      annotation_details_map);
+
         let chains_track =
             make_generic_track(flex_str!("Chains"), &gene_details.chains, false);
 
@@ -939,7 +1049,8 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                  localisation_signals_track,
                  binding_sites_track, active_sites_track,
                  beta_strands_track, helix_track, turns_track,
-                 propeptides_track, chains_track]);
+                 propeptides_track, cleavage_sites_track,
+                 chains_track]);
 
 
         let protein_view_data = ProteinViewData {
