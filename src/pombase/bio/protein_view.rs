@@ -641,11 +641,11 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
     tracks
 }
 
-fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFeature>,
-                      split_start_and_end: bool)
-    -> ProteinViewTrack
+fn make_generic_features(track_name: FlexStr,
+                         features: &Vec<impl GenericProteinFeature>,
+                         split_start_and_end: bool)
+    -> Vec<ProteinViewFeature>
 {
-    let features =
         features.iter().map(|f| {
             let start = f.start();
             let end = f.end();
@@ -675,7 +675,15 @@ fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFea
                 positions,
             }
         })
-        .collect();
+        .collect()
+        
+}
+
+fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFeature>,
+                      split_start_and_end: bool)
+    -> ProteinViewTrack
+{
+    let features = make_generic_features(track_name.clone(), features, split_start_and_end);
 
     ProteinViewTrack {
         name: track_name,
@@ -684,9 +692,13 @@ fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFea
     }
 }
 
-fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
+fn make_binding_sites_track(gene_details: &GeneDetails,
+                            term_details_map: &TermIdDetailsMap,
+                            annotation_details: &IdOntAnnotationDetailMap)
+     -> ProteinViewTrack
+{
     let track_name = flex_str!("Binding sites");
-    let features =
+    let mut features: Vec<_> =
         gene_details.binding_sites.iter().map(|binding_site| {
             let ligand = &binding_site.ligand;
             let start = binding_site.range.start;
@@ -710,6 +722,22 @@ fn make_binding_sites_track(gene_details: &GeneDetails) -> ProteinViewTrack {
             }
         })
         .collect();
+
+    let sumo_features =
+        find_so_annotations_with_position(gene_details, term_details_map,
+                                          annotation_details, "SO:0002235");
+    features.extend_from_slice(&make_generic_features(track_name.clone(), &sumo_features, false));
+
+    let polypeptide_copper_ion_contact_features =
+        find_so_annotations_with_position(gene_details, term_details_map,
+                                          annotation_details, "SO:0001096");
+    features.extend_from_slice(&make_generic_features(track_name.clone(),
+                                                      &polypeptide_copper_ion_contact_features, false));     
+    
+    let pip_boxes_features =
+        find_so_annotations_with_position(gene_details, term_details_map,
+                                          annotation_details, "SO:0001810");        
+    features.extend_from_slice(&make_generic_features(track_name.clone(), &pip_boxes_features, false));
 
     ProteinViewTrack {
         name: track_name,
@@ -826,17 +854,11 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
     return_val
 }
 
-struct SoAnnotation {
-    range: PeptideRange,
-    assigned_by: Option<FlexStr>,
-    term_name: FlexStr,
-}
-
 fn find_so_annotations_with_position(gene_details: &GeneDetails,
                                      term_details_map: &TermIdDetailsMap,
                                      annotation_details_map: &IdOntAnnotationDetailMap,
                                      so_term: &str)
-   -> Vec<SoAnnotation>
+   -> Vec<BasicProteinFeature>
 {
     let Some(term_annotations) = gene_details.cv_annotations().get("sequence")
     else {
@@ -887,10 +909,10 @@ fn find_so_annotations_with_position(gene_details: &GeneDetails,
             let term_name = term_details_map.get(&term_annotation.term)
                 .unwrap().name.clone().replace("_", " ").into();
 
-            ret_vec.push(SoAnnotation {
+            ret_vec.push(BasicProteinFeature {
                 range,
                 assigned_by: annotation_detail.assigned_by.clone(),
-                term_name,
+                feature_type: term_name,
             })
        }
     }
@@ -903,22 +925,11 @@ fn make_cleavage_sites_track(gene_details: &GeneDetails,
                              annotation_details: &IdOntAnnotationDetailMap)
     -> ProteinViewTrack
 {
-    let so_term_annotations =
+    let cleavage_sites =
         find_so_annotations_with_position(gene_details, term_details_map,
                                           annotation_details, "SO:0100011");
 
-
-
-    let cleavage_sites = so_term_annotations.into_iter()
-        .map(|so_annotation|
-            BasicProteinFeature {
-                range: so_annotation.range,
-                assigned_by: so_annotation.assigned_by,
-                feature_type: so_annotation.term_name, 
-            })
-        .collect();
-
-   make_generic_track(flex_str!("Cleavage sites"), &cleavage_sites, false)
+    make_generic_track(flex_str!("Cleavage sites"), &cleavage_sites, false)
 }
 
 pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
@@ -990,7 +1001,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let coiled_coil_coords =
             make_generic_track(flex_str!("Coiled coils"), &gene_details.coiled_coil_coords, false);
 
-        let mut localisation_signals = vec![];
+        let mut localisation_signals: Vec<_> = vec![];
 
         if let Some(ref signal_peptide) = gene_details.signal_peptide {
             localisation_signals.push(signal_peptide.clone());
@@ -999,12 +1010,25 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         if let Some(ref transit_peptide) = gene_details.transit_peptide {
             localisation_signals.push(transit_peptide.clone());
         }
+        
+        let localization_signals_track_name = flex_str!("Localization signals");
+
+        for localisation_so_term in &["SO:0001531", "SO:0001528", "SO:0001806"] {
+            let signals =
+                find_so_annotations_with_position(gene_details, term_details_map,
+                                                  annotation_details_map, localisation_so_term);
+           
+            eprintln!("{}: {}", gene_details.uniquename, signals.len());
+            localisation_signals.extend_from_slice(&signals);
+            eprintln!("    {}", localisation_signals.len());
+        }
 
         let localisation_signals_track =
-            make_generic_track(flex_str!("Localization signals"),
+            make_generic_track(localization_signals_track_name,
                                &localisation_signals, false);
 
-        let binding_sites_track = make_binding_sites_track(gene_details);
+        let binding_sites_track =
+            make_binding_sites_track(gene_details, term_details_map, annotation_details_map);
 
         let active_sites_track =
             make_generic_track(flex_str!("Active sites"), &gene_details.active_sites, false);

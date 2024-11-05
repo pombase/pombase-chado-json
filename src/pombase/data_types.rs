@@ -149,32 +149,6 @@ impl GenericProteinFeature for AssignedByPeptideRange {
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct LocalisationSignal {
-    pub range: PeptideRange,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub assigned_by: Option<AssignedBy>,
-    pub feature_type: FlexStr,
-}
-
-impl GenericProteinFeature for LocalisationSignal {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
-    }
-
-    fn feature_type(&self) -> Option<FlexStr> {
-        Some(self.feature_type.clone())
-    }
-
-    fn assigned_by(&self) -> &Option<AssignedBy> {
-        &self.assigned_by
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BindingSite {
     pub ligand: FlexStr,
     pub range: PeptideRange,
@@ -1499,9 +1473,9 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub coiled_coil_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub signal_peptide: Option<LocalisationSignal>,
+    pub signal_peptide: Option<BasicProteinFeature>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub transit_peptide: Option<LocalisationSignal>,
+    pub transit_peptide: Option<BasicProteinFeature>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub binding_sites: Vec<BindingSite>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
