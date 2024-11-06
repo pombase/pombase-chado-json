@@ -676,7 +676,6 @@ fn make_generic_features(track_name: FlexStr,
             }
         })
         .collect()
-        
 }
 
 fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFeature>,
@@ -693,6 +692,7 @@ fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFea
 }
 
 fn make_binding_sites_track(gene_details: &GeneDetails,
+                            config: &Config,
                             term_details_map: &TermIdDetailsMap,
                             annotation_details: &IdOntAnnotationDetailMap)
      -> ProteinViewTrack
@@ -724,19 +724,19 @@ fn make_binding_sites_track(gene_details: &GeneDetails,
         .collect();
 
     let sumo_features =
-        find_so_annotations_with_position(gene_details, term_details_map,
+        find_so_annotations_with_position(gene_details, config, term_details_map,
                                           annotation_details, "SO:0002235");
     features.extend_from_slice(&make_generic_features(track_name.clone(), &sumo_features, false));
 
     let polypeptide_copper_ion_contact_features =
-        find_so_annotations_with_position(gene_details, term_details_map,
+        find_so_annotations_with_position(gene_details, config, term_details_map,
                                           annotation_details, "SO:0001096");
     features.extend_from_slice(&make_generic_features(track_name.clone(),
-                                                      &polypeptide_copper_ion_contact_features, false));     
-    
+                                                      &polypeptide_copper_ion_contact_features, false));
+
     let pip_boxes_features =
-        find_so_annotations_with_position(gene_details, term_details_map,
-                                          annotation_details, "SO:0001810");        
+        find_so_annotations_with_position(gene_details, config, term_details_map,
+                                          annotation_details, "SO:0001810");
     features.extend_from_slice(&make_generic_features(track_name.clone(), &pip_boxes_features, false));
 
     ProteinViewTrack {
@@ -855,6 +855,7 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
 }
 
 fn find_so_annotations_with_position(gene_details: &GeneDetails,
+                                     config: &Config,
                                      term_details_map: &TermIdDetailsMap,
                                      annotation_details_map: &IdOntAnnotationDetailMap,
                                      so_term: &str)
@@ -909,9 +910,20 @@ fn find_so_annotations_with_position(gene_details: &GeneDetails,
             let term_name = term_details_map.get(&term_annotation.term)
                 .unwrap().name.clone().replace("_", " ").into();
 
+            let assigned_by =
+                if let Some(ref assigned_by) = annotation_detail.assigned_by {
+                    if assigned_by == config.database_name {
+                        None
+                    } else {
+                        Some(assigned_by.to_owned())
+                    }
+                } else {
+                    None
+                };
+
             ret_vec.push(BasicProteinFeature {
                 range,
-                assigned_by: annotation_detail.assigned_by.clone(),
+                assigned_by,
                 feature_type: term_name,
             })
        }
@@ -921,12 +933,13 @@ fn find_so_annotations_with_position(gene_details: &GeneDetails,
 }
 
 fn make_cleavage_sites_track(gene_details: &GeneDetails,
+                             config: &Config,
                              term_details_map: &TermIdDetailsMap,
                              annotation_details: &IdOntAnnotationDetailMap)
     -> ProteinViewTrack
 {
     let cleavage_sites =
-        find_so_annotations_with_position(gene_details, term_details_map,
+        find_so_annotations_with_position(gene_details, config, term_details_map,
                                           annotation_details, "SO:0100011");
 
     make_generic_track(flex_str!("Cleavage sites"), &cleavage_sites, false)
@@ -1010,14 +1023,14 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         if let Some(ref transit_peptide) = gene_details.transit_peptide {
             localisation_signals.push(transit_peptide.clone());
         }
-        
+
         let localization_signals_track_name = flex_str!("Localization signals");
 
         for localisation_so_term in &["SO:0001531", "SO:0001528", "SO:0001806"] {
             let signals =
-                find_so_annotations_with_position(gene_details, term_details_map,
+                find_so_annotations_with_position(gene_details, config, term_details_map,
                                                   annotation_details_map, localisation_so_term);
-           
+
             eprintln!("{}: {}", gene_details.uniquename, signals.len());
             localisation_signals.extend_from_slice(&signals);
             eprintln!("    {}", localisation_signals.len());
@@ -1028,7 +1041,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                &localisation_signals, false);
 
         let binding_sites_track =
-            make_binding_sites_track(gene_details, term_details_map, annotation_details_map);
+            make_binding_sites_track(gene_details, config, term_details_map, annotation_details_map);
 
         let active_sites_track =
             make_generic_track(flex_str!("Active sites"), &gene_details.active_sites, false);
@@ -1046,7 +1059,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
             make_generic_track(flex_str!("Propeptides"), &gene_details.propeptides, false);
 
         let cleavage_sites_track =
-            make_cleavage_sites_track(gene_details, term_details_map,
+            make_cleavage_sites_track(gene_details, config, term_details_map,
                                       annotation_details_map);
 
         let chains_track =
