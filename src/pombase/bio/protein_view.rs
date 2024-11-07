@@ -1031,9 +1031,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                 find_so_annotations_with_position(gene_details, config, term_details_map,
                                                   annotation_details_map, localisation_so_term);
 
-            eprintln!("{}: {}", gene_details.uniquename, signals.len());
             localisation_signals.extend_from_slice(&signals);
-            eprintln!("    {}", localisation_signals.len());
         }
 
         let localisation_signals_track =
