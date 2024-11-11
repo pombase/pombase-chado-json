@@ -1037,6 +1037,21 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let localisation_signals_track =
             make_generic_track(localization_signals_track_name,
                                &localisation_signals, false);
+ 
+        let mut conserved_motif_features = vec![];
+
+        for conserved_motif_so_term in &["SO:0002230", "SO:0001807", "SO:0002159", "SO:0001805"] {
+            let features =
+                find_so_annotations_with_position(gene_details, config, term_details_map,
+                                                  annotation_details_map,
+                                                  conserved_motif_so_term);
+
+            conserved_motif_features.extend_from_slice(&features);
+        }
+
+        let conserved_motifs_track =
+            make_generic_track(flex_str!("Conserved motifs"),
+                               &conserved_motif_features, false);
 
         let binding_sites_track =
             make_binding_sites_track(gene_details, config, term_details_map, annotation_details_map);
@@ -1082,6 +1097,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         tracks.extend_from_slice(&[low_complexity_regions_track,
                  coiled_coil_coords,
                  localisation_signals_track,
+                 conserved_motifs_track,
                  binding_sites_track, active_sites_track,
                  beta_strands_track, helix_track, turns_track,
                  propeptides_track, cleavage_sites_track,
