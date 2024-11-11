@@ -433,7 +433,7 @@ fn test_format_fasta() {
 #[test]
 fn test_format_gff() {
     let gene = make_test_gene();
-    let mut transcripts = std::collections::HashMap::new();
+    let mut transcripts = HashMap::new();
     transcripts.insert( flex_str!("SPCC18B5.06.1"),
                        gene.transcripts_by_uniquename[&flex_str!("SPCC18B5.06.1")].clone().unwrap());
     let gene_gff_lines = format_gene_gff("chromosome_3", "PomBase",
@@ -482,7 +482,7 @@ TCAACCACATTCAA";
 
 use std::{cmp::Ordering, io::BufRead};
 #[cfg(test)]
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 use std::io::{self, BufReader};
 #[cfg(test)]
 use std::num::NonZeroUsize;
@@ -548,7 +548,7 @@ fn make_test_gene() -> GeneDetails {
         transcripts: vec![
             flex_str!("SPCC18B5.06.1"),
         ],
-        transcripts_by_uniquename: std::collections::HashMap::from([
+        transcripts_by_uniquename: HashMap::from([
             (flex_str!("SPCC18B5.06.1"),
              Some(TranscriptDetails {
                 uniquename: flex_str!("SPCC18B5.06.1"),
@@ -729,20 +729,21 @@ fn make_test_gene() -> GeneDetails {
                 rna_seq_length_unspliced: NonZeroUsize::new(730_829 - 729_054),
             })
         )]),
-        cv_annotations: std::collections::HashMap::new(),
+        cv_annotations: HashMap::new(),
         physical_interactions: vec![],
-        genetic_interactions: std::collections::HashMap::new(),
+        genetic_interactions: HashMap::new(),
         ortholog_annotations: vec![],
         paralog_annotations: vec![],
         target_of_annotations: vec![],
-        references_by_uniquename: std::collections::HashMap::new(),
-        genes_by_uniquename: std::collections::HashMap::new(),
-        genotypes_by_uniquename: std::collections::HashMap::new(),
-        alleles_by_uniquename: std::collections::HashMap::new(),
-        terms_by_termid: std::collections::HashMap::new(),
-        annotation_details: std::collections::HashMap::new(),
+        references_by_uniquename: HashMap::new(),
+        genes_by_uniquename: HashMap::new(),
+        genotypes_by_uniquename: HashMap::new(),
+        alleles_by_uniquename: HashMap::new(),
+        terms_by_termid: HashMap::new(),
+        annotation_details: HashMap::new(),
         feature_publications: HashSet::new(),
         subset_termids: HashSet::new(),
         gene_history: vec![],
+        split_by_parent_groups: HashMap::new(),
     }
 }

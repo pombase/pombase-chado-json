@@ -53,8 +53,10 @@ pub struct FilterConfig {
     pub extension_categories: Vec<AncestorFilterCategory>,
 }
 
+pub type SplitByParentsConfigName = FlexStr;
 #[derive(Deserialize, Clone, Debug)]
 pub struct SplitByParentsConfig {
+    pub config_name: SplitByParentsConfigName,
     pub termids: Vec<FlexStr>,
     pub display_name: FlexStr,
 }
@@ -97,6 +99,9 @@ pub struct TargetOfConfig {
 #[derive(Deserialize, Clone, Debug)]
 pub struct CvConfig {
     pub feature_type: FlexStr,
+
+    pub inherits_from: Option<FlexStr>,
+
     pub display_name: Option<FlexStr>,
     // filtering configured per CV
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -429,14 +434,33 @@ impl Config {
         }
     }
 
-    pub fn cv_config_by_name(&self, cv_name: &FlexStr) -> CvConfig {
+    pub fn cv_config_by_name(&self, cv_name: &FlexStr) -> Option<CvConfig> {
         if let Some(config) = self.cv_config.get(cv_name) {
-            config.clone()
+            if let Some(ref inherits_from) = config.inherits_from {
+                let parent_conf = self.cv_config.get(inherits_from).unwrap().clone();
+                Some(CvConfig {
+                    display_name: config.display_name.clone(),
+                    single_or_multi_locus: config.single_or_multi_locus.clone(),
+                    downstream_relations: config.downstream_relations.clone(),
+                    ..parent_conf
+                })
+            } else {
+                Some(config.clone())
+            }
+        } else {
+            None
+        }
+    }
+
+    pub fn cv_config_by_name_with_default(&self, cv_name: &FlexStr) -> CvConfig {
+        if let Some(config) = self.cv_config_by_name(cv_name) {
+            config
         } else {
             let empty_cv_config =
                 CvConfig {
                     feature_type: "".into(),
                     display_name: Some("".into()),
+                    inherits_from: None,
                     single_or_multi_locus: SingleOrMultiLocusConfig::NotApplicable,
                     filters: vec![],
                     split_by_parents: vec![],

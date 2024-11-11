@@ -732,6 +732,7 @@ fn get_test_config() -> Config {
     config.cv_config.insert(flex_str!("molecular_function"),
                             CvConfig {
                                 feature_type: flex_str!("Gene"),
+                                inherits_from: None,
                                 display_name: Some(flex_str!("molecular function")),
                                 single_or_multi_locus: SingleOrMultiLocusConfig::NotApplicable,
                                 filters: vec![],

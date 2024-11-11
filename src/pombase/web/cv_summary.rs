@@ -20,7 +20,7 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      data_lookup: &dyn DataLookup,
      annotation_details: &IdOntAnnotationDetailMap) {
     for (cv_name, term_annotations) in container.cv_annotations_mut() {
-        let cv_config = config.cv_config_by_name(cv_name);
+        let cv_config = config.cv_config_by_name_with_default(cv_name);
         make_cv_summary(&cv_config, children_by_termid,
                         include_gene, include_genotype, term_annotations,
                         data_lookup, annotation_details);

@@ -156,6 +156,7 @@ fn get_test_config() -> Config {
     config.cv_config.insert("molecular_function".to_shared_str(),
                             CvConfig {
                                 feature_type: "Gene".to_shared_str(),
+                                inherits_from: None,
                                 display_name: Some("molecular function".to_shared_str()),
                                 single_or_multi_locus: SingleOrMultiLocusConfig::NotApplicable,
                                 filters: vec![],
@@ -298,7 +299,7 @@ fn test_cmp_ont_annotation_detail() {
         |id1: &i32, id2: &i32| {
             let annotation1 = annotation_details_maps.get(id1).expect(&format!("{}", id1));
             let annotation2 = annotation_details_maps.get(id2).expect(&format!("{}", id2));
-            let cv_config = &config.cv_config_by_name(&flex_str!("molecular_function"));
+            let cv_config = &config.cv_config_by_name_with_default(&flex_str!("molecular_function"));
             pombase::sort_annotations::cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2,
                                       &api_data).unwrap()
@@ -677,7 +678,7 @@ fn test_collect_ext_summary_genes() {
 
     let api_data = get_api_data();
 
-    pombase::web::cv_summary::collect_ext_summary_genes(&config.cv_config_by_name(&flex_str!("molecular_function")),
+    pombase::web::cv_summary::collect_ext_summary_genes(&config.cv_config_by_name_with_default(&flex_str!("molecular_function")),
                                                         &mut rows, &api_data);
     assert_eq!(rows.len(), 11);
 

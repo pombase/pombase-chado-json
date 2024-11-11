@@ -1570,6 +1570,8 @@ pub struct GeneDetails {
     // "useful" means that the front end might need it, eg. slim term IDs
     pub subset_termids: HashSet<TermId>,
 
+    pub split_by_parent_groups: OntSplitByGroups,
+
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocams: HashSet<GoCamIdAndTitle>,
 
@@ -2201,6 +2203,9 @@ pub struct GeneExMeasurement {
 
 pub type OntName = FlexStr;
 pub type OntAnnotationMap = HashMap<OntName, Vec<OntTermAnnotations>>;
+
+pub type OntSplitByGroups = HashMap<OntName, HashMap<SplitByParentsConfigName, HashSet<TermId>>>;
+
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermAndRelation {

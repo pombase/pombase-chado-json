@@ -2084,6 +2084,7 @@ phenotypes, so just the first part of this extension will be used:
             annotation_details: HashMap::new(),
             feature_publications: HashSet::new(),
             subset_termids: HashSet::new(),
+            split_by_parent_groups: HashMap::new(),
 
             gene_history,
         };
@@ -3532,7 +3533,7 @@ phenotypes, so just the first part of this extension will be used:
     fn process_cvterms(&mut self) {
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
-                let cv_config = self.config.cv_config_by_name(&cvterm.cv.name);
+                let cv_config = self.config.cv_config_by_name_with_default(&cvterm.cv.name);
                 let annotation_feature_type = cv_config.feature_type.clone();
 
                 let mut pombase_gene_id = None;
@@ -6509,6 +6510,52 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn set_split_by_parent_sets(&mut self) {
+        for gene_details in self.genes.values_mut() {
+            for (cv_name, term_annotations) in gene_details.cv_annotations.iter() {
+                let Some(cv_config) = self.config.cv_config_by_name(cv_name)
+                else {
+                    continue;
+                };
+
+                let split_by_parents = &cv_config.split_by_parents;
+                let mut split_by_parent_groups = HashMap::new();
+
+                for term_annotation in term_annotations {
+                    let term_details = self.terms.get(&term_annotation.term).unwrap();
+                    let interesting_parent_ids = &term_details.interesting_parent_ids;
+
+                    for split_by_config in split_by_parents {
+                        for split_by_termid in &split_by_config.termids {
+                            let (split_by_termid, not_flag) =
+                                if let Some(without_prefex) = split_by_termid.strip_prefix("NOT ") {
+                                    (without_prefex, true)
+                                } else {
+                                    (split_by_termid.as_str(), false)
+                                };
+
+                            let is_in_this_split =
+                                term_annotation.term == split_by_termid ||
+                                interesting_parent_ids.contains(split_by_termid);
+
+                            if not_flag && !is_in_this_split || !not_flag && is_in_this_split {
+                                split_by_parent_groups
+                                    .entry(split_by_config.config_name.clone())
+                                    .or_insert_with(HashSet::new)
+                                    .insert(term_annotation.term.clone());
+                            }
+                        }
+                    }
+                }
+
+                if !split_by_parent_groups.is_empty() {
+                    gene_details.split_by_parent_groups
+                        .insert(cv_name.clone(), split_by_parent_groups);
+                }
+            }
+        }
+    }
+
     // make gene subsets for genes the are not in a slim category
     fn make_non_slim_subset(&self, cv_name: &FlexStr, slim_subset: &TermSubsetDetails)
                             -> IdGeneSubsetMap
@@ -7661,6 +7708,7 @@ phenotypes, so just the first part of this extension will be used:
         self.set_reference_details_maps();
         self.set_chromosome_gene_counts();
         self.set_counts();
+        self.set_split_by_parent_sets();
         self.set_protein_feature_fields();
         self.add_genotypes_to_allele_details();
         self.make_subsets();

@@ -137,6 +137,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         feature_publications: HashSet::new(),
         subset_termids: HashSet::new(),
         gene_history: vec![],
+        split_by_parent_groups: HashMap::new(),
     }
 }
 
