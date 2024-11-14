@@ -671,18 +671,17 @@ fn get_test_summary_rows() -> Vec<TermSummaryRow> {
 
 #[test]
 fn test_collect_ext_summary_genes() {
-    let config = get_test_config();
-
     let mut rows = get_test_summary_rows();
     assert_eq!(rows.len(), 13);
 
     let api_data = get_api_data();
 
-    pombase::web::cv_summary::collect_ext_summary_genes(&config.cv_config_by_name_with_default(&flex_str!("molecular_function")),
-                                                        &mut rows, &api_data);
+    pombase::web::cv_summary::collect_ext_summary_genes("has_substrate", &mut rows, &api_data);
+
     assert_eq!(rows.len(), 11);
 
     let collected_ext = rows.get(6).unwrap();
+
     let collected_ext_ext_part_1 = collected_ext.extension.get(0).unwrap();
     let summary_genes_vec = vec![vec!["SPAC16.01".to_shared_str()],
                                  vec!["SPAC3G9.09c".to_shared_str()]];
