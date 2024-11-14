@@ -59,18 +59,28 @@ fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart]
                         data_lookup: &dyn DataLookup) -> Ordering {
     let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
 
+    let mut ext1_for_cmp = ext1.to_owned();
+    let mut ext2_for_cmp = ext2.to_owned();
+
     let is_grouping_rel_name =
-        |ext: &ExtPart| !conf_rel_ranges.contains(&ext.rel_type_name);
+        |ext: &ExtPart| conf_rel_ranges.contains(&ext.rel_type_name);
 
     // put the extension that will be grouped in the summary at the end
     // See: https://github.com/pombase/pombase-chado/issues/636
-    let (mut ext1_for_cmp, ext1_rest): (Vec<ExtPart>, Vec<ExtPart>) =
-        ext1.iter().cloned().partition(&is_grouping_rel_name);
-    ext1_for_cmp.extend(ext1_rest);
 
-    let (mut ext2_for_cmp, ext2_rest): (Vec<ExtPart>, Vec<ExtPart>) =
-        ext2.iter().cloned().partition(&is_grouping_rel_name);
-    ext2_for_cmp.extend(ext2_rest);
+    let first_ext1_collect_rel_idx = ext1.iter().position(is_grouping_rel_name);
+
+    if let Some(ext1_collect_rel_idx) = first_ext1_collect_rel_idx {
+        let ext1_cellect_rel = ext1_for_cmp.remove(ext1_collect_rel_idx);
+        ext1_for_cmp.push(ext1_cellect_rel);
+    }
+
+    let first_ext2_collect_rel_idx = ext2.iter().position(is_grouping_rel_name);
+
+    if let Some(ext2_collect_rel_idx) = first_ext2_collect_rel_idx {
+        let ext2_cellect_rel = ext2_for_cmp.remove(ext2_collect_rel_idx);
+        ext2_for_cmp.push(ext2_cellect_rel);
+    }
 
     let iter = ext1_for_cmp.iter().zip(&ext2_for_cmp).enumerate();
     for (_, (ext1_part, ext2_part)) in iter {

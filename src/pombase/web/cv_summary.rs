@@ -99,16 +99,15 @@ to merge_ext_part_ranges(): {:?} {:?}", ext_part1, ext_part2);
 }
 
 // turn "has_substrate(gene1)" "has_substrate(gene2)" into "has_substrate(gene1,gene2)"
-pub fn collect_ext_summary_genes(cv_config: &CvConfig, rows: &mut Vec<TermSummaryRow>,
+pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>,
                                  data_lookup: &dyn DataLookup) {
 
-    let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
     let merge_range_rel_p =
         |ext_part: &ExtPart| {
             match ext_part.ext_range {
                 ExtRange::SummaryGenes(_) | ExtRange::SummaryTranscripts(_) | ExtRange::SummaryTerms(_) |
                 ExtRange::ModifiedResidues(_) =>
-                    conf_rel_ranges.contains(&ext_part.rel_type_name),
+                    rel_range == ext_part.rel_type_name.as_str(),
                 _ =>false
             }
         };
@@ -551,7 +550,10 @@ fn make_cv_summary(cv_config: &CvConfig,
     for term_and_annotations in &mut term_and_annotations_vec.iter_mut() {
         if let Some(ref mut summary) = term_and_annotations.summary {
             collect_summary_rows(data_lookup, summary);
-            collect_ext_summary_genes(cv_config, summary, data_lookup);
+            let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
+            for rel_range in conf_rel_ranges {
+                collect_ext_summary_genes(rel_range, summary, data_lookup);
+            }
         }
     }
 }
