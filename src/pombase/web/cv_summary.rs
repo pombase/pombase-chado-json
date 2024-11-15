@@ -111,54 +111,68 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
                 _ =>false
             }
         };
-    let mut ret_rows = vec![];
 
-    {
-        let mut row_iter = rows.iter().cloned();
+    let mut rows_mut: Vec<_> = rows.to_owned().into_iter().map(|el| Some(el)).collect();
 
-        if let Some(mut prev_row) = row_iter.next() {
-            for current_row in row_iter {
-                if prev_row.gene_uniquenames != current_row.gene_uniquenames ||
-                    prev_row.genotype_uniquenames != current_row.genotype_uniquenames {
-                        ret_rows.push(prev_row);
-                        prev_row = current_row;
-                        continue;
-                    }
+    rows.truncate(0);
 
-                let mut prev_row_extension = prev_row.extension.clone();
-                let prev_matching_ext_part_result =
-                    remove_first_with_index(&mut prev_row_extension, &merge_range_rel_p);
-                let mut current_row_extension = current_row.extension.clone();
-                let current_matching_ext_part =
-                    remove_first(&mut current_row_extension, &merge_range_rel_p);
+    loop {
 
-                if let (Some((prev_ext_part, prev_removed_index)), Some(current_ext_part)) =
-                    (prev_matching_ext_part_result, current_matching_ext_part) {
+        let Some(first_some_idx) = rows_mut.iter().position(|r| r.is_some())
+        else {
+            break;
+        };
 
-                        if mem::discriminant(&prev_ext_part.ext_range) ==
-                            mem::discriminant(&current_ext_part.ext_range) &&
-                            current_row_extension == prev_row_extension &&
-                            prev_ext_part.rel_type_display_name == current_ext_part.rel_type_display_name {
-                                let merged_ext_parts =
-                                    merge_ext_part_ranges(&prev_ext_part,
-                                                          &current_ext_part,
-                                                          data_lookup);
-                                let mut new_ext = prev_row_extension.clone();
-                                new_ext.insert(prev_removed_index, merged_ext_parts);
-                                prev_row.extension = new_ext;
-                                continue;
-                            }
-                    }
+        let mut prev_row = std::mem::replace(&mut rows_mut[first_some_idx], None).unwrap();
 
-                ret_rows.push(prev_row);
-                prev_row = current_row;
+        for current_idx in 0..rows_mut.len() {
+
+            if rows_mut[current_idx].is_none() {
+                continue;
             }
 
-            ret_rows.push(prev_row);
-        }
-    }
+            let current_row = &mut rows_mut[current_idx];
 
-    *rows = ret_rows;
+            if prev_row.gene_uniquenames != current_row.as_ref().unwrap().gene_uniquenames ||
+                prev_row.genotype_uniquenames != current_row.as_ref().unwrap().genotype_uniquenames
+            {
+                continue;
+            }
+
+            let mut prev_row_extension = prev_row.extension.clone();
+            let prev_matching_ext_part_result =
+                remove_first_with_index(&mut prev_row_extension, &merge_range_rel_p);
+            let mut current_row_extension = current_row.as_ref().unwrap().extension.clone();
+            let current_matching_ext_part =
+                remove_first(&mut current_row_extension, &merge_range_rel_p);
+
+            if let (Some((prev_ext_part, prev_removed_index)), Some(current_ext_part)) =
+                (prev_matching_ext_part_result, current_matching_ext_part)
+            {
+
+                if mem::discriminant(&prev_ext_part.ext_range) ==
+                    mem::discriminant(&current_ext_part.ext_range) &&
+                    current_row_extension == prev_row_extension &&
+                    prev_ext_part.rel_type_display_name == current_ext_part.rel_type_display_name
+                {
+                    let merged_ext_parts =
+                        merge_ext_part_ranges(&prev_ext_part,
+                                              &current_ext_part,
+                                              data_lookup);
+                    let mut new_ext = prev_row_extension.clone();
+                    new_ext.insert(prev_removed_index, merged_ext_parts);
+                    prev_row.extension = new_ext;
+
+                    rows_mut[current_idx] = None;
+
+                    continue;
+                }
+            }
+
+        }
+
+        rows.push(prev_row);
+    }
 }
 
 fn sort_genotype_uniquenames(data_lookup: &dyn DataLookup,
