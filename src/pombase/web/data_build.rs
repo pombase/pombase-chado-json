@@ -4040,6 +4040,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut allele_promoters = vec![];
             let mut throughput: Option<Throughput> = None;
             let mut curator_orcid: Option<CuratorOrcid> = None;
+            let mut curation_session: Option<CurationSessionKey> = None;
 
             // need to get evidence first as it's used later
             // See: https://github.com/pombase/website/issues/455
@@ -4134,6 +4135,9 @@ phenotypes, so just the first part of this extension will be used:
                     },
                     "curator_orcid" => {
                         curator_orcid = prop.value.clone();
+                    },
+                    "canto_session" => {
+                        curation_session = prop.value.clone();
                     },
                     "annotation_throughput_type" => {
                         if let Some(throughput_type) = prop.value.clone() {
@@ -4273,6 +4277,7 @@ phenotypes, so just the first part of this extension will be used:
                 genes: gene_uniquenames_vec,
                 transcript_uniquenames,
                 reference: reference_uniquename,
+                curation_session,
                 genotype: maybe_genotype_uniquename,
                 genotype_background,
                 allele_promoters,

@@ -6,6 +6,7 @@ pub type MiscExtRange = FlexStr;
 pub type GeneUniquename = FlexStr;
 pub type TermUniquename = FlexStr;
 pub type ReferenceUniquename = FlexStr;
+pub type CurationSessionKey = FlexStr;
 pub type GeneName = FlexStr;
 pub type TypeName = FlexStr;
 pub type GeneProduct = FlexStr;

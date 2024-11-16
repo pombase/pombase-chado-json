@@ -1082,6 +1082,8 @@ pub struct OntAnnotationDetail {
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub curation_session: Option<CurationSessionKey>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub eco_evidence: Option<Evidence>,
