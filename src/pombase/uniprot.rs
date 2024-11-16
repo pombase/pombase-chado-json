@@ -382,7 +382,7 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord,
     note_to_termid_map.insert("N6-acetyllysine".to_owned(),
                               "MOD:00064".to_owned());
     note_to_termid_map.insert("2,3-didehydroalanine (Cys)".to_owned(),
-                              "MOD:0116".to_owned());
+                              "MOD:00793".to_owned());
     note_to_termid_map.insert("3,4-dihydroxyproline".to_owned(),
                               "MOD:01402".to_owned());
 
