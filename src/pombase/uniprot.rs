@@ -37,7 +37,7 @@ pub type UniProtDataMap = HashMap<GeneUniquename, UniProtDataEntry>;
 struct UniProtDataRecord {
 //    #[serde(rename = "Entry")]
 //    uniprot_accession: String,
-    #[serde(rename = "PomBase")]
+    #[serde(rename = "Uniquename")]
     gene_uniquename: String,
     #[serde(rename = "Signal peptide")]
     signal_peptide: String,
