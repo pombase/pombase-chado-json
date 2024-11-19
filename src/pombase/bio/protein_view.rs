@@ -646,9 +646,12 @@ fn make_generic_features(track_name: FlexStr,
                          split_start_and_end: bool)
     -> Vec<ProteinViewFeature>
 {
-        features.iter().map(|f| {
-            let start = f.start();
-            let end = f.end();
+        features.iter().filter_map(|f| {
+            let Some(PeptideRange { start, end }) = f.range()
+            else {
+                return None;
+            };
+
             let feature_name_start = f.feature_type().unwrap_or(track_name.clone());
             let feature_name = flex_fmt!("{} {}..{}", feature_name_start, start, end);
             let feature_pos_name = flex_fmt!("{}-{}..{}", feature_name_start, start, end);
@@ -659,7 +662,7 @@ fn make_generic_features(track_name: FlexStr,
                 } else {
                     vec![(feature_pos_name, start, end)]
                 };
-            ProteinViewFeature {
+            Some(ProteinViewFeature {
                 id: feature_name.clone(),
                 display_name: Some(feature_name.clone()),
                 interpro_id: None,
@@ -673,7 +676,7 @@ fn make_generic_features(track_name: FlexStr,
                 feature_start: start,
                 feature_end: end,
                 positions,
-            }
+            })
         })
         .collect()
 }
@@ -902,10 +905,10 @@ fn find_so_annotations_with_position(gene_details: &GeneDetails,
                 second_pos = first_pos
             }
 
-            let range = PeptideRange {
+            let range = Some(PeptideRange {
                 start: first_pos,
                 end: second_pos,
-            };
+            });
 
             let term_name = term_details_map.get(&term_annotation.term)
                 .unwrap().name.clone().replace("_", " ").into();

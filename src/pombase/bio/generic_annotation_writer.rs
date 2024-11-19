@@ -188,12 +188,17 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
     if let Some(signal_peptide) = uniprot_data.signal_peptide.as_ref() {
       if let Some(ref termid) = signal_peptide.termid {
         let evidence = signal_peptide.evidence.as_deref().unwrap_or_default();
-        let range = &signal_peptide.range;
-        let residue_extension = if range.start == range.end {
-          format!("residue({})", range.start)
-        } else {
-          format!("residue({}-{})", range.start, range.end)
-        };
+        let range = signal_peptide.range.clone();
+        let residue_extension =
+            if let Some(range) = range {
+                if range.start == range.end {
+                  format!("residue({})", range.start)
+                } else {
+                  format!("residue({}-{})", range.start, range.end)
+                }
+            } else {
+                "".to_owned()
+            };
         write_generic_annotation(&mut writer,
                                 &transcript_uniquename,
                                 "",
@@ -211,11 +216,16 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
       if let Some(ref termid) = transit_peptide.termid {
         let evidence = transit_peptide.evidence.as_deref().unwrap_or_default();
         let range = &transit_peptide.range;
-        let residue_extension = if range.start == range.end {
-          format!("residue({})", range.start)
-        } else {
-          format!("residue({}-{})", range.start, range.end)
-        };
+        let residue_extension =
+            if let Some(range) = range {
+                if range.start == range.end {
+                  format!("residue({})", range.start)
+                } else {
+                  format!("residue({}-{})", range.start, range.end)
+                }
+            } else {
+                "".to_owned()
+            };
         write_generic_annotation(&mut writer,
                                 &transcript_uniquename,
                                 "",

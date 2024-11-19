@@ -127,7 +127,7 @@ fn get_propeptides(uniprot_record: &UniProtDataRecord) -> Vec<BasicProteinFeatur
 
     propeptides_parts_iter.filter_map(|field_part| {
         let cap = RANGE_RE.captures_iter(field_part).next()?;
-        let range = get_range(cap)?;
+        let range = get_range(cap);
 
         let mut evidence_vec = parse_evidence(field_part);
         let (evidence, reference) =
@@ -452,50 +452,49 @@ fn process_record(uniprot_record: UniProtDataRecord,
     let mut signal_peptide = None;
     if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide) {
         if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
-            if let Some(range) = get_range(cap) {
+            let range = get_range(cap);
 
-                let mut evidence_vec = parse_evidence(field_part.as_str());
-                let (evidence, reference) =
-                if let Some((evidence, reference)) = evidence_vec.pop() {
-                   (Some(evidence.clone()), reference)
-                } else {
-                   (None, None)
-                };
+            let mut evidence_vec = parse_evidence(field_part.as_str());
+            let (evidence, reference) =
+            if let Some((evidence, reference)) = evidence_vec.pop() {
+               (Some(evidence.clone()), reference)
+            } else {
+               (None, None)
+            };
 
-                signal_peptide = Some(BasicProteinFeature {
-                    range,
-                    assigned_by: Some(flex_str!("UniProt")),
-                    evidence,
-                    reference,
-                    feature_type: flex_str!("signal peptide"),
-                    termid: Some(flex_str!("SO:0000418")),
-                })
-            }
+            signal_peptide = Some(BasicProteinFeature {
+                range,
+                assigned_by: Some(flex_str!("UniProt")),
+                evidence,
+                reference,
+                feature_type: flex_str!("signal peptide"),
+                termid: Some(flex_str!("SO:0000418")),
+            })
         }
     }
 
     let mut transit_peptide = None;
     if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
         if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
-            if let Some(range) = get_range(cap) {
+            let range = get_range(cap);
 
-                let mut evidence_vec = parse_evidence(field_part.as_str());
-                let (evidence, reference) =
-                if let Some((evidence, reference)) = evidence_vec.pop() {
-                   (Some(evidence.clone()), reference)
-                } else {
-                   (None, None)
-                };
+            let mut evidence_vec = parse_evidence(field_part.as_str());
+            let (evidence, reference) =
+            if let Some((evidence, reference)) = evidence_vec.pop() {
+               (Some(evidence.clone()), reference)
+            } else {
+               (None, None)
+            };
 
-                transit_peptide = Some(BasicProteinFeature {
-                    range,
-                    assigned_by: Some(flex_str!("UniProt")),
-                    evidence,
-                    reference,
-                    feature_type: flex_str!("transit peptide"),
-                    termid: Some(flex_str!("SO:0001808")),
-                });
-            }
+            transit_peptide = Some(BasicProteinFeature {
+                range,
+                assigned_by: Some(flex_str!("UniProt")),
+                evidence,
+                reference,
+                feature_type: flex_str!("transit peptide"),
+                termid: Some(flex_str!("SO:0001808")),
+            });
+
         }
     }
 
@@ -669,6 +668,8 @@ pub fn filter_uniprot_map(mut uniprot_data_map: UniProtDataMap,
         if let Some(uniprot_data) = uniprot_data_map.remove(gene_uniquename) {
             if &peptide.sequence == uniprot_data.sequence.as_str() {
                 return_map.insert(uniprot_data.gene_uniquename.clone(), uniprot_data);
+            } else {
+                eprintln!("sequence doesn't match UniProt: {}", uniprot_data.gene_uniquename);
             }
         }
     }

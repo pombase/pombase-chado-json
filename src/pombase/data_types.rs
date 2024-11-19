@@ -116,14 +116,10 @@ impl Display for PeptideRange {
 }
 
 pub trait GenericProteinFeature {
-    fn start(&self) -> usize;
-    fn end(&self) -> usize;
+    fn range(&self) -> Option<PeptideRange>;
     fn assigned_by(&self) -> &Option<AssignedBy>;
     fn feature_type(&self) -> Option<FlexStr> {
         None
-    }
-    fn length(&self) -> usize {
-        self.end() - self.start() + 1
     }
 }
 
@@ -135,12 +131,8 @@ pub struct AssignedByPeptideRange {
 }
 
 impl GenericProteinFeature for AssignedByPeptideRange {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())        
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -157,12 +149,8 @@ pub struct BindingSite {
 }
 
 impl GenericProteinFeature for BindingSite {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -178,12 +166,8 @@ pub struct ActiveSite {
 }
 
 impl GenericProteinFeature for ActiveSite {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -199,12 +183,8 @@ pub struct BetaStrand {
 }
 
 impl GenericProteinFeature for BetaStrand {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -220,12 +200,8 @@ pub struct Helix {
 }
 
 impl GenericProteinFeature for Helix {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -241,12 +217,8 @@ pub struct Turn {
 }
 
 impl GenericProteinFeature for Turn {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -256,7 +228,7 @@ impl GenericProteinFeature for Turn {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BasicProteinFeature {
-    pub range: PeptideRange,
+    pub range: Option<PeptideRange>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
     pub evidence: Option<Evidence>,
@@ -266,12 +238,8 @@ pub struct BasicProteinFeature {
 }
 
 impl GenericProteinFeature for BasicProteinFeature {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        self.range.clone()
     }
 
     fn feature_type(&self) -> Option<FlexStr> {
@@ -291,12 +259,8 @@ pub struct Chain {
 }
 
 impl GenericProteinFeature for Chain {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -316,12 +280,8 @@ pub struct GlycosylationSite {
 }
 
 impl GenericProteinFeature for GlycosylationSite {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -341,12 +301,8 @@ pub struct DisulfideBond {
 }
 
 impl GenericProteinFeature for DisulfideBond {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -367,12 +323,8 @@ pub struct LipidationSite {
 }
 
 impl GenericProteinFeature for LipidationSite {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -393,12 +345,8 @@ pub struct ModifiedResidue {
 }
 
 impl GenericProteinFeature for ModifiedResidue {
-    fn start(&self) -> usize {
-        self.range.start
-    }
-
-    fn end(&self) -> usize {
-        self.range.end
+    fn range(&self) -> Option<PeptideRange> {
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -1590,7 +1538,7 @@ pub struct GeneDetails {
 fn feature_aa_count(feats: &Vec<AssignedByPeptideRange>) -> usize {
     let mut count = 0;
     for feat in feats {
-        count += feat.length()
+        count += feat.range.len()
     }
     count
 }

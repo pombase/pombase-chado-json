@@ -795,10 +795,14 @@ fn test_gene_details() {
         panic!("extension cv shouldn't be in the annotations");
     }
 
-    assert_eq!(par1_gene.signal_peptide.as_ref().unwrap().range.start, 1);
-    assert_eq!(par1_gene.signal_peptide.as_ref().unwrap().range.end, 22);
-    assert_eq!(par1_gene.transit_peptide.as_ref().unwrap().range.start, 1);
-    assert_eq!(par1_gene.transit_peptide.as_ref().unwrap().range.end, 24);
+    let signal_peptide_range = par1_gene.signal_peptide.as_ref().unwrap().range.clone().unwrap();
+
+    assert_eq!(signal_peptide_range.start, 1);
+    assert_eq!(signal_peptide_range.end, 22);
+
+    let transit_peptide_range = par1_gene.transit_peptide.as_ref().unwrap().range.clone().unwrap();
+    assert_eq!(transit_peptide_range.start, 1);
+    assert_eq!(transit_peptide_range.end, 24);
 
     assert_eq!(par1_gene.binding_sites.len(), 2);
     assert_eq!(par1_gene.binding_sites.iter().next().unwrap().range.end, 90);
