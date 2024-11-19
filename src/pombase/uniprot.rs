@@ -493,7 +493,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
                     evidence,
                     reference,
                     feature_type: flex_str!("transit peptide"),
-                    termid: Some(flex_str!("SO:0000418")),
+                    termid: Some(flex_str!("SO:0001808")),
                 });
             }
         }
