@@ -924,7 +924,10 @@ fn find_so_annotations_with_position(gene_details: &GeneDetails,
             ret_vec.push(BasicProteinFeature {
                 range,
                 assigned_by,
+                evidence: annotation_detail.evidence.clone(),
+                reference: annotation_detail.reference.clone(),
                 feature_type: term_name,
+                termid: Some(term_annotation.term.clone()),
             })
        }
     }
@@ -1037,7 +1040,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         let localisation_signals_track =
             make_generic_track(localization_signals_track_name,
                                &localisation_signals, false);
- 
+
         let mut conserved_motif_features = vec![];
 
         for conserved_motif_so_term in &["SO:0002230", "SO:0001807", "SO:0002159", "SO:0001805"] {

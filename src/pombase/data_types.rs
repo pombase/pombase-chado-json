@@ -259,7 +259,10 @@ pub struct BasicProteinFeature {
     pub range: PeptideRange,
     #[serde(skip_serializing_if="Option::is_none")]
     pub assigned_by: Option<AssignedBy>,
+    pub evidence: Option<Evidence>,
+    pub reference: Option<ReferenceUniquename>,
     pub feature_type: FlexStr,
+    pub termid: Option<TermId>,
 }
 
 impl GenericProteinFeature for BasicProteinFeature {
