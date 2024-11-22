@@ -157,6 +157,20 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     Ok(())
 }
 
+fn needs_nd_annotation(term_annotations: Option<&Vec<OntTermAnnotations>>) -> bool
+{
+    if let Some(annotations) = term_annotations {
+        for annotation in annotations {
+            if !annotation.is_not {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+
 fn write_complexes_to_gpi(gpi_writer: &mut dyn io::Write, protein_complex_map: &ProteinComplexMap,
                           config: &Config)
       -> Result<(), io::Error>
@@ -454,7 +468,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 
     for aspect in GO_ASPECT_NAMES.iter() {
         let term_annotations = gene_details.cv_annotations.get(aspect);
-        if term_annotations.is_none() {
+        if needs_nd_annotation(term_annotations) {
             let relation = get_gpad_nd_relation_of(aspect);
             let go_aspect_termid =
                 config.file_exports.gpad_gpi.go_aspect_terms.get(aspect).unwrap();
@@ -649,6 +663,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
             "F"
         };
 
+    let mut positive_annotation_count = 0;
+
     if let Some(term_annotations) = gene_details.cv_annotations.get(cv_name) {
         for term_annotation in term_annotations {
             let go_term = data_lookup.get_term(&term_annotation.term)
@@ -741,6 +757,10 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     ""
                 };
 
+                if !term_annotation.is_not {
+                    positive_annotation_count += 1;
+                }
+
                 let line = format!("{}\t{}\t{}{}\t{}\t{}{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t{}\t{}\n",
                                    database_name,
                                    db_object_id,
@@ -776,8 +796,10 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                 writer.write_all(line.as_bytes())?;
             }
         }
-
-    } else if write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" {
+    }
+    
+    if positive_annotation_count == 0 &&
+       write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" {
         let local: DateTime<Local> = Local::now();
         let date = local.format("%Y%m%d");
         let relation_name =
