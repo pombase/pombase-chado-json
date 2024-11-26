@@ -139,7 +139,7 @@ fn get_propeptides(uniprot_record: &UniProtDataRecord) -> Vec<BasicProteinFeatur
 
         Some(BasicProteinFeature {
             range,
-            assigned_by: Some(flex_str!("UniProt")),
+            assigned_by: Some(flex_str!("UniProtKB")),
             evidence,
             reference,
             feature_type: flex_str!("propeptide"),
@@ -158,7 +158,7 @@ fn get_chains(uniprot_record: &UniProtDataRecord) -> Vec<Chain> {
         let range = get_range(cap)?;
         Some(Chain {
             range,
-            assigned_by: Some(flex_str!("UniProt")),
+            assigned_by: Some(flex_str!("UniProtKB")),
         })
     })
     .collect()
@@ -221,7 +221,7 @@ fn get_glycosylation_sites(uniprot_record: &UniProtDataRecord) -> Vec<Glycosylat
             range,
             evidence,
             reference,
-            assigned_by: Some(flex_str!("UniProt")),
+            assigned_by: Some(flex_str!("UniProtKB")),
         })
     })
     .collect()
@@ -247,7 +247,7 @@ fn get_disulfide_bonds(uniprot_record: &UniProtDataRecord) -> Vec<DisulfideBond>
             range,
             evidence,
             reference,
-            assigned_by: Some(flex_str!("UniProt")),
+            assigned_by: Some(flex_str!("UniProtKB")),
         })
     })
     .collect()
@@ -304,7 +304,7 @@ fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSit
             termid: termid.into(),
             evidence,
             reference,
-            assigned_by: Some(flex_str!("UniProt")),
+            assigned_by: Some(flex_str!("UniProtKB")),
         })
     })
     .collect()
@@ -432,7 +432,7 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord,
             termid: termid.into(),
             evidence,
             reference,
-            assigned_by: Some(flex_str!("UniProt")),
+            assigned_by: Some(flex_str!("UniProtKB")),
         })
     })
     .collect()
@@ -464,7 +464,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
 
             signal_peptide = Some(BasicProteinFeature {
                 range,
-                assigned_by: Some(flex_str!("UniProt")),
+                assigned_by: Some(flex_str!("UniProtKB")),
                 evidence,
                 reference,
                 feature_type: flex_str!("signal peptide"),
@@ -488,7 +488,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
 
             transit_peptide = Some(BasicProteinFeature {
                 range,
-                assigned_by: Some(flex_str!("UniProt")),
+                assigned_by: Some(flex_str!("UniProtKB")),
                 evidence,
                 reference,
                 feature_type: flex_str!("transit peptide"),
@@ -515,7 +515,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
                 Some(BindingSite {
                     ligand,
                     range,
-                    assigned_by: Some(flex_str!("UniProt")),
+                    assigned_by: Some(flex_str!("UniProtKB")),
                 })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
@@ -533,7 +533,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
                 let range = get_range(cap)?;
                 Some(ActiveSite {
                     range,
-                    assigned_by: Some(flex_str!("UniProt")),
+                    assigned_by: Some(flex_str!("UniProtKB")),
                 })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
@@ -551,7 +551,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
                 let range = get_range(cap)?;
                 Some(BetaStrand {
                     range,
-                    assigned_by: Some(flex_str!("UniProt")),
+                    assigned_by: Some(flex_str!("UniProtKB")),
                 })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
@@ -568,7 +568,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
                 let range = get_range(cap)?;
                 Some(Helix {
                     range,
-                    assigned_by: Some(flex_str!("UniProt")),
+                    assigned_by: Some(flex_str!("UniProtKB")),
                 })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
@@ -585,7 +585,7 @@ fn process_record(uniprot_record: UniProtDataRecord,
                 let range = get_range(cap)?;
                 Some(Turn {
                     range,
-                    assigned_by: Some(flex_str!("UniProt")),
+                    assigned_by: Some(flex_str!("UniProtKB")),
                 })
             } else {
                 panic!("failed to parse UniProt data file, no range in {}", field_part);
