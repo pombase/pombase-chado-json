@@ -107,7 +107,8 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
             match ext_part.ext_range {
                 ExtRange::SummaryGenes(_) | ExtRange::SummaryTranscripts(_) | ExtRange::SummaryTerms(_) |
                 ExtRange::ModifiedResidues(_) =>
-                    rel_range == ext_part.rel_type_name.as_str(),
+                    rel_range == ext_part.rel_type_name.as_str() ||
+                    rel_range == ext_part.rel_type_display_name.as_str(),
                 _ =>false
             }
         };
