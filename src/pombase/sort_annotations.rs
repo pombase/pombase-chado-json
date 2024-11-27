@@ -18,19 +18,28 @@ fn gene_display_name(gene: &GeneDetails) -> FlexStr {
 }
 
 fn string_from_ext_range(ext_range: &ExtRange,
-                        data_lookup: &dyn DataLookup) -> FlexStr {
+                         data_lookup: &dyn DataLookup) -> FlexStr {
+
+    let gene_name = |gene_uniquename: &FlexStr| {
+        let gene = data_lookup.get_gene(gene_uniquename)
+           .unwrap_or_else(|| panic!("can't find gene: {}", gene_uniquename));
+        gene_display_name(gene.as_ref())
+    };
+
     match *ext_range {
         ExtRange::Gene(ref gene_uniquename) | ExtRange::Promoter(ref gene_uniquename) => {
-            let gene = data_lookup.get_gene(gene_uniquename)
-                .unwrap_or_else(|| panic!("can't find gene: {}", gene_uniquename));
-            gene_display_name(gene.as_ref())
+            gene_name(gene_uniquename)
         },
         ExtRange::Transcript(ref transcript_uniquename) => transcript_uniquename.clone(),
-        ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
-        ExtRange::SummaryTranscripts(_) => panic!("can't handle SummaryTranscripts\n"),
+        ExtRange::SummaryGenes(ref summ_genes) => {
+            gene_name(&summ_genes[0][0])
+        },
+        ExtRange::SummaryTranscripts(ref summ_transcripts) => summ_transcripts[0][0].clone(),
         ExtRange::Term(ref termid) => data_lookup.get_term(termid).unwrap().name.clone(),
         ExtRange::ModifiedResidues(ref residue) => join(residue, ","),
-        ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
+        ExtRange::SummaryTerms(ref summ_terms) => {
+            data_lookup.get_term(&summ_terms[0]).unwrap().name.clone()
+        },
         ExtRange::Misc(ref misc) => misc.clone(),
         ExtRange::Domain(ref domain) => domain.clone(),
         ExtRange::GeneProduct(ref gene_product) => gene_product.clone(),
@@ -42,6 +51,7 @@ fn string_from_ext_range(ext_range: &ExtRange,
 
 fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart,
                 data_lookup: &dyn DataLookup) -> Ordering {
+
     let ord = ext_part1.rel_type_display_name.cmp(&ext_part2.rel_type_display_name);
 
     if ord == Ordering::Equal {
@@ -55,10 +65,8 @@ fn cmp_ext_part(ext_part1: &ExtPart, ext_part2: &ExtPart,
 }
 
 // compare the extension up to the last common index
-fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart],
+fn cmp_extension_prefix(conf_rel_ranges: &Vec<FlexStr>, ext1: &[ExtPart], ext2: &[ExtPart],
                         data_lookup: &dyn DataLookup) -> Ordering {
-    let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
-
     let mut ext1_for_cmp = ext1.to_owned();
     let mut ext2_for_cmp = ext2.to_owned();
 
@@ -94,9 +102,9 @@ fn cmp_extension_prefix(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart]
     Ordering::Equal
 }
 
-fn cmp_extension(cv_config: &CvConfig, ext1: &[ExtPart], ext2: &[ExtPart],
-                 data_lookup: &dyn DataLookup) -> Ordering {
-    let cmp = cmp_extension_prefix(cv_config, ext1, ext2, data_lookup);
+pub fn cmp_extension(conf_rel_ranges: &Vec<FlexStr>, ext1: &[ExtPart], ext2: &[ExtPart],
+                     data_lookup: &dyn DataLookup) -> Ordering {
+    let cmp = cmp_extension_prefix(conf_rel_ranges, ext1, ext2, data_lookup);
     if cmp == Ordering::Equal {
         ext1.len().cmp(&ext2.len())
     } else {
@@ -131,6 +139,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                                  detail1: &OntAnnotationDetail,
                                  detail2: &OntAnnotationDetail,
                                  data_lookup: &dyn DataLookup) -> Result<Ordering, String> {
+    let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;
     if let Some(ref detail1_genotype_uniquename) = detail1.genotype {
         if let Some(ref detail2_genotype_uniquename) = detail2.genotype {
             let genotype1 = data_lookup.get_genotype(detail1_genotype_uniquename).unwrap();
@@ -139,7 +148,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
             let ord = cmp_genotypes(&genotype1, &genotype2);
 
             if ord == Ordering::Equal {
-                Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
+                Ok(cmp_extension(conf_rel_ranges, &detail1.extension, &detail2.extension,
                                  data_lookup))
             } else {
                 Ok(ord)
@@ -164,7 +173,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                                 return Ok(res);
                             }
                         } else {
-                            let res = cmp_extension(cv_config, &detail1.extension,
+                            let res = cmp_extension(conf_rel_ranges, &detail1.extension,
                                                     &detail2.extension,
                                                     data_lookup);
                             if res != Ordering::Equal {
@@ -174,7 +183,7 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
                     }
                     Ok(Ordering::Equal)
                 } else {
-                    Ok(cmp_extension(cv_config, &detail1.extension, &detail2.extension,
+                    Ok(cmp_extension(conf_rel_ranges, &detail1.extension, &detail2.extension,
                                      data_lookup))
                 }
             } else {

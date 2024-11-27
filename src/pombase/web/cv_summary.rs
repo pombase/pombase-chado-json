@@ -4,6 +4,7 @@ use std::hash::{Hash, Hasher};
 
 use std::collections::{HashSet, HashMap};
 
+use crate::sort_annotations::cmp_extension;
 use crate::types::*;
 use crate::data_types::*;
 use crate::web::config::*;
@@ -450,6 +451,46 @@ pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
     ext.append(&mut result);
 }
 
+fn sort_summary_alphabetically(data_lookup: &dyn DataLookup, summary: &mut Vec<TermSummaryRow>) {
+    let cmp_fn = |s1: &TermSummaryRow, s2: &TermSummaryRow| {
+        if s1.extension.len() == 0 {
+            return Ordering::Less;
+        }
+        if s2.extension.len() == 0 {
+            return Ordering::Greater;
+        }
+        let s1_display_name =
+            if let Some(genotype_uniquename) = s1.genotype_uniquenames.first() {
+                data_lookup.get_genotype(genotype_uniquename).unwrap().display_name.to_lowercase()
+            } else {
+                if let Some(gene_uniquename) = s1.gene_uniquenames.first() {
+                    data_lookup.get_gene(gene_uniquename).unwrap().display_name().to_lowercase()
+                } else {
+                    String::from("")
+                }
+            };
+        let s2_display_name =
+            if let Some(genotype_uniquename) = s2.genotype_uniquenames.first() {
+                data_lookup.get_genotype(genotype_uniquename).unwrap().display_name.to_lowercase()
+            } else {
+                if let Some(gene_uniquename) = s2.gene_uniquenames.first() {
+                    data_lookup.get_gene(gene_uniquename).unwrap().display_name().to_lowercase()
+                } else {
+                    String::from("")
+                }
+            };
+
+        let display_name_cmp = s1_display_name.cmp(&s2_display_name);
+        if display_name_cmp == Ordering::Equal {
+            cmp_extension(&vec![], &s1.extension, &s2.extension, data_lookup)
+        } else {
+            display_name_cmp
+        }
+    };
+
+    summary.sort_by(cmp_fn);
+}
+
 fn make_cv_summary(cv_config: &CvConfig,
                    children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                    include_gene: bool, include_genotype: bool,
@@ -569,6 +610,8 @@ fn make_cv_summary(cv_config: &CvConfig,
             for rel_range in conf_rel_ranges {
                 collect_ext_summary_genes(rel_range, summary, data_lookup);
             }
+
+            sort_summary_alphabetically(data_lookup, summary);
         }
     }
 }
