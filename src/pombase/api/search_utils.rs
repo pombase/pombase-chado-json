@@ -14,7 +14,8 @@ pub fn get_query_part(words: &[String]) -> String {
         if i == words_length - 1 {
             ret += &format!("{} {}*", word, word);
         } else {
-            ret += &format!("{} ", word);
+            ret += &word;
+            ret += " ";
         }
     }
 
