@@ -1519,17 +1519,25 @@ impl WebData {
         let mut write_interaction = |int_type: &str, int: &InteractionAnnotation|
              -> Result<(), io::Error>
         {
-            let comment_string = if let Some(ref source_database) = int.source_database {
-                format!("interaction_type: {}; source: {}", int_type, source_database)
-            } else {
-                format!("interaction_type: {}", int_type)
-            };
+            let mut comment = format!("interaction_type: {}", int_type);
+
+            if let Some(ref source_database) = int.source_database {
+                comment.push_str("|source: ");
+                comment.push_str(source_database.as_str());
+            }
+
+            if let Some(ref annotation_date) = int.annotation_date {
+                comment.push_str("|annotation_date: ");
+                comment.push_str(annotation_date.as_str());
+            }
+
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\n",
                                int.gene_uniquename,
                                int.interactor_uniquename,      
                                load_org_taxonid, load_org_taxonid,
-                               int.evidence, int.reference_uniquename.as_deref().unwrap_or_default(),
-                               comment_string);
+                               int.evidence,
+                               int.reference_uniquename.as_deref().unwrap_or_default(),
+                               comment);
             writer.write_all(line.as_bytes())?;
             Ok(())
         };

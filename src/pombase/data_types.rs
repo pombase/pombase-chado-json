@@ -2328,6 +2328,8 @@ pub struct GeneticInteractionDetail {
     pub interaction_note: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub source_database: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub annotation_date: Option<FlexStr>,
 }
 impl Ord for GeneticInteractionDetail {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -2359,6 +2361,8 @@ pub struct InteractionAnnotation {
     pub interaction_note: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub source_database: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub annotation_date: Option<FlexStr>,
 }
 impl PartialEq for InteractionAnnotation {
     fn eq(&self, other: &Self) -> bool {
