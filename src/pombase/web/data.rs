@@ -1632,7 +1632,7 @@ impl WebData {
         Ok(())
     }
 
-    pub fn write(&self, config: &Config, go_eco_mappping: &GoEcoMapping,
+    pub fn write(self, config: &Config, go_eco_mappping: &GoEcoMapping,
                  doc_config: &DocConfig, output_dir: &str)
                  -> Result<(), io::Error>
     {
@@ -1674,15 +1674,15 @@ impl WebData {
 
         let misc_path = self.create_dir(output_dir, "misc")?;
 
-        write_go_annotation_files(&self.api_maps, config, self,
+        write_go_annotation_files(&self.api_maps, config, &self,
                                   &self.metadata.db_creation_datetime,
                                   go_eco_mappping, &self.genes,
                                   &self.api_maps.transcripts,
                                   &self.api_maps.protein_complexes,
                                   &misc_path)?;
 
-        write_phenotype_annotation_files(self, &self.genotypes, config, false, &misc_path)?;
-        write_phenotype_annotation_files(self, &self.genotypes, config, true, &misc_path)?;
+        write_phenotype_annotation_files(&self, &self.genotypes, config, false, &misc_path)?;
+        write_phenotype_annotation_files(&self, &self.genotypes, config, true, &misc_path)?;
         println!("wrote GAF and PHAF files");
 
         self.write_alleles_json(&misc_path)?;
