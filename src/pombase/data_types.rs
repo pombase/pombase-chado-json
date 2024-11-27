@@ -2326,6 +2326,8 @@ pub struct GeneticInteractionDetail {
     pub throughput: Option<Throughput>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub interaction_note: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub source_database: Option<FlexStr>,
 }
 impl Ord for GeneticInteractionDetail {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -2344,7 +2346,7 @@ impl PartialOrd for GeneticInteractionDetail {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash)]
 pub struct InteractionAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub interactor_uniquename: GeneUniquename,
@@ -2355,6 +2357,8 @@ pub struct InteractionAnnotation {
     pub throughput: Option<Throughput>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub interaction_note: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub source_database: Option<FlexStr>,
 }
 impl PartialEq for InteractionAnnotation {
     fn eq(&self, other: &Self) -> bool {

@@ -131,6 +131,7 @@ pub struct WebDataBuild<'a> {
 
     ont_annotations: Vec<OntAnnotation>,
 
+    physical_interaction_annotations: HashSet<InteractionAnnotation>,
     genetic_interaction_annotations: HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>,
 }
 
@@ -909,6 +910,7 @@ impl <'a> WebDataBuild<'a> {
             references: HashMap::new(),
             all_ont_annotations: HashMap::new(),
             all_not_ont_annotations: HashMap::new(),
+            physical_interaction_annotations: HashSet::new(),
             genetic_interaction_annotations: HashMap::new(),
             recent_references: RecentReferences {
                 admin_curated: vec![],
@@ -1467,6 +1469,7 @@ phenotypes, so just the first part of this extension will be used:
                 rescued_phenotype_extension,
                 interaction_note,
                 throughput: ont_annotation_detail.throughput,
+                source_database: Some(self.config.database_name.clone()),
             };
 
         self.genetic_interaction_annotations
@@ -2776,6 +2779,7 @@ phenotypes, so just the first part of this extension will be used:
                 rescued_phenotype_extension: vec![],
                 interaction_note: interaction.interaction_note,
                 throughput: interaction.throughput,
+                source_database: interaction.source_database,
             };
 
         self.genetic_interaction_annotations
@@ -2799,6 +2803,7 @@ phenotypes, so just the first part of this extension will be used:
                         let mut throughput: Option<Throughput> = None;
                         let mut is_inferred_interaction: bool = false;
                         let mut interaction_note: Option<FlexStr> = None;
+                        let mut source_database = None;
                         let mut ortholog_qualifier = None;
 
                         let borrowed_publications = feature_rel.publications.borrow();
@@ -2856,6 +2861,11 @@ phenotypes, so just the first part of this extension will be used:
                                 prop.prop_type.name == "ortholog_qualifier" {
                                 ortholog_qualifier = prop.value.clone()
                             }
+                            if prop.prop_type.name == "source_database" {
+                                if let Some(source_database_value) = prop.value.clone() {
+                                    source_database = Some(source_database_value);
+                                }
+                            }
                         }
 
                         let evidence_clone = evidence.clone();
@@ -2882,7 +2892,9 @@ phenotypes, so just the first part of this extension will be used:
                                             reference_uniquename: maybe_reference_uniquename.clone(),
                                             throughput,
                                             interaction_note,
+                                            source_database,
                                         };
+
                                     if rel_name == "interacts_genetically" {
                                         self.save_genetic_interaction(interaction_annotation);
                                     } else {
@@ -2916,6 +2928,7 @@ phenotypes, so just the first part of this extension will be used:
                                             panic!("unknown interaction type: {}", rel_name);
                                         };
                                     }
+                                    self.physical_interaction_annotations.insert(interaction_annotation);
                                     }
                                 },
                             FeatureRelAnnotationType::Ortholog => {
@@ -7676,6 +7689,37 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn interactions_for_export(&self)
+       -> (Vec<InteractionAnnotation>, Vec<InteractionAnnotation>)
+    {
+        let physical_interaction_annotations: Vec<_> =
+            self.physical_interaction_annotations.iter().cloned().collect();
+        let mut genetic_interaction_annotations = vec![];
+
+        for (key, interaction_detail_vec) in self.genetic_interaction_annotations.iter() {
+            for interaction_detail in interaction_detail_vec.iter() {
+                let GeneticInteractionKey {
+                    gene_a_uniquename,
+                    gene_b_uniquename,
+                    interaction_type,
+                } = key.clone();
+
+                let interaction = InteractionAnnotation {
+                    gene_uniquename: gene_a_uniquename,
+                    interactor_uniquename: gene_b_uniquename,
+                    evidence: interaction_type,
+                    reference_uniquename: interaction_detail.reference_uniquename.clone(),
+                    throughput: interaction_detail.throughput.clone(),
+                    interaction_note: interaction_detail.interaction_note.clone(),
+                    source_database: interaction_detail.source_database.clone(),
+                };
+                genetic_interaction_annotations.push(interaction);
+            }
+        }
+
+        (physical_interaction_annotations, genetic_interaction_annotations)
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -7704,7 +7748,11 @@ phenotypes, so just the first part of this extension will be used:
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
         self.remove_non_curatable_refs();
+
+        let (physical_interaction_annotations,
+            genetic_interaction_annotations) = self.interactions_for_export();
         self.store_genetic_interactions();
+
         self.set_term_details_maps();
         self.set_gene_details_maps();
         self.set_gene_details_subset_termids();
@@ -7789,6 +7837,9 @@ phenotypes, so just the first part of this extension will be used:
             ont_annotations,
             stats,
             detailed_stats,
+
+            physical_interaction_annotations,
+            genetic_interaction_annotations,
 
             // used to implement the DataLookup trait:
             arc_terms: Arc::new(RwLock::new(HashMap::new())),

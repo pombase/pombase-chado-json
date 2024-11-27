@@ -59,6 +59,9 @@ pub struct WebData {
     pub stats: Stats,
     pub detailed_stats: DetailedStats,
 
+    pub physical_interaction_annotations: Vec<InteractionAnnotation>,
+    pub genetic_interaction_annotations: Vec<InteractionAnnotation>,
+
     pub arc_terms: Arc<RwLock<HashMap<TermId, Arc<TermDetails>>>>,
     pub arc_genes: Arc<RwLock<HashMap<GeneUniquename, Arc<GeneDetails>>>>,
     pub arc_alleles: Arc<RwLock<HashMap<AlleleUniquename, Arc<AlleleDetails>>>>,
@@ -1496,6 +1499,52 @@ impl WebData {
         Ok(())
     }
 
+    fn write_interactions(&self, config: &Config, output_dir: &str)
+                          -> Result<(), io::Error>
+    {
+        let load_org_taxonid =
+            if let Some(load_org_taxonid) = config.load_organism_taxonid {
+                load_org_taxonid
+            } else {
+                return Ok(())
+            };
+
+        let file_name = format!("{}/interactions.tsv", output_dir);
+        let file = File::create(file_name)?;
+        let mut writer = BufWriter::new(&file);
+
+        let header = "#InteractorA\tInteractorB\tInteractorA_taxon\tInteractorB_taxon\tEvidence_Code\tPubmedID\tScore\tModification\tPhenotypes\tComment\n";
+        writer.write_all(header.as_bytes())?;
+
+        let mut write_interaction = |int_type: &str, int: &InteractionAnnotation|
+             -> Result<(), io::Error>
+        {
+            let comment_string = if let Some(ref source_database) = int.source_database {
+                format!("interaction_type: {}; source: {}", int_type, source_database)
+            } else {
+                format!("interaction_type: {}", int_type)
+            };
+            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\n",
+                               int.gene_uniquename,
+                               int.interactor_uniquename,      
+                               load_org_taxonid, load_org_taxonid,
+                               int.evidence, int.reference_uniquename.as_deref().unwrap_or_default(),
+                               comment_string);
+            writer.write_all(line.as_bytes())?;
+            Ok(())
+        };
+
+        for phys_interaction in &self.physical_interaction_annotations {
+            write_interaction("physical", phys_interaction)?;
+        }
+
+        for genetic_interaction in &self.genetic_interaction_annotations {
+            write_interaction("genetic", genetic_interaction)?;
+        }
+
+        Ok(())
+    }
+
     // write the subsets configured using "subset_export"
     fn write_annotation_subsets(&self, config: &Config, output_dir: &str)
                                 -> Result<(), io::Error>
@@ -1701,6 +1750,7 @@ impl WebData {
         self.write_allele_tsv(&misc_path)?;
         self.write_disease_association(config, &misc_path)?;
         self.write_modifications(config, &misc_path)?;
+        self.write_interactions(config, &misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
 
