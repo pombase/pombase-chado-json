@@ -99,14 +99,24 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
         terms_url.push('"');
         terms_url += &clean_words.join(" ");
         terms_url.push('"');
-
-        terms_url += ")^0.2 OR exact_synonyms:(";
+        terms_url += ")^0.2 OR name_str_field:(";
 
         terms_url.push('"');
         terms_url += &clean_words.join(" ");
         terms_url.push('"');
 
-        terms_url += ")^0.2 OR name:(";
+        terms_url += ")^0.6 OR exact_synonyms:(";
+
+        terms_url.push('"');
+        terms_url += &clean_words.join(" ");
+        terms_url.push('"');
+        terms_url += ")^0.2 OR exact_synonyms_str_field:(";
+
+        terms_url.push('"');
+        terms_url += &clean_words.join(" ");
+        terms_url.push('"');
+
+        terms_url += ")^0.4 OR name:(";
         let query_part = get_query_part(&clean_words);
 
         terms_url += &format!("{}) OR exact_synonym_words:({})^{} OR narrow_synonym_words:({})^{} OR distant_synonym_words:({})^{} OR definition:({})^{})",
