@@ -216,7 +216,8 @@ pub struct ServerSubsetConfig {
 pub struct ServerConfig {
     pub subsets: ServerSubsetConfig,
     pub solr_url: String,
-    pub close_synonym_boost: f32,
+    pub exact_synonym_boost: f32,
+    pub narrow_synonym_boost: f32,
     pub distant_synonym_boost: f32,
     pub term_definition_boost: f32,
     pub django_url: String,

@@ -7165,8 +7165,10 @@ phenotypes, so just the first part of this extension will be used:
                     s.trim_matches(&trimmable_p).to_shared_str()
                 }).collect::<Vec<_>>();
 
-            let mut close_synonyms = vec![];
-            let mut close_synonym_words_vec: Vec<FlexStr> = vec![];
+            let mut exact_synonyms = vec![];
+            let mut exact_synonym_words_vec: Vec<FlexStr> = vec![];
+            let mut narrow_synonyms = vec![];
+            let mut narrow_synonym_words_vec: Vec<FlexStr> = vec![];
             let mut distant_synonyms = vec![];
             let mut distant_synonym_words_vec: Vec<FlexStr> = vec![];
 
@@ -7182,18 +7184,25 @@ phenotypes, so just the first part of this extension will be used:
             };
 
             for synonym in &term_details.synonyms {
-                if synonym.synonym_type == "exact" || synonym.synonym_type == "narrow" {
-                    add_to_words_vec(&synonym.name, &mut close_synonym_words_vec);
-                    close_synonyms.push(synonym.name.clone());
-                } else {
-                    add_to_words_vec(&synonym.name, &mut distant_synonym_words_vec);
-                    distant_synonyms.push(synonym.name.clone());
+                match synonym.synonym_type.as_str() {
+                    "exact" => {
+                        add_to_words_vec(&synonym.name, &mut exact_synonym_words_vec);
+                        exact_synonyms.push(synonym.name.clone());
+                    },
+                    "narrow" => {
+                        add_to_words_vec(&synonym.name, &mut narrow_synonym_words_vec);
+                        narrow_synonyms.push(synonym.name.clone());
+                    },
+                    _ => {
+                        add_to_words_vec(&synonym.name, &mut distant_synonym_words_vec);
+                        distant_synonyms.push(synonym.name.clone());
+                    }
                 }
             }
 
             distant_synonyms = distant_synonyms.into_iter()
                 .filter(|synonym| {
-                    !close_synonyms.contains(synonym)
+                    !exact_synonyms.contains(synonym)
                 })
                 .collect::<Vec<_>>();
 
@@ -7209,8 +7218,10 @@ phenotypes, so just the first part of this extension will be used:
                 cv_name: term_details.cv_name.clone(),
                 name: term_details.name.clone(),
                 definition: term_details.definition.clone(),
-                close_synonyms,
-                close_synonym_words: join(&close_synonym_words_vec," "),
+                exact_synonyms,
+                exact_synonym_words: join(&exact_synonym_words_vec," "),
+                narrow_synonyms,
+                narrow_synonym_words: join(&narrow_synonym_words_vec," "),
                 distant_synonyms,
                 distant_synonym_words: join(&distant_synonym_words_vec, " "),
                 interesting_parent_ids: interesting_parent_ids_for_solr,

@@ -102,8 +102,10 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
 
         let query_part = get_query_part(&clean_words);
 
-        terms_url += &format!("{}) OR close_synonym_words:({})^{} OR distant_synonym_words:({})^{} OR definition:({})^{})",
-                              query_part, query_part, config.close_synonym_boost,
+        terms_url += &format!("{}) OR exact_synonym_words:({})^{} OR narrow_synonym_words:({})^{} OR distant_synonym_words:({})^{} OR definition:({})^{})",
+                              query_part,
+                              query_part, config.exact_synonym_boost,
+                              query_part, config.narrow_synonym_boost,
                               query_part, config.distant_synonym_boost,
                               query_part, config.term_definition_boost);
     }

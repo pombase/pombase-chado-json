@@ -435,7 +435,8 @@
       ]
     },
     "solr_url": "http://localhost:8983/solr",
-    "close_synonym_boost": 0.6,
+    "exact_synonym_boost": 0.6,
+    "narrow_synonym_boost": 0.2,
     "distant_synonym_boost": 0.3,
     "term_definition_boost": 0.1,
     "django_url": "http://localhost:8999",

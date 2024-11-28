@@ -2825,9 +2825,15 @@ pub struct SolrTermSummary {
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub close_synonyms: Vec<FlexStr>,   // exact and narrow
-    // a uniquified list of the words in all close synonyms
-    pub close_synonym_words: FlexStr,
+    pub exact_synonyms: Vec<FlexStr>,
+    // a uniquified list of the words in all exact synonyms
+    pub exact_synonym_words: FlexStr,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub narrow_synonyms: Vec<FlexStr>,
+    // a uniquified list of the words in all narrow synonyms
+    pub narrow_synonym_words: FlexStr,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub distant_synonyms: Vec<FlexStr>, // broad and related
     // a uniquified list of the words in all distant synonyms
