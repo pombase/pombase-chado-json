@@ -77,6 +77,8 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
         terms_url += &format!("(interesting_isa_parents:{}\\:{} OR id:{}\\:{})",
                               prefix, accession, prefix, accession);
     } else {
+        // See: https://solr.apache.org/guide/7_2/the-standard-query-parser.html#constant-score-with
+        // for docs on "^=" syntax
         terms_url += &format!("+cv_name:{}^=1", cv_name);
     }
 
