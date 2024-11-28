@@ -2821,11 +2821,14 @@ pub struct SolrAlleleSummary {
 pub struct SolrTermSummary {
     pub id: TermId,
     pub name: TermName,
+    pub name_str_field: TermName,
     pub cv_name: CvName,
     #[serde(skip_serializing_if="Option::is_none")]
     pub definition: Option<TermDef>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub exact_synonyms: Vec<FlexStr>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub exact_synonyms_str_field: Vec<FlexStr>,
     // a uniquified list of the words in all exact synonyms
     pub exact_synonym_words: FlexStr,
 
