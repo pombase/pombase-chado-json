@@ -98,7 +98,7 @@ pub fn make_terms_url(config: &ServerConfig, cv_name: &str, q: &str) -> Option<S
         terms_url += &clean_words.join(" ");
         terms_url.push('"');
 
-        terms_url += ")^0.25 OR name:(";
+        terms_url += ")^0.2 OR name:(";
 
         let query_part = get_query_part(&clean_words);
 
