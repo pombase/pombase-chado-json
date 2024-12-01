@@ -38,7 +38,7 @@ http-body-util = "0.1.2"
 percent-encoding = "2.3.1"
 mime_guess = "2.0"
 tracing = "0.1.41"
-tracing-subscriber = "0.3.16"
+tracing-subscriber = "0.3.19"
 indexmap = "2"
 
 [dependencies.serde]
