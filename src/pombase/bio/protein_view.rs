@@ -393,7 +393,7 @@ fn make_mod_extension(extension: &Vec<ExtPart>,
             },
             ExtRange::Term(termid) => {
                 let term_details = term_details_map.get(termid).unwrap();
-                flex_fmt!("{} ({})", term_details.name, termid)
+                term_details.name.clone()
             },
             ExtRange::Gene(gene_uniquename) => {
                 if let Some(gene_details) = gene_details_maps.get(gene_uniquename) {
