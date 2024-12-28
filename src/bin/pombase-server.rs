@@ -773,10 +773,6 @@ async fn main() {
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
 
-//    tracing_subscriber::fmt()
-//        .with_max_level(tracing::Level::DEBUG)
-//        .init();
-
     axum::serve(listener, ServiceExt::<Request>::into_make_service(app))
         .await
         .unwrap();
