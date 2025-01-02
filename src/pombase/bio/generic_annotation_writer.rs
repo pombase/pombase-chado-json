@@ -6,6 +6,7 @@ use crate::{data_types::PeptideRange,
 use chrono::prelude::{Local, DateTime};
 
 pub struct UniProtTermidMap {
+  pub n_glycsylated_residue_termid: String,
   pub glycosylation_site_termid: String,
   pub disulphide_bond_termid: String,
 }
@@ -118,9 +119,15 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
   for uniprot_data in uniprot_data_map.values() {
     let transcript_uniquename = format!("{}.1", uniprot_data.gene_uniquename);
     for site in &uniprot_data.glycosylation_sites {
+      let aa_at_pos = get_aa_at_pos(uniprot_data.sequence.as_str(),
+                                    &site.range);
+      if aa_at_pos != 'N' {
+        panic!("glycosylation site isn't an asparagine(N) for {}: {}",
+               uniprot_data.gene_uniquename, aa_at_pos);
+      }
       let evidence = site.evidence.as_deref().unwrap_or_default();
       let reference = site.reference.as_deref().unwrap_or(uniprot_pmid);
-      let termid = &termid_map.glycosylation_site_termid;
+      let termid = &termid_map.n_glycsylated_residue_termid;
       let residue_extension = format!("residue(N{})", site.range);
       write_generic_annotation(&mut writer,
                                &transcript_uniquename,

@@ -86,6 +86,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         let mut sub_opts = Options::new();
         let sub_opts = sub_opts.parsing_style(ParsingStyle::StopAtFirstFree);
 
+        sub_opts.reqopt("", "n-glycsylated-residue-termid",
+                        "The term ID for N-glycsylated residue", "TERMID");
+
         sub_opts.reqopt("", "glycosylation-site-termid",
                     "The term ID to use in glycosylation modification annotations",
                     "TERMID");
@@ -117,6 +120,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         };
 
         let termid_map = UniProtTermidMap {
+            n_glycsylated_residue_termid: sub_matches.opt_str("n-glycsylated-residue-termid").unwrap(),
             glycosylation_site_termid: sub_matches.opt_str("glycosylation-site-termid").unwrap(),
             disulphide_bond_termid: sub_matches.opt_str("disulphide-bond-termid").unwrap(),
         };
@@ -133,7 +137,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .map(|s| flex_fmt!("PMID:{}", s.trim_start_matches("PMID:")))
             .collect();
 
-        let file_name_pos = 5 + if filter_references.len() > 0 { 1 } else { 0 };
+        let file_name_pos = 6 + if filter_references.len() > 0 { 1 } else { 0 };
         let file_name = &args[file_name_pos];
 
         let uniprot_data_map =
