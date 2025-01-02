@@ -2026,7 +2026,11 @@ impl AlleleShort {
 
 fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str,
                                 allele_description: &Option<FlexStr>) -> FlexStr {
-    let name = allele_name.clone().unwrap_or_else(|| flex_str!("unnamed"));
+    let name = if let Some(ref name) = allele_name {
+        name.as_str().replace("%", "percent")
+    } else {
+        "unnamed".into()
+    };
     let allele_type = allele_type.to_owned();
     let description =
         allele_description.clone().unwrap_or_else(|| allele_type.to_shared_str());
@@ -2038,15 +2042,15 @@ fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str
             if normalised_description != normalised_allele_type {
                 return flex_fmt!("{}({})", name, description);
             } else {
-                return name;
+                return name.into();
             }
         }
 
     let display_name =
         if allele_type == "deletion" {
-            name + "-" + description.as_str()
+            flex_fmt!("{}-{}", name, description.as_str())
         } else {
-            name + "-" + description.as_str() + "-" + &allele_type
+            flex_fmt!("{}-{}-{}", name, description.as_str(), &allele_type)
         };
     display_name
 }
