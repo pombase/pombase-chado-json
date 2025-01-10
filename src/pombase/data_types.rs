@@ -432,20 +432,20 @@ impl ExtRange {
 impl fmt::Display for ExtRange {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            ExtRange::Gene(ref gene_uniquename) | ExtRange::Promoter(ref gene_uniquename) =>
+            ExtRange::Gene(gene_uniquename) | ExtRange::Promoter(gene_uniquename) =>
                 write!(f, "{}", gene_uniquename),
-            ExtRange::Transcript(ref transcript_uniquename) =>
+            ExtRange::Transcript(transcript_uniquename) =>
                 write!(f, "{}", transcript_uniquename),
             ExtRange::SummaryGenes(_) => panic!("can't handle SummaryGenes\n"),
             ExtRange::SummaryTranscripts(_) => panic!("can't handle SummaryTranscripts\n"),
-            ExtRange::Term(ref termid) => write!(f, "{}", termid),
-            ExtRange::ModifiedResidues(ref residue) =>
+            ExtRange::Term(termid) => write!(f, "{}", termid),
+            ExtRange::ModifiedResidues(residue) =>
                 write!(f, "{}", residue.iter().map(FlexStr::to_string).collect::<Vec<_>>().join(",")),
             ExtRange::SummaryTerms(_) => panic!("can't handle SummaryGenes\n"),
-            ExtRange::Misc(ref misc) => write!(f, "{}", misc),
-            ExtRange::Domain(ref domain) => write!(f, "{}", domain),
-            ExtRange::GeneProduct(ref gene_product) => write!(f, "{}", gene_product),
-            ExtRange::GeneAndGeneProduct(ref gene_and_gene_product) =>
+            ExtRange::Misc(misc) => write!(f, "{}", misc),
+            ExtRange::Domain(domain) => write!(f, "{}", domain),
+            ExtRange::GeneProduct(gene_product) => write!(f, "{}", gene_product),
+            ExtRange::GeneAndGeneProduct(gene_and_gene_product) =>
                 write!(f, "{} ({})", gene_and_gene_product.gene_uniquename,
                        gene_and_gene_product.product),
         }
@@ -987,19 +987,19 @@ impl Ord for WithFromValue {
     fn cmp(& self, other: & WithFromValue) -> Ordering {
         let self_string =
             match self {
-                WithFromValue::Gene(ref gene) => &gene.uniquename,
-                WithFromValue::Transcript(ref transcript_uniquename) => transcript_uniquename,
-                WithFromValue::Term(ref term) => &term.name,
-                WithFromValue::Identifier(ref id) => id,
-                WithFromValue::IdentifierAndName(ref id_and_name) => &id_and_name.identifier,
+                WithFromValue::Gene(gene) => &gene.uniquename,
+                WithFromValue::Transcript(transcript_uniquename) => transcript_uniquename,
+                WithFromValue::Term(term) => &term.name,
+                WithFromValue::Identifier(id) => id,
+                WithFromValue::IdentifierAndName(id_and_name) => &id_and_name.identifier,
             };
         let other_string =
             match other {
-                WithFromValue::Gene(ref gene) => &gene.uniquename,
-                WithFromValue::Transcript(ref transcript_uniquename) => transcript_uniquename,
-                WithFromValue::Term(ref term) => &term.name,
-                WithFromValue::Identifier(ref id) => id,
-                WithFromValue::IdentifierAndName(ref id_and_name) => &id_and_name.identifier,
+                WithFromValue::Gene(gene) => &gene.uniquename,
+                WithFromValue::Transcript(transcript_uniquename) => transcript_uniquename,
+                WithFromValue::Term(term) => &term.name,
+                WithFromValue::Identifier(id) => id,
+                WithFromValue::IdentifierAndName(id_and_name) => &id_and_name.identifier,
             };
 
         self_string.cmp(other_string)
@@ -2032,7 +2032,7 @@ impl AlleleShort {
 
 fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str,
                                 allele_description: &Option<FlexStr>) -> FlexStr {
-    let name = if let Some(ref name) = allele_name {
+    let name = if let Some(name) = allele_name {
         name.as_str().replace("%", "percent")
     } else {
         "unnamed".into()

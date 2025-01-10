@@ -1424,7 +1424,7 @@ phenotypes, so just the first part of this extension will be used:
         };
 
         let rescued_phenotype_extension =
-            if let (Some(ref termid), Some(ref ext)) =
+            if let (Some(termid), Some(ext)) =
                 (&rescued_phenotype_termid, &rescued_phenotype_extension_value)
             {
                 let ext = self.parse_extension_prop(&termid, ext);
@@ -2248,7 +2248,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut codon_adaptation_index = None;
 
             let parse_prop_as_f32 = |p: &Option<FlexStr>| {
-                if let Some(ref prop_value) = p {
+                if let Some(prop_value) = p {
                     let maybe_value = prop_value.parse();
                     if let Ok(parsed_prop) = maybe_value {
                         Some(parsed_prop)
@@ -5651,7 +5651,7 @@ phenotypes, so just the first part of this extension will be used:
 
                     for with_from_value in with_from_iter {
                         match with_from_value {
-                            WithFromValue::Gene(ref gene_short) => {
+                            WithFromValue::Gene(gene_short) => {
                                 self.add_gene_to_hash(seen_genes, identifier,
                                                       &gene_short.uniquename)
                             },
@@ -5866,11 +5866,11 @@ phenotypes, so just the first part of this extension will be used:
 
                         for with_from_value in with_from_iter {
                             match with_from_value {
-                                WithFromValue::Gene(ref gene_short) => {
+                                WithFromValue::Gene(gene_short) => {
                                     self.add_gene_to_hash(&mut seen_genes, termid,
                                                           &gene_short.uniquename)
                                 },
-                                WithFromValue::Transcript(ref transcript_uniquename) => {
+                                WithFromValue::Transcript(transcript_uniquename) => {
                                     self.add_transcript_to_hashes(&mut seen_transcripts, &mut seen_genes,
                                                                   termid,  transcript_uniquename);
                                 },
@@ -6346,13 +6346,13 @@ phenotypes, so just the first part of this extension will be used:
 
                             for with_from_value in with_from_iter {
                                 match with_from_value {
-                                    WithFromValue::Gene(ref gene_short) => {
+                                    WithFromValue::Gene(gene_short) => {
                                         self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
                                                               &gene_short.uniquename);
                                         maybe_add_to_gene_count_hash(reference_uniquename,
                                                                      &gene_short.uniquename, false);
                                     },
-                                    WithFromValue::Transcript(ref transcript_uniquename) => {
+                                    WithFromValue::Transcript(transcript_uniquename) => {
                                         self.add_transcript_to_hashes(&mut seen_transcripts, &mut seen_genes,
                                                                       reference_uniquename,
                                                                       transcript_uniquename);

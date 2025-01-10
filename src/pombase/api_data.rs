@@ -961,7 +961,7 @@ impl APIData {
             return HashSet::new();
         };
 
-        if let Some(ref phase_term) = phase_term {
+        if let Some(phase_term) = phase_term {
             if let Some(downstream_genes) = downstream_genes_by_term.get(phase_term) {
                 downstream_genes.to_owned()
             } else {
