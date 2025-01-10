@@ -23,4 +23,4 @@ Build status
 [![Build status badge](https://github.com/pombase/pombase-chado-json/workflows/Test%20-%20Rust%20stable%20and%20nightly/badge.svg)](https://github.com/pombase/pombase-chado-json/actions)
 
 
-Copyright 2016-2022 Kim Rutherford and PomBase
+Copyright 2016-2025 Kim Rutherford and PomBase
