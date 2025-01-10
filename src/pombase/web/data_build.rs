@@ -14,7 +14,7 @@ use std::collections::{HashMap, HashSet};
 use crate::bio::macromolecular_complexes::macromolecular_complex_data;
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
-use crate::bio::gocam_viz::{make_gocam_data_by_gene, make_gocam_data_by_id};
+
 use crate::db::{raw::*, ChadoQueries};
 
 use crate::gene_history::GeneHistoryMap;
@@ -73,6 +73,7 @@ pub struct WebDataBuild<'a> {
     pdb_gene_entry_map: Option<PDBGeneEntryMap>,
     pdb_ref_entry_map: Option<PDBRefEntryMap>,
     chado_queries: ChadoQueries,
+    orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -133,6 +134,8 @@ pub struct WebDataBuild<'a> {
 
     physical_interaction_annotations: HashSet<InteractionAnnotation>,
     genetic_interaction_annotations: HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>,
+
+    gocam_models: HashMap<GoCamId, GoCamDetails>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -854,21 +857,6 @@ fn get_cumulative_annotation_type_counts(annotation_type_counts: StatsIntegerTab
     cumulative_counts
 }
 
-fn make_gocam_id_and_title_from_prop(gocam: &str) -> GoCamIdAndTitle {
-    let gocam_id_and_title: Vec<&str> = gocam.splitn(2, ":").collect();
-    let gocam_id = gocam_id_and_title[0].into();
-    let maybe_gocam_title: Option<GoCamTitle> =
-        if gocam_id_and_title.len() == 1 {
-            None
-        } else {
-            Some(gocam_id_and_title[1].into())
-        };
-    GoCamIdAndTitle {
-        gocam_id,
-        title: maybe_gocam_title,
-    }
-}
-
 impl <'a> WebDataBuild<'a> {
     pub fn new(raw: &'a Raw,
                domain_data: DomainData,
@@ -878,6 +866,7 @@ impl <'a> WebDataBuild<'a> {
                pdb_gene_entry_map: Option<PDBGeneEntryMap>,
                pdb_ref_entry_map: Option<PDBRefEntryMap>,
                chado_queries: ChadoQueries,
+               orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -890,6 +879,7 @@ impl <'a> WebDataBuild<'a> {
             pdb_gene_entry_map,
             pdb_ref_entry_map,
             chado_queries,
+            orcid_name_map,
             config,
 
             genes: BTreeMap::new(),
@@ -946,6 +936,8 @@ impl <'a> WebDataBuild<'a> {
             ont_annotations: vec![],
 
             gene_expression_measurements: HashMap::new(),
+
+            gocam_models: HashMap::new(),
        }
     }
 
@@ -1913,8 +1905,6 @@ phenotypes, so just the first part of this extension will be used:
         let mut pombephosphoproteomics_unige_ch_starvation_mating_gene: Option<FlexStr> = None;
         let mut pombephosphoproteomics_unige_ch_fusion_gene: Option<FlexStr> = None;
 
-        let mut gocams = HashSet::new();
-
         for prop in feat.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
                 "uniprot_identifier" => uniprot_identifier = prop.value.clone(),
@@ -1934,13 +1924,6 @@ phenotypes, so just the first part of this extension will be used:
                     pombephosphoproteomics_unige_ch_fusion_gene = prop.value.clone(),
                 "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
                 "rnacentral_2d_structure_id" => rnacentral_2d_structure_id = prop.value.clone(),
-                "gocam" => {
-                    if let Some(ref gocam) = prop.value {
-                        let gocam_id_and_title = make_gocam_id_and_title_from_prop(gocam);
-                        gocams.insert(gocam_id_and_title);
-                        ()
-                    }
-                 },
                 _ => (),
             }
         }
@@ -2062,7 +2045,7 @@ phenotypes, so just the first part of this extension will be used:
             orfeome_identifier,
             pombephosphoproteomics_unige_ch_starvation_mating_gene,
             pombephosphoproteomics_unige_ch_fusion_gene,
-            gocams,
+            gocams: HashSet::new(),
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
@@ -2519,6 +2502,33 @@ phenotypes, so just the first part of this extension will be used:
 
     }
 
+    fn add_gocam_model(&mut self, gocam_model_feature: &Feature) {
+        let gocam_id = gocam_model_feature.uniquename.clone();
+        let gocam_title = gocam_model_feature.name.clone().unwrap_or_default();
+        let mut model = GoCamDetails::new(&gocam_id, &gocam_title);
+
+        for prop in gocam_model_feature.featureprops.borrow().iter() {
+            if prop.prop_type.name == "gocam_date" {
+                model.date = prop.value.clone();
+            }
+            if prop.prop_type.name == "gocam_contributor" {
+                if let Some(ref contributor_orcid) = prop.value {
+                    let Some(contributor_name) = self.orcid_name_map.get(contributor_orcid)
+                    else {
+                        panic!("no name found for ORCID for GO-CAM contributor {}", contributor_orcid);
+                    };
+                    let orcid_and_name = OrcidAndName {
+                        orcid: contributor_orcid.to_owned(),
+                        name: contributor_name.to_owned(),
+                    };
+                    model.contributors.push(orcid_and_name);
+                }
+            }
+        }
+
+        self.gocam_models.insert(gocam_id, model);
+    }
+
     fn process_features(&mut self) {
         // we need to process all genes before transcripts
         for feat in &self.raw.features {
@@ -2553,6 +2563,12 @@ phenotypes, so just the first part of this extension will be used:
                     let feature_short = make_feature_short(&self.chromosomes, feat);
                     self.other_features.insert(feat.uniquename.clone(), feature_short);
                 }
+            }
+        }
+
+        for feat in &self.raw.features {
+            if feat.feat_type.name == "gocam_model" {
+                self.add_gocam_model(feat);
             }
         }
     }
@@ -2792,12 +2808,27 @@ phenotypes, so just the first part of this extension will be used:
             .push(interaction_annotation);
     }
 
-    // add physical interaction, legacy genetic interaction, ortholog and paralog annotations
-    fn process_annotation_feature_rels(&mut self) {
+    fn add_gocam_model_gene(&mut self, gocam_model_feature: &Feature, gene_feature: &Feature) {
+        let gocam_id = &gocam_model_feature.uniquename;
+        let Some(ref mut model_details) = self.gocam_models.get_mut(gocam_id)
+        else {
+            panic!("no model details found for: {}", gocam_id);
+        };
+
+        model_details.genes.insert(gene_feature.uniquename.clone());
+    }
+
+    // add physical interaction, legacy genetic interaction, ortholog, paralog annotations
+    // and GO-CAM genes
+    fn process_feature_rels(&mut self) {
         for feature_rel in &self.raw.feature_relationships {
             let rel_name = &feature_rel.rel_type.name;
             let subject_uniquename = &feature_rel.subject.uniquename;
             let object_uniquename = &feature_rel.object.uniquename;
+
+            if feature_rel.object.feat_type.name == "gocam_model" {
+                self.add_gocam_model_gene(&feature_rel.object, &feature_rel.subject);
+            }
 
             for rel_config in &FEATURE_REL_CONFIGS {
                 if rel_name == rel_config.rel_type_name &&
@@ -3561,17 +3592,9 @@ phenotypes, so just the first part of this extension will be used:
                 let annotation_feature_type = cv_config.feature_type.clone();
 
                 let mut pombase_gene_id = None;
-                let mut gocams = HashSet::new();
-
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
                     match cvtermprop.prop_type.name.as_str() {
-                        "pombase_gene_id" =>
-                             pombase_gene_id = Some(cvtermprop.value.clone()),
-                        "gocam" => {
-                            let gocam_prop = cvtermprop.value.as_str();
-                            let gocam_id_and_title = make_gocam_id_and_title_from_prop(gocam_prop);
-                            gocams.insert(gocam_id_and_title);
-                        },
+                        "pombase_gene_id" => pombase_gene_id = Some(cvtermprop.value.clone()),
                         _ => (),
                   }
                 }
@@ -3667,7 +3690,7 @@ phenotypes, so just the first part of this extension will be used:
                                       genotype_count: 0,
                                       xrefs,
                                       pombase_gene_id,
-                                      gocams,
+                                      gocams: HashSet::new(),
                                   });
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
@@ -4023,6 +4046,21 @@ phenotypes, so just the first part of this extension will be used:
         WithFromValue::Identifier(with_or_from_value.clone())
     }
 
+    fn add_gocam_model_term(&mut self, gocam_model_feature: &Feature, cvterm: &Cvterm) {
+        let gocam_id = &gocam_model_feature.uniquename;
+        let Some(ref mut model_details) = self.gocam_models.get_mut(gocam_id)
+        else {
+            panic!("no model details found for: {}", gocam_id);
+        };
+
+        let term_and_name = TermAndName {
+            termid: cvterm.termid(),
+            name: cvterm.name.clone(),
+        };
+
+        model_details.terms.insert(term_and_name);
+    }
+
     // process annotation
     fn process_feature_cvterms(&mut self) {
         let rel_order = self.config.extension_relation_order.clone();
@@ -4031,6 +4069,11 @@ phenotypes, so just the first part of this extension will be used:
         for feature_cvterm in &self.raw.feature_cvterms {
             let feature = &feature_cvterm.feature;
             let cvterm = &feature_cvterm.cvterm;
+
+            if feature.type_name() == "gocam_model" {
+                self.add_gocam_model_term(&feature, &cvterm);
+                continue;
+            }
 
             let termid =
                 match self.base_term_of_extensions.get(&cvterm.termid()) {
@@ -4238,6 +4281,9 @@ phenotypes, so just the first part of this extension will be used:
                         vec![feature.uniquename.clone()]
                     },
                     "genotype_interaction" => {
+                        vec![]
+                    },
+                    "gocam_model" => {
                         vec![]
                     },
                     _ =>
@@ -5389,6 +5435,20 @@ phenotypes, so just the first part of this extension will be used:
         downstream_genes
     }
 
+    pub fn make_gocam_data_by_gene(&self) -> HashMap<GeneUniquename, HashSet<GoCamId>> {
+        let mut ret = HashMap::new();
+
+        for (gocam_id, gocam_details) in &self.gocam_models {
+            for gene_uniquename in &gocam_details.genes {
+                ret.entry(gene_uniquename.clone())
+                   .or_insert_with(HashSet::new)
+                   .insert(gocam_id.clone());
+            }
+        }
+
+        ret
+    }
+
     pub fn make_api_maps(mut self) -> APIMaps {
         let mut gene_summaries: HashMap<GeneUniquename, APIGeneSummary> = HashMap::new();
         let mut gene_name_gene_map = HashMap::new();
@@ -5448,8 +5508,7 @@ phenotypes, so just the first part of this extension will be used:
                                        &self.transcripts, &self.references,
                                        &self.config);
 
-        let gocam_data_by_gene = make_gocam_data_by_gene(&self.genes);
-        let gocam_data_by_gocam_id = make_gocam_data_by_id(&self.genes, &self.terms);
+        let gocam_data_by_gene = self.make_gocam_data_by_gene();
 
         let gene_query_data_map = self.make_gene_query_data_map();
 
@@ -5518,7 +5577,7 @@ phenotypes, so just the first part of this extension will be used:
             secondary_identifiers_map,
             protein_view_data,
             gocam_data_by_gene,
-            gocam_data_by_gocam_id,
+            gocam_data_by_gocam_id: self.gocam_models,
             protein_complex_data,
             protein_complexes: self.protein_complexes,
        }
@@ -7027,14 +7086,34 @@ phenotypes, so just the first part of this extension will be used:
 
         self.references = filtered_refs;
     }
-/*
-    fn store_interaction_detail(&mut self, interactions: &mut HashMap<>
-                                gene_a_uniquename: &GeneUniquename,
-                                interaction_type: &Evidence, gene_b_uniquename: &GeneUniquename,
-                                interaction_detail: &GeneticInteractionDetail) {
+
+    fn set_gene_and_term_gocams(&mut self) {
+        let mut gocams_of_genes = HashMap::new();
+        let mut gocams_of_terms = HashMap::new();
+
+        for gocam_details in self.gocam_models.values() {
+            for gene_uniquename in &gocam_details.genes {
+                gocams_of_genes.entry(gene_uniquename.clone())
+                   .or_insert_with(HashSet::new)
+                   .insert(gocam_details.into());
+            }
+
+            for cvterm in &gocam_details.terms {
+                gocams_of_terms.entry(cvterm.termid.clone())
+                   .or_insert_with(HashSet::new)
+                   .insert(gocam_details.into());
+            }
+        }
+
+        for (gene_uniquename, gocam_id_and_title) in gocams_of_genes.drain() {
+            self.genes.get_mut(&gene_uniquename).unwrap().gocams = gocam_id_and_title;
+        }
+
+        for (termid, gocam_id_and_title) in gocams_of_terms.drain() {
+            self.terms.get_mut(&termid).unwrap().gocams = gocam_id_and_title;
+        }
 
     }
-*/
 
     fn store_genetic_interactions(&mut self) {
         fn get_interaction_details<'a>(interaction_annotations: &'a mut GeneticInteractionMap,
@@ -7766,13 +7845,15 @@ phenotypes, so just the first part of this extension will be used:
         self.store_ont_annotations(false);
         self.store_ont_annotations(true);
         self.process_cvtermpath();
-        self.process_annotation_feature_rels();
+        self.process_feature_rels();
         self.add_target_of_annotations();
         self.set_deletion_viability();
         self.set_gene_flags();
         self.set_term_details_subsets();
         self.set_taxonomic_distributions();
         self.remove_non_curatable_refs();
+
+        self.set_gene_and_term_gocams();
 
         let (physical_interaction_annotations,
             genetic_interaction_annotations) = self.interactions_for_export();

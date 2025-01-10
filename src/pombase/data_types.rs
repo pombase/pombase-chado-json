@@ -132,7 +132,7 @@ pub struct AssignedByPeptideRange {
 
 impl GenericProteinFeature for AssignedByPeptideRange {
     fn range(&self) -> Option<PeptideRange> {
-        Some(self.range.clone())        
+        Some(self.range.clone())
     }
 
     fn assigned_by(&self) -> &Option<AssignedBy> {
@@ -1012,6 +1012,12 @@ impl PartialOrd for WithFromValue {
 }
 
 pub type CuratorOrcid = FlexStr;
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct OrcidAndName {
+    pub orcid: CuratorOrcid,
+    pub name: FlexStr,
+}
 
 pub type Promoter = FlexStr;
 
@@ -2733,28 +2739,41 @@ pub type GoCamTitle = FlexStr;
 #[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, Hash)]
 pub struct GoCamIdAndTitle {
     pub gocam_id: GoCamId,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub title: Option<GoCamTitle>,
+    pub title: GoCamTitle,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct GoCamDetails {
     pub gocam_id: GoCamId,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub title: Option<FlexStr>,
+    pub title: FlexStr,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub genes: HashSet<GeneUniquename>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub terms: HashSet<TermAndName>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub contributors: Vec<OrcidAndName>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub date: Option<FlexStr>,
 }
 
 impl GoCamDetails {
-    pub fn new(gocam_id: &GoCamId, gocam_title: Option<GoCamTitle>) -> GoCamDetails {
+    pub fn new(gocam_id: &GoCamId, gocam_title: &GoCamTitle) -> GoCamDetails {
         GoCamDetails {
             gocam_id: gocam_id.to_owned(),
-            title: gocam_title,
+            title: gocam_title.to_owned(),
             genes: HashSet::new(),
             terms: HashSet::new(),
+            contributors: vec![],
+            date: None,
+        }
+    }
+}
+
+impl From<&GoCamDetails> for GoCamIdAndTitle {
+    fn from(details: &GoCamDetails) -> GoCamIdAndTitle {
+        GoCamIdAndTitle {
+            gocam_id: details.gocam_id.clone(),
+            title: details.title.clone(),
         }
     }
 }

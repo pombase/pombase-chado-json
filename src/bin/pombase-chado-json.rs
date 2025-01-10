@@ -2,9 +2,11 @@ extern crate getopts;
 
 use deadpool_postgres::{Pool, Manager};
 use pombase::bio::pdb_reader::read_pdb_data;
+use pombase::bio::util::parse_orcid_name_map;
 use pombase::db::ChadoQueries;
 use pombase::uniprot::parse_uniprot;
 
+use std::collections::HashMap;
 use std::str::FromStr;
 
 use std::error::Error;
@@ -64,6 +66,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 "GO evidence code to ECO ID mapping from http://purl.obolibrary.org/obo/eco/gaf-eco-mapping.txt", "FILE");
     opts.optopt("", "gene-history-file",
                 "The gene history file in this format: https://github.com/pombase/genome_changelog/blob/master/results/all_coordinate_changes_file_comments_no_type_change.tsv", "FILE");
+    opts.optopt("", "orcid-name-map",
+                "A TSV file mapping ORCIDs to names", "FILE");
     opts.optopt("d", "output-directory",
                 "Destination directory for the output", "DIR");
 
@@ -133,6 +137,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         } else {
            None
         };
+    let orcid_name_map_filename = matches.opt_str("orcid-name-map");
     let output_dir = matches.opt_str("d").unwrap();
 
     let pg_config = tokio_postgres::Config::from_str(&connection_string)?;
@@ -166,11 +171,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
             (None, None)
         };
 
+    let orcid_name_map = 
+        if let Some(ref orcid_name_map_filename) = orcid_name_map_filename {
+            parse_orcid_name_map(orcid_name_map_filename)?
+        } else {
+            HashMap::new()
+        };
+
     let web_data_build = WebDataBuild::new(&raw, interpro_data,
                                            uniprot_data,
                                            rnacentral_data, gene_history,
                                            pdb_entry_map, pdb_ref_entry_map,
                                            chado_queries,
+                                           orcid_name_map,
                                            &config);
     let web_data = web_data_build.get_web_data();
 

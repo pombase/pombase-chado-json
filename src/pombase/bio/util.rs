@@ -416,6 +416,29 @@ pub fn read_fasta(input: &mut dyn std::io::Read)
     Ok(ret)
 }
 
+pub fn parse_orcid_name_map(orcid_name_map_filename: &str)
+    -> Result<std::collections::HashMap<CuratorOrcid, FlexStr>, io::Error>
+{
+    let file = File::open(orcid_name_map_filename)?;
+
+    let bufreader = BufReader::new(file);
+    let mut ret = std::collections::HashMap::new();
+
+    for line in bufreader.lines() {
+        let line = line?;
+
+        let bits: Vec<_> = line.split("\t").collect();
+
+        if bits.len() != 2 {
+            return Err(io::Error::new(ErrorKind::Other, "badly formatted orcid mapping file"));
+        }
+
+        ret.insert(bits[0].into(), bits[1].into());
+    }
+
+    Ok(ret)
+}
+
 #[test]
 fn test_format_fasta() {
     assert!(format_fasta("id1", None, "", 8) == ">id1\n\n");
@@ -480,7 +503,7 @@ TCAACCACATTCAA";
     assert_eq!(records[1].sequence, "TCACTTAAATTCTTCGTCAACCACATTCAA");
 }
 
-use std::{cmp::Ordering, io::BufRead};
+use std::{cmp::Ordering, fs::File, io::{BufRead, ErrorKind}};
 #[cfg(test)]
 use std::collections::{HashSet, HashMap};
 use std::io::{self, BufReader};
