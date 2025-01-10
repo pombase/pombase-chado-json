@@ -763,11 +763,14 @@ fn get_test_web_data() -> WebData {
         community_response_rates: vec![],
         annotation_type_counts_by_year: StatsIntegerTable { header: vec![], data: vec![] },
     };
+    let mut orcid_name_map = HashMap::new();
+    orcid_name_map.insert("0000-0001-6277-726X".into(), "Kim Rutherford".into());
 
     let web_data_build = WebDataBuild::new(&raw, domain_data,
                                            uniprot_data,
                                            rnacentral_data, gene_history,
-                                           None, None, chado_queries, &config);
+                                           None, None, chado_queries,
+                                           orcid_name_map, &config);
     web_data_build.get_web_data()
 }
 
