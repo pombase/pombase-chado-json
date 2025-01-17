@@ -3475,6 +3475,10 @@ phenotypes, so just the first part of this extension will be used:
                 for gene_details in self.genes.values() {
                     for term_annotations in gene_details.cv_annotations.values() {
                         for term_annotation in term_annotations {
+                            if term_annotation.is_not {
+                                // NOT annotations aren't included in subsets
+                                continue;
+                            }
                             let gene_termid = &term_annotation.term;
                             if is_subset_member(&term_and_name.termid, gene_termid) {
                                 subsets_by_gene
