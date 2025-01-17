@@ -6874,7 +6874,7 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    // populated the subsets HashMap
+    // populate the subsets HashMap
     fn make_subsets(&mut self) {
         let mut gene_subsets: IdGeneSubsetMap = HashMap::new();
 
