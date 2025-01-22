@@ -6538,7 +6538,9 @@ phenotypes, so just the first part of this extension will be used:
                         let annotation_detail = self.annotation_details
                             .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
                         for gene_uniquename in &annotation_detail.genes {
-                            seen_genes.insert(gene_uniquename.clone());
+                            if !term_annotation.is_not {
+                                seen_genes.insert(gene_uniquename.clone());
+                            }
                         }
                         if let Some(ref genotype_uniquename) = annotation_detail.genotype {
                             seen_genotypes.insert(genotype_uniquename.clone());

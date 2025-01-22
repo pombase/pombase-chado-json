@@ -2243,7 +2243,9 @@ pub struct TermDetails {
     #[serde_as(as = "Vec<(_, _)>")]
     pub single_allele_genetic_interactions: GeneticInteractionMap,
 
+    // count of genes annotated with this term, excluding NOT annotations
     pub gene_count: usize,
+
     pub genotype_count: usize,
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     pub xrefs: HashMap<FlexStr, TermXref>,
