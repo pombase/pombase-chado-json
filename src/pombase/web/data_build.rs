@@ -2511,6 +2511,11 @@ phenotypes, so just the first part of this extension will be used:
             if prop.prop_type.name == "gocam_date" {
                 model.date = prop.value.clone();
             }
+            if prop.prop_type.name == "gocam_title_termid" {
+                if let Some(ref title_termid) = prop.value {
+                    model.title_terms.insert(title_termid.clone());
+                }
+            }
             if prop.prop_type.name == "gocam_contributor" {
                 if let Some(ref contributor_orcid) = prop.value {
                     let Some(contributor_name) = self.orcid_name_map.get(contributor_orcid)

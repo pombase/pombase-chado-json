@@ -2748,11 +2748,9 @@ pub struct GoCamIdAndTitle {
 pub struct GoCamDetails {
     pub gocam_id: GoCamId,
     pub title: FlexStr,
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub genes: HashSet<GeneUniquename>,
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub terms: HashSet<TermAndName>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub title_terms: HashSet<TermId>,
     pub contributors: Vec<OrcidAndName>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub date: Option<FlexStr>,
@@ -2763,6 +2761,7 @@ impl GoCamDetails {
         GoCamDetails {
             gocam_id: gocam_id.to_owned(),
             title: gocam_title.to_owned(),
+            title_terms: HashSet::new(),
             genes: HashSet::new(),
             terms: HashSet::new(),
             contributors: vec![],
