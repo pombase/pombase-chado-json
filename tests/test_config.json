@@ -453,6 +453,7 @@
   "file_exports": {
     "site_map_reference_prefixes": [],
     "site_map_term_prefixes": [],
+    "exclude_references": [],
     "macromolecular_complexes": null,
     "annotation_subsets": [
       {

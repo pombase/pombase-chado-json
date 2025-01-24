@@ -117,6 +117,7 @@ fn get_test_config() -> Config {
         file_exports: FileExportConfig {
             site_map_reference_prefixes: vec![],
             site_map_term_prefixes: vec![],
+            exclude_references: HashSet::new(),
             macromolecular_complexes: None,
             rnacentral: None,
             annotation_subsets: vec![],
