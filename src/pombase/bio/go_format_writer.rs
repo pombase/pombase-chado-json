@@ -421,6 +421,12 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                     panic!("can't find annotation {}", annotation_id);
                 };
 
+                if let Some(ref reference) = annotation_detail.reference {
+                    if config.file_exports.exclude_references.contains(reference) {
+                        continue;
+                    }
+                }
+
                 let gene_product_form_id = annotation_detail.gene_product_form_id.to_owned();
 
                 if let Some(gene_product_form_id) = gene_product_form_id {
@@ -674,6 +680,11 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
             for annotation_id in &term_annotation.annotations {
                 let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+                if let Some(ref reference) = annotation_detail.reference {
+                    if config.file_exports.exclude_references.contains(reference) {
+                        continue;
+                    }
+                }
                 let go_id = &term_annotation.term;
                 let term_details_arc = data_lookup.get_term(go_id).clone();
                 let term_details_ref = term_details_arc.as_deref().clone().unwrap();

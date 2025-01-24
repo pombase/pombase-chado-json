@@ -293,6 +293,8 @@ pub struct GpadGpiConfig {
 pub struct FileExportConfig {
     pub site_map_term_prefixes: Vec<FlexStr>,
     pub site_map_reference_prefixes: Vec<FlexStr>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub exclude_references: HashSet<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub macromolecular_complexes: Option<MacromolecularComplexesConfig>,
     #[serde(skip_serializing_if="Option::is_none")]
