@@ -472,20 +472,22 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     let local_iso_date = local.format("%F");
     let assigned_by = &config.database_name;
 
-    for aspect in GO_ASPECT_NAMES.iter() {
-        let term_annotations = gene_details.cv_annotations.get(aspect);
-        if needs_nd_annotation(term_annotations) {
-            let relation = get_gpad_nd_relation_of(aspect);
-            let go_aspect_termid =
-                config.file_exports.gpad_gpi.go_aspect_terms.get(aspect).unwrap();
-            let nd_ref = &config.file_exports.nd_reference;
-            let line = format!("{}\t\t{}\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
-                               db_object_id,
-                               relation,
-                               &go_aspect_termid,
-                               nd_ref,
-                               local_iso_date, assigned_by);
-            gpad_writer.write_all(line.as_bytes())?;
+    if config.file_exports.include_nd_lines {
+        for aspect in GO_ASPECT_NAMES.iter() {
+            let term_annotations = gene_details.cv_annotations.get(aspect);
+            if needs_nd_annotation(term_annotations) {
+                let relation = get_gpad_nd_relation_of(aspect);
+                let go_aspect_termid =
+                    config.file_exports.gpad_gpi.go_aspect_terms.get(aspect).unwrap();
+                let nd_ref = &config.file_exports.nd_reference;
+                let line = format!("{}\t\t{}\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
+                                   db_object_id,
+                                   relation,
+                                   &go_aspect_termid,
+                                   nd_ref,
+                                   local_iso_date, assigned_by);
+                gpad_writer.write_all(line.as_bytes())?;
+            }
         }
     }
 
@@ -808,8 +810,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
             }
         }
     }
-    
-    if positive_annotation_count == 0 &&
+
+    if positive_annotation_count == 0 && config.file_exports.include_nd_lines &&
        write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" {
         let local: DateTime<Local> = Local::now();
         let date = local.format("%Y%m%d");

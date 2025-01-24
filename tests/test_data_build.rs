@@ -118,6 +118,7 @@ fn get_test_config() -> Config {
             site_map_reference_prefixes: vec![],
             site_map_term_prefixes: vec![],
             exclude_references: HashSet::new(),
+            include_nd_lines: false,
             macromolecular_complexes: None,
             rnacentral: None,
             annotation_subsets: vec![],

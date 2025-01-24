@@ -295,6 +295,7 @@ pub struct FileExportConfig {
     pub site_map_reference_prefixes: Vec<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub exclude_references: HashSet<FlexStr>,
+    pub include_nd_lines: bool,
     #[serde(skip_serializing_if="Option::is_none")]
     pub macromolecular_complexes: Option<MacromolecularComplexesConfig>,
     #[serde(skip_serializing_if="Option::is_none")]

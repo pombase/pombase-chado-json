@@ -454,6 +454,7 @@
     "site_map_reference_prefixes": [],
     "site_map_term_prefixes": [],
     "exclude_references": [],
+    "include_nd_lines": false,
     "macromolecular_complexes": null,
     "annotation_subsets": [
       {
