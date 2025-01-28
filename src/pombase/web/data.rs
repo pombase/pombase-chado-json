@@ -1190,8 +1190,8 @@ impl WebData {
         Ok(())
     }
 
-    fn write_gene_expression_table(&self, output_dir: &str) -> Result<(), io::Error> {
-        let file_name = format!("{}/gene_expression_table.tsv", output_dir);
+    fn write_htp_gene_expression_table(&self, output_dir: &str) -> Result<(), io::Error> {
+        let file_name = format!("{}/htp_gene_expression_table.tsv", output_dir);
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
@@ -1533,7 +1533,7 @@ impl WebData {
 
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\n",
                                int.gene_uniquename,
-                               int.interactor_uniquename,      
+                               int.interactor_uniquename,
                                load_org_taxonid, load_org_taxonid,
                                int.evidence,
                                int.reference_uniquename.as_deref().unwrap_or_default(),
@@ -1753,7 +1753,7 @@ impl WebData {
         self.write_deletion_viability(config, &misc_path)?;
         self.write_slim_ids_and_names(config, &misc_path)?;
         self.write_transmembrane_domains(config, &misc_path)?;
-        self.write_gene_expression_table(&misc_path)?;
+        self.write_htp_gene_expression_table(&misc_path)?;
         self.write_site_map_txt(config, doc_config, &self.references, &misc_path)?;
         self.write_allele_tsv(&misc_path)?;
         self.write_disease_association(config, &misc_path)?;
