@@ -5,3 +5,4 @@ pub mod pdb_reader;
 pub mod protein_view;
 pub mod macromolecular_complexes;
 pub mod generic_annotation_writer;
+pub mod gene_expression_writer;

@@ -33,6 +33,7 @@ use crate::annotation_util::table_for_export;
 use crate::bio::go_format_writer::write_go_annotation_files;
 use crate::bio::phenotype_format_writer::write_phenotype_annotation_files;
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
+use crate::bio::gene_expression_writer::write_gene_expression_row;
 
 use crate::utils::{join, make_maps_database_tables, store_maps_into_database};
 
@@ -1270,6 +1271,39 @@ impl WebData {
         Ok(())
     }
 
+    fn write_full_gene_expression_table(&self, output_dir: &str)
+           -> Result<(), io::Error>
+    {
+        let file_name = format!("{}/full_gene_expression_table.tsv", output_dir);
+        let file = File::create(file_name)?;
+        let mut writer = BufWriter::new(&file);
+
+        let header = "gene_systematic_id\tgene_name\ttype\textension\tcopies\trange\tevidence\tscale\tcondition\treference\ttaxon\tdate\n";
+        writer.write_all(header.as_bytes())?;
+
+        for gene_details in self.genes.values() {
+            let Some(term_annotations) = gene_details.cv_annotations.get("quantitative_gene_expression")
+            else {
+                continue;
+            };
+
+            for term_annotation in term_annotations {
+                for annotation_id in &term_annotation.annotations {
+                    let annotation_detail = self.get_annotation_detail(*annotation_id)
+                        .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                    write_gene_expression_row(&mut writer,
+                                              &self.terms,
+                                              gene_details,
+                                              &term_annotation.term,
+                                              &annotation_detail)?
+                }
+            }
+        }
+
+        Ok(())
+    }
+
     fn write_site_map_txt(&self, config: &Config, doc_config: &DocConfig,
                           references: &UniquenameReferenceMap, output_dir: &str)
                           -> Result<(), io::Error>
@@ -1754,6 +1788,7 @@ impl WebData {
         self.write_slim_ids_and_names(config, &misc_path)?;
         self.write_transmembrane_domains(config, &misc_path)?;
         self.write_htp_gene_expression_table(&misc_path)?;
+        self.write_full_gene_expression_table(&misc_path)?;
         self.write_site_map_txt(config, doc_config, &self.references, &misc_path)?;
         self.write_allele_tsv(&misc_path)?;
         self.write_disease_association(config, &misc_path)?;
@@ -1764,11 +1799,17 @@ impl WebData {
 
         self.write_apicuron_files(config, &self.references, &misc_path)?;
 
+        println!("wrote miscellaneous files");
+
         self.write_stats(&web_json_path)?;
         self.write_detailed_stats(&web_json_path)?;
 
+        println!("wrote stats files");
+
         let gff_path = self.create_dir(output_dir, "gff")?;
         self.write_gff(config, &gff_path)?;
+
+        println!("wrote GFF files");
 
         Ok(())
     }
