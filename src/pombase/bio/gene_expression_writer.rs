@@ -63,7 +63,16 @@ pub fn write_gene_expression_row(writer: &mut dyn Write,
         }
     };
 
-    let copies_per_cell = gene_ex_props.copies_per_cell.as_ref().unwrap_or(&empty_string);
+    let copies_per_cell =
+        if let Some(ref copies_per_cell) = gene_ex_props.copies_per_cell {
+            if copies_per_cell == "ND" {
+                &empty_string
+            } else {
+                copies_per_cell
+            }
+        } else {
+            &empty_string
+        };
     let avg_copies_per_cell = gene_ex_props.avg_copies_per_cell.as_ref().unwrap_or(&empty_string);
     let scale = &gene_ex_props.scale;
 
