@@ -71,12 +71,15 @@ pub fn write_gene_expression_row(writer: &mut dyn Write,
 
     let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
 
-    let conditions =
+    let mut condition_names =
         annotation_detail.conditions.iter().map(|termid| {
             terms.get(termid).expect(&format!("failed to find term details for {}", termid)).name.clone()
         })
-        .collect::<Vec<_>>()
-        .join(",");
+        .collect::<Vec<_>>();
+
+    condition_names.sort();
+
+    let conditions = condition_names.join(",");
 
     let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                        gene_uniquename, gene_name, annotation_type,
