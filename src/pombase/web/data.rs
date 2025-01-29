@@ -1278,7 +1278,7 @@ impl WebData {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
-        let header = "gene_systematic_id\tgene_name\ttype\textension\tcopies\trange\tevidence\tscale\tcondition\treference\ttaxon\tdate\n";
+        let header = "gene_systematic_id\tgene_name\ttype\textension\tcopies_per_cell\trange\tevidence\tscale\tcondition\treference\ttaxon\tdate\n";
         writer.write_all(header.as_bytes())?;
 
         for gene_details in self.genes.values() {
