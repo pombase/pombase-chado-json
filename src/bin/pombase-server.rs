@@ -4,7 +4,10 @@ use axum::{
     body::Body, extract::{Path, Request, State}, http::{header, HeaderMap, StatusCode}, response::{Html, IntoResponse, Response}, routing::{get, post}, Json, Router, ServiceExt
 };
 
-use tokio::fs::read;
+use axum_extra::{headers::Range, TypedHeader};
+use axum_range::{KnownSize, Ranged};
+use tokio::fs::{read, File};
+
 use tower::layer::Layer;
 
 use tower_http::normalize_path::NormalizePathLayer;
@@ -52,6 +55,16 @@ struct TermLookupResponse {
     summary: Option<SolrTermSummary>,
 }
 
+
+async fn get_file_range(range: Option<TypedHeader<Range>>, file_path: &str)
+      -> Ranged<KnownSize<File>>
+{
+    let file = File::open(file_path).await.unwrap();
+    let body = KnownSize::file(file).await.unwrap();
+    let range = range.map(|TypedHeader(range)| range);
+    Ranged::new(range, body)
+}
+
 async fn get_static_file(path: &str) -> Response {
     let res = read(path).await;
 
@@ -81,7 +94,8 @@ struct AllState {
 // If the path is a directory, return path+"/index.html".  Otherwise
 // try the path, then try path + ".json", then default to loading the
 // Angular app from /index.html
-async fn get_misc(Path(mut path): Path<String>,
+async fn get_misc(range: Option<TypedHeader<Range>>,
+                  Path(mut path): Path<String>,
                   State(all_state): State<Arc<AllState>>)
             -> Response
 {
@@ -104,7 +118,7 @@ async fn get_misc(Path(mut path): Path<String>,
     }
 
     if std::path::Path::new(&full_path).exists() {
-        return get_static_file(&full_path).await;
+        return get_file_range(range, &full_path).await.into_response();
     }
 
     let json_path = format!("{}.json", full_path);

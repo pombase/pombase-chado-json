@@ -35,6 +35,8 @@ tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6.2", features = ["fs", "normalize-path"] }
 axum = { version = "0.8", features = ["macros"] }
 axum-macros = "0.5"
+axum-range = "0.5"
+axum-extra = "0.10"
 http-body-util = "0.1.2"
 percent-encoding = "2.3.1"
 mime_guess = "2.0"
