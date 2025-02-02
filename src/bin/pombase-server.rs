@@ -56,13 +56,13 @@ struct TermLookupResponse {
 }
 
 
-async fn get_file_range(range: Option<TypedHeader<Range>>, file_path: &str)
+async fn get_file_range(range: Range, file_path: &str)
       -> Ranged<KnownSize<File>>
 {
     let file = File::open(file_path).await.unwrap();
     let body = KnownSize::file(file).await.unwrap();
-    let range = range.map(|TypedHeader(range)| range);
-    Ranged::new(range, body)
+
+    Ranged::new(Some(range), body)
 }
 
 async fn get_static_file(path: &str) -> Response {
@@ -118,7 +118,11 @@ async fn get_misc(range: Option<TypedHeader<Range>>,
     }
 
     if std::path::Path::new(&full_path).exists() {
-        return get_file_range(range, &full_path).await.into_response();
+        if let Some(TypedHeader(maybe_range_header)) = range {
+           return get_file_range(maybe_range_header, &full_path).await.into_response();
+        } else {
+           return get_static_file(&full_path).await;
+        }
     }
 
     let json_path = format!("{}.json", full_path);
