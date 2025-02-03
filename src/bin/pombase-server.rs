@@ -68,10 +68,15 @@ async fn get_file_range(range: Range, file_path: &str)
 async fn get_static_file(path: &str) -> Response {
     let res = read(path).await;
 
-    let content_type = match mime_guess::from_path(&path).first_raw() {
-        Some(mime) => mime,
-        None => "text/plain"
-    };
+    let content_type =
+        if path.ends_with(".ix") || path.ends_with(".ixx") {
+            "application/octet-stream"
+        } else {
+            match mime_guess::from_path(&path).first_raw() {
+                Some(mime) => mime,
+                None => "text/plain"
+            }
+        };
 
     match res {
         Ok(bytes) => {
