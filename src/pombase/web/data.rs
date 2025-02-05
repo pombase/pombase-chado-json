@@ -1390,7 +1390,7 @@ impl WebData {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
-        let header = "#gene_systematic_id\tgene_name\tcurrent_internal_id\tallele_name\tallele_type\tallele_description\tsynonyms\n";
+        let header = "#gene_systematic_id\tgene_name\tallele_current_internal_id\tallele_name\tallele_type\tallele_description\tallele_synonyms\n";
         writer.write_all(header.as_bytes())?;
 
         let empty_string = flex_str!("");
