@@ -8,7 +8,7 @@ use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
 use tokio::fs::{read, File};
 
-use tower::layer::Layer;
+use tower::{layer::Layer, timeout::TimeoutLayer};
 
 use tower_http::normalize_path::NormalizePathLayer;
 
@@ -23,7 +23,7 @@ extern crate serde_derive;
 
 extern crate pombase;
 
-use std::{process, sync::Arc};
+use std::{process, sync::Arc, time::Duration};
 use std::env;
 
 use getopts::Options;
@@ -793,5 +793,6 @@ async fn main() {
 
     axum::serve(listener, ServiceExt::<Request>::into_make_service(app))
         .await
-        .unwrap();
+        .unwrap()
+        .layer(TimeoutLayer::new(Duration::from_secs(120)));
 }
