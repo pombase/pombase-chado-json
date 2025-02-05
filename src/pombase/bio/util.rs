@@ -70,6 +70,7 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
 
 fn to_gff(chromosome_export_id: &str,
           source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str,
+          maybe_characterisation_status: Option<&str>,
           location: &ChromosomeLocation, maybe_parent: Option<&str>) -> String {
     let phase_char =
         if let Some(ref phase) = location.phase {
@@ -105,6 +106,11 @@ fn to_gff(chromosome_export_id: &str,
         ret_val.push_str(name);
     };
 
+    if let Some(characterisation_status) = maybe_characterisation_status {
+        ret_val.push_str(";characterisation_status=");
+        ret_val.push_str(characterisation_status);
+    }
+
     ret_val
 }
 
@@ -129,14 +135,12 @@ pub fn format_gene_gff(chromosome_export_id: &str,
                        gene: &GeneDetails) -> Vec<String> {
     let mut ret_val = vec![];
     if let Some (ref gene_loc) = gene.location {
-        let maybe_gene_name =
-            gene.name.as_ref().map(|gene_name| gene_name as &str);
-
         let gene_type = get_gff_gene_type(gene);
 
         let gene_gff_line =
-            to_gff(chromosome_export_id, source, &gene.uniquename, maybe_gene_name,
-                   "gene", gene_loc, None);
+            to_gff(chromosome_export_id, source, &gene.uniquename,
+                   gene.name.as_deref(),
+                   "gene", gene.characterisation_status.as_deref(), gene_loc, None);
 
         ret_val.push(format!("{};so_term_name={}", gene_gff_line, gene_type));
 
@@ -149,6 +153,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
             ret_val.push(to_gff(chromosome_export_id,
                                 source, transcript_uniquename, None,
                                 &transcript_details.transcript_type,
+                                None,
                                 &transcript_details.location,
                                 Some(&gene.uniquename)));
             for part in &transcript_details.parts {
@@ -163,6 +168,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
                     };
                 ret_val.push(to_gff(chromosome_export_id,
                                     source, &part.uniquename, None, &gff_feat_type,
+                                    None,
                                     &part.location,
                                     Some(transcript_uniquename)));
             }
@@ -177,7 +183,7 @@ pub fn format_misc_feature_gff(chromosome_export_id: &str,
     let feature_type_name = format!("{}", feature_short.feature_type);
     ret_val.push(to_gff(chromosome_export_id,
                         source, &feature_short.uniquename, None,
-                        &feature_type_name, &feature_short.location, None));
+                        &feature_type_name, None, &feature_short.location, None));
     ret_val
 }
 
@@ -464,7 +470,7 @@ fn test_format_gff() {
 
     assert_eq!(gene_gff_lines.len(), 13);
     assert_eq!(gene_gff_lines[0],
-               "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34;so_term_name=protein_coding_gene");
+               "chromosome_3\tPomBase\tgene\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06;Name=dom34;characterisation_status=biological role published;so_term_name=protein_coding_gene");
     assert_eq!(gene_gff_lines[1],
                "chromosome_3\tPomBase\tmRNA\t729054\t730829\t.\t+\t.\tID=SPCC18B5.06.1;Parent=SPCC18B5.06");
     assert_eq!(gene_gff_lines[2],
