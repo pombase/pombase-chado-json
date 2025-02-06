@@ -6,11 +6,13 @@ use axum::{
 
 use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
+use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
 
 use tower::{layer::Layer, timeout::TimeoutLayer};
 
 use tower_http::normalize_path::NormalizePathLayer;
+use tower_http::trace::TraceLayer;
 
 use serde::Serialize;
 use serde_json::{json, Value};
@@ -706,6 +708,14 @@ async fn main() {
         process::exit(1);
     }
 
+    tracing_subscriber::fmt()
+        .with_env_filter(
+            EnvFilter::try_from_default_env()
+                .or_else(|_| EnvFilter::try_new("pombase-chado-json=warn,tower_http=warn"))
+                .unwrap(),
+        )
+        .init();
+
     let bind_address_and_port = matches.opt_str("bind-address-and-port");
     let listener =
         if let Some(bind_address_and_port) = bind_address_and_port {
@@ -718,7 +728,6 @@ async fn main() {
     let api_maps_database_path = matches.opt_str("d").unwrap();
 
     let search_maps_filename = matches.opt_str("m").unwrap();
-    println!("Reading data files ...");
 
     let site_db =
         if let Some(conn_str) = site_db_conn_string {
@@ -787,7 +796,8 @@ async fn main() {
         .route("/api/v1/dataset/latest/summary/term/{id}", get(get_term_summary_by_id))
         .route("/ping", get(ping))
         .fallback(not_found)
-        .with_state(Arc::new(all_state));
+        .with_state(Arc::new(all_state))
+        .layer(TraceLayer::new_for_http());
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
 
@@ -795,4 +805,8 @@ async fn main() {
         .await
         .unwrap()
         .layer(TimeoutLayer::new(Duration::from_secs(120)));
+
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
 }
