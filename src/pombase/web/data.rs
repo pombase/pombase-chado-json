@@ -33,7 +33,7 @@ use crate::annotation_util::table_for_export;
 use crate::bio::go_format_writer::write_go_annotation_files;
 use crate::bio::phenotype_format_writer::write_phenotype_annotation_files;
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
-use crate::bio::gene_expression_writer::write_gene_expression_row;
+use crate::bio::gene_expression_writer::{write_quantitative_expression_row, write_qualitative_expression_row};
 
 use crate::utils::{join, make_maps_database_tables, store_maps_into_database};
 
@@ -1191,7 +1191,7 @@ impl WebData {
         Ok(())
     }
 
-    fn write_htp_gene_expression_table(&self, output_dir: &str) -> Result<(), io::Error> {
+    fn write_htp_quant_expression_table(&self, output_dir: &str) -> Result<(), io::Error> {
         let file_name = format!("{}/htp_gene_expression_table.tsv", output_dir);
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
@@ -1271,7 +1271,7 @@ impl WebData {
         Ok(())
     }
 
-    fn write_full_gene_expression_table(&self, output_dir: &str)
+    fn write_full_quant_expression_table(&self, output_dir: &str)
            -> Result<(), io::Error>
     {
         let file_name = format!("{}/full_gene_expression_table.tsv", output_dir);
@@ -1292,11 +1292,44 @@ impl WebData {
                     let annotation_detail = self.get_annotation_detail(*annotation_id)
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
-                    write_gene_expression_row(&mut writer,
+                    write_quantitative_expression_row(&mut writer,
                                               &self.terms,
                                               gene_details,
                                               &term_annotation.term,
                                               &annotation_detail)?
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn write_qualitative_expression_table(&self, output_dir: &str)
+           -> Result<(), io::Error>
+    {
+        let file_name = format!("{}/qualitative_gene_expression.tsv", output_dir);
+        let file = File::create(file_name)?;
+        let mut writer = BufWriter::new(&file);
+
+        let header = "gene_systematic_id\tgene_name\ttype\tevidence\tqualifier\textension\treference\ttaxon\tdate\n";
+        writer.write_all(header.as_bytes())?;
+
+        for gene_details in self.genes.values() {
+            let Some(term_annotations) = gene_details.cv_annotations.get("qualitative_gene_expression")
+            else {
+                continue;
+            };
+
+            for term_annotation in term_annotations {
+                for annotation_id in &term_annotation.annotations {
+                    let annotation_detail = self.get_annotation_detail(*annotation_id)
+                        .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                    write_qualitative_expression_row(&mut writer,
+                                                     &self.terms,
+                                                     gene_details,
+                                                     &term_annotation.term,
+                                                     &annotation_detail)?
                 }
             }
         }
@@ -1787,8 +1820,9 @@ impl WebData {
         self.write_deletion_viability(config, &misc_path)?;
         self.write_slim_ids_and_names(config, &misc_path)?;
         self.write_transmembrane_domains(config, &misc_path)?;
-        self.write_htp_gene_expression_table(&misc_path)?;
-        self.write_full_gene_expression_table(&misc_path)?;
+        self.write_htp_quant_expression_table(&misc_path)?;
+        self.write_full_quant_expression_table(&misc_path)?;
+        self.write_qualitative_expression_table(&misc_path)?;
         self.write_site_map_txt(config, doc_config, &self.references, &misc_path)?;
         self.write_allele_tsv(&misc_path)?;
         self.write_disease_association(config, &misc_path)?;

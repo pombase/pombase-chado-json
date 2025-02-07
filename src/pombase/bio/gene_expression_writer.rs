@@ -22,11 +22,11 @@ fn extension_to_string(extension: &[ExtPart]) -> String {
     part_strings.join(",")
 }
 
-pub fn write_gene_expression_row(writer: &mut dyn Write,
-                                 terms: &TermIdDetailsMap,
-                                 gene_details: &GeneDetails,
-                                 annotation_termid: &TermId,
-                                 annotation_detail: &OntAnnotationDetail)
+pub fn write_quantitative_expression_row(writer: &mut dyn Write,
+                                         terms: &TermIdDetailsMap,
+                                         gene_details: &GeneDetails,
+                                         annotation_termid: &TermId,
+                                         annotation_detail: &OntAnnotationDetail)
    -> Result<(), io::Error>
 {
     let empty_string = flex_str!("");
@@ -95,6 +95,56 @@ pub fn write_gene_expression_row(writer: &mut dyn Write,
                        extension_string, avg_copies_per_cell, copies_per_cell,
                        evidence, scale, conditions,
                        reference, gene_details.taxonid, date);
+
+    writer.write_all(line.as_bytes())?;
+
+    Ok(())
+}
+
+const VALID_QUALIFIERS: [&str; 8] =
+    ["qualifier", "increased", "decreased", "present", "unchanged", "absent",
+     "constant", "fluctuates"];
+
+pub fn write_qualitative_expression_row(writer: &mut dyn Write,
+                                        terms: &TermIdDetailsMap,
+                                        gene_details: &GeneDetails,
+                                        annotation_termid: &TermId,
+                                        annotation_detail: &OntAnnotationDetail)
+   -> Result<(), io::Error>
+{
+    let empty_string = flex_str!("");
+
+    let gene_uniquename = &gene_details.uniquename;
+    let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+
+    let Some(annotation_term) = terms.get(annotation_termid)
+    else {
+        panic!("can't find term details for: {}", annotation_termid);
+    };
+
+    let Some((annotation_type, qualifier)) = annotation_term.name.rsplit_once(" ")
+    else {
+        panic!("can't parse term name {} {}", annotation_term.termid, annotation_term.name);
+    };
+
+    if !VALID_QUALIFIERS.contains(&qualifier) {
+        eprintln!(r#"invalid qualifier "{}" from term name "{}""#,
+                  qualifier, annotation_term.name);
+        return Ok(());
+    }
+
+    let extension_string = extension_to_string(&annotation_detail.extension);
+    let reference = annotation_detail.reference.as_ref().unwrap_or(&empty_string);
+
+    let evidence = annotation_detail.evidence.as_ref().unwrap_or(&empty_string);
+
+    let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
+
+    let line =
+        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                gene_uniquename, gene_name, annotation_type,
+                evidence, qualifier, extension_string,
+                reference, gene_details.taxonid, date);
 
     writer.write_all(line.as_bytes())?;
 
