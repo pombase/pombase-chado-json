@@ -627,7 +627,8 @@ async fn get_stats(Path(graph_type): Path<String>,
         "ltp_annotations_per_pub_per_year_range" |
         "htp_annotations_per_pub_per_year_range" |
         "community_response_rates" |
-        "cumulative_annotation_type_counts_by_year"
+        "cumulative_annotation_type_counts_by_year" |
+        "cumulative_micropublications_by_year"
             => all_state.stats_plots.get_svg_graph(graph_type.as_ref()).await,
         _ => return StatusCode::NOT_FOUND.into_response(),
     };

@@ -3123,6 +3123,8 @@ pub struct DetailedStats {
     pub community_response_rates: Vec<CommunityResponseRate>,
     pub annotation_type_counts_by_year: StatsIntegerTable,
     pub cumulative_annotation_type_counts_by_year: StatsIntegerTable,
+    pub micropublications_by_year: StatsIntegerTable,
+    pub cumulative_micropublications_by_year: StatsIntegerTable,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

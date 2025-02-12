@@ -7694,6 +7694,54 @@ phenotypes, so just the first part of this extension will be used:
         (genes_data, ltp_annotations_data, htp_annotations_data)
     }
 
+    fn get_micropublications_by_year(&self)
+        -> (StatsIntegerTable, StatsIntegerTable)
+    {
+        let mut by_year_map = BTreeMap::new();
+
+        for reference in self.references.values() {
+            let Some(ref pub_year) = reference.publication_year
+            else {
+                continue;
+            };
+
+            let Some(ref citation) = reference.citation
+            else {
+                continue;
+            };
+
+            if !citation.contains("MicroPubl Biol") {
+                continue;
+            }
+
+            *by_year_map.entry(pub_year.clone())
+                .or_insert(0) += 1;
+        }
+
+        let header = vec!["date".to_owned(), "count".to_owned()];
+        let mut data = vec![];
+        let mut cumulative_data = vec![];
+        let mut total = 0;
+
+        for (year, count) in by_year_map.iter() {
+            data.push((year.to_std_string(), vec![*count]));
+            total += *count;
+            cumulative_data.push((year.to_std_string(), vec![total]));
+        }
+
+        let by_year = StatsIntegerTable {
+            header: header.clone(),
+            data,
+        };
+
+        let cumulative_by_year = StatsIntegerTable {
+            header: header.clone(),
+            data: cumulative_data,
+        };
+
+        (by_year, cumulative_by_year)
+    }
+
     fn get_detailed_stats(&self) -> DetailedStats {
         let pub_stats_header = vec!["date".to_owned(), "curatable".to_owned(),
                                     "community_curated".to_owned(),
@@ -7716,6 +7764,8 @@ phenotypes, so just the first part of this extension will be used:
             self.chado_queries.annotation_type_counts_by_year.clone();
         let cumulative_annotation_type_counts_by_year =
             get_cumulative_annotation_type_counts(annotation_type_counts_by_year.clone());
+        let (micropublications_by_year, cumulative_micropublications_by_year) =
+            self.get_micropublications_by_year();
 
         DetailedStats {
             curated_by_month: StatsIntegerTable {
@@ -7749,6 +7799,8 @@ phenotypes, so just the first part of this extension will be used:
             community_response_rates: self.chado_queries.community_response_rates.clone(),
             annotation_type_counts_by_year,
             cumulative_annotation_type_counts_by_year,
+            micropublications_by_year,
+            cumulative_micropublications_by_year,
         }
     }
 
