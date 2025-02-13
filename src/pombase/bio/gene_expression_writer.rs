@@ -122,7 +122,7 @@ pub fn write_qualitative_expression_row(writer: &mut dyn Write,
         panic!("can't find term details for: {}", annotation_termid);
     };
 
-    let Some((annotation_type, qualifier)) = annotation_term.name.rsplit_once(" ")
+    let Some((mut annotation_type, qualifier)) = annotation_term.name.rsplit_once(" ")
     else {
         panic!("can't parse term name {} {}", annotation_term.termid, annotation_term.name);
     };
@@ -131,6 +131,10 @@ pub fn write_qualitative_expression_row(writer: &mut dyn Write,
         eprintln!(r#"invalid qualifier "{}" from term name "{}""#,
                   qualifier, annotation_term.name);
         return Ok(());
+    }
+
+    if let Some(prefix) = annotation_type.strip_suffix(" level") {
+        annotation_type = prefix;
     }
 
     let extension_string = extension_to_string(&annotation_detail.extension);
