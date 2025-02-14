@@ -159,7 +159,12 @@ pub fn format_gene_gff(chromosome_export_id: &str,
             for part in &transcript_details.parts {
                 let gff_feat_type =
                     match part.feature_type {
-                        FeatureType::Exon => "CDS".to_owned(),
+                        FeatureType::Exon =>
+                            if gene.feature_type == "mRNA gene" || gene.feature_type == "pseudogene" {
+                                "CDS".to_owned()
+                            } else {
+                                "exon".to_owned()
+                            },
                         FeatureType::CdsIntron | FeatureType::FivePrimeUtrIntron |
                         FeatureType::ThreePrimeUtrIntron => "intron".to_owned(),
                         FeatureType::FivePrimeUtr => "five_prime_UTR".to_owned(),
