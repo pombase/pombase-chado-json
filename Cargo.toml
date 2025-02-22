@@ -2,8 +2,8 @@
 name = "pombase-chado-json"
 version = "213.26.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
-edition = "2021"
-rust-version = "1.84"
+edition = "2024"
+rust-version = "1.85"
 resolver = "3"
 
 [lib]

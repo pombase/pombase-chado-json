@@ -54,7 +54,7 @@ pub fn write_quantitative_expression_row(writer: &mut dyn Write,
     let extension_string = extension_to_string(&annotation_detail.extension);
     let reference = annotation_detail.reference.as_ref().unwrap_or(&empty_string);
 
-    let Some(ref gene_ex_props) = &annotation_detail.gene_ex_props
+    let Some(gene_ex_props) = &annotation_detail.gene_ex_props
     else {
         if reference.len() == 0 {
             panic!("no gene_ex_props for gene expression");
