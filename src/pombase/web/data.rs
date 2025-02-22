@@ -1750,7 +1750,7 @@ impl WebData {
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
 
-        writeln!(writer, "model_id\tmodel_title\tactivity_id\tactivity_label\ttype\tprocess\tinput\toutput\toccurs_in\tlocated_in")?;
+        writeln!(writer, "model_id\tmodel_title\tactivity_id\tactivity_label\tprocess\tinput\toutput\toccurs_in\tlocated_in\ttype")?;
 
         for model in &self.gocam_models {
             let model_id = model.id();
