@@ -7,6 +7,7 @@ use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
 use std::usize;
 
+use pombase_gocam::GoCamModel;
 use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
@@ -74,6 +75,7 @@ pub struct WebDataBuild<'a> {
     pdb_ref_entry_map: Option<PDBRefEntryMap>,
     chado_queries: ChadoQueries,
     orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
+    gocam_models: Vec<GoCamModel>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -135,7 +137,7 @@ pub struct WebDataBuild<'a> {
     physical_interaction_annotations: HashSet<InteractionAnnotation>,
     genetic_interaction_annotations: HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>,
 
-    gocam_models: HashMap<GoCamId, GoCamDetails>,
+    gocam_summaries: HashMap<GoCamId, GoCamDetails>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -867,6 +869,7 @@ impl <'a> WebDataBuild<'a> {
                pdb_ref_entry_map: Option<PDBRefEntryMap>,
                chado_queries: ChadoQueries,
                orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
+               gocam_models: Vec<GoCamModel>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -880,6 +883,7 @@ impl <'a> WebDataBuild<'a> {
             pdb_ref_entry_map,
             chado_queries,
             orcid_name_map,
+            gocam_models,
             config,
 
             genes: BTreeMap::new(),
@@ -937,7 +941,7 @@ impl <'a> WebDataBuild<'a> {
 
             gene_expression_measurements: HashMap::new(),
 
-            gocam_models: HashMap::new(),
+            gocam_summaries: HashMap::new(),
        }
     }
 
@@ -2531,7 +2535,7 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
-        self.gocam_models.insert(gocam_id, model);
+        self.gocam_summaries.insert(gocam_id, model);
     }
 
     fn process_features(&mut self) {
@@ -2815,7 +2819,7 @@ phenotypes, so just the first part of this extension will be used:
 
     fn add_gocam_model_gene(&mut self, gocam_model_feature: &Feature, gene_feature: &Feature) {
         let gocam_id = &gocam_model_feature.uniquename;
-        let Some(ref mut model_details) = self.gocam_models.get_mut(gocam_id)
+        let Some(ref mut model_details) = self.gocam_summaries.get_mut(gocam_id)
         else {
             panic!("no model details found for: {}", gocam_id);
         };
@@ -4057,7 +4061,7 @@ phenotypes, so just the first part of this extension will be used:
 
     fn add_gocam_model_term(&mut self, gocam_model_feature: &Feature, cvterm: &Cvterm) {
         let gocam_id = &gocam_model_feature.uniquename;
-        let Some(ref mut model_details) = self.gocam_models.get_mut(gocam_id)
+        let Some(ref mut model_details) = self.gocam_summaries.get_mut(gocam_id)
         else {
             panic!("no model details found for: {}", gocam_id);
         };
@@ -5447,8 +5451,8 @@ phenotypes, so just the first part of this extension will be used:
     pub fn make_gocam_data_by_gene(&self) -> HashMap<GeneUniquename, HashSet<GoCamId>> {
         let mut ret = HashMap::new();
 
-        for (gocam_id, gocam_details) in &self.gocam_models {
-            for gene_uniquename in &gocam_details.genes {
+        for (gocam_id, gocam_summary) in &self.gocam_summaries {
+            for gene_uniquename in &gocam_summary.genes {
                 ret.entry(gene_uniquename.clone())
                    .or_insert_with(HashSet::new)
                    .insert(gocam_id.clone());
@@ -5586,7 +5590,7 @@ phenotypes, so just the first part of this extension will be used:
             secondary_identifiers_map,
             protein_view_data,
             gocam_data_by_gene,
-            gocam_data_by_gocam_id: self.gocam_models,
+            gocam_data_by_gocam_id: self.gocam_summaries,
             protein_complex_data,
             protein_complexes: self.protein_complexes,
        }
@@ -7102,7 +7106,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut gocams_of_genes = HashMap::new();
         let mut gocams_of_terms = HashMap::new();
 
-        for gocam_details in self.gocam_models.values() {
+        for gocam_details in self.gocam_summaries.values() {
             for gene_uniquename in &gocam_details.genes {
                 gocams_of_genes.entry(gene_uniquename.clone())
                    .or_insert_with(HashSet::new)
@@ -7949,6 +7953,8 @@ phenotypes, so just the first part of this extension will be used:
         let solr_term_summaries = self.make_solr_term_summaries();
         let solr_reference_summaries = self.make_solr_reference_summaries();
 
+        let gocam_models = self.gocam_models.clone();
+
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,
             gene_summaries: solr_gene_summaries,
@@ -8006,6 +8012,7 @@ phenotypes, so just the first part of this extension will be used:
             ont_annotations,
             stats,
             detailed_stats,
+            gocam_models,
 
             physical_interaction_annotations,
             genetic_interaction_annotations,

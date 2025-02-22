@@ -7,6 +7,8 @@ use std::io::{Write, BufWriter};
 use std::io;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use pombase_gocam::GoCamModel;
+use pombase_gocam_process::find_holes;
 use regex::Regex;
 
 use flate2::Compression;
@@ -59,6 +61,7 @@ pub struct WebData {
     pub ont_annotations: Vec<OntAnnotation>,
     pub stats: Stats,
     pub detailed_stats: DetailedStats,
+    pub gocam_models: Vec<GoCamModel>,
 
     pub physical_interaction_annotations: Vec<InteractionAnnotation>,
     pub genetic_interaction_annotations: Vec<InteractionAnnotation>,
@@ -1742,6 +1745,28 @@ impl WebData {
         Ok(())
     }
 
+    fn write_gocam_model_hole_table(&self, output_dir: &str) -> Result<(), io::Error> {
+        let file_name = String::new() + output_dir + "/gocam_model_holes_table.tsv";
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+
+        writeln!(writer, "model_id\tmodel_title\tactivity_id\tactivity_label\ttype\tprocess\tinput\toutput\toccurs_in\tlocated_in")?;
+
+        for model in &self.gocam_models {
+            let model_id = model.id();
+            let model_title = model.title();
+
+            let hole_nodes = find_holes(&model);
+
+            for hole_node in hole_nodes {
+                writeln!(writer, "{}\t{}\t{}", model_id,
+                         model_title, hole_node)?;
+            }
+        }
+
+        Ok(())
+    }
+
     fn write_sqlite_db(&self, output_dir: &str) -> anyhow::Result<()> {
         let db_path = String::new() + output_dir + "/" + API_MAPS_SQLITE3_FILE_NAME;
         let mut conn = Connection::open(db_path)?;
@@ -1828,6 +1853,7 @@ impl WebData {
         self.write_disease_association(config, &misc_path)?;
         self.write_modifications(config, &misc_path)?;
         self.write_interactions(config, &misc_path)?;
+        self.write_gocam_model_hole_table(&misc_path)?;
 
         self.write_annotation_subsets(config, &misc_path)?;
 

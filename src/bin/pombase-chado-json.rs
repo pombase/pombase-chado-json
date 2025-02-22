@@ -1,6 +1,7 @@
 extern crate getopts;
 
 use deadpool_postgres::{Pool, Manager};
+use pombase::bio::gocam_model_process::read_gocam_models;
 use pombase::bio::pdb_reader::read_pdb_data;
 use pombase::bio::util::parse_orcid_name_map;
 use pombase::db::ChadoQueries;
@@ -68,6 +69,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 "The gene history file in this format: https://github.com/pombase/genome_changelog/blob/master/results/all_coordinate_changes_file_comments_no_type_change.tsv", "FILE");
     opts.optopt("", "orcid-name-map",
                 "A TSV file mapping ORCIDs to names", "FILE");
+    opts.optopt("", "gocam-model-directory",
+                "The directory containing the GO-CAM model JSON files", "DIR");
     opts.optopt("d", "output-directory",
                 "Destination directory for the output", "DIR");
 
@@ -138,6 +141,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
            None
         };
     let orcid_name_map_filename = matches.opt_str("orcid-name-map");
+    let gocam_model_dir = matches.opt_str("gocam-model-directory");
+
+    let gocam_models =
+        if let Some(model_dir) = gocam_model_dir {
+            read_gocam_models(&model_dir)?
+        } else {
+            vec![]
+        };
+
     let output_dir = matches.opt_str("d").unwrap();
 
     let pg_config = tokio_postgres::Config::from_str(&connection_string)?;
@@ -184,6 +196,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                            pdb_entry_map, pdb_ref_entry_map,
                                            chado_queries,
                                            orcid_name_map,
+                                           gocam_models,
                                            &config);
     let web_data = web_data_build.get_web_data();
 

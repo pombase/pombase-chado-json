@@ -772,7 +772,7 @@ fn get_test_web_data() -> WebData {
                                            uniprot_data,
                                            rnacentral_data, gene_history,
                                            None, None, chado_queries,
-                                           orcid_name_map, &config);
+                                           orcid_name_map, vec![], &config);
     web_data_build.get_web_data()
 }
 
