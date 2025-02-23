@@ -1750,7 +1750,7 @@ impl WebData {
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
 
-        writeln!(writer, "model_id\tmodel_title\tactivity_id\tactivity_label\tprocess\tinput\toutput\toccurs_in\tlocated_in\ttype")?;
+        writeln!(writer, "model_id\tmodel_title\tactivity_id\tactivity_label\tprocess\tinput\toutput\toccurs_in")?;
 
         for model in &self.gocam_models {
             let model_id = model.id();
@@ -1759,8 +1759,33 @@ impl WebData {
             let hole_nodes = find_holes(&model);
 
             for hole_node in hole_nodes {
-                writeln!(writer, "{}\t{}\t{}", model_id,
-                         model_title, hole_node)?;
+                write!(writer, "{}\t{}\t{}\t{}\t", model_id,
+                       model_title, hole_node.id, hole_node.label)?;
+                if let Some(ref part_of_process) = hole_node.part_of_process {
+                    write!(writer, "{}\t", part_of_process.label_or_id())?;
+                } else {
+                    write!(writer, "\t")?;
+                }
+                let has_input_string =
+                    hole_node.has_input.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
+                if has_input_string.len() > 0 {
+                    write!(writer, "{}\t", has_input_string)?;
+                } else {
+                    write!(writer, "\t")?;
+                }
+                let has_output_string =
+                    hole_node.has_output.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
+                if has_output_string.len() > 0 {
+                    write!(writer, "{}\t", has_output_string)?;
+                } else {
+                    write!(writer, "\t")?;
+                }
+                let occurs_in_string =
+                    hole_node.occurs_in.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
+                if occurs_in_string.len() > 0 {
+                    write!(writer, "{}", occurs_in_string)?
+                }
+                writeln!(writer)?;
             }
         }
 
