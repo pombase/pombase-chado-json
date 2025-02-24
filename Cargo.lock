@@ -1391,8 +1391,8 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam-process"
-version = "0.10.0"
-source = "git+https://github.com/pombase/pombase-gocam-process.git#03055a410083015875b108c4ff1e04c7599ecdbf"
+version = "0.14.0"
+source = "git+https://github.com/pombase/pombase-gocam-process.git#3d3b04a9cc9efe2411713891f24d62d184d83c37"
 dependencies = [
  "petgraph",
  "pombase-gocam",
