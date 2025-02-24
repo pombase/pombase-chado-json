@@ -7,6 +7,8 @@ use std::io::{Write, BufWriter};
 use std::io;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
+use std::cmp::Ordering;
+
 use pombase_gocam::GoCamModel;
 use pombase_gocam_process::find_holes;
 use regex::Regex;
@@ -1752,6 +1754,8 @@ impl WebData {
 
         writeln!(writer, "GO-CAM_model\tmissing_activity\tprocess\tinput_/_output\toccurs_in")?;
 
+        let mut model_and_holes = vec![];
+
         for model in &self.gocam_models {
             let model_id = model.id();
             let model_title = model.title();
@@ -1759,6 +1763,27 @@ impl WebData {
             let hole_nodes = find_holes(&model);
 
             for hole_node in hole_nodes {
+                model_and_holes.push((model_id.clone(), model_title.clone(),
+                                      hole_node));
+            }
+        }
+
+        model_and_holes.sort_by(|a, b| {
+            let (_, a_model_title, a_hole_node) = a;
+            let (_, b_model_title, b_hole_node) = b;
+
+            let order = a_model_title.cmp(&b_model_title);
+
+            if order == Ordering::Equal {
+                a_hole_node.label.cmp(&b_hole_node.label)
+            } else {
+                order
+            }
+        });
+
+        for model_and_hole in model_and_holes.into_iter() {
+            let (model_id, model_title, hole_node) = model_and_hole;
+
                 write!(writer, "{} {}\t{} ({})\t", model_id,
                        model_title, hole_node.label, hole_node.id)?;
                 if let Some(ref part_of_process) = hole_node.part_of_process {
@@ -1786,7 +1811,6 @@ impl WebData {
                     write!(writer, "{}", occurs_in_string)?
                 }
                 writeln!(writer)?;
-            }
         }
 
         Ok(())
