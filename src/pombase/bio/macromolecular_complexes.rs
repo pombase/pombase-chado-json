@@ -1,71 +1,12 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::io::{self, Write, BufWriter};
 use std::fs::File;
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str};
+use flexstr::SharedStr as FlexStr;
 
-use crate::data_types::{OntAnnotation, ProteinComplexData, ProteinComplexTerm,
-                        ProteinComplexGene};
+use crate::data_types::ProteinComplexData;
 
-use crate::web::config::Config;
 use crate::utils::join;
-
-pub fn macromolecular_complex_data(ont_annotations: &Vec<OntAnnotation>, config: &Config)
-    -> ProteinComplexData
-{
-    let mut complex_data = HashMap::new();
-
-    let no_evidence = flex_str!("NO_EVIDENCE");
-
-    let annotation_details = |annotation: &OntAnnotation| {
-        let evidence = annotation.evidence.clone().unwrap_or_else(|| no_evidence.clone());
-        (annotation.genes.iter().next().unwrap().clone(), evidence)
-    };
-
-    if let Some(ref complexes_config) = config.file_exports.macromolecular_complexes {
-        let check_parent_term = |el: &FlexStr| {
-            *el == complexes_config.parent_complex_termid
-        };
-        'TERM: for annotation in ont_annotations {
-            let term_short = &annotation.term_short;
-            let termid = &term_short.termid;
-            let term_name = &term_short.name;
-
-            let reference_uniquename =
-                if let Some(ref reference_short) = annotation.reference_short {
-                    Some(reference_short.uniquename.clone())
-                } else {
-                    None
-                };
-
-            if complexes_config.excluded_terms.contains(termid) {
-                continue 'TERM;
-            }
-            if !term_short.interesting_parent_ids.iter().any(check_parent_term) {
-                continue 'TERM;
-            }
-
-            let (gene_short, evidence) = annotation_details(annotation);
-
-            complex_data.entry(term_short.termid.clone())
-                .or_insert_with(|| ProteinComplexTerm {
-                    term_name: term_name.to_owned(),
-                    complex_genes: BTreeMap::new(),
-                })
-                .complex_genes
-                .entry(gene_short.uniquename.clone())
-                .or_insert_with(|| ProteinComplexGene {
-                    gene_short,
-                    annotation_details: HashSet::new(),
-                })
-                .annotation_details
-                .insert((reference_uniquename, annotation.assigned_by.clone(),
-                          evidence));
-        }
-    }
-
-    complex_data
-}
 
 pub fn write_macromolecular_complexes(complex_data: &ProteinComplexData,
                                       output_dir: &str)

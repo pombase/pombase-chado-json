@@ -1,4 +1,5 @@
 use core::panic;
+use std::hash::Hash;
 use std::num::NonZeroUsize;
 use std::rc::Rc;
 use std::collections::{BTreeMap, BTreeSet};
@@ -12,7 +13,6 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
-use crate::bio::macromolecular_complexes::macromolecular_complex_data;
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
 
@@ -138,6 +138,8 @@ pub struct WebDataBuild<'a> {
     genetic_interaction_annotations: HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>,
 
     gocam_summaries: HashMap<GoCamId, GoCamDetails>,
+
+    protein_complex_data: ProteinComplexData,
 }
 
 #[allow(clippy::type_complexity)]
@@ -942,6 +944,8 @@ impl <'a> WebDataBuild<'a> {
             gene_expression_measurements: HashMap::new(),
 
             gocam_summaries: HashMap::new(),
+
+            protein_complex_data: HashMap::new(),
        }
     }
 
@@ -5569,9 +5573,6 @@ phenotypes, so just the first part of this extension will be used:
         std::mem::swap(&mut gene_expression_measurements,
                        &mut self.gene_expression_measurements);
 
-        let protein_complex_data =
-            macromolecular_complex_data(&self.ont_annotations, &self.config);
-
         APIMaps {
             gene_summaries,
             gene_query_data_map,
@@ -5591,7 +5592,7 @@ phenotypes, so just the first part of this extension will be used:
             protein_view_data,
             gocam_data_by_gene,
             gocam_data_by_gocam_id: self.gocam_summaries,
-            protein_complex_data,
+            protein_complex_data: self.protein_complex_data,
             protein_complexes: self.protein_complexes,
        }
     }
@@ -7080,6 +7081,79 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn macromolecular_complex_data(&self, config: &Config)
+                                   -> ProteinComplexData
+    {
+        let mut complex_data = HashMap::new();
+
+        let no_evidence = flex_str!("NO_EVIDENCE");
+
+        let Some(ref complexes_config) = config.file_exports.macromolecular_complexes
+        else {
+            return HashMap::new();
+        };
+
+        let check_parent_term = |termid: &FlexStr| {
+            *termid == complexes_config.parent_complex_termid
+        };
+
+        for (gene_uniquename, gene_details) in &self.genes {
+            let uniprot_identifier = &gene_details.uniprot_identifier;
+            for term_annotations in gene_details.cv_annotations.values() {
+                'TERM_ANNOTATION: for term_annotation in term_annotations {
+                    if term_annotation.is_not {
+                        continue 'TERM_ANNOTATION;
+                    }
+                    let termid = &term_annotation.term;
+                    'TERM: for annotation_detail_id in &term_annotation.annotations {
+                        let annotation_detail = self.annotation_details
+                            .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
+
+                        let term_details = self.terms.get(termid).unwrap();
+                        let term_name = &term_details.name;
+
+                        let reference_uniquename =
+                            if let Some(ref reference_short) = annotation_detail.reference {
+                                Some(reference_short.clone())
+                            } else {
+                                None
+                            };
+
+                        if complexes_config.excluded_terms.contains(termid) {
+                            continue 'TERM;
+                        }
+
+                        if !term_details.interesting_parent_ids.iter().any(check_parent_term) {
+                            continue 'TERM;
+                        }
+
+                        let evidence = annotation_detail.evidence.clone()
+                            .unwrap_or_else(|| no_evidence.clone());
+                        let gene_short = gene_details.into();
+
+                        complex_data.entry(termid.clone())
+                            .or_insert_with(|| ProteinComplexTerm {
+                                term_name: term_name.to_owned(),
+                                complex_genes: BTreeMap::new(),
+                            })
+                            .complex_genes
+                            .entry(gene_uniquename.clone())
+                            .or_insert_with(|| ProteinComplexGene {
+                                gene_short,
+                                uniprot_identifier: uniprot_identifier.to_owned(),
+                                annotation_details: HashSet::new(),
+                            })
+                            .annotation_details
+                            .insert((reference_uniquename, annotation_detail.assigned_by.clone(),
+                                     evidence));
+                    }
+                }
+            }
+        }
+
+        complex_data
+    }
+
     // remove some of the refs that have no annotations.
     // See: https://github.com/pombase/website/issues/628
     fn remove_non_curatable_refs(&mut self) {
@@ -7973,6 +8047,8 @@ phenotypes, so just the first part of this extension will be used:
         let all_community_curated = self.all_community_curated.clone();
         let all_admin_curated = self.all_admin_curated.clone();
         let ont_annotations = self.ont_annotations.clone();
+
+        self.protein_complex_data = self.macromolecular_complex_data(&self.config);
 
         let mut terms_for_api: HashMap<TermId, TermDetails> = HashMap::new();
 

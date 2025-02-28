@@ -2722,6 +2722,7 @@ pub struct ProteinComplexDetails {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinComplexGene {
     pub gene_short: GeneShort,
+    pub uniprot_identifier: Option<UniprotIdentifier>,
     pub annotation_details: HashSet<(Option<ReferenceUniquename>,
                                  Option<AssignedBy>, Evidence)>
 }
