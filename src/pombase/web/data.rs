@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::cmp::Ordering;
 
-use pombase_gocam::GoCamModel;
+use pombase_gocam::GoCamRawModel;
 use pombase_gocam_process::find_holes;
 use regex::Regex;
 
@@ -63,7 +63,7 @@ pub struct WebData {
     pub ont_annotations: Vec<OntAnnotation>,
     pub stats: Stats,
     pub detailed_stats: DetailedStats,
-    pub gocam_models: Vec<GoCamModel>,
+    pub gocam_models: Vec<GoCamRawModel>,
 
     pub physical_interaction_annotations: Vec<InteractionAnnotation>,
     pub genetic_interaction_annotations: Vec<InteractionAnnotation>,

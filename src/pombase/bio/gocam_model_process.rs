@@ -1,11 +1,11 @@
 use std::fs::{self, File};
 
-use pombase_gocam::{gocam_parse, GoCamModel};
+use pombase_gocam::{gocam_parse, GoCamRawModel};
 
 use anyhow::Result;
 
 pub fn read_gocam_models(model_dir: &str)
-    -> Result<Vec<GoCamModel>>
+    -> Result<Vec<GoCamRawModel>>
 {
     let mut ret = vec![];
 
