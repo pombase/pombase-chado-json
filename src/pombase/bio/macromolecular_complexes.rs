@@ -16,7 +16,7 @@ pub fn write_macromolecular_complexes(complex_data: &ProteinComplexData,
     let complexes_file = File::create(complexes_file_name).expect("Unable to open file");
     let mut complexes_writer = BufWriter::new(&complexes_file);
 
-    let header = "acc\tGO_name\tsystematic_id\tsymbol\tgene_product_description\tevidence_code\tsource\tassigned_by";
+    let header = "complex_term_id\tGO_term_name\tsystematic_id\tsymbol\tgene_product_description\tUniProt_ID\tevidence_code\tsource\tassigned_by";
 
     complexes_writer.write_all(header.as_bytes())?;
     complexes_writer.write_all(b"\n")?;
@@ -64,7 +64,8 @@ pub fn write_macromolecular_complexes(complex_data: &ProteinComplexData,
                                      term_details.term_name.as_str(),
                                      gene_details.gene_short.uniquename.as_str(),
                                      gene_display_name,
-                                     gene_details.gene_short.product.as_ref().map(FlexStr::as_str).unwrap_or_else(|| ""),
+                                     gene_details.gene_short.product.as_ref().map(FlexStr::as_str).unwrap_or_default(),
+                                     gene_details.uniprot_identifier.as_ref().map(FlexStr::as_str).unwrap_or_default(),
                                      evidence.as_str(), refs_string.as_str(),
                                      assigned_by_string.as_str()];
 
