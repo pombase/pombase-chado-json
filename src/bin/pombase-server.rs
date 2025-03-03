@@ -346,11 +346,11 @@ async fn protein_feature_view(Path((scope, gene_uniquename)): Path<(String, Stri
     }
 }
 
-async fn gocam_viz(Path((full_or_widget, gocam_id)): Path<(String, String)>,
-                   State(all_state): State<Arc<AllState>>)
+async fn gocam_viz_view(Path((viz_or_view, full_or_widget, gocam_id)): Path<(String, String, String)>,
+                        State(all_state): State<Arc<AllState>>)
    -> (StatusCode, Html<String>)
 {
-    let search_url = all_state.config.server.django_url.to_owned() + "/gocam_viz/";
+    let search_url = format!("{}/gocam_{}/", all_state.config.server.django_url, viz_or_view);
 
     let params = [("full_or_widget", full_or_widget),
                   ("gocam_id", gocam_id)];
@@ -770,7 +770,7 @@ async fn main() {
         .route("/structure_view/{structure_type}/{id}", get(structure_view))
         .route("/rna_2d_structure/{gene_uniquename}/{urs_id}", get(rna_2d_structure))
         .route("/protein_feature_view/{scope}/{gene_uniquename}", get(protein_feature_view))
-        .route("/gocam_viz/{full_or_widget}/{gocam_id}", get(gocam_viz))
+        .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}", get(gocam_viz_view))
         .route("/simple/gene/{id}", get(get_simple_gene))
         .route("/simple/genotype/{id}", get(get_simple_genotype))
         .route("/simple/reference/{id}", get(get_simple_reference))
