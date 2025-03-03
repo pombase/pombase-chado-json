@@ -6,8 +6,10 @@ use axum::{
 
 use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
+use pombase_gocam_process::{make_gocam_model, model_to_cytoscape_simple};
 use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
+use tokio::io::AsyncReadExt;
 
 use tower::{layer::Layer, timeout::TimeoutLayer};
 
@@ -25,7 +27,7 @@ extern crate serde_derive;
 
 extern crate pombase;
 
-use std::{process, sync::Arc, time::Duration};
+use std::{io::Cursor, process, sync::Arc, time::Duration};
 use std::env;
 
 use getopts::Options;
@@ -218,6 +220,29 @@ async fn get_all_gocam_data_by_id(Path(gocam_id): Path<String>,
     let res = all_state.query_exec.get_api_data().get_gocam_details_by_id(&gocam_id).map(Json);
 
     option_json_to_result(&gocam_id, res)
+}
+
+async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
+                                   State(all_state): State<Arc<AllState>>)
+       -> impl IntoResponse
+{
+    let static_file_state = &all_state.static_file_state;
+    let web_root_dir = &static_file_state.web_root_dir;
+
+    let file_name = format!("{}/web-json/go-cam/gomodel:{}.json", web_root_dir, gocam_id);
+    let mut source = File::open(file_name).await.unwrap();
+    let mut contents = vec![];
+    let read_res = source.read_to_end(&mut contents).await;
+
+    if let Err(_) = read_res {
+        return (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
+    }
+
+    let mut cursor = Cursor::new(contents);
+    let model = make_gocam_model(&mut cursor).unwrap();
+    let elements = model_to_cytoscape_simple(&model);
+
+    (StatusCode::OK, Json(elements)).into_response()
 }
 
 async fn get_term_summary_by_id(Path(id): Path<String>, State(all_state): State<Arc<AllState>>)
@@ -787,6 +812,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/{full_or_widget}/{gene_uniquename}", get(get_gocam_data))
         .route("/api/v1/dataset/latest/data/gocam/all", get(get_all_gocam_data))
         .route("/api/v1/dataset/latest/data/gocam/by_id/{gocam_id}", get(get_all_gocam_data_by_id))
+        .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/{plot_size}/{genes}", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/{type}", get(get_stats))
         .route("/api/v1/dataset/latest/motif_search/{scope}/{q}/{max_gene_details}", get(motif_search))
