@@ -9,8 +9,6 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use std::cmp::Ordering;
 
-use pombase_gocam::GoCamRawModel;
-use pombase_gocam_process::find_holes;
 use regex::Regex;
 
 use flate2::Compression;
@@ -20,6 +18,8 @@ use zstd::stream::Encoder;
 use rusqlite::Connection;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
+
+use pombase_gocam_process::{find_holes, GoCamModel};
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff,
                        process_modification_ext};
@@ -63,7 +63,9 @@ pub struct WebData {
     pub ont_annotations: Vec<OntAnnotation>,
     pub stats: Stats,
     pub detailed_stats: DetailedStats,
-    pub gocam_models: Vec<GoCamRawModel>,
+
+    #[serde(skip)]
+    pub gocam_models: Vec<GoCamModel>,
 
     pub physical_interaction_annotations: Vec<InteractionAnnotation>,
     pub genetic_interaction_annotations: Vec<InteractionAnnotation>,

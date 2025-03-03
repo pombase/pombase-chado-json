@@ -8,10 +8,11 @@ use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
 use std::usize;
 
-use pombase_gocam::GoCamRawModel;
 use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
+
+use pombase_gocam_process::GoCamModel;
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
@@ -75,7 +76,7 @@ pub struct WebDataBuild<'a> {
     pdb_ref_entry_map: Option<PDBRefEntryMap>,
     chado_queries: ChadoQueries,
     orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
-    gocam_models: Vec<GoCamRawModel>,
+    gocam_models: Vec<GoCamModel>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -871,7 +872,7 @@ impl <'a> WebDataBuild<'a> {
                pdb_ref_entry_map: Option<PDBRefEntryMap>,
                chado_queries: ChadoQueries,
                orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
-               gocam_models: Vec<GoCamRawModel>,
+               gocam_models: Vec<GoCamModel>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {

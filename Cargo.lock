@@ -248,6 +248,31 @@ dependencies = [
 ]
 
 [[package]]
+name = "bon"
+version = "3.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fe7acc34ff59877422326db7d6f2d845a582b16396b6b08194942bf34c6528ab"
+dependencies = [
+ "bon-macros",
+ "rustversion",
+]
+
+[[package]]
+name = "bon-macros"
+version = "3.3.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4159dd617a7fbc9be6a692fe69dc2954f8e6bb6bb5e4d7578467441390d77fd0"
+dependencies = [
+ "darling",
+ "ident_case",
+ "prettyplease",
+ "proc-macro2",
+ "quote",
+ "rustversion",
+ "syn",
+]
+
+[[package]]
 name = "bumpalo"
 version = "3.17.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1334,7 +1359,7 @@ checksum = "953ec861398dccce10c670dfeaf3ec4911ca479e9c02154b3a215178c5f566f2"
 
 [[package]]
 name = "pombase-chado-json"
-version = "214.10.0"
+version = "214.11.0"
 dependencies = [
  "anyhow",
  "async-recursion",
@@ -1391,9 +1416,11 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam-process"
-version = "0.21.0"
-source = "git+https://github.com/pombase/pombase-gocam-process.git#775b43cda0109798472a53ec2feb374e6f660963"
+version = "0.25.0"
+source = "git+https://github.com/pombase/pombase-gocam-process.git#ade0411bb746ca8c28a160b79b7bbb96273de37b"
 dependencies = [
+ "anyhow",
+ "bon",
  "petgraph",
  "pombase-gocam",
  "serde",
@@ -1446,6 +1473,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "77957b295656769bb8ad2b6a6b09d897d94f05c41b069aede1fcdaa675eaea04"
 dependencies = [
  "zerocopy 0.7.35",
+]
+
+[[package]]
+name = "prettyplease"
+version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6924ced06e1f7dfe3fa48d57b9f74f55d8915f5036121bef647ef4b204895fac"
+dependencies = [
+ "proc-macro2",
+ "syn",
 ]
 
 [[package]]
