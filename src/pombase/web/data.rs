@@ -1765,8 +1765,7 @@ impl WebData {
             let hole_nodes = find_holes(&model);
 
             for hole_node in hole_nodes {
-                model_and_holes.push((model_id.clone(), model_title.clone(),
-                                      hole_node));
+                model_and_holes.push((model_id, model_title, hole_node));
             }
         }
 
