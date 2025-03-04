@@ -12,7 +12,7 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
-use pombase_gocam_process::GoCamModel;
+use pombase_gocam::GoCamModel;
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;

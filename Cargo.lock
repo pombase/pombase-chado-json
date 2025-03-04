@@ -1360,6 +1360,7 @@ dependencies = [
  "mime_guess",
  "once_cell",
  "percent-encoding",
+ "pombase-gocam",
  "pombase-gocam-process",
  "regex",
  "reqwest",
@@ -1380,10 +1381,11 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam"
-version = "0.15.0"
-source = "git+https://github.com/pombase/pombase-gocam.git#54fd05c3048cfa1b1325db991db04944a20e2ab3"
+version = "0.18.0"
+source = "git+https://github.com/pombase/pombase-gocam.git#4990b10d765e2c93a13b7cb359988754eb067ea9"
 dependencies = [
  "anyhow",
+ "petgraph",
  "phf",
  "serde",
  "serde_derive",
@@ -1392,8 +1394,8 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam-process"
-version = "0.28.0"
-source = "git+https://github.com/pombase/pombase-gocam-process.git#b19d7e0774a46726f12357a918e89fb3c60c7006"
+version = "0.31.0"
+source = "git+https://github.com/pombase/pombase-gocam-process.git#09e2443b9745157534c6e5001eb30ee68f18f8e3"
 dependencies = [
  "anyhow",
  "petgraph",

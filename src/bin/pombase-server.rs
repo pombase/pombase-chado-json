@@ -6,7 +6,8 @@ use axum::{
 
 use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
-use pombase_gocam_process::{make_gocam_model, model_to_cytoscape_simple};
+use pombase_gocam::make_gocam_model;
+use pombase_gocam_process::model_to_cytoscape_simple;
 use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
 use tokio::io::AsyncReadExt;

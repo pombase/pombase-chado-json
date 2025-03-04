@@ -2,7 +2,7 @@ use std::fs::{self, File};
 
 use anyhow::Result;
 
-use pombase_gocam_process::{make_gocam_model, GoCamModel};
+use pombase_gocam::{make_gocam_model, GoCamModel};
 
 pub fn read_gocam_models(model_dir: &str)
     -> Result<Vec<GoCamModel>>

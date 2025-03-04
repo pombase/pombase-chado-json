@@ -19,7 +19,8 @@ use rusqlite::Connection;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
-use pombase_gocam_process::{find_holes, GoCamModel};
+use pombase_gocam::GoCamModel;
+use pombase_gocam_process::find_holes;
 
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff,
                        process_modification_ext};
