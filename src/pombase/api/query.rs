@@ -1222,7 +1222,13 @@ impl Query {
 
                    subsets =
                        if self.output_options.flags.contains(&flex_str!("include_gene_subsets")) {
-                           gene_data.subset_termids.clone()
+                           let mut subset = gene_data.subset_termids.clone();
+                           let gocam_ids: Vec<_> =
+                               gene_data.gocam_ids.iter()
+                                   .map(|gocam_id| flex_fmt!("gomodel:{gocam_id}"))
+                                   .collect();
+                           subset.extend(gocam_ids.into_iter());
+                           subset
                        } else {
                            HashSet::new()
                        };
