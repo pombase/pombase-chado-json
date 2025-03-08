@@ -372,14 +372,25 @@ async fn protein_feature_view(Path((scope, gene_uniquename)): Path<(String, Stri
     }
 }
 
-async fn gocam_viz_view(Path((viz_or_view, full_or_widget, gocam_id)): Path<(String, String, String)>,
-                        State(all_state): State<Arc<AllState>>)
+async fn gocam_viz_view(Path((viz_or_view, full_or_widget, gocam_id)):
+                                       Path<(String, String, String)>,
+                                  State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    gocam_viz_view_highlight(Path((viz_or_view, full_or_widget, gocam_id, "".to_owned())),
+                             State(all_state)).await
+}
+
+async fn gocam_viz_view_highlight(Path((viz_or_view, full_or_widget, gocam_id, highlight_gene_ids)):
+                                       Path<(String, String, String, String)>,
+                                  State(all_state): State<Arc<AllState>>)
    -> (StatusCode, Html<String>)
 {
     let search_url = format!("{}/gocam_{}/", all_state.config.server.django_url, viz_or_view);
 
     let params = [("full_or_widget", full_or_widget),
-                  ("gocam_id", gocam_id)];
+                  ("gocam_id", gocam_id),
+                  ("highlight_gene_ids", highlight_gene_ids)];
     let client = reqwest::Client::new();
     let result = client.get(search_url).query(&params).send().await;
 
@@ -797,6 +808,7 @@ async fn main() {
         .route("/rna_2d_structure/{gene_uniquename}/{urs_id}", get(rna_2d_structure))
         .route("/protein_feature_view/{scope}/{gene_uniquename}", get(protein_feature_view))
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}", get(gocam_viz_view))
+        .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}/{highlight_gene_ids}", get(gocam_viz_view_highlight))
         .route("/simple/gene/{id}", get(get_simple_gene))
         .route("/simple/genotype/{id}", get(get_simple_genotype))
         .route("/simple/reference/{id}", get(get_simple_reference))
