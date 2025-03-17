@@ -2,7 +2,7 @@ use std::fs::{self, File};
 
 use anyhow::Result;
 
-use pombase_gocam::{make_gocam_model, GoCamModel};
+use pombase_gocam::{parse_gocam_model, GoCamModel};
 
 pub fn read_gocam_models(model_dir: &str)
     -> Result<Vec<GoCamModel>>
@@ -15,7 +15,7 @@ pub fn read_gocam_models(model_dir: &str)
         let file_name = entry?.path();
         if file_name.to_string_lossy().ends_with(".json") {
             let mut file = File::open(file_name)?;
-            let model = make_gocam_model(&mut file)?;
+            let model = parse_gocam_model(&mut file)?;
             ret.push(model);
         }
     }

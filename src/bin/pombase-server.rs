@@ -6,8 +6,8 @@ use axum::{
 
 use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
-use pombase_gocam::make_gocam_model;
-use pombase_gocam_process::model_to_cytoscape_simple;
+
+use pombase_gocam::parse_gocam_model;
 use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
 use tokio::io::AsyncReadExt;
@@ -20,6 +20,7 @@ use tower_http::trace::TraceLayer;
 use serde::Serialize;
 use serde_json::{json, Value};
 
+use pombase_gocam_process::model_to_cytoscape_simple;
 use pombase::data_types::{GoCamDetails, ProteinViewType};
 
 use rusqlite::Connection;
@@ -240,7 +241,7 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
     }
 
     let mut cursor = Cursor::new(contents);
-    let model = make_gocam_model(&mut cursor).unwrap();
+    let model = parse_gocam_model(&mut cursor).unwrap();
     let elements = model_to_cytoscape_simple(&model);
 
     (StatusCode::OK, Json(elements)).into_response()
