@@ -131,7 +131,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
             continue;
         }
 
-        write_gene_to_gpi(&mut gpi_writer, config, api_maps, data_lookup, gene_details)?;
+        write_to_gpi(&mut gpi_writer, config, api_maps, data_lookup, gene_details)?;
 
         write_gene_product_annotation(&mut gpad_writer, data_lookup, go_eco_mappping, config,
                                       gene_details)?;
@@ -314,7 +314,7 @@ fn get_pr_term_name(data_lookup: &dyn DataLookup, gene_product_form_id: &FlexStr
     (term_details.name.clone(), orig_term_name)
 }
 
-pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIMaps,
+pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIMaps,
                          data_lookup: &dyn DataLookup,
                          gene_details: &GeneDetails)
                          -> Result<(), io::Error>
@@ -385,6 +385,24 @@ pub fn write_gene_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: 
                            db_xrefs,
                            product);
     gpi_writer.write_all(gpi_line.as_bytes())?;
+
+    if gene_details.feature_type == "mRNA gene" {
+        for (idx, transcript_id) in gene_details.transcripts.iter().enumerate() {
+            let transcript_number = idx + 1;
+            let transcript = api_maps.transcripts.get(transcript_id).unwrap();
+            let transcript_name = transcript.name.as_ref().unwrap_or(transcript_id);
+
+            let gpi_line = format!("{}.{}\t{}\t{}\t\tSO:0000234\t{}\t{}\t\t\t{}\tgo-annotation-summary={}\n",
+                                   db_object_id, transcript_number,
+                                   transcript_name,
+                                   db_object_name,
+                                   db_object_taxon,
+                                   db_object_id,
+                                   db_xrefs,
+                                   product);
+            gpi_writer.write_all(gpi_line.as_bytes())?;
+        }
+    }
 
     let db_protein_id =
         if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
