@@ -1464,6 +1464,10 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub orfeome_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub tfexplorer_chipseq_identifier: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub tfexplorer_ipms_identifier: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub pombephosphoproteomics_unige_ch_starvation_mating_gene: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub pombephosphoproteomics_unige_ch_fusion_gene: Option<FlexStr>,

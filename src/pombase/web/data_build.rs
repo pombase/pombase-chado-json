@@ -1911,6 +1911,8 @@ phenotypes, so just the first part of this extension will be used:
                 vec![]
             };
 
+        let mut tfexplorer_chipseq_identifier = None;
+        let mut tfexplorer_ipms_identifier = None;
         let mut pombephosphoproteomics_unige_ch_starvation_mating_gene: Option<FlexStr> = None;
         let mut pombephosphoproteomics_unige_ch_fusion_gene: Option<FlexStr> = None;
 
@@ -1933,6 +1935,10 @@ phenotypes, so just the first part of this extension will be used:
                     pombephosphoproteomics_unige_ch_fusion_gene = prop.value.clone(),
                 "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
                 "rnacentral_2d_structure_id" => rnacentral_2d_structure_id = prop.value.clone(),
+                "tfexplorer_chipseq_identifier" =>
+                    tfexplorer_chipseq_identifier = prop.value.clone(),
+                "tfexplorer_ipms_identifier" =>
+                    tfexplorer_ipms_identifier = prop.value.clone(),
                 _ => (),
             }
         }
@@ -2052,6 +2058,8 @@ phenotypes, so just the first part of this extension will be used:
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
+            tfexplorer_chipseq_identifier,
+            tfexplorer_ipms_identifier,
             pombephosphoproteomics_unige_ch_starvation_mating_gene,
             pombephosphoproteomics_unige_ch_fusion_gene,
             gocams: HashSet::new(),
