@@ -3140,16 +3140,24 @@ phenotypes, so just the first part of this extension will be used:
 
     // create and returns any TargetOfAnnotations implied by the extension
     fn make_target_of_for_ext(&self, cv_name: &FlexStr,
-                              genes: &[FlexStr],
-                              maybe_genotype_uniquename: &Option<FlexStr>,
-                              reference_uniquename: &Option<FlexStr>,
                               annotation_termid: &FlexStr,
-                              extension: &[ExtPart]) -> Vec<(GeneUniquename, TargetOfAnnotation)> {
+                              annotation: &OntAnnotationDetail)
+        -> Vec<(GeneUniquename, TargetOfAnnotation)>
+    {
+        let genes = &annotation.genes;
         if genes.len() != 1 {
             panic!("expected an annotation with one gene for {}, got: {:?}",
                    annotation_termid, genes);
         }
         let gene = &genes[0];
+
+        let genotype_uniquename = &annotation.genotype;
+        let reference_uniquename = &annotation.reference;
+        let assigned_by = &annotation.assigned_by;
+        let evidence = &annotation.evidence;
+        let extension = &annotation.extension;
+        let date = &annotation.date;
+
         let mut ret_vec = vec![];
 
         for ext_part in extension {
@@ -3164,8 +3172,8 @@ phenotypes, so just the first part of this extension will be used:
                     if let Some(reciprocal_display_name) =
                         ext_config.reciprocal_display {
                             let (annotation_gene_uniquename, annotation_genotype_uniquename) =
-                                if maybe_genotype_uniquename.is_some() {
-                                    (gene.clone(), maybe_genotype_uniquename.clone())
+                                if genotype_uniquename.is_some() {
+                                    (gene.clone(), genotype_uniquename.clone())
                                 } else {
                                     (gene.clone(), None)
                                 };
@@ -3177,6 +3185,9 @@ phenotypes, so just the first part of this extension will be used:
                                               gene: annotation_gene_uniquename,
                                               genotype_uniquename: annotation_genotype_uniquename,
                                               reference_uniquename: reference_uniquename.clone(),
+                                              assigned_by: assigned_by.clone(),
+                                              date: date.clone(),
+                                              evidence: evidence.clone(),
                                           }));
                         }
                 },
@@ -3286,11 +3297,8 @@ phenotypes, so just the first part of this extension will be used:
 
                         let new_annotations =
                             self.make_target_of_for_ext(&term_details.cv_name,
-                                                        &annotation.genes,
-                                                        &annotation.genotype,
-                                                        &annotation.reference,
                                                         &term_details.termid,
-                                                        &annotation.extension);
+                                                        &annotation);
                         for (target_gene_uniquename, new_annotation) in new_annotations {
                            if self.genes.get(&target_gene_uniquename).is_some() {
                                if target_gene_uniquename != new_annotation.gene {

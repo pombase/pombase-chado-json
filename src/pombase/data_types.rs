@@ -1234,6 +1234,12 @@ pub struct TargetOfAnnotation {
     #[serde(skip_serializing_if="Option::is_none", default)]
     pub genotype_uniquename: Option<GenotypeUniquename>,
     #[serde(skip_serializing_if="Option::is_none", default)]
+    pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none", default)]
+    pub date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none", default)]
+    pub assigned_by: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none", default)]
     pub reference_uniquename: Option<ReferenceUniquename>,
 }
 
