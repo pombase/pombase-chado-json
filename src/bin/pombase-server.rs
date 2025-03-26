@@ -242,7 +242,8 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
 
     let mut cursor = Cursor::new(contents);
     let model = parse_gocam_model(&mut cursor).unwrap();
-    let elements = model_to_cytoscape_simple(&model);
+    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
+    let elements = model_to_cytoscape_simple(&model, overlaps);
 
     (StatusCode::OK, Json(elements)).into_response()
 }
