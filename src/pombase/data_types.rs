@@ -5,6 +5,7 @@ use std::fmt;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
+use pombase_gocam::GoCamNodeOverlap;
 use regex::Regex;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
@@ -2810,6 +2811,8 @@ pub struct APIMaps {
     pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
     pub gocam_data_by_gene: HashMap<GeneUniquename, HashSet<GoCamId>>,
     pub gocam_data_by_gocam_id: HashMap<GoCamId, GoCamDetails>,
+
+    pub gocam_overlaps: Vec<GoCamNodeOverlap>,
 
     // based on annotations to "protein-containing complex" (GO:0032991):
     pub protein_complex_data: ProteinComplexData,

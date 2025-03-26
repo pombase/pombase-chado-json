@@ -12,7 +12,7 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
-use pombase_gocam::GoCamModel;
+use pombase_gocam::{GoCamModel, GoCamNodeOverlap};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
@@ -141,6 +141,8 @@ pub struct WebDataBuild<'a> {
     gocam_summaries: HashMap<GoCamId, GoCamDetails>,
 
     protein_complex_data: ProteinComplexData,
+
+    gocam_overlaps: Vec<GoCamNodeOverlap>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -945,6 +947,8 @@ impl <'a> WebDataBuild<'a> {
             gene_expression_measurements: HashMap::new(),
 
             gocam_summaries: HashMap::new(),
+
+            gocam_overlaps: vec![],
 
             protein_complex_data: HashMap::new(),
        }
@@ -5609,6 +5613,8 @@ phenotypes, so just the first part of this extension will be used:
             protein_view_data,
             gocam_data_by_gene,
             gocam_data_by_gocam_id: self.gocam_summaries,
+            gocam_overlaps: self.gocam_overlaps,
+
             protein_complex_data: self.protein_complex_data,
             protein_complexes: self.protein_complexes,
        }
@@ -8045,6 +8051,8 @@ phenotypes, so just the first part of this extension will be used:
         let solr_reference_summaries = self.make_solr_reference_summaries();
 
         let gocam_models = self.gocam_models.clone();
+
+        self.gocam_overlaps = GoCamModel::find_overlaps(&gocam_models);
 
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,

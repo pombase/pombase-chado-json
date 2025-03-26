@@ -65,7 +65,6 @@ pub struct WebData {
     pub stats: Stats,
     pub detailed_stats: DetailedStats,
 
-    #[serde(skip)]
     pub gocam_models: Vec<GoCamModel>,
 
     pub physical_interaction_annotations: Vec<InteractionAnnotation>,
