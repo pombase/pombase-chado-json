@@ -213,13 +213,20 @@ async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
     res
 }
 
-async fn get_all_gocam_data_by_id(Path(gocam_id): Path<String>,
+async fn get_all_gocam_data_by_id(Path(gocam_ids): Path<String>,
                                   State(all_state): State<Arc<AllState>>)
         -> impl IntoResponse
 {
-    let res = all_state.query_exec.get_api_data().get_gocam_details_by_id(&gocam_id).map(Json);
+    let details_list: Vec<_> =
+        gocam_ids.split(",").map(|gocam_id| {
+            all_state.query_exec.get_api_data().get_gocam_details_by_id(&gocam_id)
+        }).collect();
 
-    option_json_to_result(&gocam_id, res)
+    if details_list.len() == 0 {
+        Err((StatusCode::NOT_FOUND, format!("no page for: {}", gocam_ids)))
+    } else {
+        Ok((StatusCode::OK, Json(details_list)))
+    }
 }
 
 async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
