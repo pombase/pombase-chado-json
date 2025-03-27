@@ -42,7 +42,6 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<Go
 
     for detail in all_gocam_data {
         let gocam_id = &detail.gocam_id;
-        eprintln!("reading: {}", gocam_id);
         let model = read_gocam_model(web_root_dir, gocam_id).await?;
         models.push(model);
     }
