@@ -213,7 +213,7 @@ async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
     res
 }
 
-async fn get_all_gocam_data_by_id(Path(gocam_ids): Path<String>,
+async fn get_gocam_data_by_id(Path(gocam_ids): Path<String>,
                                   State(all_state): State<Arc<AllState>>)
         -> impl IntoResponse
 {
@@ -854,7 +854,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/term/{id}", get(get_term))
         .route("/api/v1/dataset/latest/data/gocam/{full_or_widget}/{gene_uniquename}", get(get_gocam_data))
         .route("/api/v1/dataset/latest/data/gocam/all", get(get_all_gocam_data))
-        .route("/api/v1/dataset/latest/data/gocam/by_id/{gocam_id}", get(get_all_gocam_data_by_id))
+        .route("/api/v1/dataset/latest/data/gocam/by_id/{gocam_id}", get(get_gocam_data_by_id))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/{plot_size}/{genes}", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/{type}", get(get_stats))
