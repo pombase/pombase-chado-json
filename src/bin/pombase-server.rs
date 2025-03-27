@@ -19,7 +19,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use pombase_gocam_process::model_to_cytoscape_simple;
-use pombase::{bio::gocam_model_process::{read_gocam_model, read_merged_gocam_model}, data_types::{GoCamDetails, ProteinViewType}};
+use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model, read_merged_gocam_model}, data_types::{GoCamDetails, ProteinViewType}};
 
 use rusqlite::Connection;
 
@@ -230,6 +230,7 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
     let web_root_dir = &static_file_state.web_root_dir;
 
     let all_gocam_data = &all_state.gocam_data;
+    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
 
     let read_res =
         if gocam_id.contains("+") {
@@ -244,13 +245,16 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
                 "ALL_MERGED" => {
                     read_merged_gocam_model(web_root_dir, all_gocam_data).await
                 },
+                "ALL_CONNECTED" => {
+                    read_connected_gocam_models(web_root_dir, all_gocam_data,
+                                                overlaps).await
+                }
                 _ => read_gocam_model(web_root_dir, &gocam_id).await
             }
         };
 
     match read_res {
         anyhow::Result::Ok(model) => {
-         let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
          let elements = model_to_cytoscape_simple(&model, overlaps);
 
          (StatusCode::OK, Json(elements)).into_response()

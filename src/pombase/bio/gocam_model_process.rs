@@ -1,8 +1,8 @@
-use std::{fs::{self, File}, io::Cursor, vec};
+use std::{collections::HashSet, fs::{self, File}, io::Cursor, vec};
 
 use anyhow::Result;
 
-use pombase_gocam::{parse_gocam_model, GoCamModel};
+use pombase_gocam::{parse_gocam_model, GoCamModel, GoCamNodeOverlap, GoCamNodeType};
 use tokio::io::AsyncReadExt as _;
 
 use crate::data_types::GoCamDetails;
@@ -42,6 +42,38 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<Go
 
     for detail in all_gocam_data {
         let gocam_id = &detail.gocam_id;
+        let model = read_gocam_model(web_root_dir, gocam_id).await?;
+        models.push(model);
+    }
+
+    let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
+
+    merge_res
+}
+
+pub async fn read_connected_gocam_models(web_root_dir: &str,
+                                         all_gocam_data: &Vec<GoCamDetails>,
+                                         overlaps: &Vec<GoCamNodeOverlap>)
+    -> anyhow::Result<GoCamModel>
+{
+    let mut overlapping_gocam_ids = HashSet::new();
+    for overlap in overlaps {
+        if let GoCamNodeType::Activity(_) = overlap.node_type {
+            for gocam_id in overlap.model_ids.iter() {
+                overlapping_gocam_ids.insert(gocam_id.replace("gomodel:", ""));
+            }
+        }
+    }
+
+    let mut models = vec![];
+
+    for detail in all_gocam_data {
+        let gocam_id = &detail.gocam_id;
+
+        if !overlapping_gocam_ids.contains(gocam_id.as_str()) {
+            continue;
+        }
+
         let model = read_gocam_model(web_root_dir, gocam_id).await?;
         models.push(model);
     }
