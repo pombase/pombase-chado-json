@@ -7,10 +7,8 @@ use axum::{
 use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
 
-use pombase_gocam::parse_gocam_model;
 use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
-use tokio::io::AsyncReadExt;
 
 use tower::{layer::Layer, timeout::TimeoutLayer};
 
@@ -21,7 +19,7 @@ use serde::Serialize;
 use serde_json::{json, Value};
 
 use pombase_gocam_process::model_to_cytoscape_simple;
-use pombase::data_types::{GoCamDetails, ProteinViewType};
+use pombase::{bio::gocam_model_process::{read_gocam_model, read_merged_gocam_model}, data_types::{GoCamDetails, ProteinViewType}};
 
 use rusqlite::Connection;
 
@@ -29,8 +27,7 @@ extern crate serde_derive;
 
 extern crate pombase;
 
-use std::{io::Cursor, process, sync::Arc, time::Duration};
-use std::env;
+use std::{process, sync::Arc, time::Duration};
 
 use getopts::Options;
 
@@ -91,6 +88,7 @@ async fn get_static_file(path: &str) -> Response {
 
 struct AllState {
     query_exec: QueryExec,
+    gocam_data: Vec<GoCamDetails>,
     search: Search,
     stats_plots: StatsPlots,
     static_file_state: StaticFileState,
@@ -231,21 +229,26 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
     let static_file_state = &all_state.static_file_state;
     let web_root_dir = &static_file_state.web_root_dir;
 
-    let file_name = format!("{}/web-json/go-cam/gomodel:{}.json", web_root_dir, gocam_id);
-    let mut source = File::open(file_name).await.unwrap();
-    let mut contents = vec![];
-    let read_res = source.read_to_end(&mut contents).await;
+    let read_res = match gocam_id.as_str() {
+        "ALL_MERGED" => {
+            eprintln!("HERE 1");
+            let all_gocam_data = &all_state.gocam_data;
+            read_merged_gocam_model(web_root_dir, all_gocam_data).await
+        },
+        _ => read_gocam_model(web_root_dir, &gocam_id).await
+    };
 
-    if let Err(_) = read_res {
-        return (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
+    match read_res {
+        anyhow::Result::Ok(model) => {
+         let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
+         let elements = model_to_cytoscape_simple(&model, overlaps);
+
+         (StatusCode::OK, Json(elements)).into_response()
+        },
+        anyhow::Result::Err(_) => {
+           (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
+        }
     }
-
-    let mut cursor = Cursor::new(contents);
-    let model = parse_gocam_model(&mut cursor).unwrap();
-    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
-    let elements = model_to_cytoscape_simple(&model, overlaps);
-
-    (StatusCode::OK, Json(elements)).into_response()
 }
 
 async fn get_term_summary_by_id(Path(id): Path<String>, State(all_state): State<Arc<AllState>>)
@@ -705,7 +708,7 @@ fn print_usage(program: &str, opts: Options) {
 async fn main() {
     println!("{} v{}", PKG_NAME, VERSION);
 
-    let args: Vec<String> = env::args().collect();
+    let args: Vec<String> = std::env::args().collect();
     let mut opts = Options::new();
 
     opts.optflag("h", "help", "print this help message");
@@ -785,6 +788,8 @@ async fn main() {
     let api_maps_database_conn = Connection::open(api_maps_database_path).unwrap();
     let api_data = APIData::new(&config, api_maps_database_conn, api_maps);
 
+    let gocam_data = api_data.get_all_gocam_data();
+
     let query_exec = QueryExec::new(api_data, site_db);
     let search = Search::new(&config);
     let stats_plots = StatsPlots::new(&config);
@@ -796,6 +801,7 @@ async fn main() {
 
     let all_state = AllState {
         query_exec,
+        gocam_data,
         search,
         stats_plots,
         static_file_state,
