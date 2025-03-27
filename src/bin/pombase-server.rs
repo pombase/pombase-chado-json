@@ -27,7 +27,7 @@ extern crate serde_derive;
 
 extern crate pombase;
 
-use std::{process, sync::Arc, time::Duration};
+use std::{collections::HashSet, process, sync::Arc, time::Duration};
 
 use getopts::Options;
 
@@ -229,14 +229,24 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
     let static_file_state = &all_state.static_file_state;
     let web_root_dir = &static_file_state.web_root_dir;
 
-    let read_res = match gocam_id.as_str() {
-        "ALL_MERGED" => {
-            eprintln!("HERE 1");
-            let all_gocam_data = &all_state.gocam_data;
-            read_merged_gocam_model(web_root_dir, all_gocam_data).await
-        },
-        _ => read_gocam_model(web_root_dir, &gocam_id).await
-    };
+    let all_gocam_data = &all_state.gocam_data;
+
+    let read_res =
+        if gocam_id.contains("+") {
+            let gocam_id_set: HashSet<_> = gocam_id.split("+").collect();
+            let filtered_data = all_gocam_data.iter()
+                .filter(|detail| {
+                    gocam_id_set.contains(detail.gocam_id.as_str())
+                }).cloned().collect();
+            read_merged_gocam_model(web_root_dir, &filtered_data).await
+        } else {
+            match gocam_id.as_str() {
+                "ALL_MERGED" => {
+                    read_merged_gocam_model(web_root_dir, all_gocam_data).await
+                },
+                _ => read_gocam_model(web_root_dir, &gocam_id).await
+            }
+        };
 
     match read_res {
         anyhow::Result::Ok(model) => {
@@ -245,7 +255,8 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
 
          (StatusCode::OK, Json(elements)).into_response()
         },
-        anyhow::Result::Err(_) => {
+        anyhow::Result::Err(err) => {
+            eprintln!("err: {}", err);
            (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
         }
     }
