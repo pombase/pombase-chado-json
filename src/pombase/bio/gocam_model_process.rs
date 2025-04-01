@@ -59,8 +59,8 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
     let mut overlapping_gocam_ids = HashSet::new();
     for overlap in overlaps {
         if let GoCamNodeType::Activity(_) = overlap.node_type {
-            for gocam_id in overlap.model_ids.iter() {
-                overlapping_gocam_ids.insert(gocam_id.replace("gomodel:", ""));
+            for (model_id, _) in overlap.models.iter() {
+                overlapping_gocam_ids.insert(model_id.replace("gomodel:", ""));
             }
         }
     }
