@@ -1788,7 +1788,7 @@ impl WebData {
                 write!(writer, "{} {}\t{} ({})\t", model_id,
                        model_title, hole_node.label, hole_node.node_id)?;
                 if let Some(ref part_of_process) = hole_node.part_of_process {
-                    write!(writer, "{} ({})\t", part_of_process.label(), part_of_process.id())?;
+                    write!(writer, "{} ({})\t", part_of_process.label, part_of_process.id)?;
                 } else {
                     write!(writer, "\t")?;
                 }
