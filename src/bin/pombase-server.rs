@@ -239,7 +239,7 @@ async fn get_gocam_overlaps(State(all_state): State<Arc<AllState>>)
     Json(overlaps.to_owned())
 }
 
-async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
+async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
                                    State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
@@ -249,6 +249,15 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
     let all_gocam_data = &all_state.gocam_data;
     let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
 
+    let id_split: Vec<_> = gocam_id_arg.split(':').collect();
+
+    let (gocam_id, include_chemicals) =
+        if id_split.len() == 1 {
+            (id_split[0], true)
+        } else {
+            (id_split[0], !(id_split[1].to_lowercase() == "no_chemicals"))
+        };
+
     let read_res =
         if gocam_id.contains("+") {
             let gocam_id_set: HashSet<_> = gocam_id.split("+").collect();
@@ -256,17 +265,17 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id): Path<String>,
                 .filter(|detail| {
                     gocam_id_set.contains(detail.gocam_id.as_str())
                 }).cloned().collect();
-            read_merged_gocam_model(web_root_dir, &filtered_data).await
+            read_merged_gocam_model(web_root_dir, &filtered_data, include_chemicals).await
         } else {
-            match gocam_id.as_str() {
+            match gocam_id {
                 "ALL_MERGED" => {
-                    read_merged_gocam_model(web_root_dir, all_gocam_data).await
-                },
+                    read_merged_gocam_model(web_root_dir, all_gocam_data, include_chemicals).await
+                }
                 "ALL_CONNECTED" => {
                     read_connected_gocam_models(web_root_dir, all_gocam_data,
-                                                overlaps).await
+                                                overlaps, include_chemicals).await
                 }
-                _ => read_gocam_model(web_root_dir, &gocam_id).await
+                _ => read_gocam_model(web_root_dir, &gocam_id, include_chemicals).await
             }
         };
 
