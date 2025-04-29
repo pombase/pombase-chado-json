@@ -143,6 +143,9 @@ pub struct WebDataBuild<'a> {
     protein_complex_data: ProteinComplexData,
 
     gocam_overlaps: Vec<GoCamNodeOverlap>,
+
+    // transcripts with overlapping exons
+    transcript_frameshifts_to_check: Vec<(TranscriptUniquename, usize)>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -640,12 +643,33 @@ fn make_canto_curated(references_map: &UniquenameReferenceMap,
     (recent_admin_curated, recent_community_curated, all_community_curated,
      all_admin_curated)
 }
+// return true iff the gene has a frameshifted warning annotation
+fn has_annotated_frame_shift(gene_details: &GeneDetails) -> bool {
+    let Some(term_annotations) = gene_details.cv_annotations.get("warning")
+    else {
+        return false;
+    };
 
+    for term_annotation in term_annotations {
+        if term_annotation.term == "PBO:0000108" {
+            return true;
+        }
+    }
+
+    false
+}
+
+// returns a list of IDs for transcripts that have potential frameshifts, with the position
+// in the transcript
 fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                              transcript_uniquename: &FlexStr,
                              strand: Strand,
-                             parts: &mut Vec<FeatureShort>) {
+                             parts: &mut Vec<FeatureShort>)
+   -> Option<usize>
+{
     let mut new_parts: Vec<FeatureShort> = vec![];
+
+    let mut maybe_frameshift_pos = None;
 
     let mut intron_count = 0;
 
@@ -656,14 +680,23 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
             let intron_start = prev_part.location.end_pos + 1;
             let intron_end = part.location.start_pos - 1;
 
-            if intron_start > intron_end {
-                if intron_start > intron_end + 1 {
-                    println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
-                             transcript_uniquename);
+            let overlap = part.location.start_pos as i64 - prev_part.location.end_pos as i64 - 1;
+
+            if overlap <= 0 {
+                if overlap == 0 && (prev_part.feature_type != FeatureType::Exon || part.feature_type != FeatureType::Exon) {
+                    // no gap between coding exon and 5'/3' UTR
+                } else {
+                    if overlap == -1 || overlap == -2 || overlap == -3 {
+                        // Probably a overlap that represents a frameshift in the reference.
+                        // We'll check later for "warning, frameshifted".
+                        // See:
+                        // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
+                        maybe_frameshift_pos = Some(intron_start);
+                    } else {
+                        println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
+                                 transcript_uniquename);
+                    }
                 }
-                // if intron_start == intron_end-1 then it is a one base overlap that
-                // represents a frameshift in the reference See:
-                // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
             } else {
 
                 let new_intron_loc = ChromosomeLocation {
@@ -729,6 +762,8 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
     }
 
     *parts = new_parts;
+
+    maybe_frameshift_pos
 }
 
 fn validate_transcript_parts(transcript_uniquename: &FlexStr, parts: &[FeatureShort]) {
@@ -951,6 +986,8 @@ impl <'a> WebDataBuild<'a> {
             gocam_overlaps: vec![],
 
             protein_complex_data: HashMap::new(),
+
+            transcript_frameshifts_to_check: vec![],
        }
     }
 
@@ -2120,7 +2157,12 @@ phenotypes, so just the first part of this extension will be used:
 
             let chr_name = &parts[0].location.chromosome_name.clone();
             if let Some(chromosome) = self.chromosomes.get(chr_name) {
-                add_introns_to_transcript(chromosome, transcript_uniquename, strand, &mut parts);
+                let maybe_frameshift_pos =
+                    add_introns_to_transcript(chromosome, transcript_uniquename, strand, &mut parts);
+                if let Some(frameshift_pos) = maybe_frameshift_pos {
+                    let frame_shift_detail = (transcript_uniquename.to_owned(), frameshift_pos);
+                    self.transcript_frameshifts_to_check.push(frame_shift_detail);
+                }
             } else {
                 panic!("can't find chromosome details for: {}", chr_name);
             }
@@ -7988,6 +8030,21 @@ phenotypes, so just the first part of this extension will be used:
         (physical_interaction_annotations, genetic_interaction_annotations)
     }
 
+    fn report_missing_frameshift_quals(&self) {
+        for (transcript_uniquename, pos) in &self.transcript_frameshifts_to_check {
+            let Some(gene_uniquename) = self.genes_of_transcripts.get(transcript_uniquename)
+            else {
+                panic!("transcript has no gene: {}", transcript_uniquename);
+            };
+
+            let gene_details = self.genes.get(gene_uniquename).unwrap();
+
+            if !has_annotated_frame_shift(gene_details) {
+                eprintln!("no gap between exons at {} in {}", pos, transcript_uniquename);
+            }
+        }
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -8037,6 +8094,8 @@ phenotypes, so just the first part of this extension will be used:
         self.make_subsets();
         self.sort_chromosome_genes();
         self.set_gene_expression_measurements();
+
+        self.report_missing_frameshift_quals();
 
         let stats = self.get_stats();
 
