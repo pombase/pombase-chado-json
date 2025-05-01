@@ -71,7 +71,7 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
 {
     let mut overlapping_gocam_ids = HashSet::new();
     for overlap in overlaps {
-        for (model_id, _) in overlap.models.iter() {
+        for (model_id, _, _) in overlap.models.iter() {
             overlapping_gocam_ids.insert(model_id.replace("gomodel:", ""));
         }
     }
