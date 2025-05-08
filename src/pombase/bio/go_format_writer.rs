@@ -405,7 +405,7 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
     }
 
     let db_protein_id =
-        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+        if let Some(transcript_uniquename) = gene_details.transcripts.first() {
             if let Some(transcript_details) =
                 api_maps.transcripts.get(transcript_uniquename)
             {
@@ -663,7 +663,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         };
 
     let db_object_type =
-        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+        if let Some(transcript_uniquename) = gene_details.transcripts.first() {
             let transcript_details =
                 transcripts.get(transcript_uniquename)
                 .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",

@@ -1500,9 +1500,9 @@ pub struct GeneDetails {
     pub location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gene_neighbourhood: Vec<GeneShort>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    #[serde(skip_serializing_if="BTreeSet::is_empty", default)]
     // transcripts of this gene
-    pub transcripts: Vec<TranscriptUniquename>,
+    pub transcripts: BTreeSet<TranscriptUniquename>,
     pub cv_annotations: OntAnnotationMap,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub physical_interactions: Vec<InteractionAnnotation>,

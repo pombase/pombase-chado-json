@@ -978,7 +978,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
             continue;
         }
 
-        let Some(transcript_uniquename) = gene_details.transcripts.get(0)
+        let Some(transcript_uniquename) = gene_details.transcripts.first()
         else {
             continue;
         };

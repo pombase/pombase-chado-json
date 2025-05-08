@@ -783,7 +783,7 @@ fn test_gene_details() {
     assert_eq!(web_data.genes.len(), 3);
     let par1_gene = web_data.genes.remove(&flex_str!("SPCC188.02")).unwrap();
 
-    let transcript_0_uniquename = &par1_gene.transcripts[0];
+    let transcript_0_uniquename = par1_gene.transcripts.first().unwrap();
     let transcript_details_0 =
         web_data.api_maps.transcripts.get(transcript_0_uniquename)
         .unwrap();

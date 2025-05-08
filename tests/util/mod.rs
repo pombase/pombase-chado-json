@@ -122,7 +122,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         taxonomic_distribution: None,
         location: None,
         gene_neighbourhood: vec![],
-        transcripts: vec![],
+        transcripts: BTreeSet::new(),
         transcripts_by_uniquename: HashMap::new(),
         cv_annotations: HashMap::new(),
         physical_interactions: vec![],
@@ -183,12 +183,15 @@ pub fn get_test_genes_map() -> UniquenameGeneMap {
                           }]);
     let mut transcripts_by_uniquename = HashMap::new();
     transcripts_by_uniquename.insert("SPBC11C11.05.1".into(), None);
+    let mut transcripts = std::collections::BTreeSet::new();
+    use flexstr::shared_str as flex_str;
+    transcripts.insert(flex_str!("SPBC11C11.05.1"));
 
     ret.insert("SPAC27E2.05".into(),
                GeneDetails {
                  deletion_viability: DeletionViability::DependsOnConditions,
                  cv_annotations,
-                 transcripts: vec!["SPBC11C11.05.1".into()],
+                 transcripts,
                  transcripts_by_uniquename,
                  ..gene_spac27e2_05
                });

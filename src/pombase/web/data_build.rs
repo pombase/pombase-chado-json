@@ -1171,7 +1171,7 @@ impl <'a> WebDataBuild<'a> {
         let mut five_prime_exon_count = 0;
         let mut three_prime_exon_count = 0;
 
-        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+        if let Some(transcript_uniquename) = gene_details.transcripts.first() {
             let transcript = self.transcripts
                 .get(transcript_uniquename)
                 .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
@@ -2121,7 +2121,7 @@ phenotypes, so just the first part of this extension will be used:
             ortholog_annotations: vec![],
             paralog_annotations: vec![],
             target_of_annotations: vec![],
-            transcripts: vec![],
+            transcripts: BTreeSet::new(),
             transcripts_by_uniquename: HashMap::new(),
             genes_by_uniquename: HashMap::new(),
             genotypes_by_uniquename: HashMap::new(),
@@ -2293,7 +2293,7 @@ phenotypes, so just the first part of this extension will be used:
 
                 self.transcripts.insert(transcript_uniquename.clone(), transcript);
 
-                gene_details.transcripts.push(transcript_uniquename);
+                gene_details.transcripts.insert(transcript_uniquename);
                 gene_details.transcript_so_termid = Some(feat.feat_type.termid());
             } else {
                 panic!("can't find gene for transcript: {}", transcript_uniquename);
@@ -5280,7 +5280,7 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn get_rna_lengths(&self, gene_details: &GeneDetails) -> (Option<usize>, Option<usize>) {
-        if let Some(transcript_uniquename) = gene_details.transcripts.get(0) {
+        if let Some(transcript_uniquename) = gene_details.transcripts.first() {
             if let Some(transcript) =
                 self.transcripts.get(transcript_uniquename) {
                     let spliced_length = transcript.rna_seq_length_spliced.map(|i| i.get());

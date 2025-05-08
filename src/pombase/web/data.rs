@@ -398,7 +398,7 @@ impl WebData {
 
         for (gene_uniquename, gene_details) in &self.genes {
             if let Some(transcript_uniquename) =
-                gene_details.transcripts.get(0)
+                gene_details.transcripts.first()
             {
                 let transcript = self.api_maps.transcripts.get(transcript_uniquename)
                     .expect(&format!("internal error, can't find transcript details for {}",
@@ -741,7 +741,7 @@ impl WebData {
 
         for (gene_uniquename, gene_details) in &self.genes {
             if let Some(transcript_uniquename) =
-                gene_details.transcripts.get(0)
+                gene_details.transcripts.first()
             {
                 let transcript = self.api_maps.transcripts.get(transcript_uniquename)
                     .expect(&format!("internal error, can't find transcript details for {}",
@@ -1179,7 +1179,7 @@ impl WebData {
             }
 
             if let Some(transcript_uniquename) =
-                gene_details.transcripts.get(0)
+                gene_details.transcripts.first()
             {
                 let transcript = self.api_maps.transcripts.get(transcript_uniquename)
                     .expect(&format!("internal error, can't find transcript details for {}",

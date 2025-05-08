@@ -524,6 +524,9 @@ use std::num::NonZeroUsize;
 use flexstr::shared_str as flex_str;
 #[cfg(test)]
 fn make_test_gene() -> GeneDetails {
+    let mut transcripts = std::collections::BTreeSet::new();
+    transcripts.insert(flex_str!("SPCC18B5.06.1"));
+
     GeneDetails {
         uniquename: flex_str!("SPCC18B5.06"),
         name: Some(flex_str!("dom34")),
@@ -581,9 +584,7 @@ fn make_test_gene() -> GeneDetails {
             phase: None,
         }),
         gene_neighbourhood: vec![],
-        transcripts: vec![
-            flex_str!("SPCC18B5.06.1"),
-        ],
+        transcripts,
         transcripts_by_uniquename: HashMap::from([
             (flex_str!("SPCC18B5.06.1"),
              Some(TranscriptDetails {
