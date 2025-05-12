@@ -2604,17 +2604,19 @@ pub struct GeneQueryData {
     pub property_flags: HashSet<GeneQueryPropFlag>,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, PartialEq, Eq, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum InteractionType {
     Physical,
     Genetic
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct APIInteractor {
     pub interaction_type: InteractionType,
     pub interactor_uniquename: GeneUniquename,
+    pub throughput: Option<Throughput>,
+    pub evidence_type: FlexStr,
 }
 
 pub type GeneExDataSetName = FlexStr;
@@ -2798,7 +2800,7 @@ pub struct APIMaps {
     pub gene_query_data_map: HashMap<GeneUniquename, GeneQueryData>,
     pub transcripts: UniquenameTranscriptMap,
     pub gene_name_gene_map: HashMap<FlexStr, GeneUniquename>,
-    pub interactors_of_genes: HashMap<GeneUniquename, Vec<APIInteractor>>,
+    pub interactors_of_genes: HashMap<GeneUniquename, HashSet<APIInteractor>>,
     pub downstream_genes: HashMap<FlexStr, HashMap<TermId, HashSet<GeneUniquename>>>,
     pub other_features: UniquenameFeatureShortMap,
     pub seq_feature_page_features: Vec<FeatureShort>,

@@ -12,6 +12,7 @@ use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
 use crate::data_types::DataLookup;
+use crate::data_types::Throughput;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
                        ChromosomeDetails, Strand, Ploidiness, GeneQueryPropFlag};
 use crate::types::CvName;
@@ -196,7 +197,11 @@ pub struct GenomeRangeNode {
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
 pub struct InteractorsNode {
     pub gene_uniquename: GeneUniquename,
-    pub interaction_type: String
+    pub interaction_type: String,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub throughput: Option<Throughput>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub evidence_type: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -687,8 +692,12 @@ fn exec_float_range(api_data: &APIData, range_type: &FloatRangeType,
 }
 
 fn exec_interactors_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
-                            interaction_type: InteractionType) -> GeneUniquenameVecResult {
-    Ok(api_data.interactors_of_genes(gene_uniquename, interaction_type))
+                            interaction_type: InteractionType,
+                            throughput: &Option<Throughput>,
+                            evidence_type: &Option<String>)
+     -> GeneUniquenameVecResult
+{
+    Ok(api_data.interactors_of_genes(gene_uniquename, interaction_type, throughput, evidence_type))
 }
 
 fn exec_substrates_of_gene(api_data: &APIData, gene_uniquename: &GeneUniquename,
@@ -826,10 +835,14 @@ impl QueryNode {
             return match &interactors_node.interaction_type as &str {
                 "physical" =>
                     exec_interactors_of_gene(api_data, &interactors_node.gene_uniquename,
-                                             InteractionType::Physical),
+                                             InteractionType::Physical,
+                                             &interactors_node.throughput,
+                                             &interactors_node.evidence_type),
                 "genetic" =>
                     exec_interactors_of_gene(api_data, &interactors_node.gene_uniquename,
-                                             InteractionType::Genetic),
+                                             InteractionType::Genetic,
+                                             &interactors_node.throughput,
+                                             &interactors_node.evidence_type),
                 _ => Err(flex_fmt!("No such interaction type: {}",
                                    interactors_node.interaction_type))
             };

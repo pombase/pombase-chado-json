@@ -5544,7 +5544,7 @@ phenotypes, so just the first part of this extension will be used:
                 }
                 gene_summaries.insert(gene_uniquename.clone(), gene_summary);
 
-                let mut interactors = vec![];
+                let mut interactors = HashSet::new();
 
                 for interaction_annotation in &gene_details.physical_interactions {
                     let interactor_uniquename =
@@ -5556,24 +5556,26 @@ phenotypes, so just the first part of this extension will be used:
                     let interactor = APIInteractor {
                         interaction_type: InteractionType::Physical,
                         interactor_uniquename,
+                        throughput: interaction_annotation.throughput.clone(),
+                        evidence_type: interaction_annotation.evidence.clone(),
                     };
-                    if !interactors.contains(&interactor) {
-                        interactors.push(interactor);
-                    }
+                    interactors.insert(interactor);
                 }
-                for interaction_key in gene_details.genetic_interactions.keys() {
+                for (interaction_key, annotations) in gene_details.genetic_interactions.iter() {
                     let interactor_uniquename =
                         if gene_uniquename == interaction_key.gene_a_uniquename {
                             interaction_key.gene_b_uniquename.clone()
                         } else {
                             interaction_key.gene_a_uniquename.clone()
                         };
-                    let interactor = APIInteractor {
-                        interaction_type: InteractionType::Genetic,
-                        interactor_uniquename,
-                    };
-                    if !interactors.contains(&interactor) {
-                        interactors.push(interactor);
+                    for annotation in annotations {
+                        let interactor = APIInteractor {
+                            interaction_type: InteractionType::Genetic,
+                            interactor_uniquename: interactor_uniquename.clone(),
+                            throughput: annotation.throughput.clone(),
+                            evidence_type: interaction_key.interaction_type.clone(),
+                        };
+                        interactors.insert(interactor);
                     }
                 }
                 interactors_of_genes.insert(gene_uniquename.clone(), interactors);

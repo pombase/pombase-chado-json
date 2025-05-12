@@ -8,9 +8,9 @@ use std::sync::{Mutex, Arc, RwLock};
 use zstd::stream::Decoder;
 use rusqlite::Connection;
 
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeSet, HashMap, HashSet};
 
-use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIGenotypeAnnotation, APIMaps, AlleleDetails, AlleleShort, ChromosomeDetails, DataLookup, ExtPart, ExtRange, FeatureShort, GeneAndGeneProduct, GeneDetails, GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails, GoCamDetails, GoCamId, IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType, OntAnnotationDetail, OntAnnotationId, OntAnnotationMap, Ploidiness, ProteinViewData, ProteinViewType, ReferenceDetails, ReferenceShort, ReferenceShortOptionMap, TermDetails, TermShort, TermShortOptionMap, TranscriptDetailsOptionMap, WithFromValue};
+use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIGenotypeAnnotation, APIMaps, AlleleDetails, AlleleShort, ChromosomeDetails, DataLookup, ExtPart, ExtRange, FeatureShort, GeneAndGeneProduct, GeneDetails, GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails, GoCamDetails, GoCamId, IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType, OntAnnotationDetail, OntAnnotationId, OntAnnotationMap, Ploidiness, ProteinViewData, ProteinViewType, ReferenceDetails, ReferenceShort, ReferenceShortOptionMap, TermDetails, TermShort, TermShortOptionMap, Throughput, TranscriptDetailsOptionMap, WithFromValue};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
@@ -937,15 +937,36 @@ impl APIData {
     }
 
     pub fn interactors_of_genes(&self, gene_uniquename: &GeneUniquename,
-                                interaction_type: InteractionType)
+                                interaction_type_constraint: InteractionType,
+                                throughput_constraint: &Option<Throughput>,
+                                evidence_type_constraint: &Option<String>)
                                 -> Vec<GeneUniquename> {
         if let Some(interactors) = self.maps.interactors_of_genes.get(gene_uniquename) {
             interactors.iter()
                 .filter(|interactor| {
-                    interactor.interaction_type == interaction_type
+                    if interactor.interaction_type != interaction_type_constraint {
+                        return false;
+                    }
+                    if let Some(throughput_constraint) = throughput_constraint {
+                        if let Some(ref interactor_throughput) = interactor.throughput {
+                            if interactor_throughput != throughput_constraint {
+                                return false;
+                            }
+                        } else {
+                            return false;
+                        }
+                    }
+                    if let Some(evidence_type) = evidence_type_constraint {
+                        if interactor.evidence_type != *evidence_type {
+                            return false;
+                        }
+                    }
+                    return true;
                 })
                 .map(|interactor| interactor.interactor_uniquename.clone())
-                .collect::<Vec<_>>()
+                .collect::<BTreeSet<_>>()
+                .into_iter()
+                .collect()
         } else {
             vec![]
         }
@@ -1039,8 +1060,8 @@ impl APIData {
                         prot_feat_conf.domains_and_features_tracks.contains(&track.name)
                     },
                     ProteinViewType::Modifications =>
-                        prot_feat_conf.modification_section_tracks.contains(&track.name),  
-                    ProteinViewType::Full => 
+                        prot_feat_conf.modification_section_tracks.contains(&track.name),
+                    ProteinViewType::Full =>
                         !prot_feat_conf.full_display_excluded.contains(&track.name),
 
                 }
