@@ -13,6 +13,7 @@ pub type GeneProduct = FlexStr;
 
 pub type TermName = FlexStr;
 pub type TermId = FlexStr;
+pub type RelationTermId = TermId;
 pub type TermDef = FlexStr;
 pub type ChromosomeName = FlexStr;
 

@@ -77,6 +77,7 @@ pub struct WebDataBuild<'a> {
     chado_queries: ChadoQueries,
     orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
     gocam_models: Vec<GoCamModel>,
+    extension_config: Vec<CantoExtensionConfig>,
     config: &'a Config,
 
     genes: UniquenameGeneMap,
@@ -116,7 +117,9 @@ pub struct WebDataBuild<'a> {
 
     base_term_of_extensions: HashMap<TermId, TermId>,
 
-    // a set of child terms for each term from the cvtermpath table
+    // a set of parent terms for each term from the cvtermpath table
+    parents_by_termid_and_rel: HashMap<TermId, HashMap<RelationTermId, HashSet<TermId>>>,
+    // child terms for each term from the cvtermpath table
     children_by_termid: HashMap<TermId, HashSet<TermId>>,
     dbxrefs_of_features: HashMap<FlexStr, HashSet<FlexStr>>,
 
@@ -910,6 +913,7 @@ impl <'a> WebDataBuild<'a> {
                chado_queries: ChadoQueries,
                orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
                gocam_models: Vec<GoCamModel>,
+               extension_config: Vec<CantoExtensionConfig>,
                config: &'a Config) -> WebDataBuild<'a>
     {
         WebDataBuild {
@@ -924,6 +928,7 @@ impl <'a> WebDataBuild<'a> {
             chado_queries,
             orcid_name_map,
             gocam_models,
+            extension_config,
             config,
 
             genes: BTreeMap::new(),
@@ -967,6 +972,7 @@ impl <'a> WebDataBuild<'a> {
 
             base_term_of_extensions: HashMap::new(),
 
+            parents_by_termid_and_rel: HashMap::new(),
             children_by_termid: HashMap::new(),
             dbxrefs_of_features: HashMap::new(),
 
@@ -4924,7 +4930,8 @@ phenotypes, so just the first part of this extension will be used:
         let mut new_annotations: HashMap<(CvName, TermId), HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
             HashMap::new();
 
-        let mut children_by_termid: HashMap<TermId, HashSet<TermId>> = HashMap::new();
+        let mut parents_by_termid_and_rel = HashMap::new();
+        let mut children_by_termid = HashMap::new();
 
         for cvtermpath in &self.raw.cvtermpaths {
             let subject_term = &cvtermpath.subject;
@@ -4957,6 +4964,12 @@ phenotypes, so just the first part of this extension will be used:
                 if subject_term_details.cv_annotations.keys().len() > 0 ||
                     slim_termids.contains(&object_termid)
                 {
+                    parents_by_termid_and_rel
+                        .entry(subject_termid.clone())
+                        .or_insert_with(HashMap::new)
+                        .entry(rel_term_name.clone())
+                        .or_insert_with(HashSet::new)
+                        .insert(object_termid.clone());
                     children_by_termid
                         .entry(object_termid.clone())
                         .or_insert_with(HashSet::new)
@@ -5055,6 +5068,7 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
+        self.parents_by_termid_and_rel = parents_by_termid_and_rel;
         self.children_by_termid = children_by_termid;
     }
 
@@ -7117,6 +7131,76 @@ phenotypes, so just the first part of this extension will be used:
         self.gene_expression_measurements = measurements;
     }
 
+    fn find_matching_extension_config(&'a self, termid: &TermId)
+        -> Vec<&'a CantoExtensionConfig>
+    {
+        let config_matches_termid =
+            |termid: &TermId, domain_id: &TermId, subset_relation: &RelationTermId| -> bool
+        {
+            if termid == domain_id {
+                return true;
+            }
+
+            let Some(parent_termids_by_rel) =
+                self.parents_by_termid_and_rel.get(termid)
+            else {
+                return false;
+            };
+
+            let Some(parent_termids) = parent_termids_by_rel.get(subset_relation)
+            else {
+                return false;
+            };
+
+            parent_termids.contains(domain_id)
+        };
+
+        let mut ret = vec![];
+
+        'CONF:
+        for conf in &self.extension_config {
+            if config_matches_termid(termid, &conf.domain_id, &conf.subset_relation) {
+                for excluded_domain_id_and_rel in &conf.excluded_domain_ids_and_rels {
+                    let excl_termid = &excluded_domain_id_and_rel.termid;
+                    let excl_rel = &excluded_domain_id_and_rel.relation_termid;
+                    if config_matches_termid(termid, &excl_termid, excl_rel) {
+                        continue 'CONF;
+                    }
+                }
+                ret.push(conf);
+            }
+        }
+
+        ret
+    }
+
+    fn check_extension_relations(&self) {
+        println!("start: {:?}", chrono::offset::Local::now());
+
+        for (termid, term_details) in &self.terms {
+
+            let matching_configs =
+                self.find_matching_extension_config(termid);
+
+            if matching_configs.len() > 0 {
+//            panic!("match: {}", matching_configs.len());
+            }
+
+            for term_annotations in term_details.cv_annotations.values() {
+                for term_annotation in term_annotations {
+                    for annotation_detail_id in &term_annotation.annotations {
+                        let annotation_detail = self.annotation_details
+                            .get(annotation_detail_id).expect("can't find OntAnnotationDetail");
+                        for ext_part in &annotation_detail.extension {
+//                            check_extension_part(matching_configs)
+                        }
+                    }
+                }
+            }
+        }
+        println!("end {:?}", chrono::offset::Local::now());
+    }
+
     fn set_chromosome_gene_counts(&mut self) {
         let mut counts = HashMap::new();
         let mut coding_counts = HashMap::new();
@@ -8096,6 +8180,7 @@ phenotypes, so just the first part of this extension will be used:
         self.make_subsets();
         self.sort_chromosome_genes();
         self.set_gene_expression_measurements();
+        self.check_extension_relations();
 
         self.report_missing_frameshift_quals();
 

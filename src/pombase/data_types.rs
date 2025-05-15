@@ -80,6 +80,24 @@ pub trait DataLookup {
            -> Option<Arc<OntAnnotationDetail>>;
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct CantoExtensionTermAndRel {
+    pub termid: TermId,
+    pub relation_termid: RelationTermId,
+}
+#[derive(Debug, Clone)]
+pub struct CantoExtensionConfig {
+    pub domain_id: FlexStr,
+    pub excluded_domain_ids_and_rels: HashSet<CantoExtensionTermAndRel>,
+    pub subset_relation: FlexStr,
+    pub extension_relation: FlexStr,
+    pub range_id: FlexStr,
+    pub display_text: FlexStr,
+    pub help_text: FlexStr,
+    pub cardinality: FlexStr,
+    pub role: FlexStr,
+}
+
 pub type RNAcentralAnnotations = HashMap<FlexStr, Vec<RfamAnnotation>>;
 
 fn empty_string()-> FlexStr {

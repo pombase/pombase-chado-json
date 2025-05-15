@@ -3,6 +3,7 @@ extern crate getopts;
 use deadpool_postgres::{Pool, Manager};
 use pombase::bio::gocam_model_process::read_gocam_models;
 use pombase::bio::pdb_reader::read_pdb_data;
+use pombase::bio::util::parse_all_extension_config;
 use pombase::bio::util::parse_orcid_name_map;
 use pombase::db::ChadoQueries;
 use pombase::uniprot::parse_uniprot;
@@ -67,6 +68,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 "GO evidence code to ECO ID mapping from http://purl.obolibrary.org/obo/eco/gaf-eco-mapping.txt", "FILE");
     opts.optopt("", "gene-history-file",
                 "The gene history file in this format: https://github.com/pombase/genome_changelog/blob/master/results/all_coordinate_changes_file_comments_no_type_change.tsv", "FILE");
+    opts.optopt("", "extension-config-directory",
+                "The Canto extension config directory, see: https://github.com/pombase/canto/wiki/AnnotationExtensionConfig",
+                "DIR");
     opts.optopt("", "orcid-name-map",
                 "A TSV file mapping ORCIDs to names", "FILE");
     opts.optopt("", "gocam-model-directory",
@@ -140,6 +144,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         } else {
            None
         };
+    let extension_config_dirname = matches.opt_str("extension-config-directory");
     let orcid_name_map_filename = matches.opt_str("orcid-name-map");
     let gocam_model_dir = matches.opt_str("gocam-model-directory");
 
@@ -183,11 +188,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
             (None, None)
         };
 
-    let orcid_name_map = 
+    let orcid_name_map =
         if let Some(ref orcid_name_map_filename) = orcid_name_map_filename {
             parse_orcid_name_map(orcid_name_map_filename)?
         } else {
             HashMap::new()
+        };
+
+    let extension_config =
+        if let Some(ref extension_config_dirname) = extension_config_dirname {
+            parse_all_extension_config(extension_config_dirname)?
+        } else {
+            vec![]
         };
 
     let web_data_build = WebDataBuild::new(&raw, interpro_data,
@@ -197,6 +209,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                            chado_queries,
                                            orcid_name_map,
                                            gocam_models,
+                                           extension_config,
                                            &config);
     let web_data = web_data_build.get_web_data();
 

@@ -1,7 +1,9 @@
+use std::collections::HashSet;
 
-use crate::web::config::RelationOrder;
+use crate::{types::TermId, web::config::RelationOrder};
 use crate::types::GeneUniquename;
 
+use csv::Trim;
 use flexstr::{SharedStr as FlexStr, shared_fmt as flex_fmt, ToSharedStr};
 use regex::Regex;
 
@@ -450,6 +452,125 @@ pub fn parse_orcid_name_map(orcid_name_map_filename: &str)
     Ok(ret)
 }
 
+
+#[derive(Deserialize)]
+struct RawCantoExtensionConfig {
+    #[serde(rename = "domain ID")]
+    pub domain_id: String,
+    #[serde(rename = "subset relation")]
+    pub subset_relation: FlexStr,
+    #[serde(rename = "extension relation")]
+    pub extension_relation: FlexStr,
+    #[serde(rename = "range ID")]
+    pub range_id: FlexStr,
+    #[serde(rename = "Canto display text")]
+    pub display_text: FlexStr,
+    #[serde(rename = "Help text")]
+    pub help_text: FlexStr,
+    #[serde(rename = "cardinality")]
+    pub cardinality: FlexStr,
+    #[serde(rename = "role")]
+    pub role: FlexStr,
+}
+
+lazy_static! {
+    static ref EXT_CONFIG_REL_AND_TERMID: Regex =
+        Regex::new(r"^([a-z_]+)\(([A-Z]+:\d+)\)").unwrap();
+}
+
+fn parse_domain_id_field(domain_id_config: &str)
+    -> (TermId, HashSet<CantoExtensionTermAndRel>)
+{
+    let domain_parts: Vec<_> = domain_id_config.splitn(2, '-').collect();
+
+    if domain_parts.len() == 2 {
+        let domain_id = domain_parts[0];
+        let excluded_termids: HashSet<_> =
+            domain_parts[1]
+            .split("&")
+            .map(|rel_and_term: &str| {
+                if let Some(captures) = EXT_CONFIG_REL_AND_TERMID.captures(rel_and_term) {
+                    if captures.len() > 3 {
+                        panic!("can't parse extension config domain ID: {}", domain_id_config);
+                    }
+                    if let (Some(termid), Some(relation_termid)) =
+                         (captures.get(1), captures.get(2))
+                    {
+                        return CantoExtensionTermAndRel {
+                            termid: termid.as_str().into(),
+                            relation_termid: relation_termid.as_str().into(),
+                        };
+                    }
+                }
+
+                panic!("can't parse extension config domain ID: {}", domain_id_config);
+            })
+            .collect();
+        (domain_id.into(), excluded_termids)
+    } else {
+        (domain_id_config.into(), HashSet::new())
+    }
+}
+
+
+pub fn parse_all_extension_config(extension_config_dir: &str)
+    -> Result<Vec<CantoExtensionConfig>, io::Error>
+{
+    let mut res = vec![];
+
+    for config_file_entry in fs::read_dir(extension_config_dir)? {
+        let config_file_path = config_file_entry?.path();
+        if !config_file_path.to_str().unwrap().ends_with("_config") {
+            continue;
+        }
+
+        let file = match File::open(config_file_path.clone()) {
+            Ok(file) => file,
+            Err(err) => {
+                println!("Failed to open {}: {}",
+                         config_file_path.display(), err);
+                process::exit(1);
+            }
+        };
+
+        let reader = BufReader::new(file);
+
+        let mut csv_reader = csv::ReaderBuilder::new()
+            .has_headers(true)
+            .flexible(true)
+            .trim(Trim::All)
+            .delimiter(b'\t')
+            .comment(Some(b'#'))
+            .from_reader(reader);
+
+        for result in csv_reader.deserialize() {
+            let raw_record: RawCantoExtensionConfig =
+                result.unwrap_or_else(|e| {
+                    panic!("failed to read Canto extension config TSV file: {}", e);
+                });
+
+            let (domain_id, excluded_domain_ids_and_rels) =
+                parse_domain_id_field(&raw_record.domain_id);
+
+            let record = CantoExtensionConfig {
+                domain_id,
+                excluded_domain_ids_and_rels,
+                subset_relation: raw_record.subset_relation.clone(),
+                extension_relation: raw_record.extension_relation.clone(),
+                range_id: raw_record.range_id.clone(),
+                display_text: raw_record.display_text.clone(),
+                help_text: raw_record.help_text.clone(),
+                cardinality: raw_record.cardinality.clone(),
+                role: raw_record.role.clone(),
+            };
+
+            res.push(record);
+        }
+    }
+
+    Ok(res)
+}
+
 #[test]
 fn test_format_fasta() {
     assert!(format_fasta("id1", None, "", 8) == ">id1\n\n");
@@ -514,9 +635,9 @@ TCAACCACATTCAA";
     assert_eq!(records[1].sequence, "TCACTTAAATTCTTCGTCAACCACATTCAA");
 }
 
-use std::{cmp::Ordering, fs::File, io::{BufRead, ErrorKind}};
+use std::{cmp::Ordering, fs::{self, File}, io::{BufRead, ErrorKind}, process};
 #[cfg(test)]
-use std::collections::{HashSet, HashMap};
+use std::collections::HashMap;
 use std::io::{self, BufReader};
 #[cfg(test)]
 use std::num::NonZeroUsize;
