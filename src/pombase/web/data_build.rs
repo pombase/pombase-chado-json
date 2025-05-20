@@ -1266,9 +1266,13 @@ impl <'a> WebDataBuild<'a> {
         gene_details.characterisation_status = Some(cvterm_name.clone());
     }
 
-    fn add_gene_product(&mut self, gene_uniquename: &FlexStr, product: &FlexStr) {
+    fn add_gene_product(&mut self, gene_uniquename: &FlexStr, new_product: &FlexStr) {
         let gene_details = self.get_gene_mut(gene_uniquename);
-        gene_details.product = Some(product.clone());
+        if let Some(ref product) = gene_details.product {
+            gene_details.product = Some(flex_fmt!("{} OR {}", product, new_product));
+        } else {
+            gene_details.product = Some(new_product.clone());
+        }
     }
 
     fn add_name_description(&mut self, gene_uniquename: &FlexStr, name_description: &FlexStr) {
@@ -4057,11 +4061,7 @@ phenotypes, so just the first part of this extension will be used:
 
             if let Some(gene_uniquename) = maybe_gene_uniquename {
                 if let Some(transcript_uniquename) = maybe_transcript_uniquename {
-                    if transcript_uniquename.ends_with(".1") {
-                        // for multi-transcript genes, use the product
-                        // from the first transcript
-                        self.add_gene_product(&gene_uniquename, &cvterm.name);
-                    }
+                    self.add_gene_product(&gene_uniquename, &cvterm.name);
 
                     self.add_product_to_protein(&transcript_uniquename,
                                                 cvterm.name.clone());
