@@ -1,7 +1,7 @@
 extern crate getopts;
 
 use deadpool_postgres::{Pool, Manager};
-use pombase::bio::gocam_model_process::read_gocam_models;
+use pombase::bio::gocam_model_process::read_gocam_models_from_dir;
 use pombase::bio::pdb_reader::read_pdb_data;
 use pombase::bio::util::parse_orcid_name_map;
 use pombase::db::ChadoQueries;
@@ -145,7 +145,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let gocam_models =
         if let Some(model_dir) = gocam_model_dir {
-            read_gocam_models(&model_dir)?
+            read_gocam_models_from_dir(&model_dir)?
         } else {
             vec![]
         };

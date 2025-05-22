@@ -7,7 +7,7 @@ use tokio::io::AsyncReadExt as _;
 
 use crate::data_types::GoCamDetails;
 
-pub fn read_gocam_models(model_dir: &str)
+pub fn read_gocam_models_from_dir(model_dir: &str)
     -> Result<Vec<GoCamModel>>
 {
     let mut ret = vec![];
@@ -24,6 +24,20 @@ pub fn read_gocam_models(model_dir: &str)
     }
 
     Ok(ret)
+}
+
+pub async fn read_all_gocam_models(web_root_dir: &str, all_gocam_data: &Vec<GoCamDetails>)
+    -> anyhow::Result<Vec<GoCamModel>>
+{
+    let mut models = vec![];
+
+    for detail in all_gocam_data {
+        let gocam_id = &detail.gocam_id;
+        let model = read_gocam_model(web_root_dir, gocam_id, true).await?;
+        models.push(model);
+    }
+
+    Ok(models)
 }
 
 pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, include_chemicals: bool)
@@ -46,13 +60,7 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<Go
                                      include_chemicals: bool)
     -> anyhow::Result<GoCamModel>
 {
-    let mut models = vec![];
-
-    for detail in all_gocam_data {
-        let gocam_id = &detail.gocam_id;
-        let model = read_gocam_model(web_root_dir, gocam_id, true).await?;
-        models.push(model);
-    }
+    let models = read_all_gocam_models(web_root_dir, all_gocam_data).await?;
 
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
 

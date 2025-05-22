@@ -292,12 +292,30 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
     }
 }
 
-async fn get_model_connections_for_cytoscape(State(all_state): State<Arc<AllState>>)
+async fn get_model_summary_for_cytoscape_all(State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
     let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
 
-    let model_connections = model_connections_to_cytoscope(overlaps);
+    let all_gocam_data = &all_state.gocam_data;
+
+    let ids_and_titles: Vec<(String, String)> =
+        all_gocam_data.iter()
+        .map(|detail| (format!("gomodel:{}", detail.gocam_id), detail.title.to_string()))
+        .collect();
+
+    let model_connections = model_connections_to_cytoscope(overlaps, &ids_and_titles);
+
+    Json(model_connections.to_owned())
+}
+
+async fn get_model_summary_for_cytoscape_connected(State(all_state): State<Arc<AllState>>)
+       -> impl IntoResponse
+{
+    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
+
+
+    let model_connections = model_connections_to_cytoscope(overlaps, &vec![]);
 
     Json(model_connections.to_owned())
 }
@@ -469,13 +487,21 @@ async fn gocam_viz_view_highlight(Path((viz_or_view, full_or_widget, gocam_id, h
     }
 }
 
-async fn get_gocam_connections(State(all_state): State<Arc<AllState>>)
+async fn get_gocam_summary(all_models: bool, all_state: Arc<AllState>)
    -> (StatusCode, Html<String>)
 {
     let url = format!("{}/gocam_connections/", all_state.config.server.django_url);
 
+    let summary_type =
+        if all_models {
+            "all_models"
+        } else {
+            "connected_only"
+        };
+    let params = [("summary_type", summary_type)];
+
     let client = reqwest::Client::new();
-    let result = client.get(url).send().await;
+    let result = client.get(url).query(&params).send().await;
 
     match result {
         Ok(res) => {
@@ -494,6 +520,18 @@ async fn get_gocam_connections(State(all_state): State<Arc<AllState>>)
             (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
         }
     }
+}
+
+async fn get_gocam_summary_connected(State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    get_gocam_summary(false, all_state).await
+}
+
+async fn get_gocam_summary_all(State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    get_gocam_summary(true, all_state).await
 }
 
 /*
@@ -895,7 +933,8 @@ async fn main() {
         .route("/protein_feature_view/{scope}/{gene_uniquename}", get(protein_feature_view))
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}", get(gocam_viz_view))
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}/{highlight_gene_ids}", get(gocam_viz_view_highlight))
-        .route("/gocam_connections", get(get_gocam_connections))
+        .route("/gocam/summary/connected", get(get_gocam_summary_connected))
+        .route("/gocam/summary/all", get(get_gocam_summary_all))
         .route("/simple/gene/{id}", get(get_simple_gene))
         .route("/simple/genotype/{id}", get(get_simple_genotype))
         .route("/simple/reference/{id}", get(get_simple_reference))
@@ -913,7 +952,8 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/all", get(get_all_gocam_data))
         .route("/api/v1/dataset/latest/data/gocam/by_id/{gocam_id}", get(get_gocam_data_by_id))
         .route("/api/v1/dataset/latest/data/gocam/overlaps", get(get_gocam_overlaps))
-        .route("/api/v1/dataset/latest/data/gocam/model_connections", get(get_model_connections_for_cytoscape))
+        .route("/api/v1/dataset/latest/data/gocam/model_summary/all_models", get(get_model_summary_for_cytoscape_all))
+        .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/{plot_size}/{genes}", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/{type}", get(get_stats))
