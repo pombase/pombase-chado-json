@@ -2,7 +2,7 @@ use std::{collections::HashSet, fs::{self, File}, io::Cursor, vec};
 
 use anyhow::Result;
 
-use pombase_gocam::{parse_gocam_model, GoCamModel, GoCamNodeOverlap};
+use pombase_gocam::{parse_gocam_model, GoCamModel, GoCamNodeOverlap, RemoveType};
 use tokio::io::AsyncReadExt as _;
 
 use crate::data_types::GoCamDetails;
@@ -31,16 +31,21 @@ pub async fn read_all_gocam_models(web_root_dir: &str, all_gocam_data: &Vec<GoCa
 {
     let mut models = vec![];
 
+    let mut flags = HashSet::new();
+
+    flags.insert("with_chemicals".to_owned());
+    flags.insert("with_inputs".to_owned());
+
     for detail in all_gocam_data {
         let gocam_id = &detail.gocam_id;
-        let model = read_gocam_model(web_root_dir, gocam_id, true).await?;
+        let model = read_gocam_model(web_root_dir, gocam_id, &flags).await?;
         models.push(model);
     }
 
     Ok(models)
 }
 
-pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, include_chemicals: bool)
+pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSet<String>)
     -> anyhow::Result<GoCamModel>
 {
     let file_name = format!("{}/web-json/go-cam/gomodel:{}.json", web_root_dir, gocam_id);
@@ -48,33 +53,42 @@ pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, include_chemic
     let mut contents = vec![];
     source.read_to_end(&mut contents).await?;
     let mut cursor = Cursor::new(contents);
-    let model_res = parse_gocam_model(&mut cursor).into();
-    if include_chemicals {
-        model_res
+    let model_res = parse_gocam_model(&mut cursor);
+
+    if flags.contains("no_inputs") {
+        model_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs))
     } else {
-        model_res.map(|model| model.remove_chemicals())
+        if flags.contains("no_chemicals") {
+            model_res.map(|model| model.remove_nodes(RemoveType::Chemicals))
+        } else {
+            model_res
+        }
     }
 }
 
 pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<GoCamDetails>,
-                                     include_chemicals: bool)
+                                     flags: &HashSet<String>)
     -> anyhow::Result<GoCamModel>
 {
     let models = read_all_gocam_models(web_root_dir, all_gocam_data).await?;
 
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
 
-    if include_chemicals {
-        merge_res
+    if flags.contains("no_inputs") {
+        merge_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs))
     } else {
-        merge_res.map(|model| model.remove_chemicals())
+        if flags.contains("no_chemicals") {
+            merge_res.map(|model| model.remove_nodes(RemoveType::Chemicals))
+        } else {
+            merge_res
+        }
     }
 }
 
 pub async fn read_connected_gocam_models(web_root_dir: &str,
                                          all_gocam_data: &Vec<GoCamDetails>,
                                          overlaps: &Vec<GoCamNodeOverlap>,
-                                         include_chemicals: bool)
+                                         flags: &HashSet<String>)
     -> anyhow::Result<GoCamModel>
 {
     let mut overlapping_gocam_ids = HashSet::new();
@@ -93,15 +107,19 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
             continue;
         }
 
-        let model = read_gocam_model(web_root_dir, gocam_id, true).await?;
+        let model = read_gocam_model(web_root_dir, gocam_id, &HashSet::new()).await?;
         models.push(model);
     }
 
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
 
-    if include_chemicals {
-        merge_res
+    if flags.contains("no_inputs") {
+        merge_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs))
     } else {
-        merge_res.map(|model| model.remove_chemicals())
+        if flags.contains("no_chemicals") {
+            merge_res.map(|model| model.remove_nodes(RemoveType::Chemicals))
+        } else {
+            merge_res
+        }
     }
 }

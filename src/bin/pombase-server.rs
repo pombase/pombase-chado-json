@@ -250,12 +250,12 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
     let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
 
     let id_split: Vec<_> = gocam_id_arg.split(':').collect();
-
-    let (gocam_id, include_chemicals) =
-        if id_split.len() == 1 {
-            (id_split[0], true)
+    let (gocam_id, flag_string) = (id_split[0], id_split.get(1));
+    let flags: HashSet<_> =
+        if let Some(flag_string) = flag_string {
+            flag_string.split(",").map(String::from).collect()
         } else {
-            (id_split[0], !(id_split[1].to_lowercase() == "no_chemicals"))
+            HashSet::new()
         };
 
     let read_res =
@@ -265,17 +265,17 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
                 .filter(|detail| {
                     gocam_id_set.contains(detail.gocam_id.as_str())
                 }).cloned().collect();
-            read_merged_gocam_model(web_root_dir, &filtered_data, include_chemicals).await
+            read_merged_gocam_model(web_root_dir, &filtered_data, &flags).await
         } else {
             match gocam_id {
                 "ALL_MERGED" => {
-                    read_merged_gocam_model(web_root_dir, all_gocam_data, include_chemicals).await
+                    read_merged_gocam_model(web_root_dir, all_gocam_data, &flags).await
                 }
                 "ALL_CONNECTED" => {
                     read_connected_gocam_models(web_root_dir, all_gocam_data,
-                                                overlaps, include_chemicals).await
+                                                overlaps, &flags).await
                 }
-                _ => read_gocam_model(web_root_dir, &gocam_id, include_chemicals).await
+                _ => read_gocam_model(web_root_dir, &gocam_id, &flags).await
             }
         };
 
