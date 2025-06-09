@@ -20,7 +20,7 @@ getopts = "0.2.21"
 regex = "1.11"
 bit-set = "0.8"
 chrono = { version = "0.4.41", default-features = false, features = ["clock", "serde"] }
-flate2 = "1.0"
+flate2 = "1.1"
 lazy_static = "1.5"
 once_cell = "1.20"
 uuid = { version = "1.17.0", features = ["v4", "serde", ] }
