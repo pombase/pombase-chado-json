@@ -404,24 +404,6 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
         }
     }
 
-    let db_protein_id =
-        if let Some(transcript_uniquename) = gene_details.transcripts.first() {
-            if let Some(transcript_details) =
-                api_maps.transcripts.get(transcript_uniquename)
-            {
-                if let Some(ref protein) = transcript_details.protein {
-                    let protein_uniquename = protein.uniquename.replace(":", ".");
-                    format!("{}:{}", database_name, protein_uniquename)
-                } else {
-                    return Ok(())
-                }
-            } else {
-                return Ok(())
-            }
-        } else {
-            return Ok(())
-        };
-
     let mut pr_ids_seen = HashSet::new();
 
     for aspect in GO_ASPECT_NAMES.iter() {
@@ -466,7 +448,7 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
                                 db_object_type,
                                 db_object_taxon,
                                 db_object_id,
-                                db_protein_id,
+                                db_object_id,
                                 db_xrefs,
                                 product);
                     gpi_writer.write_all(gpi_line.as_bytes())?;
