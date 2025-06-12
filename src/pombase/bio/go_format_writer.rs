@@ -375,13 +375,14 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
 
     let db_xrefs = db_xrefs_vec.join("|");
 
-    let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\tgo-annotation-summary={}\n",
+    let gpi_line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t\t{}\tgo-annotation-summary={}\n",
                            db_object_id,
                            db_object_symbol,
                            db_object_name,
                            db_object_synonyms_string,
                            db_object_type,
                            db_object_taxon,
+                           db_object_id,
                            db_xrefs,
                            product);
     gpi_writer.write_all(gpi_line.as_bytes())?;
@@ -392,11 +393,12 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
             let transcript = api_maps.transcripts.get(transcript_id).unwrap();
             let transcript_name = transcript.name.as_ref().unwrap_or(transcript_id);
 
-            let gpi_line = format!("{}.{}\t{}\t{}\t\tSO:0000234\t{}\t{}\t\t\t{}\tgo-annotation-summary={}\n",
+            let gpi_line = format!("{}.{}\t{}\t{}\t\tSO:0000234\t{}\t{}\t{}\t\t{}\tgo-annotation-summary={}\n",
                                    db_object_id, transcript_number,
                                    transcript_name,
                                    db_object_name,
                                    db_object_taxon,
+                                   db_object_id,
                                    db_object_id,
                                    db_xrefs,
                                    product);
