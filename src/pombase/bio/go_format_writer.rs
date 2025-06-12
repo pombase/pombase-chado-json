@@ -37,7 +37,6 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                  go_eco_mappping: &GoEcoMapping,
                                  genes: &UniquenameGeneMap,
                                  transcripts: &UniquenameTranscriptMap,
-                                 protein_complex_map: &ProteinComplexMap,
                                  output_dir: &str)
         -> Result<(), io::Error>
 {
@@ -152,8 +151,6 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         }
     }
 
-    write_complexes_to_gpi(&mut gpi_writer, protein_complex_map, config)?;
-
     Ok(())
 }
 
@@ -170,36 +167,6 @@ fn needs_nd_annotation(term_annotations: Option<&Vec<OntTermAnnotations>>) -> bo
     return true;
 }
 
-
-fn write_complexes_to_gpi(gpi_writer: &mut dyn io::Write, protein_complex_map: &ProteinComplexMap,
-                          config: &Config)
-      -> Result<(), io::Error>
-{
-    let db_object_taxon = make_ncbi_taxon_id(config);
-
-    for (protein_complex_uniquename, complex_details) in protein_complex_map.iter() {
-        let mut genes_with_prefixes: Vec<String> =
-            complex_details.genes
-               .iter().map(|gene_uniquename| {
-                format!("{}:{}", config.database_name, gene_uniquename)
-            }).collect();
-
-        genes_with_prefixes.sort();
-
-        let complex_name = complex_details.complex_name
-            .as_deref()
-            .unwrap_or_default();
-
-        let gpi_line = format!("ComplexPortal:{}\t{}\t\t\tGO:0032991\t{}\t\t\t{}\t\t\n",
-                               protein_complex_uniquename,
-                               complex_name,
-                               db_object_taxon,
-                               genes_with_prefixes.join("|"));
-        gpi_writer.write_all(gpi_line.as_bytes())?;
-    }
-
-    Ok(())
-}
 
 fn eco_evidence_from_annotation(mapping: &GoEcoMapping,
                                 annotation: &OntAnnotationDetail)
