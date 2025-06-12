@@ -121,7 +121,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         }
 
         if let Some(ref characterisation_status) = gene_details.characterisation_status {
-            if characterisation_status == "dubious" {
+            if characterisation_status == "dubious" || characterisation_status == "transposon" {
                 continue;
             }
         }
