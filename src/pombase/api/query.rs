@@ -57,6 +57,8 @@ pub enum IntRangeType {
     PDBStructureCount,
 #[serde(rename = "gocam_model_count")]
     GoCamModelCount,
+#[serde(rename = "gocam_activity_gene_count")]
+    GoCamActivtyGeneCount,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug, Clone)]
@@ -641,6 +643,18 @@ fn exec_gocam_model_count_range(api_data: &APIData,
     Ok(gene_uniquenames)
 }
 
+fn exec_gocam_activity_gene_count_range(api_data: &APIData,
+                                        range_start: Option<usize>, range_end: Option<usize>)
+    -> GeneUniquenameVecResult
+{
+    let gene_uniquenames =
+        api_data.filter_genes(&|gene: &APIGeneSummary| {
+            (range_start.is_none() || gene.enables_gocam_activity_ids.len() >= range_start.unwrap()) &&
+            (range_end.is_none() || gene.enables_gocam_activity_ids.len() <= range_end.unwrap())
+        });
+    Ok(gene_uniquenames)
+}
+
 fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
                   start: Option<usize>, end: Option<usize>,
                   options: &HashSet<String>) -> GeneUniquenameVecResult {
@@ -659,6 +673,7 @@ fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
         IntRangeType::TranscriptCount => exec_transcript_count_range(api_data, start, end),
         IntRangeType::PDBStructureCount => exec_pdb_id_count_range(api_data, start, end),
         IntRangeType::GoCamModelCount => exec_gocam_model_count_range(api_data, start, end),
+        IntRangeType::GoCamActivtyGeneCount => exec_gocam_activity_gene_count_range(api_data, start, end),
     }
 }
 
@@ -1204,6 +1219,7 @@ impl Query {
                            "pdb_ids" => pdb_ids = gene_data.pdb_ids.clone(),
                            "rnacentral_id" => rnacentral_id = gene_data.rnacentral_urs_identifier.clone(),
                            "gocam_ids" => gocam_ids = gene_data.gocam_ids.clone(),
+                           "enables_gocam_activity_ids" => gocam_ids = gene_data.enables_gocam_activity_ids.clone(),
                            "paralogs" => paralogs = gene_data.paralogs.clone(),
                            "molecular_weight" =>
                                molecular_weight = gene_data.molecular_weight,

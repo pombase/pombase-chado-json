@@ -2520,6 +2520,8 @@ pub struct APIGeneSummary {
     pub pdb_ids: HashSet<PdbId>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocam_ids: HashSet<GoCamId>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub enables_gocam_activity_ids: HashSet<GoCamId>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub location: Option<ChromosomeLocation>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -2598,6 +2600,8 @@ pub struct GeneQueryData {
     pub rnacentral_urs_identifier: Option<FlexStr>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocam_ids: HashSet<GoCamId>,
+#[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub enables_gocam_activity_ids: HashSet<GoCamId>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub paralogs: HashSet<GeneUniquename>,
 #[serde(skip_serializing_if="HashSet::is_empty", default)]

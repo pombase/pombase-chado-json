@@ -146,6 +146,9 @@ pub struct WebDataBuild<'a> {
 
     // transcripts with overlapping exons
     transcript_frameshifts_to_check: Vec<(TranscriptUniquename, usize)>,
+
+    // for passing to GoCamModel::genes_in_model()
+    pro_term_to_gene: HashMap<String, String>,
 }
 
 #[allow(clippy::type_complexity)]
@@ -988,6 +991,8 @@ impl <'a> WebDataBuild<'a> {
             protein_complex_data: HashMap::new(),
 
             transcript_frameshifts_to_check: vec![],
+
+            pro_term_to_gene: HashMap::new(),
        }
     }
 
@@ -1205,8 +1210,20 @@ impl <'a> WebDataBuild<'a> {
             .map(|pdb_entry| pdb_entry.pdb_id.clone())
             .collect();
 
-        let gocam_ids =
-            gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
+        let mut gocam_ids = HashSet::new();
+        let mut enables_gocam_activity_ids = HashSet::new();
+
+        let uniquename_with_prefix =
+            format!("{}:{}", self.config.database_name, gene_uniquename);
+
+        for model in &self.gocam_models {
+            if model.genes_in_model(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+                gocam_ids.insert(model.id().into());
+            }
+            if model.genes_enabling_activities(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+                enables_gocam_activity_ids.insert(model.id().into());
+            }
+        }
 
         let disordered_regions_count = gene_details.disordered_region_coords.len();
         let low_complexity_regions_count = gene_details.low_complexity_region_coords.len();
@@ -1235,6 +1252,7 @@ impl <'a> WebDataBuild<'a> {
             dbxrefs: gene_details.dbxrefs.clone(),
             pdb_ids,
             gocam_ids,
+            enables_gocam_activity_ids,
             location: gene_details.location.clone(),
             transcripts: transcript_details,
             tm_domain_count: gene_details.tm_domain_coords.len(),
@@ -3670,6 +3688,8 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn process_cvterms(&mut self) {
+        let mut pro_term_to_gene = HashMap::new();
+
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name != POMBASE_ANN_EXT_TERM_CV_NAME {
                 let cv_config = self.config.cv_config_by_name_with_default(&cvterm.cv.name);
@@ -3678,7 +3698,12 @@ phenotypes, so just the first part of this extension will be used:
                 let mut pombase_gene_id = None;
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
                     match cvtermprop.prop_type.name.as_str() {
-                        "pombase_gene_id" => pombase_gene_id = Some(cvtermprop.value.clone()),
+                        "pombase_gene_id" => {
+                            pombase_gene_id = Some(cvtermprop.value.clone());
+                            let gene_for_map = format!("{}:{}", self.config.database_name,
+                                                       cvtermprop.value);
+                            pro_term_to_gene.insert(cvterm.termid().to_string(), gene_for_map);
+                        },
                         _ => (),
                   }
                 }
@@ -3779,6 +3804,8 @@ phenotypes, so just the first part of this extension will be used:
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
         }
+
+        self.pro_term_to_gene = pro_term_to_gene;
     }
 
     fn get_ext_rel_display_name(&self, annotation_termid: &FlexStr,
@@ -5300,6 +5327,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut gene_query_data_map = HashMap::new();
 
         for gene_details in self.genes.values() {
+            let gene_uniquename = &gene_details.uniquename;
             let ortholog_taxonids = self.get_ortholog_taxonids(gene_details);
             let physical_interactors = self.get_physical_interactors(gene_details);
             let reference_uniquenames =
@@ -5355,9 +5383,20 @@ phenotypes, so just the first part of this extension will be used:
                 .collect();
             let rnacentral_urs_identifier = gene_details.rnacentral_urs_identifier.clone();
 
-            let gocam_ids =
-                gene_details.gocams.iter().map(|gocam| gocam.gocam_id.clone()).collect();
+            let mut gocam_ids = HashSet::new();
+            let mut enables_gocam_activity_ids = HashSet::new();
 
+            let uniquename_with_prefix =
+                format!("{}:{}", self.config.database_name, gene_uniquename);
+
+            for model in &self.gocam_models {
+                if model.genes_in_model(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+                    gocam_ids.insert(model.id().into());
+                }
+                if model.genes_enabling_activities(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+                    enables_gocam_activity_ids.insert(model.id().into());
+                }
+            }
             let paralogs =
                 gene_details.paralog_annotations.iter()
                 .map(|paralog_annotation| {
@@ -5393,6 +5432,7 @@ phenotypes, so just the first part of this extension will be used:
                 pdb_ids,
                 rnacentral_urs_identifier,
                 gocam_ids,
+                enables_gocam_activity_ids,
                 paralogs,
                 subset_termids: gene_details.subset_termids.clone(),
 
