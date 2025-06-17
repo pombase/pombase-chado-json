@@ -27,6 +27,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "allocator-api2"
+version = "0.2.21"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "683d7910e743518b0e34f1186f92494becacb047c7b6bf616c96772180fef923"
+
+[[package]]
 name = "android-tzdata"
 version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -656,6 +662,8 @@ version = "0.15.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5971ac85611da7067dbfcabef3c70ebb5606018acd9e2a3903a0da507521e0d5"
 dependencies = [
+ "allocator-api2",
+ "equivalent",
  "foldhash",
 ]
 
@@ -1218,11 +1226,12 @@ checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "petgraph"
-version = "0.7.1"
+version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3672b37090dbd86368a4145bc067582552b29c27377cad4e0a306c97f9bd7772"
+checksum = "54acf3a685220b533e437e264e4d932cfbdc4cc7ec0cd232ed73c08d03b8a7ca"
 dependencies = [
  "fixedbitset",
+ "hashbrown 0.15.4",
  "indexmap 2.9.0",
  "serde",
  "serde_derive",
@@ -1355,9 +1364,7 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam"
-version = "0.75.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b8893d3bbcb1d0d2e207e9a0d20871055dae0abd61438f777e422d759251a239"
+version = "0.76.0"
 dependencies = [
  "anyhow",
  "petgraph",
@@ -1370,8 +1377,7 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam-process"
-version = "0.81.0"
-source = "git+https://github.com/pombase/pombase-gocam-process.git#df1ffe92ba982fab29464ac4c2236400ae5b2fd3"
+version = "0.82.0"
 dependencies = [
  "anyhow",
  "itertools",
