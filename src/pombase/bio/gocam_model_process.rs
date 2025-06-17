@@ -5,7 +5,7 @@ use anyhow::Result;
 use pombase_gocam::{parse_gocam_model, GoCamModel, GoCamNodeOverlap, RemoveType};
 use tokio::io::AsyncReadExt as _;
 
-use crate::data_types::GoCamDetails;
+use crate::data_types::GoCamSummary;
 
 pub fn read_gocam_models_from_dir(model_dir: &str)
     -> Result<Vec<GoCamModel>>
@@ -26,7 +26,7 @@ pub fn read_gocam_models_from_dir(model_dir: &str)
     Ok(ret)
 }
 
-pub async fn read_all_gocam_models(web_root_dir: &str, all_gocam_data: &Vec<GoCamDetails>)
+pub async fn read_all_gocam_models(web_root_dir: &str, all_gocam_data: &Vec<GoCamSummary>)
     -> anyhow::Result<Vec<GoCamModel>>
 {
     let mut models = vec![];
@@ -66,7 +66,7 @@ pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSe
     }
 }
 
-pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<GoCamDetails>,
+pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<GoCamSummary>,
                                      flags: &HashSet<String>)
     -> anyhow::Result<GoCamModel>
 {
@@ -86,7 +86,7 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<Go
 }
 
 pub async fn read_connected_gocam_models(web_root_dir: &str,
-                                         all_gocam_data: &Vec<GoCamDetails>,
+                                         all_gocam_data: &Vec<GoCamSummary>,
                                          overlaps: &Vec<GoCamNodeOverlap>,
                                          flags: &HashSet<String>)
     -> anyhow::Result<GoCamModel>

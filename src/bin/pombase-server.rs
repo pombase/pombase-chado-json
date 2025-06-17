@@ -21,7 +21,7 @@ use serde_json::{json, Value};
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
                                          read_merged_gocam_model},
-              data_types::{GoCamDetails, ProteinViewType}};
+              data_types::{GoCamSummary, ProteinViewType}};
 
 use rusqlite::Connection;
 
@@ -90,7 +90,7 @@ async fn get_static_file(path: &str) -> Response {
 
 struct AllState {
     query_exec: QueryExec,
-    gocam_data: Vec<GoCamDetails>,
+    gocam_data: Vec<GoCamSummary>,
     search: Search,
     stats_plots: StatsPlots,
     static_file_state: StaticFileState,
@@ -209,7 +209,7 @@ async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
 {
     let res = all_state.query_exec.get_api_data().get_all_gocam_data();
 
-    let res: Result<(StatusCode, Json<Vec<GoCamDetails>>), (StatusCode, String)> =
+    let res: Result<(StatusCode, Json<Vec<GoCamSummary>>), (StatusCode, String)> =
       Ok((StatusCode::OK, Json(res)));
 
     res

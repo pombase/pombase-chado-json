@@ -2763,7 +2763,7 @@ pub struct GoCamIdAndTitle {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct GoCamDetails {
+pub struct GoCamSummary {
     pub gocam_id: GoCamId,
     pub title: FlexStr,
     pub genes: HashSet<GeneUniquename>,
@@ -2774,9 +2774,9 @@ pub struct GoCamDetails {
     pub date: Option<FlexStr>,
 }
 
-impl GoCamDetails {
-    pub fn new(gocam_id: &GoCamId, gocam_title: &GoCamTitle) -> GoCamDetails {
-        GoCamDetails {
+impl GoCamSummary {
+    pub fn new(gocam_id: &GoCamId, gocam_title: &GoCamTitle) -> GoCamSummary {
+        GoCamSummary {
             gocam_id: gocam_id.to_owned(),
             title: gocam_title.to_owned(),
             title_terms: HashSet::new(),
@@ -2788,8 +2788,8 @@ impl GoCamDetails {
     }
 }
 
-impl From<&GoCamDetails> for GoCamIdAndTitle {
-    fn from(details: &GoCamDetails) -> GoCamIdAndTitle {
+impl From<&GoCamSummary> for GoCamIdAndTitle {
+    fn from(details: &GoCamSummary) -> GoCamIdAndTitle {
         GoCamIdAndTitle {
             gocam_id: details.gocam_id.clone(),
             title: details.title.clone(),
@@ -2816,7 +2816,7 @@ pub struct APIMaps {
     pub secondary_identifiers_map: HashMap<TermId, TermId>,
     pub protein_view_data: HashMap<GeneUniquename, ProteinViewData>,
     pub gocam_data_by_gene: HashMap<GeneUniquename, HashSet<GoCamId>>,
-    pub gocam_data_by_gocam_id: HashMap<GoCamId, GoCamDetails>,
+    pub gocam_data_by_gocam_id: HashMap<GoCamId, GoCamSummary>,
 
     pub gocam_overlaps: Vec<GoCamNodeOverlap>,
 

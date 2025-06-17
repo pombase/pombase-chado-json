@@ -138,7 +138,7 @@ pub struct WebDataBuild<'a> {
     physical_interaction_annotations: HashSet<InteractionAnnotation>,
     genetic_interaction_annotations: HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>,
 
-    gocam_summaries: HashMap<GoCamId, GoCamDetails>,
+    gocam_summaries: HashMap<GoCamId, GoCamSummary>,
 
     protein_complex_data: ProteinComplexData,
 
@@ -2590,7 +2590,7 @@ phenotypes, so just the first part of this extension will be used:
     fn add_gocam_model(&mut self, gocam_model_feature: &Feature) {
         let gocam_id = gocam_model_feature.uniquename.clone();
         let gocam_title = gocam_model_feature.name.clone().unwrap_or_default();
-        let mut model = GoCamDetails::new(&gocam_id, &gocam_title);
+        let mut model = GoCamSummary::new(&gocam_id, &gocam_title);
 
         for prop in gocam_model_feature.featureprops.borrow().iter() {
             if prop.prop_type.name == "gocam_date" {
