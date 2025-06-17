@@ -21,7 +21,7 @@ use serde_json::{json, Value};
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
                                          read_merged_gocam_model},
-              data_types::{GoCamSummary, ProteinViewType}};
+              data_types::{GoCamId, GoCamSummary, ProteinViewType}};
 
 use rusqlite::Connection;
 
@@ -29,7 +29,7 @@ extern crate serde_derive;
 
 extern crate pombase;
 
-use std::{collections::HashSet, process, sync::Arc, time::Duration};
+use std::{collections::{HashMap, HashSet}, process, sync::Arc, time::Duration};
 
 use getopts::Options;
 
@@ -90,7 +90,7 @@ async fn get_static_file(path: &str) -> Response {
 
 struct AllState {
     query_exec: QueryExec,
-    gocam_data: Vec<GoCamSummary>,
+    gocam_data: HashMap<GoCamId, GoCamSummary>,
     search: Search,
     stats_plots: StatsPlots,
     static_file_state: StaticFileState,
@@ -207,7 +207,8 @@ async fn get_gocam_data(Path((_full_or_widget, gene_uniquename)): Path<(String, 
 async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
         -> impl IntoResponse
 {
-    let res = all_state.query_exec.get_api_data().get_all_gocam_data();
+    let res = all_state.query_exec.get_api_data().get_all_gocam_data()
+        .values().cloned().collect();
 
     let res: Result<(StatusCode, Json<Vec<GoCamSummary>>), (StatusCode, String)> =
       Ok((StatusCode::OK, Json(res)));
@@ -260,11 +261,14 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
 
     let read_res =
         if gocam_id.contains("+") {
-            let gocam_id_set: HashSet<_> = gocam_id.split("+").collect();
-            let filtered_data = all_gocam_data.iter()
-                .filter(|detail| {
-                    gocam_id_set.contains(detail.gocam_id.as_str())
-                }).cloned().collect();
+            let filtered_data = gocam_id.split("+")
+               .filter_map(|gocam_id| {
+                    if let Some(model) = all_gocam_data.get(gocam_id) {
+                        Some((gocam_id.into(), model.clone()))
+                    } else {
+                        None
+                    }
+                }).collect();
             read_merged_gocam_model(web_root_dir, &filtered_data, &flags).await
         } else {
             match gocam_id {
@@ -301,7 +305,9 @@ async fn get_model_summary_for_cytoscape_all(State(all_state): State<Arc<AllStat
 
     let ids_and_titles: Vec<(String, String)> =
         all_gocam_data.iter()
-        .map(|detail| (format!("gomodel:{}", detail.gocam_id), detail.title.to_string()))
+        .map(|(gocam_id, summary)| {
+            (format!("gomodel:{}", gocam_id), summary.title.to_string())
+        })
         .collect();
 
     let model_connections = model_connections_to_cytoscope(overlaps, &ids_and_titles);

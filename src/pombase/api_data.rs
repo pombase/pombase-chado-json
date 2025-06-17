@@ -1090,8 +1090,8 @@ impl APIData {
     }
 
     pub fn get_all_gocam_data(&self)
-        -> Vec<GoCamSummary>
+        -> HashMap<GoCamId, GoCamSummary>
     {
-        self.maps.gocam_data_by_gocam_id.values().cloned().collect()
+        self.maps.gocam_data_by_gocam_id.clone()
     }
 }

@@ -1,11 +1,11 @@
-use std::{collections::HashSet, fs::{self, File}, io::Cursor, vec};
+use std::{collections::{HashMap, HashSet}, fs::{self, File}, io::Cursor, vec};
 
 use anyhow::Result;
 
 use pombase_gocam::{parse_gocam_model, GoCamModel, GoCamNodeOverlap, RemoveType};
 use tokio::io::AsyncReadExt as _;
 
-use crate::data_types::GoCamSummary;
+use crate::data_types::{GoCamId, GoCamSummary};
 
 pub fn read_gocam_models_from_dir(model_dir: &str)
     -> Result<Vec<GoCamModel>>
@@ -26,7 +26,8 @@ pub fn read_gocam_models_from_dir(model_dir: &str)
     Ok(ret)
 }
 
-pub async fn read_all_gocam_models(web_root_dir: &str, all_gocam_data: &Vec<GoCamSummary>)
+pub async fn read_all_gocam_models(web_root_dir: &str,
+                                   all_gocam_data: &HashMap<GoCamId, GoCamSummary>)
     -> anyhow::Result<Vec<GoCamModel>>
 {
     let mut models = vec![];
@@ -36,8 +37,7 @@ pub async fn read_all_gocam_models(web_root_dir: &str, all_gocam_data: &Vec<GoCa
     flags.insert("with_chemicals".to_owned());
     flags.insert("with_inputs".to_owned());
 
-    for detail in all_gocam_data {
-        let gocam_id = &detail.gocam_id;
+    for gocam_id in all_gocam_data.keys() {
         let model = read_gocam_model(web_root_dir, gocam_id, &flags).await?;
         models.push(model);
     }
@@ -66,7 +66,7 @@ pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSe
     }
 }
 
-pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<GoCamSummary>,
+pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &HashMap<GoCamId, GoCamSummary>,
                                      flags: &HashSet<String>)
     -> anyhow::Result<GoCamModel>
 {
@@ -86,7 +86,7 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &Vec<Go
 }
 
 pub async fn read_connected_gocam_models(web_root_dir: &str,
-                                         all_gocam_data: &Vec<GoCamSummary>,
+                                         all_gocam_data: &HashMap<GoCamId, GoCamSummary>,
                                          overlaps: &Vec<GoCamNodeOverlap>,
                                          flags: &HashSet<String>)
     -> anyhow::Result<GoCamModel>
@@ -100,9 +100,7 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
 
     let mut models = vec![];
 
-    for detail in all_gocam_data {
-        let gocam_id = &detail.gocam_id;
-
+    for gocam_id in all_gocam_data.keys() {
         if !overlapping_gocam_ids.contains(gocam_id.as_str()) {
             continue;
         }
