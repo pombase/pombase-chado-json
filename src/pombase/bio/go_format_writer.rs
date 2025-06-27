@@ -408,7 +408,7 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
                         get_pr_term_name(data_lookup, &gene_product_form_id);
 
                     let gpi_line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\tgo-annotation-summary={}\n",
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t\tgo-annotation-summary={}\n",
                                 gene_product_form_id,
                                 pr_term_symbol,
                                 pr_term_name,
@@ -417,7 +417,6 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
                                 db_object_taxon,
                                 db_object_id,
                                 db_object_id,
-                                db_xrefs,
                                 product);
                     gpi_writer.write_all(gpi_line.as_bytes())?;
                 }
