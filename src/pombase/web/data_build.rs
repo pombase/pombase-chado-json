@@ -8,11 +8,12 @@ use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
 use std::usize;
 
+use pombase_gocam_process::find_holes;
 use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
-use pombase_gocam::{GoCamModel, GoCamNodeOverlap};
+use pombase_gocam::{GoCamModel, GoCamNodeOverlap, GoCamNode};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
@@ -143,6 +144,7 @@ pub struct WebDataBuild<'a> {
     protein_complex_data: ProteinComplexData,
 
     gocam_overlaps: Vec<GoCamNodeOverlap>,
+    gocam_holes: Vec<GoCamNode>,
 
     // transcripts with overlapping exons
     transcript_frameshifts_to_check: Vec<(TranscriptUniquename, usize)>,
@@ -987,6 +989,7 @@ impl <'a> WebDataBuild<'a> {
             gocam_summaries: HashMap::new(),
 
             gocam_overlaps: vec![],
+            gocam_holes: vec![],
 
             protein_complex_data: HashMap::new(),
 
@@ -5698,6 +5701,7 @@ phenotypes, so just the first part of this extension will be used:
             gocam_data_by_gene,
             gocam_data_by_gocam_id: self.gocam_summaries,
             gocam_overlaps: self.gocam_overlaps,
+            gocam_holes: self.gocam_holes,
 
             protein_complex_data: self.protein_complex_data,
             protein_complexes: self.protein_complexes,
@@ -8154,6 +8158,8 @@ phenotypes, so just the first part of this extension will be used:
         let gocam_models = self.gocam_models.clone();
 
         self.gocam_overlaps = GoCamModel::find_overlaps(&gocam_models);
+        self.gocam_holes = gocam_models.iter()
+            .flat_map(|m| find_holes(m)).collect();
 
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,

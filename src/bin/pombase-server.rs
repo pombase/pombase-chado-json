@@ -240,6 +240,14 @@ async fn get_gocam_overlaps(State(all_state): State<Arc<AllState>>)
     Json(overlaps.to_owned())
 }
 
+async fn get_gocam_holes(State(all_state): State<Arc<AllState>>)
+     -> impl IntoResponse
+{
+    let holes = &all_state.query_exec.get_api_data().get_maps().gocam_holes;
+
+    Json(holes.to_owned())
+}
+
 async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
                                    State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
@@ -958,6 +966,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/all", get(get_all_gocam_data))
         .route("/api/v1/dataset/latest/data/gocam/by_id/{gocam_id}", get(get_gocam_data_by_id))
         .route("/api/v1/dataset/latest/data/gocam/overlaps", get(get_gocam_overlaps))
+        .route("/api/v1/dataset/latest/data/gocam/holes", get(get_gocam_holes))
         .route("/api/v1/dataset/latest/data/gocam/model_summary/all_models", get(get_model_summary_for_cytoscape_all))
         .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
