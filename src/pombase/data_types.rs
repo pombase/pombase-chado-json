@@ -874,6 +874,11 @@ pub struct ReferenceDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub pubmed_keyword_genes: Vec<FlexStr>,
 
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    // genes associated with this reference in Chado but not via an annotation,
+    // not including those in pubmed_keyword_genes
+    pub extra_genes: Vec<FlexStr>,
+
     // count of genes from the main organism of the site (ie. only pombe)
     pub gene_count: usize,
 

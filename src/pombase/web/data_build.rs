@@ -1589,22 +1589,29 @@ phenotypes, so just the first part of this extension will be used:
         self.dbxrefs_of_features = map;
     }
 
-    fn get_pubmed_keyword_genes(&self, publication: &Publication) -> Vec<FlexStr> {
-        let mut ret_val = vec![];
+    fn get_extra_gene_pubs(&self, publication: &Publication)
+         -> (Vec<GeneUniquename>, Vec<GeneUniquename>)
+    {
+        let mut pubmed_keyword_genes = vec![];
+        let mut extra_genes = vec![];
         for feat_pub in publication.feature_publications.borrow().iter() {
             for prop in feat_pub.feature_pubprops.borrow().iter() {
                 if prop.prop_type.name == "feature_pub_source" {
                     if let Some(ref prop_value) = prop.value {
                         let feature = &feat_pub.feature;
-                        if prop_value == "pubmed_keyword" &&
-                           feature.feat_type.name == "gene" {
-                           ret_val.push(feature.uniquename.clone());
+                        if feature.feat_type.name == "gene" {
+                            let gene_uniquename = feature.uniquename.clone();
+                            if prop_value == "pubmed_keyword" {
+                                pubmed_keyword_genes.push(gene_uniquename);
+                            } else {
+                                extra_genes.push(gene_uniquename);
+                            }
                         }
                     }
                 }
             }
         }
-        ret_val
+        (pubmed_keyword_genes, extra_genes)
     }
 
     fn process_references(&mut self) {
@@ -1774,7 +1781,8 @@ phenotypes, so just the first part of this extension will be used:
               }
             }
 
-            let pubmed_keyword_genes = self.get_pubmed_keyword_genes(rc_publication);
+            let (pubmed_keyword_genes, extra_genes) =
+                self.get_extra_gene_pubs(rc_publication);
 
             self.references.insert(reference_uniquename.clone(),
                                    ReferenceDetails {
@@ -1802,6 +1810,7 @@ phenotypes, so just the first part of this extension will be used:
                                        file_curator_name,
                                        annotation_file_curators,
                                        pubmed_keyword_genes,
+                                       extra_genes,
                                        approved_date,
                                        publication_year,
                                        cv_annotations: HashMap::new(),
@@ -6612,6 +6621,13 @@ phenotypes, so just the first part of this extension will be used:
                                           pubmed_keyword_gene);
                     maybe_add_to_gene_count_hash(&reference_details.uniquename,
                                                  pubmed_keyword_gene, false);
+                }
+
+                for extra_gene in &reference_details.extra_genes {
+                    self.add_gene_to_hash(&mut seen_genes, reference_uniquename,
+                                          extra_gene);
+                    maybe_add_to_gene_count_hash(&reference_details.uniquename,
+                                                 extra_gene, false);
                 }
             }
         }
