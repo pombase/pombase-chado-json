@@ -5399,7 +5399,11 @@ phenotypes, so just the first part of this extension will be used:
             let mut enables_gocam_activity_ids = HashSet::new();
 
             let uniquename_with_prefix =
-                format!("{}:{}", self.config.database_name, gene_uniquename);
+                if gene_uniquename.contains(':') {
+                    gene_uniquename.to_std_string()
+                } else {
+                    format!("{}:{}", self.config.database_name, gene_uniquename)
+                };
 
             for model in &self.gocam_models {
                 if model.genes_in_model(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
@@ -5409,6 +5413,7 @@ phenotypes, so just the first part of this extension will be used:
                     enables_gocam_activity_ids.insert(model.id().into());
                 }
             }
+
             let paralogs =
                 gene_details.paralog_annotations.iter()
                 .map(|paralog_annotation| {
