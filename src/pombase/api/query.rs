@@ -1254,7 +1254,13 @@ impl Query {
                            let mut subset = gene_data.subset_termids.clone();
                            let gocam_ids: Vec<_> =
                                gene_data.gocam_ids.iter()
-                                   .map(|gocam_id| flex_fmt!("gomodel:{gocam_id}"))
+                                   .map(|gocam_id| {
+                                       if gocam_id.starts_with("gomodel:") {
+                                           gocam_id.into()
+                                       } else {
+                                           flex_fmt!("gomodel:{gocam_id}")
+                                       }
+                                   })
                                    .collect();
                            subset.extend(gocam_ids.into_iter());
                            subset
