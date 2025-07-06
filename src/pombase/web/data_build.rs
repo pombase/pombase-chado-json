@@ -5339,6 +5339,12 @@ phenotypes, so just the first part of this extension will be used:
         let mut gene_query_data_map = HashMap::new();
 
         for gene_details in self.genes.values() {
+            if self.config.load_organism_taxonid.is_some() &&
+                self.config.load_organism_taxonid.unwrap() != gene_details.taxonid
+            {
+                continue;
+            }
+
             let gene_uniquename = &gene_details.uniquename;
             let ortholog_taxonids = self.get_ortholog_taxonids(gene_details);
             let physical_interactors = self.get_physical_interactors(gene_details);
