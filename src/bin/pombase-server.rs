@@ -18,7 +18,7 @@ use tower_http::trace::TraceLayer;
 use serde::Serialize;
 use serde_json::{json, Value};
 
-use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple};
+use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
                                          read_merged_gocam_model},
               data_types::{GoCamId, GoCamSummary, ProteinViewType}};
@@ -291,9 +291,15 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
             }
         };
 
+    let style = if flags.contains("hide_models") {
+        GoCamCytoscapeStyle::HideParents
+    } else {
+        GoCamCytoscapeStyle::IncludeParents
+    };
+
     match read_res {
         anyhow::Result::Ok(model) => {
-         let elements = model_to_cytoscape_simple(&model, overlaps);
+            let elements =  model_to_cytoscape_simple(&model, overlaps, style);
 
          (StatusCode::OK, Json(elements)).into_response()
         },
