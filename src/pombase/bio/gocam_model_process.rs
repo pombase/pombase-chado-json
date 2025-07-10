@@ -112,10 +112,12 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
 
     if flags.contains("no_inputs") {
-        merge_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs))
+        merge_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs)
+                         .retain_largest_subgraph())
     } else {
         if flags.contains("no_chemicals") {
-            merge_res.map(|model| model.remove_nodes(RemoveType::Chemicals))
+            merge_res.map(|model| model.remove_nodes(RemoveType::Chemicals)
+                              .retain_largest_subgraph())
         } else {
             merge_res
         }
