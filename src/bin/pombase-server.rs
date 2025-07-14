@@ -7,6 +7,7 @@ use axum::{
 use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
 
+use pombase_gocam::RemoveType;
 use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
 
@@ -29,7 +30,7 @@ extern crate serde_derive;
 
 extern crate pombase;
 
-use std::{collections::{HashMap, HashSet}, process, sync::Arc, time::Duration};
+use std::{collections::{HashMap, HashSet, BTreeSet}, process, sync::Arc, time::Duration};
 
 use getopts::Options;
 
@@ -252,6 +253,13 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
                                    State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
+    get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, "".to_owned())), State(all_state)).await
+}
+
+async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, retain_genes)): Path<(String, String)>,
+                                   State(all_state): State<Arc<AllState>>)
+       -> impl IntoResponse
+{
     let static_file_state = &all_state.static_file_state;
     let web_root_dir = &static_file_state.web_root_dir;
 
@@ -267,7 +275,7 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
             HashSet::new()
         };
 
-    let read_res =
+    let mut read_res =
         if gocam_id.contains("+") {
             let filtered_data = gocam_id.split("+")
                .filter_map(|gocam_id| {
@@ -296,6 +304,16 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
     } else {
         GoCamCytoscapeStyle::IncludeParents
     };
+
+    if flags.contains("retain_genes") {
+        let retain_gene_set: BTreeSet<_> =
+            retain_genes.split(",").map(|g| g.to_owned()).collect();
+
+        read_res = read_res.map(|model| {
+            model.remove_nodes(RemoveType::InputsOutputs)
+                .retain_enabling_genes(&retain_gene_set)
+        });
+    }
 
     match read_res {
         anyhow::Result::Ok(model) => {
@@ -976,6 +994,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/model_summary/all_models", get(get_model_summary_for_cytoscape_all))
         .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
+        .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}/{retain_genes}", get(get_cytoscape_gocam_by_id_retain_genes))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/{plot_size}/{genes}", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/{type}", get(get_stats))
         .route("/api/v1/dataset/latest/motif_search/{scope}/{q}/{max_gene_details}", get(motif_search))
