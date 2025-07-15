@@ -3,7 +3,7 @@ name = "pombase-chado-json"
 version = "219.25.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 edition = "2024"
-rust-version = "1.86"
+rust-version = "1.88"
 resolver = "3"
 
 [lib]
@@ -11,8 +11,8 @@ name = "pombase"
 path = "src/pombase/lib.rs"
 
 [dependencies]
-pombase-gocam = "0.85.0"
-pombase-gocam-process = { git = "https://github.com/pombase/pombase-gocam-process.git", version = "0.94.0" }
+pombase-gocam = "0.86.0"
+pombase-gocam-process = { git = "https://github.com/pombase/pombase-gocam-process.git", version = "0.95.0" }
 serde_with = "3.13"
 serde_derive = "1.0"
 serde_json = "1.0"
