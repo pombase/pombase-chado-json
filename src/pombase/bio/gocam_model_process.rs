@@ -1,8 +1,8 @@
-use std::{collections::{HashMap, HashSet}, fs::{self, File}, io::Cursor, vec};
+use std::{collections::{BTreeSet, HashMap, HashSet}, fs::{self, File}, io::Cursor, vec};
 
 use anyhow::Result;
 
-use pombase_gocam::{parse_gocam_model, GoCamModel, GoCamNodeOverlap, RemoveType};
+use pombase_gocam::{parse_gocam_model, GoCamGeneIdentifier, GoCamModel, GoCamNodeOverlap, RemoveType};
 use tokio::io::AsyncReadExt as _;
 
 use crate::data_types::{GoCamId, GoCamSummary};
@@ -67,10 +67,20 @@ pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSe
 }
 
 pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &HashMap<GoCamId, GoCamSummary>,
-                                     flags: &HashSet<String>)
-    -> anyhow::Result<GoCamModel>
+                                     flags: &HashSet<String>,
+                                     gene_list: &BTreeSet<GoCamGeneIdentifier>)
+                                     -> anyhow::Result<GoCamModel>
 {
-    let models = read_all_gocam_models(web_root_dir, all_gocam_data).await?;
+    let models: Vec<_> = read_all_gocam_models(web_root_dir, all_gocam_data).await?
+        .into_iter()
+        .filter(|model| {
+            if flags.contains("trim_models") {
+                model.model_activity_enabled_by(gene_list)
+            } else {
+                true
+            }
+        })
+        .collect();
 
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
 

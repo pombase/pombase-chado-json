@@ -256,7 +256,7 @@ async fn get_cytoscape_gocam_by_id(Path(gocam_id_arg): Path<String>,
     get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, "".to_owned())), State(all_state)).await
 }
 
-async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, retain_genes)): Path<(String, String)>,
+async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)): Path<(String, String)>,
                                    State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
@@ -274,6 +274,8 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, retain_genes
         } else {
             HashSet::new()
         };
+    let gene_set: BTreeSet<_> =
+        gene_list.split(",").map(|g| g.to_owned()).collect();
 
     let mut read_res =
         if gocam_id.contains("+") {
@@ -285,11 +287,11 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, retain_genes
                         None
                     }
                 }).collect();
-            read_merged_gocam_model(web_root_dir, &filtered_data, &flags).await
+            read_merged_gocam_model(web_root_dir, &filtered_data, &flags, &gene_set).await
         } else {
             match gocam_id {
                 "ALL_MERGED" => {
-                    read_merged_gocam_model(web_root_dir, all_gocam_data, &flags).await
+                    read_merged_gocam_model(web_root_dir, all_gocam_data, &flags, &gene_set).await
                 }
                 "ALL_CONNECTED" => {
                     read_connected_gocam_models(web_root_dir, all_gocam_data,
@@ -306,12 +308,9 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, retain_genes
     };
 
     if flags.contains("retain_genes") {
-        let retain_gene_set: BTreeSet<_> =
-            retain_genes.split(",").map(|g| g.to_owned()).collect();
-
         read_res = read_res.map(|model| {
             model.remove_nodes(RemoveType::InputsOutputs)
-                .retain_enabling_genes(&retain_gene_set)
+                .retain_enabling_genes(&gene_set)
         });
     }
 
