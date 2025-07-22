@@ -259,8 +259,6 @@ fn get_submitter_comment(annotation_detail: &OntAnnotationDetail)
         return None;
     };
 
-    eprintln!("COMMENT: {}", comment.as_str());
-
     Some(format!("\t{}", comment.as_str()))
 }
 
