@@ -15,6 +15,12 @@ pub struct SeqRecord {
     pub sequence: String,
 }
 
+lazy_static! {
+    // comments matching this pattern will be exported
+    pub static ref COMMENT_EXPORT_RE: Regex =
+        Regex::new(r"^\((?:comment:\s*)?(.*)\)$").unwrap();
+}
+
 fn complement_char(base: char) -> char {
     match base {
         'a' => 't',

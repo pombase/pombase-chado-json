@@ -15,7 +15,7 @@ use crate::utils::join;
 use crate::web::config::*;
 use crate::data_types::*;
 
-use super::util::make_extension_string;
+use super::util::{make_extension_string, COMMENT_EXPORT_RE};
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum GpadGafWriteMode {
@@ -821,3 +821,91 @@ fn make_ncbi_taxon_id(config: &Config) -> FlexStr {
     taxon_str.into()
 }
 
+
+
+
+pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
+                                    config: &Config, genes: &UniquenameGeneMap,
+                                    output_dir: &str)
+     -> Result<(), io::Error>
+{
+
+    let file_name = format!("{}/canto_go_comments.tsv", output_dir);
+    let file = File::create(file_name)?;
+    let mut writer = BufWriter::new(&file);
+
+    let header = "#gene_systematic_id\tgene_name\taspect\tterm_id\tterm_name\treference\tevidence\textension\tcomment\n";
+    writer.write_all(header.as_bytes())?;
+
+    let empty_string = flex_str!("");
+
+    for gene_details in genes.values() {
+        let cv_annotations = &gene_details.cv_annotations;
+
+        for aspect in &GO_ASPECT_NAMES {
+            if let Some(term_annotations) = cv_annotations.get(aspect) {
+                for term_annotation in term_annotations {
+                    if term_annotation.is_not {
+                        continue;
+                    }
+                    for annotation_id in &term_annotation.annotations {
+                        let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
+                            .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                        let gene_uniquename = &gene_details.uniquename;
+                        let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+                        let Some(ref submitter_comment) = annotation_detail.submitter_comment
+                        else {
+                            continue;
+                        };
+
+                        let captures = COMMENT_EXPORT_RE.captures(submitter_comment);
+                        let Some(capture) = captures.iter().next()
+                        else {
+                            continue;
+                        };
+
+                        let Some(comment) = capture.get(1)
+                        else {
+                            continue;
+                        };
+
+                        let term_id = &term_annotation.term;
+
+                        let Some(term_details) = data_lookup.get_term(term_id)
+                        else {
+                            panic!("can't find term details for {}", term_id);
+                        };
+                        let term_name = term_details.name.as_str();
+
+                        let reference = annotation_detail.reference.as_ref()
+                            .unwrap_or(&empty_string);
+                        let evidence = annotation_detail.evidence.as_ref()
+                            .unwrap_or(&empty_string);
+
+                        let extension_bits = &annotation_detail.extension;
+
+                        let extension =
+                            make_extension_string(config, data_lookup,
+                                                  &GpadGafWriteMode::PomBaseGaf,
+                                                  &extension_bits);
+
+                        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                                           gene_uniquename,
+                                           gene_name,
+                                           aspect,
+                                           term_id,
+                                           term_name,
+                                           reference,
+                                           evidence,
+                                           extension,
+                                           comment.as_str());
+                        writer.write_all(line.as_bytes())?;
+                    }
+                }
+            }
+        }
+    }
+
+    Ok(())
+}
