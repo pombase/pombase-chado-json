@@ -35,7 +35,7 @@ use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
 use crate::bio::go_format_writer::{write_canto_go_comments_file, write_go_annotation_files};
-use crate::bio::phenotype_format_writer::write_phenotype_annotation_files;
+use crate::bio::phenotype_format_writer::{write_phenotype_annotation_files, FypoEvidenceType, FypoExportComments};
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
 use crate::bio::gene_expression_writer::{write_quantitative_expression_row, write_qualitative_expression_row};
 
@@ -1885,8 +1885,19 @@ impl WebData {
                                   &self.api_maps.transcripts,
                                   &misc_path)?;
 
-        write_phenotype_annotation_files(&self, &self.genotypes, config, false, &misc_path)?;
-        write_phenotype_annotation_files(&self, &self.genotypes, config, true, &misc_path)?;
+        write_phenotype_annotation_files(&self, &self.genotypes, config,
+                                         FypoEvidenceType::PomBase,
+                                         FypoExportComments::NoExport,
+                                         &misc_path)?;
+        write_phenotype_annotation_files(&self, &self.genotypes, config,
+                                         FypoEvidenceType::Eco,
+                                         FypoExportComments::NoExport,
+                                         &misc_path)?;
+        write_phenotype_annotation_files(&self, &self.genotypes, config,
+                                         FypoEvidenceType::Eco,
+                                         FypoExportComments::Export,
+                                         &misc_path)?;
+
         println!("wrote GAF and PHAF files");
 
         self.write_alleles_json(&misc_path)?;

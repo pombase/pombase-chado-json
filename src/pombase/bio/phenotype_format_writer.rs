@@ -5,6 +5,7 @@ use std::fs::File;
 
 use flexstr::{shared_fmt as flex_fmt, ToSharedStr};
 
+use crate::bio::util::COMMENT_EXPORT_RE;
 use crate::web::config::*;
 use crate::data_types::*;
 
@@ -13,11 +14,23 @@ use itertools::Itertools;
 use super::go_format_writer::GpadGafWriteMode;
 use super::util::make_extension_string;
 
+#[derive(Debug, PartialEq, Eq)]
+pub enum FypoEvidenceType {
+    PomBase,
+    Eco,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum FypoExportComments {
+    Export,
+    NoExport,
+}
 
 pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                         genotypes_map: &IdGenotypeMap,
                                         config: &Config,
-                                        use_eco_evidence: bool,
+                                        evidence_type: FypoEvidenceType,
+                                        export_comments: FypoExportComments,
                                         output_dir: &str)
   -> Result<(), io::Error>
 {
@@ -35,45 +48,47 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
 
     let database_name = &config.database_name;
 
-    let eco_ev_bit =
-        if use_eco_evidence {
-            "_eco_evidence"
-        } else {
-            ""
-        };
+
     let phaf_file_name =
-        format!("{}/single_locus_phenotype_annotations_taxon_{}{}.phaf", output_dir,
-                load_org_taxonid, eco_ev_bit);
+        if export_comments == FypoExportComments::Export {
+            format!("{}/single_locus_phenotype_annotations_with_comments.tsv", output_dir)
+        } else {
+            let eco_ev_bit =
+                if evidence_type == FypoEvidenceType::Eco {
+                    "_eco_evidence"
+                } else {
+                    ""
+                };
+            format!("{}/single_locus_phenotype_annotations_taxon_{}{}.phaf", output_dir,
+                    load_org_taxonid, eco_ev_bit)
+        };
+
     let phaf_file = File::create(phaf_file_name).expect("Unable to open file");
     let mut phaf_writer = BufWriter::new(&phaf_file);
 
-    let header = "#Database name\tGene systematic ID\tFYPO ID\tAllele description\tExpression\tParental strain\tStrain name (background)\tGenotype description\tGene symbol\tAllele name\tAllele synonym\tAllele type\tEvidence\tCondition\tPenetrance\tSeverity\tExtension\tReference\tTaxon\tDate\tPloidy\n";
+    let comment_header =
+        if export_comments == FypoExportComments::Export {
+            "\tAnnotation comment"
+        } else {
+            ""
+        };
+
+    let header = format!("#Database name\tGene systematic ID\tFYPO ID\tAllele description\tExpression\tParental strain\tStrain name (background)\tGenotype description\tGene symbol\tAllele name\tAllele synonym\tAllele type\tEvidence\tCondition\tPenetrance\tSeverity\tExtension\tReference\tTaxon\tDate\tPloidy{}\n",
+                         comment_header);
 
     phaf_writer.write_all(header.as_bytes())?;
 
-    'GENOTYPES:
+  'GENOTYPES:
     for genotype_details in genotypes_map.values() {
         if genotype_details.taxonid != load_org_taxonid {
             continue 'GENOTYPES;
         }
 
         // only export single locus genotypes that are haploid or homozygous diploid
-        let expressed_allele =
-            if genotype_details.loci.len() == 1 {
-                let locus = &genotype_details.loci[0];
-
-                let expressed_alleles = &locus.expressed_alleles;
-
-                for test_expressed_allele in &expressed_alleles[1..] {
-                    if expressed_alleles[0] != *test_expressed_allele {
-                        continue 'GENOTYPES;
-                    }
-                }
-
-                &expressed_alleles[0]
-            } else {
-                continue;
-            };
+        let Some(expressed_allele) = get_expressed_allele(genotype_details)
+        else {
+            continue 'GENOTYPES;
+        };
 
         let is_homozygous_diploid = genotype_details.loci[0].expressed_alleles.len() > 1;
 
@@ -115,8 +130,19 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                     let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
+                    let comment_field =
+                        if export_comments == FypoExportComments::Export {
+                            let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref())
+                            else {
+                                continue 'GENOTYPES;
+                            };
+                            submitter_comment
+                        } else {
+                            String::default()
+                        };
+
                     let evidence =
-                        if use_eco_evidence {
+                        if evidence_type == FypoEvidenceType::Eco {
                             annotation_detail.eco_evidence.clone().unwrap_or_else(|| flex_fmt!(""))
                         } else {
                             annotation_detail.evidence.clone().unwrap_or_else(|| flex_fmt!(""))
@@ -181,7 +207,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                         };
 
                     let line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}{}\n",
                                 database_name,
                                 locus_gene.uniquename,
                                 term.termid,
@@ -202,6 +228,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                 load_org_taxonid,
                                 date,
                                 if is_homozygous_diploid { "homozygous diploid" } else { "haploid" },
+                                comment_field,
                         );
                     phaf_writer.write_all(line.as_bytes())?;
                 }
@@ -212,3 +239,46 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
 
   Ok(())
 }
+
+fn get_submitter_comment(annotation_detail: &OntAnnotationDetail)
+   -> Option<String>
+{
+    let Some(ref submitter_comment) = annotation_detail.submitter_comment
+    else {
+        return None;
+    };
+
+    let captures = COMMENT_EXPORT_RE.captures(submitter_comment);
+    let Some(capture) = captures.iter().next()
+    else {
+        return None;
+    };
+
+    let Some(comment) = capture.get(1)
+    else {
+        return None;
+    };
+
+    eprintln!("COMMENT: {}", comment.as_str());
+
+    Some(format!("\t{}", comment.as_str()))
+}
+
+fn get_expressed_allele(genotype_details: &GenotypeDetails) -> Option<&ExpressedAllele> {
+    if genotype_details.loci.len() == 1 {
+        let locus = &genotype_details.loci[0];
+
+        let expressed_alleles = &locus.expressed_alleles;
+
+        for test_expressed_allele in &expressed_alleles[1..] {
+            if expressed_alleles[0] != *test_expressed_allele {
+                return None;
+            }
+        }
+
+        Some(&expressed_alleles[0])
+    } else {
+        None
+    }
+}
+
