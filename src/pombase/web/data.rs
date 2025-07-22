@@ -22,8 +22,7 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_
 use pombase_gocam::GoCamModel;
 use pombase_gocam_process::find_holes;
 
-use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff,
-                       process_modification_ext};
+use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff, make_extension_string, process_modification_ext};
 
 use crate::constants::*;
 
@@ -35,12 +34,18 @@ use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename, Al
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
-use crate::bio::go_format_writer::write_go_annotation_files;
+use crate::bio::go_format_writer::{write_go_annotation_files, GpadGafWriteMode, GO_ASPECT_NAMES};
 use crate::bio::phenotype_format_writer::write_phenotype_annotation_files;
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
 use crate::bio::gene_expression_writer::{write_quantitative_expression_row, write_qualitative_expression_row};
 
 use crate::utils::{join, make_maps_database_tables, store_maps_into_database};
+
+lazy_static! {
+    // comments matching this pattern will be exported
+    static ref COMMENT_EXPORT_RE: Regex =
+        Regex::new(r"^\((?:comment:\s*)?(.*)\)$").unwrap();
+}
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
@@ -1729,6 +1734,99 @@ impl WebData {
         Ok(())
     }
 
+
+
+    fn write_canto_go_comments_file(&self, config: &Config, output_dir: &str)
+                                    -> Result<(), io::Error>
+    {
+
+        let file_name = format!("{}/canto_go_comments.tsv", output_dir);
+        let file = File::create(file_name)?;
+        let mut writer = BufWriter::new(&file);
+
+        let header = "#gene_systematic_id\tgene_name\taspect\tterm_id\tterm_name\treference\tevidence\textension\tcomment\n";
+        writer.write_all(header.as_bytes())?;
+
+        let empty_string = flex_str!("");
+
+        for gene_details in self.genes.values() {
+            let cv_annotations = &gene_details.cv_annotations;
+
+            for aspect in &GO_ASPECT_NAMES {
+                if let Some(term_annotations) = cv_annotations.get(aspect) {
+                    for term_annotation in term_annotations {
+                        if term_annotation.is_not {
+                            continue;
+                        }
+                        for annotation_id in &term_annotation.annotations {
+                            let annotation_detail = self.get_annotation_detail(*annotation_id)
+                                .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                            let gene_uniquename = &gene_details.uniquename;
+                            let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+                            let Some(ref submitter_comment) = annotation_detail.submitter_comment
+                            else {
+                                continue;
+                            };
+
+                            let captures = COMMENT_EXPORT_RE.captures(submitter_comment);
+                            let Some(capture) = captures.iter().next()
+                            else {
+                                continue;
+                            };
+
+                            let Some(comment) = capture.get(1)
+                            else {
+                                continue;
+                            };
+
+                            let term_id = &term_annotation.term;
+
+                            let term_name =
+                                if let Some(term_details) = self.terms.get(term_id) {
+                                    term_details.name.as_str()
+                                } else {
+                                    panic!("can't find term details for {}", term_id);
+                                };
+                            let reference = annotation_detail.reference.as_ref()
+                                .unwrap_or(&empty_string);
+                            let evidence = annotation_detail.evidence.as_ref()
+                                .unwrap_or(&empty_string);
+
+                            let extension_bits = &annotation_detail.extension;
+
+                            let extension =
+                                make_extension_string(config, self,
+                                                      &GpadGafWriteMode::PomBaseGaf,
+                                                      &extension_bits);
+
+                            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                                               gene_uniquename,
+                                               gene_name,
+                                               aspect,
+                                               term_id,
+                                               term_name,
+                                               reference,
+                                               evidence,
+                                               extension,
+                                               comment.as_str());
+                            writer.write_all(line.as_bytes())?;
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
+
+    fn write_canto_comment_files(&self, config: &Config,output_dir: &str)
+          -> Result<(), io::Error>
+    {
+        self.write_canto_go_comments_file(config, output_dir)?;
+        Ok(())
+    }
+
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
         let file_name = String::new() + output_dir + "/stats.json";
@@ -1907,6 +2005,8 @@ impl WebData {
         self.write_annotation_subsets(config, &misc_path)?;
 
         self.write_apicuron_files(config, &self.references, &misc_path)?;
+
+        self.write_canto_comment_files(config, &misc_path)?;
 
         println!("wrote miscellaneous files");
 

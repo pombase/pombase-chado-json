@@ -4226,6 +4226,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut allele_promoters = vec![];
             let mut throughput: Option<Throughput> = None;
             let mut curator_orcid: Option<CuratorOrcid> = None;
+            let mut submitter_comment: Option<FlexStr> = None;
             let mut curation_session: Option<CurationSessionKey> = None;
 
             // need to get evidence first as it's used later
@@ -4321,6 +4322,9 @@ phenotypes, so just the first part of this extension will be used:
                     },
                     "curator_orcid" => {
                         curator_orcid = prop.value.clone();
+                    },
+                    "submitter_comment" => {
+                        submitter_comment = prop.value.clone();
                     },
                     "canto_session" => {
                         curation_session = prop.value.clone();
@@ -4486,6 +4490,7 @@ phenotypes, so just the first part of this extension will be used:
                 assigned_by,
                 throughput,
                 curator: curator_orcid,
+                submitter_comment,
             };
 
             if &feature.feat_type.name == "genotype_interaction" {
