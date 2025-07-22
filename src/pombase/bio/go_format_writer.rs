@@ -30,6 +30,17 @@ pub const GO_ASPECT_NAMES: [FlexStr; 3] =
     [flex_str!("cellular_component"), flex_str!("biological_process"),
      flex_str!("molecular_function")];
 
+fn abbreviation_of_go_aspect(cv_name: &str)
+    -> &'static str
+{
+    if cv_name.starts_with('b') {
+        "P"
+    } else if cv_name.starts_with('c') {
+        "C"
+    } else {
+        "F"
+    }
+}
 
 pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                  data_lookup: &dyn DataLookup,
@@ -629,14 +640,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
             return Ok(());
         };
 
-    let single_letter_aspect =
-        if cv_name.starts_with('b') {
-            "P"
-        } else if cv_name.starts_with('c') {
-            "C"
-        } else {
-            "F"
-        };
+    let single_letter_aspect = abbreviation_of_go_aspect(cv_name);
 
     let mut positive_annotation_count = 0;
 
