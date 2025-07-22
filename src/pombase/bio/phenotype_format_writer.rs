@@ -51,7 +51,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
 
     let phaf_file_name =
         if export_comments == FypoExportComments::Export {
-            format!("{}/single_locus_phenotype_annotations_with_comments.tsv", output_dir)
+            format!("{}/canto_fypo_annotations_with_comments.tsv", output_dir)
         } else {
             let eco_ev_bit =
                 if evidence_type == FypoEvidenceType::Eco {

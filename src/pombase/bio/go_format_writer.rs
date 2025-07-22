@@ -830,7 +830,7 @@ pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
      -> Result<(), io::Error>
 {
 
-    let file_name = format!("{}/canto_go_comments.tsv", output_dir);
+    let file_name = format!("{}/canto_go_annotations_with_comments.tsv", output_dir);
     let file = File::create(file_name)?;
     let mut writer = BufWriter::new(&file);
 
