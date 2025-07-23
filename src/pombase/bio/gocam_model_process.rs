@@ -55,14 +55,19 @@ pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSe
     let mut cursor = Cursor::new(contents);
     let model_res = parse_gocam_model(&mut cursor);
 
+    let mut remove_types = HashSet::new();
+
     if flags.contains("no_inputs") {
-        model_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs))
+        remove_types.insert(RemoveType::Targets);
+    }
+    if flags.contains("no_chemicals") {
+        remove_types.insert(RemoveType::Chemicals);
+    }
+
+    if remove_types.is_empty() {
+        model_res
     } else {
-        if flags.contains("no_chemicals") {
-            model_res.map(|model| model.remove_nodes(RemoveType::Chemicals))
-        } else {
-            model_res
-        }
+        model_res.map(|model| model.remove_nodes(remove_types))
     }
 }
 
@@ -84,14 +89,19 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &HashMa
 
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
 
+    let mut remove_types = HashSet::new();
+
+    if flags.contains("no_chemicals") {
+        remove_types.insert(RemoveType::Chemicals);
+    }
     if flags.contains("no_inputs") {
-        merge_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs))
+        remove_types.insert(RemoveType::Targets);
+    }
+
+    if remove_types.is_empty() {
+        merge_res
     } else {
-        if flags.contains("no_chemicals") {
-            merge_res.map(|model| model.remove_nodes(RemoveType::Chemicals))
-        } else {
-            merge_res
-        }
+        merge_res.map(|model| model.remove_nodes(remove_types))
     }
 }
 
@@ -120,16 +130,19 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
     }
 
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
+    let mut remove_types = HashSet::new();
 
+    if flags.contains("no_chemicals") {
+        remove_types.insert(RemoveType::Chemicals);
+    }
     if flags.contains("no_inputs") {
-        merge_res.map(|model| model.remove_nodes(RemoveType::InputsOutputs)
-                         .retain_largest_subgraph())
+        remove_types.insert(RemoveType::Targets);
+    }
+
+    if remove_types.is_empty() {
+        merge_res
     } else {
-        if flags.contains("no_chemicals") {
-            merge_res.map(|model| model.remove_nodes(RemoveType::Chemicals)
-                              .retain_largest_subgraph())
-        } else {
-            merge_res
-        }
+        merge_res.map(|model| model.remove_nodes(remove_types)
+                         .retain_largest_subgraph())
     }
 }

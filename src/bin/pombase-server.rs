@@ -308,8 +308,13 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
     };
 
     if flags.contains("retain_genes") {
+        // we're hightlighting genes in the mega-models then hiding
+        // models that don't have a hightlighted gene
         read_res = read_res.map(|model| {
-            model.remove_nodes(RemoveType::InputsOutputs)
+            let mut remove_types = HashSet::new();
+            remove_types.insert(RemoveType::Chemicals);
+            remove_types.insert(RemoveType::Targets);
+            model.remove_nodes(remove_types)
                 .retain_enabling_genes(&gene_set)
         });
     }
