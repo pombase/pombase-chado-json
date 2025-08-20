@@ -529,6 +529,35 @@ async fn gocam_viz_view_highlight(Path((viz_or_view, full_or_widget, gocam_id, h
     }
 }
 
+async fn rhea_widget(Path((view_type, rhea_id)): Path<(String, String)>,
+                     State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    let search_url = all_state.config.server.django_url.to_owned() + "/rhea_widget/";
+    let params = [("view_type", view_type),
+                  ("rhea_id", rhea_id)];
+    let client = reqwest::Client::new();
+    let result = client.get(search_url).query(&params).send().await;
+
+    match result {
+        Ok(res) => {
+            match res.text().await {
+                Ok(text) => (StatusCode::OK, Html(text)),
+                Err(err) => {
+                    let err_mess = format!("Error proxying to Django: {:?}", err);
+                    eprintln!("{}", err_mess);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+                }
+            }
+        },
+        Err(err) => {
+            let err_mess = format!("Error proxying to Django: {:?}", err);
+            eprintln!("{}", err_mess);
+            (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+        }
+    }
+}
+
 async fn get_gocam_summary(all_models: bool, all_state: Arc<AllState>)
    -> (StatusCode, Html<String>)
 {
@@ -975,6 +1004,7 @@ async fn main() {
         .route("/protein_feature_view/{scope}/{gene_uniquename}", get(protein_feature_view))
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}", get(gocam_viz_view))
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}/{highlight_gene_ids}", get(gocam_viz_view_highlight))
+        .route("/rhea_widget/{view_type}/{rhea_id}", get(rhea_widget))
         .route("/gocam_summary/connected", get(get_gocam_summary_connected))
         .route("/gocam_summary/all", get(get_gocam_summary_all))
         .route("/simple/gene/{id}", get(get_simple_gene))
