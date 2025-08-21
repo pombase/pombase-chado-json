@@ -2828,6 +2828,9 @@ pub struct APIMaps {
     pub gocam_overlaps: Vec<GoCamNodeOverlap>,
     pub gocam_holes: Vec<GoCamNode>,
 
+    // for passing to GoCamModel::new()
+    pub pro_term_to_gene_map: HashMap<String, String>,
+
     // based on annotations to "protein-containing complex" (GO:0032991):
     pub protein_complex_data: ProteinComplexData,
 

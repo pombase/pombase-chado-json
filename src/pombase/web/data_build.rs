@@ -1220,10 +1220,10 @@ impl <'a> WebDataBuild<'a> {
             format!("{}:{}", self.config.database_name, gene_uniquename);
 
         for model in &self.gocam_models {
-            if model.genes_in_model(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+            if model.genes_in_model().contains(&uniquename_with_prefix) {
                 gocam_ids.insert(model.id().into());
             }
-            if model.genes_enabling_activities(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+            if model.genes_enabling_activities().contains_key(&uniquename_with_prefix) {
                 enables_gocam_activity_ids.insert(model.id().into());
             }
         }
@@ -5417,10 +5417,10 @@ phenotypes, so just the first part of this extension will be used:
                 };
 
             for model in &self.gocam_models {
-                if model.genes_in_model(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+                if model.genes_in_model().contains(&uniquename_with_prefix) {
                     gocam_ids.insert(model.id().into());
                 }
-                if model.genes_enabling_activities(&self.pro_term_to_gene).contains(&uniquename_with_prefix) {
+                if model.genes_enabling_activities().contains_key(&uniquename_with_prefix) {
                     enables_gocam_activity_ids.insert(model.id().into());
                 }
             }
@@ -5727,6 +5727,7 @@ phenotypes, so just the first part of this extension will be used:
             gocam_data_by_gocam_id: self.gocam_summaries,
             gocam_overlaps: self.gocam_overlaps,
             gocam_holes: self.gocam_holes,
+            pro_term_to_gene_map: self.pro_term_to_gene,
 
             protein_complex_data: self.protein_complex_data,
             protein_complexes: self.protein_complexes,
@@ -8227,6 +8228,10 @@ phenotypes, so just the first part of this extension will be used:
         let annotation_details = self.annotation_details.clone();
 
         let termid_genotype_annotation = self.get_api_genotype_annotation();
+
+        for model in &mut self.gocam_models {
+            model.add_pro_term_to_gene_map(&self.pro_term_to_gene);
+        }
 
         let api_maps = self.make_api_maps();
 

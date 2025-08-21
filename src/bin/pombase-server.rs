@@ -95,6 +95,13 @@ struct AllState {
     search: Search,
     stats_plots: StatsPlots,
     static_file_state: StaticFileState,
+
+    // gene ID to name map for cytoscape JSON generation
+    gene_name_map: HashMap<String, String>,
+
+    // needed because this information isn't in the GO-CAM model JSON
+    pro_term_to_gene_map: HashMap<String, String>,
+
     config: Config
 }
 
@@ -287,17 +294,21 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
                         None
                     }
                 }).collect();
-            read_merged_gocam_model(web_root_dir, &filtered_data, &flags, &gene_set).await
+            read_merged_gocam_model(web_root_dir, &filtered_data,
+                                    &flags, &gene_set).await
         } else {
             match gocam_id {
                 "ALL_MERGED" => {
-                    read_merged_gocam_model(web_root_dir, all_gocam_data, &flags, &gene_set).await
+                    read_merged_gocam_model(web_root_dir, all_gocam_data,
+                                            &flags, &gene_set).await
                 }
                 "ALL_CONNECTED" => {
                     read_connected_gocam_models(web_root_dir, all_gocam_data,
-                                                overlaps, &flags).await
+                                                overlaps,
+                                                &flags).await
                 }
-                _ => read_gocam_model(web_root_dir, &gocam_id, &flags).await
+                _ => read_gocam_model(web_root_dir, &gocam_id,
+                                      &flags).await
             }
         };
 
@@ -319,8 +330,13 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
         });
     }
 
+
     match read_res {
-        anyhow::Result::Ok(model) => {
+        anyhow::Result::Ok(mut model) => {
+            let gene_name_map = &all_state.gene_name_map;
+            model.add_gene_name_map(gene_name_map);
+            let pro_term_to_gene_map = &all_state.pro_term_to_gene_map;
+            model.add_pro_term_to_gene_map(pro_term_to_gene_map);
             let elements =  model_to_cytoscape_simple(&model, overlaps, style);
 
          (StatusCode::OK, Json(elements)).into_response()
@@ -977,6 +993,18 @@ async fn main() {
 
     let gocam_data = api_data.get_all_gocam_data();
 
+    let gene_name_map = api_data.get_maps().gene_summaries
+        .iter()
+        .filter_map(|(k, v)|
+            if let Some(ref name) = v.name {
+                Some((k.to_std_string(), name.to_std_string()))
+            } else {
+                None
+            })
+        .collect();
+
+    let pro_term_to_gene_map = api_data.get_maps().pro_term_to_gene_map.clone();
+
     let query_exec = QueryExec::new(api_data, site_db);
     let search = Search::new(&config);
     let stats_plots = StatsPlots::new(&config);
@@ -992,6 +1020,8 @@ async fn main() {
         search,
         stats_plots,
         static_file_state,
+        gene_name_map,
+        pro_term_to_gene_map,
         config,
     };
 

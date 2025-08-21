@@ -125,7 +125,8 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
             continue;
         }
 
-        let model = read_gocam_model(web_root_dir, gocam_id, &HashSet::new()).await?;
+        let flags = HashSet::new();
+        let model = read_gocam_model(web_root_dir, gocam_id, &flags).await?;
         models.push(model);
     }
 
