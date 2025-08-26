@@ -139,7 +139,7 @@ pub struct WebDataBuild<'a> {
     physical_interaction_annotations: HashSet<InteractionAnnotation>,
     genetic_interaction_annotations: HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>,
 
-    gocam_summaries: HashMap<GoCamId, GoCamSummary>,
+    gocam_summaries: GoCamSummaryMap,
 
     protein_complex_data: ProteinComplexData,
 
@@ -2910,14 +2910,26 @@ phenotypes, so just the first part of this extension will be used:
             .push(interaction_annotation);
     }
 
-    fn add_gocam_model_gene(&mut self, gocam_model_feature: &Feature, gene_feature: &Feature) {
+    fn add_gocam_model_gene(&mut self, gocam_model_feature: &Feature, 
+                            gene_feature: &Feature, rel_name: &FlexStr) {
         let gocam_id = &gocam_model_feature.uniquename;
         let Some(ref mut model_details) = self.gocam_summaries.get_mut(gocam_id)
         else {
             panic!("no model details found for: {}", gocam_id);
         };
 
-        model_details.genes.insert(gene_feature.uniquename.clone());
+        match rel_name.as_str() {
+            "enables_gocam_activity" => {
+                model_details.activity_enabling_genes.insert(gene_feature.uniquename.clone());
+            },
+            "gocam_target_gene" => {
+                model_details.target_genes.insert(gene_feature.uniquename.clone());
+            },
+            _ => {
+                panic!("unknown feature relationship type for GO-CAM: {} {} {}",
+                       gocam_model_feature.uniquename, rel_name, gene_feature.uniquename);
+            }
+        }
     }
 
     // add physical interaction, legacy genetic interaction, ortholog, paralog annotations
@@ -2929,7 +2941,7 @@ phenotypes, so just the first part of this extension will be used:
             let object_uniquename = &feature_rel.object.uniquename;
 
             if feature_rel.object.feat_type.name == "gocam_model" {
-                self.add_gocam_model_gene(&feature_rel.object, &feature_rel.subject);
+                self.add_gocam_model_gene(&feature_rel.object, &feature_rel.subject, rel_name);
             }
 
             for rel_config in &FEATURE_REL_CONFIGS {
@@ -5583,11 +5595,11 @@ phenotypes, so just the first part of this extension will be used:
         downstream_genes
     }
 
-    pub fn make_gocam_data_by_gene(&self) -> HashMap<GeneUniquename, HashSet<GoCamId>> {
+    fn make_gocam_data_by_gene(&self) -> HashMap<GeneUniquename, HashSet<GoCamId>> {
         let mut ret = HashMap::new();
 
         for (gocam_id, gocam_summary) in &self.gocam_summaries {
-            for gene_uniquename in &gocam_summary.genes {
+            for gene_uniquename in &gocam_summary.activity_enabling_genes {
                 ret.entry(gene_uniquename.clone())
                    .or_insert_with(HashSet::new)
                    .insert(gocam_id.clone());
@@ -7325,7 +7337,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut gocams_of_terms = HashMap::new();
 
         for gocam_details in self.gocam_summaries.values() {
-            for gene_uniquename in &gocam_details.genes {
+            for gene_uniquename in &gocam_details.activity_enabling_genes {
                 gocams_of_genes.entry(gene_uniquename.clone())
                    .or_insert_with(HashSet::new)
                    .insert(gocam_details.into());

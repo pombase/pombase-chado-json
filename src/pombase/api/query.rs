@@ -375,7 +375,7 @@ fn exec_subset(api_data: &APIData, subset_name: &FlexStr)  -> GeneUniquenameVecR
     if subset_name.starts_with("gomodel:") {
         let gocam_id = subset_name.strip_prefix("gomodel:").unwrap();
         if let Some(gocam_details) = api_data.get_gocam_details_by_id(gocam_id) {
-            Ok(gocam_details.genes.iter().cloned().collect())
+            Ok(gocam_details.activity_enabling_genes.iter().cloned().collect())
         } else {
             Ok(vec![])
         }

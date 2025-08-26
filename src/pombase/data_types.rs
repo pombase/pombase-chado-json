@@ -53,6 +53,8 @@ pub type GeneticInteractionMap = HashMap<GeneticInteractionKey, Vec<GeneticInter
 
 pub type ProteinComplexMap = HashMap<ProteinComplexUniquename, ProteinComplexDetails>;
 
+pub type GoCamSummaryMap = HashMap<GoCamId, GoCamSummary>;
+
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -2773,7 +2775,8 @@ pub struct GoCamIdAndTitle {
 pub struct GoCamSummary {
     pub gocam_id: GoCamId,
     pub title: FlexStr,
-    pub genes: HashSet<GeneUniquename>,
+    pub activity_enabling_genes: HashSet<GeneUniquename>,
+    pub target_genes: HashSet<GeneUniquename>,
     pub terms: HashSet<TermAndName>,
     pub title_terms: HashSet<TermId>,
     pub contributors: Vec<OrcidAndName>,
@@ -2787,7 +2790,8 @@ impl GoCamSummary {
             gocam_id: gocam_id.to_owned(),
             title: gocam_title.to_owned(),
             title_terms: HashSet::new(),
-            genes: HashSet::new(),
+            activity_enabling_genes: HashSet::new(),
+            target_genes: HashSet::new(),
             terms: HashSet::new(),
             contributors: vec![],
             date: None,
