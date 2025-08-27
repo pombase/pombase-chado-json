@@ -1253,7 +1253,7 @@ impl Query {
                        if self.output_options.flags.contains(&flex_str!("include_gene_subsets")) {
                            let mut subset = gene_data.subset_termids.clone();
                            let gocam_ids: Vec<_> =
-                               gene_data.gocam_ids.iter()
+                               gene_data.enables_gocam_activity_ids.iter()
                                    .map(|gocam_id| {
                                        if gocam_id.starts_with("gomodel:") {
                                            gocam_id.into()
