@@ -235,7 +235,7 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
     let file = File::create(file_name).expect("Unable to open file");
     let mut writer = BufWriter::new(&file);
 
-    writeln!(writer, "#database_name\tgene_systematic_id\tgene_name\tfypo_term\tallele_1_name\tallele_1_description\tallele_1_type\tallele_1_expression\tallele_2_name\tallele_2_description\tallele_2_type\tallele_2_expression\tevidence\tconditions\tpenetrance\tseverity\textension\treference\ttaxon_id\tdate")?;
+    writeln!(writer, "#database_name\tgene_systematic_id\tgene_name\tfypo_term_id\tfypo_term_name\tallele_1_name\tallele_1_description\tallele_1_type\tallele_1_expression\tallele_2_name\tallele_2_description\tallele_2_type\tallele_2_expression\tevidence\tconditions\tpenetrance\tseverity\textension\treference\ttaxon_id\tdate")?;
 
   'GENOTYPES:
     for genotype_details in genotypes_map.values() {
@@ -349,11 +349,12 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
                         };
 
                     let line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                 database_name,
                                 gene.uniquename,
                                 gene_name_or_uniquename,
                                 term.termid,
+                                term.name,
                                 allele_1.name.clone().unwrap_or_else(FlexStr::default),
                                 allele_1.description.clone().unwrap_or_else(FlexStr::default),
                                 allele_1.allele_type,
