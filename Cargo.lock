@@ -1373,7 +1373,7 @@ dependencies = [
  "mime_guess",
  "once_cell",
  "percent-encoding",
- "pombase-gocam 0.91.0",
+ "pombase-gocam",
  "pombase-gocam-process",
  "regex",
  "reqwest",
@@ -1394,21 +1394,6 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam"
-version = "0.90.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "cceab184780e932ea1a5fb6a863c6a56c9b861974e307ebb150094ae6af90bbc"
-dependencies = [
- "anyhow",
- "petgraph",
- "phf",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_yaml",
-]
-
-[[package]]
-name = "pombase-gocam"
 version = "0.91.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ece82abcf90e668094e53073bc255e3ee7fb772d14c7f7f832b5d91a4bfceb23"
@@ -1424,14 +1409,14 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam-process"
-version = "0.104.0"
-source = "git+https://github.com/pombase/pombase-gocam-process.git#91cbc446c815ace542faa77b73ca2e899cbbb7d7"
+version = "0.105.0"
+source = "git+https://github.com/pombase/pombase-gocam-process.git#5d3d7f7d573a78e145c60706d21cf2ae65c7ee52"
 dependencies = [
  "anyhow",
  "itertools",
  "lazy_static",
  "petgraph",
- "pombase-gocam 0.90.0",
+ "pombase-gocam",
  "regex",
  "serde",
  "serde_derive",
@@ -1599,8 +1584,8 @@ checksum = "23d7fd106d8c02486a8d64e778353d1cffe08ce79ac2e82f540c86d0facf6912"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-automata 0.4.9",
- "regex-syntax 0.8.5",
+ "regex-automata 0.4.10",
+ "regex-syntax 0.8.6",
 ]
 
 [[package]]
@@ -1614,13 +1599,13 @@ dependencies = [
 
 [[package]]
 name = "regex-automata"
-version = "0.4.9"
+version = "0.4.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "809e8dc61f6de73b46c85f4c96486310fe304c434cfa43669d7b40f711150908"
+checksum = "6b9458fa0bfeeac22b5ca447c63aaf45f28439a709ccd244698632f9aa6394d6"
 dependencies = [
  "aho-corasick",
  "memchr",
- "regex-syntax 0.8.5",
+ "regex-syntax 0.8.6",
 ]
 
 [[package]]
@@ -1631,9 +1616,9 @@ checksum = "f162c6dd7b008981e4d40210aca20b4bd0f9b60ca9271061b07f78537722f2e1"
 
 [[package]]
 name = "regex-syntax"
-version = "0.8.5"
+version = "0.8.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b15c43186be67a4fd63bee50d0303afffcef381492ebe2c5d87f324e1b8815c"
+checksum = "caf4aa5b0f434c91fe5c7f1ecb6a5ece2130b02ad2a590589dda5146df959001"
 
 [[package]]
 name = "reqwest"
