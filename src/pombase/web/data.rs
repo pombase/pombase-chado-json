@@ -22,6 +22,7 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_
 use pombase_gocam::GoCamModel;
 use pombase_gocam_process::find_holes;
 
+use crate::bio::complementation::write_complementation;
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff, process_modification_ext};
 
 use crate::constants::*;
@@ -1899,6 +1900,8 @@ impl WebData {
                                          FypoEvidenceType::Eco,
                                          FypoExportComments::Export,
                                          &misc_path)?;
+
+        write_complementation(&self, &self.genes, &misc_path)?;
 
         write_heterozygous_diploid_annotations(&self, &self.genotypes, config,
                                                &misc_path)?;

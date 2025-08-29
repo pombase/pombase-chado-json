@@ -7,3 +7,4 @@ pub mod macromolecular_complexes;
 pub mod generic_annotation_writer;
 pub mod gene_expression_writer;
 pub mod gocam_model_process;
+pub mod complementation;
