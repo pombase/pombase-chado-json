@@ -67,7 +67,7 @@ pub fn write_complementation(data_lookup: &dyn DataLookup,
                             if term.name.starts_with("is not functionally complemented by") {
                                 &mut not_complemented_by_writer
                             } else {
-                                if term.name.starts_with("not functionally complemented") {
+                                if term.name.starts_with("does not functionally complement") {
                                     &mut does_not_complement_writer
                                 } else {
                                     eprintln!("can't parse complementation term name {} {}: {}",
