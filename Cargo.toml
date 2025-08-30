@@ -16,7 +16,7 @@ pombase-gocam-process = { git = "https://github.com/pombase/pombase-gocam-proces
 serde_with = "3.13"
 serde_derive = "1.0"
 serde_json = "1.0"
-getopts = "0.2.23"
+getopts = "0.2.24"
 regex = "1.11"
 bit-set = "0.8"
 chrono = { version = "0.4.41", default-features = false, features = ["clock", "serde"] }
