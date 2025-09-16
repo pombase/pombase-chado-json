@@ -15,7 +15,7 @@ use crate::utils::join;
 use crate::web::config::*;
 use crate::data_types::*;
 
-use super::util::{make_extension_string, COMMENT_EXPORT_RE};
+use crate::bio::util::{make_extension_string, ANNOTATION_COMMENT_NESTED_BRACKETS_RE, ANNOTATION_COMMENT_RE};
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum GpadGafWriteMode {
@@ -822,8 +822,6 @@ fn make_ncbi_taxon_id(config: &Config) -> FlexStr {
 }
 
 
-
-
 pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
                                     config: &Config, genes: &UniquenameGeneMap,
                                     output_dir: &str)
@@ -859,16 +857,16 @@ pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
                             continue;
                         };
 
-                        let captures = COMMENT_EXPORT_RE.captures(submitter_comment);
-                        let Some(capture) = captures.iter().next()
-                        else {
-                            continue;
-                        };
+                        // remove comments while handling nested brackets (in a hacky way)
+                        let submitter_comment =
+                            ANNOTATION_COMMENT_NESTED_BRACKETS_RE.replace_all(submitter_comment, "");
+                        let submitter_comment =
+                            ANNOTATION_COMMENT_RE.replace_all(&submitter_comment, "");
+                        let submitter_comment = submitter_comment.trim();
 
-                        let Some(comment) = capture.get(1)
-                        else {
+                        if submitter_comment.is_empty() {
                             continue;
-                        };
+                        }
 
                         let term_id = &term_annotation.term;
 
@@ -899,7 +897,7 @@ pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
                                            reference,
                                            evidence,
                                            extension,
-                                           comment.as_str());
+                                           submitter_comment);
                         writer.write_all(line.as_bytes())?;
                     }
                 }

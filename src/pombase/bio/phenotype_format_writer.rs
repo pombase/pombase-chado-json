@@ -5,14 +5,13 @@ use std::fs::File;
 
 use flexstr::{shared_fmt as flex_fmt, FlexStr, ToSharedStr};
 
-use crate::bio::util::COMMENT_EXPORT_RE;
 use crate::web::config::*;
 use crate::data_types::*;
 
 use itertools::Itertools;
 
 use super::go_format_writer::GpadGafWriteMode;
-use super::util::make_extension_string;
+use crate::bio::util::{make_extension_string, ANNOTATION_COMMENT_NESTED_BRACKETS_RE, ANNOTATION_COMMENT_RE};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FypoEvidenceType {
@@ -134,7 +133,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                         if export_comments == FypoExportComments::Export {
                             let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref())
                             else {
-                                continue 'GENOTYPES;
+                                continue;
                             };
                             submitter_comment
                         } else {
@@ -426,18 +425,18 @@ fn get_submitter_comment(annotation_detail: &OntAnnotationDetail)
         return None;
     };
 
-    let captures = COMMENT_EXPORT_RE.captures(submitter_comment);
-    let Some(capture) = captures.iter().next()
-    else {
-        return None;
-    };
+    // remove comments while handling nested brackets (in a hacky way)
+    let submitter_comment =
+        ANNOTATION_COMMENT_NESTED_BRACKETS_RE.replace_all(submitter_comment, "");
+    let submitter_comment =
+        ANNOTATION_COMMENT_RE.replace_all(&submitter_comment, "");
+    let submitter_comment = submitter_comment.trim();
 
-    let Some(comment) = capture.get(1)
-    else {
-        return None;
-    };
-
-    Some(format!("\t{}", comment.as_str()))
+    if submitter_comment.is_empty() {
+        None
+    } else {
+        Some(format!("\t{}", submitter_comment))
+    }
 }
 
 fn get_expressed_allele(genotype_details: &GenotypeDetails) -> Option<&ExpressedAllele> {
