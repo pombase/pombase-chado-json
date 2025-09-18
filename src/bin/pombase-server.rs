@@ -522,6 +522,7 @@ async fn gocam_viz_view_highlight(Path((viz_or_view, full_or_widget, gocam_id, h
 
     let params = [("full_or_widget", full_or_widget),
                   ("gocam_id", gocam_id),
+                  ("api_path", "/api/v1/dataset/latest/data/go-cam-cytoscape".to_owned()),
                   ("highlight_gene_ids", highlight_gene_ids)];
     let client = reqwest::Client::new();
     let result = client.get(search_url).query(&params).send().await;
@@ -585,7 +586,8 @@ async fn get_gocam_summary(all_models: bool, all_state: Arc<AllState>)
         } else {
             "connected_only"
         };
-    let params = [("summary_type", summary_type)];
+    let params = [("summary_type", summary_type),
+                  ("api_path", "/api/v1/dataset/latest/data/gocam/model_summary")];
 
     let client = reqwest::Client::new();
     let result = client.get(url).query(&params).send().await;
