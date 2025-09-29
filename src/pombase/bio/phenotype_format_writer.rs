@@ -180,14 +180,15 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                         };
 
                     let line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}{}\n",
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}{}\n",
                                 database_name,
                                 locus_gene.uniquename,
                                 term.termid,
                                 locus_allele.description.clone().unwrap_or_else(|| flex_fmt!("")),
                                 expression,
                                 phaf_parental_strain,
-                                "", //annotation_detail.genotype_background.clone().unwrap_or_else(|| flex_fmt!("")),
+                                annotation_detail.genotype_background.clone().unwrap_or_default(),
+                                "",
                                 locus_gene_name_or_uniquename,
                                 locus_allele.name.clone().unwrap_or_else(|| flex_fmt!("")),
                                 locus_allele_synonyms,
