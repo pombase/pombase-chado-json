@@ -1381,7 +1381,7 @@ dependencies = [
  "mime_guess",
  "once_cell",
  "percent-encoding",
- "pombase-gocam",
+ "pombase-gocam 0.97.0",
  "pombase-gocam-process",
  "regex",
  "reqwest",
@@ -1417,6 +1417,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pombase-gocam"
+version = "0.97.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4a035679d3dfc5040754bd3453842ac905f1a164bcd05a19408dde362bda3bec"
+dependencies = [
+ "anyhow",
+ "petgraph",
+ "phf 0.11.3",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_yaml",
+]
+
+[[package]]
 name = "pombase-gocam-process"
 version = "0.112.0"
 source = "git+https://github.com/pombase/pombase-gocam-process.git#a9c1c280372519574b22c19221032d6f05df9e77"
@@ -1425,7 +1441,7 @@ dependencies = [
  "itertools",
  "lazy_static",
  "petgraph",
- "pombase-gocam",
+ "pombase-gocam 0.96.0",
  "regex",
  "serde",
  "serde_derive",
