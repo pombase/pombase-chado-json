@@ -231,11 +231,17 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
 
     let database_name = &config.database_name;
 
-    let file_name = format!("{}/heterozygous_diploid_annotations.tsv", output_dir);
-    let file = File::create(file_name).expect("Unable to open file");
-    let mut writer = BufWriter::new(&file);
+    let dominant_file_name = format!("{}/dominant_diploid_annotations.tsv", output_dir);
+    let dominant_file = File::create(dominant_file_name).expect("Unable to open file");
+    let mut dominant_writer = BufWriter::new(&dominant_file);
 
-    writeln!(writer, "#database_name\tgene_systematic_id\tgene_name\tfypo_term_id\tfypo_term_name\tallele_1_name\tallele_1_description\tallele_1_type\tallele_1_expression\tallele_2_name\tallele_2_description\tallele_2_type\tallele_2_expression\tevidence\tconditions\tpenetrance\tseverity\textension\treference\ttaxon_id\tdate")?;
+    let all_heterozygous_file_name = format!("{}/single_locus_heterozygous_diploid_annotations.tsv", output_dir);
+    let all_heterozygous_file = File::create(all_heterozygous_file_name).expect("Unable to open file");
+    let mut all_heterozygous_writer = BufWriter::new(&all_heterozygous_file);
+
+    let header = "#database_name\tgene_systematic_id\tgene_name\tfypo_term_id\tfypo_term_name\tallele_1_name\tallele_1_description\tallele_1_type\tallele_1_expression\tallele_2_name\tallele_2_description\tallele_2_type\tallele_2_expression\tevidence\tconditions\tpenetrance\tseverity\textension\treference\ttaxon_id\tdate";
+    writeln!(dominant_writer, "{}", header)?;
+    writeln!(all_heterozygous_writer, "{}", header)?;
 
   'GENOTYPES:
     for genotype_details in genotypes_map.values() {
@@ -257,14 +263,16 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
             data_lookup.get_allele(&expressed_allele_2.allele_uniquename)
             .unwrap_or_else(|| panic!("no allele found for {}", expressed_allele_2.allele_uniquename));
 
+        let mut is_dominant_diploid = true;
+
         // it's not a dominant allele if the other allele is a deletion
         if allele_1.allele_type == "deletion" || allele_2.allele_type == "deletion" {
-            continue 'GENOTYPES;
+            is_dominant_diploid = false;
         }
 
         // it's not a dominant allele unless the other allele is WT
         if allele_1.allele_type != "wild_type" && allele_2.allele_type != "wild_type" {
-            continue 'GENOTYPES;
+            is_dominant_diploid = false;
         }
 
         if allele_1.gene != allele_2.gene {
@@ -284,10 +292,9 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
         let expression_1 =
             if let Some(ref expression) = expressed_allele_1.expression {
                 if expression == "Null"  {
-                    continue 'GENOTYPES;
-                } else {
-                    expression.clone()
+                    is_dominant_diploid = false;
                 }
+                expression.clone()
             } else {
                 flex_fmt!("")
             };
@@ -295,10 +302,9 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
         let expression_2 =
             if let Some(ref expression) = expressed_allele_2.expression {
                 if expression == "Null"  {
-                    continue 'GENOTYPES;
-                } else {
-                    expression.clone()
+                    is_dominant_diploid = false;
                 }
+                expression.clone()
             } else {
                 flex_fmt!("")
             };
@@ -372,7 +378,11 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
                                 load_org_taxonid,
                                 date,
                         );
-                    writer.write_all(line.as_bytes())?;
+
+                    if is_dominant_diploid {
+                        dominant_writer.write_all(line.as_bytes())?;
+                    }
+                    all_heterozygous_writer.write_all(line.as_bytes())?;
                 }
             }
 
