@@ -915,6 +915,21 @@ pub struct ReferenceDetails {
     pub pdb_entries: Vec<PDBEntry>,
 }
 
+impl ReferenceDetails {
+    pub fn is_pubmed_reference(&self) -> bool {
+        self.uniquename.starts_with("PMID:")
+    }
+
+    // true if this publication has been curated in Canto, possible with no annotations
+    pub fn is_canto_curated(&self) -> bool {
+        let Some(ref status) = self.canto_annotation_status
+        else {
+            return false;
+        };
+        status == "APPROVED"
+    }
+}
+
 impl Container for ReferenceDetails {
     fn container_type(&self) -> ContainerType {
         ContainerType::Reference

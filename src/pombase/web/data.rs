@@ -1738,6 +1738,22 @@ impl WebData {
         Ok(())
     }
 
+    fn write_ai_ml_files(&self, output_dir: &str)
+         -> Result<(), io::Error>
+    {
+        let curated_pubs_file_name = format!("{}/curated_pubs.txt", output_dir);
+        let curated_pubs_file = File::create(curated_pubs_file_name)?;
+        let mut curated_pubs_writer = BufWriter::new(&curated_pubs_file);
+
+        for reference in self.references.values() {
+            if reference.is_pubmed_reference() && reference.is_canto_curated() {
+                writeln!(curated_pubs_writer, "{}", reference.uniquename)?;
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn write_stats(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.stats).unwrap();
         let file_name = String::new() + output_dir + "/stats.json";
@@ -1934,6 +1950,8 @@ impl WebData {
         self.write_apicuron_files(config, &self.references, &misc_path)?;
 
         self.write_canto_comment_files(config, &misc_path)?;
+
+        self.write_ai_ml_files(&misc_path)?;
 
         println!("wrote miscellaneous files");
 
