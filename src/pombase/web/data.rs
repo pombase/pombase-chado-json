@@ -1747,7 +1747,9 @@ impl WebData {
 
         for reference in self.references.values() {
             if reference.is_pubmed_reference() && reference.is_canto_curated() {
-                writeln!(curated_pubs_writer, "{}", reference.uniquename)?;
+                if let Some(ref title) = reference.title {
+                    writeln!(curated_pubs_writer, "{}\t{}", reference.uniquename, title)?;
+                }
             }
         }
 
