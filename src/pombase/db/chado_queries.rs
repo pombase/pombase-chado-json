@@ -2,7 +2,7 @@ extern crate tokio_postgres;
 
 use std::collections::{BTreeSet, HashMap};
 
-use crate::data_types::StatsIntegerTable;
+use crate::{data_types::StatsIntegerTable, types::OrganismTaxonId, web::config::Config};
 
 use self::tokio_postgres::Client;
 
@@ -67,7 +67,8 @@ const ANNOTATION_TYPE_COUNT_SQL: &str = r#"
 SELECT annotation_year, annotation_type, count(DISTINCT id)
   FROM pombase_annotation_summary
  WHERE
-  (annotation_year <= extract(YEAR FROM CURRENT_DATE)::integer
+  ($1 = '' OR taxonid = $1)
+  AND (annotation_year <= extract(YEAR FROM CURRENT_DATE)::integer
    OR annotation_year IS NULL)
   AND (evidence_code IS NULL OR evidence_code <> 'Inferred from Electronic Annotation')
   AND (annotation_type NOT IN ('kegg_pombe_pathway', 'pathway'))
@@ -76,7 +77,7 @@ SELECT annotation_year, annotation_type, count(DISTINCT id)
  ORDER BY annotation_year, annotation_type
 "#;
 
-async fn get_annotation_type_counts(conn: &mut Client)
+async fn get_annotation_type_counts(taxonid: Option<OrganismTaxonId>, conn: &mut Client)
     -> Result<StatsIntegerTable, tokio_postgres::Error>
 {
   let mut res = HashMap::new();
@@ -85,7 +86,14 @@ async fn get_annotation_type_counts(conn: &mut Client)
   let mut last_year: i32 = 0;
   let mut annotation_types = BTreeSet::new();
 
-  let result = conn.query(ANNOTATION_TYPE_COUNT_SQL, &[]).await?;
+  let taxonid =
+    if let Some(taxonid) = taxonid {
+      format!("{}", taxonid)
+    } else {
+      String::default()
+    };
+
+  let result = conn.query(ANNOTATION_TYPE_COUNT_SQL, &[&taxonid]).await?;
 
   for row in &result {
 
@@ -145,9 +153,11 @@ async fn get_annotation_type_counts(conn: &mut Client)
 }
 
 impl ChadoQueries {
-  pub async fn new(conn: &mut Client) -> Result<ChadoQueries, tokio_postgres::Error> {
+  pub async fn new(config: &Config, conn: &mut Client) -> Result<ChadoQueries, tokio_postgres::Error> {
     let community_response_rates = get_community_response_rates(conn).await?;
-    let annotation_type_counts_by_year = get_annotation_type_counts(conn).await?;
+    let taxonid = config.load_organism_taxonid;
+    let annotation_type_counts_by_year =
+      get_annotation_type_counts(taxonid, conn).await?;
     Ok(ChadoQueries {
       community_response_rates,
       annotation_type_counts_by_year,

@@ -162,7 +162,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let raw = Raw::new(&mut client).await?;
 
-    let chado_queries = ChadoQueries::new(&mut client).await?;
+    let chado_queries = ChadoQueries::new(&config, &mut client).await?;
 
     let interpro_data = parse_interpro(&config, &interpro_json);
 
