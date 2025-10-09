@@ -19,7 +19,7 @@ use rusqlite::Connection;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
-use pombase_gocam::GoCamModel;
+use pombase_gocam::{GoCamModel, GoCamNodeType};
 use pombase_gocam_process::find_holes;
 
 use crate::bio::complementation::write_complementation;
@@ -1812,6 +1812,11 @@ impl WebData {
         for model_and_hole in model_and_holes.into_iter() {
             let (model_id, model_title, hole_node) = model_and_hole;
 
+            let GoCamNodeType::Activity { enabler: _, inputs, outputs } = hole_node.node_type
+            else {
+                panic!("internal error: not an activity node");
+            };
+
                 write!(writer, "{} {}\t{} ({})\t", model_id,
                        model_title, hole_node.label, hole_node.node_id)?;
                 if let Some(ref part_of_process) = hole_node.part_of_process {
@@ -1820,14 +1825,14 @@ impl WebData {
                     write!(writer, "\t")?;
                 }
                 let has_input_string =
-                    hole_node.has_input.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
+                    inputs.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
                 if has_input_string.len() > 0 {
                     write!(writer, "{} / ", has_input_string)?;
                 } else {
                     write!(writer, "? / ")?;
                 }
                 let has_output_string =
-                    hole_node.has_output.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
+                    outputs.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
                 if has_output_string.len() > 0 {
                     write!(writer, "{}\t", has_output_string)?;
                 } else {
