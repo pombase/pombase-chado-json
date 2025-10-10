@@ -18,9 +18,9 @@ pub struct SeqRecord {
 lazy_static! {
     // comment parts matching these patterns will be removed before export
     pub static ref ANNOTATION_COMMENT_NESTED_BRACKETS_RE: Regex =
-        Regex::new(r"\((comment:(?:[^\(\)]*\([^\)]+\)[^\(\)]*)+[^\)]*)\)\s*").unwrap();
+        Regex::new(r"\((\s*[Cc]omment:(?:[^\(\)]*\([^\)]+\)[^\(\)]*)+[^\)]*)\)\s*").unwrap();
     pub static ref ANNOTATION_COMMENT_RE: Regex =
-        Regex::new(r"\(comment:\s*[^\(]+\)\s*").unwrap();
+        Regex::new(r"\(\s*[Cc]omment:\s*[^\(]+\)\s*").unwrap();
 }
 
 fn complement_char(base: char) -> char {
