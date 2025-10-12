@@ -850,6 +850,20 @@ pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
                         let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                             .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
+                        let Some(ref reference_uniquename) = annotation_detail.reference
+                        else {
+                            continue;
+                        };
+
+                        let Some(reference_details) = data_lookup.get_reference(reference_uniquename)
+                        else {
+                            continue;
+                        };
+
+                        if !reference_details.is_canto_curated() {
+                            continue;
+                        }
+
                         let gene_uniquename = &gene_details.uniquename;
                         let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
                         let Some(ref submitter_comment) = annotation_detail.submitter_comment
@@ -864,10 +878,6 @@ pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
                             ANNOTATION_COMMENT_RE.replace_all(&submitter_comment, "");
                         let submitter_comment = submitter_comment.trim();
 
-                        if submitter_comment.is_empty() {
-                            continue;
-                        }
-
                         let term_id = &term_annotation.term;
 
                         let Some(term_details) = data_lookup.get_term(term_id)
@@ -876,8 +886,6 @@ pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
                         };
                         let term_name = term_details.name.as_str();
 
-                        let reference = annotation_detail.reference.as_ref()
-                            .unwrap_or(&empty_string);
                         let evidence = annotation_detail.evidence.as_ref()
                             .unwrap_or(&empty_string);
 
@@ -894,7 +902,7 @@ pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
                                            aspect,
                                            term_id,
                                            term_name,
-                                           reference,
+                                           reference_uniquename,
                                            evidence,
                                            extension,
                                            submitter_comment);

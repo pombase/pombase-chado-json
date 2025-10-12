@@ -129,13 +129,30 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                     let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
+                    let reference_uniquename =
+                        if let Some(ref reference) = annotation_detail.reference {
+                            reference.clone()
+                        } else {
+                            flex_fmt!("")
+                        };
+
+                    if export_comments == FypoExportComments::Export {
+                        if let Some(reference_details) = data_lookup.get_reference(&reference_uniquename) {
+                            if !reference_details.is_canto_curated() {
+                                continue;
+                            }
+                        } else {
+                            continue;
+                        }
+                    }
+
                     let comment_field =
                         if export_comments == FypoExportComments::Export {
-                            let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref())
-                            else {
-                                continue;
-                            };
-                            submitter_comment
+                            if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
+                                submitter_comment
+                            } else {
+                                format!("\t")
+                            }
                         } else {
                             String::default()
                         };
@@ -171,13 +188,6 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
 
                     let date =
                         annotation_detail.date.clone().unwrap_or_else(|| flex_fmt!("NO_DATE"));
-
-                    let reference_uniquename =
-                        if let Some(ref reference) = annotation_detail.reference {
-                            reference.clone()
-                        } else {
-                            flex_fmt!("")
-                        };
 
                     let line =
                         format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}{}\n",
