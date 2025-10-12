@@ -1741,7 +1741,7 @@ impl WebData {
     fn write_ai_ml_files(&self, output_dir: &str)
          -> Result<(), io::Error>
     {
-        let curated_pubs_file_name = format!("{}/curated_publications.txt", output_dir);
+        let curated_pubs_file_name = format!("{}/curated_publications.tsv", output_dir);
         let curated_pubs_file = File::create(curated_pubs_file_name)?;
         let mut curated_pubs_writer = BufWriter::new(&curated_pubs_file);
 
