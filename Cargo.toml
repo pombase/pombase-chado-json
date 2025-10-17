@@ -31,7 +31,7 @@ deadpool-postgres = "0.14"
 deadpool = "0.12"
 anyhow = "1.0"
 itertools = "0.14"
-csv = "1.1.6"
+csv = "1.4.0"
 rusqlite = { version = "0.37.0", features = ["bundled", "serde_json"] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6.6", features = ["fs", "normalize-path", "trace"] }
