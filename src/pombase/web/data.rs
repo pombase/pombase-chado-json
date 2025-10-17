@@ -19,7 +19,7 @@ use rusqlite::Connection;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
 
-use pombase_gocam::{GoCamModel, GoCamNodeType};
+use pombase_gocam::{GoCamActivity, GoCamModel, GoCamNodeType};
 use pombase_gocam_process::find_holes;
 
 use crate::bio::complementation::write_complementation;
@@ -1812,7 +1812,7 @@ impl WebData {
         for model_and_hole in model_and_holes.into_iter() {
             let (model_id, model_title, hole_node) = model_and_hole;
 
-            let GoCamNodeType::Activity { enabler: _, inputs, outputs } = hole_node.node_type
+            let GoCamNodeType::Activity(GoCamActivity { enabler: _, inputs, outputs }) = hole_node.node_type
             else {
                 panic!("internal error: not an activity node");
             };
