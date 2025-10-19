@@ -25,6 +25,7 @@ use pombase_gocam_process::find_holes;
 use crate::bio::complementation::write_complementation;
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff, process_modification_ext};
 
+use crate::bio::ExportComments;
 use crate::constants::*;
 
 use crate::web::config::*;
@@ -35,10 +36,10 @@ use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename, Al
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
-use crate::bio::go_format_writer::{write_canto_go_comments_file, write_go_annotation_files};
+use crate::bio::go_format_writer::write_go_annotation_files;
 use crate::bio::phenotype_format_writer::{write_phenotype_annotation_files,
                                           write_heterozygous_diploid_annotations,
-                                          FypoEvidenceType, FypoExportComments};
+                                          FypoEvidenceType};
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
 use crate::bio::gene_expression_writer::{write_quantitative_expression_row, write_qualitative_expression_row};
 
@@ -1731,13 +1732,6 @@ impl WebData {
         Ok(())
     }
 
-    fn write_canto_comment_files(&self, config: &Config,output_dir: &str)
-          -> Result<(), io::Error>
-    {
-        write_canto_go_comments_file(self, config, &self.genes, output_dir)?;
-        Ok(())
-    }
-
     fn write_ai_ml_files(&self, output_dir: &str)
          -> Result<(), io::Error>
     {
@@ -1913,15 +1907,15 @@ impl WebData {
 
         write_phenotype_annotation_files(&self, &self.genotypes, config,
                                          FypoEvidenceType::PomBase,
-                                         FypoExportComments::NoExport,
+                                         ExportComments::NoExport,
                                          &misc_path)?;
         write_phenotype_annotation_files(&self, &self.genotypes, config,
                                          FypoEvidenceType::Eco,
-                                         FypoExportComments::NoExport,
+                                         ExportComments::NoExport,
                                          &misc_path)?;
         write_phenotype_annotation_files(&self, &self.genotypes, config,
                                          FypoEvidenceType::Eco,
-                                         FypoExportComments::Export,
+                                         ExportComments::Export,
                                          &misc_path)?;
 
         write_complementation(&self, &self.genes, &misc_path)?;
@@ -1955,8 +1949,6 @@ impl WebData {
         self.write_annotation_subsets(config, &misc_path)?;
 
         self.write_apicuron_files(config, &self.references, &misc_path)?;
-
-        self.write_canto_comment_files(config, &misc_path)?;
 
         self.write_ai_ml_files(&misc_path)?;
 

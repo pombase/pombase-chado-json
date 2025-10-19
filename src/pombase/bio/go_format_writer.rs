@@ -11,11 +11,12 @@ use chrono::prelude::{Local, DateTime};
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt};
 use regex::Regex;
 
+use crate::bio::{get_submitter_comment, ExportComments};
 use crate::utils::join;
 use crate::web::config::*;
 use crate::data_types::*;
 
-use crate::bio::util::{make_extension_string, ANNOTATION_COMMENT_NESTED_BRACKETS_RE, ANNOTATION_COMMENT_RE};
+use crate::bio::util::make_extension_string;
 
 #[derive(Clone, PartialEq, Eq)]
 pub enum GpadGafWriteMode {
@@ -24,7 +25,6 @@ pub enum GpadGafWriteMode {
   StandardGaf,
   Gpad,
 }
-
 
 pub const GO_ASPECT_NAMES: [FlexStr; 3] =
     [flex_str!("cellular_component"), flex_str!("biological_process"),
@@ -69,6 +69,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     let pombase_gaf_file_name = format!("{}/pombase_style_gaf.tsv", output_dir);
     let extended_pombase_gaf_file_name = format!("{}/extended_pombase_style_gaf.tsv", output_dir);
     let standard_gaf_file_name = format!("{}/go_style_gaf.tsv", output_dir);
+    let comments_gaf_file_name = format!("{}/canto_go_annotations_with_comments.tsv", output_dir);
 
     let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
     let gpad_file = File::create(gpad_file_name).expect("Unable to open file");
@@ -78,11 +79,14 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         File::create(extended_pombase_gaf_file_name).expect("Unable to open file");
     let standard_gaf_file =
         File::create(standard_gaf_file_name).expect("Unable to open file");
+    let comments_gaf_file =
+        File::create(comments_gaf_file_name).expect("Unable to open file");
     let mut gpi_writer = BufWriter::new(&gpi_file);
     let mut gpad_writer = BufWriter::new(&gpad_file);
     let mut extended_pombase_gaf_writer = BufWriter::new(&extended_pombase_gaf_file);
     let mut pombase_gaf_writer = BufWriter::new(&pombase_gaf_file);
     let mut standard_gaf_writer = BufWriter::new(&standard_gaf_file);
+    let mut comments_gaf_writer = BufWriter::new(&comments_gaf_file);
 
     let generated_by = format!("!generated-by: {}\n", database_name);
     let iso_date = db_creation_datetime.replace(' ', "T");
@@ -109,6 +113,9 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     standard_gaf_writer.write_all(url_header.as_bytes())?;
     let contact = format!("!contact: {}\n", &config.helpdesk_address);
     standard_gaf_writer.write_all(contact.as_bytes())?;
+
+    write!(comments_gaf_writer, "{}",
+           "DB	DB_object_ID	DB_Object_Symbol	Qualifier	GO_ID	DB:Reference	Evidence_Code	With_or_From	Aspect	DB_Object_Name	DB_Object_Synonym	DB_Object_Type	Taxon	Date	Assigned_By	Annotation_Extension	Gene_Product_Form_ID")?;
 
     for gene_details in genes.values() {
         if gene_details.taxonid != load_org_taxonid {
@@ -149,17 +156,25 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         for aspect_name in &GO_ASPECT_NAMES {
             write_go_annotation_format(&mut pombase_gaf_writer, config,
                                        data_lookup, GpadGafWriteMode::PomBaseGaf,
+                                       ExportComments::NoExport,
                                        gene_details, transcripts,
                                        aspect_name)?;
             write_go_annotation_format(&mut extended_pombase_gaf_writer, config,
                                        data_lookup, GpadGafWriteMode::ExtendedPomBaseGaf,
+                                       ExportComments::NoExport,
                                        gene_details, transcripts,
                                        aspect_name)?;
             write_go_annotation_format(&mut standard_gaf_writer, config,
                                        data_lookup, GpadGafWriteMode::StandardGaf,
+                                       ExportComments::NoExport,
                                        gene_details, transcripts,
                                        aspect_name)?;
-        }
+            write_go_annotation_format(&mut comments_gaf_writer, config,
+                                       data_lookup, GpadGafWriteMode::StandardGaf,
+                                       ExportComments::Export,
+                                       gene_details, transcripts,
+                                       aspect_name)?;
+            }
     }
 
     Ok(())
@@ -586,6 +601,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                   data_lookup: &dyn DataLookup,
                                   write_mode: GpadGafWriteMode,
+                                  export_comments: ExportComments,
                                   gene_details: &GeneDetails,
                                   transcripts: &UniquenameTranscriptMap,
                                   cv_name: &FlexStr)
@@ -658,6 +674,21 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                         continue;
                     }
                 }
+
+                let reference_uniquename =
+                    annotation_detail.reference.clone()
+                    .unwrap_or_else(|| flex_str!(""));
+
+                if export_comments == ExportComments::Export {
+                    if let Some(reference_details) = data_lookup.get_reference(&reference_uniquename) {
+                        if !reference_details.is_canto_curated() {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                }
+
                 let go_id = &term_annotation.term;
                 let term_details_arc = data_lookup.get_term(go_id).clone();
                 let term_details_ref = term_details_arc.as_deref().clone().unwrap();
@@ -689,9 +720,6 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     }
                 };
 
-                let reference_uniquename =
-                    annotation_detail.reference.clone()
-                    .unwrap_or_else(|| flex_str!(""));
                 let assigned_by =
                     if let Some(ref assigned_by) = annotation_detail.assigned_by {
                         assigned_by.as_str()
@@ -745,7 +773,18 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     positive_annotation_count += 1;
                 }
 
-                let line = format!("{}\t{}\t{}{}\t{}\t{}{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t{}\t{}\n",
+                let comment_field =
+                    if export_comments == ExportComments::Export {
+                        if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
+                            submitter_comment
+                        } else {
+                            format!("\t")
+                        }
+                    } else {
+                        String::default()
+                    };
+
+                let line = format!("{}\t{}\t{}{}\t{}\t{}{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t{}\t{}{}\n",
                                    database_name,
                                    db_object_id,
                                    db_object_symbol,
@@ -776,7 +815,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                    date,
                                    assigned_by,
                                    annotation_extensions,
-                                   gene_product_form_id);
+                                   gene_product_form_id,
+                                   comment_field);
                 writer.write_all(line.as_bytes())?;
             }
         }
@@ -819,99 +859,4 @@ fn make_ncbi_taxon_id(config: &Config) -> FlexStr {
                             config.load_organism_taxonid.expect("internal error, no load_organism_taxonid"));
 
     taxon_str.into()
-}
-
-
-pub fn write_canto_go_comments_file(data_lookup: &dyn DataLookup,
-                                    config: &Config, genes: &UniquenameGeneMap,
-                                    output_dir: &str)
-     -> Result<(), io::Error>
-{
-
-    let file_name = format!("{}/canto_go_annotations_with_comments.tsv", output_dir);
-    let file = File::create(file_name)?;
-    let mut writer = BufWriter::new(&file);
-
-    let header = "#gene_systematic_id\tgene_name\taspect\tterm_id\tterm_name\treference\tevidence\textension\tcomment\n";
-    writer.write_all(header.as_bytes())?;
-
-    let empty_string = flex_str!("");
-
-    for gene_details in genes.values() {
-        let cv_annotations = &gene_details.cv_annotations;
-
-        for aspect in &GO_ASPECT_NAMES {
-            if let Some(term_annotations) = cv_annotations.get(aspect) {
-                for term_annotation in term_annotations {
-                    if term_annotation.is_not {
-                        continue;
-                    }
-                    for annotation_id in &term_annotation.annotations {
-                        let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
-                            .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
-
-                        let Some(ref reference_uniquename) = annotation_detail.reference
-                        else {
-                            continue;
-                        };
-
-                        let Some(reference_details) = data_lookup.get_reference(reference_uniquename)
-                        else {
-                            continue;
-                        };
-
-                        if !reference_details.is_canto_curated() {
-                            continue;
-                        }
-
-                        let gene_uniquename = &gene_details.uniquename;
-                        let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
-                        let Some(ref submitter_comment) = annotation_detail.submitter_comment
-                        else {
-                            continue;
-                        };
-
-                        // remove comments while handling nested brackets (in a hacky way)
-                        let submitter_comment =
-                            ANNOTATION_COMMENT_NESTED_BRACKETS_RE.replace_all(submitter_comment, "");
-                        let submitter_comment =
-                            ANNOTATION_COMMENT_RE.replace_all(&submitter_comment, "");
-                        let submitter_comment = submitter_comment.trim();
-
-                        let term_id = &term_annotation.term;
-
-                        let Some(term_details) = data_lookup.get_term(term_id)
-                        else {
-                            panic!("can't find term details for {}", term_id);
-                        };
-                        let term_name = term_details.name.as_str();
-
-                        let evidence = annotation_detail.evidence.as_ref()
-                            .unwrap_or(&empty_string);
-
-                        let extension_bits = &annotation_detail.extension;
-
-                        let extension =
-                            make_extension_string(config, data_lookup,
-                                                  &GpadGafWriteMode::PomBaseGaf,
-                                                  &extension_bits);
-
-                        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-                                           gene_uniquename,
-                                           gene_name,
-                                           aspect,
-                                           term_id,
-                                           term_name,
-                                           reference_uniquename,
-                                           evidence,
-                                           extension,
-                                           submitter_comment);
-                        writer.write_all(line.as_bytes())?;
-                    }
-                }
-            }
-        }
-    }
-
-    Ok(())
 }

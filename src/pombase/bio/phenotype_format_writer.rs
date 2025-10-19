@@ -5,13 +5,14 @@ use std::fs::File;
 
 use flexstr::{shared_fmt as flex_fmt, FlexStr, ToSharedStr};
 
+use crate::bio::{get_submitter_comment, ExportComments};
 use crate::web::config::*;
 use crate::data_types::*;
 
 use itertools::Itertools;
 
 use super::go_format_writer::GpadGafWriteMode;
-use crate::bio::util::{make_extension_string, ANNOTATION_COMMENT_NESTED_BRACKETS_RE, ANNOTATION_COMMENT_RE};
+use crate::bio::util::make_extension_string;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum FypoEvidenceType {
@@ -19,17 +20,11 @@ pub enum FypoEvidenceType {
     Eco,
 }
 
-#[derive(Debug, PartialEq, Eq)]
-pub enum FypoExportComments {
-    Export,
-    NoExport,
-}
-
 pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                         genotypes_map: &IdGenotypeMap,
                                         config: &Config,
                                         evidence_type: FypoEvidenceType,
-                                        export_comments: FypoExportComments,
+                                        export_comments: ExportComments,
                                         output_dir: &str)
   -> Result<(), io::Error>
 {
@@ -49,7 +44,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
 
 
     let phaf_file_name =
-        if export_comments == FypoExportComments::Export {
+        if export_comments == ExportComments::Export {
             format!("{}/canto_fypo_annotations_with_comments.tsv", output_dir)
         } else {
             let eco_ev_bit =
@@ -66,7 +61,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
     let mut phaf_writer = BufWriter::new(&phaf_file);
 
     let comment_header =
-        if export_comments == FypoExportComments::Export {
+        if export_comments == ExportComments::Export {
             "\tAnnotation comment"
         } else {
             ""
@@ -134,7 +129,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                             flex_fmt!("")
                         };
 
-                    if export_comments == FypoExportComments::Export {
+                    if export_comments == ExportComments::Export {
                         if let Some(reference_details) = data_lookup.get_reference(&reference_uniquename) {
                             if !reference_details.is_canto_curated() {
                                 continue;
@@ -145,7 +140,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                     }
 
                     let comment_field =
-                        if export_comments == FypoExportComments::Export {
+                        if export_comments == ExportComments::Export {
                             if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
                                 submitter_comment
                             } else {
@@ -433,28 +428,6 @@ fn annotation_severity(data_lookup: &dyn DataLookup, annotation_detail: &OntAnno
         })
         .collect::<Vec<_>>()
         .join(",")
-}
-
-fn get_submitter_comment(annotation_detail: &OntAnnotationDetail)
-   -> Option<String>
-{
-    let Some(ref submitter_comment) = annotation_detail.submitter_comment
-    else {
-        return None;
-    };
-
-    // remove comments while handling nested brackets (in a hacky way)
-    let submitter_comment =
-        ANNOTATION_COMMENT_NESTED_BRACKETS_RE.replace_all(submitter_comment, "");
-    let submitter_comment =
-        ANNOTATION_COMMENT_RE.replace_all(&submitter_comment, "");
-    let submitter_comment = submitter_comment.trim();
-
-    if submitter_comment.is_empty() {
-        None
-    } else {
-        Some(format!("\t{}", submitter_comment))
-    }
 }
 
 fn get_expressed_allele(genotype_details: &GenotypeDetails) -> Option<&ExpressedAllele> {
