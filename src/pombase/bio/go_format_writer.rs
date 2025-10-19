@@ -114,8 +114,11 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     let contact = format!("!contact: {}\n", &config.helpdesk_address);
     standard_gaf_writer.write_all(contact.as_bytes())?;
 
-    write!(comments_gaf_writer, "{}",
-           "DB	DB_object_ID	DB_Object_Symbol	Qualifier	GO_ID	DB:Reference	Evidence_Code	With_or_From	Aspect	DB_Object_Name	DB_Object_Synonym	DB_Object_Type	Taxon	Date	Assigned_By	Annotation_Extension	Gene_Product_Form_ID")?;
+    write!(comments_gaf_writer, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+           "db", "db_object_id", "db_object_symbol", "qualifier", "go_id", "db:reference",
+           "evidence_code", "with_or_from", "aspect", "db_object_name", "db_object_synonym",
+           "db_object_type", "taxon", "date", "assigned_by", "annotation_extension",
+           "gene_product_form_id", "comment_or_text_span\n")?;
 
     for gene_details in genes.values() {
         if gene_details.taxonid != load_org_taxonid {
