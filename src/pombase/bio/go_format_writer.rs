@@ -826,7 +826,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
     }
 
     if positive_annotation_count == 0 && config.file_exports.include_nd_lines &&
-       write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" {
+       write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" &&
+       export_comments == ExportComments::NoExport {
         let local: DateTime<Local> = Local::now();
         let date = local.format("%Y%m%d");
         let relation_name =
