@@ -58,7 +58,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                 } else {
                     ""
                 };
-            format!("{}/single_locus_phenotype_annotations_taxon_{}{}.phaf", output_dir,
+            format!("{}/single_locus_haploid_phenotype_annotations_taxon_{}{}.phaf", output_dir,
                     load_org_taxonid, eco_ev_bit)
         };
 
@@ -72,7 +72,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
             ""
         };
 
-    let header = format!("#Database name\tGene systematic ID\tFYPO ID\tAllele description\tExpression\tParental strain\tStrain name (background)\tGenotype description\tGene symbol\tAllele name\tAllele synonym\tAllele type\tEvidence\tCondition\tPenetrance\tSeverity\tExtension\tReference\tTaxon\tDate\tPloidy{}\n",
+    let header = format!("#Database name\tGene systematic ID\tFYPO ID\tAllele description\tExpression\tParental strain\tStrain name (background)\tGenotype description\tGene symbol\tAllele name\tAllele synonym\tAllele type\tEvidence\tCondition\tPenetrance\tSeverity\tExtension\tReference\tTaxon\tDate{}\n",
                          comment_header);
 
     phaf_writer.write_all(header.as_bytes())?;
@@ -88,8 +88,6 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
         else {
             continue 'GENOTYPES;
         };
-
-        let is_homozygous_diploid = genotype_details.loci[0].expressed_alleles.len() > 1;
 
         let locus_allele =
             data_lookup.get_allele(&expressed_allele.allele_uniquename)
@@ -190,7 +188,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                         annotation_detail.date.clone().unwrap_or_else(|| flex_fmt!("NO_DATE"));
 
                     let line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}{}\n",
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}{}\n",
                                 database_name,
                                 locus_gene.uniquename,
                                 term.termid,
@@ -211,7 +209,6 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                 reference_uniquename,
                                 load_org_taxonid,
                                 date,
-                                if is_homozygous_diploid { "homozygous diploid" } else { "haploid" },
                                 comment_field,
                         );
                     phaf_writer.write_all(line.as_bytes())?;
@@ -245,7 +242,7 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
     let dominant_file = File::create(dominant_file_name).expect("Unable to open file");
     let mut dominant_writer = BufWriter::new(&dominant_file);
 
-    let all_heterozygous_file_name = format!("{}/single_locus_heterozygous_diploid_annotations.tsv", output_dir);
+    let all_heterozygous_file_name = format!("{}/single_locus_diploid_phenotype_annotations.tsv", output_dir);
     let all_heterozygous_file = File::create(all_heterozygous_file_name).expect("Unable to open file");
     let mut all_heterozygous_writer = BufWriter::new(&all_heterozygous_file);
 
@@ -466,13 +463,11 @@ fn get_expressed_allele(genotype_details: &GenotypeDetails) -> Option<&Expressed
 
         let expressed_alleles = &locus.expressed_alleles;
 
-        for test_expressed_allele in &expressed_alleles[1..] {
-            if expressed_alleles[0] != *test_expressed_allele {
-                return None;
-            }
+        if expressed_alleles.len() == 1 {
+            Some(&expressed_alleles[0])
+        } else {
+            None
         }
-
-        Some(&expressed_alleles[0])
     } else {
         None
     }
@@ -492,10 +487,6 @@ fn get_heterozygous_alleles(genotype_details: &GenotypeDetails)
 
         let allele_1 = &expressed_alleles[0];
         let allele_2 = &expressed_alleles[1];
-
-        if allele_1.allele_uniquename == allele_2.allele_uniquename {
-            return None;
-        }
 
         Some((allele_1, allele_2))
     } else {
