@@ -1,6 +1,6 @@
 [package]
 name = "pombase-chado-json"
-version = "221.0.0"
+version = "221.1.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 edition = "2024"
 rust-version = "1.88"
@@ -11,6 +11,8 @@ name = "pombase"
 path = "src/pombase/lib.rs"
 
 [dependencies]
+#pombase-gocam-process = { path = "../pombase-gocam-process" }
+#pombase-gocam = { path = "../pombase-gocam" }
 pombase-gocam = "0.100.0"
 pombase-gocam-process = { git = "https://github.com/pombase/pombase-gocam-process.git", version = "0.118.0" }
 serde_with = "3.15"
