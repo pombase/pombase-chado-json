@@ -153,6 +153,7 @@ dependencies = [
  "bytes",
  "futures-core",
  "futures-util",
+ "headers",
  "http",
  "http-body",
  "http-body-util",
