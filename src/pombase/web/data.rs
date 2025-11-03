@@ -755,7 +755,7 @@ impl WebData {
                                        gene_uniquename, protein.molecular_weight,
                                        protein.isoelectric_point,
                                        protein.charge_at_ph7,
-                                       protein.sequence.len() - 1,
+                                       protein.sequence_length(),
                                        protein.codon_adaptation_index);
                     peptide_stats_writer.write_all(line.as_bytes())?;
 
