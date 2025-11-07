@@ -570,8 +570,10 @@ impl WebData {
         write!(rna_writer, "{}", header_with_product)?;
 
         let big_header =
-            "gene_systematic_id\tgene_systematic_id_with_prefix\tgene_name\tchromosome_id\tgene_product\tuniprot_id\tgene_type\tsynonyms\n";
+            "gene_systematic_id\tgene_systematic_id_with_prefix\tgene_name\tchromosome_id\tgene_product\texternal_id\tgene_type\tsynonyms\n";
         write!(all_ids_writer, "{}", big_header)?;
+
+        let empty_string = flex_str!("");
 
         for gene_details in self.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid {
@@ -625,15 +627,11 @@ impl WebData {
                 }
             }
 
-            let uniprot_id =
-                if let Some(gene_uniprot_id) = gene_details.uniprot_identifier.as_ref() {
-                    gene_uniprot_id
-                } else {
-                    ""
-                };
+            let external_id = gene_details.uniprot_identifier.as_ref()
+                .unwrap_or(gene_details.rnacentral_urs_identifier.as_ref().unwrap_or(&empty_string));
 
 
-            if uniprot_id.len() > 0 && gene_details.feature_type == "mRNA gene" {
+            if external_id.len() > 0 && gene_details.feature_type == "mRNA gene" {
                 let gene_name_or_dash =
                     if gene_name.len() == 0 {
                         "-"
@@ -641,7 +639,7 @@ impl WebData {
                         gene_name.as_str()
                     };
                 let uniprot_ids_line = format!("{}\t{}\t{}\n",
-                                               uniprot_id,
+                                               external_id,
                                                gene_details.uniquename,
                                                gene_name_or_dash);
                 uniprot_ids_writer.write_all(uniprot_ids_line.as_bytes())?;
@@ -668,7 +666,7 @@ impl WebData {
                                        gene_name,
                                        chromosome_name,
                                        gene_product,
-                                       uniprot_id,
+                                       external_id,
                                        gene_type,
                                        synonyms);
             all_ids_writer.write_all(all_ids_line.as_bytes())?;
