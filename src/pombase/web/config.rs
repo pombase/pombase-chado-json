@@ -532,6 +532,32 @@ impl Config {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Testimonial {
+    pub quote: String,
+    pub author: String,
+    pub location: String,
+}
+
+impl Testimonial {
+    pub fn read_restimonials(testimonials_filename: &str) -> Vec<Testimonial> {
+        let file = match File::open(testimonials_filename) {
+            Ok(file) => file,
+            Err(err) => {
+                panic!("Failed to read {}: {}\n", testimonials_filename, err)
+            }
+        };
+        let reader = BufReader::new(file);
+
+        match serde_json::from_reader(reader) {
+            Ok(config) => config,
+            Err(err) => {
+                panic!("failed to parse {}: {}", testimonials_filename, err)
+            },
+        }
+    }
+}
+
 pub const POMBASE_ANN_EXT_TERM_CV_NAME: &str = "PomBase annotation extension terms";
 pub const ANNOTATION_EXT_REL_PREFIX: &str = "annotation_extension_relation-";
 

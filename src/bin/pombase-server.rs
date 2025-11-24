@@ -19,10 +19,13 @@ use tower_http::trace::TraceLayer;
 use serde::Serialize;
 use serde_json::{json, Value};
 
+use rand::rng;
+use rand::seq::IteratorRandom;
+
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
                                          read_merged_gocam_model},
-              data_types::{GoCamId, GoCamSummary, ProteinViewType}};
+              data_types::{GoCamId, GoCamSummary, ProteinViewType}, web::config::Testimonial};
 
 use rusqlite::Connection;
 
@@ -102,7 +105,11 @@ struct AllState {
     // needed because this information isn't in the GO-CAM model JSON
     pro_term_to_gene_map: HashMap<String, String>,
 
-    config: Config
+    config: Config,
+
+
+    front_page_testimonals: Vec<Testimonial>,
+    full_testimonals: Vec<Testimonial>,
 }
 
 // If the path is a directory, return path+"/index.html".  Otherwise
@@ -789,6 +796,29 @@ async fn allele_complete(Path(q): Path<String>, State(all_state): State<Arc<AllS
     Json(completion_response)
 }
 
+async fn get_config_testimonials(Path((all_or_random, location)): Path<(String, String)>,
+                                 State(all_state): State<Arc<AllState>>)
+    -> Json<Vec<Testimonial>>
+{
+    let testimonials = if &location == "front" {
+        &all_state.front_page_testimonals
+    } else {
+        &all_state.full_testimonals
+    };
+
+    if &all_or_random == "all" {
+        Json(testimonials.clone())
+    } else {
+        let mut rng = rng();
+        if let Some(el) = testimonials.iter().choose(&mut rng) {
+            Json(vec![el.to_owned()])
+        } else {
+            Json(vec![])
+        }
+    }
+}
+
+
 // search for terms, refs or docs that match the query
 async fn solr_search(Path((scope, q)): Path<(String, String)>, State(all_state): State<Arc<AllState>>)
     -> Json<SolrSearchResponse>
@@ -920,6 +950,7 @@ async fn main() {
 
     opts.optflag("h", "help", "print this help message");
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
+    opts.optopt("", "testimonials", "JSON file of testimonials", "TESTIMONIALS_FILE");
     opts.optopt("b", "bind-address-and-port", "The address:port to bind to", "BIND_ADDRESS_AND_PORT");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
     opts.optopt("d", "api-maps-database", "SQLite3 database of API maps", "API_MAPS_DATABASE");
@@ -1018,6 +1049,28 @@ async fn main() {
         web_root_dir: web_root_dir.clone(),
     };
 
+    let testimonals =
+        if let Some(testimonials_filename) = matches.opt_str("testimonials") {
+            Testimonial::read_restimonials(&testimonials_filename)
+        } else {
+            vec![]
+        };
+
+    let mut front_page_testimonals = vec![];
+    let mut full_testimonals = vec![];
+
+    for testimonal in testimonals.into_iter() {
+        match testimonal.location.as_str() {
+          "FRONT" => front_page_testimonals.push(testimonal),
+          "FULL" => full_testimonals.push(testimonal),
+          "BOTH" => {
+            front_page_testimonals.push(testimonal.clone());
+            full_testimonals.push(testimonal);
+          },
+          _ => panic!("unknown location in testimonial: {}", testimonal.location),
+        }
+    }
+
     let all_state = AllState {
         query_exec,
         gocam_data,
@@ -1027,6 +1080,8 @@ async fn main() {
         gene_name_map,
         pro_term_to_gene_map,
         config,
+        front_page_testimonals,
+        full_testimonals,
     };
 
     println!("Starting server ...");
@@ -1063,12 +1118,13 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}/{retain_genes}", get(get_cytoscape_gocam_by_id_retain_genes))
+        .route("/api/v1/dataset/latest/config/testimonials/{all_or_random}/{location}", get(get_config_testimonials))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/{plot_size}/{genes}", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/{type}", get(get_stats))
         .route("/api/v1/dataset/latest/motif_search/{scope}/{q}/{max_gene_details}", get(motif_search))
         .route("/api/v1/dataset/latest/protein_features/{scope}/{gene_uniquename}", get(get_protein_features))
-        .route("/api/v1/dataset/latest/query/{q}", get(query_get))
         .route("/api/v1/dataset/latest/query", post(query_post))
+        .route("/api/v1/dataset/latest/query/{q}", get(query_get))
         .route("/api/v1/dataset/latest/search/{scope}/{q}", get(solr_search))
         .route("/api/v1/dataset/latest/summary/term/{id}", get(get_term_summary_by_id))
         .route("/ping", get(ping))

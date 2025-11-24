@@ -1340,6 +1340,7 @@ dependencies = [
  "percent-encoding",
  "pombase-gocam",
  "pombase-gocam-process",
+ "rand 0.9.2",
  "regex",
  "reqwest",
  "rusqlite",
