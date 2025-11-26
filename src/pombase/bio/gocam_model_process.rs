@@ -2,7 +2,8 @@ use std::{collections::{BTreeSet, HashMap, HashSet}, fs::{self, File}, io::Curso
 
 use anyhow::Result;
 
-use pombase_gocam::{parse_gocam_model, GoCamGeneIdentifier, GoCamModel, GoCamNodeOverlap, RemoveType};
+use pombase_gocam::{overlaps::GoCamNodeOverlap, parse_gocam_model, GoCamMergeAlgorithm,
+                    GoCamGeneIdentifier, GoCamModel, RemoveType};
 use tokio::io::AsyncReadExt as _;
 
 use crate::data_types::{GoCamId, GoCamSummary};
@@ -87,7 +88,8 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &HashMa
         })
         .collect();
 
-    let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
+    let merge_res = GoCamModel::merge_models("merged", "merged models", &models,
+                                             GoCamMergeAlgorithm::Activity);
 
     let mut remove_types = HashSet::new();
 
@@ -130,7 +132,14 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
         models.push(model);
     }
 
-    let merge_res = GoCamModel::merge_models("merged", "merged models", &models);
+    let merge_algorithm = if flags.contains("merge_by_chemical") {
+        GoCamMergeAlgorithm::Chemical
+    } else {
+        GoCamMergeAlgorithm::Activity
+    };
+
+    let merge_res = GoCamModel::merge_models("merged", "merged models", &models,
+                                             merge_algorithm);
     let mut remove_types = HashSet::new();
 
     if flags.contains("no_chemicals") {

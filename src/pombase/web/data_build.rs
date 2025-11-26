@@ -8,12 +8,13 @@ use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
 use std::usize;
 
+use pombase_gocam::overlaps::{find_activity_overlaps, GoCamNodeOverlap};
 use pombase_gocam_process::find_holes;
 use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
-use pombase_gocam::{GoCamModel, GoCamNodeOverlap, GoCamNode};
+use pombase_gocam::{GoCamModel, GoCamNode};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
@@ -8202,7 +8203,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let gocam_models = self.gocam_models.clone();
 
-        self.gocam_overlaps = GoCamModel::find_overlaps(&gocam_models);
+        self.gocam_overlaps = find_activity_overlaps(&gocam_models);
         self.gocam_holes = gocam_models.iter()
             .flat_map(|m| find_holes(m)).collect();
 

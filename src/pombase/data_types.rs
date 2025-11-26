@@ -5,7 +5,8 @@ use std::fmt;
 use std::num::NonZeroUsize;
 use std::sync::Arc;
 
-use pombase_gocam::{GoCamNodeOverlap, GoCamNode};
+use pombase_gocam::overlaps::GoCamNodeOverlap;
+use pombase_gocam::GoCamNode;
 use regex::Regex;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
