@@ -88,8 +88,14 @@ pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &HashMa
         })
         .collect();
 
+    let merge_algorithm = if flags.contains("merge_by_chemical") {
+        GoCamMergeAlgorithm::Chemical
+    } else {
+        GoCamMergeAlgorithm::Activity
+    };
+
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models,
-                                             GoCamMergeAlgorithm::Activity);
+                                             merge_algorithm);
 
     let mut remove_types = HashSet::new();
 
@@ -140,6 +146,7 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
 
     let merge_res = GoCamModel::merge_models("merged", "merged models", &models,
                                              merge_algorithm);
+
     let mut remove_types = HashSet::new();
 
     if flags.contains("no_chemicals") {
