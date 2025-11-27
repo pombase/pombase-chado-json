@@ -383,7 +383,6 @@ async fn get_model_summary_for_cytoscape_connected(Path(flags): Path<String>,
                                                    State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
-    eprintln!("FLAGS: {}", flags);
     let overlaps =
        if flags.contains("merge_by_chemical") {
          &all_state.query_exec.get_api_data().get_maps().gocam_overlaps_merge_by_chemical
