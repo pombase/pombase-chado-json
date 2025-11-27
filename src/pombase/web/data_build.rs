@@ -8,7 +8,7 @@ use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
 use std::usize;
 
-use pombase_gocam::overlaps::{find_activity_overlaps, GoCamNodeOverlap};
+use pombase_gocam::overlaps::{GoCamNodeOverlap, find_activity_overlaps, find_chemical_overlaps};
 use pombase_gocam_process::find_holes;
 use regex::Regex;
 
@@ -145,6 +145,8 @@ pub struct WebDataBuild<'a> {
     protein_complex_data: ProteinComplexData,
 
     gocam_overlaps: Vec<GoCamNodeOverlap>,
+    gocam_overlaps_merge_by_chemical: Vec<GoCamNodeOverlap>,
+
     gocam_holes: Vec<GoCamNode>,
 
     // transcripts with overlapping exons
@@ -990,6 +992,7 @@ impl <'a> WebDataBuild<'a> {
             gocam_summaries: HashMap::new(),
 
             gocam_overlaps: vec![],
+            gocam_overlaps_merge_by_chemical: vec![],
             gocam_holes: vec![],
 
             protein_complex_data: HashMap::new(),
@@ -2911,7 +2914,7 @@ phenotypes, so just the first part of this extension will be used:
             .push(interaction_annotation);
     }
 
-    fn add_gocam_model_gene(&mut self, gocam_model_feature: &Feature, 
+    fn add_gocam_model_gene(&mut self, gocam_model_feature: &Feature,
                             gene_feature: &Feature, rel_name: &FlexStr) {
         let gocam_id = &gocam_model_feature.uniquename;
         let Some(ref mut model_details) = self.gocam_summaries.get_mut(gocam_id)
@@ -5739,6 +5742,7 @@ phenotypes, so just the first part of this extension will be used:
             gocam_data_by_gene,
             gocam_data_by_gocam_id: self.gocam_summaries,
             gocam_overlaps: self.gocam_overlaps,
+            gocam_overlaps_merge_by_chemical: self.gocam_overlaps_merge_by_chemical,
             gocam_holes: self.gocam_holes,
             pro_term_to_gene_map: self.pro_term_to_gene,
 
@@ -8204,6 +8208,8 @@ phenotypes, so just the first part of this extension will be used:
         let gocam_models = self.gocam_models.clone();
 
         self.gocam_overlaps = find_activity_overlaps(&gocam_models);
+        self.gocam_overlaps_merge_by_chemical =
+            find_chemical_overlaps(&gocam_models);
         self.gocam_holes = gocam_models.iter()
             .flat_map(|m| find_holes(m)).collect();
 

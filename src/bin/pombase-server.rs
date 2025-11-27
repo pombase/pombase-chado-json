@@ -373,12 +373,23 @@ async fn get_model_summary_for_cytoscape_all(State(all_state): State<Arc<AllStat
 
     Json(model_connections.to_owned())
 }
-
-async fn get_model_summary_for_cytoscape_connected(State(all_state): State<Arc<AllState>>)
+async fn get_model_summary_for_cytoscape_connected_no_flags(State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
-    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
+    get_model_summary_for_cytoscape_connected(Path(String::default()), State(all_state)).await
+}
 
+async fn get_model_summary_for_cytoscape_connected(Path(flags): Path<String>,
+                                                   State(all_state): State<Arc<AllState>>)
+       -> impl IntoResponse
+{
+    eprintln!("FLAGS: {}", flags);
+    let overlaps =
+       if flags.contains("merge_by_chemical") {
+         &all_state.query_exec.get_api_data().get_maps().gocam_overlaps_merge_by_chemical
+       } else {
+         &all_state.query_exec.get_api_data().get_maps().gocam_overlaps
+       };
 
     let model_connections = model_connections_to_cytoscope(overlaps, &vec![]);
 
@@ -583,7 +594,7 @@ async fn rhea_widget(Path((view_type, rhea_id)): Path<(String, String)>,
     }
 }
 
-async fn get_gocam_summary(all_models: bool, all_state: Arc<AllState>)
+async fn get_gocam_summary(all_models: bool, flags_string: &str, all_state: Arc<AllState>)
    -> (StatusCode, Html<String>)
 {
     let url = format!("{}/gocam_connections/", all_state.config.server.django_url);
@@ -594,9 +605,13 @@ async fn get_gocam_summary(all_models: bool, all_state: Arc<AllState>)
         } else {
             "connected_only"
         };
+
+    let api_path = "/api/v1/dataset/latest/data/gocam/model_summary";
+
     let params = [("summary_type", summary_type),
                   ("model_view_path", "/gocam/pombase-view/docs"),
-                  ("api_path", "/api/v1/dataset/latest/data/gocam/model_summary")];
+                  ("flags", flags_string),
+                  ("api_path", api_path)];
 
     let client = reqwest::Client::new();
     let result = client.get(url).query(&params).send().await;
@@ -620,16 +635,30 @@ async fn get_gocam_summary(all_models: bool, all_state: Arc<AllState>)
     }
 }
 
-async fn get_gocam_summary_connected(State(all_state): State<Arc<AllState>>)
+async fn get_gocam_summary_connected_no_flags(State(all_state): State<Arc<AllState>>)
    -> (StatusCode, Html<String>)
 {
-    get_gocam_summary(false, all_state).await
+    get_gocam_summary_connected(Path(String::default()), State(all_state)).await
 }
 
-async fn get_gocam_summary_all(State(all_state): State<Arc<AllState>>)
+async fn get_gocam_summary_connected(Path(flags): Path<String>,
+                                     State(all_state): State<Arc<AllState>>)
    -> (StatusCode, Html<String>)
 {
-    get_gocam_summary(true, all_state).await
+    get_gocam_summary(false, &flags, all_state).await
+}
+
+async fn get_gocam_summary_all_no_flags(State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    get_gocam_summary_all(Path(String::default()), State(all_state)).await
+}
+
+async fn get_gocam_summary_all(Path(flags): Path<String>,
+                               State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    get_gocam_summary(true, &flags, all_state).await
 }
 
 /*
@@ -1094,8 +1123,10 @@ async fn main() {
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}", get(gocam_viz_view))
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}/{highlight_gene_ids}", get(gocam_viz_view_highlight))
         .route("/rhea_widget/{view_type}/{rhea_id}", get(rhea_widget))
-        .route("/gocam_summary/connected", get(get_gocam_summary_connected))
-        .route("/gocam_summary/all", get(get_gocam_summary_all))
+        .route("/gocam_summary/connected", get(get_gocam_summary_connected_no_flags))
+        .route("/gocam_summary/connected:{flags}", get(get_gocam_summary_connected))
+        .route("/gocam_summary/all", get(get_gocam_summary_all_no_flags))
+        .route("/gocam_summary/all:{flags}", get(get_gocam_summary_all))
         .route("/simple/gene/{id}", get(get_simple_gene))
         .route("/simple/genotype/{id}", get(get_simple_genotype))
         .route("/simple/reference/{id}", get(get_simple_reference))
@@ -1115,7 +1146,8 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/overlaps", get(get_gocam_overlaps))
         .route("/api/v1/dataset/latest/data/gocam/holes", get(get_gocam_holes))
         .route("/api/v1/dataset/latest/data/gocam/model_summary/all_models", get(get_model_summary_for_cytoscape_all))
-        .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected))
+        .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only:{flags}", get(get_model_summary_for_cytoscape_connected))
+        .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected_no_flags))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}/{retain_genes}", get(get_cytoscape_gocam_by_id_retain_genes))
         .route("/api/v1/dataset/latest/config/testimonials/{all_or_random}/{location}", get(get_config_testimonials))

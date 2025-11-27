@@ -2846,6 +2846,7 @@ pub struct APIMaps {
     pub gocam_data_by_gocam_id: HashMap<GoCamId, GoCamSummary>,
 
     pub gocam_overlaps: Vec<GoCamNodeOverlap>,
+    pub gocam_overlaps_merge_by_chemical: Vec<GoCamNodeOverlap>,
     pub gocam_holes: Vec<GoCamNode>,
 
     // for passing to GoCamModel::new()
