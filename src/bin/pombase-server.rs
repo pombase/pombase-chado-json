@@ -355,10 +355,23 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
     }
 }
 
-async fn get_model_summary_for_cytoscape_all(State(all_state): State<Arc<AllState>>)
+async fn get_model_summary_for_cytoscape_all_no_flags(State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
-    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
+    get_model_summary_for_cytoscape_all(Path(String::default()), State(all_state)).await
+}
+
+async fn get_model_summary_for_cytoscape_all(Path(flags): Path<String>,
+                                             State(all_state): State<Arc<AllState>>)
+       -> impl IntoResponse
+{
+    let api_maps = all_state.query_exec.get_api_data().get_maps();
+    let overlaps =
+       if flags.contains("merge_by_chemical") {
+         &api_maps.gocam_overlaps_merge_by_chemical
+       } else {
+         &api_maps.gocam_overlaps
+       };
 
     let all_gocam_data = &all_state.gocam_data;
 
@@ -383,11 +396,12 @@ async fn get_model_summary_for_cytoscape_connected(Path(flags): Path<String>,
                                                    State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
+    let api_maps = all_state.query_exec.get_api_data().get_maps();
     let overlaps =
        if flags.contains("merge_by_chemical") {
-         &all_state.query_exec.get_api_data().get_maps().gocam_overlaps_merge_by_chemical
+         &api_maps.gocam_overlaps_merge_by_chemical
        } else {
-         &all_state.query_exec.get_api_data().get_maps().gocam_overlaps
+         &api_maps.gocam_overlaps
        };
 
     let model_connections = model_connections_to_cytoscope(overlaps, &vec![]);
@@ -1144,7 +1158,8 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/gocam/by_id/{gocam_id}", get(get_gocam_data_by_id))
         .route("/api/v1/dataset/latest/data/gocam/overlaps", get(get_gocam_overlaps))
         .route("/api/v1/dataset/latest/data/gocam/holes", get(get_gocam_holes))
-        .route("/api/v1/dataset/latest/data/gocam/model_summary/all_models", get(get_model_summary_for_cytoscape_all))
+        .route("/api/v1/dataset/latest/data/gocam/model_summary/all_models:{flags}", get(get_model_summary_for_cytoscape_all))
+        .route("/api/v1/dataset/latest/data/gocam/model_summary/all_models", get(get_model_summary_for_cytoscape_all_no_flags))
         .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only:{flags}", get(get_model_summary_for_cytoscape_connected))
         .route("/api/v1/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected_no_flags))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
