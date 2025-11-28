@@ -155,7 +155,6 @@ pub struct WebDataBuild<'a> {
     pro_term_to_gene: HashMap<String, String>,
 }
 
-#[allow(clippy::type_complexity)]
 fn get_maps() ->
     (HashMap<FlexStr, ReferenceShortOptionMap>,
      HashMap<FlexStr, GeneShortOptionMap>,
