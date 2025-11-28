@@ -1,0 +1,11 @@
+name: "Run cargo clippy"
+
+on: [push, pull_request]
+
+jobs:
+  lint:
+    runs-on: self-hosted
+    name: Run cargo clippy
+    steps:
+      - uses: actions/checkout@v3
+      - uses: qernal/github-actions-rust-clippy@v2.0.2
