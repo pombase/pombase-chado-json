@@ -300,8 +300,8 @@ fn test_cmp_ont_annotation_detail() {
 
     let cmp_detail_with_genotypes =
         |id1: &i32, id2: &i32| {
-            let annotation1 = annotation_details_maps.get(id1).expect(&format!("{}", id1));
-            let annotation2 = annotation_details_maps.get(id2).expect(&format!("{}", id2));
+            let annotation1 = annotation_details_maps.get(id1).unwrap_or_else(|| panic!("{}", id1));
+            let annotation2 = annotation_details_maps.get(id2).unwrap_or_else(|| panic!("{}", id2));
             let cv_config = &config.cv_config_by_name_with_default(&flex_str!("molecular_function"));
             pombase::sort_annotations::cmp_ont_annotation_detail(cv_config,
                                       annotation1, annotation2,
@@ -311,7 +311,7 @@ fn test_cmp_ont_annotation_detail() {
     details_vec.sort_by(&cmp_detail_with_genotypes);
 
     let expected: Vec<String> =
-        vec!["atpase_dead_mutant-unknown-unknown-expression-not_assayed",
+        ["atpase_dead_mutant-unknown-unknown-expression-not_assayed",
         "c-terminal_truncation-1320-1516-partial_amino_acid_deletion-expression-not_assayed",
         "c-terminal_truncation_940-1516-940-1516-partial_amino_acid_deletion-expression-not_assayed",
         "cdc25-22-c532y-amino_acid_mutation-expression-not_assayed",
@@ -342,12 +342,12 @@ fn test_cmp_ont_annotation_detail() {
     let annotation_sort_results: Vec<(String, String)> =
         extension_details_vec.iter().map(|detail_id| {
             let detail = annotation_details_maps.get(detail_id).unwrap();
-            ((*detail).genes[0].to_string(),
-             (*detail).reference.clone().unwrap().to_string())
+            (detail.genes[0].to_string(),
+             detail.reference.clone().unwrap().to_string())
         }).collect();
 
     let expected_annotation_sort: Vec<(String, String)> =
-        vec![("SPBC11B10.09", "PMID:10921876"),
+        [("SPBC11B10.09", "PMID:10921876"),
              ("SPBC11B10.09", "PMID:10485849" /* has_direct_input(cut3) */),
              ("SPBC11B10.09", "PMID:7957097" /* has_direct_input(dis2) */),
              ("SPBC11B10.09", "PMID:19523829" /* has_direct_input(mde4), part_of(...), happens_during(...) */),
@@ -495,6 +495,7 @@ fn test_merge_ext_part_ranges() {
                                            vec!["SPAC977.09c".to_shared_str()]]));
 }
 
+#[allow(clippy::vec_init_then_push)]
 fn get_test_summary_rows() -> Vec<TermSummaryRow> {
     let mut rows = vec![];
 
@@ -685,7 +686,7 @@ fn test_collect_ext_summary_genes() {
 
     let collected_ext = rows.get(6).unwrap();
 
-    let collected_ext_ext_part_1 = collected_ext.extension.get(0).unwrap();
+    let collected_ext_ext_part_1 = collected_ext.extension.first().unwrap();
     let summary_genes_vec = vec![vec!["SPAC16.01".to_shared_str()],
                                  vec!["SPAC3G9.09c".to_shared_str()]];
     assert_eq!(collected_ext_ext_part_1.ext_range,

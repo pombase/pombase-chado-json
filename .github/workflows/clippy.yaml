@@ -1,11 +1,11 @@
-name: "Run cargo clippy"
+name: "Run clippy"
 
 on: [push, pull_request]
 
 jobs:
   lint:
-    runs-on: self-hosted
-    name: Run cargo clippy
+    runs-on: ubuntu-latest
+    name: Run clippy
     steps:
       - uses: actions/checkout@v3
       - uses: qernal/github-actions-rust-clippy@v2.0.2

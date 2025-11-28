@@ -10,7 +10,8 @@ use pombase::web::config::Config;
 use rusqlite::Connection;
 
 #[allow(dead_code)]
-pub fn setup_test_maps_database(mut conn: &mut Connection,
+#[allow(clippy::too_many_arguments)]
+pub fn setup_test_maps_database(conn: &mut Connection,
                                 terms: &TermIdDetailsMap,
                                 genes: &UniquenameGeneMap,
                                 alleles: &UniquenameAlleleMap,
@@ -20,7 +21,7 @@ pub fn setup_test_maps_database(mut conn: &mut Connection,
                                 termid_genotype_annotation: &HashMap<TermId, Vec<APIGenotypeAnnotation>>) {
     make_maps_database_tables(conn).unwrap();
 
-    store_maps_into_database(&mut conn, terms, genes, alleles, references,
+    store_maps_into_database(conn, terms, genes, alleles, references,
                              genotypes, annotation_details, termid_genotype_annotation).unwrap();
 }
 
@@ -54,7 +55,7 @@ pub fn make_one_genotype(display_uniquename: &str, name: Option<&str>,
         display_name: display_uniquename.into(),
         name: name.map(|s| s.to_shared_str()),
         taxonid: 4896,
-        loci: loci,
+        loci,
         ploidiness: Ploidiness::Haploid,
         comment: None,
         cv_annotations: HashMap::new(),
@@ -331,13 +332,13 @@ pub fn get_test_genotypes_map() -> DisplayUniquenameGenotypeMap {
 
 pub fn make_one_allele_details(uniquename: &str, name: &str, allele_type: &str,
                            description: Option<&str>, gene_uniquename: &str) -> AlleleDetails {
-     let ref gene = make_test_gene(gene_uniquename, None);
+     let gene = &make_test_gene(gene_uniquename, None);
      AlleleDetails::new(
-        uniquename.into(),
+        uniquename,
         &Some(name.into()),
         allele_type,
         &description.map(|s| s.to_shared_str()),
-        &vec![],
+        &[],
         false,
         gene.into(),
     )
@@ -456,7 +457,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         conditions.iter().map(|cond| (cond.clone(), None)).collect();
 
     OntAnnotationDetail {
-        id: id,
+        id,
         genes: vec![gene_uniquename.into()],
         transcript_uniquenames: vec![],
         genotype: maybe_genotype_uniquename.map(|s| s.to_shared_str()),
@@ -473,7 +474,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         gene_product_form_id: None,
         allele_promoters: vec![],
         qualifiers: vec![],
-        extension: extension,
+        extension,
         gene_ex_props: None,
         conditions,
         condition_details,
@@ -491,7 +492,7 @@ pub fn make_test_ext_part(rel_type_name: &str, rel_type_display_name: &str,
         rel_type_id: Some("RO:0000000".to_shared_str()),
         rel_type_name: rel_type_name.into(),
         rel_type_display_name: rel_type_display_name.into(),
-        ext_range: ext_range,
+        ext_range,
     }
 }
 

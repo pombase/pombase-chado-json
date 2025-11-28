@@ -59,17 +59,15 @@ fn make_test_feature(features: &mut Vec<Rc<Feature>>, organism: &Rc<ChadoOrganis
             "ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT\
 ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT\
 ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
+        } else if type_cvterm.name == "polypeptide" {
+            "MKTTMLMLVLLVCSYIHYVCAQIRFVTPATTDSMDFTAISFSWEESNTGIP"
         } else {
-            if type_cvterm.name == "polypeptide" {
-                "MKTTMLMLVLLVCSYIHYVCAQIRFVTPATTDSMDFTAISFSWEESNTGIP"
-            } else {
-                "ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
-            }
+            "ATGCTGATGCTAGATAGTGCATGTAGCTGTATTTATATCCGGATTAGCTACGTAGTGGCCTAATATATCGCAT"
         };
     let feature = Rc::new(Feature {
         organism: organism.clone(),
         uniquename: uniquename.to_shared_str(),
-        name: name,
+        name,
         is_obsolete: false,
         feat_type: type_cvterm.clone(),
         residues: Some(residues.into()),
@@ -86,7 +84,7 @@ fn make_test_featureprop(featureprops: &mut Vec<Rc<Featureprop>>, feature: &Rc<F
     let featureprop = Rc::new(Featureprop {
         feature: feature.clone(),
         prop_type: type_cvterm.clone(),
-        value: value,
+        value,
         featureprop_pubs: RefCell::new(vec![]),
     });
     feature.featureprops.borrow_mut().push(featureprop.clone());
@@ -572,29 +570,29 @@ fn get_test_raw() -> Raw {
     Raw {
         organisms: vec![pombe_organism],
         organismprops: vec![],
-        cvs: cvs,
+        cvs,
         cvprops: vec![],
-        dbs: dbs,
-        dbxrefs: dbxrefs,
-        cvterms: cvterms,
+        dbs,
+        dbxrefs,
+        cvterms,
         cvtermsynonyms: vec![],
         cvtermprops: vec![],
         cvtermpaths: vec![],
-        cvterm_relationships: cvterm_relationships,
+        cvterm_relationships,
         publications: vec![publication],
         publicationprops: vec![],
         synonyms: vec![],
-        features: features,
+        features,
         feature_synonyms: vec![],
         feature_pubs: vec![],
         feature_pubprops: vec![],
         feature_dbxrefs: vec![],
-        featureprops: featureprops,
+        featureprops,
         featurelocs: vec![],
-        feature_cvterms: feature_cvterms,
+        feature_cvterms,
         feature_cvtermprops: vec![],
-        feature_relationships: feature_relationships,
-        chadoprops: chadoprops,
+        feature_relationships,
+        chadoprops,
     }
 }
 
@@ -797,7 +795,7 @@ fn test_gene_details() {
     assert_eq!(par1_gene.name.unwrap(), "par1");
     assert_eq!(par1_gene.cv_annotations.len(), 2);
 
-    if par1_gene.cv_annotations.get(&flex_str!(POMBASE_ANN_EXT_TERM_CV_NAME)).is_some() {
+    if par1_gene.cv_annotations.contains_key(&flex_str!(POMBASE_ANN_EXT_TERM_CV_NAME)) {
         panic!("extension cv shouldn't be in the annotations");
     }
 
@@ -811,10 +809,10 @@ fn test_gene_details() {
     assert_eq!(transit_peptide_range.end, 24);
 
     assert_eq!(par1_gene.binding_sites.len(), 2);
-    assert_eq!(par1_gene.binding_sites.iter().next().unwrap().range.end, 90);
+    assert_eq!(par1_gene.binding_sites.first().unwrap().range.end, 90);
     assert_eq!(par1_gene.active_sites.len(), 1);
-    assert_eq!(par1_gene.active_sites.iter().next().unwrap().range.end, 159);
-    assert_eq!(par1_gene.active_sites.iter().next().unwrap().range.end, 159);
+    assert_eq!(par1_gene.active_sites.first().unwrap().range.end, 159);
+    assert_eq!(par1_gene.active_sites.first().unwrap().range.end, 159);
 
     assert_eq!(par1_gene.beta_strands.len(), 1);
     assert_eq!(par1_gene.helices.len(), 2);
@@ -925,11 +923,11 @@ fn test_collect_duplicated_relations() {
     pombase::web::cv_summary::collect_duplicated_relations(&mut ext);
 
     assert_eq!(ext.len(), 3);
-    assert_eq!(ext.get(0).unwrap().rel_type_name, "some_rel");
+    assert_eq!(ext.first().unwrap().rel_type_name, "some_rel");
     let ext_part_1 = ext.get(1).unwrap();
     assert_eq!(ext_part_1.rel_type_name, "has_input");
     if let ExtRange::SummaryGenes(summary_genes) = ext_part_1.ext_range.clone() {
-        assert_eq!(summary_genes.get(0).unwrap(),
+        assert_eq!(summary_genes.first().unwrap(),
                    &vec![flex_str!("SPAC3G9.09c"),
                          flex_str!("SPAC16.01")]);
     } else {
