@@ -6,7 +6,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
-use std::usize;
 
 use pombase_gocam::overlaps::{GoCamNodeOverlap, find_activity_overlaps, find_chemical_overlaps};
 use pombase_gocam_process::find_holes;
@@ -175,13 +174,11 @@ fn get_feat_rel_expression_and_promoter(feature: &Feature,
    -> (Option<FlexStr>, Option<FlexStr>)
 {
     for feature_prop in feature.featureprops.borrow().iter() {
-        if feature_prop.prop_type.name == "allele_type" {
-            if let Some(ref value) = feature_prop.value {
-                if value == "deletion" {
+        if feature_prop.prop_type.name == "allele_type"
+            && let Some(ref value) = feature_prop.value
+                && value == "deletion" {
                     return (Some("Null".into()), None);
                 }
-            }
-        }
     }
 
     let mut maybe_expression = None;
@@ -311,7 +308,7 @@ fn make_phase(feature_loc: &Featureloc) -> Option<Phase> {
 fn make_location(chromosome_map: &ChrNameDetailsMap,
                  feat: &Feature) -> Option<ChromosomeLocation> {
     let feature_locs = feat.featurelocs.borrow();
-    match feature_locs.get(0) {
+    match feature_locs.first() {
         Some(feature_loc) => {
             let start_pos =
                 if feature_loc.fmin + 1 >= 1 {
@@ -564,12 +561,10 @@ fn make_recently_added(references_map: &UniquenameReferenceMap,
                     } else {
                         Ordering::Less
                     }
+                } else if ref2.canto_added_date.is_some() {
+                    Ordering::Greater
                 } else {
-                    if ref2.canto_added_date.is_some() {
-                        Ordering::Greater
-                    } else {
-                        Ordering::Equal
-                    }
+                    Ordering::Equal
                 }
             };
 
@@ -693,17 +688,15 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
             if overlap <= 0 {
                 if overlap == 0 && (prev_part.feature_type != FeatureType::Exon || part.feature_type != FeatureType::Exon) {
                     // no gap between coding exon and 5'/3' UTR
+                } else if overlap == -1 || overlap == -2 || overlap == -3 {
+                    // Probably a overlap that represents a frameshift in the reference.
+                    // We'll check later for "warning, frameshifted".
+                    // See:
+                    // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
+                    maybe_frameshift_pos = Some(intron_start);
                 } else {
-                    if overlap == -1 || overlap == -2 || overlap == -3 {
-                        // Probably a overlap that represents a frameshift in the reference.
-                        // We'll check later for "warning, frameshifted".
-                        // See:
-                        // https://github.com/pombase/curation/issues/1453#issuecomment-303214177
-                        maybe_frameshift_pos = Some(intron_start);
-                    } else {
-                        println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
-                                 transcript_uniquename);
-                    }
+                    println!("no gap between exons at {}..{} in {}", intron_start, intron_end,
+                             transcript_uniquename);
                 }
             } else {
 
@@ -721,12 +714,10 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     if prev_part.feature_type == FeatureType::Exon &&
                     part.feature_type == FeatureType::Exon {
                         FeatureType::CdsIntron
+                    } else if prev_part.feature_type == FeatureType::FivePrimeUtr {
+                        FeatureType::FivePrimeUtrIntron
                     } else {
-                        if prev_part.feature_type == FeatureType::FivePrimeUtr {
-                            FeatureType::FivePrimeUtrIntron
-                        } else {
-                            FeatureType::ThreePrimeUtrIntron
-                        }
+                        FeatureType::ThreePrimeUtrIntron
                     };
                 maybe_new_intron = Some(FeatureShort {
                     feature_type: intron_type,
@@ -801,20 +792,16 @@ fn validate_transcript_parts(transcript_uniquename: &FlexStr, parts: &[FeatureSh
                 }
 
                 break;
-            } else {
-                if part.location.strand == Strand::Forward {
-                    if part.feature_type != FeatureType::FivePrimeUtr {
-                        println!("{:?}", parts);
-                        panic!("wrong feature type '{}' before exons in {}",
-                               part.feature_type, transcript_uniquename);
-                    }
-                } else {
-                    if part.feature_type != FeatureType::ThreePrimeUtr {
-                        println!("{:?}", parts);
-                        panic!("wrong feature type '{}' after exons in {}",
-                               part.feature_type, transcript_uniquename);
-                    }
+            } else if part.location.strand == Strand::Forward {
+                if part.feature_type != FeatureType::FivePrimeUtr {
+                    println!("{:?}", parts);
+                    panic!("wrong feature type '{}' before exons in {}",
+                           part.feature_type, transcript_uniquename);
                 }
+            } else if part.feature_type != FeatureType::ThreePrimeUtr {
+                println!("{:?}", parts);
+                panic!("wrong feature type '{}' after exons in {}",
+                       part.feature_type, transcript_uniquename);
             }
         }
     }
@@ -836,18 +823,14 @@ fn validate_transcript_parts(transcript_uniquename: &FlexStr, parts: &[FeatureSh
                 }
 
                 break;
-            } else {
-                if part.location.strand == Strand::Forward {
-                    if part.feature_type != FeatureType::ThreePrimeUtr {
-                        panic!("wrong feature type '{}' before exons in {}",
-                               part.feature_type, transcript_uniquename);
-                    }
-                } else {
-                    if part.feature_type != FeatureType::FivePrimeUtr {
-                        panic!("wrong feature type '{}' after exons in {}",
-                               part.feature_type, transcript_uniquename);
-                    }
+            } else if part.location.strand == Strand::Forward {
+                if part.feature_type != FeatureType::ThreePrimeUtr {
+                    panic!("wrong feature type '{}' before exons in {}",
+                           part.feature_type, transcript_uniquename);
                 }
+            } else if part.feature_type != FeatureType::FivePrimeUtr {
+                panic!("wrong feature type '{}' after exons in {}",
+                       part.feature_type, transcript_uniquename);
             }
         }
     }
@@ -859,7 +842,7 @@ fn set_has_protein_features(genes: &mut UniquenameGeneMap, protein_view_data: &H
             let mut has_protein_features = false;
 
             for track in &protein_feature_data.tracks {
-                if track.features.len() > 0 {
+                if !track.features.is_empty() {
                     has_protein_features = true;
                     break;
                 }
@@ -907,7 +890,10 @@ fn get_cumulative_annotation_type_counts(annotation_type_counts: StatsIntegerTab
     cumulative_counts
 }
 
+type CuratedStats =(Vec<(DateString, Vec<usize>)>, Vec<(DateString, Vec<usize>)>);
+
 impl <'a> WebDataBuild<'a> {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(raw: &'a Raw,
                domain_data: DomainData,
                uniprot_data: Option<UniProtDataMap>,
@@ -1007,14 +993,13 @@ impl <'a> WebDataBuild<'a> {
                        seen_references: &mut HashMap<FlexStr, ReferenceShortOptionMap>,
                        identifier: &FlexStr,
                        maybe_reference_uniquename: &Option<ReferenceUniquename>) {
-        if let Some(reference_uniquename) = maybe_reference_uniquename {
-            if reference_uniquename != "null" {
+        if let Some(reference_uniquename) = maybe_reference_uniquename
+            && reference_uniquename != "null" {
                 seen_references
                     .entry(identifier.into())
-                    .or_insert_with(HashMap::new)
+                    .or_default()
                     .insert(reference_uniquename.clone(), None);
             }
-        }
     }
 
 
@@ -1027,7 +1012,7 @@ impl <'a> WebDataBuild<'a> {
         }
         seen_genes
             .entry(identifier.clone())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(other_gene_uniquename.clone(), None);
     }
 
@@ -1049,7 +1034,7 @@ impl <'a> WebDataBuild<'a> {
 
         seen_genotypes
             .entry(identifier.clone())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(genotype_uniquename.clone(), genotype_short);
     }
 
@@ -1079,7 +1064,7 @@ impl <'a> WebDataBuild<'a> {
             self.add_gene_to_hash(seen_genes, identifier, allele_gene_uniquename);
             seen_alleles
                 .entry(identifier.clone())
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .insert(allele_uniquename.clone(), allele_short.clone());
         }
         allele_short
@@ -1093,7 +1078,7 @@ impl <'a> WebDataBuild<'a> {
         if let Some(transcript_details) = self.transcripts.get(transcript_uniquename) {
             seen_transcripts
                 .entry(identifier.clone())
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .insert(transcript_uniquename.clone(), None);
             self.add_gene_to_hash(seen_genes, identifier,
                                   &transcript_details.gene_uniquename);
@@ -1109,7 +1094,7 @@ impl <'a> WebDataBuild<'a> {
                         other_termid: &TermId) {
         seen_terms
             .entry(identifier.clone())
-            .or_insert_with(HashMap::new)
+            .or_default()
             .insert(other_termid.clone(), None);
     }
 
@@ -1238,16 +1223,15 @@ impl <'a> WebDataBuild<'a> {
         let mut disordered_percent = 0;
         let mut low_complexity_percent = 0;
 
-        if let Some(ref transcript) = transcript_details.get(0) {
-            if let Some(ref protein) = transcript.protein {
+        if let Some(transcript) = transcript_details.first()
+            && let Some(ref protein) = transcript.protein {
                 coiled_coil_percent =
                     100usize * gene_details.coiled_coil_aa_count() / protein.sequence_length();
                 disordered_percent =
                     100usize * gene_details.disordered_aa_count() / protein.sequence_length();
                 low_complexity_percent =
                     100usize * gene_details.low_complexity_aa_count() / protein.sequence_length();
-            }
-        };
+            };
 
         APIGeneSummary {
             uniquename: gene_details.uniquename.clone(),
@@ -1380,7 +1364,7 @@ phenotypes, so just the first part of this extension will be used:
             return vec![];
         }
 
-        let inner = ext.get(0).unwrap();
+        let inner = ext.first().unwrap();
 
         if inner.is_empty() {
             return vec![];
@@ -1506,7 +1490,7 @@ phenotypes, so just the first part of this extension will be used:
             if let (Some(termid), Some(ext)) =
                 (&rescued_phenotype_termid, &rescued_phenotype_extension_value)
             {
-                let ext = self.parse_extension_prop(&termid, ext);
+                let ext = self.parse_extension_prop(termid, ext);
                 // See: https://github.com/pombase/pombase-chado/issues/1114
                 filter_interaction_extension(ext)
             } else {
@@ -1548,7 +1532,7 @@ phenotypes, so just the first part of this extension will be used:
 
         self.genetic_interaction_annotations
             .entry(interaction_key)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(interaction_annotation);
     }
 
@@ -1600,8 +1584,8 @@ phenotypes, so just the first part of this extension will be used:
         let mut extra_genes = vec![];
         for feat_pub in publication.feature_publications.borrow().iter() {
             for prop in feat_pub.feature_pubprops.borrow().iter() {
-                if prop.prop_type.name == "feature_pub_source" {
-                    if let Some(ref prop_value) = prop.value {
+                if prop.prop_type.name == "feature_pub_source"
+                    && let Some(ref prop_value) = prop.value {
                         let feature = &feat_pub.feature;
                         if feature.feat_type.name == "gene" {
                             let gene_uniquename = feature.uniquename.clone();
@@ -1612,7 +1596,6 @@ phenotypes, so just the first part of this extension will be used:
                             }
                         }
                     }
-                }
             }
         }
         (pubmed_keyword_genes, extra_genes)
@@ -1625,6 +1608,10 @@ phenotypes, so just the first part of this extension will be used:
                     .unwrap_or_else(|_| panic!("failed to parse {} pupprop: {}", prop_type, value));
                 curator
             };
+
+        let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
+        let publication_date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
+        let approved_date_re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
 
         for rc_publication in &self.raw.publications {
             let reference_uniquename = &rc_publication.uniquename;
@@ -1724,7 +1711,6 @@ phenotypes, so just the first part of this extension will be used:
 
             if let Some(authors) = pubmed_authors.clone() {
                 if authors.contains(',') {
-                    let author_re = Regex::new(r"^(?P<f>[^,]+),.*$").unwrap();
                     let replaced: String =
                         author_re.replace_all(&authors, "$f et al.").into();
                     authors_abbrev = Some(replaced.to_shared_str());
@@ -1734,8 +1720,7 @@ phenotypes, so just the first part of this extension will be used:
             }
 
             if let Some(publication_date) = pubmed_publication_date.clone() {
-                let date_re = Regex::new(r"^(.* )?(?P<y>\d\d\d\d)$").unwrap();
-                publication_year = Some(date_re.replace_all(&publication_date, "$y").to_shared_str());
+                publication_year = Some(publication_date_re.replace_all(&publication_date, "$y").to_shared_str());
             }
 
             let mut approved_date = canto_first_approved_date.clone();
@@ -1745,18 +1730,12 @@ phenotypes, so just the first part of this extension will be used:
             }
 
             approved_date =
-                if let Some(date) = approved_date {
-                    let re = Regex::new(r"^(?P<date>\d\d\d\d-\d\d-\d\d).*").unwrap();
-                    Some(re.replace_all(&date, "$date").to_shared_str())
-                } else {
-                    None
-                };
+                approved_date.map(|date| approved_date_re.replace_all(&date, "$date").to_shared_str());
 
-            if let Some(ref canto_annotation_status) = canto_annotation_status {
-                if canto_annotation_status != "APPROVED" {
+            if let Some(ref canto_annotation_status) = canto_annotation_status
+                && canto_annotation_status != "APPROVED" {
                     approved_date = None;
                 }
-            }
 
             let authors = pubmed_authors.or(non_pubmed_authors);
 
@@ -1764,10 +1743,8 @@ phenotypes, so just the first part of this extension will be used:
               if annotation_curator.community_curator {
                 canto_curator_name = Some(annotation_curator.name.clone());
                 canto_curator_role = flex_str!("community");
-              } else {
-                if canto_curator_name.is_none() {
-                  canto_curator_name = Some(annotation_curator.name.clone());
-                }
+              } else if canto_curator_name.is_none() {
+                canto_curator_name = Some(annotation_curator.name.clone());
               }
             }
 
@@ -1778,12 +1755,11 @@ phenotypes, so just the first part of this extension will be used:
               }
             }
 
-            if let Some(first_curator) = annotation_file_curators.get(0) {
-              if file_curator_name.is_none() && file_curator_role.is_none() {
+            if let Some(first_curator) = annotation_file_curators.first()
+              && file_curator_name.is_none() && file_curator_role.is_none() {
                 file_curator_name = Some(first_curator.name.clone());
                 file_curator_role = Some(self.config.database_name.clone());
               }
-            }
 
             let (pubmed_keyword_genes, extra_genes) =
                 self.get_extra_gene_pubs(rc_publication);
@@ -1888,7 +1864,7 @@ phenotypes, so just the first part of this extension will be used:
 
                         let genotype_uniquename = object_uniquename;
                         let genotype_entry = self.loci_of_genotypes.entry(genotype_uniquename.clone());
-                        let locus_map = genotype_entry.or_insert_with(HashMap::new);
+                        let locus_map = genotype_entry.or_default();
 
                         let genotype_locus =
                             locus_map.entry(genotype_locus_identifier)
@@ -1899,7 +1875,7 @@ phenotypes, so just the first part of this extension will be used:
                         genotype_locus.expressed_alleles.push(allele_and_expression);
 
                         self.genotypes_of_alleles.entry(allele_uniquename.clone())
-                           .or_insert_with(HashSet::new)
+                           .or_default()
                            .insert(genotype_uniquename.clone());
 
                         continue;
@@ -1908,12 +1884,12 @@ phenotypes, so just the first part of this extension will be used:
             if TRANSCRIPT_PART_TYPES.contains(&subject_type_name.as_str()) {
                 let entry = self.parts_of_transcripts.entry(object_uniquename.clone());
                 let part = make_feature_short(&self.chromosomes, &feature_rel.subject);
-                entry.or_insert_with(Vec::new).push(part);
+                entry.or_default().push(part);
             }
 
             if subject_type_name == "gene" && object_type_name == "protein-containing complex" {
                 let entry = self.genes_of_complexes.entry(object_uniquename.clone());
-                entry.or_insert_with(HashSet::new).insert(subject_uniquename.clone());
+                entry.or_default().insert(subject_uniquename.clone());
             }
 
             if object_type_name == "genotype_interaction" {
@@ -1958,11 +1934,10 @@ phenotypes, so just the first part of this extension will be used:
 
         let maybe_location = make_location(&self.chromosomes, feat);
 
-        if let Some(ref location) = maybe_location {
-            if let Some(ref mut chr) = self.chromosomes.get_mut(&location.chromosome_name) {
+        if let Some(ref location) = maybe_location
+            && let Some(ref mut chr) = self.chromosomes.get_mut(&location.chromosome_name) {
                 chr.gene_uniquenames.push(feat.uniquename.clone());
             }
-        }
 
         let organism = make_organism(&feat.organism);
         let dbxrefs = self.get_feature_dbxrefs(feat);
@@ -2270,21 +2245,19 @@ phenotypes, so just the first part of this extension will be used:
 
                 if cds_end == 0 {
                     (None, None)
-                } else {
-                    if let Some(mrna_location) = feat.featurelocs.borrow().get(0) {
-                        let first_part_loc = &parts[0].location;
+                } else if let Some(mrna_location) = feat.featurelocs.borrow().first() {
+                    let first_part_loc = &parts[0].location;
 
-                        (NonZeroUsize::new((cds_end + 1).saturating_sub(cds_start)),
-                         Some(ChromosomeLocation {
-                              chromosome_name: first_part_loc.chromosome_name.clone(),
-                              start_pos: cds_start,
-                              end_pos: cds_end,
-                              strand: first_part_loc.strand,
-                              phase: make_phase(mrna_location),
-                          }))
-                    } else {
-                        (None, None)
-                    }
+                    (NonZeroUsize::new((cds_end + 1).saturating_sub(cds_start)),
+                     Some(ChromosomeLocation {
+                          chromosome_name: first_part_loc.chromosome_name.clone(),
+                          start_pos: cds_start,
+                          end_pos: cds_end,
+                          strand: first_part_loc.strand,
+                          phase: make_phase(mrna_location),
+                      }))
+                } else {
+                    (None, None)
                 }
             } else {
                 let rna_length =
@@ -2364,16 +2337,14 @@ phenotypes, so just the first part of this extension will be used:
             };
 
             for prop in feat.featureprops.borrow().iter() {
-                if prop.prop_type.name == "molecular_weight" {
-                    if let Some(value) = parse_prop_as_f32(&prop.value) {
+                if prop.prop_type.name == "molecular_weight"
+                    && let Some(value) = parse_prop_as_f32(&prop.value) {
                         molecular_weight = Some(value / 1000.0);
                     }
-                }
-                if prop.prop_type.name == "average_residue_weight" {
-                    if let Some(value) = parse_prop_as_f32(&prop.value) {
+                if prop.prop_type.name == "average_residue_weight"
+                    && let Some(value) = parse_prop_as_f32(&prop.value) {
                         average_residue_weight = Some(value / 1000.0);
                     }
-                }
                 if prop.prop_type.name == "charge_at_ph7" {
                     charge_at_ph7 = parse_prop_as_f32(&prop.value);
                 }
@@ -2519,12 +2490,9 @@ phenotypes, so just the first part of this extension will be used:
                     self.genotype_backgrounds.insert(feat.uniquename.clone(),
                                                      background.clone());
                 }
-            } else {
-                if prop.prop_type.name == "genotype_comment" {
-                    if let Some(ref comment_ref) = prop.value {
-                        comment = Some(comment_ref.to_shared_str());
-                    }
-                }
+            } else if prop.prop_type.name == "genotype_comment"
+            && let Some(ref comment_ref) = prop.value {
+                comment = Some(comment_ref.to_shared_str());
             }
         }
 
@@ -2568,7 +2536,7 @@ phenotypes, so just the first part of this extension will be used:
                     let comment = CommentAndReference {
                       comment: comment.clone(),
                       reference:
-                         prop.featureprop_pubs.borrow().get(0)
+                         prop.featureprop_pubs.borrow().first()
                              .map(|publication| publication.uniquename.clone()),
                     };
                     comments.push(comment);
@@ -2612,13 +2580,12 @@ phenotypes, so just the first part of this extension will be used:
             if prop.prop_type.name == "gocam_date" {
                 model.date = prop.value.clone();
             }
-            if prop.prop_type.name == "gocam_title_termid" {
-                if let Some(ref title_termid) = prop.value {
+            if prop.prop_type.name == "gocam_title_termid"
+                && let Some(ref title_termid) = prop.value {
                     model.title_terms.insert(title_termid.clone());
                 }
-            }
-            if prop.prop_type.name == "gocam_contributor" {
-                if let Some(ref contributor_orcid) = prop.value {
+            if prop.prop_type.name == "gocam_contributor"
+                && let Some(ref contributor_orcid) = prop.value {
                     let Some(contributor_name) = self.orcid_name_map.get(contributor_orcid)
                     else {
                         panic!("no name found for ORCID for GO-CAM contributor {}", contributor_orcid);
@@ -2629,7 +2596,6 @@ phenotypes, so just the first part of this extension will be used:
                     };
                     model.contributors.push(orcid_and_name);
                 }
-            }
         }
 
         self.gocam_summaries.insert(gocam_id, model);
@@ -2665,7 +2631,7 @@ phenotypes, so just the first part of this extension will be used:
                 !HANDLED_FEATURE_TYPES.contains(&feat.feat_type.name.as_str())
             {
                 // for now, ignore features without locations
-                if feat.featurelocs.borrow().len() > 0 {
+                if !feat.featurelocs.borrow().is_empty() {
                     let feature_short = make_feature_short(&self.chromosomes, feat);
                     self.other_features.insert(feat.uniquename.clone(), feature_short);
                 }
@@ -2703,7 +2669,7 @@ phenotypes, so just the first part of this extension will be used:
             if self.is_interesting_parent(&object_termid, &rel_term_name) {
                 interesting_parents_by_termid
                     .entry(subject_termid.clone())
-                    .or_insert_with(HashSet::new)
+                    .or_default()
                     .insert(InterestingParent {
                         termid: object_termid,
                         rel_name: rel_term_name,
@@ -2807,17 +2773,15 @@ phenotypes, so just the first part of this extension will be used:
 
         for gene_details in self.genes.values() {
             // mRNA or pseudogenic_transcript
-            if let Some(ref transcript_so_termid) = gene_details.transcript_so_termid {
-                if transcript_so_termid == "SO:0000234" ||
-                    transcript_so_termid == "SO:0000516" {
-                    if let Some(ref location) = gene_details.location {
+            if let Some(ref transcript_so_termid) = gene_details.transcript_so_termid
+                && (transcript_so_termid == "SO:0000234" ||
+                    transcript_so_termid == "SO:0000516")
+                    && let Some(ref location) = gene_details.location {
                         genes_and_locs.push(GeneAndLoc {
                             gene_uniquename: gene_details.uniquename.clone(),
                             loc: location.clone(),
                         });
                     }
-                }
-            }
         }
 
         let cmp = |a: &GeneAndLoc, b: &GeneAndLoc| {
@@ -2835,11 +2799,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut nearby_genes: Vec<GeneShort> = vec![];
             if i > 0 {
                 let start_index =
-                    if i > GENE_NEIGHBOURHOOD_DISTANCE {
-                        i - GENE_NEIGHBOURHOOD_DISTANCE
-                    } else {
-                        0
-                    };
+                    i.saturating_sub(GENE_NEIGHBOURHOOD_DISTANCE);
 
                 for back_index in (start_index..i).rev() {
                     let back_gene_and_loc = &genes_and_locs[back_index];
@@ -2864,6 +2824,7 @@ phenotypes, so just the first part of this extension will be used:
                         i + GENE_NEIGHBOURHOOD_DISTANCE + 1
                     };
 
+                #[allow(clippy::needless_range_loop)]
                 for forward_index in i+1..end_index {
                     let forward_gene_and_loc = &genes_and_locs[forward_index];
 
@@ -2910,7 +2871,7 @@ phenotypes, so just the first part of this extension will be used:
 
         self.genetic_interaction_annotations
             .entry(interaction_key)
-            .or_insert_with(Vec::new)
+            .or_default()
             .push(interaction_annotation);
     }
 
@@ -2961,7 +2922,7 @@ phenotypes, so just the first part of this extension will be used:
                         let mut annotation_date = None;
 
                         let borrowed_publications = feature_rel.publications.borrow();
-                        let maybe_publication = borrowed_publications.get(0);
+                        let maybe_publication = borrowed_publications.first();
                         let maybe_reference_uniquename =
                             match maybe_publication {
                                 Some(publication) =>
@@ -2974,8 +2935,8 @@ phenotypes, so just the first part of this extension will be used:
                             };
 
                         for prop in feature_rel.feature_relationshipprops.borrow().iter() {
-                            if prop.prop_type.name == "evidence" {
-                                if let Some(ref evidence_long) = prop.value {
+                            if prop.prop_type.name == "evidence"
+                                && let Some(ref evidence_long) = prop.value {
                                     for (evidence_code, ev_details) in &self.config.evidence_types {
                                         if &ev_details.long == evidence_long {
                                             evidence = Some(evidence_code.clone());
@@ -2985,16 +2946,13 @@ phenotypes, so just the first part of this extension will be used:
                                         evidence = Some(evidence_long.clone());
                                     }
                                 }
-                            }
-                            if prop.prop_type.name == "is_inferred" {
-                                if let Some(is_inferred_value) = prop.value.clone() {
-                                    if is_inferred_value == "yes" {
+                            if prop.prop_type.name == "is_inferred"
+                                && let Some(is_inferred_value) = prop.value.clone()
+                                    && is_inferred_value == "yes" {
                                         is_inferred_interaction = true;
                                     }
-                                }
-                            }
-                            if prop.prop_type.name == "annotation_throughput_type" {
-                                if let Some(throughput_type) = prop.value.clone() {
+                            if prop.prop_type.name == "annotation_throughput_type"
+                                && let Some(throughput_type) = prop.value.clone() {
                                     throughput = Some(match throughput_type.as_ref() {
                                         "low throughput" => Throughput::LowThroughput,
                                         "high throughput" => Throughput::HighThroughput,
@@ -3005,26 +2963,22 @@ phenotypes, so just the first part of this extension will be used:
                                         }
                                     });
                                 }
-                            }
-                            if prop.prop_type.name == "interaction_note" {
-                                if let Some(interaction_note_value) = prop.value.clone() {
+                            if prop.prop_type.name == "interaction_note"
+                                && let Some(interaction_note_value) = prop.value.clone() {
                                     interaction_note = Some(interaction_note_value);
                                 }
-                            }
                             if prop.prop_type.name == "ortholog qualifier" ||
                                 prop.prop_type.name == "ortholog_qualifier" {
                                 ortholog_qualifier = prop.value.clone()
                             }
-                            if prop.prop_type.name == "source_database" {
-                                if let Some(source_database_value) = prop.value.clone() {
+                            if prop.prop_type.name == "source_database"
+                                && let Some(source_database_value) = prop.value.clone() {
                                     source_database = Some(source_database_value);
                                 }
-                            }
-                            if prop.prop_type.name == "date" {
-                                if let Some(date_value) = prop.value.clone() {
+                            if prop.prop_type.name == "date"
+                                && let Some(date_value) = prop.value.clone() {
                                     annotation_date = Some(date_value);
                                 }
-                            }
                         }
 
                         let evidence_clone = evidence.clone();
@@ -3101,8 +3055,8 @@ phenotypes, so just the first part of this extension will be used:
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                         qualifier: ortholog_qualifier.clone(),
                                     };
-                                if Some(gene_organism_taxonid) == self.config.load_organism_taxonid {
-                                    if let Some(ref_details) =
+                                if Some(gene_organism_taxonid) == self.config.load_organism_taxonid
+                                    && let Some(ref_details) =
                                         if let Some(ref reference_uniquename) = maybe_reference_uniquename {
                                             self.references.get_mut(reference_uniquename)
                                         } else {
@@ -3111,7 +3065,6 @@ phenotypes, so just the first part of this extension will be used:
                                     {
                                         ref_details.ortholog_annotations.push(ortholog_annotation.clone());
                                     }
-                                }
                                 let gene_details = self.genes.get_mut(subject_uniquename).unwrap();
                                 gene_details.ortholog_annotations.push(ortholog_annotation);
                             },
@@ -3131,14 +3084,12 @@ phenotypes, so just the first part of this extension will be used:
                                     } else {
                                         None
                                     }
-                                {
-                                    if self.config.load_organism_taxonid.is_some() &&
+                                    && (self.config.load_organism_taxonid.is_some() &&
                                         self.config.load_organism_taxonid.unwrap() == gene_details.taxonid ||
-                                        gene_organism_taxonid < other_gene_organism_taxonid
+                                        gene_organism_taxonid < other_gene_organism_taxonid)
                                     {
                                         ref_details.paralog_annotations.push(paralog_annotation);
                                     }
-                                }
                             }
                         }
 
@@ -3156,8 +3107,8 @@ phenotypes, so just the first part of this extension will be used:
                                         reference_uniquename: maybe_reference_uniquename.clone(),
                                         qualifier: ortholog_qualifier,
                                     };
-                                if Some(other_gene_organism_taxonid) == self.config.load_organism_taxonid {
-                                    if let Some(ref_details) =
+                                if Some(other_gene_organism_taxonid) == self.config.load_organism_taxonid
+                                    && let Some(ref_details) =
                                         if let Some(ref reference_uniquename) = maybe_reference_uniquename {
                                             self.references.get_mut(reference_uniquename)
                                         } else {
@@ -3166,7 +3117,6 @@ phenotypes, so just the first part of this extension will be used:
                                     {
                                         ref_details.ortholog_annotations.push(ortholog_annotation.clone());
                                     }
-                                }
                                 other_gene_details.ortholog_annotations.push(ortholog_annotation);
                             },
                             FeatureRelAnnotationType::Paralog => {
@@ -3184,14 +3134,12 @@ phenotypes, so just the first part of this extension will be used:
                                     } else {
                                         None
                                     }
-                                {
-                                    if self.config.load_organism_taxonid.is_some() &&
+                                    && (self.config.load_organism_taxonid.is_some() &&
                                         self.config.load_organism_taxonid.unwrap() == other_gene_details.taxonid ||
-                                        gene_organism_taxonid > other_gene_organism_taxonid
+                                        gene_organism_taxonid > other_gene_organism_taxonid)
                                     {
                                         ref_details.paralog_annotations.push(paralog_annotation);
                                     }
-                                }
                             },
                         }
                     }
@@ -3264,8 +3212,8 @@ phenotypes, so just the first part of this extension will be used:
                 ExtRange::GeneAndGeneProduct(GeneAndGeneProduct {
                      gene_uniquename: ref target_gene_uniquename, product: _
                 }) =>
-                if let Some(ext_config) = maybe_ext_config {
-                    if let Some(reciprocal_display_name) =
+                if let Some(ext_config) = maybe_ext_config
+                    && let Some(reciprocal_display_name) =
                         ext_config.reciprocal_display {
                             let (annotation_gene_uniquename, annotation_genotype_uniquename) =
                                 if genotype_uniquename.is_some() {
@@ -3285,8 +3233,7 @@ phenotypes, so just the first part of this extension will be used:
                                               date: date.clone(),
                                               evidence: evidence.clone(),
                                           }));
-                        }
-                },
+                        },
                 _ => (),
             }
         }
@@ -3330,16 +3277,12 @@ phenotypes, so just the first part of this extension will be used:
                         (&a_gene_details.name, &b_gene_details.name)
                     {
                         a_name.cmp(b_name)
+                    } else if a_gene_details.name.is_some() {
+                        Ordering::Less
+                    } else if b_gene_details.name.is_some() {
+                        Ordering::Greater
                     } else {
-                        if a_gene_details.name.is_some() {
-                            Ordering::Less
-                        } else {
-                            if b_gene_details.name.is_some() {
-                                Ordering::Greater
-                            } else {
-                                a_gene_details.uniquename.cmp(&b_gene_details.uniquename)
-                            }
-                        }
+                        a_gene_details.uniquename.cmp(&b_gene_details.uniquename)
                     }
                 } else {
                     rel_name_order
@@ -3360,12 +3303,11 @@ phenotypes, so just the first part of this extension will be used:
             let key = flex_fmt!("{}-{}", annotation.ontology_name, annotation.gene);
             let existing_rel = seen_gene_rels.get(&key);
 
-            if let Some(existing_rel) = existing_rel {
-                if *existing_rel > *rel_priority {
+            if let Some(existing_rel) = existing_rel
+                && *existing_rel > *rel_priority {
                     annotation.show_in_summary = false;
                     continue;
                 }
-            }
             seen_gene_rels.insert(key, *rel_priority);
         }
 
@@ -3394,13 +3336,13 @@ phenotypes, so just the first part of this extension will be used:
                         let new_annotations =
                             self.make_target_of_for_ext(&term_details.cv_name,
                                                         &term_details.termid,
-                                                        &annotation);
+                                                        annotation);
                         for (target_gene_uniquename, new_annotation) in new_annotations {
-                           if self.genes.get(&target_gene_uniquename).is_some() {
+                           if self.genes.contains_key(&target_gene_uniquename) {
                                if target_gene_uniquename != new_annotation.gene {
                                    target_of_annotations
                                        .entry(target_gene_uniquename.clone())
-                                       .or_insert_with(HashSet::new)
+                                       .or_default()
                                        .insert(new_annotation);
                                }
                            } else {
@@ -3475,12 +3417,10 @@ phenotypes, so just the first part of this extension will be used:
                                 *viable_termid == term_annotation.term {
                                     viable_conditions.insert(conditions_as_string,
                                                              term_annotation.term.clone());
-                                } else {
-                                    if interesting_parent_ids.contains(inviable_termid) ||
-                                        *inviable_termid == term_annotation.term {
-                                            inviable_conditions.insert(conditions_as_string,
-                                                                       term_annotation.term.clone());
-                                        }
+                                } else if interesting_parent_ids.contains(inviable_termid) ||
+                                *inviable_termid == term_annotation.term {
+                                    inviable_conditions.insert(conditions_as_string,
+                                                               term_annotation.term.clone());
                                 }
                         }
                     }
@@ -3489,32 +3429,30 @@ phenotypes, so just the first part of this extension will be used:
                         if !inviable_conditions.is_empty() {
                             new_status = DeletionViability::Inviable;
                         }
+                    } else if inviable_conditions.is_empty() {
+                        new_status = DeletionViability::Viable;
                     } else {
-                        if inviable_conditions.is_empty() {
-                            new_status = DeletionViability::Viable;
-                        } else {
-                            new_status = DeletionViability::DependsOnConditions;
+                        new_status = DeletionViability::DependsOnConditions;
 
-                            let viable_conditions_set: HashSet<FlexStr> =
-                                viable_conditions.keys().cloned().collect();
-                            let inviable_conditions_set: HashSet<FlexStr> =
-                                inviable_conditions.keys().cloned().collect();
+                        let viable_conditions_set: HashSet<FlexStr> =
+                            viable_conditions.keys().cloned().collect();
+                        let inviable_conditions_set: HashSet<FlexStr> =
+                            inviable_conditions.keys().cloned().collect();
 
-                            let intersecting_conditions =
-                                viable_conditions_set.intersection(&inviable_conditions_set);
-                            if intersecting_conditions.clone().count() > 0 {
-                                println!("{} is viable and inviable with", gene_uniquename);
-                                for cond in intersecting_conditions {
-                                    if cond.is_empty() {
-                                        println!("  no conditions");
-                                    } else {
-                                        println!("  conditions: {}", cond);
-                                    }
-                                    println!("   viable term: {}",
-                                             viable_conditions[cond]);
-                                    println!("   inviable term: {}",
-                                             inviable_conditions[cond]);
+                        let intersecting_conditions =
+                            viable_conditions_set.intersection(&inviable_conditions_set);
+                        if intersecting_conditions.clone().count() > 0 {
+                            println!("{} is viable and inviable with", gene_uniquename);
+                            for cond in intersecting_conditions {
+                                if cond.is_empty() {
+                                    println!("  no conditions");
+                                } else {
+                                    println!("  conditions: {}", cond);
                                 }
+                                println!("   viable term: {}",
+                                         viable_conditions[cond]);
+                                println!("   inviable term: {}",
+                                         inviable_conditions[cond]);
                             }
                         }
                     }
@@ -3551,11 +3489,10 @@ phenotypes, so just the first part of this extension will be used:
             if nucleosome_genes.contains(&gene_details.uniquename) {
                 gene_details.flags.insert(flex_str!("is_histone"));
             }
-            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
-                if gene_details.taxonid != load_organism_taxonid {
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid
+                && gene_details.taxonid != load_organism_taxonid {
                     gene_details.flags.insert(flex_str!("not_load_organism"));
                 }
-            }
         }
     }
 
@@ -3699,12 +3636,11 @@ phenotypes, so just the first part of this extension will be used:
                 continue 'GENE;
             }
 
-            if let Some(ref characterisation_status) = gene_details.characterisation_status {
-                if characterisation_status == "dubious" {
+            if let Some(ref characterisation_status) = gene_details.characterisation_status
+                && characterisation_status == "dubious" {
                     gene_details.taxonomic_distribution = Some(flex_str!("dubious"));
                     continue 'GENE;
                 }
-            }
 
             if gene_details.feature_type != "mRNA gene" {
                 gene_details.taxonomic_distribution = Some(flex_str!("not curated"));
@@ -3725,15 +3661,12 @@ phenotypes, so just the first part of this extension will be used:
 
                 let mut pombase_gene_id = None;
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                    match cvtermprop.prop_type.name.as_str() {
-                        "pombase_gene_id" => {
-                            pombase_gene_id = Some(cvtermprop.value.clone());
-                            let gene_for_map = format!("{}:{}", self.config.database_name,
-                                                       cvtermprop.value);
-                            pro_term_to_gene.insert(cvterm.termid().to_string(), gene_for_map);
-                        },
-                        _ => (),
-                  }
+                    if cvtermprop.prop_type.name.as_str() == "pombase_gene_id" {
+                        pombase_gene_id = Some(cvtermprop.value.clone());
+                        let gene_for_map = format!("{}:{}", self.config.database_name,
+                                                   cvtermprop.value);
+                        pro_term_to_gene.insert(cvterm.termid().to_string(), gene_for_map);
+                    }
                 }
 
                 let mut xrefs = HashMap::new();
@@ -3748,11 +3681,9 @@ phenotypes, so just the first part of this extension will be used:
                                     break;
                                 }
                             }
-                        } else {
-                            if term_xref_id_prop == "ACCESSION" {
-                                let dbxref: &Dbxref = cvterm.dbxref.borrow();
-                                maybe_xref_id = Some(dbxref.accession.clone());
-                            }
+                        } else if term_xref_id_prop == "ACCESSION" {
+                            let dbxref: &Dbxref = cvterm.dbxref.borrow();
+                            maybe_xref_id = Some(dbxref.accession.clone());
                         }
                     }
                     let mut maybe_xref_display_name = None;
@@ -3865,20 +3796,16 @@ phenotypes, so just the first part of this extension will be used:
                                 } else {
                                     panic!("unknown gene in promoter: {}", db_feature_uniquename);
                                 }
-                            } else {
-                                if self.genes.contains_key(&db_feature_uniquename) {
-                                    ExtRange::Gene(db_feature_uniquename.clone())
+                            } else if self.genes.contains_key(&db_feature_uniquename) {
+                                ExtRange::Gene(db_feature_uniquename.clone())
+                            } else if let Some(captures) = TRANSCRIPT_ID_RE.captures(db_feature_uniquename.as_ref()) {
+                                if self.genes.contains_key(&captures["gene"].to_shared_str()) {
+                                    ExtRange::Transcript(db_feature_uniquename.clone())
                                 } else {
-                                    if let Some(captures) = TRANSCRIPT_ID_RE.captures(db_feature_uniquename.as_ref()) {
-                                        if self.genes.contains_key(&captures["gene"].to_shared_str()) {
-                                            ExtRange::Transcript(db_feature_uniquename.clone())
-                                        } else {
-                                            panic!("unknown gene for transcript: {}", db_feature_uniquename);
-                                        }
-                                    } else {
-                                        panic!("can't find gene or transcript for: {}", db_feature_uniquename);
-                                    }
+                                    panic!("unknown gene for transcript: {}", db_feature_uniquename);
                                 }
+                            } else {
+                                panic!("can't find gene or transcript for: {}", db_feature_uniquename);
                             }
                         } else {
                             ExtRange::Misc(ext_range)
@@ -3893,7 +3820,7 @@ phenotypes, so just the first part of this extension will be used:
                                     self.term_ids_by_name.get(&ext_rel_name).cloned();
 
                                 self.parts_of_extensions.entry(cvterm.termid())
-                                    .or_insert_with(Vec::new).push(ExtPart {
+                                    .or_default().push(ExtPart {
                                         rel_type_id,
                                         rel_type_name: ext_rel_name,
                                         rel_type_display_name,
@@ -3971,7 +3898,7 @@ phenotypes, so just the first part of this extension will be used:
                                self.make_term_ext_range(&object_termid);
 
                             self.parts_of_extensions.entry(subject_termid)
-                                .or_insert_with(Vec::new).push(ExtPart {
+                                .or_default().push(ExtPart {
                                     rel_type_id: Some(rel_type.termid()),
                                     rel_type_name: rel_type.name.clone(),
                                     rel_type_display_name,
@@ -4006,13 +3933,11 @@ phenotypes, so just the first part of this extension will be used:
 
             if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
                 gene_details.synonyms.push(make_synonym());
-            } else {
-                if let Some(ref mut allele) = self.alleles.get_mut(&feature.uniquename) {
-                    let synonym = make_synonym();
-                    if let Err(insert_pos) = allele.synonyms.binary_search(&synonym) {
-                        // keep synonym list ordered
-                        allele.synonyms.insert(insert_pos, synonym);
-                    }
+            } else if let Some(ref mut allele) = self.alleles.get_mut(&feature.uniquename) {
+                let synonym = make_synonym();
+                if let Err(insert_pos) = allele.synonyms.binary_search(&synonym) {
+                    // keep synonym list ordered
+                    allele.synonyms.insert(insert_pos, synonym);
                 }
             }
         }
@@ -4063,13 +3988,11 @@ phenotypes, so just the first part of this extension will be used:
                               product: FlexStr) {
         if let Some(transcript_details) =
             self.transcripts.get_mut(transcript_uniquename)
-        {
-            if let Some(ref mut protein) = transcript_details
+            && let Some(ref mut protein) = transcript_details
                 .protein
             {
                 protein.product = Some(product);
             }
-        }
     }
 
     // process feature properties stored as cvterms,
@@ -4094,42 +4017,35 @@ phenotypes, so just the first part of this extension will be used:
                             } else {
                                 (None, None)
                             }
-                    } else {
-                        if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
-                            if let Some(gene_uniquename) =
-                                self.genes_of_transcripts.get(&feature.uniquename) {
-                                    (Some(gene_uniquename.clone()), Some(feature.uniquename.clone()))
-                                } else {
-                                    (None, None)
-                                }
-                        } else {
-                            if feature.feat_type.name == "gene" {
-                                (Some(feature.uniquename.clone()), None)
+                    } else if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
+                        if let Some(gene_uniquename) =
+                            self.genes_of_transcripts.get(&feature.uniquename) {
+                                (Some(gene_uniquename.clone()), Some(feature.uniquename.clone()))
                             } else {
                                 (None, None)
                             }
-                        }
+                    } else if feature.feat_type.name == "gene" {
+                        (Some(feature.uniquename.clone()), None)
+                    } else {
+                        (None, None)
                     }
                 } else {
                     (None, None)
                 };
 
-            if let Some(gene_uniquename) = maybe_gene_uniquename {
-                if let Some(transcript_uniquename) = maybe_transcript_uniquename {
+            if let Some(gene_uniquename) = maybe_gene_uniquename
+                && let Some(transcript_uniquename) = maybe_transcript_uniquename {
                     self.add_gene_product(&gene_uniquename, &cvterm.name);
 
                     self.add_product_to_protein(&transcript_uniquename,
                                                 cvterm.name.clone());
                 }
-            }
 
             if feature.feat_type.name == "gene" || feature.feat_type.name == "pseudogene" {
                 if cvterm.cv.name == "PomBase gene characterisation status" {
                     self.add_characterisation_status(&feature.uniquename, &cvterm.name);
-                } else {
-                    if cvterm.cv.name == "name_description" {
-                        self.add_name_description(&feature.uniquename, &cvterm.name);
-                    }
+                } else if cvterm.cv.name == "name_description" {
+                    self.add_name_description(&feature.uniquename, &cvterm.name);
                 }
             }
         }
@@ -4145,36 +4061,27 @@ phenotypes, so just the first part of this extension will be used:
                 if self.config.database_name == prefix {
                     // a gene from the main organism
                     return WithFromValue::Gene(gene_short);
-                } else {
-                    if let Some(name) = &gene_short.name {
-                        return WithFromValue::IdentifierAndName({
-                            IdentifierAndName {
-                                identifier: with_or_from_value.clone(),
-                                name: name.clone(),
-                            }
-                        });
-                    }
+                } else if let Some(name) = &gene_short.name {
+                    return WithFromValue::IdentifierAndName({
+                        IdentifierAndName {
+                            identifier: with_or_from_value.clone(),
+                            name: name.clone(),
+                        }
+                    });
                 }
-            } else {
-                if self.transcripts.contains_key(&id) {
-                    if self.config.database_name == prefix {
-                        return WithFromValue::Transcript(id);
-                    }
-                }
+            } else if self.transcripts.contains_key(&id)
+            && self.config.database_name == prefix {
+                return WithFromValue::Transcript(id);
             }
-        } else {
-            if self.genes.contains_key(with_or_from_value) {
-                let gene_short = self.make_gene_short(with_or_from_value);
-                // a gene from the main organism
-                return WithFromValue::Gene(gene_short);
-            } else {
-                if self.transcripts.contains_key(with_or_from_value) {
-                    return WithFromValue::Transcript(with_or_from_value.clone());
-                }
-            }
+        } else if self.genes.contains_key(with_or_from_value) {
+            let gene_short = self.make_gene_short(with_or_from_value);
+            // a gene from the main organism
+            return WithFromValue::Gene(gene_short);
+        } else if self.transcripts.contains_key(with_or_from_value) {
+            return WithFromValue::Transcript(with_or_from_value.clone());
         }
 
-        if self.terms.get(with_or_from_value).is_some() {
+        if self.terms.contains_key(with_or_from_value) {
             return WithFromValue::Term(self.make_term_short(with_or_from_value))
         }
 
@@ -4206,7 +4113,7 @@ phenotypes, so just the first part of this extension will be used:
             let cvterm = &feature_cvterm.cvterm;
 
             if feature.type_name() == "gocam_model" {
-                self.add_gocam_model_term(&feature, &cvterm);
+                self.add_gocam_model_term(feature, cvterm);
                 continue;
             }
 
@@ -4248,8 +4155,8 @@ phenotypes, so just the first part of this extension will be used:
             // need to get evidence first as it's used later
             // See: https://github.com/pombase/website/issues/455
             for prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
-                if &prop.type_name() == "evidence" {
-                    if let Some(ref evidence_long) = prop.value {
+                if &prop.type_name() == "evidence"
+                    && let Some(ref evidence_long) = prop.value {
                         for (evidence_code, ev_details) in &self.config.evidence_types {
                             if &ev_details.long == evidence_long {
                                 evidence = Some(evidence_code.clone());
@@ -4259,7 +4166,6 @@ phenotypes, so just the first part of this extension will be used:
                             evidence = Some(evidence_long.clone());
                         }
                     }
-                }
             }
 
             for prop in feature_cvterm.feature_cvtermprops.borrow().iter() {
@@ -4429,13 +4335,12 @@ phenotypes, so just the first part of this extension will be used:
                         if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
                             if let Some(gene_uniquename) =
                                 self.genes_of_transcripts.get(&feature.uniquename) {
-                                    if let Some(gene_details) = self.genes.get(gene_uniquename) {
-                                        if gene_details.transcripts.len() > 1 {
+                                    if let Some(gene_details) = self.genes.get(gene_uniquename)
+                                        && gene_details.transcripts.len() > 1 {
                                             // only bother to record the specific transcript if
                                             // there is more than one
                                             transcript_uniquenames.push(feature.uniquename.clone());
                                         }
-                                    }
                                     vec![gene_uniquename.clone()]
                                 } else {
                                     vec![]
@@ -4600,10 +4505,8 @@ phenotypes, so just the first part of this extension will be used:
                     if let Some(genotype_details) = self.genotypes.get(genotype_uniquename) {
                         if genotype_details.loci.len() == 1 {
                             single_locus.annotations.push(*annotation_id);
-                        } else {
-                            if !multi_locus.annotations.contains(annotation_id) {
-                                multi_locus.annotations.push(*annotation_id);
-                            }
+                        } else if !multi_locus.annotations.contains(annotation_id) {
+                            multi_locus.annotations.push(*annotation_id);
                         }
                     } else {
                         panic!("can't find genotype details for {}\n", genotype_uniquename);
@@ -4641,7 +4544,7 @@ phenotypes, so just the first part of this extension will be used:
     fn remove_duplicate_transcript_annotation(&mut self) {
         let ont_annotation_map = &mut self.all_ont_annotations;
 
-        for (_, annotations) in ont_annotation_map {
+        for annotations in ont_annotation_map.values_mut() {
             let (no_transcript_annotations, mut has_transcript_annotations): (Vec<i32>, Vec<i32>) =
                 annotations
                 .iter()
@@ -4673,12 +4576,11 @@ phenotypes, so just the first part of this extension will be used:
                          current_annotation.transcript_uniquenames[0].clone())
                     };
                     if annotations_equal {
-                        if let Some(annotation_details) = self.annotation_details.get(&prev_annotation_id) {
-                            if !annotation_details.transcript_uniquenames.contains(&current_transcript_uniquename) {
+                        if let Some(annotation_details) = self.annotation_details.get(&prev_annotation_id)
+                            && !annotation_details.transcript_uniquenames.contains(&current_transcript_uniquename) {
                                 self.annotation_details.get_mut(&prev_annotation_id).unwrap()
                                     .transcript_uniquenames.push(current_transcript_uniquename);
                             }
-                        }
                     } else {
                         annotations.push(prev_annotation_id);
                         prev_annotation_id = current_annotation_id;
@@ -4729,18 +4631,18 @@ phenotypes, so just the first part of this extension will be used:
 
                 for gene_uniquename in &annotation.genes {
                     gene_annotation_by_term.entry(gene_uniquename.clone())
-                        .or_insert_with(HashMap::new)
+                        .or_default()
                         .entry(termid.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(*annotation_id);
                 }
 
                 if let Some(ref genotype_uniquename) = annotation.genotype {
                     let existing =
                         genotype_annotation_by_term.entry(genotype_uniquename.clone())
-                        .or_insert_with(HashMap::new)
+                        .or_default()
                         .entry(termid.clone())
-                        .or_insert_with(Vec::new);
+                        .or_default();
                     if !existing.contains(annotation_id) {
                         existing.push(*annotation_id);
                     }
@@ -4748,9 +4650,9 @@ phenotypes, so just the first part of this extension will be used:
 
                 if let Some(reference_uniquename) = annotation.reference.clone() {
                     ref_annotation_by_term.entry(reference_uniquename)
-                        .or_insert_with(HashMap::new)
+                        .or_default()
                         .entry(termid.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(*annotation_id);
                 }
 
@@ -4909,7 +4811,7 @@ phenotypes, so just the first part of this extension will be used:
 
                 for (cv_name, new_annotation) in new_annotations {
                     gene_details.cv_annotations.entry(cv_name.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(new_annotation);
                 }
             }
@@ -4929,7 +4831,7 @@ phenotypes, so just the first part of this extension will be used:
 
                 for (cv_name, new_annotation) in new_annotations {
                     details.cv_annotations.entry(cv_name.clone())
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(new_annotation);
                 }
             }
@@ -4948,7 +4850,7 @@ phenotypes, so just the first part of this extension will be used:
                 let ref_details = self.references.get_mut(reference_uniquename).unwrap();
 
                 for (cv_name, new_annotation) in new_annotations {
-                    ref_details.cv_annotations.entry(cv_name).or_insert_with(Vec::new)
+                    ref_details.cv_annotations.entry(cv_name).or_default()
                         .push(new_annotation.clone());
                 }
             }
@@ -4981,6 +4883,7 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
+        #[allow(clippy::type_complexity)]
         let mut new_annotations: HashMap<(CvName, TermId), HashMap<TermId, HashMap<i32, HashSet<RelName>>>> =
             HashMap::new();
 
@@ -5019,7 +4922,7 @@ phenotypes, so just the first part of this extension will be used:
                 {
                     children_by_termid
                         .entry(object_termid.clone())
-                        .or_insert_with(HashSet::new)
+                        .or_default()
                         .insert(subject_termid.clone());
                 }
 
@@ -5031,11 +4934,11 @@ phenotypes, so just the first part of this extension will be used:
 
                             if !term_annotation.is_not {
                                 new_annotations.entry((cv_name.clone(), dest_termid))
-                                    .or_insert_with(HashMap::new)
+                                    .or_default()
                                     .entry(source_termid)
-                                    .or_insert_with(HashMap::new)
+                                    .or_default()
                                     .entry(*annotation_id)
-                                    .or_insert_with(HashSet::new)
+                                    .or_default()
                                     .insert(rel_term_name.clone());
                             }
                         }
@@ -5136,14 +5039,13 @@ phenotypes, so just the first part of this extension will be used:
             if chadoprop.prop_type.name == "db_date_version" {
                 continue;
             }
-            if chadoprop.prop_type.name.ends_with("_version") {
-                if let Some(ref value) = chadoprop.value {
+            if chadoprop.prop_type.name.ends_with("_version")
+                && let Some(ref value) = chadoprop.value {
                     let trimmed_type =
                         chadoprop.prop_type.name.trim_end_matches("_version").to_shared_str();
                     data_source_versions.insert(trimmed_type,
                                                 value.to_owned());
                 }
-            }
         }
 
         let mut cv_versions = HashMap::new();
@@ -5239,8 +5141,8 @@ phenotypes, so just the first part of this extension will be used:
         let mut protein_length = None;
 
         for transcript_uniquename in &gene_details.transcripts {
-            if let Some(transcript) = self.transcripts.get(transcript_uniquename) {
-                if let Some(ref protein) = transcript.protein {
+            if let Some(transcript) = self.transcripts.get(transcript_uniquename)
+                && let Some(ref protein) = transcript.protein {
                     molecular_weight = Some((100.0 * protein.molecular_weight).round() / 100.0);
                     if protein.sequence.ends_with('*') {
                         protein_length = Some(protein.sequence.len() - 1);
@@ -5249,22 +5151,19 @@ phenotypes, so just the first part of this extension will be used:
                     }
                     break;
                 }
-            }
         }
 
         for field_name in &self.config.gene_results.visualisation_field_names {
             let column_conf = &self.config.gene_results.field_config[field_name];
             for attr_value_conf in &column_conf.attr_values {
                 if let (Some(ref bin_start), Some(ref bin_end)) =
-                    (attr_value_conf.bin_start, attr_value_conf.bin_end) {
-                        if let Some(prot_len) = protein_length {
-                            if *bin_start <= prot_len && *bin_end >= prot_len {
+                    (attr_value_conf.bin_start, attr_value_conf.bin_end)
+                        && let Some(prot_len) = protein_length
+                            && *bin_start <= prot_len && *bin_end >= prot_len {
                                 return (molecular_weight,
                                         Some(prot_len),
                                         Some(attr_value_conf.name.clone()));
                             }
-                        }
-                    }
             }
         }
 
@@ -5529,13 +5428,13 @@ phenotypes, so just the first part of this extension will be used:
               };
 
               let downstream_relations = &cv_config.downstream_relations;
-              if downstream_relations.len() == 0 {
+              if downstream_relations.is_empty() {
                 continue;
               }
 
               for term_annotation in term_annotations {
                  for annotation in &term_annotation.annotations {
-                    let annotation_details = self.annotation_details.get(&annotation).unwrap();
+                    let annotation_details = self.annotation_details.get(annotation).unwrap();
                     let mut maybe_downstream_gene: Option<GeneUniquename> = None;
                     let mut downstream_gene_phase: Option<TermId> = None;
 
@@ -5545,20 +5444,14 @@ phenotypes, so just the first part of this extension will be used:
                             continue;
                         };
                         if rel_type_id == "RO:0002092" {
-                            match ext_part.ext_range {
-                                ExtRange::Term(ref phase_termid) => {
-                                    downstream_gene_phase = Some(phase_termid.into());
-                                },
-                                _ => ()
+                            if let ExtRange::Term(ref phase_termid) = ext_part.ext_range {
+                                downstream_gene_phase = Some(phase_termid.into());
                             }
-                        } else {
-                            if downstream_relations.contains(rel_type_id) ||
-                               downstream_relations.contains(&ext_part.rel_type_name) {
-                                if let ExtRange::Gene(ref target_gene_uniquename) = ext_part.ext_range {
-                                    maybe_downstream_gene = Some(target_gene_uniquename.into());
-                                }
-                            }
-                        }
+                        } else if (downstream_relations.contains(rel_type_id) ||
+                        downstream_relations.contains(&ext_part.rel_type_name))
+                         && let ExtRange::Gene(ref target_gene_uniquename) = ext_part.ext_range {
+                             maybe_downstream_gene = Some(target_gene_uniquename.into());
+                         }
                     }
 
                     if let Some(ref downstream_gene_uniquename) = maybe_downstream_gene {
@@ -5567,8 +5460,8 @@ phenotypes, so just the first part of this extension will be used:
                         let mut downstream_gene_phase_and_parents = vec![];
 
                         if let Some(ref downstream_gene_phase) = downstream_gene_phase {
-                            let ref phase_term_details = self.terms.get(downstream_gene_phase)
-                                .expect(&format!("internal error: failed to find term {}", downstream_gene_phase));
+                            let phase_term_details = self.terms.get(downstream_gene_phase)
+                                .unwrap_or_else(|| panic!("internal error: failed to find term {}", downstream_gene_phase));
 
                             for parent_id in phase_term_details.interesting_parent_ids.iter() {
                                 if possible_phases.contains(parent_id) {
@@ -5672,7 +5565,7 @@ phenotypes, so just the first part of this extension will be used:
                                        &self.annotation_details,
                                        &self.genotypes, &self.alleles,
                                        &self.transcripts, &self.references,
-                                       &self.config);
+                                       self.config);
 
         let gocam_data_by_gene = self.make_gocam_data_by_gene();
 
@@ -5682,12 +5575,11 @@ phenotypes, so just the first part of this extension will be used:
 
         for (termid, term_details) in self.terms.drain() {
             let cv_config = &self.config.cv_config;
-            if let Some(term_config) = cv_config.get(&term_details.cv_name) {
-                if term_config.feature_type == "gene" {
+            if let Some(term_config) = cv_config.get(&term_details.cv_name)
+                && term_config.feature_type == "gene" {
                     termid_genes.insert(termid.clone(),
                                         term_details.annotated_genes.clone());
                 }
-            }
         }
 
         let seq_feature_page_features: Vec<FeatureShort> =
@@ -5767,6 +5659,7 @@ phenotypes, so just the first part of this extension will be used:
         ret
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn add_cv_annotations_to_maps(&self,
                                   identifier: &FlexStr,
                                   cv_annotations: &OntAnnotationMap,
@@ -5799,12 +5692,11 @@ phenotypes, so just the first part of this extension will be used:
                                               condition_termid);
                     }
                     if let Some(ref gene_product_form_id) =
-                        annotation_detail.gene_product_form_id {
-                            if gene_product_form_id.starts_with("PR:") {
+                        annotation_detail.gene_product_form_id
+                            && gene_product_form_id.starts_with("PR:") {
                                 self.add_term_to_hash(seen_terms, identifier,
                                                       gene_product_form_id);
                             }
-                        }
                     self.add_extension_to_maps(&annotation_detail.extension, seen_genes,
                                                seen_transcripts, seen_terms, identifier);
                     if let Some(ref genotype_uniquename) = annotation_detail.genotype {
@@ -5961,7 +5853,7 @@ phenotypes, so just the first part of this extension will be used:
                                     // prevent NOT annotation from appearing in the
                                     // counts on term pages and in the query builder
                                     annotated_genes_map
-                                        .entry(termid.clone()).or_insert_with(HashSet::new)
+                                        .entry(termid.clone()).or_default()
                                         .insert(gene_uniquename.clone());
                                     }
                                 }
@@ -5972,11 +5864,11 @@ phenotypes, so just the first part of this extension will be used:
                             let gene_uniquenames = self.gene_uniquenames_from_genotype(genotype_details);
                             if genotype_details.loci.len() == 1 {
                                 single_locus_annotated_genes_map
-                                    .entry(termid.clone()).or_insert_with(HashSet::new)
+                                    .entry(termid.clone()).or_default()
                                     .extend(gene_uniquenames.iter().cloned());
                             } else {
                                 multi_locus_annotated_genes_map
-                                    .entry(termid.clone()).or_insert_with(HashSet::new)
+                                    .entry(termid.clone()).or_default()
                                     .extend(gene_uniquenames.iter().cloned());
                             }
                         }
@@ -5994,12 +5886,11 @@ phenotypes, so just the first part of this extension will be used:
                                                   condition_termid);
                         }
                         if let Some(ref gene_product_form_id) =
-                            annotation_detail.gene_product_form_id {
-                                if gene_product_form_id.starts_with("PR:") {
+                            annotation_detail.gene_product_form_id
+                                && gene_product_form_id.starts_with("PR:") {
                                     self.add_term_to_hash(&mut seen_terms, termid,
                                                           gene_product_form_id);
                                 }
-                            }
                         for ext_part in &annotation_detail.extension {
                             match ext_part.ext_range {
                                 ExtRange::Term(ref range_termid) |
@@ -6426,12 +6317,12 @@ phenotypes, so just the first part of this extension will be used:
                 };
 
                 if gene_details.taxonid == load_org_taxonid {
-                    let mut hash = if ltp_only {
+                    let hash = if ltp_only {
                         &mut ltp_gene_count_hash
                     } else {
                         &mut gene_count_hash
                     };
-                    self.add_gene_to_hash(&mut hash,
+                    self.add_gene_to_hash(hash,
                                           reference_uniquename,
                                           gene_uniquename);
                 }
@@ -6473,12 +6364,11 @@ phenotypes, so just the first part of this extension will be used:
                                                       condition_termid);
                             }
                            if let Some(ref gene_product_form_id) =
-                               annotation_detail.gene_product_form_id {
-                                   if gene_product_form_id.starts_with("PR:") {
+                               annotation_detail.gene_product_form_id
+                                   && gene_product_form_id.starts_with("PR:") {
                                        self.add_term_to_hash(&mut seen_terms, reference_uniquename,
                                                              gene_product_form_id);
                                    }
-                               }
                             for ext_part in &annotation_detail.extension {
                                 match ext_part.ext_range {
                                     ExtRange::Term(ref range_termid) |
@@ -6765,7 +6655,7 @@ phenotypes, so just the first part of this extension will be used:
         for genotype in self.genotypes.values_mut() {
             let mut annotation_count = 0;
 
-            for (_, term_annotations) in genotype.cv_annotations() {
+            for term_annotations in genotype.cv_annotations().values() {
                 for term_annotation in term_annotations {
                     annotation_count += term_annotation.annotations.len()
                 }
@@ -6846,11 +6736,10 @@ phenotypes, so just the first part of this extension will be used:
         };
 
         for gene_details in self.genes.values() {
-            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
-                if load_organism_taxonid != gene_details.taxonid {
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid
+                && load_organism_taxonid != gene_details.taxonid {
                     continue;
                 }
-            }
 
             if gene_details.feature_type != "mRNA gene" {
                 continue;
@@ -6947,7 +6836,7 @@ phenotypes, so just the first part of this extension will be used:
     fn make_feature_type_subsets(&self, subsets: &mut IdGeneSubsetMap) {
         let mut add_to_subset = |subset_name: &str, gene_details: &GeneDetails| {
             let re = Regex::new(r"[\s,:]+").unwrap();
-            let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_shared_str();
+            let subset_name_no_spaces = re.replace_all(subset_name, "_").to_shared_str();
             subsets.entry(subset_name_no_spaces.clone())
                 .or_insert(GeneSubsetDetails {
                     name: subset_name_no_spaces,
@@ -6957,11 +6846,10 @@ phenotypes, so just the first part of this extension will be used:
                 .elements.insert(gene_details.uniquename.clone());
         };
         for gene_details in self.genes.values() {
-            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
-                if load_organism_taxonid != gene_details.taxonid {
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid
+                && load_organism_taxonid != gene_details.taxonid {
                     continue;
                 }
-            }
             let subset_name =
                 format!("feature_type:{}", gene_details.feature_type);
             add_to_subset(&subset_name, gene_details);
@@ -6979,12 +6867,12 @@ phenotypes, so just the first part of this extension will be used:
 
     // make subsets using the characterisation_status field of GeneDetails
     fn make_characterisation_status_subsets(&self, subsets: &mut IdGeneSubsetMap) {
+        let status_fix_re = Regex::new(r"[\s,:]+").unwrap();
         for gene_details in self.genes.values() {
-            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid {
-                if load_organism_taxonid != gene_details.taxonid {
+            if let Some(load_organism_taxonid) = self.config.load_organism_taxonid
+                && load_organism_taxonid != gene_details.taxonid {
                     continue;
                 }
-            }
 
             if gene_details.feature_type != "mRNA gene" {
                 continue;
@@ -6993,8 +6881,7 @@ phenotypes, so just the first part of this extension will be used:
             if let Some(ref characterisation_status) = gene_details.characterisation_status {
                 let subset_name =
                     flex_str!("characterisation_status:") + characterisation_status;
-                let re = Regex::new(r"[\s,:]+").unwrap();
-                let subset_name_no_spaces = re.replace_all(&subset_name, "_").to_shared_str();
+                let subset_name_no_spaces = status_fix_re.replace_all(&subset_name, "_").to_shared_str();
                 subsets.entry(subset_name_no_spaces.clone())
                     .or_insert(GeneSubsetDetails {
                         name: subset_name_no_spaces,
@@ -7019,14 +6906,13 @@ phenotypes, so just the first part of this extension will be used:
                 let mut new_subset_names = vec![];
 
                 if let (Some(interpro_id), Some(interpro_name)) =
-                    (&interpro_match.interpro_id, &interpro_match.interpro_name) {
-                    if !interpro_id.is_empty() {
+                    (&interpro_match.interpro_id, &interpro_match.interpro_name)
+                    && !interpro_id.is_empty() {
                         let subset_name =
                             String::from("interpro:") + interpro_id;
                         new_subset_names.push((subset_name.to_shared_str(),
                                                interpro_name.clone()));
                     }
-                }
 
                 let subset_name = format!("interpro:{}:{}",
                                           interpro_match.dbname,
@@ -7079,26 +6965,23 @@ phenotypes, so just the first part of this extension will be used:
                 let gene1 = &self.genes[uniquename1];
                 let gene2 = &self.genes[uniquename2];
 
-                if let Some(ref gene1_loc) = gene1.location {
-                    if let Some(ref gene2_loc) = gene2.location {
+                if let Some(ref gene1_loc) = gene1.location
+                    && let Some(ref gene2_loc) = gene2.location {
                         let cmp = gene1_loc.start_pos.cmp(&gene2_loc.start_pos);
                         if cmp != Ordering::Equal {
                             return cmp;
                         }
                     }
-                }
                 if gene1.name.is_some() {
                     if gene2.name.is_some() {
                         gene1.name.cmp(&gene2.name)
                     } else {
                         Ordering::Less
                     }
+                } else if gene2.name.is_some() {
+                    Ordering::Greater
                 } else {
-                    if gene2.name.is_some() {
-                        Ordering::Greater
-                    } else {
-                        gene1.uniquename.cmp(&gene2.uniquename)
-                    }
+                    gene1.uniquename.cmp(&gene2.uniquename)
                 }
             };
 
@@ -7222,13 +7105,12 @@ phenotypes, so just the first part of this extension will be used:
                     .or_insert(0) += 1;
             }
 
-            if gene_details.feature_type == "mRNA gene" {
-                if let Some(ref loc) = gene_details.location {
+            if gene_details.feature_type == "mRNA gene"
+                && let Some(ref loc) = gene_details.location {
                     *coding_counts
                         .entry(&loc.chromosome_name)
                         .or_insert(0) += 1;
                 }
-            }
         }
 
         for chromosome_detail in self.chromosomes.values_mut() {
@@ -7274,11 +7156,7 @@ phenotypes, so just the first part of this extension will be used:
                         let term_name = &term_details.name;
 
                         let reference_uniquename =
-                            if let Some(ref reference_short) = annotation_detail.reference {
-                                Some(reference_short.clone())
-                            } else {
-                                None
-                            };
+                            annotation_detail.reference.clone();
 
                         if complexes_config.excluded_terms.contains(termid) {
                             continue 'TERM;
@@ -7319,15 +7197,14 @@ phenotypes, so just the first part of this extension will be used:
     // See: https://github.com/pombase/website/issues/628
     fn remove_non_curatable_refs(&mut self) {
         let filtered_refs = self.references.drain()
-            .filter(|&(_, ref reference_details)| {
+            .filter(|(_, reference_details)| {
                 if reference_has_annotation(reference_details) {
                     return true;
                 }
-                if let Some(ref triage_status) = reference_details.canto_triage_status {
-                    if triage_status == "New" || triage_status == "Wrong organism" && triage_status == "Loaded in error"{
+                if let Some(ref triage_status) = reference_details.canto_triage_status
+                    && (triage_status == "New" || triage_status == "Wrong organism" && triage_status == "Loaded in error"){
                         return false;
                     }
-                }
                 // default to true because there are references that
                 // haven't or shouldn't be triaged, eg. GO_REF:...
                 true
@@ -7366,11 +7243,11 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn store_genetic_interactions(&mut self) {
-        fn get_interaction_details<'a>(interaction_annotations: &'a mut GeneticInteractionMap,
+        fn get_interaction_details(interaction_annotations: &mut GeneticInteractionMap,
                                interaction_key: GeneticInteractionKey)
-             -> &'a mut Vec<GeneticInteractionDetail>
+             -> &mut Vec<GeneticInteractionDetail>
         {
-            interaction_annotations.entry(interaction_key).or_insert_with(Vec::new)
+            interaction_annotations.entry(interaction_key).or_default()
         }
 
         for (interaction_key, interaction_annotation_details) in self.genetic_interaction_annotations.drain() {
@@ -7625,8 +7502,7 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    fn get_pub_curated_stats(&self)
-        -> (Vec<(DateString, Vec<usize>)>, Vec<(DateString, Vec<usize>)>)
+    fn get_pub_curated_stats(&self) -> CuratedStats
     {
         let mut year_month_map = HashMap::new();
         let mut year_map = HashMap::new();
@@ -7771,10 +7647,10 @@ phenotypes, so just the first part of this extension will be used:
         (year_month_return, year_return)
     }
 
-    fn get_cumulative_curated_stats(&self, stats: &Vec<(DateString, Vec<usize>)>)
+    fn get_cumulative_curated_stats(&self, stats: &[(DateString, Vec<usize>)])
       -> Vec<(DateString, Vec<usize>)>
     {
-        if stats.len() == 0 {
+        if stats.is_empty() {
             return vec![];
         }
 
@@ -7858,7 +7734,7 @@ phenotypes, so just the first part of this extension will be used:
             for term_annotations_vec in reference.cv_annotations.values() {
                 for term_annotations in term_annotations_vec {
                     for annotation_id in &term_annotations.annotations {
-                        let annotation = self.annotation_details.get(&annotation_id).unwrap();
+                        let annotation = self.annotation_details.get(annotation_id).unwrap();
 
                         let Some(ref throughput) = annotation.throughput
                         else {
@@ -8211,7 +8087,7 @@ phenotypes, so just the first part of this extension will be used:
         self.gocam_overlaps_merge_by_chemical =
             find_chemical_overlaps(&gocam_models);
         self.gocam_holes = gocam_models.iter()
-            .flat_map(|m| find_holes(m)).collect();
+            .flat_map(find_holes).collect();
 
         let solr_data = SolrData {
             term_summaries: solr_term_summaries,
@@ -8232,7 +8108,7 @@ phenotypes, so just the first part of this extension will be used:
         let all_admin_curated = self.all_admin_curated.clone();
         let ont_annotations = self.ont_annotations.clone();
 
-        self.protein_complex_data = self.macromolecular_complex_data(&self.config);
+        self.protein_complex_data = self.macromolecular_complex_data(self.config);
 
         let mut terms_for_api: HashMap<TermId, TermDetails> = HashMap::new();
 

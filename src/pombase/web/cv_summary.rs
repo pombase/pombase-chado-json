@@ -114,7 +114,7 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
             }
         };
 
-    let mut rows_mut: Vec<_> = rows.to_owned().into_iter().map(|el| Some(el)).collect();
+    let mut rows_mut: Vec<_> = rows.iter().cloned().map(Some).collect();
 
     rows.truncate(0);
 
@@ -125,8 +125,9 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
             break;
         };
 
-        let mut prev_row = std::mem::replace(&mut rows_mut[first_some_idx], None).unwrap();
+        let mut prev_row = rows_mut[first_some_idx].take().unwrap();
 
+        #[allow(clippy::needless_range_loop)]
         for current_idx in 0..rows_mut.len() {
 
             if rows_mut[current_idx].is_none() {
@@ -150,9 +151,8 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
 
             if let (Some((prev_ext_part, prev_removed_index)), Some(current_ext_part)) =
                 (prev_matching_ext_part_result, current_matching_ext_part)
-            {
 
-                if mem::discriminant(&prev_ext_part.ext_range) ==
+                && mem::discriminant(&prev_ext_part.ext_range) ==
                     mem::discriminant(&current_ext_part.ext_range) &&
                     current_row_extension == prev_row_extension &&
                     prev_ext_part.rel_type_display_name == current_ext_part.rel_type_display_name
@@ -169,7 +169,6 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
 
                     continue;
                 }
-            }
 
         }
 
@@ -306,13 +305,12 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
             let mut seen = HashSet::new();
 
             for current in current_rows.drain(0..) {
-                if !vec_set.contains_proper_superset(&ext_parts_wrap(&current.extension)) {
-                    if !seen.contains(&current.extension) {
+                if !vec_set.contains_proper_superset(&ext_parts_wrap(&current.extension))
+                    && !seen.contains(&current.extension) {
                         // no extension is more specific (ie. has more parts), so include in the summary:
                         results.push(current.clone());
                         seen.insert(current.extension);
                     }
-                }
             }
         };
 
@@ -366,7 +364,7 @@ pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<T
             if term_annotation.summary.as_ref().unwrap().is_empty() {
                 let mut found_child_match = false;
                 for child_termid in child_termids {
-                    if term_annotations_by_termid.get(child_termid).is_some() {
+                    if term_annotations_by_termid.contains_key(child_termid) {
                         found_child_match = true;
                     }
                 }
@@ -421,23 +419,21 @@ pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
                     continue;
                 }
 
-                if let ExtRange::SummaryGenes(ref current_summ_genes) = current.ext_range {
-                    if let ExtRange::SummaryGenes(ref mut prev_summ_genes) = prev.ext_range {
+                if let ExtRange::SummaryGenes(ref current_summ_genes) = current.ext_range
+                    && let ExtRange::SummaryGenes(ref mut prev_summ_genes) = prev.ext_range {
                         let mut current_genes = current_summ_genes[0].clone();
                         prev_summ_genes[0].append(& mut current_genes);
 
                         continue;
                     }
-                }
 
-                if let ExtRange::SummaryTranscripts(ref current_summ_transcripts) = current.ext_range {
-                    if let ExtRange::SummaryTranscripts(ref mut prev_summ_transcripts) = prev.ext_range {
+                if let ExtRange::SummaryTranscripts(ref current_summ_transcripts) = current.ext_range
+                    && let ExtRange::SummaryTranscripts(ref mut prev_summ_transcripts) = prev.ext_range {
                         let mut current_transcripts = current_summ_transcripts[0].clone();
                         prev_summ_transcripts[0].append(& mut current_transcripts);
 
                         continue;
                     }
-                }
 
                 result.push(prev);
                 prev = current;
@@ -451,33 +447,29 @@ pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
     ext.append(&mut result);
 }
 
-fn sort_summary_alphabetically(data_lookup: &dyn DataLookup, summary: &mut Vec<TermSummaryRow>) {
+fn sort_summary_alphabetically(data_lookup: &dyn DataLookup, summary: &mut [TermSummaryRow]) {
     let cmp_fn = |s1: &TermSummaryRow, s2: &TermSummaryRow| {
-        if s1.extension.len() == 0 {
+        if s1.extension.is_empty() {
             return Ordering::Less;
         }
-        if s2.extension.len() == 0 {
+        if s2.extension.is_empty() {
             return Ordering::Greater;
         }
         let s1_display_name =
             if let Some(genotype_uniquename) = s1.genotype_uniquenames.first() {
                 data_lookup.get_genotype(genotype_uniquename).unwrap().display_name.to_lowercase()
+            } else if let Some(gene_uniquename) = s1.gene_uniquenames.first() {
+                data_lookup.get_gene(gene_uniquename).unwrap().display_name().to_lowercase()
             } else {
-                if let Some(gene_uniquename) = s1.gene_uniquenames.first() {
-                    data_lookup.get_gene(gene_uniquename).unwrap().display_name().to_lowercase()
-                } else {
-                    String::from("")
-                }
+                String::from("")
             };
         let s2_display_name =
             if let Some(genotype_uniquename) = s2.genotype_uniquenames.first() {
                 data_lookup.get_genotype(genotype_uniquename).unwrap().display_name.to_lowercase()
+            } else if let Some(gene_uniquename) = s2.gene_uniquenames.first() {
+                data_lookup.get_gene(gene_uniquename).unwrap().display_name().to_lowercase()
             } else {
-                if let Some(gene_uniquename) = s2.gene_uniquenames.first() {
-                    data_lookup.get_gene(gene_uniquename).unwrap().display_name().to_lowercase()
-                } else {
-                    String::from("")
-                }
+                String::from("")
             };
 
         let display_name_cmp = s1_display_name.cmp(&s2_display_name);
@@ -514,19 +506,15 @@ fn make_cv_summary(cv_config: &CvConfig,
                 // sort is stable so this will keep the ordering the same
                 if a1.extension.is_empty() && !a2.extension.is_empty() {
                     Ordering::Less
+                } else if !a1.extension.is_empty() && a2.extension.is_empty() {
+                    Ordering::Greater
                 } else {
-                    if !a1.extension.is_empty() && a2.extension.is_empty() {
-                        Ordering::Greater
-                    } else {
-                        Ordering::Equal
-                    }
+                    Ordering::Equal
                 }
+            } else if a1.extension[0].rel_type_display_name == a2.extension[0].rel_type_display_name {
+                a1.extension.len().cmp(&a2.extension.len())
             } else {
-                if a1.extension[0].rel_type_display_name == a2.extension[0].rel_type_display_name {
-                    a1.extension.len().cmp(&a2.extension.len())
-                } else {
-                    a1.extension[0].rel_type_display_name.cmp(&a2.extension[0].rel_type_display_name)
-                }
+                a1.extension[0].rel_type_display_name.cmp(&a2.extension[0].rel_type_display_name)
             }
         };
         summary_sorted_annotations.sort_by(ext_comp);
@@ -556,11 +544,10 @@ fn make_cv_summary(cv_config: &CvConfig,
 
             let summary_relations_to_hide = &cv_config.summary_relations_to_hide;
 
-            let mut summary_extension = annotation.extension.iter().cloned()
-                .filter(|ext_part| {
+            let mut summary_extension = annotation.extension.iter().filter(|&ext_part| {
                     !summary_relations_to_hide.contains(&ext_part.rel_type_name) &&
                         *summary_relations_to_hide != vec!["ALL"]
-                })
+                }).cloned()
                 .map(move |mut ext_part| {
                     match ext_part.ext_range.clone() {
                         ExtRange::Gene(gene_uniquename) => {

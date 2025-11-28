@@ -137,13 +137,11 @@ pub async fn term_complete(config: &ServerConfig, cv_name: &str, q: &str)
         let res = reqwest::get(terms_url).await?;
         if res.status().is_success() {
             Ok(container_to_matches(res.json().await?))
+        } else if let Some(reason) = res.status().canonical_reason() {
+            Err(anyhow!("HTTP request to Solr failed: {} - {}", res.status(), reason))
         } else {
-            if let Some(reason) = res.status().canonical_reason() {
-                Err(anyhow!("HTTP request to Solr failed: {} - {}", res.status(), reason))
-            } else {
-                Err(anyhow!("HTTP request to Solr failed with status code: {}",
-                            res.status()))
-            }
+            Err(anyhow!("HTTP request to Solr failed with status code: {}",
+                        res.status()))
         }
     } else {
         Ok(vec![])
@@ -161,7 +159,7 @@ pub async fn term_summary_by_id(config: &ServerConfig, termid: &str)
     if res.status().is_success() {
         let container = res.json::<SolrTermResponseContainer>().await?;
         let summaries = container.response.docs;
-        if let Some(summary) = summaries.get(0) {
+        if let Some(summary) = summaries.first() {
             if summary.id == termid {
                 Ok(Some(summary.clone()))
             } else {

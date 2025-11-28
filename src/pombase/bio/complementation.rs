@@ -51,31 +51,25 @@ pub fn write_complementation(data_lookup: &dyn DataLookup,
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                 let gene_name = gene_details.name
-                    .as_ref().unwrap_or_else(|| &empty_string);
+                    .as_ref().unwrap_or(&empty_string);
                 let reference = annotation_detail.reference
-                    .as_ref().unwrap_or_else(|| &empty_string);
+                    .as_ref().unwrap_or(&empty_string);
 
                 let qualifiers = annotation_detail.qualifiers.iter().join(",");
 
                 let writer =
                     if term.name.starts_with("functionally complemented by") {
                         &mut complemented_by_writer
+                    } else if term.name.starts_with("functionally complements") {
+                        &mut complements_writer
+                    } else if term.name.starts_with("is not functionally complemented by") {
+                        &mut not_complemented_by_writer
+                    } else if term.name.starts_with("does not functionally complement") {
+                        &mut does_not_complement_writer
                     } else {
-                        if term.name.starts_with("functionally complements") {
-                            &mut complements_writer
-                        } else {
-                            if term.name.starts_with("is not functionally complemented by") {
-                                &mut not_complemented_by_writer
-                            } else {
-                                if term.name.starts_with("does not functionally complement") {
-                                    &mut does_not_complement_writer
-                                } else {
-                                    eprintln!("can't parse complementation term name {} {}: {}",
-                                              gene_details.uniquename, reference, term.name);
-                                    continue;
-                                }
-                            }
-                        }
+                        eprintln!("can't parse complementation term name {} {}: {}",
+                                  gene_details.uniquename, reference, term.name);
+                        continue;
                     };
                 writer.write_fmt(format_args!("{}\t{}\t{}\t{}\t{}\n",
                                               gene_details.uniquename,

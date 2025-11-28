@@ -466,7 +466,7 @@ fn exec_spliced_rna_length_range(api_data: &APIData,
 {
     let gene_uniquenames =
         api_data.filter_genes(&|gene: &APIGeneSummary| {
-            if let Some(first_transcript) = gene.transcripts.get(0) {
+            if let Some(first_transcript) = gene.transcripts.first() {
                 if let Some(spliced_rna_len) = first_transcript.rna_seq_length_spliced {
                     (range_start.is_none() || spliced_rna_len.get() >= range_start.unwrap()) &&
                     (range_end.is_none() || spliced_rna_len.get() <= range_end.unwrap())
@@ -486,7 +486,7 @@ fn exec_unspliced_rna_length_range(api_data: &APIData,
 {
     let gene_uniquenames =
         api_data.filter_genes(&|gene: &APIGeneSummary| {
-            if let Some(first_transcript) = gene.transcripts.get(0) {
+            if let Some(first_transcript) = gene.transcripts.first() {
                 if let Some(unspliced_rna_len) = first_transcript.rna_seq_length_unspliced {
                     (range_start.is_none() || unspliced_rna_len.get() >= range_start.unwrap()) &&
                     (range_end.is_none() || unspliced_rna_len.get() <= range_end.unwrap())
@@ -595,12 +595,10 @@ fn exec_exon_count_range(api_data: &APIData,
             let count =
                 if options.contains("five-prime-utr-exons") {
                     gene.five_prime_exon_count
+                } else if options.contains("three-prime-utr-exons") {
+                    gene.three_prime_exon_count
                 } else {
-                    if options.contains("three-prime-utr-exons") {
-                        gene.three_prime_exon_count
-                    } else {
-                        gene.coding_exon_count
-                    }
+                    gene.coding_exon_count
                 };
             (range_start.is_none() || count >= range_start.unwrap()) &&
             (range_end.is_none() || count <= range_end.unwrap())
@@ -1004,12 +1002,10 @@ impl Query {
                         } else {
                             (BeforeOrAfter::After, loc.end_pos)
                         }
+                    } else if loc.strand == Strand::Forward {
+                        (BeforeOrAfter::Before, cds_loc.as_ref().unwrap().start_pos)
                     } else {
-                        if loc.strand == Strand::Forward {
-                            (BeforeOrAfter::Before, cds_loc.as_ref().unwrap().start_pos)
-                        } else {
-                            (BeforeOrAfter::After, cds_loc.as_ref().unwrap().end_pos)
-                        }
+                        (BeforeOrAfter::After, cds_loc.as_ref().unwrap().end_pos)
                     };
 
                 let range_seq = get_chr_range(&chr_details.residues, feature_edge,
@@ -1044,12 +1040,10 @@ impl Query {
                         } else {
                             (BeforeOrAfter::Before, loc.start_pos)
                         }
+                    } else if loc.strand == Strand::Forward {
+                        (BeforeOrAfter::After, cds_loc.as_ref().unwrap().end_pos)
                     } else {
-                        if loc.strand == Strand::Forward {
-                            (BeforeOrAfter::After, cds_loc.as_ref().unwrap().end_pos)
-                        } else {
-                            (BeforeOrAfter::Before, cds_loc.as_ref().unwrap().start_pos)
-                        }
+                        (BeforeOrAfter::Before, cds_loc.as_ref().unwrap().start_pos)
                     };
 
                 let range_seq = get_chr_range(&chr_details.residues, feature_edge,
@@ -1070,7 +1064,7 @@ impl Query {
         let maybe_gene_summary = api_data.get_gene_summary(gene_uniquename);
 
         if let Some(gene_summary) = maybe_gene_summary {
-            let maybe_transcript = gene_summary.transcripts.get(0);
+            let maybe_transcript = gene_summary.transcripts.first();
             if let Some(transcript) = maybe_transcript {
                 match self.output_options.sequence {
                     SeqType::Protein =>
@@ -1123,11 +1117,10 @@ impl Query {
             }
         }
 
-        if let Ok(gaf_str) = str::from_utf8(&gaf_bytes) {
-            if !gaf_str.is_empty() {
+        if let Ok(gaf_str) = str::from_utf8(&gaf_bytes)
+            && !gaf_str.is_empty() {
                 return Some(gaf_str.to_owned())
             }
-        }
         None
     }
 
@@ -1140,17 +1133,15 @@ impl Query {
         let maybe_datasets =
             api_data.get_maps().gene_expression_measurements.get(gene_uniquename);
 
-        if let Some(datasets) = maybe_datasets {
-            if let Some(measurement) = datasets.get(dataset_name) {
-                if let Some(ref avg_copies_per_cell) = measurement.avg_copies_per_cell {
+        if let Some(datasets) = maybe_datasets
+            && let Some(measurement) = datasets.get(dataset_name)
+                && let Some(ref avg_copies_per_cell) = measurement.avg_copies_per_cell {
                     let new_value = GeneExValue {
                         dataset_name: dataset_name.clone(),
                         value: avg_copies_per_cell.clone(),
                     };
                     result.push(new_value);
                 }
-            }
-        }
 
         result
     }
@@ -1162,11 +1153,9 @@ impl Query {
         for ancestor_term in needed_ancestor_terms.iter() {
             if let Some(genes_of_ancestor_term) =
                 api_data.get_maps().termid_genes.get(ancestor_term)
-            {
-                if genes_of_ancestor_term.contains(gene_uniquename) {
+                && genes_of_ancestor_term.contains(gene_uniquename) {
                     subsets.insert(ancestor_term.clone());
                 }
-            }
         }
     }
 
@@ -1264,7 +1253,7 @@ impl Query {
                                        }
                                    })
                                    .collect();
-                           subset.extend(gocam_ids.into_iter());
+                           subset.extend(gocam_ids);
                            subset
                        } else {
                            HashSet::new()

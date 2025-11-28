@@ -42,13 +42,11 @@ pub fn write_quantitative_expression_row(writer: &mut dyn Write,
     let annotation_type =
         if annotation_term.name == "RNA level" {
             "RNA"
+        } else if annotation_term.name == "protein level" {
+            "protein"
         } else {
-            if annotation_term.name == "protein level" {
-                "protein"
-            } else {
-                panic!("unexpected gene expression term name: {}",
-                       annotation_term.name);
-            }
+            panic!("unexpected gene expression term name: {}",
+                   annotation_term.name);
         };
 
     let extension_string = extension_to_string(&annotation_detail.extension);
@@ -56,7 +54,7 @@ pub fn write_quantitative_expression_row(writer: &mut dyn Write,
 
     let Some(gene_ex_props) = &annotation_detail.gene_ex_props
     else {
-        if reference.len() == 0 {
+        if reference.is_empty() {
             panic!("no gene_ex_props for gene expression");
         } else {
             panic!("no gene_ex_props for gene expression for reference {}", reference);
@@ -82,7 +80,7 @@ pub fn write_quantitative_expression_row(writer: &mut dyn Write,
 
     let mut condition_names =
         annotation_detail.conditions.iter().map(|termid| {
-            terms.get(termid).expect(&format!("failed to find term details for {}", termid)).name.clone()
+            terms.get(termid).unwrap_or_else(|| panic!("failed to find term details for {}", termid)).name.clone()
         })
         .collect::<Vec<_>>();
 

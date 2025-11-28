@@ -51,17 +51,18 @@ pub struct DomainData {
     pub domains_by_id: HashMap<FlexStr, GeneMatches>,
 }
 
-fn sort_matches(config: &Config, matches: &mut Vec<InterProMatch>) {
+fn sort_matches(config: &Config, matches: &mut [InterProMatch]) {
     let db_order = &config.protein_feature_db_order;
 
     let order_pos = move |m: &InterProMatch| {
+        #[allow(clippy::needless_range_loop)]
         for pos in 0..db_order.len() {
             if m.dbname.as_str().starts_with(db_order[pos].as_str()) {
                 return pos;
             }
         }
 
-        return db_order.len()
+        db_order.len()
     };
 
 
@@ -97,7 +98,7 @@ pub fn parse_interpro(config: &Config, file_name: &str) -> DomainData {
     let mut filtered_domains = HashMap::new();
 
     for (gene_uniquename, mut results) in domain_data.domains_by_id {
-        let mut new_interpro_matches =
+        let mut new_interpro_matches: Vec<InterProMatch> =
             results.interpro_matches.into_iter()
             .filter(|interpro_match|
                     !config.interpro.dbnames_to_filter.contains(&interpro_match.dbname))

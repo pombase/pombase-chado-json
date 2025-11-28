@@ -1,6 +1,5 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeSet, HashMap, HashSet};
-use std::usize;
 
 use indexmap::IndexMap;
 use regex::Regex;
@@ -32,10 +31,7 @@ lazy_static! {
 }
 
 fn parse_mutation_postion(desc_part: &str) -> Option<(FlexStr, usize, usize)> {
-    let Some(captures) = MUTATION_DESC_RE.captures(desc_part)
-    else {
-        return None;
-    };
+    let captures = MUTATION_DESC_RE.captures(desc_part)?;
 
     let (Some(amino_acids), Some(pos_match)) = (captures.get(1), captures.get(2))
     else {
@@ -61,10 +57,7 @@ lazy_static! {
 fn parse_deletion_postion(desc_part: &str)
         -> Option<(FlexStr, usize, usize)>
 {
-    let Some(captures) = DELETION_DESC_RE.captures(desc_part)
-    else {
-        return None;
-    };
+    let captures = DELETION_DESC_RE.captures(desc_part)?;
 
     let (Some(start), Some(end)) = (captures.get(1), captures.get(2))
     else {
@@ -94,15 +87,9 @@ lazy_static! {
 fn parse_truncation_postion(desc_part: &str, seq_lenth: usize)
         -> Option<(FlexStr, usize, usize)>
 {
-    let Some(captures) = TRUNCATION_DESC_RE.captures(desc_part)
-    else {
-        return None;
-    };
+    let captures = TRUNCATION_DESC_RE.captures(desc_part)?;
 
-    let Some(start) = captures.get(1)
-    else {
-        return None;
-    };
+    let start = captures.get(1)?;
 
     let Ok(start) = start.as_str().parse::<usize>()
     else {
@@ -116,7 +103,7 @@ fn parse_truncation_postion(desc_part: &str, seq_lenth: usize)
 
 fn positions_max_min(positions: &[(FlexStr, usize, usize)]) -> (usize, usize)
 {
-    if positions.len() == 0 {
+    if positions.is_empty() {
         panic!("internal error: empty list of positions");
     }
 
@@ -140,10 +127,7 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
 {
     let allele: AlleleShort = allele_details.into();
 
-    let Some(ref allele_description) = allele.description
-    else {
-        return None;
-    };
+    let allele_description = allele.description.as_ref()?;
 
     let mut positions = vec![];
 
@@ -155,15 +139,13 @@ fn feature_from_allele(allele_details: &AlleleDetails, seq_length: usize)
         if let Some(deletion_position) = parse_deletion_postion(desc_part) {
             positions.push(deletion_position);
             continue;
-        } else {
-            if let Some(deletion_position) = parse_truncation_postion(desc_part, seq_length) {
-                positions.push(deletion_position);
-                continue;
-            }
+        } else if let Some(deletion_position) = parse_truncation_postion(desc_part, seq_length) {
+            positions.push(deletion_position);
+            continue;
         }
     }
 
-    if positions.len() > 0 {
+    if !positions.is_empty() {
         let (min, max) = positions_max_min(&positions);
 
         Some(ProteinViewFeature {
@@ -226,6 +208,7 @@ fn make_mutant_summary(mutants_track: &ProteinViewTrack) -> ProteinViewTrack {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn make_mutants_track(gene_details: &GeneDetails,
                       pheno_type_config: &CvConfig,
                       protein: &ProteinDetails,
@@ -279,7 +262,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
             }
 
             for annotation_id in &term_annotation.annotations {
-                let annotation_detail = annotation_details_maps.get(&annotation_id)
+                let annotation_detail = annotation_details_maps.get(annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                 let Some(ref genotype_uniquename) = annotation_detail.genotype
@@ -337,7 +320,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
 
         let sequence_length = protein.sequence_length();
 
-        if let Some(mut feature) = feature_from_allele(&allele_details, sequence_length) {
+        if let Some(mut feature) = feature_from_allele(allele_details, sequence_length) {
             let mut viability_level = ProteinViewViabilityLevel::Normal;
 
             let mut categories_with_names: Vec<_> = allele_categories
@@ -363,7 +346,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
                 }
             }
 
-            categories_with_names.sort_by(|c1, c2| c1.cmp(c2));
+            categories_with_names.sort();
 
             feature.annotated_terms.extend(categories_with_names);
 
@@ -376,7 +359,7 @@ fn make_mutants_track(gene_details: &GeneDetails,
     track
 }
 
-fn make_mod_extension(extension: &Vec<ExtPart>,
+fn make_mod_extension(extension: &[ExtPart],
                       ext_rel_types: &HashSet<FlexStr>,
                       gene_details_maps: &UniquenameGeneMap,
                       term_details_map: &TermIdDetailsMap) -> Vec<FlexStr> {
@@ -417,7 +400,7 @@ fn make_mod_extension(extension: &Vec<ExtPart>,
         })
         .collect();
 
-    display_extension.sort_by(|s1, s2| s1.cmp(s2));
+    display_extension.sort();
 
     display_extension
 }
@@ -429,10 +412,7 @@ lazy_static! {
 
 fn parse_residue(residue_str: &str) -> Option<(FlexStr, usize)>
 {
-    let Some(captures) = MODIFICATION_RESIDUE_RE.captures(residue_str)
-    else {
-        return None;
-    };
+    let captures = MODIFICATION_RESIDUE_RE.captures(residue_str)?;
 
     let (Some(residue_match), Some(pos_match)) = (captures.get(1), captures.get(2))
     else {
@@ -461,9 +441,9 @@ fn make_modification_track(gene_details: &GeneDetails,
 
         for term_annotation in term_annotations {
             let termid = &term_annotation.term;
-            let ref term_details = term_details_map
+            let term_details = term_details_map
                 .get(termid)
-                .expect(&format!("internal error, can't find term: {}", termid));
+                .unwrap_or_else(|| panic!("internal error, can't find term: {}", termid));
             let term_name = &term_details.name;
             let annotations = term_annotation.annotations.clone();
 
@@ -491,14 +471,13 @@ fn make_modification_track(gene_details: &GeneDetails,
                         let mod_abbrev_conf = &psi_mod_config.modification_abbreviations;
                         let gene_uniquename = &gene_details.uniquename;
 
-                        if let Some(res_config) = mod_abbrev_conf.get(gene_uniquename) {
-                            if let Some(expanded_residues) = res_config.get(residue_str) {
+                        if let Some(res_config) = mod_abbrev_conf.get(gene_uniquename)
+                            && let Some(expanded_residues) = res_config.get(residue_str) {
                                 annotation_residues.extend(expanded_residues.split(","));
                             }
-                        }
                     }
 
-                    if annotation_residues.len() == 0 {
+                    if annotation_residues.is_empty() {
                         annotation_residues.push(residue_str.as_str());
                     }
                 };
@@ -565,8 +544,7 @@ fn make_modification_track(gene_details: &GeneDetails,
         }
     }
 
-    let features = seen_modifications.into_iter()
-                      .map(|(_, feature)| feature)
+    let features = seen_modifications.into_values()
                       .collect();
 
     ProteinViewTrack {
@@ -622,7 +600,7 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
             features.push(feature.clone());
 
             let feature_track = ProteinViewTrack {
-                name: flex_fmt!("Pfam {}", interpro_match.name.as_ref().unwrap_or_else(|| &interpro_match.id)),
+                name: flex_fmt!("Pfam {}", interpro_match.name.as_ref().unwrap_or(&interpro_match.id)),
                 display_type: flex_str!("block"),
                 features: vec![feature],
             };
@@ -642,15 +620,12 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
 }
 
 fn make_generic_features(track_name: FlexStr,
-                         features: &Vec<impl GenericProteinFeature>,
+                         features: &[impl GenericProteinFeature],
                          split_start_and_end: bool)
     -> Vec<ProteinViewFeature>
 {
         features.iter().filter_map(|f| {
-            let Some(PeptideRange { start, end }) = f.range()
-            else {
-                return None;
-            };
+            let PeptideRange { start, end } = f.range()?;
 
             let feature_name_start = f.feature_type().unwrap_or(track_name.clone());
             let feature_name = flex_fmt!("{} {}..{}", feature_name_start, start, end);
@@ -681,7 +656,7 @@ fn make_generic_features(track_name: FlexStr,
         .collect()
 }
 
-fn make_generic_track(track_name: FlexStr, features: &Vec<impl GenericProteinFeature>,
+fn make_generic_track(track_name: FlexStr, features: &[impl GenericProteinFeature],
                       split_start_and_end: bool)
     -> ProteinViewTrack
 {
@@ -752,8 +727,8 @@ fn make_binding_sites_track(gene_details: &GeneDetails,
 fn sort_deletions(deletions_track: &mut ProteinViewTrack) {
     let sort_helper = |(_, p1_start, p1_end): &ProteinViewFeaturePos,
                        (_, p2_start, p2_end): &ProteinViewFeaturePos| {
-        p1_start.cmp(&p2_start)
-                .then_with(|| p1_end.cmp(&p2_end))
+        p1_start.cmp(p2_start)
+                .then_with(|| p1_end.cmp(p2_end))
     };
 
     let sorter = |f1: &ProteinViewFeature, f2: &ProteinViewFeature| {
@@ -845,12 +820,10 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
 
         if dbname == "COILS" {
             return_val.coils.push(track);
+        } else if dbname.starts_with("MOBIDB") {
+            return_val.disordered.push(track);
         } else {
-            if dbname.starts_with("MOBIDB") {
-                return_val.disordered.push(track);
-            } else {
-                return_val.other.push(track);
-            }
+            return_val.other.push(track);
         }
     }
 
@@ -888,7 +861,7 @@ fn find_so_annotations_with_position(gene_details: &GeneDetails,
                 continue;
             }
 
-            let Some((_, first_pos)) = parse_residue(bits.get(0).unwrap())
+            let Some((_, first_pos)) = parse_residue(bits.first().unwrap())
             else {
                 continue;
             };
@@ -896,7 +869,7 @@ fn find_so_annotations_with_position(gene_details: &GeneDetails,
             let second_pos;
 
             if let Some(second_bit) = bits.get(1) {
-                let Some((_, pos)) = parse_residue(*second_bit)
+                let Some((_, pos)) = parse_residue(second_bit)
                 else {
                    continue;
                 };
@@ -951,6 +924,7 @@ fn make_cleavage_sites_track(gene_details: &GeneDetails,
     make_generic_track(flex_str!("Cleavage sites"), &cleavage_sites, false)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
                                   term_details_map: &TermIdDetailsMap,
                                   annotation_details_map: &IdOntAnnotationDetailMap,

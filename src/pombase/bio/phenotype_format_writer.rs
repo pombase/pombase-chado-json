@@ -144,7 +144,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                             if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
                                 submitter_comment
                             } else {
-                                format!("\t")
+                                "\t".to_string()
                             }
                         } else {
                             String::default()

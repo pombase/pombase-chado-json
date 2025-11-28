@@ -77,10 +77,7 @@ async fn get_file_range(range: Range, file_path: &str)
 async fn get_static_file(path: &str) -> Response {
     let res = read(path).await;
 
-    let content_type = match mime_guess::from_path(&path).first_raw() {
-        Some(mime) => mime,
-        None => "text/plain"
-    };
+    let content_type = mime_guess::from_path(path).first_raw().unwrap_or("text/plain");
 
     match res {
         Ok(bytes) => {
@@ -225,8 +222,9 @@ async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
     let res = all_state.query_exec.get_api_data().get_all_gocam_data()
         .values().cloned().collect();
 
-    let res: Result<(StatusCode, Json<Vec<GoCamSummary>>), (StatusCode, String)> =
-      Ok((StatusCode::OK, Json(res)));
+    type DataResult = Result<(StatusCode, Json<Vec<GoCamSummary>>), (StatusCode, String)>;
+
+    let res: DataResult = Ok((StatusCode::OK, Json(res)));
 
     res
 }
@@ -237,10 +235,10 @@ async fn get_gocam_data_by_id(Path(gocam_ids): Path<String>,
 {
     let details_list: Vec<_> =
         gocam_ids.split(",").map(|gocam_id| {
-            all_state.query_exec.get_api_data().get_gocam_details_by_id(&gocam_id)
+            all_state.query_exec.get_api_data().get_gocam_details_by_id(gocam_id)
         }).collect();
 
-    if details_list.len() == 0 {
+    if details_list.is_empty() {
         Err((StatusCode::NOT_FOUND, format!("no page for: {}", gocam_ids)))
     } else {
         Ok((StatusCode::OK, Json(details_list)))
@@ -295,11 +293,7 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
         if gocam_id.contains("+") {
             let filtered_data = gocam_id.split("+")
                .filter_map(|gocam_id| {
-                    if let Some(model) = all_gocam_data.get(gocam_id) {
-                        Some((gocam_id.into(), model.clone()))
-                    } else {
-                        None
-                    }
+                    all_gocam_data.get(gocam_id).map(|model| (gocam_id.into(), model.clone()))
                 }).collect();
             read_merged_gocam_model(web_root_dir, &filtered_data,
                                     &flags, &gene_set).await
@@ -314,7 +308,7 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
                                                 overlaps,
                                                 &flags).await
                 }
-                _ => read_gocam_model(web_root_dir, &gocam_id,
+                _ => read_gocam_model(web_root_dir, gocam_id,
                                       &flags).await
             }
         };
@@ -404,7 +398,7 @@ async fn get_model_summary_for_cytoscape_connected(Path(flags): Path<String>,
          &api_maps.gocam_overlaps
        };
 
-    let model_connections = model_connections_to_cytoscope(overlaps, &vec![]);
+    let model_connections = model_connections_to_cytoscope(overlaps, &[]);
 
     Json(model_connections.to_owned())
 }
@@ -1073,11 +1067,7 @@ async fn main() {
     let gene_name_map = api_data.get_maps().gene_summaries
         .iter()
         .filter_map(|(k, v)|
-            if let Some(ref name) = v.name {
-                Some((k.to_std_string(), name.to_std_string()))
-            } else {
-                None
-            })
+            v.name.as_ref().map(|name| (k.to_std_string(), name.to_std_string())))
         .collect();
 
     let pro_term_to_gene_map = api_data.get_maps().pro_term_to_gene_map.clone();
@@ -1180,10 +1170,11 @@ async fn main() {
 
     let app = NormalizePathLayer::trim_trailing_slash().layer(app);
 
-    axum::serve(listener, ServiceExt::<Request>::into_make_service(app))
-        .await
-        .unwrap()
-        .layer(TimeoutLayer::new(Duration::from_secs(120)));
+    let _: () = axum::serve(listener, ServiceExt::<Request>::into_make_service(app))
+    .await
+    .unwrap();
+    ()
+    .layer(TimeoutLayer::new(Duration::from_secs(120)));
 
     tracing_subscriber::fmt()
         .with_max_level(tracing::Level::DEBUG)

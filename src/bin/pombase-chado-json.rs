@@ -135,11 +135,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let go_eco_mapping = GoEcoMapping::read(&matches.opt_str("go-eco-mapping").unwrap())?;
     let gene_history_filename = matches.opt_str("gene-history-file");
     let gene_history =
-        if let Some(gene_history_filename) = gene_history_filename {
-           Some(parse_gene_history(&gene_history_filename))
-        } else {
-           None
-        };
+        gene_history_filename.map(|gene_history_filename| parse_gene_history(&gene_history_filename));
     let orcid_name_map_filename = matches.opt_str("orcid-name-map");
     let gocam_model_dir = matches.opt_str("gocam-model-directory");
 

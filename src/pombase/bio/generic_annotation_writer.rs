@@ -90,17 +90,15 @@ fn get_residue_extension(uniprot_data: &UniProtDataEntry,
 
     if range.len() == 1 {
         format!("residue({}{})", residue_abbrev, range.start)
+    } else if termid == "MOD:00689" {
+        // special case for disulfide crosslinked residues
+        format!("residue({}{}..{}{})",
+                residue_abbrev, range.start,
+                residue_abbrev, range.end)
     } else {
-        if termid == "MOD:00689" {
-            // special case for disulfide crosslinked residues
-            format!("residue({}{}..{}{})",
-                    residue_abbrev, range.start,
-                    residue_abbrev, range.end)
-        } else {
-            format!("residue({}{}-{}{})",
-                    residue_abbrev, range.start,
-                    residue_abbrev, range.end)
-        }
+        format!("residue({}{}-{}{})",
+                residue_abbrev, range.start,
+                residue_abbrev, range.end)
     }
 }
 
@@ -192,8 +190,8 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                                assigned_by)?;
     }
 
-    if let Some(signal_peptide) = uniprot_data.signal_peptide.as_ref() {
-      if let Some(ref termid) = signal_peptide.termid {
+    if let Some(signal_peptide) = uniprot_data.signal_peptide.as_ref()
+      && let Some(ref termid) = signal_peptide.termid {
         let evidence = signal_peptide.evidence.as_deref().unwrap_or_default();
         let range = signal_peptide.range.clone();
         let residue_extension =
@@ -217,10 +215,9 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                                 residue_extension.as_str(),
                                 assigned_by)?;
       }
-    }
 
-    if let Some(ref transit_peptide) = uniprot_data.transit_peptide {
-      if let Some(ref termid) = transit_peptide.termid {
+    if let Some(ref transit_peptide) = uniprot_data.transit_peptide
+      && let Some(ref termid) = transit_peptide.termid {
         let evidence = transit_peptide.evidence.as_deref().unwrap_or_default();
         let range = &transit_peptide.range;
         let residue_extension =
@@ -244,12 +241,12 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
                                 residue_extension.as_str(),
                                 assigned_by)?;
       }
-    }
   }
 
   Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 fn write_generic_annotation(out: &mut BufWriter<&mut dyn Write>,
                             uniquename: &str, name: &str, termid: &str,
                             evidence: &str,

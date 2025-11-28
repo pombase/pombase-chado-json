@@ -31,12 +31,10 @@ fn make_gene_title(gene_details: &GeneDetails) -> String {
     let feature_type =
         if gene_details.feature_type == "mRNA gene" {
             String::from("protein coding gene")
+        } else if gene_details.feature_type.ends_with("gene") {
+            String::from(gene_details.feature_type.as_str())
         } else {
-            if gene_details.feature_type.ends_with("gene") {
-                String::from(gene_details.feature_type.as_str())
-            } else {
-                format!("{} gene", gene_details.feature_type)
-            }
+            format!("{} gene", gene_details.feature_type)
         };
 
     if let Some(ref product) = gene_details.product {
@@ -209,12 +207,12 @@ fn genotype_alleles_summary(genotype_details: &GenotypeDetails) -> String {
 
             summ += "<tr>";
 
-            let gene_product = gene.product.as_ref().unwrap_or_else(|| &empty_string);
+            let gene_product = gene.product.as_ref().unwrap_or(&empty_string);
 
             let allele_expression =
-                expressed_allele.expression.as_ref().unwrap_or_else(|| &empty_string);
-            let allele_name = allele.name.as_ref().unwrap_or_else(|| &empty_string);
-            let allele_description = allele.description.as_ref().unwrap_or_else(|| &empty_string);
+                expressed_allele.expression.as_ref().unwrap_or(&empty_string);
+            let allele_name = allele.name.as_ref().unwrap_or(&empty_string);
+            let allele_description = allele.description.as_ref().unwrap_or(&empty_string);
 
             if idx == 0 {
                 summ += &format!("<td><a href='/gene/{}'>{}</a></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
@@ -439,16 +437,15 @@ fn gene_references(gene_details: &GeneDetails) -> String {
 
     for ref_uniquename in gene_details.references_by_uniquename.keys() {
         let ref_by_uniquename = &gene_details.references_by_uniquename;
-        if let Some(ref_short_opt) = ref_by_uniquename.get(ref_uniquename) {
-            if let Some(ref_short) = ref_short_opt {
+        if let Some(ref_short_opt) = ref_by_uniquename.get(ref_uniquename)
+            && let Some(ref_short) = ref_short_opt {
                 refs_html += &format!("<dt><a href='/reference/{}'>{}</a> - <a href='/reference/{}'>{}</a></dt> <dd>{} {}</dd>\n",
                                       ref_short.uniquename, ref_short.uniquename,
                                       ref_short.uniquename,
-                                      ref_short.title.as_ref().unwrap_or_else(|| &unknown_title),
-                                      ref_short.authors_abbrev.as_ref().unwrap_or_else(|| &empty),
-                                      ref_short.citation.as_ref().unwrap_or_else(|| &empty));
+                                      ref_short.title.as_ref().unwrap_or(&unknown_title),
+                                      ref_short.authors_abbrev.as_ref().unwrap_or(&empty),
+                                      ref_short.citation.as_ref().unwrap_or(&empty));
             }
-        }
     }
 
     refs_html += "</dl>\n";
@@ -469,7 +466,7 @@ fn gene_body(config: &Config, title: &str, gene_details: &GeneDetails) -> String
     body += &format!("<section><h2>Annotation</h2>\n{}</section>\n",
                      annotation_section(config, gene_details));
 
-    if gene_details.interpro_matches.len() > 0 {
+    if !gene_details.interpro_matches.is_empty() {
         body += &format!("<section><h2>Protein features</h2>\n{}</section>\n",
                          protein_features(gene_details));
     }

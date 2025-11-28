@@ -76,6 +76,7 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
     ret
 }
 
+#[allow(clippy::too_many_arguments)]
 fn to_gff(chromosome_export_id: &str,
           source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str,
           maybe_characterisation_status: Option<&str>,
@@ -215,7 +216,7 @@ pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
                 panic!("unknown ext_range for: {:?}", ext_part);
             };
 
-            let Some(ref cv_conf) = config.cv_config.get("PSI-MOD")
+            let Some(cv_conf) = config.cv_config.get("PSI-MOD")
             else {
                 panic!("no modification CV configured - can't find \"PSI-MOD\"");
             };
@@ -350,39 +351,33 @@ pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,
         } else {
             Ordering::Less
         }
+    } else if maybe_ep2_index.is_some() {
+        Ordering::Greater
     } else {
-        if maybe_ep2_index.is_some() {
-            Ordering::Greater
-        } else {
-            let maybe_ep1_last_index = always_last_conf.iter().position(|r| *r == ep1.rel_type_name);
-            let maybe_ep2_last_index = always_last_conf.iter().position(|r| *r == ep2.rel_type_name);
+        let maybe_ep1_last_index = always_last_conf.iter().position(|r| *r == ep1.rel_type_name);
+        let maybe_ep2_last_index = always_last_conf.iter().position(|r| *r == ep2.rel_type_name);
 
-            if let Some(ep1_last_index) = maybe_ep1_last_index {
-                if let Some(ep2_last_index) = maybe_ep2_last_index {
-                    ep1_last_index.cmp(&ep2_last_index)
-                } else {
+        if let Some(ep1_last_index) = maybe_ep1_last_index {
+            if let Some(ep2_last_index) = maybe_ep2_last_index {
+                ep1_last_index.cmp(&ep2_last_index)
+            } else {
+                Ordering::Greater
+            }
+        } else if maybe_ep2_last_index.is_some() {
+            Ordering::Less
+        } else {
+            let name_cmp = ep1.rel_type_name.cmp(&ep2.rel_type_name);
+
+            if name_cmp == Ordering::Equal {
+                if ep1.ext_range.is_gene() && !ep2.ext_range.is_gene() {
+                    Ordering::Less
+                } else if !ep1.ext_range.is_gene() && ep2.ext_range.is_gene() {
                     Ordering::Greater
+                } else {
+                    Ordering::Equal
                 }
             } else {
-                if maybe_ep2_last_index.is_some() {
-                    Ordering::Less
-                } else {
-                    let name_cmp = ep1.rel_type_name.cmp(&ep2.rel_type_name);
-
-                    if name_cmp == Ordering::Equal {
-                        if ep1.ext_range.is_gene() && !ep2.ext_range.is_gene() {
-                            Ordering::Less
-                        } else {
-                            if !ep1.ext_range.is_gene() && ep2.ext_range.is_gene() {
-                                Ordering::Greater
-                            } else {
-                                Ordering::Equal
-                            }
-                        }
-                    } else {
-                        name_cmp
-                    }
-                }
+                name_cmp
             }
         }
     }
@@ -413,12 +408,10 @@ pub fn read_fasta(input: &mut dyn std::io::Read)
                 id,
                 sequence: String::new(),
             });
+        } else if let Some(ref mut seq_rec) = current {
+            seq_rec.sequence.push_str(&line);
         } else {
-            if let Some(ref mut seq_rec) = current {
-                seq_rec.sequence.push_str(&line);
-            } else {
-                panic!("missing header line in fasta file: {}", line);
-            }
+            panic!("missing header line in fasta file: {}", line);
         }
     }
 
@@ -449,7 +442,7 @@ pub fn parse_orcid_name_map(orcid_name_map_filename: &str)
         let bits: Vec<_> = line.split("\t").collect();
 
         if bits.len() != 2 {
-            return Err(io::Error::new(ErrorKind::Other, "badly formatted orcid mapping file"));
+            return Err(io::Error::other("badly formatted orcid mapping file"));
         }
 
         ret.insert(bits[0].into(), bits[1].into());
@@ -522,7 +515,7 @@ TCAACCACATTCAA";
     assert_eq!(records[1].sequence, "TCACTTAAATTCTTCGTCAACCACATTCAA");
 }
 
-use std::{cmp::Ordering, fs::File, io::{BufRead, ErrorKind}};
+use std::{cmp::Ordering, fs::File, io::BufRead};
 #[cfg(test)]
 use std::collections::{HashSet, HashMap};
 use std::io::{self, BufReader};

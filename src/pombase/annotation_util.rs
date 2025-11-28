@@ -64,11 +64,10 @@ pub fn table_for_export(data_lookup: &dyn DataLookup,
                             let term_name = annotation_term_details.name.clone();
                             row.push(term_name);
                         }
-                        if column_config.name == "allele" {
-                            if let Some(ref genotype_details) = maybe_genotype_details {
+                        if column_config.name == "allele"
+                            && let Some(ref genotype_details) = maybe_genotype_details {
                                 row.push(genotype_details.display_uniquename.clone());
                             }
-                        }
                         if column_config.name == "gene_uniquename" {
                             let gene_uniquenames_string = join(gene_uniquenames, ",");
                             row.push(gene_uniquenames_string);

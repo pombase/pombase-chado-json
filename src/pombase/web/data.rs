@@ -86,14 +86,12 @@ impl DataLookup for WebData {
         let mut arc_terms = self.arc_terms.write().unwrap();
         if let Some(arc_term_details) = arc_terms.get(termid) {
             Some(arc_term_details.to_owned())
+        } else if let Some(term_details) = self.terms.get(termid) {
+            let arc_term_details = Arc::new(term_details.to_owned());
+            arc_terms.insert(termid.to_owned(), arc_term_details.clone());
+            Some(arc_term_details)
         } else {
-           if let Some(term_details) = self.terms.get(termid) {
-               let arc_term_details = Arc::new(term_details.to_owned());
-               arc_terms.insert(termid.to_owned(), arc_term_details.clone());
-               Some(arc_term_details)
-           } else {
-               None
-           }
+            None
         }
     }
 
@@ -101,14 +99,12 @@ impl DataLookup for WebData {
         let mut arc_genes = self.arc_genes.write().unwrap();
         if let Some(arc_gene_details) = arc_genes.get(gene_uniquename) {
             Some(arc_gene_details.to_owned())
+        } else if let Some(gene_details) = self.genes.get(gene_uniquename) {
+            let arc_gene_details = Arc::new(gene_details.to_owned());
+            arc_genes.insert(gene_uniquename.to_owned(), arc_gene_details.clone());
+            Some(arc_gene_details)
         } else {
-           if let Some(gene_details) = self.genes.get(gene_uniquename) {
-               let arc_gene_details = Arc::new(gene_details.to_owned());
-               arc_genes.insert(gene_uniquename.to_owned(), arc_gene_details.clone());
-               Some(arc_gene_details)
-           } else {
-               None
-           }
+            None
         }
     }
 
@@ -116,14 +112,12 @@ impl DataLookup for WebData {
         let mut arc_alleles = self.arc_alleles.write().unwrap();
         if let Some(arc_allele_details) = arc_alleles.get(allele_uniquename) {
             Some(arc_allele_details.to_owned())
+        } else if let Some(allele_details) = self.alleles.get(allele_uniquename) {
+            let arc_allele_details = Arc::new(allele_details.to_owned());
+            arc_alleles.insert(allele_uniquename.to_owned(), arc_allele_details.clone());
+            Some(arc_allele_details)
         } else {
-           if let Some(allele_details) = self.alleles.get(allele_uniquename) {
-               let arc_allele_details = Arc::new(allele_details.to_owned());
-               arc_alleles.insert(allele_uniquename.to_owned(), arc_allele_details.clone());
-               Some(arc_allele_details)
-           } else {
-               None
-           }
+            None
         }
     }
 
@@ -131,14 +125,12 @@ impl DataLookup for WebData {
         let mut arc_references = self.arc_references.write().unwrap();
         if let Some(arc_reference_details) = arc_references.get(reference_uniquename) {
             Some(arc_reference_details.to_owned())
+        } else if let Some(reference_details) = self.references.get(reference_uniquename) {
+            let arc_reference_details = Arc::new(reference_details.to_owned());
+            arc_references.insert(reference_uniquename.to_owned(), arc_reference_details.clone());
+            Some(arc_reference_details)
         } else {
-           if let Some(reference_details) = self.references.get(reference_uniquename) {
-               let arc_reference_details = Arc::new(reference_details.to_owned());
-               arc_references.insert(reference_uniquename.to_owned(), arc_reference_details.clone());
-               Some(arc_reference_details)
-           } else {
-               None
-           }
+            None
         }
     }
 
@@ -148,15 +140,13 @@ impl DataLookup for WebData {
         let mut arc_genotypes = self.arc_genotypes.write().unwrap();
         if let Some(arc_genotype_details) = arc_genotypes.get(genotype_display_uniquename) {
             Some(arc_genotype_details.to_owned())
-        } else {
-           if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
-               let arc_genotype_details = Arc::new(genotype_details.to_owned());
-               arc_genotypes.insert(genotype_display_uniquename.to_owned(),
+        } else if let Some(genotype_details) = self.genotypes.get(genotype_display_uniquename) {
+            let arc_genotype_details = Arc::new(genotype_details.to_owned());
+            arc_genotypes.insert(genotype_display_uniquename.to_owned(),
                                          arc_genotype_details.clone());
-               Some(arc_genotype_details)
-           } else {
-               None
-           }
+            Some(arc_genotype_details)
+        } else {
+            None
         }
     }
 
@@ -166,15 +156,13 @@ impl DataLookup for WebData {
         let mut arc_annotation_details = self.arc_annotation_details.write().unwrap();
         if let Some(arc_annotation_detail_details) = arc_annotation_details.get(&annotation_id) {
             Some(arc_annotation_detail_details.to_owned())
+        } else if let Some(annotation_detail_details) = self.annotation_details.get(&annotation_id) {
+            let arc_annotation_detail_details = Arc::new(annotation_detail_details.to_owned());
+            arc_annotation_details.insert(annotation_id,
+                                          arc_annotation_detail_details.clone());
+            Some(arc_annotation_detail_details)
         } else {
-           if let Some(annotation_detail_details) = self.annotation_details.get(&annotation_id) {
-               let arc_annotation_detail_details = Arc::new(annotation_detail_details.to_owned());
-               arc_annotation_details.insert(annotation_id,
-                                             arc_annotation_detail_details.clone());
-               Some(arc_annotation_detail_details)
-           } else {
-               None
-           }
+            None
         }
     }
 }
@@ -404,7 +392,7 @@ impl WebData {
                 gene_details.transcripts.first()
             {
                 let transcript = self.api_maps.transcripts.get(transcript_uniquename)
-                    .expect(&format!("internal error, can't find transcript details for {}",
+                    .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
                                      transcript_uniquename));
                 let mut cds_seq = String::new();
                 let mut cds_introns_seq = String::new();
@@ -576,11 +564,10 @@ impl WebData {
         let empty_string = flex_str!("");
 
         for gene_details in self.genes.values() {
-            if let Some(load_org_taxonid) = config.load_organism_taxonid {
-                if gene_details.taxonid != load_org_taxonid {
+            if let Some(load_org_taxonid) = config.load_organism_taxonid
+                && gene_details.taxonid != load_org_taxonid {
                     continue;
                 }
-            }
 
             let synonyms =
                 gene_details.synonyms.iter().filter(|synonym| {
@@ -617,23 +604,19 @@ impl WebData {
 
             if gene_details.feature_type == "pseudogene" {
                 pseudogenes_writer.write_all(line.as_bytes())?;
-            } else {
-                if gene_details.feature_type == "mRNA gene" {
-                    gene_writer.write_all(line_with_product.as_bytes())?;
-                } else {
-                    if gene_details.feature_type.contains("RNA") {
-                        rna_writer.write_all(line_with_product.as_bytes())?;
-                    }
-                }
+            } else if gene_details.feature_type == "mRNA gene" {
+                gene_writer.write_all(line_with_product.as_bytes())?;
+            } else if gene_details.feature_type.contains("RNA") {
+                rna_writer.write_all(line_with_product.as_bytes())?;
             }
 
             let external_id = gene_details.uniprot_identifier.as_ref()
                 .unwrap_or(gene_details.rnacentral_urs_identifier.as_ref().unwrap_or(&empty_string));
 
 
-            if external_id.len() > 0 && gene_details.feature_type == "mRNA gene" {
+            if !external_id.is_empty() && gene_details.feature_type == "mRNA gene" {
                 let gene_name_or_dash =
-                    if gene_name.len() == 0 {
+                    if gene_name.is_empty() {
                         "-"
                     } else {
                         gene_name.as_str()
@@ -745,7 +728,7 @@ impl WebData {
                 gene_details.transcripts.first()
             {
                 let transcript = self.api_maps.transcripts.get(transcript_uniquename)
-                    .expect(&format!("internal error, can't find transcript details for {}",
+                    .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
                                      transcript_uniquename));
 
                 if let Some(ref protein) = transcript.protein {
@@ -852,11 +835,10 @@ impl WebData {
         };
 
         for (chr_uniquename, chr_details) in &self.chromosomes {
-            if let Some(load_org_taxonid) = config.load_organism_taxonid {
-                if chr_details.taxonid != load_org_taxonid {
+            if let Some(load_org_taxonid) = config.load_organism_taxonid
+                && chr_details.taxonid != load_org_taxonid {
                     continue;
                 }
-            }
 
             let gene_file_name = format!("{}/{}.gene.coords.tsv", output_dir, chr_uniquename);
             let cds_file_name = format!("{}/{}.cds.coords.tsv", output_dir, chr_uniquename);
@@ -878,7 +860,7 @@ impl WebData {
                     for transcript_uniquename in &gene.transcripts {
                         let transcript = self.api_maps.transcripts
                             .get(transcript_uniquename)
-                            .expect(&format!("internal error, can't find transcript details for {}",
+                            .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
                                              transcript_uniquename));
 
                         if let Some(ref cds_location) = transcript.cds_location {
@@ -889,11 +871,11 @@ impl WebData {
                             transcript.parts[0].location.strand == Strand::Forward;
 
                         let parts: Vec<FeatureShort> = if is_forward {
-                            transcript.parts.iter().cloned().filter(|part| {
+                            transcript.parts.iter().filter(|&part| {
                                 part.feature_type == FeatureType::Exon ||
                                     part.feature_type == FeatureType::FivePrimeUtr ||
                                     part.feature_type == FeatureType::ThreePrimeUtr
-                            }).collect()
+                            }).cloned().collect()
                         } else {
                             transcript.parts.iter().cloned().rev().filter(|part| {
                                 part.feature_type == FeatureType::Exon ||
@@ -1086,11 +1068,10 @@ impl WebData {
         let mut deletion_viability_writer = BufWriter::new(&deletion_viability_file);
 
         for gene_details in self.genes.values() {
-            if let Some(load_org_taxonid) = config.load_organism_taxonid {
-                if gene_details.taxonid != load_org_taxonid {
+            if let Some(load_org_taxonid) = config.load_organism_taxonid
+                && gene_details.taxonid != load_org_taxonid {
                     continue;
                 }
-            }
 
             let line = format!("{}\t{}\n",
                                gene_details.uniquename,
@@ -1169,11 +1150,10 @@ impl WebData {
         };
 
         for gene_details in self.genes.values() {
-            if let Some(load_org_taxonid) = config.load_organism_taxonid {
-                if gene_details.taxonid != load_org_taxonid {
+            if let Some(load_org_taxonid) = config.load_organism_taxonid
+                && gene_details.taxonid != load_org_taxonid {
                     continue;
                 }
-            }
 
             if gene_details.tm_domain_coords.is_empty() {
                 continue;
@@ -1183,7 +1163,7 @@ impl WebData {
                 gene_details.transcripts.first()
             {
                 let transcript = self.api_maps.transcripts.get(transcript_uniquename)
-                    .expect(&format!("internal error, can't find transcript details for {}",
+                    .unwrap_or_else(|| panic!("internal error, can't find transcript details for {}",
                                      transcript_uniquename));
 
                 if let Some(ref protein) = transcript.protein {
@@ -1360,11 +1340,10 @@ impl WebData {
         }
 
         for gene_details in self.genes.values() {
-            if let Some(load_org_taxonid) = config.load_organism_taxonid {
-                if gene_details.taxonid != load_org_taxonid {
+            if let Some(load_org_taxonid) = config.load_organism_taxonid
+                && gene_details.taxonid != load_org_taxonid {
                     continue;
                 }
-            }
             s += &format!("{}/gene/{}\n", base_url, gene_details.uniquename);
         }
 
@@ -1540,11 +1519,10 @@ impl WebData {
 
                         let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
                         let mut maybe_evidence = annotation_detail.evidence.clone();
-                        if let Some(ref evidence) = maybe_evidence {
-                            if let Some(ev_config) = config.evidence_types.get(evidence) {
+                        if let Some(ref evidence) = maybe_evidence
+                            && let Some(ev_config) = config.evidence_types.get(evidence) {
                                 maybe_evidence = Some(ev_config.long.to_shared_str());
                             }
-                        }
                         let (modification, extension) =
                             process_modification_ext(config, self, &gene_details.uniquename,
                                                      &annotation_detail.extension);
@@ -1685,7 +1663,7 @@ impl WebData {
                 continue;
             };
 
-            let approved_time = approved_parts.next().unwrap_or_else(|| "00:00:00");
+            let approved_time = approved_parts.next().unwrap_or("00:00:00");
 
             let timestamp = flex_fmt!("{}T{}.000Z", approved_date, approved_time);
 
@@ -1706,10 +1684,10 @@ impl WebData {
                 };
 
             for annotation_curator in &ref_details.annotation_curators {
-                maybe_add_record(&annotation_curator, flex_str!("publication_curated"));
+                maybe_add_record(annotation_curator, flex_str!("publication_curated"));
             }
             for annotation_curator in &ref_details.annotation_file_curators {
-                maybe_add_record(&annotation_curator, flex_str!("provided_dataset"));
+                maybe_add_record(annotation_curator, flex_str!("provided_dataset"));
             }
             if let Some(ref canto_approver_orcid) = ref_details.canto_approver_orcid {
                 add_record(canto_approver_orcid, flex_str!("approved_publication"));
@@ -1738,11 +1716,10 @@ impl WebData {
         let mut curated_pubs_writer = BufWriter::new(&curated_pubs_file);
 
         for reference in self.references.values() {
-            if reference.is_pubmed_reference() && reference.is_canto_curated() {
-                if let Some(ref title) = reference.title {
+            if reference.is_pubmed_reference() && reference.is_canto_curated()
+                && let Some(ref title) = reference.title {
                     writeln!(curated_pubs_writer, "{}\t{}", reference.uniquename, title)?;
                 }
-            }
         }
 
         Ok(())
@@ -1792,7 +1769,7 @@ impl WebData {
             let (_, a_model_title, a_hole_node) = a;
             let (_, b_model_title, b_hole_node) = b;
 
-            let order = a_model_title.cmp(&b_model_title);
+            let order = a_model_title.cmp(b_model_title);
 
             if order == Ordering::Equal {
                 a_hole_node.label.cmp(&b_hole_node.label)
@@ -1818,21 +1795,21 @@ impl WebData {
                 }
                 let has_input_string =
                     inputs.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
-                if has_input_string.len() > 0 {
+                if !has_input_string.is_empty() {
                     write!(writer, "{} / ", has_input_string)?;
                 } else {
                     write!(writer, "? / ")?;
                 }
                 let has_output_string =
                     outputs.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
-                if has_output_string.len() > 0 {
+                if !has_output_string.is_empty() {
                     write!(writer, "{}\t", has_output_string)?;
                 } else {
                     write!(writer, "?\t")?;
                 }
                 let occurs_in_string =
                     hole_node.occurs_in.iter().map(|l| l.label_or_id()).collect::<Vec<_>>().join(",");
-                if occurs_in_string.len() > 0 {
+                if !occurs_in_string.is_empty() {
                     write!(writer, "{}", occurs_in_string)?
                 }
                 writeln!(writer)?;
@@ -1873,7 +1850,7 @@ impl WebData {
         self.write_all_admin_curated(&web_json_path)?;
         println!("wrote references");
 
-        self.write_sqlite_db(&output_dir).unwrap();
+        self.write_sqlite_db(output_dir).unwrap();
         println!("wrote SQLite DB");
 
         self.write_api_maps(&web_json_path)?;

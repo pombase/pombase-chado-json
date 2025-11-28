@@ -106,11 +106,10 @@ fn get_range(cap: Captures) -> Option<PeptideRange> {
 }
 
 fn get_ligand(rest: &str) -> FlexStr {
-    if let Some(ligand_capture) = LIGAND_RE.captures_iter(rest).next() {
-        if let Some(ligand_match) = ligand_capture.get(1) {
+    if let Some(ligand_capture) = LIGAND_RE.captures_iter(rest).next()
+        && let Some(ligand_match) = ligand_capture.get(1) {
             return ligand_match.as_str().into()
         }
-    }
 
     flex_str!("unknown ligand")
 }
@@ -181,13 +180,11 @@ fn parse_evidence(text: &str) -> Vec<(Evidence, Option<ReferenceUniquename>)>
             let ev_and_ref: Vec<_> = part.split('|').collect();
             if ev_and_ref.len() == 1 {
                 (ev_and_ref[0].into(), None)
+            } else if ev_and_ref[1].starts_with("PubMed:") {
+                let reference = ev_and_ref[1].replace("PubMed:", "PMID:").into();
+                (ev_and_ref[0].into(), Some(reference))
             } else {
-                if ev_and_ref[1].starts_with("PubMed:") {
-                    let reference = ev_and_ref[1].replace("PubMed:", "PMID:").into();
-                    (ev_and_ref[0].into(), Some(reference))
-                } else {
-                    (ev_and_ref[0].into(), None)
-                }
+                (ev_and_ref[0].into(), None)
             }
         })
         .collect()
@@ -212,7 +209,7 @@ fn get_glycosylation_sites(uniprot_record: &UniProtDataRecord) -> Vec<Glycosylat
         let mut evidence_vec = parse_evidence(field_part);
         let (evidence, reference) =
             if let Some((evidence, reference)) = evidence_vec.pop() {
-                (Some(evidence.into()), reference)
+                (Some(evidence), reference)
             } else {
                 (None, None)
             };
@@ -238,7 +235,7 @@ fn get_disulfide_bonds(uniprot_record: &UniProtDataRecord) -> Vec<DisulfideBond>
         let mut evidence_vec = parse_evidence(field_part);
         let (evidence, reference) =
             if let Some((evidence, reference)) = evidence_vec.pop() {
-                (Some(evidence.into()), reference)
+                (Some(evidence), reference)
             } else {
                 (None, None)
             };
@@ -283,21 +280,19 @@ fn get_lipidation_sites(uniprot_record: &UniProtDataRecord) -> Vec<LipidationSit
         let mut evidence_vec = parse_evidence(field_part);
         let (evidence, reference) =
             if let Some((evidence, reference)) = evidence_vec.pop() {
-                (Some(evidence.into()), reference)
+                (Some(evidence), reference)
             } else {
                 (None, None)
             };
 
+        #[allow(clippy::question_mark)]
         let Some(ref note) = parse_note(field_part)
         else {
             return None;
         };
 
         let termid = note_to_termid_map.get(note.as_str());
-        let Some(termid) = termid
-        else {
-            return None;
-        };
+        let termid = termid?;
 
         Some(LipidationSite {
             range,
@@ -405,27 +400,24 @@ fn get_modified_residues(uniprot_record: &UniProtDataRecord,
         let mut evidence_vec = parse_evidence(field_part);
         let (evidence, reference) =
             if let Some((evidence, reference)) = evidence_vec.pop() {
-                if let Some(ref reference) = reference {
-                    if filter_references.contains(&reference) {
+                if let Some(ref reference) = reference
+                    && filter_references.contains(reference) {
                         return None;
                     }
-                }
-                (Some(evidence.into()), reference)
+                (Some(evidence), reference)
             } else {
                 (None, None)
             };
 
 
+        #[allow(clippy::question_mark)]
         let Some(ref note) = parse_note(field_part)
         else {
             return None;
         };
 
         let termid = note_to_termid_map.get(note.as_str());
-        let Some(termid) = termid
-        else {
-            return None;
-        };
+        let termid = termid?;
 
         Some(ModifiedResidue {
             range,
@@ -450,8 +442,8 @@ fn process_record(uniprot_record: UniProtDataRecord,
         };
 
     let mut signal_peptide = None;
-    if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide) {
-        if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
+    if let Some(field_part) = first_field_part(&uniprot_record.signal_peptide)
+        && let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
             let range = get_range(cap);
 
             let mut evidence_vec = parse_evidence(field_part.as_str());
@@ -471,11 +463,10 @@ fn process_record(uniprot_record: UniProtDataRecord,
                 termid: Some(flex_str!("SO:0000418")),
             })
         }
-    }
 
     let mut transit_peptide = None;
-    if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide) {
-        if let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
+    if let Some(field_part) = first_field_part(&uniprot_record.transit_peptide)
+        && let Some(cap) = RANGE_RE.captures_iter(&field_part).next() {
             let range = get_range(cap);
 
             let mut evidence_vec = parse_evidence(field_part.as_str());
@@ -496,7 +487,6 @@ fn process_record(uniprot_record: UniProtDataRecord,
             });
 
         }
-    }
 
     let mut binding_sites_parts_iter =
         SPLIT_RE.split(&uniprot_record.binding_sites);
@@ -666,7 +656,7 @@ pub fn filter_uniprot_map(mut uniprot_data_map: UniProtDataMap,
                 &peptide.id
             };
         if let Some(uniprot_data) = uniprot_data_map.remove(gene_uniquename) {
-            if &peptide.sequence == uniprot_data.sequence.as_str() {
+            if peptide.sequence == uniprot_data.sequence.as_str() {
                 return_map.insert(uniprot_data.gene_uniquename.clone(), uniprot_data);
             } else {
                 eprintln!("sequence doesn't match UniProt: {}", uniprot_data.gene_uniquename);

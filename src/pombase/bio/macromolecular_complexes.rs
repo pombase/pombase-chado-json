@@ -25,7 +25,7 @@ pub fn write_macromolecular_complexes(complex_data: &ProteinComplexData,
 
     for (termid, term_details) in complex_data.iter() {
 
-        for (_, gene_details) in &term_details.complex_genes {
+        for gene_details in term_details.complex_genes.values() {
             let mut evidence_set = BTreeSet::new();
             let mut evidence_refs = HashMap::new();
             let mut evidence_assigned_by = HashMap::new();

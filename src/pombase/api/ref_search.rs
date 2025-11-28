@@ -104,11 +104,10 @@ fn make_refs_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
             refs_url += &url_parts.join(" OR ");
 
             for word in clean_words {
-                if word.len() == 4 && (word.starts_with("19") || word.starts_with("20")) {
-                    if let Ok(num) = word.parse::<u32>() {
+                if word.len() == 4 && (word.starts_with("19") || word.starts_with("20"))
+                    && let Ok(num) = word.parse::<u32>() {
                         refs_url += &format!(" OR publication_year:{}^20", num);
                     }
-                }
             }
         }
     }

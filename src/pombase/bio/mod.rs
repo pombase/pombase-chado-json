@@ -21,10 +21,7 @@ pub enum ExportComments {
 fn get_submitter_comment(annotation_detail: &OntAnnotationDetail)
    -> Option<String>
 {
-    let Some(ref submitter_comment) = annotation_detail.submitter_comment
-    else {
-        return None;
-    };
+    let submitter_comment = annotation_detail.submitter_comment.as_ref()?;
 
     // remove comments while handling nested brackets (in a hacky way)
     let submitter_comment =

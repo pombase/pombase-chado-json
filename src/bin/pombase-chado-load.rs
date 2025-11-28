@@ -123,7 +123,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let mark_as_obsolete =
-        if let Some(first_remaining) = remaining_args.get(0) {
+        if let Some(first_remaining) = remaining_args.first() {
             first_remaining == "--mark-as-obsolete"
         } else {
             false

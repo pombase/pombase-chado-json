@@ -89,19 +89,19 @@ impl Search {
     pub async fn term_complete(&self, cv_name: &str, q: &str)
                          -> Result<Vec<SolrTermSummary>>
     {
-        Ok(term_complete(&self.config, cv_name, q).await?)
+        term_complete(&self.config, cv_name, q).await
     }
 
     pub async fn term_summary_by_id(&self, termid: &str)
                              -> Result<Option<SolrTermSummary>>
     {
-        Ok(term_summary_by_id(&self.config, termid).await?)
+        term_summary_by_id(&self.config, termid).await
     }
 
     pub async fn ref_complete(&self, q: &str)
                         -> Result<Vec<SolrReferenceSummary>>
     {
-        Ok(search_refs(&self.config, q).await?)
+        search_refs(&self.config, q).await
     }
 
     pub async fn allele_complete(&self, q: &str)

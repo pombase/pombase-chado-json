@@ -100,6 +100,7 @@ pub struct PeptideRange {
 }
 
 impl PeptideRange {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         if self.start <= self.end {
             self.end - self.start + 1
@@ -2026,7 +2027,7 @@ impl AlleleShort {
             (name.ends_with('Δ') || name.ends_with("delta")) ||
             allele_type == "wild_type" && name.ends_with('+') {
                 if name.ends_with(description.as_str()) || allele_type == description ||
-                    compact && allele_type.as_str() == &description.replace(" ", "_") {
+                    compact && allele_type.as_str() == description.replace(" ", "_") {
                     return name;
                 } else {
                     return flex_fmt!("{}({})", name, description);
@@ -2088,13 +2089,12 @@ fn allele_encoded_name_and_type(allele_name: &Option<FlexStr>, allele_type: &str
             }
         }
 
-    let display_name =
-        if allele_type == "deletion" {
+
+    if allele_type == "deletion" {
             flex_fmt!("{}-{}", name, description.as_str())
         } else {
             flex_fmt!("{}-{}-{}", name, description.as_str(), &allele_type)
-        };
-    display_name
+        }
 }
 
 impl From<&AlleleDetails> for AlleleShort {
@@ -2396,7 +2396,7 @@ impl PartialOrd for GeneticInteractionDetail {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Hash)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct InteractionAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub interactor_uniquename: GeneUniquename,
@@ -2411,6 +2411,13 @@ pub struct InteractionAnnotation {
     pub source_database: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub annotation_date: Option<FlexStr>,
+}
+impl Hash for InteractionAnnotation {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.gene_uniquename.hash(state);
+        self.interactor_uniquename.hash(state);
+        self.evidence.hash(state);
+    }
 }
 impl PartialEq for InteractionAnnotation {
     fn eq(&self, other: &Self) -> bool {

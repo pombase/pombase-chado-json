@@ -14,7 +14,7 @@ pub fn get_query_part(words: &[String]) -> String {
         if i == words_length - 1 {
             ret += &format!("{} {}*", word, word);
         } else {
-            ret += &word;
+            ret += word;
             ret += " ";
         }
     }
@@ -76,15 +76,13 @@ pub async fn solr_request(reqwest_client: &Client, url_base: &str, highlight_fie
         Ok(res) => {
             if res.status().is_success() {
                 Ok(res)
+            } else if let Some(reason) = res.status().canonical_reason() {
+                let var_name = format!("HTTP request to Solr failed: {} - {}", res.status(), reason);
+                Err(var_name.as_str().into())
             } else {
-                if let Some(reason) = res.status().canonical_reason() {
-                    let var_name = format!("HTTP request to Solr failed: {} - {}", res.status(), reason);
-                    Err(var_name.as_str().into())
-                } else {
-                    let mess = format!("HTTP request to Solr failed with status code: {}", res.status());
-                    Err(mess.as_str().into())
-                 }
-            }
+                let mess = format!("HTTP request to Solr failed with status code: {}", res.status());
+                Err(mess.as_str().into())
+             }
         },
         Err(err) => {
             let mess = format!("Error from Reqwest: {:?} for {} q:{}", err, url_base, query);

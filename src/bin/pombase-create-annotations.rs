@@ -137,7 +137,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             .map(|s| flex_fmt!("PMID:{}", s.trim_start_matches("PMID:")))
             .collect();
 
-        let file_name_pos = 6 + if filter_references.len() > 0 { 1 } else { 0 };
+        let file_name_pos = 6 + if !filter_references.is_empty() { 1 } else { 0 };
         let file_name = &args[file_name_pos];
 
         let uniprot_data_map =

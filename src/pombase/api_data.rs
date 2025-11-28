@@ -296,7 +296,7 @@ impl APIMapsDatabase {
     {
         let mut cache = self.annotation_detail_cache.write().unwrap();
 
-        if !cache.contains_key(&annotation_id) {
+        if let std::collections::hash_map::Entry::Vacant(e) = cache.entry(annotation_id) {
             let conn = self.api_maps_database_conn.lock().unwrap();
 
             let mut stmt = conn.prepare("SELECT data FROM annotation_detail WHERE id = :id").unwrap();
@@ -316,7 +316,7 @@ impl APIMapsDatabase {
                 result_annotation_detail.map(|v| v.unwrap());
 
             if let Some(annotation_detail) = maybe_annotation_detail {
-                cache.insert(annotation_id, Arc::new(annotation_detail));
+                e.insert(Arc::new(annotation_detail));
             }
         }
 
@@ -399,19 +399,17 @@ impl APIData {
     pub fn gene_uniquename_of_id(&self, id: &FlexStr) -> Option<GeneUniquename> {
         if self.maps.gene_summaries.contains_key(id) {
             Some(id.clone())
+        } else if let Some(gene_uniquename) =
+        self.maps.gene_name_gene_map.get(id) {
+            Some(gene_uniquename.clone())
         } else {
-            if let Some(gene_uniquename) =
-                self.maps.gene_name_gene_map.get(id) {
-                    Some(gene_uniquename.clone())
-                } else {
-                    let lower_case_id = id.to_lowercase();
-                    for gene_uniquename in self.maps.gene_summaries.keys() {
-                        if gene_uniquename.to_lowercase() == lower_case_id {
-                            return Some(gene_uniquename.clone());
-                        }
-                    }
-                    None
+            let lower_case_id = id.to_lowercase();
+            for gene_uniquename in self.maps.gene_summaries.keys() {
+                if gene_uniquename.to_lowercase() == lower_case_id {
+                    return Some(gene_uniquename.clone());
                 }
+            }
+            None
         }
     }
 
@@ -510,17 +508,15 @@ impl APIData {
                                 } else {
                                     false
                                 }
-                            } else {
-                                if *expression_filter == QueryExpressionFilter::WtOverexpressed {
-                                    if let Some(ref expression) = *expression {
-                                        expression == "Overexpression" &&
-                                            allele_type == "wild_type"
-                                    } else {
-                                        false
-                                    }
+                            } else if *expression_filter == QueryExpressionFilter::WtOverexpressed {
+                                if let Some(ref expression) = *expression {
+                                    expression == "Overexpression" &&
+                                        allele_type == "wild_type"
                                 } else {
                                     false
                                 }
+                            } else {
+                                false
                             }
                         } else {
                             true
@@ -639,8 +635,8 @@ impl APIData {
     // remove the with value
     fn maybe_move_with(&self, term_details: &TermDetails,
                        annotation: &mut OntAnnotationDetail) {
-        if let Some(ref evidence_code) = annotation.evidence {
-            if evidence_code == "IPI" &&
+        if let Some(ref evidence_code) = annotation.evidence
+            && evidence_code == "IPI" &&
                 (term_details.termid == "GO:0005515" ||
                  term_details.interesting_parent_ids.contains(&flex_str!("GO:0005515")) ||
                  term_details.termid == "GO:0003723" ||
@@ -678,11 +674,10 @@ impl APIData {
                                     }
                                 },
                                 ExtRange::GeneAndGeneProduct(GeneAndGeneProduct { gene_uniquename, product: _ }) => {
-                                    if let WithFromValue::Gene(ref with_gene) = with_value {
-                                        if *gene_uniquename == with_gene.uniquename {
+                                    if let WithFromValue::Gene(ref with_gene) = with_value
+                                        && *gene_uniquename == with_gene.uniquename {
                                            first_with = None;
                                         }
-                                    }
                                 },
                                 _ => (),
                             }
@@ -694,7 +689,6 @@ impl APIData {
                     annotation.extension.insert(0, self.get_with_extension(with_value));
                 }
             }
-        }
     }
 
     fn get_gene_prod_extension(&self, prod_value: &FlexStr) -> ExtPart {
@@ -956,12 +950,11 @@ impl APIData {
                             return false;
                         }
                     }
-                    if let Some(evidence_type) = evidence_type_constraint {
-                        if interactor.evidence_type != *evidence_type {
+                    if let Some(evidence_type) = evidence_type_constraint
+                        && interactor.evidence_type != *evidence_type {
                             return false;
                         }
-                    }
-                    return true;
+                    true
                 })
                 .map(|interactor| interactor.interactor_uniquename.clone())
                 .collect::<BTreeSet<_>>()
@@ -1015,7 +1008,7 @@ impl APIData {
         for target_of_annotation in &gene_details.target_of_annotations {
             let ontology_label =
                 target_of_config.ontology_labels.get(&target_of_annotation.ontology_name)
-                .unwrap_or_else(|| unknown);
+                .unwrap_or(unknown);
 
             if (target_of_type == TargetOfType::GO || target_of_type == TargetOfType::All) &&
                 ontology_label == "GO" {

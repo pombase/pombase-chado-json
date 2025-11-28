@@ -42,6 +42,7 @@ fn abbreviation_of_go_aspect(cv_name: &str)
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                  data_lookup: &dyn DataLookup,
                                  db_creation_datetime: &FlexStr,
@@ -114,11 +115,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     let contact = format!("!contact: {}\n", &config.helpdesk_address);
     standard_gaf_writer.write_all(contact.as_bytes())?;
 
-    write!(comments_gaf_writer, "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-           "db", "db_object_id", "db_object_symbol", "qualifier", "go_id", "db:reference",
-           "evidence_code", "with_or_from", "aspect", "db_object_name", "db_object_synonym",
-           "db_object_type", "taxon", "date", "assigned_by", "annotation_extension",
-           "gene_product_form_id", "comment_or_text_span\n")?;
+    writeln!(comments_gaf_writer, "db\tdb_object_id\tdb_object_symbol\tqualifier\tgo_id\tdb:reference\tevidence_code\twith_or_from\taspect\tdb_object_name\tdb_object_synonym\tdb_object_type\ttaxon\tdate\tassigned_by\tannotation_extension\tgene_product_form_id\tcomment_or_text_span\n")?;
 
     for gene_details in genes.values() {
         if gene_details.taxonid != load_org_taxonid {
@@ -141,11 +138,10 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
             }
         }
 
-        if let Some(ref characterisation_status) = gene_details.characterisation_status {
-            if characterisation_status == "dubious" || characterisation_status == "transposon" {
+        if let Some(ref characterisation_status) = gene_details.characterisation_status
+            && (characterisation_status == "dubious" || characterisation_status == "transposon") {
                 continue;
             }
-        }
 
         if gene_details.feature_type == "pseudogene" {
             continue;
@@ -193,7 +189,7 @@ fn needs_nd_annotation(term_annotations: Option<&Vec<OntTermAnnotations>>) -> bo
         }
     }
 
-    return true;
+    true
 }
 
 
@@ -292,7 +288,7 @@ fn get_pr_term_name(data_lookup: &dyn DataLookup, gene_product_form_id: &FlexStr
     -> (FlexStr, FlexStr)
 {
     let term_details = data_lookup.get_term(gene_product_form_id)
-        .expect(&format!("can't find details for term {}", gene_product_form_id));
+        .unwrap_or_else(|| panic!("can't find details for term {}", gene_product_form_id));
 
     let mut orig_term_name = term_details.name.clone();
 
@@ -418,11 +414,10 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
                     panic!("can't find annotation {}", annotation_id);
                 };
 
-                if let Some(ref reference) = annotation_detail.reference {
-                    if config.file_exports.exclude_references.contains(reference) {
+                if let Some(ref reference) = annotation_detail.reference
+                    && config.file_exports.exclude_references.contains(reference) {
                         continue;
                     }
-                }
 
                 let gene_product_form_id = annotation_detail.gene_product_form_id.to_owned();
 
@@ -601,6 +596,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                   data_lookup: &dyn DataLookup,
                                   write_mode: GpadGafWriteMode,
@@ -672,11 +668,10 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
             for annotation_id in &term_annotation.annotations {
                 let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
-                if let Some(ref reference) = annotation_detail.reference {
-                    if config.file_exports.exclude_references.contains(reference) {
+                if let Some(ref reference) = annotation_detail.reference
+                    && config.file_exports.exclude_references.contains(reference) {
                         continue;
                     }
-                }
 
                 let reference_uniquename =
                     annotation_detail.reference.clone()
@@ -694,7 +689,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
                 let go_id = &term_annotation.term;
                 let term_details_arc = data_lookup.get_term(go_id).clone();
-                let term_details_ref = term_details_arc.as_deref().clone().unwrap();
+                let term_details_ref = term_details_arc.as_deref().unwrap();
 
                 let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf ||
                                     write_mode == GpadGafWriteMode::ExtendedPomBaseGaf
@@ -781,7 +776,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                         if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
                             submitter_comment
                         } else {
-                            format!("\t")
+                            "\t".to_string()
                         }
                     } else {
                         String::default()

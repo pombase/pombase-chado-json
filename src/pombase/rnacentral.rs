@@ -126,7 +126,7 @@ fn make_genome_location(config: &Config, gene_details: &GeneDetails,
     let assembly =
         config.organisms.iter()
         .filter(|org| org.taxonid == gene_details.taxonid)
-        .collect::<Vec<_>>().get(0)
+        .collect::<Vec<_>>().first()
         .unwrap_or_else(|| panic!("organism not found in configuration: {}", gene_details.taxonid))
         .assembly_version.clone()
         .unwrap_or_else(|| panic!("no assembly_version for: {}", gene_details.taxonid));

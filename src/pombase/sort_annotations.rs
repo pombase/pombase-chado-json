@@ -157,38 +157,36 @@ pub fn cmp_ont_annotation_detail(cv_config: &CvConfig,
             // needed to display the FYECO term pages
             Ok(Ordering::Less)
         }
+    } else if detail2.genotype.is_some() {
+        // needed to display the FYECO term pages
+        Ok(Ordering::Greater)
     } else {
-        if detail2.genotype.is_some() {
-            // needed to display the FYECO term pages
-            Ok(Ordering::Greater)
-        } else {
-            let ord = cmp_gene_vec(data_lookup, &detail1.genes, &detail2.genes);
+        let ord = cmp_gene_vec(data_lookup, &detail1.genes, &detail2.genes);
 
-            if ord == Ordering::Equal {
-                if let Some(ref sort_details_by) = cv_config.sort_details_by {
-                    for sort_type in sort_details_by {
-                        if sort_type == "modification" {
-                            let res = cmp_residues(&detail1.residue, &detail2.residue);
-                            if res != Ordering::Equal {
-                                return Ok(res);
-                            }
-                        } else {
-                            let res = cmp_extension(conf_rel_ranges, &detail1.extension,
-                                                    &detail2.extension,
-                                                    data_lookup);
-                            if res != Ordering::Equal {
-                                return Ok(res);
-                            }
+        if ord == Ordering::Equal {
+            if let Some(ref sort_details_by) = cv_config.sort_details_by {
+                for sort_type in sort_details_by {
+                    if sort_type == "modification" {
+                        let res = cmp_residues(&detail1.residue, &detail2.residue);
+                        if res != Ordering::Equal {
+                            return Ok(res);
+                        }
+                    } else {
+                        let res = cmp_extension(conf_rel_ranges, &detail1.extension,
+                                                &detail2.extension,
+                                                data_lookup);
+                        if res != Ordering::Equal {
+                            return Ok(res);
                         }
                     }
-                    Ok(Ordering::Equal)
-                } else {
-                    Ok(cmp_extension(conf_rel_ranges, &detail1.extension, &detail2.extension,
-                                     data_lookup))
                 }
+                Ok(Ordering::Equal)
             } else {
-                Ok(ord)
+                Ok(cmp_extension(conf_rel_ranges, &detail1.extension, &detail2.extension,
+                                 data_lookup))
             }
+        } else {
+            Ok(ord)
         }
     }
 }

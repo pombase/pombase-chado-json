@@ -33,7 +33,7 @@ pub fn make_maps_database_tables(conn: &mut Connection) -> rusqlite::Result<()> 
     Ok(())
 }
 
-
+#[allow(clippy::too_many_arguments)]
 pub fn store_maps_into_database(conn: &mut Connection, terms: &TermIdDetailsMap,
                                 genes: &UniquenameGeneMap, alleles: &UniquenameAlleleMap,
                                 references: &UniquenameReferenceMap, genotypes: &IdGenotypeMap,

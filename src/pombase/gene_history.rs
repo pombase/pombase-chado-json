@@ -50,7 +50,7 @@ fn add_entry(map: &mut GeneHistoryMap, record: GeneHistoryFileRecord) {
     };
 
     map.entry(record.systematic_id.into())
-        .or_insert_with(Vec::new)
+        .or_default()
         .push(entry);
 
 }
