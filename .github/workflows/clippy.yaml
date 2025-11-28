@@ -2,12 +2,15 @@ name: "Run clippy"
 
 on: [push, pull_request]
 
+env:
+  RUSTFLAGS: "-Dwarnings"
+
 jobs:
   lint:
     runs-on: ubuntu-latest
     name: Run clippy
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - uses: qernal/github-actions-rust-clippy@v2.0.2
+      - run: cargo clippy
