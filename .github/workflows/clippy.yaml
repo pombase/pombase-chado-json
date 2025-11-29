@@ -1,6 +1,8 @@
 name: "Run clippy"
 
-on: [push]
+on:
+  push:
+    branches: [ master ]
 
 env:
   RUSTFLAGS: "-Dwarnings"
