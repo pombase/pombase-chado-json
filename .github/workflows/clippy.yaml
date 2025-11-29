@@ -1,6 +1,6 @@
 name: "Run clippy"
 
-on: [push, pull_request]
+on: [push]
 
 env:
   RUSTFLAGS: "-Dwarnings"
