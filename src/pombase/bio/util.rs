@@ -80,7 +80,8 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
 fn to_gff(chromosome_export_id: &str,
           source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str,
           maybe_characterisation_status: Option<&str>,
-          location: &ChromosomeLocation, maybe_parent: Option<&str>) -> String {
+          location: &ChromosomeLocation, maybe_parent: Option<&str>,
+          maybe_uniprot_id: Option<&str>) -> String {
     let phase_char =
         if let Some(ref phase) = location.phase {
             phase.to_gff_str()
@@ -120,6 +121,11 @@ fn to_gff(chromosome_export_id: &str,
         ret_val.push_str(characterisation_status);
     }
 
+    if let Some(uniprot_id) = maybe_uniprot_id {
+        ret_val.push_str(";uniprot=");
+        ret_val.push_str(uniprot_id);
+    }
+
     ret_val
 }
 
@@ -149,7 +155,9 @@ pub fn format_gene_gff(chromosome_export_id: &str,
         let gene_gff_line =
             to_gff(chromosome_export_id, source, &gene.uniquename,
                    gene.name.as_deref(),
-                   "gene", gene.characterisation_status.as_deref(), gene_loc, None);
+                   "gene", gene.characterisation_status.as_deref(),
+                   gene_loc, None,
+                   gene.uniprot_identifier.as_deref());
 
         ret_val.push(format!("{};so_term_name={}", gene_gff_line, gene_type));
 
@@ -164,7 +172,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
                                 &transcript_details.transcript_type,
                                 None,
                                 &transcript_details.location,
-                                Some(&gene.uniquename)));
+                                Some(&gene.uniquename), None));
             for part in &transcript_details.parts {
                 let gff_feat_type =
                     match part.feature_type {
@@ -184,7 +192,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
                                     source, &part.uniquename, None, &gff_feat_type,
                                     None,
                                     &part.location,
-                                    Some(transcript_uniquename)));
+                                    Some(transcript_uniquename), None));
             }
         }
     }
@@ -197,7 +205,8 @@ pub fn format_misc_feature_gff(chromosome_export_id: &str,
     let feature_type_name = format!("{}", feature_short.feature_type);
     ret_val.push(to_gff(chromosome_export_id,
                         source, &feature_short.uniquename, None,
-                        &feature_type_name, None, &feature_short.location, None));
+                        &feature_type_name, None, &feature_short.location,
+                        None, None));
     ret_val
 }
 

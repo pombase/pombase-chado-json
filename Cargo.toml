@@ -1,6 +1,6 @@
 [package]
 name = "pombase-chado-json"
-version = "221.17.0"
+version = "221.18.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 edition = "2024"
 rust-version = "1.91"
@@ -44,7 +44,7 @@ percent-encoding = "2.3.2"
 mime_guess = "2.0"
 indexmap = "2"
 tracing = "0.1.43"
-tracing-subscriber = { version = "0.3.20", features=["env-filter"] }
+tracing-subscriber = { version = "0.3.22", features=["env-filter"] }
 rand = "0.9.2"
 
 [dependencies.serde]
