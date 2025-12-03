@@ -6,7 +6,7 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use pombase_gocam::overlaps::GoCamNodeOverlap;
-use pombase_gocam::{GoCamModel, GoCamNode};
+use pombase_gocam::{GoCamModel, GoCamNode, RemoveType};
 use pombase_gocam_process::chado_data_helper;
 use regex::Regex;
 
@@ -2805,6 +2805,8 @@ pub struct GoCamSummary {
     pub title_child_process_terms: HashSet<TermAndName>,
     pub contributors: Vec<OrcidAndName>,
     pub date: FlexStr,
+    pub chemical_count: usize,
+    pub target_count: usize,
 }
 
 impl GoCamSummary {
@@ -2857,6 +2859,22 @@ impl GoCamSummary {
             })
             .collect();
 
+        let chemical_count = {
+            let mut remove_types = HashSet::new();
+            remove_types.insert(RemoveType::Chemicals);
+            let count_after_removal =
+                model.remove_nodes(remove_types).node_count();
+            model.node_count() - count_after_removal
+        };
+
+        let target_count = {
+            let mut remove_types = HashSet::new();
+            remove_types.insert(RemoveType::Targets);
+            let count_after_removal =
+                model.remove_nodes(remove_types).node_count();
+            model.node_count() - count_after_removal
+        };
+
         GoCamSummary {
             gocam_id,
             title: chado_gocam_data.title.to_shared_str(),
@@ -2866,6 +2884,8 @@ impl GoCamSummary {
             title_child_process_terms,
             contributors,
             date: chado_gocam_data.date.to_shared_str(),
+            chemical_count,
+            target_count,
         }
     }
 }
