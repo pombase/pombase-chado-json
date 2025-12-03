@@ -2568,37 +2568,6 @@ phenotypes, so just the first part of this extension will be used:
                 self.store_chromosome_details(feat);
             }
         }
-
-    }
-
-    fn add_gocam_model(&mut self, gocam_model_feature: &Feature) {
-        let gocam_id = gocam_model_feature.uniquename.clone();
-        let gocam_title = gocam_model_feature.name.clone().unwrap_or_default();
-        let mut model = GoCamSummary::new(&gocam_id, &gocam_title);
-
-        for prop in gocam_model_feature.featureprops.borrow().iter() {
-            if prop.prop_type.name == "gocam_date" {
-                model.date = prop.value.clone();
-            }
-            if prop.prop_type.name == "gocam_title_termid"
-                && let Some(ref title_termid) = prop.value {
-                    model.title_terms.insert(title_termid.clone());
-                }
-            if prop.prop_type.name == "gocam_contributor"
-                && let Some(ref contributor_orcid) = prop.value {
-                    let Some(contributor_name) = self.orcid_name_map.get(contributor_orcid)
-                    else {
-                        panic!("no name found for ORCID for GO-CAM contributor {}", contributor_orcid);
-                    };
-                    let orcid_and_name = OrcidAndName {
-                        orcid: contributor_orcid.to_owned(),
-                        name: contributor_name.to_owned(),
-                    };
-                    model.contributors.push(orcid_and_name);
-                }
-        }
-
-        self.gocam_summaries.insert(gocam_id, model);
     }
 
     fn process_features(&mut self) {
@@ -2635,12 +2604,6 @@ phenotypes, so just the first part of this extension will be used:
                     let feature_short = make_feature_short(&self.chromosomes, feat);
                     self.other_features.insert(feat.uniquename.clone(), feature_short);
                 }
-            }
-        }
-
-        for feat in &self.raw.features {
-            if feat.feat_type.name == "gocam_model" {
-                self.add_gocam_model(feat);
             }
         }
     }
@@ -2875,28 +2838,6 @@ phenotypes, so just the first part of this extension will be used:
             .push(interaction_annotation);
     }
 
-    fn add_gocam_model_gene(&mut self, gocam_model_feature: &Feature,
-                            gene_feature: &Feature, rel_name: &FlexStr) {
-        let gocam_id = &gocam_model_feature.uniquename;
-        let Some(ref mut model_details) = self.gocam_summaries.get_mut(gocam_id)
-        else {
-            panic!("no model details found for: {}", gocam_id);
-        };
-
-        match rel_name.as_str() {
-            "enables_gocam_activity" => {
-                model_details.activity_enabling_genes.insert(gene_feature.uniquename.clone());
-            },
-            "gocam_target_gene" => {
-                model_details.target_genes.insert(gene_feature.uniquename.clone());
-            },
-            _ => {
-                panic!("unknown feature relationship type for GO-CAM: {} {} {}",
-                       gocam_model_feature.uniquename, rel_name, gene_feature.uniquename);
-            }
-        }
-    }
-
     // add physical interaction, legacy genetic interaction, ortholog, paralog annotations
     // and GO-CAM genes
     fn process_feature_rels(&mut self) {
@@ -2904,10 +2845,6 @@ phenotypes, so just the first part of this extension will be used:
             let rel_name = &feature_rel.rel_type.name;
             let subject_uniquename = &feature_rel.subject.uniquename;
             let object_uniquename = &feature_rel.object.uniquename;
-
-            if feature_rel.object.feat_type.name == "gocam_model" {
-                self.add_gocam_model_gene(&feature_rel.object, &feature_rel.subject, rel_name);
-            }
 
             for rel_config in &FEATURE_REL_CONFIGS {
                 if rel_name == rel_config.rel_type_name &&
@@ -4088,21 +4025,6 @@ phenotypes, so just the first part of this extension will be used:
         WithFromValue::Identifier(with_or_from_value.clone())
     }
 
-    fn add_gocam_model_term(&mut self, gocam_model_feature: &Feature, cvterm: &Cvterm) {
-        let gocam_id = &gocam_model_feature.uniquename;
-        let Some(ref mut model_details) = self.gocam_summaries.get_mut(gocam_id)
-        else {
-            panic!("no model details found for: {}", gocam_id);
-        };
-
-        let term_and_name = TermAndName {
-            termid: cvterm.termid(),
-            name: cvterm.name.clone(),
-        };
-
-        model_details.terms.insert(term_and_name);
-    }
-
     // process annotation
     fn process_feature_cvterms(&mut self) {
         let rel_order = self.config.extension_relation_order.clone();
@@ -4113,7 +4035,6 @@ phenotypes, so just the first part of this extension will be used:
             let cvterm = &feature_cvterm.cvterm;
 
             if feature.type_name() == "gocam_model" {
-                self.add_gocam_model_term(feature, cvterm);
                 continue;
             }
 
@@ -7214,6 +7135,16 @@ phenotypes, so just the first part of this extension will be used:
         self.references = filtered_refs;
     }
 
+    fn make_gocam_summaries(&mut self) {
+        self.gocam_summaries = self.gocam_models.iter()
+            .map(|m| {
+                let summ = GoCamSummary::new_from_model(m, &self.orcid_name_map,
+                                                        &self.terms, &self.children_by_termid);
+                (summ.gocam_id.clone(), summ)
+            })
+            .collect()
+    }
+
     fn set_gene_and_term_gocams(&mut self) {
         let mut gocams_of_genes = HashMap::new();
         let mut gocams_of_terms = HashMap::new();
@@ -7225,7 +7156,7 @@ phenotypes, so just the first part of this extension will be used:
                    .insert(gocam_details.into());
             }
 
-            for cvterm in &gocam_details.terms {
+            for cvterm in &gocam_details.title_child_process_terms {
                 gocams_of_terms.entry(cvterm.termid.clone())
                    .or_insert_with(HashSet::new)
                    .insert(gocam_details.into());
@@ -7233,7 +7164,9 @@ phenotypes, so just the first part of this extension will be used:
         }
 
         for (gene_uniquename, gocam_id_and_title) in gocams_of_genes.drain() {
-            self.genes.get_mut(&gene_uniquename).unwrap().gocams = gocam_id_and_title;
+            if let Some(ref mut gene_details) = self.genes.get_mut(&gene_uniquename) {
+                gene_details.gocams = gocam_id_and_title;
+            }
         }
 
         for (termid, gocam_id_and_title) in gocams_of_terms.drain() {
@@ -8046,6 +7979,7 @@ phenotypes, so just the first part of this extension will be used:
         self.set_taxonomic_distributions();
         self.remove_non_curatable_refs();
 
+        self.make_gocam_summaries();
         self.set_gene_and_term_gocams();
 
         let (physical_interaction_annotations,

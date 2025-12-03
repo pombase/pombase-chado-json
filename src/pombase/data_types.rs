@@ -6,7 +6,8 @@ use std::num::NonZeroUsize;
 use std::sync::Arc;
 
 use pombase_gocam::overlaps::GoCamNodeOverlap;
-use pombase_gocam::GoCamNode;
+use pombase_gocam::{GoCamModel, GoCamNode};
+use pombase_gocam_process::chado_data_helper;
 use regex::Regex;
 
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
@@ -2800,24 +2801,71 @@ pub struct GoCamSummary {
     pub title: FlexStr,
     pub activity_enabling_genes: HashSet<GeneUniquename>,
     pub target_genes: HashSet<GeneUniquename>,
-    pub terms: HashSet<TermAndName>,
     pub title_terms: HashSet<TermId>,
+    pub title_child_process_terms: HashSet<TermAndName>,
     pub contributors: Vec<OrcidAndName>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub date: Option<FlexStr>,
+    pub date: FlexStr,
 }
 
 impl GoCamSummary {
-    pub fn new(gocam_id: &GoCamId, gocam_title: &GoCamTitle) -> GoCamSummary {
+    pub fn new_from_model(model: &GoCamModel,
+                          orcid_name_map: &HashMap<CuratorOrcid, FlexStr>,
+                          term_map: &TermIdDetailsMap,
+                          children_by_termid: &HashMap<TermId, HashSet<TermId>>)
+        -> GoCamSummary
+    {
+        let gocam_id = model.id().trim_start_matches("gomodel:").to_shared_str();
+        let chado_gocam_data = chado_data_helper(model);
+
+        let contributors = chado_gocam_data.contributors.iter()
+            .map(|orcid| {
+                let Some(contributor_name) = orcid_name_map.get(orcid.as_str())
+                else {
+                   panic!("no name found for ORCID for GO-CAM contributor {}", orcid);
+                };
+                OrcidAndName {
+                    orcid: orcid.to_shared_str(),
+                    name: contributor_name.to_owned(),
+                }
+            })
+            .collect();
+
+        let to_flexstr_vec = |bts: &BTreeSet<String>| {
+            bts.iter().map(|s| s.to_shared_str()).collect::<HashSet<_>>()
+        };
+
+        let title_child_process_terms = chado_gocam_data.process_terms.iter()
+            .filter_map(|process_term_id| {
+                for title_term in &chado_gocam_data.title_terms {
+                    if title_term == process_term_id {
+                        let term_details = term_map.get(process_term_id.as_str()).unwrap();
+                        return Some(TermAndName {
+                            termid: process_term_id.to_shared_str(),
+                            name: term_details.name.clone(),
+                        });
+                    }
+                    if let Some(children) = children_by_termid.get(title_term.as_str())
+                        && children.contains(process_term_id.as_str()) {
+                            let term_details = term_map.get(process_term_id.as_str()).unwrap();
+                            return Some(TermAndName {
+                                termid: process_term_id.to_shared_str(),
+                                name: term_details.name.clone(),
+                            });
+                        }
+                }
+                None
+            })
+            .collect();
+
         GoCamSummary {
-            gocam_id: gocam_id.to_owned(),
-            title: gocam_title.to_owned(),
-            title_terms: HashSet::new(),
-            activity_enabling_genes: HashSet::new(),
-            target_genes: HashSet::new(),
-            terms: HashSet::new(),
-            contributors: vec![],
-            date: None,
+            gocam_id,
+            title: chado_gocam_data.title.to_shared_str(),
+            activity_enabling_genes: to_flexstr_vec(&chado_gocam_data.genes),
+            target_genes: to_flexstr_vec(&chado_gocam_data.target_genes),
+            title_terms: to_flexstr_vec(&chado_gocam_data.title_terms),
+            title_child_process_terms,
+            contributors,
+            date: chado_gocam_data.date.to_shared_str(),
         }
     }
 }
