@@ -540,7 +540,7 @@ pub struct Testimonial {
 }
 
 impl Testimonial {
-    pub fn read_restimonials(testimonials_filename: &str) -> Vec<Testimonial> {
+    pub fn read_testimonials(testimonials_filename: &str) -> Vec<Testimonial> {
         let file = match File::open(testimonials_filename) {
             Ok(file) => file,
             Err(err) => {
@@ -553,6 +553,42 @@ impl Testimonial {
             Ok(config) => config,
             Err(err) => {
                 panic!("failed to parse {}: {}", testimonials_filename, err)
+            },
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PanelConfig {
+    pub title: String,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub title_link: Option<String>,
+    pub head_image: Vec<String>,
+    pub content: String,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub reference_id: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub link: Option<String>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub link_label: Option<String>,
+    pub date_added: String,
+    pub show_on_front_page: bool,
+}
+
+impl PanelConfig {
+    pub fn read_panel_configs(panel_configs_filename: &str) -> Vec<PanelConfig> {
+        let file = match File::open(panel_configs_filename) {
+            Ok(file) => file,
+            Err(err) => {
+                panic!("Failed to read {}: {}\n", panel_configs_filename, err)
+            }
+        };
+        let reader = BufReader::new(file);
+
+        match serde_json::from_reader(reader) {
+            Ok(config) => config,
+            Err(err) => {
+                panic!("failed to parse {}: {}", panel_configs_filename, err)
             },
         }
     }

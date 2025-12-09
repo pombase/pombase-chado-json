@@ -25,7 +25,7 @@ use rand::seq::IteratorRandom;
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
                                          read_merged_gocam_model},
-              data_types::{GoCamId, GoCamSummary, ProteinViewType}, web::config::Testimonial};
+              data_types::{GoCamId, GoCamSummary, ProteinViewType}, web::config::{PanelConfig, Testimonial}};
 
 use rusqlite::Connection;
 
@@ -104,9 +104,14 @@ struct AllState {
 
     config: Config,
 
-
     front_page_testimonals: Vec<Testimonial>,
     full_testimonals: Vec<Testimonial>,
+
+    front_page_spotlights: Vec<PanelConfig>,
+    full_spotlights: Vec<PanelConfig>,
+
+    front_page_explore: Vec<PanelConfig>,
+    full_explore: Vec<PanelConfig>,
 }
 
 // If the path is a directory, return path+"/index.html".  Otherwise
@@ -854,6 +859,32 @@ async fn get_config_testimonials(Path((all_or_random, location)): Path<(String, 
     }
 }
 
+async fn get_panel_configs(Path((panel_type, location)): Path<(String, String)>,
+                           State(all_state): State<Arc<AllState>>)
+    -> Json<Vec<PanelConfig>>
+{
+    if &location == "front" {
+        let mut rng = rng();
+        let panel_configs =
+            match panel_type.as_str() {
+                "spotlight" => &all_state.front_page_spotlights,
+                "explore" => &all_state.front_page_explore,
+                _ => return Json(vec![])
+            };
+
+        if let Some(el) = panel_configs.iter().choose(&mut rng) {
+            Json(vec![el.to_owned()])
+        } else {
+            Json(vec![])
+        }
+    } else {
+        match panel_type.as_str() {
+            "spotlight" => Json(all_state.full_spotlights.clone()),
+            "explore" => Json(all_state.full_explore.clone()),
+            _ => return Json(vec![])
+        }
+    }
+}
 
 // search for terms, refs or docs that match the query
 async fn solr_search(Path((scope, q)): Path<(String, String)>, State(all_state): State<Arc<AllState>>)
@@ -987,6 +1018,8 @@ async fn main() {
     opts.optflag("h", "help", "print this help message");
     opts.optopt("c", "config-file", "Configuration file name", "CONFIG");
     opts.optopt("", "testimonials", "JSON file of testimonials", "TESTIMONIALS_FILE");
+    opts.optopt("", "spotlight-config", "JSON file of spotlight item configuration", "SPOTLIGHT_CONFIG_FILE");
+    opts.optopt("", "explore-config", "JSON file of explore item configuration", "EXPLORE_CONFIG_FILE");
     opts.optopt("b", "bind-address-and-port", "The address:port to bind to", "BIND_ADDRESS_AND_PORT");
     opts.optopt("m", "search-maps", "Search data", "MAPS_JSON_FILE");
     opts.optopt("d", "api-maps-database", "SQLite3 database of API maps", "API_MAPS_DATABASE");
@@ -1083,7 +1116,7 @@ async fn main() {
 
     let testimonals =
         if let Some(testimonials_filename) = matches.opt_str("testimonials") {
-            Testimonial::read_restimonials(&testimonials_filename)
+            Testimonial::read_testimonials(&testimonials_filename)
         } else {
             vec![]
         };
@@ -1103,6 +1136,40 @@ async fn main() {
         }
     }
 
+    let spotlights =
+        if let Some(spotlights_filename) = matches.opt_str("spotlight-config") {
+            PanelConfig::read_panel_configs(&spotlights_filename)
+        } else {
+            vec![]
+        };
+
+    let mut front_page_spotlights = vec![];
+    let mut full_spotlights = vec![];
+
+    for spotlight in spotlights.into_iter() {
+        if spotlight.show_on_front_page {
+            front_page_spotlights.push(spotlight.clone());
+        }
+        full_spotlights.push(spotlight)
+    }
+
+    let explore =
+        if let Some(explore_filename) = matches.opt_str("explore-config") {
+            PanelConfig::read_panel_configs(&explore_filename)
+        } else {
+            vec![]
+        };
+
+    let mut front_page_explore = vec![];
+    let mut full_explore = vec![];
+
+    for explore_conf in explore.into_iter() {
+        if explore_conf.show_on_front_page {
+            front_page_explore.push(explore_conf.clone());
+        }
+        full_explore.push(explore_conf)
+    }
+
     let all_state = AllState {
         query_exec,
         gocam_data,
@@ -1114,6 +1181,10 @@ async fn main() {
         config,
         front_page_testimonals,
         full_testimonals,
+        front_page_spotlights,
+        full_spotlights,
+        front_page_explore,
+        full_explore,
     };
 
     println!("Starting server ...");
@@ -1155,6 +1226,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
         .route("/api/v1/dataset/latest/data/go-cam-cytoscape/{gocam_id}/{retain_genes}", get(get_cytoscape_gocam_by_id_retain_genes))
         .route("/api/v1/dataset/latest/config/testimonials/{all_or_random}/{location}", get(get_config_testimonials))
+        .route("/api/v1/dataset/latest/config/panels/{panel_type}/{location}", get(get_panel_configs))
         .route("/api/v1/dataset/latest/gene_ex_violin_plot/{plot_size}/{genes}", get(gene_ex_violin_plot))
         .route("/api/v1/dataset/latest/stats/{type}", get(get_stats))
         .route("/api/v1/dataset/latest/motif_search/{scope}/{q}/{max_gene_details}", get(motif_search))
