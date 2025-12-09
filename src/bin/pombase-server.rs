@@ -881,7 +881,7 @@ async fn get_panel_configs(Path((panel_type, location)): Path<(String, String)>,
         match panel_type.as_str() {
             "spotlight" => Json(all_state.full_spotlights.clone()),
             "explore" => Json(all_state.full_explore.clone()),
-            _ => return Json(vec![])
+            _ => Json(vec![])
         }
     }
 }
