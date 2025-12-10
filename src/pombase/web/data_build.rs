@@ -1131,11 +1131,13 @@ impl <'a> WebDataBuild<'a> {
                 let ortholog_uniquename = ortholog_annotation.ortholog_uniquename.clone();
                 let ortholog_gene_summary = &self.genes.get(&ortholog_uniquename).unwrap();
                 let maybe_secondary_identifier = ortholog_gene_summary.secondary_identifier.clone();
+                let maybe_agr_identifier = ortholog_gene_summary.agr_identifier.clone();
                 let maybe_ortholog_name = ortholog_gene_summary.name.clone();
 
                 IdNameAndOrganism {
                     identifier: ortholog_uniquename,
                     secondary_identifier: maybe_secondary_identifier,
+                    agr_identifier: maybe_agr_identifier,
                     name: maybe_ortholog_name,
                     taxonid: ortholog_annotation.ortholog_taxonid,
                 }
@@ -1951,6 +1953,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut uniprot_identifier = None;
         let mut secondary_identifier = None;
+        let mut agr_identifier = None;
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
         let mut rnacentral_2d_structure_id = None;
@@ -1974,6 +1977,7 @@ phenotypes, so just the first part of this extension will be used:
             match prop.prop_type.name.as_str() {
                 "uniprot_identifier" => uniprot_identifier = prop.value.clone(),
                 "sgd_identifier" => secondary_identifier = prop.value.clone(),
+                "agr_identifier" => agr_identifier = prop.value.clone(),
                 "biogrid_interactor_id" => {
                     if let Some(ref chado_biogrid_id) = prop.value {
                         biogrid_interactor_id = match chado_biogrid_id.parse::<u32>() {
@@ -2088,6 +2092,7 @@ phenotypes, so just the first part of this extension will be used:
             deletion_viability: DeletionViability::Unknown,
             uniprot_identifier,
             secondary_identifier,
+            agr_identifier,
             biogrid_interactor_id,
             rnacentral_urs_identifier,
             rnacentral_2d_structure_id,

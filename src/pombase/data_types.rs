@@ -508,6 +508,10 @@ pub struct GeneShort {
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<GeneName>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub secondary_identifier: Option<GeneName>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub agr_identifier: Option<GeneName>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<GeneProduct>,
     #[serde(skip_serializing_if="is_one", default = "one")]
     pub transcript_count: usize,
@@ -535,6 +539,8 @@ impl From<&GeneDetails> for GeneShort {
         GeneShort {
             uniquename: details.uniquename.clone(),
             name: details.name.clone(),
+            secondary_identifier: details.secondary_identifier.clone(),
+            agr_identifier: details.agr_identifier.clone(),
             product: details.product.clone(),
             transcript_count: details.transcripts.len(),
             flags: details.flags.clone(),
@@ -584,6 +590,8 @@ pub struct IdNameAndOrganism {
     pub identifier: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub secondary_identifier: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub agr_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
     pub taxonid: u32,
@@ -1445,6 +1453,8 @@ pub struct GeneDetails {
     pub uniprot_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub secondary_identifier: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub agr_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub biogrid_interactor_id: Option<u32>,
     #[serde(skip_serializing_if="Option::is_none")]
