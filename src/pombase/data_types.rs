@@ -518,13 +518,7 @@ pub struct GeneShort {
 
 impl GeneShort {
     pub fn from_gene_details(gene_details: &GeneDetails) -> Self {
-        GeneShort {
-            uniquename: gene_details.uniquename.clone(),
-            name: gene_details.name.clone(),
-            product: gene_details.product.clone(),
-            transcript_count: gene_details.transcripts.len(),
-            flags: gene_details.flags.clone(),
-        }
+        gene_details.into()
     }
 
     pub fn display_name(&self) -> String {

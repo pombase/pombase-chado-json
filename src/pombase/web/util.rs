@@ -60,13 +60,7 @@ fn test_remove_first_string() {
 pub fn make_gene_short(data_lookup: &dyn DataLookup,
                        gene_uniquename: &FlexStr) -> GeneShort {
     if let Some(gene_details) = data_lookup.get_gene(gene_uniquename) {
-        GeneShort {
-            uniquename: gene_details.uniquename.clone(),
-            name: gene_details.name.clone(),
-            product: gene_details.product.clone(),
-            transcript_count: gene_details.transcripts.len(),
-            flags: gene_details.flags.clone(),
-        }
+        gene_details.as_ref().into()
     } else {
         panic!("can't find GeneDetails for gene uniquename {}", gene_uniquename)
     }
