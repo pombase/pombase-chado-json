@@ -545,6 +545,7 @@ fn make_test_gene() -> GeneDetails {
         deletion_viability: DeletionViability::Viable,
         uniprot_identifier: Some(flex_str!("Q9USL5")),
         secondary_identifier: None,
+        agr_identifier: None,
         biogrid_interactor_id: Some(275937),
         rnacentral_urs_identifier: None,
         pdb_entries: vec![],

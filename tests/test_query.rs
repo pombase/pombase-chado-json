@@ -49,6 +49,8 @@ fn make_genes(ids: Vec<&str>) -> Vec<GeneShort> {
         ret.push(GeneShort {
             uniquename: id.into(),
             name: None,
+            secondary_identifier: None,
+            agr_identifier: None,
             product: None,
             transcript_count: 1,
             flags: HashSet::new(),

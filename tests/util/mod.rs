@@ -82,6 +82,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         deletion_viability: DeletionViability::Unknown,
         uniprot_identifier: None,
         secondary_identifier: None,
+        agr_identifier: None,
         biogrid_interactor_id: None,
         rnacentral_urs_identifier: None,
         rnacentral_2d_structure_id: None,
