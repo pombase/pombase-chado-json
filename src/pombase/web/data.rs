@@ -121,13 +121,13 @@ impl DataLookup for WebData {
         }
     }
 
-    fn get_reference(&self, reference_uniquename: &ReferenceUniquename) -> Option<Arc<ReferenceDetails>> {
+    fn get_reference(&self, reference_uniquename: &str) -> Option<Arc<ReferenceDetails>> {
         let mut arc_references = self.arc_references.write().unwrap();
         if let Some(arc_reference_details) = arc_references.get(reference_uniquename) {
             Some(arc_reference_details.to_owned())
         } else if let Some(reference_details) = self.references.get(reference_uniquename) {
             let arc_reference_details = Arc::new(reference_details.to_owned());
-            arc_references.insert(reference_uniquename.to_owned(), arc_reference_details.clone());
+            arc_references.insert(reference_uniquename.to_shared_str(), arc_reference_details.clone());
             Some(arc_reference_details)
         } else {
             None

@@ -33,7 +33,7 @@ fn get_submitter_comment(annotation_detail: &OntAnnotationDetail)
     if submitter_comment.is_empty() {
         None
     } else {
-        Some(format!("\t{}", submitter_comment))
+        Some(submitter_comment.to_owned())
     }
 }
 

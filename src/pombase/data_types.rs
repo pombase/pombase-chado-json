@@ -75,7 +75,7 @@ pub trait DataLookup {
 
     fn get_allele(&self, allele_unquename: &AlleleUniquename) -> Option<Arc<AlleleDetails>>;
 
-    fn get_reference(&self, reference_uniquename: &ReferenceUniquename) -> Option<Arc<ReferenceDetails>>;
+    fn get_reference(&self, reference_uniquename: &str) -> Option<Arc<ReferenceDetails>>;
 
     fn get_genotype(&self, genotype_display_uniquename: &GenotypeDisplayUniquename)
            -> Option<Arc<GenotypeDetails>>;

@@ -611,8 +611,8 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                                   format!("unknown CV: {}", cv_name)));
     }
 
-    let database_name = &config.database_name;
-    let db_object_id = &gene_details.uniquename;
+    let database_name = config.database_name.as_str();
+    let db_object_id = gene_details.uniquename.as_str();
     let db_object_symbol =
         if let Some(ref gene_name) = gene_details.name {
             gene_name.as_str()
@@ -630,7 +630,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
     let db_object_synonyms_string = db_object_synonyms.join("|");
 
-        let db_object_name =
+    let db_object_name =
         if let Some(ref product) = gene_details.product {
             product.as_str()
         } else {
@@ -673,12 +673,9 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                         continue;
                     }
 
-                let reference_uniquename =
-                    annotation_detail.reference.clone()
-                    .unwrap_or_else(|| flex_str!(""));
-
-                if export_comments == ExportComments::Export {
-                    if let Some(reference_details) = data_lookup.get_reference(&reference_uniquename) {
+                if export_comments == ExportComments::Export &&
+                   let Some(ref reference_uniquename) = annotation_detail.reference {
+                    if let Some(reference_details) = data_lookup.get_reference(reference_uniquename) {
                         if !reference_details.is_canto_curated() {
                             continue;
                         }
@@ -722,7 +719,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     if let Some(ref assigned_by) = annotation_detail.assigned_by {
                         assigned_by.as_str()
                     } else {
-                        database_name.as_str()
+                        database_name
                     };
 
                 let with_iter = annotation_detail.withs.iter();
@@ -738,7 +735,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     })
                     .collect::<Vec<FlexStr>>();
                 with_or_from_parts.sort_unstable();
-                let with_or_from = join(&with_or_from_parts,",");
+                let with_or_from = itertools::join(&with_or_from_parts,",");
 
                 let evidence_code =
                     annotation_detail.evidence
@@ -767,88 +764,98 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     ""
                 };
 
+                let taxonid = format!("taxon:{}", gene_details.taxonid);
+
                 if !term_annotation.is_not {
                     positive_annotation_count += 1;
                 }
 
-                let comment_field =
-                    if export_comments == ExportComments::Export {
-                        if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
-                            submitter_comment
-                        } else {
-                            "\t".to_string()
-                        }
-                    } else {
-                        String::default()
-                    };
+                let mut line_parts = vec![database_name,
+                                          db_object_id,
+                                          db_object_symbol];
 
-                let line = format!("{}\t{}\t{}{}\t{}\t{}{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t{}\t{}{}\n",
-                                   database_name,
-                                   db_object_id,
-                                   db_object_symbol,
-                                   if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
-                                       if let Some(ref product) = gene_details.product {
-                                           flex_fmt!("\t{}", product)
-                                       } else {
-                                           flex_str!("\t")
-                                       }
-                                   } else {
-                                       flex_str!("")
-                                   },
-                                   qualifiers,
-                                   go_id,
-                                   if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
-                                       flex_fmt!("\t{}", term_details_ref.name)
-                                   } else {
-                                       flex_str!("")
-                                   },
-                                   reference_uniquename,
-                                   evidence_code,
-                                   with_or_from,
-                                   single_letter_aspect,
-                                   db_object_name,
-                                   db_object_synonyms_string,
-                                   db_object_type,
-                                   gene_details.taxonid,
-                                   date,
-                                   assigned_by,
-                                   annotation_extensions,
-                                   gene_product_form_id,
-                                   comment_field);
-                writer.write_all(line.as_bytes())?;
+                if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
+                    if let Some(ref product) = gene_details.product {
+                        line_parts.push(product.as_str())
+                    } else {
+                        line_parts.push("");
+                    }
+                }
+
+                line_parts.push(qualifiers.as_str());
+                line_parts.push(go_id);
+                if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
+                    line_parts.push(term_details_ref.name.as_str());
+                }
+
+                if let Some(ref reference_uniquename) =
+                    annotation_detail.reference {
+                        line_parts.push(reference_uniquename);
+                    } else {
+                        line_parts.push("");
+                    };
+                line_parts.push(evidence_code);
+                line_parts.push(with_or_from.as_str());
+                line_parts.push(single_letter_aspect);
+                line_parts.push(db_object_name);
+                line_parts.push(db_object_synonyms_string.as_str());
+                line_parts.push(db_object_type);
+                line_parts.push(taxonid.as_str());
+                line_parts.push(date.as_str());
+                line_parts.push(assigned_by);
+                line_parts.push(annotation_extensions.as_str());
+                line_parts.push(gene_product_form_id);
+                let submitter_comment;
+                if export_comments == ExportComments::Export {
+                    if let Some(ref tmp_submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
+                        submitter_comment = tmp_submitter_comment.to_owned();
+                        line_parts.push(submitter_comment.as_str());
+                    } else {
+                        line_parts.push("");
+                    }
+                }
+
+                let line = line_parts.join("\t");
+                writeln!(writer, "{}", line)?;
             }
         }
     }
 
     if positive_annotation_count == 0 && config.file_exports.include_nd_lines &&
-       write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" &&
-       export_comments == ExportComments::NoExport {
-        let local: DateTime<Local> = Local::now();
-        let date = local.format("%Y%m%d");
-        let relation_name =
-            get_gpad_nd_relation_name_of(data_lookup, cv_name);
-        let go_aspect_termid =
-            config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
-        let nd_ref = &config.file_exports.nd_reference;
-        let assigned_by = database_name.as_str();
+        write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" &&
+        export_comments == ExportComments::NoExport {
+            let local: DateTime<Local> = Local::now();
+            let date = local.format("%Y%m%d").to_string();
+            let relation_name =
+                get_gpad_nd_relation_name_of(data_lookup, cv_name);
+            let go_aspect_termid =
+                config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
+            let nd_ref = &config.file_exports.nd_reference;
+            let taxonid = format!("taxon:{}", gene_details.taxonid);
+            let assigned_by = database_name;
 
-        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\tND\t\t{}\t{}\t{}\t{}\ttaxon:{}\t{}\t{}\t\t\n",
-                           database_name,
-                           db_object_id,
-                           db_object_symbol,
-                           relation_name,
-                           go_aspect_termid,
-                           nd_ref,
-                           single_letter_aspect,
-                           db_object_name,
-                           db_object_synonyms_string,
-                           db_object_type,
-                           gene_details.taxonid,
-                           date,
-                           assigned_by);
+            let line_parts = vec![database_name,
+                                  db_object_id,
+                                  db_object_symbol,
+                                  relation_name.as_str(),
+                                  go_aspect_termid,
+                                  nd_ref,
+                                  "ND",
+                                  "",
+                                  single_letter_aspect,
+                                  db_object_name,
+                                  db_object_synonyms_string.as_str(),
+                                  db_object_type,
+                                  taxonid.as_str(),
+                                  date.as_str(),
+                                  assigned_by,
+                                  "",
+                                  ""];
 
-        writer.write_all(line.as_bytes())?;
-    }
+            let line = line_parts.join("\t");
+
+            writeln!(writer, "{}", line)?;
+        }
 
     Ok(())
 }

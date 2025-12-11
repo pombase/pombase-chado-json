@@ -49,7 +49,7 @@ impl DataLookup for APIData {
         self.maps_database.get_allele(allele_uniquename)
     }
 
-    fn get_reference(&self, reference_uniquename: &ReferenceUniquename)
+    fn get_reference(&self, reference_uniquename: &str)
            -> Option<Arc<ReferenceDetails>>
     {
         self.maps_database.get_reference(reference_uniquename)
@@ -158,7 +158,7 @@ impl APIMapsDatabase {
         term_value.map(|t| t.to_owned())
     }
 
-    pub fn get_reference(&self, reference_uniquename: &ReferenceUniquename)
+    pub fn get_reference(&self, reference_uniquename: &str)
            -> Option<Arc<ReferenceDetails>>
     {
         let mut cache = self.reference_cache.write().unwrap();
@@ -169,7 +169,7 @@ impl APIMapsDatabase {
             let mut stmt = conn.prepare("SELECT data FROM refs WHERE id = :id").unwrap();
 
             let mut references =
-                stmt.query_map(&[(":id", reference_uniquename.as_ref())],
+                stmt.query_map(&[(":id", reference_uniquename)],
                                |row| {
                                    let json: String = row.get(0)?;
                                    let reference_details: ReferenceDetails =
@@ -182,7 +182,8 @@ impl APIMapsDatabase {
             let maybe_reference = result_reference.map(|g| g.unwrap());
 
             if let Some(reference_details) = maybe_reference {
-                cache.insert(reference_uniquename.clone(), Arc::new(reference_details));
+                cache.insert(reference_uniquename.to_shared_str(),
+                             Arc::new(reference_details));
             }
         }
 
