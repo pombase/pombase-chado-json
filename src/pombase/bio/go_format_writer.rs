@@ -84,7 +84,7 @@ fn write_parquet(writer: &mut BufWriter<&File>,
     let schema = Arc::new(Schema::new(gaf_schema_fields));
 
     let props = WriterProperties::builder()
-        .set_compression(Compression::ZSTD(ZstdLevel::try_new(9).unwrap()))
+        .set_compression(Compression::ZSTD(ZstdLevel::try_new(16).unwrap()))
         .build();
 
     let mut arrow_writer =
