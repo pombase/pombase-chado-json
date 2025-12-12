@@ -5,6 +5,13 @@ use std::collections::HashSet;
 
 use std::io::Write;
 use std::fs::File;
+use std::sync::Arc;
+
+use arrow_array::{Array, LargeStringArray, RecordBatch};
+use arrow_schema::{DataType, Field, Schema};
+use parquet::arrow::ArrowWriter;
+use parquet::file::properties::WriterProperties;
+use parquet::basic::{Compression, ZstdLevel};
 
 use chrono::prelude::{Local, DateTime};
 
@@ -42,14 +49,65 @@ fn abbreviation_of_go_aspect(cv_name: &str)
     }
 }
 
-fn write_tsv_lines(writer: &mut dyn io::Write, lines: Vec<Vec<String>>)
+fn write_tsv_lines(writer: &mut dyn io::Write, lines: &Vec<Vec<String>>)
   -> Result<(), io::Error>
 {
-
     for line_parts in lines {
         let line = line_parts.join("\t");
         writeln!(writer, "{}", line)?;
     }
+
+    Ok(())
+}
+
+fn write_parquet(writer: &mut BufWriter<&File>,
+                 header_parts: &[&str],
+                 lines: &Vec<Vec<String>>)
+  -> Result<(), io::Error>
+{
+    let mut gaf_schema_fields = vec![];
+    for header_part in header_parts {
+        gaf_schema_fields.push(Field::new(header_part.to_owned(),
+                                          DataType::LargeUtf8, false));
+    }
+    let schema = Arc::new(Schema::new(gaf_schema_fields));
+
+    let props = WriterProperties::builder()
+        .set_compression(Compression::ZSTD(ZstdLevel::try_new(9).unwrap()))
+        .build();
+
+    let mut arrow_writer =
+        ArrowWriter::try_new(writer, schema.clone(), Some(props))?;
+
+    for chunk in lines.chunks(1000) {
+        let chunk_lines: Vec<_> = chunk.into_iter().collect();
+
+        let mut columns: Vec<Vec<String>> = vec![];
+        for _ in 0..chunk_lines[0].len() {
+            columns.push(vec![]);
+        }
+
+        for chunk_line in chunk_lines.into_iter() {
+            for (idx, value) in chunk_line.iter().enumerate() {
+                columns[idx].push(value.to_owned());
+            }
+        }
+
+        let str_vec_vec: Vec<Arc<dyn Array>> = columns.into_iter()
+            .map(|v| {
+                Arc::new(LargeStringArray::from_iter_values(v)) as _
+            })
+            .collect();
+
+        let record_batch = RecordBatch::try_new(
+            schema.clone(),
+            str_vec_vec,
+        ).unwrap();
+
+        arrow_writer.write(&record_batch)?;
+    }
+
+    arrow_writer.close()?;
 
     Ok(())
 }
@@ -62,7 +120,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                  genes: &UniquenameGeneMap,
                                  transcripts: &UniquenameTranscriptMap,
                                  output_dir: &str)
-        -> Result<(), io::Error>
+                                 -> Result<(), io::Error>
 {
     let load_org_taxonid =
         if let Some(load_org_taxonid) = config.load_organism_taxonid {
@@ -80,26 +138,43 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         format!("{}/gene_product_annotation_data_taxonid_{}.tsv", output_dir,
                 load_org_taxonid);
     let pombase_gaf_file_name = format!("{}/pombase_style_gaf.tsv", output_dir);
+    let pombase_gaf_parquet_file_name = format!("{}/pombase_style_gaf.parquet", output_dir);
     let extended_pombase_gaf_file_name = format!("{}/extended_pombase_style_gaf.tsv", output_dir);
+    let extended_pombase_gaf_parquet_file_name = format!("{}/extended_pombase_style_gaf.parquet", output_dir);
     let standard_gaf_file_name = format!("{}/go_style_gaf.tsv", output_dir);
+    let standard_gaf_parquet_file_name = format!("{}/go_style_gaf.parquet", output_dir);
     let comments_gaf_file_name = format!("{}/canto_go_annotations_with_comments.tsv", output_dir);
+    let comments_gaf_parquet_file_name = format!("{}/canto_go_annotations_with_comments.parquet", output_dir);
 
     let gpi_file = File::create(gpi_file_name).expect("Unable to open file");
     let gpad_file = File::create(gpad_file_name).expect("Unable to open file");
     let pombase_gaf_file =
         File::create(pombase_gaf_file_name).expect("Unable to open file");
+    let pombase_gaf_parquet_file =
+        File::create(pombase_gaf_parquet_file_name).expect("Unable to open file");
     let extended_pombase_gaf_file =
         File::create(extended_pombase_gaf_file_name).expect("Unable to open file");
+    let extended_pombase_gaf_parquet_file =
+        File::create(extended_pombase_gaf_parquet_file_name).expect("Unable to open file");
     let standard_gaf_file =
         File::create(standard_gaf_file_name).expect("Unable to open file");
+    let standard_gaf_parquet_file =
+        File::create(standard_gaf_parquet_file_name).expect("Unable to open file");
     let comments_gaf_file =
         File::create(comments_gaf_file_name).expect("Unable to open file");
+    let comments_gaf_parquet_file =
+        File::create(comments_gaf_parquet_file_name).expect("Unable to open file");
+
     let mut gpi_writer = BufWriter::new(&gpi_file);
     let mut gpad_writer = BufWriter::new(&gpad_file);
     let mut extended_pombase_gaf_writer = BufWriter::new(&extended_pombase_gaf_file);
+    let mut extended_pombase_gaf_parquet_writer = BufWriter::new(&extended_pombase_gaf_parquet_file);
     let mut pombase_gaf_writer = BufWriter::new(&pombase_gaf_file);
+    let mut pombase_gaf_parquet_writer = BufWriter::new(&pombase_gaf_parquet_file);
     let mut standard_gaf_writer = BufWriter::new(&standard_gaf_file);
+    let mut standard_gaf_parquet_writer = BufWriter::new(&standard_gaf_parquet_file);
     let mut comments_gaf_writer = BufWriter::new(&comments_gaf_file);
+    let mut comments_gaf_parquet_writer = BufWriter::new(&comments_gaf_parquet_file);
 
     let generated_by = format!("!generated-by: {}\n", database_name);
     let iso_date = db_creation_datetime.replace(' ', "T");
@@ -127,7 +202,21 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     let contact = format!("!contact: {}\n", &config.helpdesk_address);
     standard_gaf_writer.write_all(contact.as_bytes())?;
 
-    writeln!(comments_gaf_writer, "db\tdb_object_id\tdb_object_symbol\tqualifier\tgo_id\tdb:reference\tevidence_code\twith_or_from\taspect\tdb_object_name\tdb_object_synonym\tdb_object_type\ttaxon\tdate\tassigned_by\tannotation_extension\tgene_product_form_id\tcomment_or_text_span\n")?;
+    let extended_pombase_gaf_header_parts =
+        vec!["db", "db_object_id", "db_object_symbol", "db_object_description",
+             "qualifier", "go_id", "go_term_name", "db:reference", "evidence_code",
+             "with_or_from", "aspect", "db_object_name", "db_object_synonym",
+             "db_object_type", "taxon", "date", "assigned_by", "annotation_extension",
+             "gene_product_form_id"];
+    let standard_gaf_header_parts =
+        vec!["db", "db_object_id", "db_object_symbol", "qualifier", "go_id", "db:reference",
+             "evidence_code", "with_or_from", "aspect", "db_object_name", "db_object_synonym",
+             "db_object_type", "taxon", "date", "assigned_by", "annotation_extension",
+             "gene_product_form_id"];
+    let mut comments_gaf_header_parts = standard_gaf_header_parts.clone();
+    comments_gaf_header_parts.push("comment_or_text_span");
+
+    writeln!(comments_gaf_writer, "{}\n", comments_gaf_header_parts.join("\t"))?;
 
     let mut pombase_gaf_lines = vec![];
     let mut extended_pombase_gaf_lines = vec![];
@@ -201,10 +290,19 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
         }
     }
 
-    write_tsv_lines(&mut pombase_gaf_writer, pombase_gaf_lines)?;
-    write_tsv_lines(&mut extended_pombase_gaf_writer, extended_pombase_gaf_lines)?;
-    write_tsv_lines(&mut standard_gaf_writer, standard_gaf_lines)?;
-    write_tsv_lines(&mut comments_gaf_writer, comments_gaf_lines)?;
+    write_tsv_lines(&mut pombase_gaf_writer, &pombase_gaf_lines)?;
+    write_tsv_lines(&mut extended_pombase_gaf_writer, &extended_pombase_gaf_lines)?;
+    write_tsv_lines(&mut standard_gaf_writer, &standard_gaf_lines)?;
+    write_tsv_lines(&mut comments_gaf_writer, &comments_gaf_lines)?;
+
+    write_parquet(&mut pombase_gaf_parquet_writer, &standard_gaf_header_parts,
+                  &pombase_gaf_lines)?;
+    write_parquet(&mut extended_pombase_gaf_parquet_writer, &extended_pombase_gaf_header_parts,
+                  &extended_pombase_gaf_lines)?;
+    write_parquet(&mut standard_gaf_parquet_writer, &standard_gaf_header_parts,
+                  &standard_gaf_lines)?;
+    write_parquet(&mut comments_gaf_parquet_writer, &comments_gaf_header_parts,
+                  &comments_gaf_lines)?;
 
     Ok(())
 }
@@ -899,7 +997,7 @@ pub fn write_go_annotation_format(tsv_writer: &mut dyn io::Write,
     make_gene_association_lines(config, data_lookup, write_mode, export_comments,
                                 gene_details, transcripts, cv_name, &mut lines);
 
-    write_tsv_lines(tsv_writer, lines)?;
+    write_tsv_lines(tsv_writer, &lines)?;
 
     Ok(())
 }
