@@ -7,7 +7,10 @@ use std::io::Write;
 use std::fs::File;
 use std::sync::Arc;
 
-use arrow_array::{Array, LargeStringArray, RecordBatch};
+use arrow::datatypes::Date32Type;
+use chrono::NaiveDate;
+
+use arrow_array::{Array, Date32Array, LargeStringArray, RecordBatch};
 use arrow_schema::{DataType, Field, Schema};
 use parquet::arrow::ArrowWriter;
 use parquet::file::properties::WriterProperties;
@@ -66,9 +69,17 @@ fn write_parquet(writer: &mut BufWriter<&File>,
   -> Result<(), io::Error>
 {
     let mut gaf_schema_fields = vec![];
-    for header_part in header_parts {
-        gaf_schema_fields.push(Field::new(header_part.to_owned(),
-                                          DataType::LargeUtf8, false));
+
+    let mut date_idx = 0;
+
+    for (idx, header_part) in header_parts.iter().enumerate() {
+        let field = if *header_part == "date" {
+            date_idx = idx;
+            Field::new(header_part.to_owned(), DataType::Date32, false)
+        } else {
+            Field::new(header_part.to_owned(), DataType::LargeUtf8, false)
+        };
+        gaf_schema_fields.push(field);
     }
     let schema = Arc::new(Schema::new(gaf_schema_fields));
 
@@ -93,9 +104,19 @@ fn write_parquet(writer: &mut BufWriter<&File>,
             }
         }
 
-        let str_vec_vec: Vec<Arc<dyn Array>> = columns.into_iter()
-            .map(|v| {
-                Arc::new(LargeStringArray::from_iter_values(v)) as _
+        let str_vec_vec: Vec<Arc<dyn Array>> =
+            columns.iter().enumerate()
+            .map(|(idx, v)| {
+                if idx == date_idx {
+                    let date_iter = v.iter()
+                        .map(|d| {
+                            let naive_date = NaiveDate::parse_from_str(d, "%Y%m%d").unwrap();
+                            Date32Type::from_naive_date(naive_date)
+                        });
+                    Arc::new(Date32Array::from_iter_values(date_iter)) as _
+                } else {
+                    Arc::new(LargeStringArray::from_iter_values(v)) as _
+                }
             })
             .collect();
 
