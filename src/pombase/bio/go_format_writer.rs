@@ -63,9 +63,9 @@ fn write_tsv_lines(writer: &mut dyn io::Write, lines: &Vec<Vec<String>>)
     Ok(())
 }
 
-fn write_parquet(writer: &mut BufWriter<&File>,
-                 header_parts: &[&str],
-                 lines: &[Vec<String>])
+pub fn write_parquet(writer: &mut BufWriter<&File>,
+                     header_parts: &[&str],
+                     lines: &[Vec<String>])
   -> Result<(), io::Error>
 {
     let mut gaf_schema_fields = vec![];
@@ -73,7 +73,7 @@ fn write_parquet(writer: &mut BufWriter<&File>,
     let mut date_idx = 0;
 
     for (idx, header_part) in header_parts.iter().enumerate() {
-        let field = if *header_part == "date" {
+        let field = if header_part.to_lowercase() == "date" {
             date_idx = idx;
             Field::new(header_part.to_owned(), DataType::Date32, false)
         } else {
@@ -110,7 +110,13 @@ fn write_parquet(writer: &mut BufWriter<&File>,
                 if idx == date_idx {
                     let date_iter = v.iter()
                         .map(|d| {
-                            let naive_date = NaiveDate::parse_from_str(d, "%Y%m%d").unwrap();
+                            let naive_date =
+                                if d.contains("-") {
+                                    NaiveDate::parse_from_str(d, "%Y-%m-%d")
+                                } else {
+                                    NaiveDate::parse_from_str(d, "%Y%m%d")
+                                }
+                                .unwrap_or_else(|_| panic!("failed to parse date: {}", d));
                             Date32Type::from_naive_date(naive_date)
                         });
                     Arc::new(Date32Array::from_iter_values(date_iter)) as _

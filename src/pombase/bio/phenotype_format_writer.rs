@@ -5,6 +5,7 @@ use std::fs::File;
 
 use flexstr::{shared_fmt as flex_fmt, FlexStr, ToSharedStr};
 
+use crate::bio::go_format_writer::write_parquet;
 use crate::bio::{get_submitter_comment, ExportComments};
 use crate::web::config::*;
 use crate::data_types::*;
@@ -59,18 +60,24 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                     load_org_taxonid, eco_ev_bit)
         };
 
+    let parquet_phaf_file_name = phaf_file_name
+        .replace(".tsv", ".parquet")
+        .replace(".phaf", ".parquet");
+
     let phaf_file = File::create(phaf_file_name).expect("Unable to open file");
+    let phaf_parquet_file = File::create(parquet_phaf_file_name).expect("Unable to open file");
     let mut phaf_writer = BufWriter::new(&phaf_file);
+    let mut phaf_parquet_writer = BufWriter::new(&phaf_parquet_file);
 
-    let comment_header =
-        if export_comments == ExportComments::Export {
-            "\tAnnotation comment"
-        } else {
-            ""
-        };
-
-    let header = format!("#Database name\tGene systematic ID\tFYPO ID\tAllele description\tExpression\tParental strain\tStrain name (background)\tGenotype description\tGene symbol\tAllele name\tAllele synonym\tAllele type\tEvidence\tCondition\tPenetrance\tSeverity\tExtension\tReference\tTaxon\tDate{}\n",
-                         comment_header);
+    let mut header_parts = vec!["Database name", "Gene systematic ID", "FYPO ID", "Allele description",
+                            "Expression", "Parental strain", "Strain name (background)",
+                            "Genotype description", "Gene symbol", "Allele name", "Allele synonym",
+                            "Allele type", "Evidence", "Condition", "Penetrance", "Severity",
+                            "Extension", "Reference", "Taxon", "Date"];
+    if export_comments == ExportComments::Export {
+        header_parts.push("Annotation comment")
+    }
+    let header = format!("#{}\n", header_parts.join("\t"));
 
     phaf_writer.write_all(header.as_bytes())?;
 
@@ -213,7 +220,9 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
         }
     }
 
-  Ok(())
+    write_parquet(&mut phaf_parquet_writer, &header_parts, &lines)?;
+
+    Ok(())
 }
 
 pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
