@@ -62,7 +62,7 @@ fn write_tsv_lines(writer: &mut dyn io::Write, lines: &Vec<Vec<String>>)
 
 fn write_parquet(writer: &mut BufWriter<&File>,
                  header_parts: &[&str],
-                 lines: &Vec<Vec<String>>)
+                 lines: &[Vec<String>])
   -> Result<(), io::Error>
 {
     let mut gaf_schema_fields = vec![];
@@ -80,7 +80,7 @@ fn write_parquet(writer: &mut BufWriter<&File>,
         ArrowWriter::try_new(writer, schema.clone(), Some(props))?;
 
     for chunk in lines.chunks(1000) {
-        let chunk_lines: Vec<_> = chunk.into_iter().collect();
+        let chunk_lines: Vec<_> = chunk.iter().collect();
 
         let mut columns: Vec<Vec<String>> = vec![];
         for _ in 0..chunk_lines[0].len() {
