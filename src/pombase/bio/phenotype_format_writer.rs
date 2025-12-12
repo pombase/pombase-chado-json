@@ -28,6 +28,8 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                         output_dir: &str)
   -> Result<(), io::Error>
 {
+    let mut lines = vec![];
+
     let load_org_taxonid =
         if let Some(load_org_taxonid) = config.load_organism_taxonid {
             load_org_taxonid
@@ -139,17 +141,6 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                         }
                     }
 
-                    let comment_field =
-                        if export_comments == ExportComments::Export {
-                            if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
-                                format!("\t{}", submitter_comment)
-                            } else {
-                                "\t".to_string()
-                            }
-                        } else {
-                            String::default()
-                        };
-
                     let evidence =
                         if evidence_type == FypoEvidenceType::Eco {
                             annotation_detail.eco_evidence.clone().unwrap_or_else(|| flex_fmt!(""))
@@ -182,34 +173,43 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                     let date =
                         annotation_detail.date.clone().unwrap_or_else(|| flex_fmt!("NO_DATE"));
 
-                    let line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}{}\n",
-                                database_name,
-                                locus_gene.uniquename,
-                                term.termid,
-                                locus_allele.description.clone().unwrap_or_else(|| flex_fmt!("")),
-                                expression,
-                                phaf_parental_strain,
-                                "",
-                                annotation_detail.genotype_background.clone().unwrap_or_default(),
-                                locus_gene_name_or_uniquename,
-                                locus_allele.name.clone().unwrap_or_else(|| flex_fmt!("")),
-                                locus_allele_synonyms,
-                                locus_allele.allele_type,
-                                evidence,
+                    let mut line_parts =
+                        vec![database_name.to_std_string(),
+                                locus_gene.uniquename.to_std_string(),
+                                term.termid.to_std_string(),
+                                locus_allele.description.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
+                                expression.to_std_string(),
+                                phaf_parental_strain.to_owned(),
+                                String::default(),
+                                annotation_detail.genotype_background.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
+                                locus_gene_name_or_uniquename.to_std_string(),
+                                locus_allele.name.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
+                                locus_allele_synonyms.clone(),
+                                locus_allele.allele_type.to_std_string(),
+                                evidence.to_std_string(),
                                 conditions,
                                 penetrance,
                                 severity,
                                 extension,
-                                reference_uniquename,
-                                load_org_taxonid,
-                                date,
-                                comment_field,
-                        );
-                    phaf_writer.write_all(line.as_bytes())?;
+                                reference_uniquename.to_std_string(),
+                                load_org_taxonid.to_string(),
+                                date.to_std_string()];
+
+                        if export_comments == ExportComments::Export {
+                            if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
+                                line_parts.push(submitter_comment);
+                            } else {
+                                line_parts.push(String::default())
+                            }
+                        };
+
+                    let line = line_parts.join("\t");
+
+                    writeln!(phaf_writer, "{}", line)?;
+
+                    lines.push(line_parts);
                 }
             }
-
         }
     }
 
