@@ -212,7 +212,7 @@ pub fn format_misc_feature_gff(chromosome_export_id: &str,
 
 pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
                                 gene_uniquename: &GeneUniquename, extension: &[ExtPart])
-    -> (FlexStr, FlexStr)
+    -> (String, String)
 {
     let mut remaining = vec![];
     let mut mod_res: Vec<&str> = vec![];
@@ -264,12 +264,12 @@ pub fn process_modification_ext(config: &Config, data_lookup: &dyn DataLookup,
     let remaining_str = make_extension_string(config, data_lookup, &GpadGafWriteMode::StandardGaf,
                                               &remaining);
 
-    (mod_res.join(",").to_shared_str(), remaining_str)
+    (mod_res.join(","), remaining_str)
 }
 
 pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
                          write_mode: &GpadGafWriteMode, extension: &[ExtPart])
-                         -> FlexStr
+                         -> String
 {
     let rel_mapping = &config.file_exports.gpad_gpi.extension_relation_mappings;
     let get_rel_term = |ext_part: &ExtPart| {
@@ -342,7 +342,7 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
 
     parts.sort();
 
-    parts.join(",").to_shared_str()
+    parts.join(",")
 }
 
 pub fn compare_ext_part_with_config(extension_relation_order: &RelationOrder,

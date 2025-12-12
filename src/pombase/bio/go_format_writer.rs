@@ -42,6 +42,18 @@ fn abbreviation_of_go_aspect(cv_name: &str)
     }
 }
 
+fn write_tsv_lines(writer: &mut dyn io::Write, lines: Vec<Vec<String>>)
+  -> Result<(), io::Error>
+{
+
+    for line_parts in lines {
+        let line = line_parts.join("\t");
+        writeln!(writer, "{}", line)?;
+    }
+
+    Ok(())
+}
+
 #[allow(clippy::too_many_arguments)]
 pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                  data_lookup: &dyn DataLookup,
@@ -117,6 +129,11 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
 
     writeln!(comments_gaf_writer, "db\tdb_object_id\tdb_object_symbol\tqualifier\tgo_id\tdb:reference\tevidence_code\twith_or_from\taspect\tdb_object_name\tdb_object_synonym\tdb_object_type\ttaxon\tdate\tassigned_by\tannotation_extension\tgene_product_form_id\tcomment_or_text_span\n")?;
 
+    let mut pombase_gaf_lines = vec![];
+    let mut extended_pombase_gaf_lines = vec![];
+    let mut standard_gaf_lines = vec![];
+    let mut comments_gaf_lines = vec![];
+
     for gene_details in genes.values() {
         if gene_details.taxonid != load_org_taxonid {
             continue;
@@ -153,28 +170,41 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                       gene_details)?;
 
         for aspect_name in &GO_ASPECT_NAMES {
-            write_go_annotation_format(&mut pombase_gaf_writer, config,
-                                       data_lookup, GpadGafWriteMode::PomBaseGaf,
-                                       ExportComments::NoExport,
-                                       gene_details, transcripts,
-                                       aspect_name)?;
-            write_go_annotation_format(&mut extended_pombase_gaf_writer, config,
-                                       data_lookup, GpadGafWriteMode::ExtendedPomBaseGaf,
-                                       ExportComments::NoExport,
-                                       gene_details, transcripts,
-                                       aspect_name)?;
-            write_go_annotation_format(&mut standard_gaf_writer, config,
-                                       data_lookup, GpadGafWriteMode::StandardGaf,
-                                       ExportComments::NoExport,
-                                       gene_details, transcripts,
-                                       aspect_name)?;
-            write_go_annotation_format(&mut comments_gaf_writer, config,
-                                       data_lookup, GpadGafWriteMode::StandardGaf,
-                                       ExportComments::Export,
-                                       gene_details, transcripts,
-                                       aspect_name)?;
-            }
+            make_gene_association_lines(config,
+                                        data_lookup,
+                                        GpadGafWriteMode::PomBaseGaf,
+                                        ExportComments::NoExport,
+                                        gene_details, transcripts,
+                                        aspect_name,
+                                        &mut pombase_gaf_lines);
+            make_gene_association_lines(config,
+                                        data_lookup,
+                                        GpadGafWriteMode::ExtendedPomBaseGaf,
+                                        ExportComments::NoExport,
+                                        gene_details, transcripts,
+                                        aspect_name,
+                                        &mut extended_pombase_gaf_lines);
+            make_gene_association_lines(config,
+                                        data_lookup,
+                                        GpadGafWriteMode::StandardGaf,
+                                        ExportComments::NoExport,
+                                        gene_details, transcripts,
+                                        aspect_name,
+                                        &mut standard_gaf_lines);
+            make_gene_association_lines(config,
+                                        data_lookup,
+                                        GpadGafWriteMode::StandardGaf,
+                                        ExportComments::Export,
+                                        gene_details, transcripts,
+                                        aspect_name,
+                                        &mut comments_gaf_lines);
+        }
     }
+
+    write_tsv_lines(&mut pombase_gaf_writer, pombase_gaf_lines)?;
+    write_tsv_lines(&mut extended_pombase_gaf_writer, extended_pombase_gaf_lines)?;
+    write_tsv_lines(&mut standard_gaf_writer, standard_gaf_lines)?;
+    write_tsv_lines(&mut comments_gaf_writer, comments_gaf_lines)?;
 
     Ok(())
 }
@@ -597,27 +627,21 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
-                                  data_lookup: &dyn DataLookup,
-                                  write_mode: GpadGafWriteMode,
-                                  export_comments: ExportComments,
-                                  gene_details: &GeneDetails,
-                                  transcripts: &UniquenameTranscriptMap,
-                                  cv_name: &FlexStr)
-                                  -> Result<(), io::Error>
-{
-    if !GO_ASPECT_NAMES.contains(cv_name) {
-        return Err(io::Error::new(io::ErrorKind::InvalidInput,
-                                  format!("unknown CV: {}", cv_name)));
-    }
-
-    let database_name = config.database_name.as_str();
-    let db_object_id = gene_details.uniquename.as_str();
+pub fn make_gene_association_lines(config: &Config,
+                                   data_lookup: &dyn DataLookup,
+                                   write_mode: GpadGafWriteMode,
+                                   export_comments: ExportComments,
+                                   gene_details: &GeneDetails,
+                                   transcripts: &UniquenameTranscriptMap,
+                                   cv_name: &FlexStr,
+                                   lines: &mut Vec<Vec<String>>) {
+    let database_name = config.database_name.to_std_string();
+    let db_object_id = gene_details.uniquename.to_std_string();
     let db_object_symbol =
         if let Some(ref gene_name) = gene_details.name {
-            gene_name.as_str()
+            gene_name.to_std_string()
         } else {
-            db_object_id
+            db_object_id.clone()
         };
     let mut db_object_synonyms =
         gene_details.synonyms.iter().filter(|synonym| {
@@ -625,16 +649,14 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
         })
         .map(|synonym| synonym.name.to_string())
         .collect::<Vec<String>>();
-
     db_object_synonyms.sort();
-
     let db_object_synonyms_string = db_object_synonyms.join("|");
 
     let db_object_name =
         if let Some(ref product) = gene_details.product {
-            product.as_str()
+            product.to_std_string()
         } else {
-            ""
+            "".to_owned()
         };
 
     let db_object_type =
@@ -642,20 +664,20 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
             let transcript_details =
                 transcripts.get(transcript_uniquename)
                 .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
-                                 transcript_uniquename));
+                                          transcript_uniquename));
 
             let transcript_type = transcript_details.transcript_type.as_str();
 
             if transcript_type == "mRNA" {
-                "protein"
+                "protein".to_owned()
             } else {
-                transcript_type
+                transcript_type.to_owned()
             }
         } else {
-            return Ok(());
+            return;
         };
 
-    let single_letter_aspect = abbreviation_of_go_aspect(cv_name);
+    let single_letter_aspect = abbreviation_of_go_aspect(cv_name).to_owned();
 
     let mut positive_annotation_count = 0;
 
@@ -674,22 +696,23 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     }
 
                 if export_comments == ExportComments::Export &&
-                   let Some(ref reference_uniquename) = annotation_detail.reference {
-                    if let Some(reference_details) = data_lookup.get_reference(reference_uniquename) {
-                        if !reference_details.is_canto_curated() {
+                    let Some(ref reference_uniquename) = annotation_detail.reference {
+                        if let Some(reference_details) = data_lookup.get_reference(reference_uniquename) {
+                            if !reference_details.is_canto_curated() {
+                                continue;
+                            }
+                        } else {
                             continue;
                         }
-                    } else {
-                        continue;
                     }
-                }
 
-                let go_id = &term_annotation.term;
-                let term_details_arc = data_lookup.get_term(go_id).clone();
-                let term_details_ref = term_details_arc.as_deref().unwrap();
+                let go_id = term_annotation.term.to_std_string();
+
+                let term_details_arc = data_lookup.get_term(&term_annotation.term);
+                let term_details_ref = term_details_arc.as_deref().unwrap().to_owned();
 
                 let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf ||
-                                    write_mode == GpadGafWriteMode::ExtendedPomBaseGaf
+                    write_mode == GpadGafWriteMode::ExtendedPomBaseGaf
                 {
                     let mut qualifier_parts = vec![];
                     if term_annotation.is_not {
@@ -697,8 +720,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     };
 
                     qualifier_parts.extend(annotation_detail.qualifiers.iter()
-                                   .map(|s| s.as_str()));
-
+                                           .map(|s| s.as_str()));
                     qualifier_parts.sort();
 
                     qualifier_parts.join("|")
@@ -706,7 +728,7 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     let relation_name =
                         get_gpad_relation_name_of(data_lookup,
                                                   &go_term, annotation_detail.as_ref())
-                                                  .to_string();
+                        .to_string();
 
                     if term_annotation.is_not {
                         format!("NOT|{}", relation_name)
@@ -717,9 +739,9 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
 
                 let assigned_by =
                     if let Some(ref assigned_by) = annotation_detail.assigned_by {
-                        assigned_by.as_str()
+                        assigned_by.to_std_string()
                     } else {
-                        database_name
+                        database_name.clone()
                     };
 
                 let with_iter = annotation_detail.withs.iter();
@@ -741,11 +763,12 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     annotation_detail.evidence
                     .as_ref()
                     .map(|s| s.as_str())
-                    .unwrap_or_else(|| "");
+                    .unwrap_or_else(|| "")
+                    .to_string();
 
                 let date =
                     if let Some(ref raw_date) = annotation_detail.date {
-                        raw_date.replace('-', "")
+                        raw_date.replace('-', "").to_string()
                     } else {
                         println!("WARNING while writing GPAD file: \
                                   date missing from annotation {}", annotation_id);
@@ -759,9 +782,9 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                 let gene_product_form_id =
                     if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id
                 {
-                    gene_product_form_id.as_str()
+                    gene_product_form_id.to_std_string()
                 } else {
-                    ""
+                    "".to_owned()
                 };
 
                 let taxonid = format!("taxon:{}", gene_details.taxonid);
@@ -770,92 +793,113 @@ pub fn write_go_annotation_format(writer: &mut dyn io::Write, config: &Config,
                     positive_annotation_count += 1;
                 }
 
-                let mut line_parts = vec![database_name,
-                                          db_object_id,
-                                          db_object_symbol];
+                let mut line_parts: Vec<String> =
+                    vec![database_name.clone(),
+                         db_object_id.clone(),
+                         db_object_symbol.clone()];
 
                 if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
                     if let Some(ref product) = gene_details.product {
-                        line_parts.push(product.as_str())
+                        line_parts.push(product.to_std_string())
                     } else {
-                        line_parts.push("");
+                        line_parts.push("".to_owned());
                     }
                 }
 
-                line_parts.push(qualifiers.as_str());
+                line_parts.push(qualifiers);
                 line_parts.push(go_id);
                 if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
-                    line_parts.push(term_details_ref.name.as_str());
+                    line_parts.push(term_details_ref.name.to_std_string());
                 }
 
                 if let Some(ref reference_uniquename) =
                     annotation_detail.reference {
-                        line_parts.push(reference_uniquename);
+                        line_parts.push(reference_uniquename.to_std_string());
                     } else {
-                        line_parts.push("");
+                        line_parts.push("".to_owned());
                     };
                 line_parts.push(evidence_code);
-                line_parts.push(with_or_from.as_str());
-                line_parts.push(single_letter_aspect);
-                line_parts.push(db_object_name);
-                line_parts.push(db_object_synonyms_string.as_str());
-                line_parts.push(db_object_type);
-                line_parts.push(taxonid.as_str());
-                line_parts.push(date.as_str());
+                line_parts.push(with_or_from);
+                line_parts.push(single_letter_aspect.clone());
+                line_parts.push(db_object_name.clone());
+                line_parts.push(db_object_synonyms_string.clone());
+                line_parts.push(db_object_type.clone());
+                line_parts.push(taxonid);
+                line_parts.push(date);
                 line_parts.push(assigned_by);
-                line_parts.push(annotation_extensions.as_str());
+                line_parts.push(annotation_extensions);
                 line_parts.push(gene_product_form_id);
-                let submitter_comment;
                 if export_comments == ExportComments::Export {
                     if let Some(ref tmp_submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
-                        submitter_comment = tmp_submitter_comment.to_owned();
-                        line_parts.push(submitter_comment.as_str());
+                        line_parts.push(tmp_submitter_comment.to_owned());
                     } else {
-                        line_parts.push("");
+                        line_parts.push("".to_owned());
                     }
                 }
 
-                let line = line_parts.join("\t");
-                writeln!(writer, "{}", line)?;
+                lines.push(line_parts);
             }
         }
     }
 
     if positive_annotation_count == 0 && config.file_exports.include_nd_lines &&
         write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" &&
-        export_comments == ExportComments::NoExport {
-            let local: DateTime<Local> = Local::now();
-            let date = local.format("%Y%m%d").to_string();
-            let relation_name =
-                get_gpad_nd_relation_name_of(data_lookup, cv_name);
-            let go_aspect_termid =
-                config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap();
-            let nd_ref = &config.file_exports.nd_reference;
-            let taxonid = format!("taxon:{}", gene_details.taxonid);
-            let assigned_by = database_name;
+        export_comments == ExportComments::NoExport
+    {
+        let local: DateTime<Local> = Local::now();
+        let date = local.format("%Y%m%d").to_string();
+        let relation_name =
+            get_gpad_nd_relation_name_of(data_lookup, cv_name).to_std_string();
+        let go_aspect_termid =
+            config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap().to_std_string();
+        let nd_ref = config.file_exports.nd_reference.clone();
+        let taxonid = format!("taxon:{}", gene_details.taxonid);
+        let assigned_by = database_name.clone();
 
-            let line_parts = vec![database_name,
-                                  db_object_id,
-                                  db_object_symbol,
-                                  relation_name.as_str(),
-                                  go_aspect_termid,
-                                  nd_ref,
-                                  "ND",
-                                  "",
-                                  single_letter_aspect,
-                                  db_object_name,
-                                  db_object_synonyms_string.as_str(),
-                                  db_object_type,
-                                  taxonid.as_str(),
-                                  date.as_str(),
-                                  assigned_by,
-                                  "",
-                                  ""];
+        let line_parts = vec![database_name.clone(),
+                              db_object_id,
+                              db_object_symbol,
+                              relation_name,
+                              go_aspect_termid,
+                              nd_ref,
+                              "ND".to_owned(),
+                              "".to_owned(),
+                              single_letter_aspect,
+                              db_object_name,
+                              db_object_synonyms_string,
+                              db_object_type,
+                              taxonid,
+                              date,
+                              assigned_by,
+                              "".to_owned(),
+                              "".to_owned()];
 
-            let line = line_parts.join("\t");
+        lines.push(line_parts);
+    }
+}
 
-            writeln!(writer, "{}", line)?;
-        }
+#[allow(clippy::too_many_arguments)]
+pub fn write_go_annotation_format(tsv_writer: &mut dyn io::Write,
+                                  config: &Config,
+                                  data_lookup: &dyn DataLookup,
+                                  write_mode: GpadGafWriteMode,
+                                  export_comments: ExportComments,
+                                  gene_details: &GeneDetails,
+                                  transcripts: &UniquenameTranscriptMap,
+                                  cv_name: &FlexStr)
+         -> Result<(), io::Error>
+{
+    if !GO_ASPECT_NAMES.contains(cv_name) {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput,
+                                  format!("unknown CV: {}", cv_name)));
+    }
+
+    let mut lines = vec![];
+
+    make_gene_association_lines(config, data_lookup, write_mode, export_comments,
+                                gene_details, transcripts, cv_name, &mut lines);
+
+    write_tsv_lines(tsv_writer, lines)?;
 
     Ok(())
 }
