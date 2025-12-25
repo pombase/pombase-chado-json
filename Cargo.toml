@@ -60,7 +60,7 @@ version = "0.13"
 features = ["zstdmt"]
 
 [dependencies.flexstr]
-version = "0.9"
+version = "0.10"
 features = ["serde"]
 
 [dependencies.tokio-postgres]
