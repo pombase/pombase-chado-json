@@ -360,6 +360,10 @@ pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<T
     }
 
     for term_annotation in term_annotations.iter_mut() {
+        if term_annotation.is_not {
+            // don't filter NOT annotations
+            continue;
+        }
         if let Some(child_termids) = children_by_termid.get(&term_annotation.term) {
             if term_annotation.summary.as_ref().unwrap().is_empty() {
                 let mut found_child_match = false;
@@ -583,7 +587,9 @@ fn make_cv_summary(cv_config: &CvConfig,
             rows.push(row);
         }
 
-        remove_redundant_summary_rows(&mut rows);
+        if !term_and_annotations.is_not {
+            remove_redundant_summary_rows(&mut rows);
+        }
 
         term_and_annotations.summary = Some(rows);
     }
