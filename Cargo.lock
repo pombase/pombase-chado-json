@@ -202,7 +202,7 @@ dependencies = [
  "arrow-schema",
  "chrono",
  "half",
- "indexmap 2.12.1",
+ "indexmap 2.13.0",
  "itoa",
  "lexical-core",
  "memchr",
@@ -1278,9 +1278,9 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.12.1"
+version = "2.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0ad4bb2b565bca0645f4d68c5c9af97fba094e9791da685bf83cb5f3ce74acf2"
+checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
 dependencies = [
  "equivalent",
  "hashbrown 0.16.1",
@@ -1704,7 +1704,7 @@ checksum = "8701b58ea97060d5e5b155d383a69952a60943f0e6dfe30b04c287beb0b27455"
 dependencies = [
  "fixedbitset",
  "hashbrown 0.15.5",
- "indexmap 2.12.1",
+ "indexmap 2.13.0",
  "serde",
  "serde_derive",
 ]
@@ -1831,7 +1831,7 @@ dependencies = [
  "flexstr",
  "getopts",
  "http-body-util",
- "indexmap 2.12.1",
+ "indexmap 2.13.0",
  "itertools",
  "lazy_static",
  "mime_guess",
@@ -2259,7 +2259,7 @@ dependencies = [
  "chrono",
  "hex",
  "indexmap 1.9.3",
- "indexmap 2.12.1",
+ "indexmap 2.13.0",
  "schemars 0.9.0",
  "schemars 1.1.0",
  "serde_core",
@@ -2286,7 +2286,7 @@ version = "0.9.34+deprecated"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6a8b1a1a2ebf674015cc02edccce75287f1a0130d394307b36743c2f5d504b47"
 dependencies = [
- "indexmap 2.12.1",
+ "indexmap 2.13.0",
  "itoa",
  "ryu",
  "serde",
