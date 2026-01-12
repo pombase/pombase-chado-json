@@ -22,6 +22,7 @@ use serde_json::{json, Value};
 use rand::rng;
 use rand::seq::IteratorRandom;
 
+use pombase_gocam::GoCamError;
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
                                          read_merged_gocam_model},
@@ -325,7 +326,7 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
     };
 
     if flags.contains("retain_genes") {
-        // we're hightlighting genes in the mega-models then hiding
+        // we're hightlighting genes in the mega-models then hide
         // models that don't have a hightlighted gene
         read_res = read_res.map(|model| {
             let mut remove_types = HashSet::new();
@@ -338,7 +339,7 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
 
 
     match read_res {
-        anyhow::Result::Ok(mut model) => {
+        Ok(mut model) => {
             let gene_name_map = &all_state.gene_name_map;
             model.add_gene_name_map(gene_name_map);
             let pro_term_to_gene_map = &all_state.pro_term_to_gene_map;
@@ -347,9 +348,17 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
 
          (StatusCode::OK, Json(elements)).into_response()
         },
-        anyhow::Result::Err(err) => {
-            eprintln!("err: {}", err);
-           (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
+        Err(err) => {
+            match err {
+                GoCamError::NoModelsError => {
+                    (StatusCode::OK, [(header::CONTENT_TYPE, "application/json".to_string())],
+                     "{\"status\": \"no-models\", \"message\": \"no models after filtering\"}".to_string()).into_response()
+                },
+                _ => {
+                    eprintln!("err: {}", err);
+                    (StatusCode::NOT_FOUND, [(header::CONTENT_TYPE, "text/plain".to_string())], "not found".to_string()).into_response()
+                }
+            }
         }
     }
 }
