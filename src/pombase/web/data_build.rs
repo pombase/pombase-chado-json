@@ -7970,7 +7970,7 @@ phenotypes, so just the first part of this extension will be used:
         for gene_details in self.genes.values() {
             if let Some(ref location) = gene_details.location {
                 let counter = gene_feature_type_maps.entry(gene_details.feature_type.clone())
-                    .or_insert_with(HashMap::new)
+                    .or_default()
                     .entry(location.chromosome_name.clone())
                     .or_default();
                 *counter += 1;
@@ -7979,7 +7979,7 @@ phenotypes, so just the first part of this extension will be used:
 
         for feature in self.other_features.values() {
             let counter = non_gene_feature_type_maps.entry(feature.feature_type.to_string().into())
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .entry(feature.location.chromosome_name.clone())
                 .or_default();
             *counter += 1;
