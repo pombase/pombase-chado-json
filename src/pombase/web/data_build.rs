@@ -7955,6 +7955,56 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn make_chr_feat_summaries(&self)
+        -> (Vec<ChromosomeShort>, Vec<FeatureTypeSummary>)
+    {
+        let mut chromosome_summaries = vec![];
+
+        for chr_details in self.chromosomes.values() {
+            chromosome_summaries.push(chr_details.make_chromosome_short());
+        }
+
+        let mut gene_feature_type_maps: HashMap<FlexStr, HashMap<FlexStr, usize>> = HashMap::new();
+        let mut non_gene_feature_type_maps: HashMap<FlexStr, HashMap<FlexStr, usize>> = HashMap::new();
+
+        for gene_details in self.genes.values() {
+            if let Some(ref location) = gene_details.location {
+                let counter = gene_feature_type_maps.entry(gene_details.feature_type.clone())
+                    .or_insert_with(HashMap::new)
+                    .entry(location.chromosome_name.clone())
+                    .or_default();
+                *counter += 1;
+            }
+        }
+
+        for feature in self.other_features.values() {
+            let counter = non_gene_feature_type_maps.entry(feature.feature_type.to_string().into())
+                .or_insert_with(HashMap::new)
+                .entry(feature.location.chromosome_name.clone())
+                .or_default();
+            *counter += 1;
+        }
+
+        let mut feature_type_summaries = vec![];
+
+        for (type_name, by_chromosome) in gene_feature_type_maps.drain() {
+
+            feature_type_summaries.push(FeatureTypeSummary {
+                type_name, by_chromosome,
+                is_gene_type: true
+            })
+        }
+
+        for (type_name, by_chromosome) in non_gene_feature_type_maps.drain() {
+            feature_type_summaries.push(FeatureTypeSummary {
+                type_name, by_chromosome,
+                is_gene_type: false
+            })
+        }
+
+        (chromosome_summaries, feature_type_summaries)
+    }
+
     pub fn get_web_data(mut self) -> WebData {
         self.process_dbxrefs();
         self.process_references();
@@ -8036,11 +8086,8 @@ phenotypes, so just the first part of this extension will be used:
         };
 
         let chromosomes = self.chromosomes.clone();
-        let mut chromosome_summaries = vec![];
-
-        for chr_details in self.chromosomes.values() {
-            chromosome_summaries.push(chr_details.make_chromosome_short());
-        }
+        let (chromosome_summaries, feature_type_summaries) =
+            self.make_chr_feat_summaries();
 
         let recent_references = self.recent_references.clone();
         let all_community_curated = self.all_community_curated.clone();
@@ -8092,6 +8139,7 @@ phenotypes, so just the first part of this extension will be used:
             stats,
             detailed_stats,
             gocam_models,
+            feature_type_summaries,
 
             physical_interaction_annotations,
             genetic_interaction_annotations,

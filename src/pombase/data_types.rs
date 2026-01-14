@@ -639,6 +639,13 @@ pub struct GeneSummary {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct FeatureTypeSummary {
+    pub type_name: FlexStr,
+    pub by_chromosome: HashMap<ChromosomeName, usize>,
+    pub is_gene_type: bool,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct TermXref {
     pub xref_id: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]

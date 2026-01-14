@@ -50,6 +50,7 @@ pub struct WebData {
     pub metadata: Metadata,
     pub chromosomes: ChrNameDetailsMap,
     pub chromosome_summaries: Vec<ChromosomeShort>,
+    pub feature_type_summaries: Vec<FeatureTypeSummary>,
     pub recent_references: RecentReferences,
     pub all_community_curated: Vec<ReferenceShort>,
     pub all_admin_curated: Vec<ReferenceShort>,
@@ -497,6 +498,15 @@ impl WebData {
     fn write_chromosome_summaries(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.chromosome_summaries).unwrap();
         let file_name = String::new() + output_dir + "/chromosome_summaries.json";
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+        writer.write_all(s.as_bytes())?;
+        Ok(())
+    }
+
+    fn write_feature_type_summaries(&self, output_dir: &str) -> Result<(), io::Error> {
+        let s = serde_json::to_string(&self.feature_type_summaries).unwrap();
+        let file_name = String::new() + output_dir + "/feature_type_summaries.json";
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes())?;
@@ -1842,6 +1852,7 @@ impl WebData {
         println!("wrote {} chromosomes", self.get_chromosomes().len());
         self.write_gene_summaries(&web_json_path)?;
         self.write_chromosome_summaries(&web_json_path)?;
+        self.write_feature_type_summaries(&web_json_path)?;
         println!("wrote summaries");
         self.write_metadata(&web_json_path)?;
         println!("wrote metadata");
