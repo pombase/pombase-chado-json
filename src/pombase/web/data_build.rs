@@ -7987,16 +7987,32 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut feature_type_summaries = vec![];
 
-        for (display_type_name, by_chromosome) in gene_feature_type_maps.drain() {
+        let mut gene_type_names: Vec<_> = gene_feature_type_maps.keys().cloned().collect();
+
+        gene_type_names.sort();
+
+        let (proteins, other_genes) = gene_type_names.into_iter()
+            .partition(|name| name.starts_with("mRNA") || name == "pseudogene");
+
+        gene_type_names = proteins;
+        gene_type_names.extend_from_slice(&other_genes);
+
+        for mut display_type_name in gene_type_names.into_iter() {
+            let by_chromosome = gene_feature_type_maps.remove(&display_type_name).unwrap();
+
+            let type_name = display_type_name.replace(' ', "_").into();
+
+            if display_type_name == "mRNA gene" {
+                display_type_name = "protein coding".into();
+            }
 
             feature_type_summaries.push(FeatureTypeSummary {
-                type_name: display_type_name.replace(' ', "_").into(),
-                display_type_name, by_chromosome,
+                type_name, display_type_name, by_chromosome,
                 is_gene_type: true
             })
         }
 
-        for (display_type_name, by_chromosome) in non_gene_feature_type_maps.drain() {
+        for (display_type_name, by_chromosome) in non_gene_feature_type_maps.into_iter() {
             feature_type_summaries.push(FeatureTypeSummary {
                 type_name: display_type_name.replace(' ', "_").into(),
                 display_type_name, by_chromosome,
