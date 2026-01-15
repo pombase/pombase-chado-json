@@ -7987,17 +7987,19 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut feature_type_summaries = vec![];
 
-        for (type_name, by_chromosome) in gene_feature_type_maps.drain() {
+        for (display_type_name, by_chromosome) in gene_feature_type_maps.drain() {
 
             feature_type_summaries.push(FeatureTypeSummary {
-                type_name, by_chromosome,
+                type_name: display_type_name.replace(' ', "_").into(),
+                display_type_name, by_chromosome,
                 is_gene_type: true
             })
         }
 
-        for (type_name, by_chromosome) in non_gene_feature_type_maps.drain() {
+        for (display_type_name, by_chromosome) in non_gene_feature_type_maps.drain() {
             feature_type_summaries.push(FeatureTypeSummary {
-                type_name, by_chromosome,
+                type_name: display_type_name.replace(' ', "_").into(),
+                display_type_name, by_chromosome,
                 is_gene_type: false
             })
         }

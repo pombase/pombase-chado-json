@@ -640,6 +640,7 @@ pub struct GeneSummary {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct FeatureTypeSummary {
+    pub display_type_name: FlexStr,
     pub type_name: FlexStr,
     pub by_chromosome: HashMap<ChromosomeName, usize>,
     pub is_gene_type: bool,
