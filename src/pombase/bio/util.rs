@@ -76,10 +76,18 @@ pub fn format_fasta(id: &str, maybe_desc: Option<String>,
     ret
 }
 
+fn quote_gff_col_9(raw: &str) -> String {
+    raw.replace(';', "%3B")
+        .replace('=', "%3D")
+        .replace('&', "%26")
+        .replace(',', "%2C")
+}
+
 #[allow(clippy::too_many_arguments)]
 fn to_gff(chromosome_export_id: &str,
           source: &str, feat_id: &str, maybe_name: Option<&str>, feat_type: &str,
           maybe_characterisation_status: Option<&str>,
+          maybe_comment: Option<&str>,
           location: &ChromosomeLocation, maybe_parent: Option<&str>,
           maybe_uniprot_id: Option<&str>) -> String {
     let phase_char =
@@ -126,6 +134,12 @@ fn to_gff(chromosome_export_id: &str,
         ret_val.push_str(uniprot_id);
     }
 
+    if feat_type.contains("repeat") &&
+       let Some(note) = maybe_comment {
+         ret_val.push_str(";note=");
+         ret_val.push_str(&quote_gff_col_9(note));
+       }
+
     ret_val
 }
 
@@ -156,6 +170,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
             to_gff(chromosome_export_id, source, &gene.uniquename,
                    gene.name.as_deref(),
                    "gene", gene.characterisation_status.as_deref(),
+                   None,
                    gene_loc, None,
                    gene.uniprot_identifier.as_deref());
 
@@ -170,7 +185,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
             ret_val.push(to_gff(chromosome_export_id,
                                 source, transcript_uniquename, None,
                                 &transcript_details.transcript_type,
-                                None,
+                                None, None,
                                 &transcript_details.location,
                                 Some(&gene.uniquename), None));
             for part in &transcript_details.parts {
@@ -190,7 +205,7 @@ pub fn format_gene_gff(chromosome_export_id: &str,
                     };
                 ret_val.push(to_gff(chromosome_export_id,
                                     source, &part.uniquename, None, &gff_feat_type,
-                                    None,
+                                    None, None,
                                     &part.location,
                                     Some(transcript_uniquename), None));
             }
@@ -203,9 +218,11 @@ pub fn format_misc_feature_gff(chromosome_export_id: &str,
                                source: &str, feature_short: &FeatureShort) -> Vec<String> {
     let mut ret_val = vec![];
     let feature_type_name = format!("{}", feature_short.feature_type);
+    let comment = feature_short.comment.as_deref();
     ret_val.push(to_gff(chromosome_export_id,
                         source, &feature_short.uniquename, None,
-                        &feature_type_name, None, &feature_short.location,
+                        &feature_type_name, None, comment,
+                        &feature_short.location,
                         None, None));
     ret_val
 }
@@ -621,6 +638,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("AAAATTTCGAGATATTATGTCAGTCAAAATAGCCTAAAAAATTCCTGTTCACTTAAATTCTTCGTCAACCACATTCAAT"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
@@ -634,6 +652,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("ATGAAGTTGATTCAAAAAAACATCGAAAAAAATGGCTCCGGATGGATAACCATGTGCCCTGAAGAGCCAGAAGATATGTG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
@@ -647,6 +666,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("GTATGCCTGGTTGCTGTATATCTGCAATCAATGCACAAACTAACTTAGTTTAG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
@@ -660,6 +680,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("GCATTTGTATAATATTCTTCAAGTTGGAGATCAGCTGAAGGCTTCTACAGTTCG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
@@ -673,6 +694,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("GTATGAAATAAAGTGTATCTTCAATGTTCGATAATAACACCTGTTTTTTCTGTTGTTTAG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
@@ -686,6 +708,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("TCGTGTAGTGAAAGTTGGCGCTACAGGAAGTACGTCAGGTTCAAGAGTTGTGATGAAACTACGTATTTTAGTTGAGAATATGGACTTTGATACAAAGGCTGCTCAATTGCACATCAAAGGACGGACAACTGAATACCATCCTGAAGTTAAGATGGGATCCTACCATACCTTGGACTTAGAACTACATCGCAATTTTACTCTATATAAAAATGAATGGGATGCATTTGCATTGGACCGTGTAGATGCTGCTTGTAATCCTTCAAGAAATGCTGAAATAGGTGCTGTGGTTTTAGATGAAG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
@@ -699,6 +722,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("GTAAATTTCTTGGCTTACATCGCTTTATTAGTTCGTGCATGTTTACTGACTTGCAG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
@@ -712,6 +736,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("GTCTTGCCAATATTTGTCTCATTACAGATTATATGACCATCCTGCGTCAAAGGATTGATCAAGTGATTCCAAGGAAACGGAGAGGGGACAGCAGCGCTTACCAAAAG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::CdsIntron,
@@ -725,6 +750,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("GTAAATTTTTAGACTTTGATTTTTCGTCCGTACTGATCAATTTTTTAG"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::Exon,
@@ -738,6 +764,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("GGCCTTGATAAATTTTATGACTCTGTTTTTCAATCCATTAACTCAGAATTTGATTTTGATAAATTGAAAGTCGTTATTCTTGCTTCACCAGGATTTGTGGCTCGAGGCTTGTATGACTACATATTCAGCATGGCCGTGAAGTTAGACTTGAAACAAATTGTTAAATCAAAGAATAAATTTGTCATCCTTCATTCTAGCACTGGTCATATTCATTCCCTTAATGAAATTTTGAAGGACCCTGCTGTTGAATCAAAACTAGCCGACACAAAATACGTACAAGAAATTCGCGTTCTGAATAAATTTTACGATGTCATGAATGAAGATGATAGAAAGGCATGGTATGGTCCAAATCATGTTTTGAAGGCTTTTGAACTTGGCGCGATCGGAGAACTTCTGATTAGCGATTCTCTGTTCAGGAGTTCTGACATTGCTACTAGAAAAAAATGGGTTTCATTAGTAGAAGGTGTTAAGGAGATTAACTGTCCTGTTTATATTTTCAGTAGTTTGCATGAGTCAGGGAAGCAGCTGGATCTGTTGTCAGGTATTGCCGCCATTCTCACTTACCCAGTCGATGAAGAGGATATATCAGAAGATGAAGAGGATGAGGAATCCCAAAATTTTGAACATAGTTAA"),
+                        comment: None,
                     },
                     FeatureShort {
                         feature_type: FeatureType::ThreePrimeUtr,
@@ -751,6 +778,7 @@ fn make_test_gene() -> GeneDetails {
                             phase: None,
                         },
                         residues: flex_str!("AGTTCATCAGTATCCGAATTGTCATGAATCTAATTATTGCTAAGCCAATATTTCATACTTTAAGCTCGGTTAGAACAATTTGTTTCATTCTCTTAAAAAATTTATTTATGGGCTCGTTTTGGTAGTCATTATTTATGCTTTTACTTGGATGTTTTAGGGTATTTACTATGATAAACATGCAAAAAATTAGGTGTTAGAATGGTCAAAAATTGATACCCTAAAATGATTTATACTTATCGATTATAACTCTTAACTTGTAAAATTAAGCTGTTAATTATAGCCGGTCCAATACAGTATTCAATTACAG"),
+                        comment: None,
                     }
                 ],
                 transcript_type: flex_str!("mRNA"),

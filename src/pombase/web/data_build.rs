@@ -387,12 +387,22 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
                 "SNP" => FeatureType::SNP,
                 _ => panic!("can't handle feature type: {}", feat.feat_type.name),
             };
+
+            let mut comment = None;
+
+            for prop in feat.featureprops.borrow().iter() {
+                if prop.prop_type.name == "comment" {
+                    comment = prop.value.clone()
+                }
+            }
+
             FeatureShort {
                 feature_type,
                 uniquename: feat.uniquename.clone(),
                 name: feat.name.clone(),
                 location: loc,
                 residues,
+                comment,
             }
         } else {
             panic!("can't find chromosome {}", loc.chromosome_name);
@@ -725,6 +735,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     name: None,
                     location: new_intron_loc,
                     residues: intron_residues,
+                    comment: None,
                 });
 
                 intron_count += 1;

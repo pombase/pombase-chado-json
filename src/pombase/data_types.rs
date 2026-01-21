@@ -1823,6 +1823,7 @@ pub struct FeatureShort {
     pub name: Option<FlexStr>,
     pub location: ChromosomeLocation,
     pub residues: Residues,
+    pub comment: Option<FlexStr>,
 }
 
 
