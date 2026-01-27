@@ -90,8 +90,8 @@ fn cmp_extension_prefix(conf_rel_ranges: &Vec<FlexStr>, ext1: &[ExtPart], ext2: 
         ext2_for_cmp.push(ext2_cellect_rel);
     }
 
-    let iter = ext1_for_cmp.iter().zip(&ext2_for_cmp).enumerate();
-    for (_, (ext1_part, ext2_part)) in iter {
+    let iter = ext1_for_cmp.iter().zip(&ext2_for_cmp);
+    for (ext1_part, ext2_part) in iter {
         let ord = cmp_ext_part(ext1_part, ext2_part, data_lookup);
 
         if ord != Ordering::Equal {
