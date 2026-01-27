@@ -1968,6 +1968,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut biogrid_interactor_id: Option<u32> = None;
         let mut rnacentral_urs_identifier = None;
         let mut rnacentral_2d_structure_id = None;
+        let mut schizosaccharomyces_orthogroup = None;
         let pdb_entries =
             if let Some(ref pdb_entry_map) = self.pdb_gene_entry_map {
                 if let Some(pdb_entries) = pdb_entry_map.get(&gene_uniquename) {
@@ -2004,6 +2005,7 @@ phenotypes, so just the first part of this extension will be used:
                     pombephosphoproteomics_unige_ch_fusion_gene = prop.value.clone(),
                 "rnacentral_identifier" => rnacentral_urs_identifier = prop.value.clone(),
                 "rnacentral_2d_structure_id" => rnacentral_2d_structure_id = prop.value.clone(),
+                "schizosaccharomyces_orthogroup" => schizosaccharomyces_orthogroup = prop.value.clone(),
                 "tfexplorer_chipseq_identifier" =>
                     tfexplorer_chipseq_identifier = prop.value.clone(),
                 "tfexplorer_ipms_identifier" =>
@@ -2128,6 +2130,7 @@ phenotypes, so just the first part of this extension will be used:
             has_protein_features: false, // is set later
             rfam_annotations,
             orfeome_identifier,
+            schizosaccharomyces_orthogroup,
             tfexplorer_chipseq_identifier,
             tfexplorer_ipms_identifier,
             pombephosphoproteomics_unige_ch_starvation_mating_gene,

@@ -108,6 +108,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         has_protein_features: false,
         rfam_annotations: vec![],
         orfeome_identifier: None,
+        schizosaccharomyces_orthogroup: None,
         tfexplorer_chipseq_identifier: None,
         tfexplorer_ipms_identifier: None,
         pombephosphoproteomics_unige_ch_starvation_mating_gene: None,
