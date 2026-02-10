@@ -46,7 +46,7 @@ mime_guess = "2"
 indexmap = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features=["env-filter"] }
-rand = "0.9"
+rand = "0.10"
 arrow = "57"
 arrow-array = "57"
 arrow-schema = "57"
