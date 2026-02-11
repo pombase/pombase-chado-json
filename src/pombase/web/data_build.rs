@@ -3326,13 +3326,21 @@ phenotypes, so just the first part of this extension will be used:
     fn set_deletion_viability(&mut self) {
         let some_null = Some(flex_str!("Null"));
 
+        let name_of_term = |term_id: &str| {
+            if let Some(term_details) = self.terms.get(term_id) {
+                term_details.name.clone()
+            } else {
+                flex_str!("UNKNOWN")
+            }
+        };
+
         let mut gene_statuses = HashMap::new();
 
         let condition_string =
             |condition_ids: HashSet<FlexStr>| {
                 let mut ids_vec: Vec<FlexStr> = condition_ids.iter().cloned().collect();
                 ids_vec.sort();
-                join(&ids_vec, " ")
+                ids_vec
             };
 
         let viable_termid = &self.config.viability_terms.viable;
@@ -3343,8 +3351,8 @@ phenotypes, so just the first part of this extension will be used:
 
             if let Some(single_locus_term_annotations) =
                 gene_details.cv_annotations.get(&flex_str!("single_locus_phenotype")) {
-                    let mut viable_conditions: HashMap<FlexStr, TermId> = HashMap::new();
-                    let mut inviable_conditions: HashMap<FlexStr, TermId> = HashMap::new();
+                    let mut viable_conditions: HashMap<Vec<FlexStr>, TermId> = HashMap::new();
+                    let mut inviable_conditions: HashMap<Vec<FlexStr>, TermId> = HashMap::new();
 
                     for term_annotation in single_locus_term_annotations {
                         'ANNOTATION: for annotation_id in &term_annotation.annotations {
@@ -3390,9 +3398,9 @@ phenotypes, so just the first part of this extension will be used:
                     } else {
                         new_status = DeletionViability::DependsOnConditions;
 
-                        let viable_conditions_set: HashSet<FlexStr> =
+                        let viable_conditions_set: HashSet<Vec<FlexStr>> =
                             viable_conditions.keys().cloned().collect();
-                        let inviable_conditions_set: HashSet<FlexStr> =
+                        let inviable_conditions_set: HashSet<Vec<FlexStr>> =
                             inviable_conditions.keys().cloned().collect();
 
                         let intersecting_conditions =
@@ -3403,12 +3411,18 @@ phenotypes, so just the first part of this extension will be used:
                                 if cond.is_empty() {
                                     println!("  no conditions");
                                 } else {
-                                    println!("  conditions: {}", cond);
+                                    let cond_and_names: Vec<String> = cond.iter()
+                                        .map(|id: &FlexStr| format!("{} ({})", id, name_of_term(id.as_str())))
+                                        .collect();
+
+                                    println!("  conditions: {}", cond_and_names.join(", "));
                                 }
-                                println!("   viable term: {}",
-                                         viable_conditions[cond]);
-                                println!("   inviable term: {}",
-                                         inviable_conditions[cond]);
+                                println!("   viable term: {} ({})",
+                                         viable_conditions[cond],
+                                         name_of_term(viable_conditions[cond].as_str()));
+                                println!("   inviable term: {} ({})",
+                                         inviable_conditions[cond],
+                                         name_of_term(inviable_conditions[cond].as_str()));
                             }
                         }
                     }
