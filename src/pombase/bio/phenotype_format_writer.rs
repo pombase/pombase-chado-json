@@ -287,13 +287,6 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
             data_lookup.get_allele(&expressed_allele_2.allele_uniquename)
             .unwrap_or_else(|| panic!("no allele found for {}", expressed_allele_2.allele_uniquename));
 
-        // it's not a dominant allele if the other allele is a deletion
-        if dominant_allele_mode &&
-            (allele_1.allele_type == "deletion" || allele_2.allele_type == "deletion")
-        {
-            continue 'GENOTYPES;
-        }
-
         // it's not a dominant allele if there are two WT in the diploid
         if dominant_allele_mode &&
             allele_1.allele_type == "wild_type" && allele_2.allele_type == "wild_type"
