@@ -5,7 +5,7 @@ use std::cmp::min;
 use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
 use std::io;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use std::cmp::Ordering;
 
@@ -37,9 +37,7 @@ use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
 use crate::bio::go_format_writer::write_go_annotation_files;
-use crate::bio::phenotype_format_writer::{write_phenotype_annotation_files,
-                                          write_heterozygous_diploid_annotations,
-                                          FypoEvidenceType};
+use crate::bio::phenotype_format_writer::{DiploidOutputMode, FypoEvidenceType, write_heterozygous_diploid_annotations, write_phenotype_annotation_files};
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
 use crate::bio::gene_expression_writer::{write_quantitative_expression_row, write_qualitative_expression_row};
 
@@ -62,6 +60,8 @@ pub struct WebData {
     pub references: UniquenameReferenceMap,
     pub annotation_details: IdOntAnnotationDetailMap,
     pub termid_genotype_annotation: HashMap<TermId, Vec<APIGenotypeAnnotation>>,
+
+    pub abnormal_phenotype_termids: HashSet<TermId>,
 
     pub solr_data: SolrData,
     pub search_gene_summaries: Vec<GeneSummary>,
@@ -1907,6 +1907,14 @@ impl WebData {
         write_complementation(&self, &self.genes, &misc_path)?;
 
         write_heterozygous_diploid_annotations(&self, &self.genotypes, config,
+                                               DiploidOutputMode::Standard,
+                                               &misc_path)?;
+
+        let diploid_output_mode = DiploidOutputMode::DominantAlleles {
+            abnormal_phenotype_termids: self.abnormal_phenotype_termids.clone(),
+        };
+        write_heterozygous_diploid_annotations(&self, &self.genotypes, config,
+                                               diploid_output_mode,
                                                &misc_path)?;
 
         println!("wrote GAF and PHAF files");

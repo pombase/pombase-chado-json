@@ -8160,6 +8160,19 @@ phenotypes, so just the first part of this extension will be used:
             model.add_pro_term_to_gene_map(&self.pro_term_to_gene);
         }
 
+        let Some(abnormal_phenotype_direct_term) = self.terms.get("FYPO:0001985")
+        else {
+            panic!("can't find abnormal phenotype term FYPO:0001985");
+        };
+
+        let mut abnormal_phenotype_termids = HashSet::new();
+        abnormal_phenotype_termids.insert(abnormal_phenotype_direct_term.termid.clone());
+        if let Some(abnormal_phenotype_child_terms) = self.children_by_termid.get("FYPO:0001985") {
+            abnormal_phenotype_termids.extend(abnormal_phenotype_child_terms.iter().cloned());
+        } else {
+            // we're running a test
+        };
+
         let api_maps = self.make_api_maps();
 
         set_has_protein_features(&mut genes, &api_maps.protein_view_data);
@@ -8186,6 +8199,8 @@ phenotypes, so just the first part of this extension will be used:
             detailed_stats,
             gocam_models,
             feature_type_summaries,
+
+            abnormal_phenotype_termids,
 
             physical_interaction_annotations,
             genetic_interaction_annotations,

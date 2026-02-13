@@ -357,6 +357,17 @@ fn get_test_raw() -> Raw {
                                 "0000082");
     make_test_cvterm_rel(&mut cvterm_relationships, &pbo0022440_cvterm, &is_a_cvterm, &fypo0000082_cvterm);
 
+    let fypo0001985_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &fypo_cv, &fypo_db,
+                                "abnormal phenotype",
+                                "0001985");
+    let fypo0002929_cvterm =
+        make_test_cvterm_dbxref(&mut cvterms, &mut dbxrefs, &fypo_cv, &fypo_db,
+                                "abnormal poly(A) tail length",
+                                "0002929");
+    make_test_cvterm_rel(&mut cvterm_relationships, &fypo0002929_cvterm, &is_a_cvterm, &fypo0001985_cvterm);
+    make_test_cvtermpath(&mut cvtermpaths, &fypo0002929_cvterm, &is_a_cvterm, &fypo0001985_cvterm);
+
     let chadoprops = vec![
         Rc::new(Chadoprop {
             prop_type: db_creation_datetime_cvterm,
@@ -577,7 +588,7 @@ fn get_test_raw() -> Raw {
         cvterms,
         cvtermsynonyms: vec![],
         cvtermprops: vec![],
-        cvtermpaths: vec![],
+        cvtermpaths,
         cvterm_relationships,
         publications: vec![publication],
         publicationprops: vec![],
