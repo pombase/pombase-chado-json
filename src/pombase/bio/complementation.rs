@@ -33,6 +33,13 @@ pub fn write_complementation(data_lookup: &dyn DataLookup,
 
     let empty_string = flex_str!("");
 
+    let header = format!("systematic_id\tsymbol\tcomplementation_detail\tfull_or_partial\treference");
+
+    writeln!(complemented_by_writer, "{}", header)?;
+    writeln!(complements_writer, "{}", header)?;
+    writeln!(not_complemented_by_writer, "{}", header)?;
+    writeln!(does_not_complement_writer, "{}", header)?;
+
     for gene_details in genes.values() {
         let Some(term_annotations) = gene_details
             .cv_annotations.get("complementation")
