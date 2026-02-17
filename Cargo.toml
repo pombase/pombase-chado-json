@@ -28,7 +28,7 @@ bytes = "1"
 tokio = { version = "1", default-features = false, features = ["rt-multi-thread"]}
 async-recursion = "1"
 deadpool-postgres = "0.14"
-deadpool = "0.12"
+deadpool = "0.13"
 anyhow = "1"
 thiserror = "2"
 itertools = "0.14"
