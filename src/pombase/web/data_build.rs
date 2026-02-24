@@ -8080,6 +8080,10 @@ phenotypes, so just the first part of this extension will be used:
         self.set_taxonomic_distributions();
         self.remove_non_curatable_refs();
 
+        for model in &mut self.gocam_models {
+            model.add_pro_term_to_gene_map(&self.pro_term_to_gene);
+        }
+
         self.make_gocam_summaries();
         self.set_gene_and_term_gocams();
 
@@ -8155,10 +8159,6 @@ phenotypes, so just the first part of this extension will be used:
         let annotation_details = self.annotation_details.clone();
 
         let termid_genotype_annotation = self.get_api_genotype_annotation();
-
-        for model in &mut self.gocam_models {
-            model.add_pro_term_to_gene_map(&self.pro_term_to_gene);
-        }
 
         let Some(abnormal_phenotype_direct_term) = self.terms.get("FYPO:0001985")
         else {
