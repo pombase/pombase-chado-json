@@ -48,9 +48,9 @@ tracing = "0.1"
 tracing-subscriber = { version = "0.3", features=["env-filter"] }
 rand = "0.10"
 arrow = "58"
-arrow-array = "57"
-arrow-schema = "57"
-parquet = "57"
+arrow-array = "58"
+arrow-schema = "58"
+parquet = "58"
 
 [dependencies.serde]
 version = "1"
