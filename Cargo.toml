@@ -49,7 +49,7 @@ tracing-subscriber = { version = "0.3", features=["env-filter"] }
 rand = "0.10"
 arrow = "58"
 arrow-array = "57"
-arrow-schema = "57"
+arrow-schema = "58"
 parquet = "57"
 
 [dependencies.serde]

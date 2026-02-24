@@ -2001,7 +2001,7 @@ dependencies = [
  "anyhow",
  "arrow",
  "arrow-array 57.3.0",
- "arrow-schema 57.3.0",
+ "arrow-schema 58.0.0",
  "async-recursion",
  "axum",
  "axum-extra 0.12.5",
