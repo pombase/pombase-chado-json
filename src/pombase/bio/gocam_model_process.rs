@@ -3,7 +3,9 @@ use std::{collections::{BTreeSet, HashMap, HashSet},
 
 use anyhow::Result;
 
-use pombase_gocam::{GoCamError, GoCamGeneIdentifier, GoCamMergeAlgorithm, GoCamModel, GoCamResult, RemoveType, overlaps::GoCamNodeOverlap, parse_gocam_model};
+use pombase_gocam::{GoCamError, GoCamGeneIdentifier, GoCamMergeAlgorithm,
+                    GoCamModel, GoCamResult, RemoveType, overlaps::GoCamNodeOverlap,
+                    parse_raw_gocam_model};
 use tokio::io::AsyncReadExt as _;
 
 use crate::data_types::{GoCamId, GoCamSummary};
@@ -19,7 +21,7 @@ pub fn read_gocam_models_from_dir(model_dir: &str)
         let file_name = entry?.path();
         if file_name.to_string_lossy().ends_with(".json") {
             let mut file = File::open(file_name)?;
-            let model = parse_gocam_model(&mut file)?;
+            let model = parse_raw_gocam_model(&mut file)?;
             ret.push(model);
         }
     }
@@ -54,7 +56,7 @@ pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSe
     let mut contents = vec![];
     source.read_to_end(&mut contents).await?;
     let mut cursor = Cursor::new(contents);
-    let model_res = parse_gocam_model(&mut cursor);
+    let model_res = parse_raw_gocam_model(&mut cursor);
 
     let mut remove_types = HashSet::new();
 
