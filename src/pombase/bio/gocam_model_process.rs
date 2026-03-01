@@ -4,7 +4,7 @@ use std::{collections::{BTreeSet, HashMap, HashSet},
 use anyhow::Result;
 
 use pombase_gocam::{GoCamError, GoCamGeneIdentifier, GoCamMergeAlgorithm,
-                    GoCamModel, GoCamResult, RemoveType, overlaps::GoCamNodeOverlap,
+                    GoCamModel, GoCamModelResult, RemoveType, overlaps::GoCamNodeOverlap,
                     parse_raw_gocam_model};
 use tokio::io::AsyncReadExt as _;
 
@@ -49,7 +49,7 @@ pub async fn read_all_gocam_models(web_root_dir: &str,
 }
 
 pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSet<String>)
-    -> GoCamResult
+    -> GoCamModelResult
 {
     let file_name = format!("{}/web-json/go-cam/gomodel:{}.json", web_root_dir, gocam_id);
     let mut source = tokio::fs::File::open(file_name).await?;
@@ -85,7 +85,7 @@ pub enum MergeError {
 pub async fn read_merged_gocam_model(web_root_dir: &str, all_gocam_data: &HashMap<GoCamId, GoCamSummary>,
                                      flags: &HashSet<String>,
                                      gene_list: &BTreeSet<GoCamGeneIdentifier>)
-                                     -> GoCamResult
+                                     -> GoCamModelResult
 {
     let models: Vec<_> = read_all_gocam_models(web_root_dir, all_gocam_data).await?
         .into_iter()
@@ -127,7 +127,7 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
                                          all_gocam_data: &HashMap<GoCamId, GoCamSummary>,
                                          overlaps: &Vec<GoCamNodeOverlap>,
                                          flags: &HashSet<String>)
-    -> GoCamResult
+    -> GoCamModelResult
 {
     let mut overlapping_gocam_ids = HashSet::new();
     for overlap in overlaps {

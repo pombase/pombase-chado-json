@@ -11,8 +11,8 @@ name = "pombase"
 path = "src/pombase/lib.rs"
 
 [dependencies]
-pombase-gocam = "0.107"
-pombase-gocam-process = { git = "https://github.com/pombase/pombase-gocam-process.git", version = "0.127.0" }
+pombase-gocam = "0.108"
+pombase-gocam-process = { git = "https://github.com/pombase/pombase-gocam-process.git", version = "0.128.0" }
 serde_with = "3"
 serde_derive = "1"
 serde_json = "1"
