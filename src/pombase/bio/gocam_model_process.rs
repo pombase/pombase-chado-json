@@ -25,11 +25,11 @@ pub fn read_gocam_models_from_dir(model_dir: &str)
 
     for entry in entries {
         let file_path = entry?.path();
-        if let Some(extension) = file_path.extension() {
-            if extension == "json" || extension == "yaml" {
-                let model = model_from_path(&file_path);
-                ret.push(model);
-            }
+        if let Some(extension) = file_path.extension() &&
+            (extension == "json" || extension == "yaml")
+        {
+            let model = model_from_path(&file_path);
+            ret.push(model);
         }
     }
 
@@ -62,7 +62,7 @@ pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSe
     let file_name = format!("{}/web-json/go-cam/gomodel:{}.json", web_root_dir, gocam_id);
     let mut source = {
         let source = tokio::fs::File::open(file_name.clone()).await;
-        if let Err(_) = source {
+        if source.is_err() {
             let file_name = format!("{}/web-json/go-cam/{}.yaml", web_root_dir, gocam_id);
             is_json = false;
             tokio::fs::File::open(file_name).await?
