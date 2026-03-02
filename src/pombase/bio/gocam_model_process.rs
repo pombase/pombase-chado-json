@@ -1,14 +1,20 @@
-use std::{collections::{BTreeSet, HashMap, HashSet},
-          fs::{self, File}, io::Cursor, vec};
+use std::{collections::{BTreeSet, HashMap, HashSet}, fs::{self, File}, io::Cursor, path::PathBuf, vec};
 
 use anyhow::Result;
 
-use pombase_gocam::{GoCamError, GoCamGeneIdentifier, GoCamMergeAlgorithm,
-                    GoCamModel, GoCamModelResult, RemoveType, overlaps::GoCamNodeOverlap,
-                    parse_raw_gocam_model};
+use pombase_gocam::{GoCamError, GoCamGeneIdentifier, GoCamMergeAlgorithm, GoCamModel, GoCamModelResult, RemoveType, overlaps::GoCamNodeOverlap, parse_gocam_py_model, parse_raw_gocam_model};
 use tokio::io::AsyncReadExt as _;
 
 use crate::data_types::{GoCamId, GoCamSummary};
+
+fn model_from_path(path: &PathBuf) -> GoCamModel {
+    let mut source = File::open(path).unwrap();
+    if path.extension().unwrap() == "json" {
+        parse_raw_gocam_model(&mut source).unwrap()
+    } else {
+        parse_gocam_py_model(&mut source).unwrap()
+    }
+}
 
 pub fn read_gocam_models_from_dir(model_dir: &str)
     -> Result<Vec<GoCamModel>>
@@ -18,11 +24,12 @@ pub fn read_gocam_models_from_dir(model_dir: &str)
     let entries = fs::read_dir(model_dir)?;
 
     for entry in entries {
-        let file_name = entry?.path();
-        if file_name.to_string_lossy().ends_with(".json") {
-            let mut file = File::open(file_name)?;
-            let model = parse_raw_gocam_model(&mut file)?;
-            ret.push(model);
+        let file_path = entry?.path();
+        if let Some(extension) = file_path.extension() {
+            if extension == "json" || extension == "yaml" {
+                let model = model_from_path(&file_path);
+                ret.push(model);
+            }
         }
     }
 
@@ -51,12 +58,26 @@ pub async fn read_all_gocam_models(web_root_dir: &str,
 pub async fn read_gocam_model(web_root_dir: &str, gocam_id: &str, flags: &HashSet<String>)
     -> GoCamModelResult
 {
+    let mut is_json = true;
     let file_name = format!("{}/web-json/go-cam/gomodel:{}.json", web_root_dir, gocam_id);
-    let mut source = tokio::fs::File::open(file_name).await?;
+    let mut source = {
+        let source = tokio::fs::File::open(file_name.clone()).await;
+        if let Err(_) = source {
+            let file_name = format!("{}/web-json/go-cam/{}.yaml", web_root_dir, gocam_id);
+            is_json = false;
+            tokio::fs::File::open(file_name).await?
+        } else {
+            source?
+        }
+    };
     let mut contents = vec![];
     source.read_to_end(&mut contents).await?;
     let mut cursor = Cursor::new(contents);
-    let model_res = parse_raw_gocam_model(&mut cursor);
+    let model_res = if is_json {
+        parse_raw_gocam_model(&mut cursor)
+    } else {
+        parse_gocam_py_model(&mut cursor)
+    };
 
     let mut remove_types = HashSet::new();
 
