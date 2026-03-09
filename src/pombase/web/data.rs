@@ -571,8 +571,6 @@ impl WebData {
             "gene_systematic_id\tgene_systematic_id_with_prefix\tgene_name\tchromosome_id\tgene_product\texternal_id\tgene_type\tsynonyms\n";
         write!(all_ids_writer, "{}", big_header)?;
 
-        let empty_string = flex_str!("");
-
         for gene_details in self.genes.values() {
             if let Some(load_org_taxonid) = config.load_organism_taxonid
                 && gene_details.taxonid != load_org_taxonid {
@@ -620,8 +618,8 @@ impl WebData {
                 rna_writer.write_all(line_with_product.as_bytes())?;
             }
 
-            let external_id = gene_details.uniprot_identifier.as_ref()
-                .unwrap_or(gene_details.rnacentral_urs_identifier.as_ref().unwrap_or(&empty_string));
+            let external_id = gene_details.uniprot_identifier.as_deref()
+                .unwrap_or(gene_details.rnacentral_urs_identifier.as_deref().unwrap_or(""));
 
 
             if !external_id.is_empty() && gene_details.feature_type == "mRNA gene" {
@@ -1423,8 +1421,6 @@ impl WebData {
         let header = "#gene_systematic_id\tgene_name\tallele_current_internal_id\tallele_name\tallele_type\tallele_description\tallele_synonyms\n";
         writer.write_all(header.as_bytes())?;
 
-        let empty_string = flex_str!("");
-
         for allele_short in self.alleles.values() {
             let gene = &allele_short.gene;
             let synonyms = allele_short.synonyms
@@ -1432,11 +1428,11 @@ impl WebData {
 
             let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                       gene.uniquename,
-                                      gene.name.as_ref().unwrap_or(&empty_string),
+                                      gene.name.as_deref().unwrap_or(""),
                                       allele_short.uniquename,
-                                      allele_short.name.as_ref().unwrap_or(&empty_string),
+                                      allele_short.name.as_deref().unwrap_or(""),
                                       allele_short.allele_type,
-                                      allele_short.description.as_ref().unwrap_or(&empty_string),
+                                      allele_short.description.as_deref().unwrap_or(""),
                                       synonyms);
 
             writer.write_all(line.as_bytes())?;
@@ -1457,8 +1453,6 @@ impl WebData {
                 return Ok(())
             };
 
-        let empty_string = flex_str!("");
-
         let header = "#gene_systematic_id\tgene_name\tmondo_id\treference\tdate\n";
         writer.write_all(header.as_bytes())?;
 
@@ -1474,10 +1468,10 @@ impl WebData {
                         let annotation_detail = self.get_annotation_detail(*annotation_id)
                             .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
-                        let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+                        let gene_name = gene_details.name.as_deref().unwrap_or("");
                         let reference =
-                            annotation_detail.reference.as_ref().unwrap_or(&empty_string);
-                        let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
+                            annotation_detail.reference.as_deref().unwrap_or("");
+                        let date = annotation_detail.date.as_deref().unwrap_or("");
                         let line = format!("{}\t{}\t{}\t{}\t{}\n",
                                            gene_details.uniquename,
                                            gene_name,
@@ -1511,8 +1505,6 @@ impl WebData {
         let header = "#gene_systematic_id\tgene_name\tmodification_term_id\tevidence\tmodification\textension\treference\ttaxon_id\tdate\tassigned_by\n";
         writer.write_all(header.as_bytes())?;
 
-        let empty_string = flex_str!("");
-
         for gene_details in self.genes.values() {
             if gene_details.taxonid != load_org_taxonid {
                 continue;
@@ -1527,7 +1519,7 @@ impl WebData {
                         let annotation_detail = self.get_annotation_detail(*annotation_id)
                             .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
-                        let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+                        let gene_name = gene_details.name.as_deref().unwrap_or("");
                         let mut maybe_evidence = annotation_detail.evidence.clone();
                         if let Some(ref evidence) = maybe_evidence
                             && let Some(ev_config) = config.evidence_types.get(evidence) {
@@ -1538,14 +1530,14 @@ impl WebData {
                                                      &annotation_detail.extension);
 
                         let reference =
-                            annotation_detail.reference.as_ref().unwrap_or(&empty_string);
-                        let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
-                        let assigned_by = annotation_detail.assigned_by.as_ref().unwrap_or(&empty_string);
+                            annotation_detail.reference.as_deref().unwrap_or("");
+                        let date = annotation_detail.date.as_deref().unwrap_or("");
+                        let assigned_by = annotation_detail.assigned_by.as_deref().unwrap_or("");
                         let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
                                            gene_details.uniquename,
                                            gene_name,
                                            term_annotation.term,
-                                           maybe_evidence.unwrap_or_else(|| empty_string.clone()),
+                                           maybe_evidence.unwrap_or_else(|| "".into()),
                                            modification,
                                            extension,
                                            reference,

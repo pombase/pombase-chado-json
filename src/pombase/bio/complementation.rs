@@ -1,6 +1,5 @@
 use std::{fs::File, io::{self, BufWriter, Write}};
 
-use flexstr::shared_str as flex_str;
 use itertools::Itertools;
 use regex::Regex;
 
@@ -31,8 +30,6 @@ pub fn write_complementation(data_lookup: &dyn DataLookup,
     let does_not_complement_file = File::create(does_not_complement_file_name)
         .expect("Unable to open file");
     let mut does_not_complement_writer = BufWriter::new(does_not_complement_file);
-
-    let empty_string = flex_str!("");
 
     let header_start = "systematic_id\tsymbol\t";
     let header_end = "\tfull_or_partial\treference";
@@ -66,9 +63,9 @@ pub fn write_complementation(data_lookup: &dyn DataLookup,
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                 let gene_name = gene_details.name
-                    .as_ref().unwrap_or(&empty_string);
+                    .as_deref().unwrap_or("");
                 let reference = annotation_detail.reference
-                    .as_ref().unwrap_or(&empty_string);
+                    .as_deref().unwrap_or("");
 
                 let qualifiers = annotation_detail.qualifiers.iter().join(",");
 

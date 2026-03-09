@@ -181,8 +181,6 @@ fn gene_summary(config: &Config, gene_details: &GeneDetails) -> String {
 fn genotype_alleles_summary(genotype_details: &GenotypeDetails) -> String {
     let mut summ = String::new();
 
-    let empty_string = flex_str!("");
-
     let locus_type_name =
         if genotype_details.ploidiness == Ploidiness::Haploid {
             "gene"
@@ -207,12 +205,12 @@ fn genotype_alleles_summary(genotype_details: &GenotypeDetails) -> String {
 
             summ += "<tr>";
 
-            let gene_product = gene.product.as_ref().unwrap_or(&empty_string);
+            let gene_product = gene.product.as_deref().unwrap_or("");
 
             let allele_expression =
-                expressed_allele.expression.as_ref().unwrap_or(&empty_string);
-            let allele_name = allele.name.as_ref().unwrap_or(&empty_string);
-            let allele_description = allele.description.as_ref().unwrap_or(&empty_string);
+                expressed_allele.expression.as_deref().unwrap_or("");
+            let allele_name = allele.name.as_deref().unwrap_or("");
+            let allele_description = allele.description.as_deref().unwrap_or("");
 
             if idx == 0 {
                 summ += &format!("<td><a href='/gene/{}'>{}</a></td><td>{}</td><td>{}</td><td>{}</td><td>{}</td><td>{}</td>\n",
@@ -382,14 +380,12 @@ fn protein_features(gene_details: &GeneDetails) -> String {
     protein_feature_html += "</tr>\n</thead>\n";
     protein_feature_html += "<tbody>\n";
 
-    let empty_str = &"".into();
-
     for interpro_match in &gene_details.interpro_matches {
         protein_feature_html +=
             &format!("<tr><td>{}</td><td>{}</td><td>{}</td><td>{}</td></tr>\n",
                      interpro_match.id,
-                     interpro_match.name.as_ref().unwrap_or(empty_str),
-                     interpro_match.interpro_name.as_ref().unwrap_or(empty_str),
+                     interpro_match.name.as_deref().unwrap_or(""),
+                     interpro_match.interpro_name.as_deref().unwrap_or(""),
                      interpro_match.dbname);
     }
 
@@ -433,7 +429,6 @@ fn gene_references(gene_details: &GeneDetails) -> String {
     refs_html += "<dl>\n";
 
     let unknown_title = flex_str!("Unknown title");
-    let empty = flex_str!("");
 
     for ref_uniquename in gene_details.references_by_uniquename.keys() {
         let ref_by_uniquename = &gene_details.references_by_uniquename;
@@ -443,8 +438,8 @@ fn gene_references(gene_details: &GeneDetails) -> String {
                                       ref_short.uniquename, ref_short.uniquename,
                                       ref_short.uniquename,
                                       ref_short.title.as_ref().unwrap_or(&unknown_title),
-                                      ref_short.authors_abbrev.as_ref().unwrap_or(&empty),
-                                      ref_short.citation.as_ref().unwrap_or(&empty));
+                                      ref_short.authors_abbrev.as_deref().unwrap_or(""),
+                                      ref_short.citation.as_deref().unwrap_or(""));
             }
     }
 

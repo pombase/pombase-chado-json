@@ -764,8 +764,6 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
             .push(interpro_match.clone());
     }
 
-    let empty_str = &"".into();
-
     let mut return_val = InterProTracks {
         coils: vec![],
         disordered: vec![],
@@ -778,15 +776,15 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
             .filter(|m| m.dbname != "PFAM")  // handled separately
             .map(|feat| {
                 let feat_name =
-                    feat.interpro_description.as_ref()
-                    .or(feat.interpro_name.as_ref())
-                    .or(feat.description.as_ref())
-                    .or(feat.name.as_ref())
-                    .unwrap_or(empty_str);
+                    feat.interpro_description.as_deref()
+                    .or(feat.interpro_name.as_deref())
+                    .or(feat.description.as_deref())
+                    .or(feat.name.as_deref())
+                    .unwrap_or("");
                 let positions: Vec<_> = feat.locations
                     .iter()
                     .map(|loc| {
-                        (feat_name.to_owned(), loc.start, loc.end)
+                        (feat_name.into(), loc.start, loc.end)
                     })
                     .collect();
 

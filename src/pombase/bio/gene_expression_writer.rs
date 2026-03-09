@@ -1,8 +1,6 @@
 use std::io;
 use std::io::Write;
 
-use flexstr::shared_str as flex_str;
-
 use crate::{data_types::{ExtPart, ExtRange, GeneDetails, OntAnnotationDetail, TermIdDetailsMap}, types::TermId};
 
 fn extension_to_string(extension: &[ExtPart]) -> String {
@@ -29,10 +27,8 @@ pub fn write_quantitative_expression_row(writer: &mut dyn Write,
                                          annotation_detail: &OntAnnotationDetail)
    -> Result<(), io::Error>
 {
-    let empty_string = flex_str!("");
-
     let gene_uniquename = &gene_details.uniquename;
-    let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+    let gene_name = gene_details.name.as_deref().unwrap_or("");
 
     let Some(annotation_term) = terms.get(annotation_termid)
     else {
@@ -50,7 +46,7 @@ pub fn write_quantitative_expression_row(writer: &mut dyn Write,
         };
 
     let extension_string = extension_to_string(&annotation_detail.extension);
-    let reference = annotation_detail.reference.as_ref().unwrap_or(&empty_string);
+    let reference = annotation_detail.reference.as_deref().unwrap_or("");
 
     let Some(gene_ex_props) = &annotation_detail.gene_ex_props
     else {
@@ -64,19 +60,19 @@ pub fn write_quantitative_expression_row(writer: &mut dyn Write,
     let copies_per_cell =
         if let Some(ref copies_per_cell) = gene_ex_props.copies_per_cell {
             if copies_per_cell == "ND" {
-                &empty_string
+                ""
             } else {
-                copies_per_cell
+                copies_per_cell.as_ref()
             }
         } else {
-            &empty_string
+            ""
         };
-    let avg_copies_per_cell = gene_ex_props.avg_copies_per_cell.as_ref().unwrap_or(&empty_string);
+    let avg_copies_per_cell = gene_ex_props.avg_copies_per_cell.as_deref().unwrap_or("");
     let scale = &gene_ex_props.scale;
 
-    let evidence = annotation_detail.evidence.as_ref().unwrap_or(&empty_string);
+    let evidence = annotation_detail.evidence.as_deref().unwrap_or("");
 
-    let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
+    let date = annotation_detail.date.as_deref().unwrap_or("");
 
     let mut condition_names =
         annotation_detail.conditions.iter().map(|termid| {
@@ -110,10 +106,8 @@ pub fn write_qualitative_expression_row(writer: &mut dyn Write,
                                         annotation_detail: &OntAnnotationDetail)
    -> Result<(), io::Error>
 {
-    let empty_string = flex_str!("");
-
     let gene_uniquename = &gene_details.uniquename;
-    let gene_name = gene_details.name.as_ref().unwrap_or(&empty_string);
+    let gene_name = gene_details.name.as_deref().unwrap_or("");
 
     let Some(annotation_term) = terms.get(annotation_termid)
     else {
@@ -136,11 +130,11 @@ pub fn write_qualitative_expression_row(writer: &mut dyn Write,
     }
 
     let extension_string = extension_to_string(&annotation_detail.extension);
-    let reference = annotation_detail.reference.as_ref().unwrap_or(&empty_string);
+    let reference = annotation_detail.reference.as_deref().unwrap_or("");
 
-    let evidence = annotation_detail.evidence.as_ref().unwrap_or(&empty_string);
+    let evidence = annotation_detail.evidence.as_deref().unwrap_or("");
 
-    let date = annotation_detail.date.as_ref().unwrap_or(&empty_string);
+    let date = annotation_detail.date.as_deref().unwrap_or("");
 
     let line =
         format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
