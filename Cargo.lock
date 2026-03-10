@@ -1477,9 +1477,9 @@ dependencies = [
 
 [[package]]
 name = "libc"
-version = "0.2.182"
+version = "0.2.183"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6800badb6cb2082ffd7b6a67e6125bb39f18782f793520caee8cb8846be06112"
+checksum = "b5b646652bf6661599e1da8901b3b9522896f01e736bad5f723fe7a3a27f899d"
 
 [[package]]
 name = "libm"
@@ -1934,9 +1934,9 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam"
-version = "0.109.0"
+version = "0.110.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a0eaf2369b9acf122ce6d024addacb27c53896601ed1c9f6af3c7d4266090792"
+checksum = "5e239b2d8664f8e4b16ac4ae8f27ce351baff932e8141e9648f97a0d3e8ae60b"
 dependencies = [
  "petgraph",
  "phf 0.11.3",
@@ -1950,8 +1950,8 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam-process"
-version = "0.129.0"
-source = "git+https://github.com/pombase/pombase-gocam-process.git#26214e5c2b5ab9332dbcccfb585838a06715965b"
+version = "0.130.0"
+source = "git+https://github.com/pombase/pombase-gocam-process.git#9525b8d2341f28e525787befb61b8b7c4abeb5a1"
 dependencies = [
  "anyhow",
  "itertools",
@@ -3330,18 +3330,18 @@ dependencies = [
 
 [[package]]
 name = "zerocopy"
-version = "0.8.40"
+version = "0.8.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a789c6e490b576db9f7e6b6d661bcc9799f7c0ac8352f56ea20193b2681532e5"
+checksum = "f2578b716f8a7a858b7f02d5bd870c14bf4ddbbcf3a4c05414ba6503640505e3"
 dependencies = [
  "zerocopy-derive",
 ]
 
 [[package]]
 name = "zerocopy-derive"
-version = "0.8.40"
+version = "0.8.42"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f65c489a7071a749c849713807783f70672b28094011623e200cb86dcb835953"
+checksum = "7e6cc098ea4d3bd6246687de65af3f920c430e236bee1e3bf2e441463f08a02f"
 dependencies = [
  "proc-macro2",
  "quote",
