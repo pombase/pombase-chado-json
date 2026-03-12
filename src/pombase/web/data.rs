@@ -1418,7 +1418,7 @@ impl WebData {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
-        let header = "#gene_systematic_id\tgene_name\tallele_current_internal_id\tallele_name\tallele_type\tallele_description\tallele_synonyms\n";
+        let header = "#gene_systematic_id\tgene_name\tallele_name\tallele_type\tallele_description\tallele_synonyms\n";
         writer.write_all(header.as_bytes())?;
 
         for allele_short in self.alleles.values() {
@@ -1426,10 +1426,9 @@ impl WebData {
             let synonyms = allele_short.synonyms
                 .iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join("|");
 
-            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\n",
                                       gene.uniquename,
                                       gene.name.as_deref().unwrap_or(""),
-                                      allele_short.uniquename,
                                       allele_short.name.as_deref().unwrap_or(""),
                                       allele_short.allele_type,
                                       allele_short.description.as_deref().unwrap_or(""),
