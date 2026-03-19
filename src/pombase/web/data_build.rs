@@ -151,7 +151,7 @@ pub struct WebDataBuild<'a> {
     // transcripts with overlapping exons
     transcript_frameshifts_to_check: Vec<(TranscriptUniquename, usize)>,
 
-    // for passing to GoCamModel::genes_in_model()
+    // for GoCamModel::genes_in_model()
     pro_term_to_gene: HashMap<String, String>,
 }
 
@@ -1222,7 +1222,7 @@ impl <'a> WebDataBuild<'a> {
             format!("{}:{}", self.config.database_name, gene_uniquename);
 
         for model in &self.gocam_models {
-            if model.genes_in_model().contains(&uniquename_with_prefix) {
+            if model.genes_in_model().contains_key(&uniquename_with_prefix) {
                 gocam_ids.insert(model.id().into());
             }
             if model.genes_enabling_activities().contains_key(&uniquename_with_prefix) {
@@ -5286,7 +5286,7 @@ phenotypes, so just the first part of this extension will be used:
                 };
 
             for model in &self.gocam_models {
-                if model.genes_in_model().contains(&uniquename_with_prefix) {
+                if model.genes_in_model().contains_key(&uniquename_with_prefix) {
                     gocam_ids.insert(model.id().into());
                 }
                 if model.genes_enabling_activities().contains_key(&uniquename_with_prefix) {
