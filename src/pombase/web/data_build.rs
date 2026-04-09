@@ -6712,7 +6712,7 @@ phenotypes, so just the first part of this extension will be used:
                     if has_parent_in_slim(annotations) {
                         continue
                     }
-                    bp_count = annotations.len();
+                    bp_count = annotations.iter().filter(|a| !a.is_not).count();
                 }
 
             if bp_count == 0 {
