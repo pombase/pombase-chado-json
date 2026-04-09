@@ -118,13 +118,7 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
 
     rows.truncate(0);
 
-    loop {
-
-        let Some(first_some_idx) = rows_mut.iter().position(|r| r.is_some())
-        else {
-            break;
-        };
-
+    while let Some(first_some_idx) = rows_mut.iter().position(|r| r.is_some()) {
         let mut prev_row = rows_mut[first_some_idx].take().unwrap();
 
         #[allow(clippy::needless_range_loop)]
