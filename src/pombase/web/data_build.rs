@@ -7194,6 +7194,12 @@ phenotypes, so just the first part of this extension will be used:
                    .or_insert_with(HashSet::new)
                    .insert(gocam_details.into());
             }
+
+            for complex_termid in &gocam_details.activity_enabling_complexes {
+                gocams_of_terms.entry(complex_termid.to_owned())
+                   .or_insert_with(HashSet::new)
+                   .insert(gocam_details.into());
+            }
         }
 
         for (gene_uniquename, gocam_id_and_title) in gocams_of_genes.drain() {
