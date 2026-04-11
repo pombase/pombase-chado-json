@@ -4285,6 +4285,10 @@ phenotypes, so just the first part of this extension will be used:
                     "gocam_model" => {
                         vec![]
                     },
+                    "intron" => {
+                        // ignore annotation on introns for now
+                        continue 'FEATURE_CVTERM;
+                    },
                     _ =>
                         if TRANSCRIPT_FEATURE_TYPES.contains(&feature.feat_type.name.as_str()) {
                             if let Some(gene_uniquename) =
