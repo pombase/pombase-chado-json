@@ -4287,6 +4287,7 @@ phenotypes, so just the first part of this extension will be used:
                     },
                     "intron" => {
                         // ignore annotation on introns for now
+                        // see: https://github.com/pombase/pombase-chado/issues/1338
                         continue 'FEATURE_CVTERM;
                     },
                     _ =>
