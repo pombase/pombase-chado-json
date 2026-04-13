@@ -1,4 +1,7 @@
 
+use std::collections::{HashMap, HashSet};
+use std::io::{Read, Error, BufReader};
+
 use crate::web::config::RelationOrder;
 use crate::types::GeneUniquename;
 
@@ -413,8 +416,8 @@ lazy_static! {
     static ref ID_RE: Regex = Regex::new(r">(\S+)").unwrap();
 }
 
-pub fn read_fasta(input: &mut dyn std::io::Read)
-             -> Result<Vec<SeqRecord>, io::Error>
+pub fn read_fasta(input: &mut dyn Read)
+             -> Result<Vec<SeqRecord>, Error>
 {
     let bufreader = BufReader::new(input);
     let mut ret = vec![];
@@ -455,12 +458,12 @@ pub fn read_fasta(input: &mut dyn std::io::Read)
 }
 
 pub fn parse_orcid_name_map(orcid_name_map_filename: &str)
-    -> Result<std::collections::HashMap<CuratorOrcid, FlexStr>, io::Error>
+    -> Result<HashMap<CuratorOrcid, FlexStr>, Error>
 {
     let file = File::open(orcid_name_map_filename)?;
 
     let bufreader = BufReader::new(file);
-    let mut ret = std::collections::HashMap::new();
+    let mut ret = HashMap::new();
 
     for line in bufreader.lines() {
         let line = line?;
@@ -468,10 +471,42 @@ pub fn parse_orcid_name_map(orcid_name_map_filename: &str)
         let bits: Vec<_> = line.split("\t").collect();
 
         if bits.len() != 2 {
-            return Err(io::Error::other("badly formatted orcid mapping file"));
+            return Err(Error::other("badly formatted orcid mapping file"));
         }
 
         ret.insert(bits[0].into(), bits[1].into());
+    }
+
+    Ok(ret)
+}
+
+pub fn parse_community_reviewers(community_reviewers_filename: &str)
+    -> Result<HashMap<GoCamId, HashSet<CuratorOrcid>>, Error>
+{
+    let file = File::open(community_reviewers_filename)?;
+
+    let bufreader = BufReader::new(file);
+    let mut ret = HashMap::new();
+
+    for line in bufreader.lines() {
+        let line = line?;
+
+        let bits: Vec<_> = line.split("\t").collect();
+
+        if bits.len() != 2 {
+            return Err(Error::other("badly formatted community reviewers mapping file"));
+        }
+
+        if bits[0] == "gocam_id" {
+            continue;
+        }
+
+        ret.entry(bits[0].into())
+            .or_insert_with(HashSet::new)
+            .insert(bits[1].into());
+        ret.entry(format!("gomodel:{}", bits[0]).into())
+            .or_insert_with(HashSet::new)
+            .insert(bits[1].into());
     }
 
     Ok(ret)
@@ -543,9 +578,6 @@ TCAACCACATTCAA";
 
 use std::{cmp::Ordering, fs::File, io::BufRead};
 #[cfg(test)]
-use std::collections::{HashSet, HashMap};
-use std::io::{self, BufReader};
-#[cfg(test)]
 use std::num::NonZeroUsize;
 #[cfg(test)]
 use flexstr::shared_str as flex_str;
@@ -594,11 +626,11 @@ fn make_test_gene() -> GeneDetails {
         pombephosphoproteomics_unige_ch_fusion_gene: None,
         name_descriptions: vec![],
         synonyms: vec![],
-        dbxrefs: HashSet::new(),
-        gocams: HashSet::new(),
+        dbxrefs: std::collections::HashSet::new(),
+        gocams: std::collections::HashSet::new(),
         rnacentral_2d_structure_id: None,
 
-        flags: HashSet::new(),
+        flags: std::collections::HashSet::new(),
 
         feature_type: flex_str!("mRNA gene"),
         feature_so_termid: flex_str!("SO:0000704"),
@@ -818,8 +850,8 @@ fn make_test_gene() -> GeneDetails {
         alleles_by_uniquename: HashMap::new(),
         terms_by_termid: HashMap::new(),
         annotation_details: HashMap::new(),
-        feature_publications: HashSet::new(),
-        subset_termids: HashSet::new(),
+        feature_publications: std::collections::HashSet::new(),
+        subset_termids: std::collections::HashSet::new(),
         gene_history: vec![],
         split_by_parent_groups: HashMap::new(),
     }

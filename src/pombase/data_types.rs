@@ -2820,6 +2820,7 @@ pub struct GoCamSummary {
     pub title_terms: HashSet<TermId>,
     pub title_child_process_terms: HashSet<TermAndName>,
     pub contributors: Vec<OrcidAndName>,
+    pub reviewers: Vec<OrcidAndName>,
     pub date: FlexStr,
     pub chemical_count: usize,
     pub target_count: usize,
@@ -2828,6 +2829,7 @@ pub struct GoCamSummary {
 impl GoCamSummary {
     pub fn new_from_model(model: &GoCamModel,
                           orcid_name_map: &HashMap<CuratorOrcid, FlexStr>,
+                          reviewer_orcids: HashSet<CuratorOrcid>,
                           term_map: &TermIdDetailsMap,
                           children_by_termid: &HashMap<TermId, HashSet<TermId>>)
         -> GoCamSummary
@@ -2847,6 +2849,16 @@ impl GoCamSummary {
                 }
             })
             .collect();
+
+        let mut reviewers = vec![];
+        for reviewer_orcid in &reviewer_orcids {
+            if let Some(reviewer_name) = orcid_name_map.get(reviewer_orcid) {
+                reviewers.push(OrcidAndName {
+                    orcid: reviewer_orcid.to_owned(),
+                    name: reviewer_name.to_owned(),
+                });
+            }
+        }
 
         let to_flexstr_vec = |bts: &BTreeSet<String>| {
             bts.iter().map(|s| s.to_shared_str()).collect::<HashSet<_>>()
@@ -2900,6 +2912,7 @@ impl GoCamSummary {
             title_terms: to_flexstr_vec(&chado_gocam_data.title_terms),
             title_child_process_terms,
             contributors,
+            reviewers,
             date: chado_gocam_data.date.to_shared_str(),
             chemical_count,
             target_count,

@@ -3,7 +3,8 @@ extern crate getopts;
 use deadpool_postgres::{Pool, Manager};
 use pombase::bio::gocam_model_process::read_gocam_models_from_dir;
 use pombase::bio::pdb_reader::read_pdb_data;
-use pombase::bio::util::parse_orcid_name_map;
+use pombase::bio::util::{parse_orcid_name_map,
+                         parse_community_reviewers};
 use pombase::db::ChadoQueries;
 use pombase::uniprot::parse_uniprot;
 
@@ -69,6 +70,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 "The gene history file in this format: https://github.com/pombase/genome_changelog/blob/master/results/all_coordinate_changes_file_comments_no_type_change.tsv", "FILE");
     opts.optopt("", "orcid-name-map",
                 "A TSV file mapping ORCIDs to names", "FILE");
+    opts.optopt("", "community-reviewers",
+                "A TSV file mapping GO-CAM IDs to the ORCIDs of model reviewers", "FILE");
     opts.optopt("", "gocam-model-directory",
                 "The directory containing the GO-CAM model JSON files", "DIR");
     opts.optopt("d", "output-directory",
@@ -137,6 +140,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let gene_history =
         gene_history_filename.map(|gene_history_filename| parse_gene_history(&gene_history_filename));
     let orcid_name_map_filename = matches.opt_str("orcid-name-map");
+    let community_reviewers_filename = matches.opt_str("community-reviewers");
     let gocam_model_dir = matches.opt_str("gocam-model-directory");
 
     let gocam_models =
@@ -179,9 +183,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
             (None, None)
         };
 
-    let orcid_name_map = 
+    let orcid_name_map =
         if let Some(ref orcid_name_map_filename) = orcid_name_map_filename {
             parse_orcid_name_map(orcid_name_map_filename)?
+        } else {
+            HashMap::new()
+        };
+
+    let community_reviewers =
+        if let Some(ref filename) = community_reviewers_filename {
+            parse_community_reviewers(filename)?
         } else {
             HashMap::new()
         };
@@ -192,6 +203,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                            pdb_entry_map, pdb_ref_entry_map,
                                            chado_queries,
                                            orcid_name_map,
+                                           community_reviewers,
                                            gocam_models,
                                            &config);
     let web_data = web_data_build.get_web_data();

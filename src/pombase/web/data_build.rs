@@ -77,6 +77,7 @@ pub struct WebDataBuild<'a> {
     pdb_ref_entry_map: Option<PDBRefEntryMap>,
     chado_queries: ChadoQueries,
     orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
+    community_reviewers_map: HashMap<GoCamId, HashSet<CuratorOrcid>>,
     gocam_models: Vec<GoCamModel>,
     config: &'a Config,
 
@@ -914,6 +915,7 @@ impl <'a> WebDataBuild<'a> {
                pdb_ref_entry_map: Option<PDBRefEntryMap>,
                chado_queries: ChadoQueries,
                orcid_name_map: HashMap<CuratorOrcid, FlexStr>,
+               community_reviewers_map: HashMap<GoCamId, HashSet<CuratorOrcid>>,
                gocam_models: Vec<GoCamModel>,
                config: &'a Config) -> WebDataBuild<'a>
     {
@@ -928,6 +930,7 @@ impl <'a> WebDataBuild<'a> {
             pdb_ref_entry_map,
             chado_queries,
             orcid_name_map,
+            community_reviewers_map,
             gocam_models,
             config,
 
@@ -7176,7 +7179,13 @@ phenotypes, so just the first part of this extension will be used:
     fn make_gocam_summaries(&mut self) {
         self.gocam_summaries = self.gocam_models.iter()
             .map(|m| {
+                let reviewer_orcids = self.community_reviewers_map
+                    .get(m.id())
+                    .cloned()
+                    .unwrap_or_else(HashSet::new);
+
                 let summ = GoCamSummary::new_from_model(m, &self.orcid_name_map,
+                                                        reviewer_orcids,
                                                         &self.terms, &self.children_by_termid);
                 (summ.gocam_id.clone(), summ)
             })
