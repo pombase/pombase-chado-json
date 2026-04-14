@@ -467,6 +467,10 @@ pub fn parse_orcid_name_map(orcid_name_map_filename: &str)
 
     for line in bufreader.lines() {
         let line = line?;
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
 
         let bits: Vec<_> = line.split("\t").collect();
 
