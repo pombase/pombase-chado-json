@@ -1940,7 +1940,7 @@ checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
 name = "pombase-chado-json"
-version = "226.4.0"
+version = "226.6.0"
 dependencies = [
  "anyhow",
  "arrow",
@@ -1991,9 +1991,7 @@ dependencies = [
 
 [[package]]
 name = "pombase-gocam"
-version = "0.126.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6f03a85c26e40ba76e714b6565b14784ea2cdedabc6aa1af64f754f3b547b9d4"
+version = "0.127.0"
 dependencies = [
  "petgraph",
  "phf 0.11.3",
@@ -2008,7 +2006,6 @@ dependencies = [
 [[package]]
 name = "pombase-gocam-process"
 version = "0.151.0"
-source = "git+https://github.com/pombase/pombase-gocam-process.git#fe6662cf2cf554437dae7ea8bceee09fe3029554"
 dependencies = [
  "anyhow",
  "itertools",
