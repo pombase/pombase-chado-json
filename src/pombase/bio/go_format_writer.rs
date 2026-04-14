@@ -21,7 +21,7 @@ use chrono::prelude::{Local, DateTime};
 use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt};
 use regex::Regex;
 
-use crate::bio::{get_submitter_comment, ExportComments};
+use crate::bio::{get_submitter_comment, ExportCommentsMode};
 use crate::utils::join;
 use crate::web::config::*;
 use crate::data_types::*;
@@ -289,28 +289,28 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
             make_gene_association_lines(config,
                                         data_lookup,
                                         GpadGafWriteMode::PomBaseGaf,
-                                        ExportComments::NoExport,
+                                        ExportCommentsMode::NoExport,
                                         gene_details, transcripts,
                                         aspect_name,
                                         &mut pombase_gaf_lines);
             make_gene_association_lines(config,
                                         data_lookup,
                                         GpadGafWriteMode::ExtendedPomBaseGaf,
-                                        ExportComments::NoExport,
+                                        ExportCommentsMode::NoExport,
                                         gene_details, transcripts,
                                         aspect_name,
                                         &mut extended_pombase_gaf_lines);
             make_gene_association_lines(config,
                                         data_lookup,
                                         GpadGafWriteMode::StandardGaf,
-                                        ExportComments::NoExport,
+                                        ExportCommentsMode::NoExport,
                                         gene_details, transcripts,
                                         aspect_name,
                                         &mut standard_gaf_lines);
             make_gene_association_lines(config,
                                         data_lookup,
                                         GpadGafWriteMode::StandardGaf,
-                                        ExportComments::Export,
+                                        ExportCommentsMode::Export,
                                         gene_details, transcripts,
                                         aspect_name,
                                         &mut comments_gaf_lines);
@@ -755,7 +755,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
 pub fn make_gene_association_lines(config: &Config,
                                    data_lookup: &dyn DataLookup,
                                    write_mode: GpadGafWriteMode,
-                                   export_comments: ExportComments,
+                                   export_comments: ExportCommentsMode,
                                    gene_details: &GeneDetails,
                                    transcripts: &UniquenameTranscriptMap,
                                    cv_name: &FlexStr,
@@ -820,7 +820,7 @@ pub fn make_gene_association_lines(config: &Config,
                         continue;
                     }
 
-                if export_comments == ExportComments::Export &&
+                if export_comments == ExportCommentsMode::Export &&
                     let Some(ref reference_uniquename) = annotation_detail.reference {
                         if let Some(reference_details) = data_lookup.get_reference(reference_uniquename) {
                             if !reference_details.is_canto_curated() {
@@ -954,7 +954,7 @@ pub fn make_gene_association_lines(config: &Config,
                 line_parts.push(assigned_by);
                 line_parts.push(annotation_extensions);
                 line_parts.push(gene_product_form_id);
-                if export_comments == ExportComments::Export {
+                if export_comments == ExportCommentsMode::Export {
                     if let Some(ref tmp_submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
                         line_parts.push(tmp_submitter_comment.to_owned());
                     } else {
@@ -969,7 +969,7 @@ pub fn make_gene_association_lines(config: &Config,
 
     if positive_annotation_count == 0 && config.file_exports.include_nd_lines &&
         write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" &&
-        export_comments == ExportComments::NoExport
+        export_comments == ExportCommentsMode::NoExport
     {
         let local: DateTime<Local> = Local::now();
         let date = local.format("%Y%m%d").to_string();
@@ -1008,7 +1008,7 @@ pub fn write_go_annotation_format(tsv_writer: &mut dyn io::Write,
                                   config: &Config,
                                   data_lookup: &dyn DataLookup,
                                   write_mode: GpadGafWriteMode,
-                                  export_comments: ExportComments,
+                                  export_comments: ExportCommentsMode,
                                   gene_details: &GeneDetails,
                                   transcripts: &UniquenameTranscriptMap,
                                   cv_name: &FlexStr)

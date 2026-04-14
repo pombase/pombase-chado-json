@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::api_data::APIData;
 use crate::api::site_db::SiteDB;
 use crate::api::result::*;
-use crate::bio::ExportComments;
+use crate::bio::ExportCommentsMode;
 use crate::data_types::DataLookup;
 use crate::data_types::Throughput;
 use crate::data_types::{APIGeneSummary, TranscriptDetails, FeatureType, GeneShort, InteractionType,
@@ -1106,7 +1106,7 @@ impl Query {
                 let result = write_go_annotation_format(&mut gaf_bytes, api_data.get_config(),
                                                         api_data,
                                                         GpadGafWriteMode::PomBaseGaf,
-                                                        ExportComments::NoExport,
+                                                        ExportCommentsMode::NoExport,
                                                         gene_details.as_ref(),
                                                         &api_data.get_maps().transcripts,
                                                         aspect);

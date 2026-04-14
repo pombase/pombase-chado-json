@@ -7,7 +7,7 @@ use std::fs::File;
 use flexstr::{shared_fmt as flex_fmt, FlexStr, ToSharedStr};
 
 use crate::bio::go_format_writer::write_parquet;
-use crate::bio::{get_submitter_comment, ExportComments};
+use crate::bio::{get_submitter_comment, ExportCommentsMode};
 use crate::web::config::*;
 use crate::data_types::*;
 
@@ -35,7 +35,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                         genotypes_map: &IdGenotypeMap,
                                         config: &Config,
                                         evidence_type: FypoEvidenceType,
-                                        export_comments: ExportComments,
+                                        export_comments_mode: ExportCommentsMode,
                                         output_dir: &str)
   -> Result<(), io::Error>
 {
@@ -55,9 +55,10 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
 
     let database_name = &config.database_name;
 
+    let export_comments = export_comments_mode == ExportCommentsMode::Export;
 
     let phaf_file_name =
-        if export_comments == ExportComments::Export {
+        if export_comments {
             format!("{}/canto_fypo_annotations_with_comments.tsv", output_dir)
         } else {
             let eco_ev_bit =
@@ -84,7 +85,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                             "Genotype description", "Gene symbol", "Allele name", "Allele synonym",
                             "Allele type", "Evidence", "Condition", "Penetrance", "Severity",
                             "Extension", "Reference", "Taxon", "Date"];
-    if export_comments == ExportComments::Export {
+    if export_comments {
         header_parts.push("Annotation comment")
     }
     let header = format!("#{}\n", header_parts.join("\t"));
@@ -148,7 +149,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                             flex_fmt!("")
                         };
 
-                    if export_comments == ExportComments::Export {
+                    if export_comments {
                         if let Some(reference_details) = data_lookup.get_reference(&reference_uniquename) {
                             if !reference_details.is_canto_curated() {
                                 continue;
@@ -212,7 +213,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                                 load_org_taxonid.to_string(),
                                 date.to_std_string()];
 
-                        if export_comments == ExportComments::Export {
+                        if export_comments {
                             if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
                                 line_parts.push(submitter_comment);
                             } else {
@@ -238,7 +239,8 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
 pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
                                               genotypes_map: &IdGenotypeMap,
                                               config: &Config,
-                                              output_mode: DiploidOutputMode,
+                                              output_mode: &DiploidOutputMode,
+                                              export_comments_mode: ExportCommentsMode,
                                               output_dir: &str)
     -> Result<(), io::Error>
 {
@@ -255,17 +257,31 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
 
     let dominant_allele_mode = matches!(output_mode, DiploidOutputMode::DominantAlleles { .. });
 
+    let export_comments = export_comments_mode == ExportCommentsMode::Export;
+
+    let comment_file_name_bit = if export_comments {
+        "_comments"
+    } else {
+        ""
+    };
+
     let file_name =
         if dominant_allele_mode {
-            format!("{}/dominant_diploid_annotations.tsv", output_dir)
+            format!("{}/dominant_diploid_annotations{}.tsv", output_dir,comment_file_name_bit)
         } else {
-            format!("{}/single_locus_diploid_phenotype_annotations.tsv", output_dir)
+            format!("{}/single_locus_diploid_phenotype_annotations{}.tsv", output_dir, comment_file_name_bit)
         };
     let file = File::create(file_name).expect("Unable to open file");
     let mut writer = BufWriter::new(&file);
 
+    let header_comment_field = if export_comments {
+        "\tcomment"
+    } else {
+        ""
+    };
+
     let header = "#database_name\tgene_systematic_id\tgene_name\tfypo_term_id\tfypo_term_name\tallele_1_name\tallele_1_description\tallele_1_type\tallele_1_expression\tallele_2_name\tallele_2_description\tallele_2_type\tallele_2_expression\tevidence\tconditions\tpenetrance\tseverity\textension\treference\ttaxon_id\tdate";
-    writeln!(writer, "{}", header)?;
+    writeln!(writer, "{}{}", header, header_comment_field)?;
 
   'GENOTYPES:
     for genotype_details in genotypes_map.values() {
@@ -336,17 +352,25 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
                     .unwrap_or_else(|| panic!("failed to find term summary for {}",
                                               term_annotation.term));
 
-                if let DiploidOutputMode::DominantAlleles {
-                    abnormal_phenotype_termids: ref abnormal_phenotypes_termids
-                } = output_mode &&
-                    !abnormal_phenotypes_termids.contains(&term.termid)
+                if let DiploidOutputMode::DominantAlleles { abnormal_phenotype_termids } = output_mode &&
+                    !abnormal_phenotype_termids.contains(&term.termid)
                 {
-                        continue 'GENOTYPES;
+                    continue 'GENOTYPES;
                 }
 
                 for annotation_id in &term_annotation.annotations {
                     let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
+
+                    let comment_bit = if export_comments {
+                        if let Some(ref submitter_comment) = annotation_detail.submitter_comment {
+                            format!("\t{}", submitter_comment)
+                        } else {
+                            continue 'GENOTYPES;
+                        }
+                    } else {
+                        String::new()
+                    };
 
                     let evidence =
                         annotation_detail.evidence.clone().unwrap_or_else(FlexStr::default);
@@ -383,7 +407,7 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
                         };
 
                     let line =
-                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+                        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
                                 database_name,
                                 gene.uniquename,
                                 gene_name_or_uniquename,
@@ -407,7 +431,7 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
                                 date,
                         );
 
-                    writer.write_all(line.as_bytes())?;
+                    writeln!(writer, "{}{}", line, comment_bit)?;
                 }
             }
 

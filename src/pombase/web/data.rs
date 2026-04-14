@@ -25,7 +25,7 @@ use pombase_gocam_process::find_holes;
 use crate::bio::complementation::write_complementation;
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff, process_modification_ext};
 
-use crate::bio::ExportComments;
+use crate::bio::ExportCommentsMode;
 use crate::constants::*;
 
 use crate::web::config::*;
@@ -1896,28 +1896,34 @@ impl WebData {
 
         write_phenotype_annotation_files(&self, &self.genotypes, config,
                                          FypoEvidenceType::PomBase,
-                                         ExportComments::NoExport,
+                                         ExportCommentsMode::NoExport,
                                          &misc_path)?;
         write_phenotype_annotation_files(&self, &self.genotypes, config,
                                          FypoEvidenceType::Eco,
-                                         ExportComments::NoExport,
+                                         ExportCommentsMode::NoExport,
                                          &misc_path)?;
         write_phenotype_annotation_files(&self, &self.genotypes, config,
                                          FypoEvidenceType::Eco,
-                                         ExportComments::Export,
+                                         ExportCommentsMode::Export,
                                          &misc_path)?;
 
         write_complementation(&self, &self.genes, &misc_path)?;
 
         write_heterozygous_diploid_annotations(&self, &self.genotypes, config,
-                                               DiploidOutputMode::Standard,
+                                               &DiploidOutputMode::Standard,
+                                               ExportCommentsMode::NoExport,
+                                               &misc_path)?;
+        write_heterozygous_diploid_annotations(&self, &self.genotypes, config,
+                                               &DiploidOutputMode::Standard,
+                                               ExportCommentsMode::Export,
                                                &misc_path)?;
 
         let diploid_output_mode = DiploidOutputMode::DominantAlleles {
             abnormal_phenotype_termids: self.abnormal_phenotype_termids.clone(),
         };
         write_heterozygous_diploid_annotations(&self, &self.genotypes, config,
-                                               diploid_output_mode,
+                                               &diploid_output_mode,
+                                               ExportCommentsMode::NoExport,
                                                &misc_path)?;
 
         println!("wrote GAF and PHAF files");

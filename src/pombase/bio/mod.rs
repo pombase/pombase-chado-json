@@ -13,7 +13,7 @@ pub mod complementation;
 
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum ExportComments {
+pub enum ExportCommentsMode {
     Export,
     NoExport,
 }
