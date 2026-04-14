@@ -36,7 +36,7 @@ use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename, Al
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
-use crate::bio::go_format_writer::write_go_annotation_files;
+use crate::bio::go_format_writer::{write_go_annotation_files, write_parquet};
 use crate::bio::phenotype_format_writer::{DiploidOutputMode, FypoEvidenceType, write_heterozygous_diploid_annotations, write_phenotype_annotation_files};
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
 use crate::bio::gene_expression_writer::{write_quantitative_expression_row, write_qualitative_expression_row};
@@ -1716,12 +1716,24 @@ impl WebData {
         let curated_pubs_file = File::create(curated_pubs_file_name)?;
         let mut curated_pubs_writer = BufWriter::new(&curated_pubs_file);
 
+        let curated_pubs_parquet_file_name = format!("{}/curated_publications.parquet", output_dir);
+        let curated_pubs_parquet_file = File::create(curated_pubs_parquet_file_name)?;
+        let mut curated_pubs_parquet_writer = BufWriter::new(&curated_pubs_parquet_file);
+
+        let mut curated_publications_lines = vec![];
+
         for reference in self.references.values() {
             if reference.is_pubmed_reference() && reference.is_canto_curated()
                 && let Some(ref title) = reference.title {
                     writeln!(curated_pubs_writer, "{}\t{}", reference.uniquename, title)?;
+                    let line_for_parquet = vec![reference.uniquename.to_std_string(), title.to_string()];
+                    curated_publications_lines.push(line_for_parquet);
                 }
         }
+
+        let curated_publications_header_parts = vec!["pubmed_id", "publication_title"];
+        write_parquet(&mut curated_pubs_parquet_writer, &curated_publications_header_parts,
+                    &curated_publications_lines)?;
 
         Ok(())
     }
