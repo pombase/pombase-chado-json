@@ -70,11 +70,11 @@ pub fn write_parquet(writer: &mut BufWriter<&File>,
 {
     let mut gaf_schema_fields = vec![];
 
-    let mut date_idx = 0;
+    let mut date_idx: i64 = -1;
 
     for (idx, header_part) in header_parts.iter().enumerate() {
         let field = if header_part.to_lowercase() == "date" {
-            date_idx = idx;
+            date_idx = idx as i64;
             Field::new(header_part.to_owned(), DataType::Date32, false)
         } else {
             Field::new(header_part.to_owned(), DataType::LargeUtf8, false)
@@ -107,7 +107,7 @@ pub fn write_parquet(writer: &mut BufWriter<&File>,
         let str_vec_vec: Vec<Arc<dyn Array>> =
             columns.iter().enumerate()
             .map(|(idx, v)| {
-                if idx == date_idx {
+                if idx as i64 == date_idx {
                     let date_iter = v.iter()
                         .map(|d| {
                             let naive_date =
