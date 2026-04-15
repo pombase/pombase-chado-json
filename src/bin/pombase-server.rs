@@ -7,6 +7,7 @@ use axum::{
 use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
 
+use itertools::Itertools;
 use pombase_gocam::RemoveType;
 use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
@@ -235,17 +236,21 @@ async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
     res
 }
 
-async fn get_gocam_data_by_id(Path(gocam_ids): Path<String>,
-                                  State(all_state): State<Arc<AllState>>)
+async fn get_gocam_data_by_id(Path(gocam_ids_param): Path<String>,
+                              State(all_state): State<Arc<AllState>>)
         -> impl IntoResponse
 {
+    let gocam_ids = gocam_ids_param.split(",").unique();
+
     let details_list: Vec<_> =
-        gocam_ids.split(",").map(|gocam_id| {
+        gocam_ids.map(|gocam_id| {
             all_state.query_exec.get_api_data().get_gocam_details_by_id(gocam_id)
-        }).collect();
+        })
+        .flatten()
+        .collect();
 
     if details_list.is_empty() {
-        Err((StatusCode::NOT_FOUND, format!("no page for: {}", gocam_ids)))
+        Err((StatusCode::NOT_FOUND, format!("no page for: {}", gocam_ids_param)))
     } else {
         Ok((StatusCode::OK, Json(details_list)))
     }
