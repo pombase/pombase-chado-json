@@ -366,7 +366,7 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
                         if let Some(ref submitter_comment) = annotation_detail.submitter_comment {
                             format!("\t{}", submitter_comment)
                         } else {
-                            continue 'GENOTYPES;
+                            "\t".to_string()
                         }
                     } else {
                         String::new()
