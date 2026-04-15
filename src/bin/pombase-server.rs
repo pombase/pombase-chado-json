@@ -243,10 +243,9 @@ async fn get_gocam_data_by_id(Path(gocam_ids_param): Path<String>,
     let gocam_ids = gocam_ids_param.split(",").unique();
 
     let details_list: Vec<_> =
-        gocam_ids.map(|gocam_id| {
+        gocam_ids.flat_map(|gocam_id| {
             all_state.query_exec.get_api_data().get_gocam_details_by_id(gocam_id)
         })
-        .flatten()
         .collect();
 
     if details_list.is_empty() {
