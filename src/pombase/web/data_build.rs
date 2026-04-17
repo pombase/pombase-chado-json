@@ -13,7 +13,7 @@ use regex::Regex;
 
 use std::collections::{HashMap, HashSet};
 
-use pombase_gocam::{GoCamModel, GoCamNode};
+use pombase_gocam::{GoCamEnabledBy, GoCamModel, GoCamNode, GoCamNodeType};
 
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
@@ -31,7 +31,7 @@ use crate::utils::join;
 
 use crate::bio::util::{compare_ext_part_with_config, rev_comp};
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str, ToSharedStr, shared_fmt as flex_fmt};
+use flexstr::{SharedStr as FlexStr, ToFlex, ToSharedStr, shared_fmt as flex_fmt, shared_str as flex_str};
 
 use crate::interpro::DomainData;
 
@@ -2138,7 +2138,8 @@ phenotypes, so just the first part of this extension will be used:
             tfexplorer_ipms_identifier,
             pombephosphoproteomics_unige_ch_starvation_mating_gene,
             pombephosphoproteomics_unige_ch_fusion_gene,
-            gocams: HashSet::new(),
+            gocams: vec![],
+            home_gocams: HashSet::new(),
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
@@ -7196,6 +7197,41 @@ phenotypes, so just the first part of this extension will be used:
         let mut gocams_of_genes = HashMap::new();
         let mut gocams_of_terms = HashMap::new();
 
+        let mut home_models_of_genes = HashMap::new();
+
+        eprintln!("set_gene_and_term_gocams()");
+
+        eprintln!("overlaps 1: {:?}", self.gocam_overlaps);
+
+        let database_name = &self.config.database_name;
+        let db_prefix = format!("{}:", database_name);
+
+        for overlap in &self.gocam_overlaps {
+            eprintln!("overlap: {:?}", overlap);
+
+            let Some(ref original_model_id) = overlap.original_model_id
+            else {
+                continue;
+            };
+
+            let GoCamNodeType::Activity(ref activity) = overlap.node_type
+            else {
+                continue;
+            };
+
+            let GoCamEnabledBy::Gene(ref gene) = activity.enabler
+            else {
+                continue;
+            };
+
+            let gene_from_overlap =
+                gene.id().strip_prefix(&db_prefix).unwrap();
+
+            home_models_of_genes.entry(gene_from_overlap.to_flex())
+                .or_insert_with(HashSet::new)
+                .insert(original_model_id.strip_prefix("gomodel:").unwrap().into());
+        }
+
         for gocam_details in self.gocam_summaries.values() {
             for gene_uniquename in &gocam_details.activity_enabling_genes {
                 gocams_of_genes.entry(gene_uniquename.clone())
@@ -7218,7 +7254,27 @@ phenotypes, so just the first part of this extension will be used:
 
         for (gene_uniquename, gocam_id_and_title) in gocams_of_genes.drain() {
             if let Some(ref mut gene_details) = self.genes.get_mut(&gene_uniquename) {
-                gene_details.gocams = gocam_id_and_title;
+                let mut gocams: Vec<_> = gocam_id_and_title.into_iter().collect();
+
+                let home_models = home_models_of_genes.get(&gene_details.uniquename);
+
+                gocams.sort_by(|a: &GoCamIdAndTitle, b: &GoCamIdAndTitle| {
+                    let a_id = &a.gocam_id;
+                    let b_id = &b.gocam_id;
+                    if let Some(home_models) = home_models {
+                        if home_models.contains(a_id) && !home_models.contains(b_id) {
+                            Ordering::Less
+                        } else if !home_models.contains(a_id) && home_models.contains(b_id) {
+                            Ordering::Greater
+                        } else {
+                            a.title.to_ascii_lowercase().cmp(&b.title.to_lowercase())
+                        }
+                    } else {
+                        a.title.to_ascii_lowercase().cmp(&b.title.to_lowercase())
+                    }
+                });
+
+                gene_details.gocams = gocams;
             }
         }
 
@@ -7226,6 +7282,11 @@ phenotypes, so just the first part of this extension will be used:
             self.terms.get_mut(&termid).unwrap().gocams = gocam_id_and_title;
         }
 
+        for (gene_uniquename, home_gocams) in home_models_of_genes.drain() {
+            let gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
+
+            gene_details.home_gocams = home_gocams; 
+        }
     }
 
     fn store_genetic_interactions(&mut self) {
@@ -8103,6 +8164,8 @@ phenotypes, so just the first part of this extension will be used:
         for model in &mut self.gocam_models {
             model.add_pro_term_to_gene_map(&self.pro_term_to_gene);
         }
+        let gocam_models = self.gocam_models.clone();
+        self.gocam_overlaps = find_activity_overlaps(&gocam_models);
 
         self.make_gocam_summaries();
         self.set_gene_and_term_gocams();
@@ -8140,9 +8203,6 @@ phenotypes, so just the first part of this extension will be used:
         let solr_term_summaries = self.make_solr_term_summaries();
         let solr_reference_summaries = self.make_solr_reference_summaries();
 
-        let gocam_models = self.gocam_models.clone();
-
-        self.gocam_overlaps = find_activity_overlaps(&gocam_models);
         self.gocam_overlaps_merge_by_chemical =
             find_chemical_overlaps(&gocam_models);
         self.gocam_holes = gocam_models.iter()

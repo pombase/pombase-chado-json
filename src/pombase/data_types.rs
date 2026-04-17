@@ -1583,8 +1583,10 @@ pub struct GeneDetails {
 
     pub split_by_parent_groups: OntSplitByGroups,
 
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub gocams: HashSet<GoCamIdAndTitle>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub gocams: Vec<GoCamIdAndTitle>,
+
+    pub home_gocams: HashSet<GoCamId>,
 
     #[serde(skip_serializing_if="Option::is_none")]
     pub rnacentral_2d_structure_id: Option<RnaUrsId>,
