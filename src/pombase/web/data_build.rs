@@ -7199,16 +7199,10 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut home_models_of_genes = HashMap::new();
 
-        eprintln!("set_gene_and_term_gocams()");
-
-        eprintln!("overlaps 1: {:?}", self.gocam_overlaps);
-
         let database_name = &self.config.database_name;
         let db_prefix = format!("{}:", database_name);
 
         for overlap in &self.gocam_overlaps {
-            eprintln!("overlap: {:?}", overlap);
-
             let Some(ref original_model_id) = overlap.original_model_id
             else {
                 continue;
@@ -7285,7 +7279,7 @@ phenotypes, so just the first part of this extension will be used:
         for (gene_uniquename, home_gocams) in home_models_of_genes.drain() {
             let gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
 
-            gene_details.home_gocams = home_gocams; 
+            gene_details.home_gocams = home_gocams;
         }
     }
 
