@@ -8,7 +8,7 @@ use axum_extra::{headers::Range, TypedHeader};
 use axum_range::{KnownSize, Ranged};
 
 use itertools::Itertools;
-use pombase_gocam::RemoveType;
+use pombase_gocam::{GoCamGeneDetails, RemoveType};
 use tracing_subscriber::EnvFilter;
 use tokio::fs::{read, File};
 
@@ -99,7 +99,7 @@ struct AllState {
     static_file_state: StaticFileState,
 
     // gene ID to name map for cytoscape JSON generation
-    gene_name_map: HashMap<String, String>,
+    gene_name_map: HashMap<String, GoCamGeneDetails>,
 
     // needed because this information isn't in the GO-CAM model JSON
     pro_term_to_gene_map: HashMap<String, String>,
@@ -345,7 +345,7 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
     match read_res {
         Ok(mut model) => {
             let gene_name_map = &all_state.gene_name_map;
-            model.add_gene_name_map(gene_name_map);
+            model.add_gene_details_map(gene_name_map);
             let pro_term_to_gene_map = &all_state.pro_term_to_gene_map;
             model.add_pro_term_to_gene_map(pro_term_to_gene_map);
             let elements =  model_to_cytoscape_simple(&model, overlaps, style);
@@ -1112,8 +1112,13 @@ async fn main() {
 
     let gene_name_map = api_data.get_maps().gene_summaries
         .iter()
-        .filter_map(|(k, v)|
-            v.name.as_ref().map(|name| (k.to_std_string(), name.to_std_string())))
+        .map(|(k, v)| {
+            let details = GoCamGeneDetails {
+                name: v.name.as_ref().map(|s| s.to_std_string()),
+                product: v.product.as_ref().map(|s| s.to_std_string()),
+            };
+            (k.to_std_string(), details)
+        })
         .collect();
 
     let pro_term_to_gene_map = api_data.get_maps().pro_term_to_gene_map.clone();
