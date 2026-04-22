@@ -23,7 +23,8 @@ use pombase_gocam::{GoCamActivity, GoCamModel, GoCamNodeType};
 use pombase_gocam_process::find_holes;
 
 use crate::bio::complementation::write_complementation;
-use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff, process_modification_ext};
+use crate::bio::modifications::write_modifications;
+use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
 use crate::bio::ExportCommentsMode;
 use crate::constants::*;
@@ -1487,72 +1488,6 @@ impl WebData {
         Ok(())
     }
 
-    fn write_modifications(&self, config: &Config, output_dir: &str)
-        -> Result<(), io::Error>
-    {
-        let load_org_taxonid =
-            if let Some(load_org_taxonid) = config.load_organism_taxonid {
-                load_org_taxonid
-            } else {
-                return Ok(())
-            };
-
-        let file_name = format!("{}/modifications.tsv", output_dir);
-        let file = File::create(file_name)?;
-        let mut writer = BufWriter::new(&file);
-
-        let header = "#gene_systematic_id\tgene_name\tmodification_term_id\tevidence\tmodification\textension\treference\ttaxon_id\tdate\tassigned_by\n";
-        writer.write_all(header.as_bytes())?;
-
-        for gene_details in self.genes.values() {
-            if gene_details.taxonid != load_org_taxonid {
-                continue;
-            }
-
-            if let Some(term_annotations) = gene_details.cv_annotations.get(&flex_str!("PSI-MOD")) {
-                for term_annotation in term_annotations {
-                    if term_annotation.is_not {
-                        continue;
-                    }
-                    for annotation_id in &term_annotation.annotations {
-                        let annotation_detail = self.get_annotation_detail(*annotation_id)
-                            .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
-
-                        let gene_name = gene_details.name.as_deref().unwrap_or("");
-                        let mut maybe_evidence = annotation_detail.evidence.clone();
-                        if let Some(ref evidence) = maybe_evidence
-                            && let Some(ev_config) = config.evidence_types.get(evidence) {
-                                maybe_evidence = Some(ev_config.long.to_shared_str());
-                            }
-                        let (modification, extension) =
-                            process_modification_ext(config, self, &gene_details.uniquename,
-                                                     &annotation_detail.extension);
-
-                        let reference =
-                            annotation_detail.reference.as_deref().unwrap_or("");
-                        let date = annotation_detail.date.as_deref().unwrap_or("");
-                        let assigned_by = annotation_detail.assigned_by.as_deref().unwrap_or("");
-                        let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
-                                           gene_details.uniquename,
-                                           gene_name,
-                                           term_annotation.term,
-                                           maybe_evidence.unwrap_or_else(|| "".into()),
-                                           modification,
-                                           extension,
-                                           reference,
-                                           load_org_taxonid,
-                                           date,
-                                           assigned_by);
-
-                       writer.write_all(line.as_bytes())?;
-                    }
-                }
-            }
-        }
-
-        Ok(())
-    }
-
     fn write_interactions(&self, config: &Config, output_dir: &str)
                           -> Result<(), io::Error>
     {
@@ -1931,6 +1866,8 @@ impl WebData {
         self.write_alleles_json(&misc_path)?;
         println!("wrote allele data to JSON");
 
+        write_modifications(config, &self.genes, &self, &misc_path)?;
+
         self.write_gene_id_table(config, &misc_path)?;
         self.write_protein_features(config, &misc_path)?;
         self.write_feature_coords(config, &misc_path)?;
@@ -1945,7 +1882,6 @@ impl WebData {
         self.write_site_map_txt(config, doc_config, &self.references, &misc_path)?;
         self.write_allele_tsv(&misc_path)?;
         self.write_disease_association(config, &misc_path)?;
-        self.write_modifications(config, &misc_path)?;
         self.write_interactions(config, &misc_path)?;
         self.write_gocam_model_hole_table(&misc_path)?;
 

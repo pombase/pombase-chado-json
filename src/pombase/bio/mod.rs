@@ -10,7 +10,7 @@ pub mod generic_annotation_writer;
 pub mod gene_expression_writer;
 pub mod gocam_model_process;
 pub mod complementation;
-
+pub mod modifications;
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum ExportCommentsMode {
