@@ -2003,6 +2003,8 @@ pub struct AlleleShort {
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub comments: Vec<CommentAndReference>,
+    #[serde(default, skip_serializing_if = "is_default")]
+    pub is_obsolete: bool,
 }
 
  lazy_static! {
@@ -2125,6 +2127,7 @@ impl From<&AlleleDetails> for AlleleShort {
            gene_uniquename: details.gene.uniquename.clone(),
            synonyms: details.synonyms.clone(),
            comments: details.comments.clone(),
+           is_obsolete: details.is_obsolete,
        }
     }
 }
