@@ -1423,6 +1423,9 @@ impl WebData {
         writer.write_all(header.as_bytes())?;
 
         for allele_short in self.alleles.values() {
+            if allele_short.is_obsolete {
+                continue;
+            }
             let gene = &allele_short.gene;
             let synonyms = allele_short.synonyms
                 .iter().map(|s| s.name.as_str()).collect::<Vec<_>>().join("|");
