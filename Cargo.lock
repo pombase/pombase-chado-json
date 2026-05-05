@@ -1941,7 +1941,7 @@ checksum = "19f132c84eca552bf34cab8ec81f1c1dcc229b811638f9d283dceabe58c5569e"
 
 [[package]]
 name = "pombase-chado-json"
-version = "228.12.0"
+version = "228.13.0"
 dependencies = [
  "anyhow",
  "arrow",
