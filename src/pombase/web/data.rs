@@ -5,7 +5,7 @@ use std::cmp::min;
 use std::fs::{File, create_dir_all};
 use std::io::{Write, BufWriter};
 use std::io;
-use std::collections::{HashMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::sync::{Arc, RwLock};
 use std::cmp::Ordering;
 
@@ -515,9 +515,9 @@ impl WebData {
     }
 
     fn write_alleles_json(&self, output_dir: &str) -> Result<(), io::Error> {
-        let allele_summaries: AlleleShortMap =
+        let allele_summaries: BTreeMap<_,_> =
             self.alleles.iter().map(|(uniquename, details)| {
-                (uniquename.clone(), details.into())
+                (uniquename.clone(), details.to_owned())
             }).collect();
 
         let s = serde_json::to_string(&allele_summaries).unwrap();
