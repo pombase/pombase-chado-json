@@ -515,9 +515,9 @@ impl WebData {
     }
 
     fn write_alleles_json(&self, output_dir: &str) -> Result<(), io::Error> {
-        let allele_summaries: BTreeMap<_,_> =
+        let allele_summaries: BTreeMap<_,AlleleShort> =
             self.alleles.iter().map(|(uniquename, details)| {
-                (uniquename.clone(), details.to_owned())
+                (uniquename.clone(), details.into())
             }).collect();
 
         let s = serde_json::to_string(&allele_summaries).unwrap();
