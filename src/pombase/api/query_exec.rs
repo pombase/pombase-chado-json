@@ -8,20 +8,18 @@ use crate::api_data::APIData;
 use flexstr::{ToSharedStr, shared_str as flex_str, shared_fmt as flex_fmt};
 
 pub struct QueryExec {
-    api_data: APIData,
     site_db: Option<SiteDB>,
 }
 
 impl QueryExec {
-    pub fn new(api_data: APIData, site_db: Option<SiteDB>) -> QueryExec {
+    pub fn new(site_db: Option<SiteDB>) -> QueryExec {
         QueryExec {
-            api_data,
             site_db,
         }
     }
 
     // execute a Query
-    pub async fn exec(&self, query: &Query) -> QueryAPIResult {
+    pub async fn exec(&self, api_data: &APIData, query: &Query) -> QueryAPIResult {
         let query =
             if let Some(ref site_db) = self.site_db {
                 if let Some(ref query_id) = query.get_constraints().get_query_id() {
@@ -58,7 +56,7 @@ impl QueryExec {
 
         let id = uuid.as_hyphenated().to_string().to_shared_str();
 
-        let rows_result = query.exec(&self.api_data, &self.site_db).await;
+        let rows_result = query.exec(api_data, &self.site_db).await;
 
         match rows_result {
             Ok(rows) => {
@@ -71,9 +69,5 @@ impl QueryExec {
             },
             Err(mess) => QueryAPIResult::new_error(&query, mess),
         }
-    }
-
-    pub fn get_api_data(&self) -> &APIData {
-        &self.api_data
     }
 }

@@ -93,6 +93,7 @@ async fn get_static_file(path: &str) -> Response {
 
 struct AllState {
     query_exec: QueryExec,
+    api_data: APIData,
     gocam_data: HashMap<GoCamId, GoCamSummary>,
     search: Search,
     stats_plots: StatsPlots,
@@ -114,6 +115,12 @@ struct AllState {
 
     front_page_explore: Vec<PanelConfig>,
     full_explore: Vec<PanelConfig>,
+}
+
+impl AllState {
+    fn get_api_data(&self) -> &APIData {
+        &self.api_data
+    }
 }
 
 // If the path is a directory, return path+"/index.html".  Otherwise
@@ -175,22 +182,22 @@ fn option_json_to_result<T>(id: &str, opt: Option<Json<T>>) -> Result<(StatusCod
 }
 
 async fn get_gene(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
-    let res = all_state.query_exec.get_api_data().get_full_gene_details(&id).map(Json);
+    let res = all_state.get_api_data().get_full_gene_details(&id).map(Json);
     option_json_to_result(&id, res)
 }
 
 async fn get_genotype(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
-    let res = all_state.query_exec.get_api_data().get_genotype_details(&id).map(Json);
+    let res = all_state.get_api_data().get_genotype_details(&id).map(Json);
     option_json_to_result(&id, res)
 }
 
 async fn get_allele(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
-    let res = all_state.query_exec.get_api_data().get_allele_details(&id).map(Json);
+    let res = all_state.get_api_data().get_allele_details(&id).map(Json);
     option_json_to_result(&id, res)
 }
 
 async fn get_term(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
-    let res = all_state.query_exec.get_api_data().get_term_details(&id).map(Json);
+    let res = all_state.get_api_data().get_term_details(&id).map(Json);
     option_json_to_result(&id, res)
 }
 
@@ -207,7 +214,7 @@ async fn get_protein_features(Path((scope, gene_uniquename)): Path<(String, Stri
             }
         };
 
-    let res = all_state.query_exec.get_api_data().get_protein_features_of_gene(scope, &gene_uniquename)
+    let res = all_state.get_api_data().get_protein_features_of_gene(scope, &gene_uniquename)
               .map(|s| s.to_owned())
               .map(Json);
     option_json_to_result(&gene_uniquename, res)
@@ -217,7 +224,7 @@ async fn get_gocam_data(Path((_full_or_widget, gene_uniquename)): Path<(String, 
                         State(all_state): State<Arc<AllState>>)
         -> impl IntoResponse
 {
-   let res = all_state.query_exec.get_api_data().get_gocam_data_of_gene(&gene_uniquename)
+   let res = all_state.get_api_data().get_gocam_data_of_gene(&gene_uniquename)
               .map(|s| s.to_owned())
               .map(Json);
     option_json_to_result(&gene_uniquename, res)
@@ -226,7 +233,7 @@ async fn get_gocam_data(Path((_full_or_widget, gene_uniquename)): Path<(String, 
 async fn get_all_gocam_data(State(all_state): State<Arc<AllState>>)
         -> impl IntoResponse
 {
-    let res = all_state.query_exec.get_api_data().get_all_gocam_data()
+    let res = all_state.get_api_data().get_all_gocam_data()
         .values().cloned().collect();
 
     type DataResult = Result<(StatusCode, Json<Vec<GoCamSummary>>), (StatusCode, String)>;
@@ -244,7 +251,7 @@ async fn get_gocam_data_by_id(Path(gocam_ids_param): Path<String>,
 
     let details_list: Vec<_> =
         gocam_ids.flat_map(|gocam_id| {
-            all_state.query_exec.get_api_data().get_gocam_details_by_id(gocam_id)
+            all_state.get_api_data().get_gocam_details_by_id(gocam_id)
         })
         .collect();
 
@@ -258,7 +265,7 @@ async fn get_gocam_data_by_id(Path(gocam_ids_param): Path<String>,
 async fn get_gocam_overlaps(State(all_state): State<Arc<AllState>>)
      -> impl IntoResponse
 {
-    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
+    let overlaps = &all_state.get_api_data().get_maps().gocam_overlaps;
 
     Json(overlaps.to_owned())
 }
@@ -266,7 +273,7 @@ async fn get_gocam_overlaps(State(all_state): State<Arc<AllState>>)
 async fn get_gocam_holes(State(all_state): State<Arc<AllState>>)
      -> impl IntoResponse
 {
-    let holes = &all_state.query_exec.get_api_data().get_maps().gocam_holes;
+    let holes = &all_state.get_api_data().get_maps().gocam_holes;
 
     Json(holes.to_owned())
 }
@@ -286,7 +293,7 @@ async fn get_cytoscape_gocam_by_id_retain_genes(Path((gocam_id_arg, gene_list)):
     let web_root_dir = &static_file_state.web_root_dir;
 
     let all_gocam_data = &all_state.gocam_data;
-    let overlaps = &all_state.query_exec.get_api_data().get_maps().gocam_overlaps;
+    let overlaps = &all_state.get_api_data().get_maps().gocam_overlaps;
 
     let id_split: Vec<_> = gocam_id_arg.split(':').collect();
     let (gocam_id, flag_string) = (id_split[0], id_split.get(1));
@@ -377,7 +384,7 @@ async fn get_model_summary_for_cytoscape_all(Path(flags): Path<String>,
                                              State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
-    let api_maps = all_state.query_exec.get_api_data().get_maps();
+    let api_maps = all_state.get_api_data().get_maps();
     let overlaps =
        if flags.contains("merge_by_chemical") {
          &api_maps.gocam_overlaps_merge_by_chemical
@@ -408,7 +415,7 @@ async fn get_model_summary_for_cytoscape_connected(Path(flags): Path<String>,
                                                    State(all_state): State<Arc<AllState>>)
        -> impl IntoResponse
 {
-    let api_maps = all_state.query_exec.get_api_data().get_maps();
+    let api_maps = all_state.get_api_data().get_maps();
     let overlaps =
        if flags.contains("merge_by_chemical") {
          &api_maps.gocam_overlaps_merge_by_chemical
@@ -447,12 +454,12 @@ async fn get_term_summary_by_id(Path(id): Path<String>, State(all_state): State<
 }
 
 async fn get_reference(Path(id): Path<String>, State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
-    let res = all_state.query_exec.get_api_data().get_reference_details(&id).map(Json);
+    let res = all_state.get_api_data().get_reference_details(&id).map(Json);
     option_json_to_result(&id, res)
 }
 
 async fn seq_feature_page_features(State(all_state): State<Arc<AllState>>) -> impl IntoResponse {
-    Json(all_state.query_exec.get_api_data().seq_feature_page_features())
+    Json(all_state.get_api_data().seq_feature_page_features())
 }
 
 async fn get_index(State(all_state): State<Arc<AllState>>) -> Response {
@@ -691,7 +698,7 @@ Return a simple HTML version a gene page for search engines
 */
 async fn get_simple_gene(Path(id): Path<String>,
                          State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
-    if let Some(gene) = all_state.query_exec.get_api_data().get_full_gene_details(&id) {
+    if let Some(gene) = all_state.get_api_data().get_full_gene_details(&id) {
         (StatusCode::OK, Html(render_simple_gene_page(&all_state.config, &gene)))
     } else {
         (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
@@ -703,7 +710,7 @@ Return a simple HTML version a genotype page for search engines
 */
 async fn get_simple_genotype(Path(id): Path<String>,
                              State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
-    if let Some(genotype) = all_state.query_exec.get_api_data().get_genotype_details(&id) {
+    if let Some(genotype) = all_state.get_api_data().get_genotype_details(&id) {
         (StatusCode::OK, Html(render_simple_genotype_page(&all_state.config, &genotype)))
     } else {
         (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
@@ -715,7 +722,7 @@ Return a simple HTML version a reference page for search engines
 */
 async fn get_simple_reference(Path(id): Path<String>,
                               State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
-    if let Some(reference) = all_state.query_exec.get_api_data().get_reference_details(&id) {
+    if let Some(reference) = all_state.get_api_data().get_reference_details(&id) {
         (StatusCode::OK, Html(render_simple_reference_page(&all_state.config, &reference)))
     } else {
         (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
@@ -726,7 +733,7 @@ Return a simple HTML version a term page for search engines
 */
 async fn get_simple_term(Path(id): Path<String>,
                          State(all_state): State<Arc<AllState>>) -> (StatusCode, Html<String>) {
-    if let Some(term) = all_state.query_exec.get_api_data().get_term_details(&id) {
+    if let Some(term) = all_state.get_api_data().get_term_details(&id) {
         (StatusCode::OK, Html(render_simple_term_page(&all_state.config, &term)))
     } else {
         (StatusCode::NOT_FOUND, Html(format!("no page for: {}", id)))
@@ -736,14 +743,14 @@ async fn get_simple_term(Path(id): Path<String>,
 async fn query_post(State(all_state): State<Arc<AllState>>, Json(q): Json<Query>)
               -> impl IntoResponse
 {
-    Json(all_state.query_exec.exec(&q).await)
+    Json(all_state.query_exec.exec(all_state.get_api_data(), &q).await)
 }
 
 async fn query_get(State(all_state): State<Arc<AllState>>, Path(q): Path<String>)
               -> impl IntoResponse
 {
     match serde_json::from_str::<Query>(&q) {
-        Ok(q) => Ok(Json(all_state.query_exec.exec(&q).await)),
+        Ok(q) => Ok(Json(all_state.query_exec.exec(all_state.get_api_data(), &q).await)),
         Err(err) => Err((StatusCode::BAD_REQUEST, err.to_string()))
     }
 }
@@ -1123,7 +1130,7 @@ async fn main() {
 
     let pro_term_to_gene_map = api_data.get_maps().pro_term_to_gene_map.clone();
 
-    let query_exec = QueryExec::new(api_data, site_db);
+    let query_exec = QueryExec::new(site_db);
     let search = Search::new(&config);
     let stats_plots = StatsPlots::new(&config);
 
@@ -1190,6 +1197,7 @@ async fn main() {
 
     let all_state = AllState {
         query_exec,
+        api_data,
         gocam_data,
         search,
         stats_plots,

@@ -19,8 +19,8 @@ use flexstr::ToSharedStr;
 
 async fn check_gene_result(query: &Query, genes: Vec<&str>) {
     let api_data = get_api_data();
-    let query_exec = QueryExec::new(api_data, None);
-    let result = query_exec.exec(query).await;
+    let query_exec = QueryExec::new(None);
+    let result = query_exec.exec(&api_data, query).await;
 
     let result_genes_iter =
         result.rows.into_iter()
@@ -37,8 +37,8 @@ async fn check_gene_result(query: &Query, genes: Vec<&str>) {
 async fn check_gene_result_with_viability(query: &Query,
                                     expected_results: &Vec<ResultRow>) {
     let api_data = get_api_data();
-    let query_exec = QueryExec::new(api_data, None);
-    let results = query_exec.exec(query).await;
+    let query_exec = QueryExec::new(None);
+    let results = query_exec.exec(&api_data, query).await;
 
     assert_eq!(expected_results, &results.rows);
 }
@@ -406,8 +406,8 @@ async fn test_gene_gaf() {
 
     let api_data = get_api_data();
 
-    let query_exec = QueryExec::new(api_data, None);
-    let result = query_exec.exec(&query).await;
+    let query_exec = QueryExec::new(None);
+    let result = query_exec.exec(&api_data, &query).await;
 
     let mut gaf_lines = String::new();
 
