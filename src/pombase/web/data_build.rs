@@ -2351,7 +2351,7 @@ phenotypes, so just the first part of this extension will be used:
                         Some(parsed_prop)
                     } else {
                         println!("{}: couldn't parse {} as f32",
-                                 feat.uniquename, &prop_value);
+                                 feat.uniquename, prop_value);
                         None
                     }
                 } else {
@@ -2580,7 +2580,7 @@ phenotypes, so just the first part of this extension will be used:
                                                     gene_details.into());
             self.alleles.insert(feat.uniquename.clone(), allele_details);
         } else {
-            panic!("no allele_type cvtermprop for {}", &feat.uniquename);
+            panic!("no allele_type cvtermprop for {}", feat.uniquename);
         }
     }
 
@@ -2647,7 +2647,7 @@ phenotypes, so just the first part of this extension will be used:
                         rel_type.termid()
                     },
                     None => panic!("no relation type for {} <-> {}\n",
-                                   &subject_term.name, &object_term.name)
+                                   subject_term.name, object_term.name)
                 };
             let term_details = self.terms.get(&rel_termid);
             let rel_term_name = term_details.unwrap().name.clone();
@@ -4310,7 +4310,7 @@ phenotypes, so just the first part of this extension will be used:
                                 }
                         } else {
                             eprintln!("can't handle annotation on {} {}",
-                                      &feature.feat_type.name, &feature.uniquename);
+                                      feature.feat_type.name, feature.uniquename);
                             continue 'FEATURE_CVTERM;
                         }
                 };
@@ -4722,7 +4722,7 @@ phenotypes, so just the first part of this extension will be used:
                     }).collect::<HashSet<_>>();
 
                 if gene_short_list.is_empty() {
-                    panic!("no genes for {:?}", &annotation);
+                    panic!("no genes for {:?}", annotation);
                 }
 
                 let ont_annotation = OntAnnotation {
@@ -4865,7 +4865,7 @@ phenotypes, so just the first part of this extension will be used:
                             rel_type.termid()
                         },
                         None => panic!("no relation type for {} <-> {}\n",
-                                       &subject_term.name, &object_term.name)
+                                       subject_term.name, object_term.name)
                     };
 
                 let rel_term_name =
@@ -4908,7 +4908,7 @@ phenotypes, so just the first part of this extension will be used:
                     }
                 }
             } else {
-                panic!("TermDetails not found for {}", &subject_termid);
+                panic!("TermDetails not found for {}", subject_termid);
             }
         }
 
@@ -5145,7 +5145,7 @@ phenotypes, so just the first part of this extension will be used:
 
                 let term_details =
                     maybe_term_details .unwrap_or_else(|| {
-                        panic!("can't find TermDetails for {}", &term_annotation.term)
+                        panic!("can't find TermDetails for {}", term_annotation.term)
                     });
 
                 let interesting_parent_ids = &term_details.interesting_parent_ids;

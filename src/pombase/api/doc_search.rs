@@ -41,7 +41,7 @@ fn make_docs_url(config: &ServerConfig, q: &str) -> Option<String> {
 
         let clean_q = clean_words.join(" ");
 
-        let prefix = format!("{}/docs/select?wt=json&q=", &config.solr_url);
+        let prefix = format!("{}/docs/select?wt=json&q=", config.solr_url);
 
         Some(format!("{}heading:({}*) OR content:({}*)^0.2", prefix,
                      clean_q, clean_q))

@@ -205,9 +205,9 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
 
     let generated_by = format!("!generated-by: {}\n", database_name);
     let iso_date = db_creation_datetime.replace(' ', "T");
-    let date_generated = format!("!date-generated: {}\n", &iso_date);
-    let url_header = format!("!URL: {}\n", &config.base_url);
-    let funding_header = format!("!funding: {}\n", &config.funder);
+    let date_generated = format!("!date-generated: {}\n", iso_date);
+    let url_header = format!("!URL: {}\n", config.base_url);
+    let funding_header = format!("!funding: {}\n", config.funder);
 
     gpi_writer.write_all("!gpi-version: 2.0\n".as_bytes())?;
     gpi_writer.write_all(format!("!namespace: {}\n", database_name).as_bytes())?;
@@ -226,7 +226,7 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
     standard_gaf_writer.write_all(generated_by.as_bytes())?;
     standard_gaf_writer.write_all(date_generated.as_bytes())?;
     standard_gaf_writer.write_all(url_header.as_bytes())?;
-    let contact = format!("!contact: {}\n", &config.helpdesk_address);
+    let contact = format!("!contact: {}\n", config.helpdesk_address);
     standard_gaf_writer.write_all(contact.as_bytes())?;
 
     let extended_pombase_gaf_header_parts =
@@ -629,7 +629,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                 let line = format!("{}\t\t{}\t{}\t{}\tECO:0000307\t\t\t{}\t{}\t\t\n",
                                    db_object_id,
                                    relation,
-                                   &go_aspect_termid,
+                                   go_aspect_termid,
                                    nd_ref,
                                    local_iso_date, assigned_by);
                 gpad_writer.write_all(line.as_bytes())?;

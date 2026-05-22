@@ -102,11 +102,11 @@ fn gene_synonyms(gene_details: &GeneDetails) -> Vec<FlexStr> {
 }
 
 fn db_uniquename(config: &Config, uniquename: &FlexStr) -> FlexStr {
-    FlexStr::from(&format!("{}:{}", &config.database_name, uniquename))
+    FlexStr::from(&format!("{}:{}", config.database_name, uniquename))
 }
 
 fn make_url(config: &Config, gene_details: &GeneDetails) -> FlexStr {
-    FlexStr::from(&format!("{}/gene/{}", &config.base_url, &gene_details.uniquename))
+    FlexStr::from(&format!("{}/gene/{}", config.base_url, gene_details.uniquename))
 }
 
 fn make_gene_struct(config: &Config, gene_details: &GeneDetails) -> RNAcentralGene {

@@ -116,7 +116,7 @@ pub fn collect_ext_summary_genes(rel_range: &str, rows: &mut Vec<TermSummaryRow>
 
     let mut rows_mut: Vec<_> = rows.iter().cloned().map(Some).collect();
 
-    rows.truncate(0);
+    rows.clear();
 
     while let Some(first_some_idx) = rows_mut.iter().position(|r| r.is_some()) {
         let mut prev_row = rows_mut[first_some_idx].take().unwrap();

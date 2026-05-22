@@ -300,7 +300,7 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
             let rel_term_id =
                 if let Some(map_termid) = rel_mapping.get(&ext_part.rel_type_name) {
                     map_termid.clone().unwrap_or_else(|| panic!("internal error, no mapping for {}",
-                                                                &ext_part.rel_type_name))
+                                                                ext_part.rel_type_name))
                 } else {
                     ext_part.rel_type_id.clone().unwrap()
                 };

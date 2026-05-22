@@ -95,7 +95,7 @@ pub async fn search_alleles(config: &ServerConfig, reqwest_client: &Client, q: &
 
     let maybe_url = make_allele_url(q);
 
-    let base_url = format!("{}/alleles/select", &config.solr_url);
+    let base_url = format!("{}/alleles/select", config.solr_url);
 
     if let Some(url) = maybe_url {
         let res = solr_request(reqwest_client, &base_url, &query_field_names, &url).await?;

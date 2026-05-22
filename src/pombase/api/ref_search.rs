@@ -33,8 +33,8 @@ fn make_refs_url(config: &ServerConfig, q: &str, query_field_names: &[&str])
     let joined_query_fields = query_field_names.join(",");
     let mut refs_url =
         format!("{}/refs/select?wt=json&hl=on&hl.fl={},publication_year&q=",
-                &config.solr_url,
-                &joined_query_fields);
+                config.solr_url,
+                joined_query_fields);
 
     let id_re_string = r"^(?:(?P<prefix>[\w_]+):\s*)?(?P<rest>\d\d\d\d\d+)$";
     let id_re = Regex::new(id_re_string).unwrap();

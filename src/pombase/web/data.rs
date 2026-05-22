@@ -215,7 +215,7 @@ impl WebData {
         let new_path = self.create_dir(output_dir, "chromosome")?;
         for (chromosome_uniquename, chromosome_details) in &self.chromosomes {
             let s = serde_json::to_string(&chromosome_details).unwrap();
-            let file_name = format!("{}/{}.json", new_path, &chromosome_uniquename);
+            let file_name = format!("{}/{}.json", new_path, chromosome_uniquename);
             let f = File::create(file_name)?;
             let mut writer = BufWriter::new(&f);
             writer.write_all(s.as_bytes())?

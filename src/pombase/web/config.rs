@@ -528,7 +528,7 @@ impl Config {
                 return chr_config;
             }
         }
-        panic!("can't find chromosome configuration for {}", &chromosome_name);
+        panic!("can't find chromosome configuration for {}", chromosome_name);
     }
 }
 
@@ -692,17 +692,13 @@ impl GoEcoMapping {
         let mut mapping = HashMap::new();
 
         for line_result in reader.lines() {
-            match line_result {
-                Ok(line) => {
-                    if line.starts_with('#') {
-                        continue;
-                    }
-                    let parts: Vec<&str> = line.split('\t').collect();
-                    mapping.insert((FlexStr::from(parts[0]), FlexStr::from(parts[1])),
-                                   FlexStr::from(parts[2]));
-                },
-                Err(err) => return Err(err)
-            };
+            let line = line_result?;
+            if line.starts_with('#') {
+                continue;
+            }
+            let parts: Vec<&str> = line.split('\t').collect();
+            mapping.insert((FlexStr::from(parts[0]), FlexStr::from(parts[1])),
+                           FlexStr::from(parts[2]));
         }
 
         Ok(GoEcoMapping {

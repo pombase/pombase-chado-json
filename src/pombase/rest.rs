@@ -21,7 +21,7 @@ impl RestExec {
     pub async fn genes_by_id(&self, api_data: &APIData, gene_ids: &[&str])
         -> PublicAPIGeneLookupResponse
     {
-        let (found, missing) = gene_ids.into_iter()
+        let (found, missing) = gene_ids.iter()
             .partition_map(|id| {
                 let id = id.to_flex();
                 if let Some(ref gene_details) = api_data.get_gene_details(&id) {
@@ -36,6 +36,12 @@ impl RestExec {
             found,
             missing,
         }
+    }
+}
+
+impl Default for RestExec {
+    fn default() -> Self {
+        RestExec::new()
     }
 }
 
@@ -79,13 +85,13 @@ impl From<&ProteinDetails> for PublicAPIProteinDetails {
         PublicAPIProteinDetails {
             systematic_id: prot.uniquename.clone(),
             sequence: prot.sequence.clone(),
-            number_of_residues: prot.number_of_residues.clone(),
+            number_of_residues: prot.number_of_residues,
             product: prot.product.clone(),
-            molecular_weight: prot.molecular_weight.clone(),
-            average_residue_weight: prot.average_residue_weight.clone(),
-            charge_at_ph7: prot.charge_at_ph7.clone(),
-            isoelectric_point: prot.isoelectric_point.clone(),
-            codon_adaptation_index: prot.codon_adaptation_index.clone(),
+            molecular_weight: prot.molecular_weight,
+            average_residue_weight: prot.average_residue_weight,
+            charge_at_ph7: prot.charge_at_ph7,
+            isoelectric_point: prot.isoelectric_point,
+            codon_adaptation_index: prot.codon_adaptation_index,
         }
     }
 }
@@ -236,10 +242,7 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             .filter_map(|transcript_uniquename| {
                 let maybe_maybe_details = gene.transcripts_by_uniquename.get(transcript_uniquename);
 
-                let Some(maybe_details) = maybe_maybe_details
-                else {
-                    return None;
-                };
+                let maybe_details = maybe_maybe_details?;
                 
                 let Some(details) = maybe_details
                 else {
@@ -254,13 +257,13 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
         PublicAPIGeneDetails {
             systematic_id: gene.uniquename.clone(),
             name: gene.name.clone(),
-            taxonid: gene.taxonid.clone(),
+            taxonid: gene.taxonid,
             product: gene.product.clone(),
             deletion_viability: gene.deletion_viability.clone(),
             uniprot_identifier: gene.uniprot_identifier.clone(),
             secondary_identifier: gene.secondary_identifier.clone(),
             agr_identifier: gene.agr_identifier.clone(),
-            biogrid_interactor_id: gene.biogrid_interactor_id.clone(),
+            biogrid_interactor_id: gene.biogrid_interactor_id,
             rnacentral_urs_identifier: gene.rnacentral_urs_identifier.clone(),
             interpro_matches: gene.interpro_matches.clone(),
             tm_domain_coords: gene.tm_domain_coords.clone(),
