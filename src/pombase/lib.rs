@@ -19,6 +19,7 @@ pub mod types;
 pub mod interpro;
 pub mod uniprot;
 pub mod api;
+pub mod rest;
 pub mod bio;
 pub mod rnacentral;
 pub mod annotation_util;

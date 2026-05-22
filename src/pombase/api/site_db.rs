@@ -6,6 +6,7 @@ use crate::api::query::Query;
 
 use std::str::FromStr;
 
+#[derive(Clone, Debug)]
 pub struct SiteDB {
     pool: Pool,
 }

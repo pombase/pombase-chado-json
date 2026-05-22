@@ -1,7 +1,7 @@
 extern crate getopts;
 
 use axum::{
-    body::Body, extract::{Path, Request, State}, http::{header, HeaderMap, StatusCode}, response::{Html, IntoResponse, Response}, routing::{get, post}, Json, Router, ServiceExt
+    Form, Json, Router, ServiceExt, body::Body, extract::{Path, Request, State}, http::{HeaderMap, StatusCode, header}, response::{Html, IntoResponse, Response}, routing::{get, post}
 };
 
 use axum_extra::{headers::Range, TypedHeader};
@@ -26,8 +26,7 @@ use rand::seq::IteratorRandom;
 use pombase_gocam::GoCamError;
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
-                                         read_merged_gocam_model},
-              data_types::{GoCamId, GoCamSummary, ProteinViewType}, web::config::{PanelConfig, Testimonial}};
+                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, rest::RestIdRequest, web::config::{PanelConfig, Testimonial}};
 
 use rusqlite::Connection;
 
@@ -39,11 +38,13 @@ use std::{collections::{HashMap, HashSet, BTreeSet}, process, sync::Arc, time::D
 
 use getopts::Options;
 
+use lazy_static::lazy_static;
 
 use pombase::api::query::Query;
 
 use pombase::api::search::{Search, DocSearchMatch, SolrSearchScope};
 use pombase::api::query_exec::QueryExec;
+use pombase::rest::RestExec;
 use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
 use pombase::api::stats_plot::StatsPlots;
@@ -93,6 +94,7 @@ async fn get_static_file(path: &str) -> Response {
 
 struct AllState {
     query_exec: QueryExec,
+    rest_exec: RestExec,
     api_data: APIData,
     gocam_data: HashMap<GoCamId, GoCamSummary>,
     search: Search,
@@ -1012,6 +1014,24 @@ async fn get_stats(Path(graph_type): Path<String>,
     }
 }
 
+lazy_static! {
+    static ref GENE_ID_SPLIT_RE: regex::Regex = regex::Regex::new(r"[, \t;\n]+").unwrap();
+}
+
+async fn rest_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(lookup_arg): Path<String>)
+    -> impl IntoResponse
+{
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim()).collect();
+    Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
+}
+
+async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, Form(ids_request): Form<RestIdRequest>)
+    -> impl IntoResponse
+{
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(&ids_request.ids).collect();
+    Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
+}
+
 async fn ping() -> String {
     String::from("OK") + " " + PKG_NAME + " " + VERSION
 }
@@ -1130,7 +1150,8 @@ async fn main() {
 
     let pro_term_to_gene_map = api_data.get_maps().pro_term_to_gene_map.clone();
 
-    let query_exec = QueryExec::new(site_db);
+    let query_exec = QueryExec::new(site_db.clone());
+    let rest_exec = RestExec::new();
     let search = Search::new(&config);
     let stats_plots = StatsPlots::new(&config);
 
@@ -1197,6 +1218,7 @@ async fn main() {
 
     let all_state = AllState {
         query_exec,
+        rest_exec,
         api_data,
         gocam_data,
         search,
@@ -1261,6 +1283,8 @@ async fn main() {
         .route("/api/v1/dataset/latest/query/{q}", get(query_get))
         .route("/api/v1/dataset/latest/search/{scope}/{q}", get(solr_search))
         .route("/api/v1/dataset/latest/summary/term/{id}", get(get_term_summary_by_id))
+        .route("/rest/genes/by_id/{ids}", get(rest_genes_by_id_get))
+        .route("/rest/genes/by_id", post(rest_genes_by_id_post))
         .route("/ping", get(ping))
         .fallback(not_found)
         .with_state(Arc::new(all_state))
