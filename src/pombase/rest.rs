@@ -247,14 +247,14 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
                 let maybe_maybe_details = gene.transcripts_by_uniquename.get(transcript_uniquename);
 
                 let maybe_details = maybe_maybe_details?;
-                
+
                 let Some(details) = maybe_details
                 else {
                     return None
                 };
 
-                let pub_details: PublicAPITranscriptDetails = details.into();
-                Some(pub_details)
+                let api_details: PublicAPITranscriptDetails = details.into();
+                Some(api_details)
             })
             .collect();
 
