@@ -1027,14 +1027,16 @@ async fn rest_gene_by_id(State(all_state): State<Arc<AllState>>, Path(gene_id): 
 async fn rest_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(lookup_arg): Path<String>)
     -> impl IntoResponse
 {
-    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim()).collect();
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
+        .filter(|id| !id.is_empty()).collect();
     Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
 
 async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, Form(ids_request): Form<RestIdRequest>)
     -> impl IntoResponse
 {
-    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(&ids_request.ids).collect();
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(&ids_request.ids.trim())
+        .filter(|id| !id.is_empty()).collect();
     Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
 
