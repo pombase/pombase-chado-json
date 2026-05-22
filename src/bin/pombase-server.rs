@@ -1,7 +1,7 @@
 extern crate getopts;
 
 use axum::{
-    Form, Json, Router, ServiceExt, body::Body, extract::{Path, Request, State}, http::{HeaderMap, StatusCode, header}, response::{Html, IntoResponse, Response}, routing::{get, post}
+    Json, Router, ServiceExt, body::Body, extract::{Path, Request, State}, http::{HeaderMap, StatusCode, header}, response::{Html, IntoResponse, Response}, routing::{get, post}
 };
 
 use axum_extra::{headers::Range, TypedHeader};
@@ -26,7 +26,7 @@ use rand::seq::IteratorRandom;
 use pombase_gocam::GoCamError;
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
-                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, rest::RestIdRequest, web::config::{PanelConfig, Testimonial}};
+                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, web::config::{PanelConfig, Testimonial}};
 
 use rusqlite::Connection;
 
@@ -1032,10 +1032,10 @@ async fn rest_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(looku
     Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
 
-async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, Form(ids_request): Form<RestIdRequest>)
+async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, ids: String)
     -> impl IntoResponse
 {
-    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(&ids_request.ids.trim())
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(&ids.trim())
         .filter(|id| !id.is_empty()).collect();
     Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }

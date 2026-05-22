@@ -316,8 +316,3 @@ pub struct PublicAPIGeneLookupResponse {
     found: Vec<PublicAPIGeneDetails>,
     missing: Vec<FlexStr>,
 }
-
-#[derive(Deserialize, Clone, Debug)]
-pub struct RestIdRequest {
-    pub ids: String,
-}
