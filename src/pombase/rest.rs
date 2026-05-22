@@ -31,7 +31,7 @@ impl RestExec {
         let (found, missing) = gene_ids.iter()
             .partition_map(|id| {
                 let id = id.to_flex();
-                if let Some(ref gene_details) = api_data.get_gene_details(&id) {
+                if let Some(ref gene_details) = api_data.get_full_gene_details(&id) {
                 let gd: PublicAPIGeneDetails = (gene_details as &GeneDetails).into();
                 Either::Left(gd)
             } else {
