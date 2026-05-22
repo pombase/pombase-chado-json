@@ -4,7 +4,7 @@ use std::num::NonZeroUsize;
 use flexstr::{SharedStr as FlexStr, ToFlex};
 use itertools::{Either, Itertools};
 
-use crate::data_types::{ActiveSite, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, Chain, ChromosomeLocation, DeletionViability, DisulfideBond, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, PDBEntry, ProteinDetails, ReferenceAndSource, Residues, SynonymDetails, TranscriptDetails, Turn};
+use crate::data_types::{ActiveSite, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, Chain, ChromosomeLocation, DeletionViability, DisulfideBond, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, PDBEntry, ProteinDetails, Residues, SynonymDetails, TranscriptDetails, Turn};
 use crate::interpro::InterProMatch;
 use crate::types::{GeneName, GeneUniquename, ProteinUniquename, RnaUrsId, TermId, TranscriptUniquename};
 
@@ -230,9 +230,6 @@ pub struct PublicAPIGeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<PublicAPITranscriptDetails>,
 
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub feature_publications: HashSet<ReferenceAndSource>,
-
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gocams: Vec<GoCamIdAndTitle>,
 
@@ -307,7 +304,6 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             taxonomic_distribution: gene.taxonomic_distribution.clone(),
             location: gene.location.clone(),
             transcripts,
-            feature_publications: gene.feature_publications.clone(),
             gocams: gene.gocams.clone(),
             rnacentral_2d_structure_id: gene.rnacentral_2d_structure_id.clone(),
             gene_history: gene.gene_history.clone(),
