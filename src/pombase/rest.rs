@@ -18,6 +18,13 @@ impl RestExec {
         RestExec { }
     }
 
+    pub async fn gene_by_id(&self, api_data: &APIData, gene_id: &str)
+        -> Option<PublicAPIGeneDetails>
+    {
+        api_data.get_full_gene_details(gene_id).as_ref()
+            .map(|gene_details| (gene_details as &GeneDetails).into())
+    }
+
     pub async fn genes_by_id(&self, api_data: &APIData, gene_ids: &[&str])
         -> PublicAPIGeneLookupResponse
     {

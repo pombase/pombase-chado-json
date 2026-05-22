@@ -1018,6 +1018,12 @@ lazy_static! {
     static ref GENE_ID_SPLIT_RE: regex::Regex = regex::Regex::new(r"[, \t;\n]+").unwrap();
 }
 
+async fn rest_gene_by_id(State(all_state): State<Arc<AllState>>, Path(gene_id): Path<String>)
+    -> impl IntoResponse
+{
+    Json(all_state.rest_exec.gene_by_id(all_state.get_api_data(), &gene_id).await)
+}
+
 async fn rest_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(lookup_arg): Path<String>)
     -> impl IntoResponse
 {
@@ -1283,6 +1289,7 @@ async fn main() {
         .route("/api/v1/dataset/latest/query/{q}", get(query_get))
         .route("/api/v1/dataset/latest/search/{scope}/{q}", get(solr_search))
         .route("/api/v1/dataset/latest/summary/term/{id}", get(get_term_summary_by_id))
+        .route("/rest/gene/by_id/{id}", get(rest_gene_by_id))
         .route("/rest/genes/by_id/{ids}", get(rest_genes_by_id_get))
         .route("/rest/genes/by_id", post(rest_genes_by_id_post))
         .route("/ping", get(ping))
