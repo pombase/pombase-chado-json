@@ -1611,7 +1611,7 @@ impl WebData {
             .filter_map(|g| {
                 if g.taxonid == load_org_taxonid {
                     let mut pub_gene = g.into();
-                    self.fill_public_api_gene_details(&g, &mut pub_gene);
+                    self.fill_public_api_gene_details(g, &mut pub_gene);
                     Some(pub_gene)
                 } else {
                     None
