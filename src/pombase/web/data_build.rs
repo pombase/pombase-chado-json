@@ -8228,6 +8228,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut genes = self.genes.clone();
         let alleles = self.alleles.clone();
+        let transcripts = self.transcripts.clone();
         let genotypes = self.genotypes.clone();
         let references = self.references.clone();
         let annotation_details = self.annotation_details.clone();
@@ -8262,6 +8263,7 @@ phenotypes, so just the first part of this extension will be used:
             terms: terms_for_api,
             genes,
             alleles,
+            transcripts,
             genotypes,
             references,
             annotation_details,

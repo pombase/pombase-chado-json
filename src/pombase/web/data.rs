@@ -29,6 +29,7 @@ use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 use crate::bio::ExportCommentsMode;
 use crate::constants::*;
 
+use crate::rest::{PublicAPIGeneDetails, PublicAPITranscriptDetails};
 use crate::web::config::*;
 use crate::rnacentral::*;
 
@@ -57,6 +58,7 @@ pub struct WebData {
     pub api_maps: APIMaps,
     pub genes: UniquenameGeneMap,
     pub alleles: UniquenameAlleleMap,
+    pub transcripts: UniquenameTranscriptMap,
     pub genotypes: IdGenotypeMap,
     pub terms: TermIdDetailsMap,
     pub references: UniquenameReferenceMap,
@@ -1580,6 +1582,50 @@ impl WebData {
         Ok(())
     }
 
+
+    // return a gene with the transcripts field filled out
+    pub fn fill_public_api_gene_details(&self, gene_details: &GeneDetails,
+                                       pub_gene: &mut PublicAPIGeneDetails) {
+        let transcript_uniquenames = gene_details.transcripts_by_uniquename.keys();
+
+        for transcript_uniquename in transcript_uniquenames {
+            let transcript_details = &self.transcripts[transcript_uniquename];
+            let pub_transcript_details: PublicAPITranscriptDetails = transcript_details.into();
+            pub_gene.transcripts.push(pub_transcript_details);
+        }
+    }
+
+    pub fn write_pub_api_genes(&self, config: &Config, output_dir: &str)
+        -> Result<(), io::Error>
+    {
+        let Some(load_org_taxonid) = config.load_organism_taxonid
+        else {
+            return Ok(());
+        };
+
+        let file_name = format!("{}/public_api_genes.json", output_dir);
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+
+        let pub_api_genes: Vec<PublicAPIGeneDetails> = self.genes.values()
+            .filter_map(|g| {
+                if g.taxonid == load_org_taxonid {
+                    let mut pub_gene = g.into();
+                    self.fill_public_api_gene_details(&g, &mut pub_gene);
+                    Some(pub_gene)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        let s = serde_json::to_string(&pub_api_genes).unwrap();
+
+        writeln!(writer, "{}", s)?;
+
+        Ok(())
+    }
+
     pub fn write_apicuron_files(&self, config: &Config,
                                 references: &UniquenameReferenceMap,
                                 output_dir: &str)
@@ -1891,8 +1937,8 @@ impl WebData {
 
         self.write_annotation_subsets(config, &misc_path)?;
 
+        self.write_pub_api_genes(config, &misc_path)?;
         self.write_apicuron_files(config, &self.references, &misc_path)?;
-
         self.write_ai_ml_files(&misc_path)?;
 
         println!("wrote miscellaneous files");
