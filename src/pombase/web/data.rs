@@ -37,7 +37,8 @@ use crate::types::{CvName, TermId, GenotypeDisplayUniquename, GeneUniquename, Al
 use crate::data_types::*;
 use crate::annotation_util::table_for_export;
 
-use crate::bio::go_format_writer::{write_go_annotation_files, write_parquet};
+use crate::bio::go_format_writer::write_go_annotation_files;
+use crate::bio::write_parquet;
 use crate::bio::phenotype_format_writer::{DiploidOutputMode, FypoEvidenceType, write_heterozygous_diploid_annotations, write_phenotype_annotation_files};
 use crate::bio::macromolecular_complexes::write_macromolecular_complexes;
 use crate::bio::gene_expression_writer::{write_quantitative_expression_row, write_qualitative_expression_row};

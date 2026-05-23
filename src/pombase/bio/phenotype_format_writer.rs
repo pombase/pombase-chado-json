@@ -6,7 +6,8 @@ use std::fs::File;
 
 use flexstr::{shared_fmt as flex_fmt, FlexStr, ToSharedStr};
 
-use crate::bio::go_format_writer::write_parquet;
+use crate::bio::write_parquet;
+
 use crate::bio::{get_submitter_comment, ExportCommentsMode};
 use crate::web::config::*;
 use crate::data_types::*;
