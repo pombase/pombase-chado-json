@@ -293,6 +293,13 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             })
             .collect();
 
+        let feature_type =
+            if gene.feature_type == "mRNA gene" {
+                flex_str!("protein")
+            } else {
+                gene.feature_type.clone()
+            };
+
         let ortholog_annotations = gene.ortholog_annotations.iter()
             .map(|orth| orth.into()).collect();
 
@@ -335,7 +342,7 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             synonyms: gene.synonyms.clone(),
             dbxrefs: gene.dbxrefs.clone(),
             flags: gene.flags.clone(),
-            feature_type: gene.feature_type.clone(),
+            feature_type,
             feature_so_termid: gene.feature_so_termid.clone(),
             transcript_so_termid: gene.transcript_so_termid.clone(),
             characterisation_status: gene.characterisation_status.clone(),
