@@ -1,12 +1,18 @@
 use std::collections::HashSet;
 use std::num::NonZeroUsize;
 
-use flexstr::{SharedStr as FlexStr, ToFlex};
+use flexstr::{SharedStr as FlexStr, ToFlex, shared_str as flex_str};
 use itertools::{Either, Itertools};
 
-use crate::data_types::{ActiveSite, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, Chain, ChromosomeLocation, DeletionViability, DisulfideBond, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, PDBEntry, ProteinDetails, Residues, SynonymDetails, TranscriptDetails, Turn};
+use crate::data_types::{ActiveSite, AssignedByPeptideRange, BasicProteinFeature, BetaStrand,
+                        BindingSite, Chain, ChromosomeLocation, DeletionViability,
+                        DisulfideBond, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry,
+                        GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, PDBEntry,
+                        ProteinDetails, Residues, SynonymDetails, TranscriptDetails, Turn,
+                        OrthologAnnotation};
 use crate::interpro::InterProMatch;
-use crate::types::{GeneName, GeneUniquename, ProteinUniquename, RnaUrsId, TermId, TranscriptUniquename};
+use crate::types::{GeneName, GeneUniquename, ProteinUniquename, RnaUrsId, TermId,
+                   TranscriptUniquename, Evidence, ReferenceUniquename};
 
 use crate::api_data::APIData;
 
@@ -139,6 +145,32 @@ impl From<&TranscriptDetails> for PublicAPITranscriptDetails {
 }
 
 #[derive(Serialize, Clone, Debug)]
+pub struct PublicAPIOrthologAnnotation {
+    pub gene_systematic_id: GeneUniquename,
+    pub ortholog_taxonid: u32,
+    pub ortholog_systematic_id: GeneUniquename,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub evidence: Option<Evidence>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub reference: Option<ReferenceUniquename>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub qualifier: Option<FlexStr>,
+}
+
+impl From<&OrthologAnnotation> for PublicAPIOrthologAnnotation {
+    fn from(ortholog_annotation: &OrthologAnnotation) -> Self {
+        PublicAPIOrthologAnnotation {
+            gene_systematic_id: ortholog_annotation.gene_uniquename.clone(),
+            ortholog_taxonid: ortholog_annotation.ortholog_taxonid,
+            ortholog_systematic_id: ortholog_annotation.ortholog_uniquename.clone(),
+            evidence: ortholog_annotation.evidence.clone(),
+            reference: ortholog_annotation.reference_uniquename.clone(),
+            qualifier: ortholog_annotation.qualifier.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Clone, Debug)]
 pub struct PublicAPIGeneDetails {
     pub systematic_id: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
@@ -213,6 +245,9 @@ pub struct PublicAPIGeneDetails {
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<FlexStr>,
 
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub ortholog_annotations: Vec<PublicAPIOrthologAnnotation>,
+
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     // possible values: "is_histone"
     pub flags: HashSet<FlexStr>,
@@ -257,6 +292,9 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
                 Some(api_details)
             })
             .collect();
+
+        let ortholog_annotations = gene.ortholog_annotations.iter()
+            .map(|orth| orth.into()).collect();
 
         PublicAPIGeneDetails {
             systematic_id: gene.uniquename.clone(),
@@ -304,6 +342,7 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             taxonomic_distribution: gene.taxonomic_distribution.clone(),
             location: gene.location.clone(),
             transcripts,
+            ortholog_annotations,
             gocams: gene.gocams.clone(),
             rnacentral_2d_structure_id: gene.rnacentral_2d_structure_id.clone(),
             gene_history: gene.gene_history.clone(),
