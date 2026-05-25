@@ -1093,10 +1093,7 @@ impl APIData {
         -> Option<GeneDetails>
     {
         let uniprot_id = &uniprot_id.to_flex();
-        let Some(ref gene_uniquename) = self.maps.gene_uniquenames_by_uniprot_accession.get(uniprot_id)
-        else {
-            return None;
-        };
+        let gene_uniquename = self.maps.gene_uniquenames_by_uniprot_accession.get(uniprot_id)?;
 
         self.get_full_gene_details(gene_uniquename)
     }
