@@ -1040,6 +1040,32 @@ async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, ids: Stri
     Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
 
+async fn rest_gene_by_uniprot_accesssion(State(all_state): State<Arc<AllState>>,
+                                         Path(uniprot_accession): Path<String>)
+    -> impl IntoResponse
+{
+    Json(all_state.rest_exec.gene_by_uniprot_accession(all_state.get_api_data(), &uniprot_accession).await)
+}
+
+async fn rest_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<AllState>>,
+                                              Path(lookup_arg): Path<String>)
+    -> impl IntoResponse
+{
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
+        .filter(|id| !id.is_empty()).collect();
+    Json(all_state.rest_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
+}
+
+async fn rest_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllState>>,
+                               ids: String)
+    -> impl IntoResponse
+{
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(ids.trim())
+        .filter(|id| !id.is_empty()).collect();
+    Json(all_state.rest_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
+}
+
+
 async fn ping() -> String {
     String::from("OK") + " " + PKG_NAME + " " + VERSION
 }
@@ -1294,6 +1320,9 @@ async fn main() {
         .route("/rest/gene/by_id/{id}", get(rest_gene_by_id))
         .route("/rest/genes/by_id/{ids}", get(rest_genes_by_id_get))
         .route("/rest/genes/by_id", post(rest_genes_by_id_post))
+        .route("/rest/gene/by_uniprot_accession/{ids}", get(rest_gene_by_uniprot_accesssion))
+        .route("/rest/genes/by_uniprot_accession/{ids}", get(rest_genes_by_uniprot_accesssion_get))
+        .route("/rest/genes/by_uniprot_accession", post(rest_genes_by_uniprot_accesssion_post))
         .route("/ping", get(ping))
         .fallback(not_found)
         .with_state(Arc::new(all_state))

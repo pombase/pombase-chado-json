@@ -5475,6 +5475,8 @@ phenotypes, so just the first part of this extension will be used:
         let mut interactors_of_genes = HashMap::new();
         let downstream_genes = self.make_api_maps_downstream_genes();
 
+        let mut gene_uniquenames_by_uniprot_accession = HashMap::new();
+
         for (gene_uniquename, gene_details) in &self.genes {
             if self.config.load_organism_taxonid.is_none() ||
                 self.config.load_organism_taxonid.unwrap() == gene_details.taxonid {
@@ -5483,6 +5485,11 @@ phenotypes, so just the first part of this extension will be used:
                     gene_name_gene_map.insert(gene_name.clone(), gene_uniquename.clone());
                 }
                 gene_summaries.insert(gene_uniquename.clone(), gene_summary);
+
+                if let Some(ref uniprot_id) = gene_details.uniprot_identifier {
+                    let gene_uniquename = gene_details.uniquename.clone();
+                    gene_uniquenames_by_uniprot_accession.insert(uniprot_id.to_owned(), gene_uniquename);
+                }
 
                 let mut interactors = HashSet::new();
 
@@ -5603,6 +5610,8 @@ phenotypes, so just the first part of this extension will be used:
 
             protein_complex_data: self.protein_complex_data,
             protein_complexes: self.protein_complexes,
+
+            gene_uniquenames_by_uniprot_accession,
        }
     }
 

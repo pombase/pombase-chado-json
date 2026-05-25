@@ -2967,6 +2967,8 @@ pub struct APIMaps {
 
     // data from Complex Portal:
     pub protein_complexes: ProteinComplexMap,
+
+    pub gene_uniquenames_by_uniprot_accession: HashMap<UniprotIdentifier, GeneUniquename>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]

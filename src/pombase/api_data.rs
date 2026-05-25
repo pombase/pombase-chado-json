@@ -20,7 +20,7 @@ use crate::web::cv_summary::make_cv_summaries;
 use crate::types::{TermId, GeneUniquename, AlleleUniquename,
                    GenotypeDisplayUniquename, GenotypeUniquename, ReferenceUniquename};
 
-use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_fmt, ToSharedStr};
+use flexstr::{SharedStr as FlexStr, ToFlex, shared_str as flex_str, shared_fmt as flex_fmt, ToSharedStr};
 
 pub struct APIData {
     config: Config,
@@ -1087,5 +1087,17 @@ impl APIData {
         -> HashMap<GoCamId, GoCamSummary>
     {
         self.maps.gocam_data_by_gocam_id.clone()
+    }
+
+    pub fn get_gene_details_by_uniprot_accession(&self, uniprot_id: &str)
+        -> Option<GeneDetails>
+    {
+        let uniprot_id = &uniprot_id.to_flex();
+        let Some(ref gene_uniquename) = self.maps.gene_uniquenames_by_uniprot_accession.get(uniprot_id)
+        else {
+            return None;
+        };
+
+        self.get_full_gene_details(gene_uniquename)
     }
 }

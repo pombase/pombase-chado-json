@@ -50,6 +50,33 @@ impl RestExec {
             missing,
         }
     }
+
+    pub async fn gene_by_uniprot_accession(&self, api_data: &APIData, uniprot_accession: &str)
+        -> Option<PublicAPIGeneDetails>
+    {
+        api_data.get_gene_details_by_uniprot_accession(uniprot_accession).as_ref()
+            .map(|gene_details| (gene_details as &GeneDetails).into())
+    }
+
+    pub async fn genes_by_uniprot_accession(&self, api_data: &APIData, uniprot_accessions: &[&str])
+        -> PublicAPIGeneLookupResponse
+    {
+        let (found, missing) = uniprot_accessions.iter()
+            .partition_map(|id| {
+                let id = id.to_flex();
+                if let Some(ref details) = api_data.get_gene_details_by_uniprot_accession(&id) {
+                    let gd: PublicAPIGeneDetails = (details as &GeneDetails).into();
+                    Either::Left(gd)
+                } else {
+                    Either::Right(id)
+                }
+            });
+
+        PublicAPIGeneLookupResponse {
+            found,
+            missing,
+        }
+    }
 }
 
 impl Default for RestExec {
