@@ -19,7 +19,7 @@ use crate::bio::util::make_extension_string;
 
 use crate::types::TermId;
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum FypoEvidenceType {
     PomBase,
     Eco,
@@ -30,6 +30,101 @@ pub enum DiploidOutputMode {
     DominantAlleles {
         abnormal_phenotype_termids: HashSet<TermId>,
     },
+}
+
+// return a Vec of field Strings for one line of phenotype annotation
+pub fn make_phenotype_line_parts(config: &Config,
+                                 data_lookup: &dyn DataLookup,
+                                 termid: &TermId,
+                                 annotation_detail: &OntAnnotationDetail,
+                                 genotype_details: &GenotypeDetails,
+                                 load_org_taxonid: u32,
+                                 evidence_type: FypoEvidenceType)
+    -> Option<Vec<String>>
+{
+    let phaf_parental_strain = config.file_exports.phaf_parental_strain.get(&load_org_taxonid)
+        .unwrap_or_else(|| panic!("no phaf_parental_strain configured for {}", load_org_taxonid));
+
+    let database_name = &config.database_name;
+
+
+    // only export single locus genotypes that are haploid or homozygous diploid
+    let expressed_allele = get_expressed_allele(genotype_details)?;
+
+    let locus_allele =
+        data_lookup.get_allele(&expressed_allele.allele_uniquename)
+        .unwrap_or_else(|| panic!("no allele found for {}", expressed_allele.allele_uniquename));
+
+    let locus_allele_synonyms =
+        locus_allele.synonyms.iter().map(|s| s.name.clone()).collect::<Vec<_>>().join("|");
+
+    let locus_gene = &locus_allele.gene;
+
+    let locus_gene_name_or_uniquename =
+        if let Some(ref name) = locus_gene.name {
+            name
+        } else {
+            &locus_gene.uniquename
+        };
+
+    let expression =
+        if let Some(ref expression) = expressed_allele.expression {
+            if expression == "Null" && locus_allele.allele_type == "deletion" {
+                flex_fmt!("")
+            } else {
+                expression.clone()
+            }
+        } else {
+            flex_fmt!("")
+        };
+
+    let evidence =
+        if evidence_type == FypoEvidenceType::Eco {
+            annotation_detail.eco_evidence.clone().unwrap_or_default()
+        } else {
+            annotation_detail.evidence.clone().unwrap_or_default()
+        };
+
+    let conditions = annotation_conditions(annotation_detail);
+
+    let penetrance = annotation_penetrance(data_lookup, annotation_detail);
+
+    let severity = annotation_severity(data_lookup, annotation_detail);
+
+    let extension_bits = annotation_extension(annotation_detail);
+
+    let extension =
+        make_extension_string(config, data_lookup,
+                              &GpadGafWriteMode::PomBaseGaf,
+                              &extension_bits);
+
+    let date =
+        annotation_detail.date.clone().unwrap_or_else(|| flex_fmt!("NO_DATE"));
+
+    let reference_uniquename = annotation_detail.reference.as_ref()
+        .map(|s| s.to_std_string()).unwrap_or_default();
+
+    Some(vec![database_name.to_std_string(),
+              locus_gene.uniquename.to_std_string(),
+              termid.to_std_string(),
+              locus_allele.description.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
+              expression.to_std_string(),
+              phaf_parental_strain.to_owned(),
+              String::default(),
+              annotation_detail.genotype_background.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
+              locus_gene_name_or_uniquename.to_std_string(),
+              locus_allele.name.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
+              locus_allele_synonyms.clone(),
+              locus_allele.allele_type.to_std_string(),
+              evidence.to_std_string(),
+              conditions,
+              penetrance,
+              severity,
+              extension,
+              reference_uniquename,
+              load_org_taxonid.to_string(),
+              date.to_std_string()])
+
 }
 
 pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
@@ -46,15 +141,10 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
         if let Some(load_org_taxonid) = config.load_organism_taxonid {
             load_org_taxonid
         } else {
-            return Ok(())
+            return Ok(());
         };
 
     let phaf_cv_name = config.file_exports.phaf_cv_name.to_shared_str();
-
-    let phaf_parental_strain = config.file_exports.phaf_parental_strain.get(&load_org_taxonid)
-        .unwrap_or_else(|| panic!("no phaf_parental_strain configured for {}", load_org_taxonid));
-
-    let database_name = &config.database_name;
 
     let export_comments = export_comments_mode == ExportCommentsMode::Export;
 
@@ -99,59 +189,21 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
             continue 'GENOTYPES;
         }
 
-        // only export single locus genotypes that are haploid or homozygous diploid
-        let Some(expressed_allele) = get_expressed_allele(genotype_details)
-        else {
-            continue 'GENOTYPES;
-        };
-
-        let locus_allele =
-            data_lookup.get_allele(&expressed_allele.allele_uniquename)
-            .unwrap_or_else(|| panic!("no allele found for {}", expressed_allele.allele_uniquename));
-
-        let locus_allele_synonyms =
-            locus_allele.synonyms.iter().map(|s| s.name.clone()).collect::<Vec<_>>().join("|");
-
-        let locus_gene = &locus_allele.gene;
-
-        let locus_gene_name_or_uniquename =
-            if let Some(ref name) = locus_gene.name {
-                name
-            } else {
-                &locus_gene.uniquename
-            };
-
-        let expression =
-            if let Some(ref expression) = expressed_allele.expression {
-                if expression == "Null" && locus_allele.allele_type == "deletion" {
-                    flex_fmt!("")
-                } else {
-                    expression.clone()
-                }
-            } else {
-                flex_fmt!("")
-            };
-
         if let Some(term_annotations) = genotype_details.cv_annotations.get(&phaf_cv_name) {
             for term_annotation in term_annotations {
-                let term =
-                    data_lookup.get_term(&term_annotation.term)
-                    .unwrap_or_else(|| panic!("failed to find term summary for {}",
-                                              term_annotation.term));
+                let termid = &term_annotation.term;
 
                 for annotation_id in &term_annotation.annotations {
                     let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
-                    let reference_uniquename =
-                        if let Some(ref reference) = annotation_detail.reference {
-                            reference.clone()
-                        } else {
-                            flex_fmt!("")
-                        };
+                    let Some(ref reference_uniquename) = annotation_detail.reference
+                    else {
+                        continue;
+                    };
 
                     if export_comments {
-                        if let Some(reference_details) = data_lookup.get_reference(&reference_uniquename) {
+                        if let Some(reference_details) = data_lookup.get_reference(reference_uniquename) {
                             if !reference_details.is_canto_curated() {
                                 continue;
                             }
@@ -160,67 +212,22 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                         }
                     }
 
-                    let evidence =
-                        if evidence_type == FypoEvidenceType::Eco {
-                            annotation_detail.eco_evidence.clone().unwrap_or_else(|| flex_fmt!(""))
+                    let Some(mut line_parts) =
+                        make_phenotype_line_parts(config, data_lookup, termid,
+                                                  annotation_detail.as_ref(),
+                                                  genotype_details, load_org_taxonid,
+                                                  evidence_type)
+                    else {
+                        continue;
+                    };
+
+                    if export_comments {
+                        if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
+                            line_parts.push(submitter_comment);
                         } else {
-                            annotation_detail.evidence.clone().unwrap_or_else(|| flex_fmt!(""))
-                        };
-
-                    let conditions =
-                        annotation_detail.conditions.iter()
-                        .map(|fs| fs.as_str())
-                        .sorted()
-                        .join(",");
-
-                    let penetrance = annotation_penetrance(data_lookup, &annotation_detail);
-
-                    let severity = annotation_severity(data_lookup, &annotation_detail);
-
-                    let extension_bits =
-                        annotation_detail.extension.iter()
-                        .filter(|bit| {
-                            bit.rel_type_name != "has_penetrance" && bit.rel_type_name != "has_severity"
-                        }).cloned()
-                        .collect::<Vec<_>>();
-
-                    let extension =
-                        make_extension_string(config, data_lookup,
-                                              &GpadGafWriteMode::PomBaseGaf,
-                                              &extension_bits);
-
-                    let date =
-                        annotation_detail.date.clone().unwrap_or_else(|| flex_fmt!("NO_DATE"));
-
-                    let mut line_parts =
-                        vec![database_name.to_std_string(),
-                                locus_gene.uniquename.to_std_string(),
-                                term.termid.to_std_string(),
-                                locus_allele.description.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
-                                expression.to_std_string(),
-                                phaf_parental_strain.to_owned(),
-                                String::default(),
-                                annotation_detail.genotype_background.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
-                                locus_gene_name_or_uniquename.to_std_string(),
-                                locus_allele.name.as_deref().map(|s| s.to_owned()).unwrap_or_default(),
-                                locus_allele_synonyms.clone(),
-                                locus_allele.allele_type.to_std_string(),
-                                evidence.to_std_string(),
-                                conditions,
-                                penetrance,
-                                severity,
-                                extension,
-                                reference_uniquename.to_std_string(),
-                                load_org_taxonid.to_string(),
-                                date.to_std_string()];
-
-                        if export_comments {
-                            if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
-                                line_parts.push(submitter_comment);
-                            } else {
-                                line_parts.push(String::default())
-                            }
-                        };
+                            line_parts.push(String::default())
+                        }
+                    };
 
                     let line = line_parts.join("\t");
 
@@ -440,6 +447,19 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
     }
 
   Ok(())
+}
+
+fn annotation_extension(annotation_detail: &OntAnnotationDetail) -> Vec<ExtPart> {
+    annotation_detail.extension.iter()
+        .filter(|bit| {
+            bit.rel_type_name != "has_penetrance" && bit.rel_type_name != "has_severity"
+        }).cloned()
+        .collect::<Vec<_>>()
+}
+
+fn annotation_conditions(annotation_detail: &OntAnnotationDetail) -> String {
+    annotation_detail.conditions.iter()
+        .map(|fs| fs.as_str()).sorted().join(",")
 }
 
 fn annotation_penetrance(data_lookup: &dyn DataLookup, annotation_detail: &OntAnnotationDetail)
