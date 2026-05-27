@@ -1065,6 +1065,17 @@ async fn rest_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllSt
     Json(all_state.rest_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
 }
 
+async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>, Path(termid): Path<String>)
+    -> impl IntoResponse
+{
+    if let Some(gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
+                                                                   &termid).await
+    {
+        gaf.into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
 
 async fn ping() -> String {
     String::from("OK") + " " + PKG_NAME + " " + VERSION
@@ -1323,6 +1334,7 @@ async fn main() {
         .route("/rest/gene/by_uniprot_accession/{ids}", get(rest_gene_by_uniprot_accesssion))
         .route("/rest/genes/by_uniprot_accession/{ids}", get(rest_genes_by_uniprot_accesssion_get))
         .route("/rest/genes/by_uniprot_accession", post(rest_genes_by_uniprot_accesssion_post))
+        .route("/rest/go_annotation/by_term_id/{id}", get(rest_go_annotation_by_term))
         .route("/ping", get(ping))
         .fallback(not_found)
         .with_state(Arc::new(all_state))

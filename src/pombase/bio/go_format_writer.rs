@@ -60,7 +60,6 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                  db_creation_datetime: &FlexStr,
                                  go_eco_mappping: &GoEcoMapping,
                                  genes: &UniquenameGeneMap,
-                                 transcripts: &UniquenameTranscriptMap,
                                  output_dir: &str)
                                  -> Result<(), io::Error>
 {
@@ -205,28 +204,28 @@ pub fn write_go_annotation_files(api_maps: &APIMaps, config: &Config,
                                         data_lookup,
                                         GpadGafWriteMode::PomBaseGaf,
                                         ExportCommentsMode::NoExport,
-                                        gene_details, transcripts,
+                                        gene_details,
                                         aspect_name,
                                         &mut pombase_gaf_lines);
             make_gene_association_lines(config,
                                         data_lookup,
                                         GpadGafWriteMode::ExtendedPomBaseGaf,
                                         ExportCommentsMode::NoExport,
-                                        gene_details, transcripts,
+                                        gene_details,
                                         aspect_name,
                                         &mut extended_pombase_gaf_lines);
             make_gene_association_lines(config,
                                         data_lookup,
                                         GpadGafWriteMode::StandardGaf,
                                         ExportCommentsMode::NoExport,
-                                        gene_details, transcripts,
+                                        gene_details,
                                         aspect_name,
                                         &mut standard_gaf_lines);
             make_gene_association_lines(config,
                                         data_lookup,
                                         GpadGafWriteMode::StandardGaf,
                                         ExportCommentsMode::Export,
-                                        gene_details, transcripts,
+                                        gene_details,
                                         aspect_name,
                                         &mut comments_gaf_lines);
         }
@@ -666,7 +665,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     Ok(())
 }
 
-fn get_db_values(gene_details: &GeneDetails, transcripts: &UniquenameTranscriptMap)
+fn get_db_values(gene_details: &GeneDetails)
     -> (String, String, Vec<String>, String, String)
 {
     let db_object_id = gene_details.uniquename.to_std_string();
@@ -692,21 +691,14 @@ fn get_db_values(gene_details: &GeneDetails, transcripts: &UniquenameTranscriptM
         };
 
     let db_object_type =
-        if let Some(transcript_uniquename) = gene_details.transcripts.first() {
-            let transcript_details =
-                transcripts.get(transcript_uniquename)
-                .unwrap_or_else(|| panic!("internal error, failed to find transcript: {}",
-                                          transcript_uniquename));
-
-            let transcript_type = transcript_details.transcript_type.as_str();
-
-            if transcript_type == "mRNA" {
-                "protein".to_owned()
-            } else {
-                transcript_type.to_owned()
-            }
+        if gene_details.feature_type == "mRNA gene" {
+            "protein".to_owned()
         } else {
-            panic!();
+            if let Some(prefix) = gene_details.feature_type.strip_suffix(" gene") {
+                prefix.to_owned()
+            } else {
+                panic!("unknown feature_type: {}", gene_details.feature_type);
+            }
         };
 
     (db_object_id, db_object_symbol, db_object_synonyms, db_object_name, db_object_type)
@@ -722,10 +714,18 @@ pub fn make_gaf_line(config: &Config,
                      annotation_detail: &OntAnnotationDetail,
                      go_id: &TermId,
                      is_not: bool,
-                     transcripts: &UniquenameTranscriptMap,
                      cv_name: &FlexStr)
    -> Option<Vec<String>>
 {
+    if let Some(ref characterisation_status) = gene_details.characterisation_status
+        && (characterisation_status == "dubious" || characterisation_status == "transposon") {
+            return None;
+        }
+
+    if gene_details.feature_type == "pseudogene" {
+        return None;
+    }
+
     if let Some(ref reference) = annotation_detail.reference
         && config.file_exports.exclude_references.contains(reference) {
             return None;
@@ -822,7 +822,7 @@ pub fn make_gaf_line(config: &Config,
     let taxonid = format!("taxon:{}", gene_details.taxonid);
 
     let (db_object_id, db_object_symbol, db_object_synonyms, db_object_name, db_object_type) =
-        get_db_values(gene_details, transcripts);
+        get_db_values(gene_details);
 
     let mut line_parts: Vec<String> =
         vec![database_name.clone(), db_object_id.clone(), db_object_symbol.clone()];
@@ -879,7 +879,6 @@ pub fn make_gene_association_lines(config: &Config,
                                    write_mode: GpadGafWriteMode,
                                    export_comments: ExportCommentsMode,
                                    gene_details: &GeneDetails,
-                                   transcripts: &UniquenameTranscriptMap,
                                    cv_name: &FlexStr,
                                    lines: &mut Vec<Vec<String>>) {
     let database_name = config.database_name.to_std_string();
@@ -898,7 +897,7 @@ pub fn make_gene_association_lines(config: &Config,
                 let Some(line_parts) = make_gaf_line(config, data_lookup, write_mode,
                                                      export_comments, gene_details,
                                                      annotation_detail.as_ref(), go_id,
-                                                     is_not, transcripts, cv_name)
+                                                     is_not, cv_name)
                 else {
                     continue;
                 };
@@ -921,7 +920,7 @@ pub fn make_gene_association_lines(config: &Config,
     }
 
     let (db_object_id, db_object_symbol, db_object_synonyms, db_object_name, db_object_type) =
-        get_db_values(gene_details, transcripts);
+        get_db_values(gene_details);
 
     if db_object_type != "protein" {
         return;
@@ -969,7 +968,6 @@ pub fn write_go_annotation_format(tsv_writer: &mut dyn io::Write,
                                   write_mode: GpadGafWriteMode,
                                   export_comments: ExportCommentsMode,
                                   gene_details: &GeneDetails,
-                                  transcripts: &UniquenameTranscriptMap,
                                   cv_name: &FlexStr)
                                   -> Result<(), io::Error>
 {
@@ -981,7 +979,7 @@ pub fn write_go_annotation_format(tsv_writer: &mut dyn io::Write,
     let mut lines = vec![];
 
     make_gene_association_lines(config, data_lookup, write_mode, export_comments,
-                                gene_details, transcripts, cv_name, &mut lines);
+                                gene_details, cv_name, &mut lines);
 
     write_tsv_lines(tsv_writer, &lines)?;
 

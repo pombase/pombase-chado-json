@@ -4,6 +4,8 @@ use std::num::NonZeroUsize;
 use flexstr::{SharedStr as FlexStr, ToFlex, shared_str as flex_str};
 use itertools::{Either, Itertools};
 
+use crate::bio::ExportCommentsMode;
+use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::data_types::{ActiveSite, AssignedByPeptideRange, BasicProteinFeature, BetaStrand,
                         BindingSite, Chain, ChromosomeLocation, DeletionViability,
                         DisulfideBond, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry,
@@ -15,6 +17,8 @@ use crate::types::{GeneName, GeneUniquename, ProteinUniquename, RnaUrsId, TermId
                    TranscriptUniquename, Evidence, ReferenceUniquename};
 
 use crate::api_data::APIData;
+use crate::data_types::DataLookup;
+use crate::web::config::Config;
 
 pub struct RestExec {
 }
@@ -76,6 +80,41 @@ impl RestExec {
             found,
             missing,
         }
+    }
+
+    // return None if the termid doesn't exist or doesn't have annotations
+    pub async fn go_annotation_by_termid(&self, config: &Config,
+                                         api_data: &APIData, ancestor_termid: &str)
+        -> Option<String>
+    {
+        let ancestor_termid = ancestor_termid.to_flex();
+        let mut lines = vec![];
+
+        let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
+
+        for (cv_name, term_annotations) in ancestor_term_details.cv_annotations.iter() {
+            for term_annotation in term_annotations {
+                let termid = &term_annotation.term;
+                let is_not = term_annotation.is_not;
+
+                for annotation_id in &term_annotation.annotations {
+                    let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
+                    let annotation_details = annotation_details.as_ref();
+                    let gene_uniquename = &annotation_details.genes[0];
+                    let gene_details = api_data.get_gene(gene_uniquename).unwrap();
+                    let gene_details = gene_details.as_ref();
+
+                    if let Some(line) =
+                        make_gaf_line(config, api_data, GpadGafWriteMode::StandardGaf,
+                                      ExportCommentsMode::NoExport, gene_details,
+                                      annotation_details, termid, is_not, cv_name) {
+                        lines.push(line);
+                    }
+                }
+            }
+        }
+
+        Some(lines.iter().map(|line| line.join("\t")).join("\n"))
     }
 }
 

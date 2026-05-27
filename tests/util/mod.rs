@@ -119,7 +119,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         gocams: vec![],
         home_gocams: HashSet::new(),
         flags: HashSet::new(),
-        feature_type: "gene".to_shared_str(),
+        feature_type: "mRNA gene".to_shared_str(),
         feature_so_termid: "SO:0000704".to_shared_str(),
         transcript_so_termid: Some("SO:0001217".to_shared_str()),
         characterisation_status: None,

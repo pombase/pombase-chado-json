@@ -1108,7 +1108,6 @@ impl Query {
                                                         GpadGafWriteMode::PomBaseGaf,
                                                         ExportCommentsMode::NoExport,
                                                         gene_details.as_ref(),
-                                                        &api_data.get_maps().transcripts,
                                                         aspect);
 
                 if result.is_err() {
