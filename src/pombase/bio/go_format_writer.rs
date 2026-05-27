@@ -12,13 +12,14 @@ use flexstr::{SharedStr as FlexStr, shared_str as flex_str, shared_fmt as flex_f
 use regex::Regex;
 
 use crate::bio::{ExportCommentsMode, get_submitter_comment, write_parquet};
+use crate::types::TermId;
 use crate::utils::join;
 use crate::web::config::*;
 use crate::data_types::*;
 
 use crate::bio::util::make_extension_string;
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, Copy, PartialEq, Eq)]
 pub enum GpadGafWriteMode {
   PomBaseGaf,
   ExtendedPomBaseGaf,
@@ -665,16 +666,9 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
     Ok(())
 }
 
-#[allow(clippy::too_many_arguments)]
-pub fn make_gene_association_lines(config: &Config,
-                                   data_lookup: &dyn DataLookup,
-                                   write_mode: GpadGafWriteMode,
-                                   export_comments: ExportCommentsMode,
-                                   gene_details: &GeneDetails,
-                                   transcripts: &UniquenameTranscriptMap,
-                                   cv_name: &FlexStr,
-                                   lines: &mut Vec<Vec<String>>) {
-    let database_name = config.database_name.to_std_string();
+fn get_db_values(gene_details: &GeneDetails, transcripts: &UniquenameTranscriptMap)
+    -> (String, String, Vec<String>, String, String)
+{
     let db_object_id = gene_details.uniquename.to_std_string();
     let db_object_symbol =
         if let Some(ref gene_name) = gene_details.name {
@@ -689,7 +683,6 @@ pub fn make_gene_association_lines(config: &Config,
         .map(|synonym| synonym.name.to_string())
         .collect::<Vec<String>>();
     db_object_synonyms.sort();
-    let db_object_synonyms_string = db_object_synonyms.join("|");
 
     let db_object_name =
         if let Some(ref product) = gene_details.product {
@@ -713,167 +706,205 @@ pub fn make_gene_association_lines(config: &Config,
                 transcript_type.to_owned()
             }
         } else {
-            return;
+            panic!();
         };
 
-    let single_letter_aspect = abbreviation_of_go_aspect(cv_name).to_owned();
+    (db_object_id, db_object_symbol, db_object_synonyms, db_object_name, db_object_type)
+}
+
+// make and return a single GAF line for an annotation (a OntAnnotationDetail)
+#[allow(clippy::too_many_arguments)]
+pub fn make_gaf_line(config: &Config,
+                     data_lookup: &dyn DataLookup,
+                     write_mode: GpadGafWriteMode,
+                     export_comments: ExportCommentsMode,
+                     gene_details: &GeneDetails,
+                     annotation_detail: &OntAnnotationDetail,
+                     go_id: &TermId,
+                     is_not: bool,
+                     transcripts: &UniquenameTranscriptMap,
+                     cv_name: &FlexStr)
+   -> Option<Vec<String>>
+{
+    if let Some(ref reference) = annotation_detail.reference
+        && config.file_exports.exclude_references.contains(reference) {
+            return None;
+        }
+
+    if export_comments == ExportCommentsMode::Export &&
+        let Some(ref reference_uniquename) = annotation_detail.reference {
+            let reference_details = data_lookup.get_reference(reference_uniquename)?;
+            if !reference_details.is_canto_curated() {
+                return None;
+            }
+        }
+
+    let term_details = data_lookup.get_term(go_id)?;
+
+    let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf ||
+        write_mode == GpadGafWriteMode::ExtendedPomBaseGaf
+    {
+        let mut qualifier_parts = vec![];
+        if is_not {
+            qualifier_parts.push("NOT");
+        };
+
+        qualifier_parts.extend(annotation_detail.qualifiers.iter()
+                               .map(|s| s.as_str()));
+        qualifier_parts.sort();
+
+        qualifier_parts.join("|")
+    } else {
+        let relation_name =
+            get_gpad_relation_name_of(data_lookup,
+                                      &term_details, annotation_detail)
+            .to_string();
+
+        if is_not {
+            format!("NOT|{}", relation_name)
+        } else {
+            relation_name
+        }
+    };
+
+    let database_name = config.database_name.to_std_string();
+
+    let assigned_by =
+        if let Some(ref assigned_by) = annotation_detail.assigned_by {
+            assigned_by.to_std_string()
+        } else {
+            database_name.clone()
+        };
+
+    let with_iter = annotation_detail.withs.iter();
+    let from_iter = annotation_detail.froms.iter();
+    let mut with_or_from_parts =
+        with_iter.chain(from_iter).map(|s| {
+            let with_from_id: FlexStr = s.id();
+            if with_from_id.contains(':') {
+                with_from_id
+            } else {
+                flex_fmt!("{}:{}", database_name, with_from_id)
+            }
+        })
+        .collect::<Vec<FlexStr>>();
+    with_or_from_parts.sort_unstable();
+    let with_or_from = itertools::join(&with_or_from_parts,",");
+
+    let evidence_code =
+        annotation_detail.evidence
+        .as_ref()
+        .map(|s| s.as_str())
+        .unwrap_or_else(|| "")
+        .to_string();
+
+    let date =
+        if let Some(ref raw_date) = annotation_detail.date {
+            raw_date.replace('-', "").to_string()
+        } else {
+            println!("WARNING while writing GAF file: \
+                      date missing from annotation {}", annotation_detail.id);
+            return None;
+        };
+
+    let annotation_extensions =
+        make_extension_string(config, data_lookup,
+                              &write_mode, &annotation_detail.extension);
+
+    let gene_product_form_id =
+        if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id
+    {
+        gene_product_form_id.to_std_string()
+    } else {
+        "".to_owned()
+    };
+
+    let taxonid = format!("taxon:{}", gene_details.taxonid);
+
+    let (db_object_id, db_object_symbol, db_object_synonyms, db_object_name, db_object_type) =
+        get_db_values(gene_details, transcripts);
+
+    let mut line_parts: Vec<String> =
+        vec![database_name.clone(), db_object_id.clone(), db_object_symbol.clone()];
+
+    if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
+        if let Some(ref product) = gene_details.product {
+            line_parts.push(product.to_std_string())
+        } else {
+            line_parts.push("".to_owned());
+        }
+    }
+
+    line_parts.push(qualifiers);
+    line_parts.push(go_id.to_std_string());
+    if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
+        line_parts.push(term_details.name.to_std_string());
+    }
+
+    if let Some(ref reference_uniquename) =
+        annotation_detail.reference {
+            line_parts.push(reference_uniquename.to_std_string());
+        } else {
+            line_parts.push("".to_owned());
+        };
+
+    let db_object_synonyms_string = db_object_synonyms.join("|");
+
+    line_parts.push(evidence_code);
+    line_parts.push(with_or_from);
+    line_parts.push(abbreviation_of_go_aspect(cv_name).to_owned());
+    line_parts.push(db_object_name.clone());
+    line_parts.push(db_object_synonyms_string.clone());
+    line_parts.push(db_object_type.clone());
+    line_parts.push(taxonid);
+    line_parts.push(date);
+    line_parts.push(assigned_by);
+    line_parts.push(annotation_extensions);
+    line_parts.push(gene_product_form_id);
+
+    if export_comments == ExportCommentsMode::Export {
+        if let Some(ref tmp_submitter_comment) = get_submitter_comment(annotation_detail) {
+            line_parts.push(tmp_submitter_comment.to_owned());
+        } else {
+            line_parts.push("".to_owned());
+        }
+    }
+
+    Some(line_parts)
+}
+
+#[allow(clippy::too_many_arguments)]
+pub fn make_gene_association_lines(config: &Config,
+                                   data_lookup: &dyn DataLookup,
+                                   write_mode: GpadGafWriteMode,
+                                   export_comments: ExportCommentsMode,
+                                   gene_details: &GeneDetails,
+                                   transcripts: &UniquenameTranscriptMap,
+                                   cv_name: &FlexStr,
+                                   lines: &mut Vec<Vec<String>>) {
+    let database_name = config.database_name.to_std_string();
 
     let mut positive_annotation_count = 0;
 
     if let Some(term_annotations) = gene_details.cv_annotations.get(cv_name) {
         for term_annotation in term_annotations {
-            let go_term = data_lookup.get_term(&term_annotation.term)
-                .unwrap_or_else(|| panic!("failed to find term summary for {}",
-                                          term_annotation.term));
+            let go_id = &term_annotation.term;
+            let is_not = term_annotation.is_not;
 
             for annotation_id in &term_annotation.annotations {
                 let annotation_detail = data_lookup.get_annotation_detail(*annotation_id)
                     .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
-                if let Some(ref reference) = annotation_detail.reference
-                    && config.file_exports.exclude_references.contains(reference) {
-                        continue;
-                    }
 
-                if export_comments == ExportCommentsMode::Export &&
-                    let Some(ref reference_uniquename) = annotation_detail.reference {
-                        if let Some(reference_details) = data_lookup.get_reference(reference_uniquename) {
-                            if !reference_details.is_canto_curated() {
-                                continue;
-                            }
-                        } else {
-                            continue;
-                        }
-                    }
-
-                let go_id = term_annotation.term.to_std_string();
-
-                let term_details_arc = data_lookup.get_term(&term_annotation.term);
-                let term_details_ref = term_details_arc.as_deref().unwrap().to_owned();
-
-                let qualifiers = if write_mode == GpadGafWriteMode::PomBaseGaf ||
-                    write_mode == GpadGafWriteMode::ExtendedPomBaseGaf
-                {
-                    let mut qualifier_parts = vec![];
-                    if term_annotation.is_not {
-                        qualifier_parts.push("NOT");
-                    };
-
-                    qualifier_parts.extend(annotation_detail.qualifiers.iter()
-                                           .map(|s| s.as_str()));
-                    qualifier_parts.sort();
-
-                    qualifier_parts.join("|")
-                } else {
-                    let relation_name =
-                        get_gpad_relation_name_of(data_lookup,
-                                                  &go_term, annotation_detail.as_ref())
-                        .to_string();
-
-                    if term_annotation.is_not {
-                        format!("NOT|{}", relation_name)
-                    } else {
-                        relation_name
-                    }
+                let Some(line_parts) = make_gaf_line(config, data_lookup, write_mode,
+                                                     export_comments, gene_details,
+                                                     annotation_detail.as_ref(), go_id,
+                                                     is_not, transcripts, cv_name)
+                else {
+                    continue;
                 };
-
-                let assigned_by =
-                    if let Some(ref assigned_by) = annotation_detail.assigned_by {
-                        assigned_by.to_std_string()
-                    } else {
-                        database_name.clone()
-                    };
-
-                let with_iter = annotation_detail.withs.iter();
-                let from_iter = annotation_detail.froms.iter();
-                let mut with_or_from_parts =
-                    with_iter.chain(from_iter).map(|s| {
-                        let with_from_id: FlexStr = s.id();
-                        if with_from_id.contains(':') {
-                            with_from_id
-                        } else {
-                            flex_fmt!("{}:{}", database_name, with_from_id)
-                        }
-                    })
-                    .collect::<Vec<FlexStr>>();
-                with_or_from_parts.sort_unstable();
-                let with_or_from = itertools::join(&with_or_from_parts,",");
-
-                let evidence_code =
-                    annotation_detail.evidence
-                    .as_ref()
-                    .map(|s| s.as_str())
-                    .unwrap_or_else(|| "")
-                    .to_string();
-
-                let date =
-                    if let Some(ref raw_date) = annotation_detail.date {
-                        raw_date.replace('-', "").to_string()
-                    } else {
-                        println!("WARNING while writing GPAD file: \
-                                  date missing from annotation {}", annotation_id);
-                        continue;
-                    };
-
-                let annotation_extensions =
-                    make_extension_string(config, data_lookup,
-                                          &write_mode, &annotation_detail.extension);
-
-                let gene_product_form_id =
-                    if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id
-                {
-                    gene_product_form_id.to_std_string()
-                } else {
-                    "".to_owned()
-                };
-
-                let taxonid = format!("taxon:{}", gene_details.taxonid);
 
                 if !term_annotation.is_not {
                     positive_annotation_count += 1;
-                }
-
-                let mut line_parts: Vec<String> =
-                    vec![database_name.clone(),
-                         db_object_id.clone(),
-                         db_object_symbol.clone()];
-
-                if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
-                    if let Some(ref product) = gene_details.product {
-                        line_parts.push(product.to_std_string())
-                    } else {
-                        line_parts.push("".to_owned());
-                    }
-                }
-
-                line_parts.push(qualifiers);
-                line_parts.push(go_id);
-                if write_mode == GpadGafWriteMode::ExtendedPomBaseGaf {
-                    line_parts.push(term_details_ref.name.to_std_string());
-                }
-
-                if let Some(ref reference_uniquename) =
-                    annotation_detail.reference {
-                        line_parts.push(reference_uniquename.to_std_string());
-                    } else {
-                        line_parts.push("".to_owned());
-                    };
-                line_parts.push(evidence_code);
-                line_parts.push(with_or_from);
-                line_parts.push(single_letter_aspect.clone());
-                line_parts.push(db_object_name.clone());
-                line_parts.push(db_object_synonyms_string.clone());
-                line_parts.push(db_object_type.clone());
-                line_parts.push(taxonid);
-                line_parts.push(date);
-                line_parts.push(assigned_by);
-                line_parts.push(annotation_extensions);
-                line_parts.push(gene_product_form_id);
-                if export_comments == ExportCommentsMode::Export {
-                    if let Some(ref tmp_submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
-                        line_parts.push(tmp_submitter_comment.to_owned());
-                    } else {
-                        line_parts.push("".to_owned());
-                    }
                 }
 
                 lines.push(line_parts);
@@ -881,40 +912,54 @@ pub fn make_gene_association_lines(config: &Config,
         }
     }
 
-    if positive_annotation_count == 0 && config.file_exports.include_nd_lines &&
-        write_mode == GpadGafWriteMode::StandardGaf && db_object_type == "protein" &&
-        export_comments == ExportCommentsMode::NoExport
+
+    if positive_annotation_count != 0 || !config.file_exports.include_nd_lines ||
+        write_mode != GpadGafWriteMode::StandardGaf ||
+        export_comments != ExportCommentsMode::NoExport
     {
-        let local: DateTime<Local> = Local::now();
-        let date = local.format("%Y%m%d").to_string();
-        let relation_name =
-            get_gpad_nd_relation_name_of(data_lookup, cv_name).to_std_string();
-        let go_aspect_termid =
-            config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap().to_std_string();
-        let nd_ref = config.file_exports.nd_reference.clone();
-        let taxonid = format!("taxon:{}", gene_details.taxonid);
-        let assigned_by = database_name.clone();
-
-        let line_parts = vec![database_name.clone(),
-                              db_object_id,
-                              db_object_symbol,
-                              relation_name,
-                              go_aspect_termid,
-                              nd_ref,
-                              "ND".to_owned(),
-                              "".to_owned(),
-                              single_letter_aspect,
-                              db_object_name,
-                              db_object_synonyms_string,
-                              db_object_type,
-                              taxonid,
-                              date,
-                              assigned_by,
-                              "".to_owned(),
-                              "".to_owned()];
-
-        lines.push(line_parts);
+        return;
     }
+
+    let (db_object_id, db_object_symbol, db_object_synonyms, db_object_name, db_object_type) =
+        get_db_values(gene_details, transcripts);
+
+    if db_object_type != "protein" {
+        return;
+    }
+
+    let local: DateTime<Local> = Local::now();
+    let date = local.format("%Y%m%d").to_string();
+    let relation_name =
+        get_gpad_nd_relation_name_of(data_lookup, cv_name).to_std_string();
+    let go_aspect_termid =
+        config.file_exports.gpad_gpi.go_aspect_terms.get(cv_name).unwrap().to_std_string();
+    let nd_ref = config.file_exports.nd_reference.clone();
+    let taxonid = format!("taxon:{}", gene_details.taxonid);
+    let assigned_by = database_name.clone();
+
+    let single_letter_aspect = abbreviation_of_go_aspect(cv_name).to_owned();
+
+    let db_object_synonyms_string = db_object_synonyms.join("|");
+
+    let nd_line_parts = vec![database_name.clone(),
+                             db_object_id,
+                             db_object_symbol,
+                             relation_name,
+                             go_aspect_termid,
+                             nd_ref,
+                             "ND".to_owned(),
+                             "".to_owned(),
+                             single_letter_aspect,
+                             db_object_name,
+                             db_object_synonyms_string,
+                             db_object_type,
+                             taxonid,
+                             date,
+                             assigned_by,
+                             "".to_owned(),
+                             "".to_owned()];
+
+    lines.push(nd_line_parts);
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -926,7 +971,7 @@ pub fn write_go_annotation_format(tsv_writer: &mut dyn io::Write,
                                   gene_details: &GeneDetails,
                                   transcripts: &UniquenameTranscriptMap,
                                   cv_name: &FlexStr)
-         -> Result<(), io::Error>
+                                  -> Result<(), io::Error>
 {
     if !GO_ASPECT_NAMES.contains(cv_name) {
         return Err(io::Error::new(io::ErrorKind::InvalidInput,
