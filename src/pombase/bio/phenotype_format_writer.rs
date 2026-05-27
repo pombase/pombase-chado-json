@@ -38,15 +38,15 @@ pub fn make_phenotype_line_parts(config: &Config,
                                  termid: &TermId,
                                  annotation_detail: &OntAnnotationDetail,
                                  genotype_details: &GenotypeDetails,
-                                 load_org_taxonid: u32,
                                  evidence_type: FypoEvidenceType)
     -> Option<Vec<String>>
 {
+    let load_org_taxonid = config.load_organism_taxonid?;
+
     let phaf_parental_strain = config.file_exports.phaf_parental_strain.get(&load_org_taxonid)
         .unwrap_or_else(|| panic!("no phaf_parental_strain configured for {}", load_org_taxonid));
 
     let database_name = &config.database_name;
-
 
     // only export single locus genotypes that are haploid or homozygous diploid
     let expressed_allele = get_expressed_allele(genotype_details)?;
@@ -215,7 +215,7 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                     let Some(mut line_parts) =
                         make_phenotype_line_parts(config, data_lookup, termid,
                                                   annotation_detail.as_ref(),
-                                                  genotype_details, load_org_taxonid,
+                                                  genotype_details,
                                                   evidence_type)
                     else {
                         continue;
