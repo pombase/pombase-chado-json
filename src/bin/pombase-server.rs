@@ -1071,10 +1071,12 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>, Path
     if let Some(gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
                                                                    &termid).await
     {
-        (StatusCode::OK,
-         [(axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
-         gaf).into_response()
-
+        let filename = format!("go_annotation_for_{}.gaf.tsv", termid.replace(":", "_"));
+        let content_disposition =
+            format!(r#"attachment; filename="{}""#, filename);
+        let headers = [(axum::http::header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                       (axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")];
+        (StatusCode::OK, headers, gaf).into_response()
     } else {
         StatusCode::NOT_FOUND.into_response()
     }
@@ -1087,9 +1089,12 @@ async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>, Path(ter
                                                                            all_state.get_api_data(),
                                                                            &termid).await
     {
-        (StatusCode::OK,
-         [(axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
-         phaf).into_response()
+       let filename = format!("phenotype_annotation_for_{}.phaf.tsv", termid.replace(":", "_"));
+        let content_disposition =
+            format!(r#"attachment; filename="{}""#, filename);
+        let headers = [(axum::http::header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                       (axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")];
+        (StatusCode::OK, headers, phaf).into_response()
     } else {
         StatusCode::NOT_FOUND.into_response()
     }
