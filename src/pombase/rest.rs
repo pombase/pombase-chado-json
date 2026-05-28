@@ -132,7 +132,9 @@ impl RestExec {
         for (cv_name, term_annotations) in ancestor_term_details.cv_annotations.iter() {
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
-                let is_not = term_annotation.is_not;
+                if term_annotation.is_not {
+                    continue;
+                }
 
                 for annotation_id in &term_annotation.annotations {
                     let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
@@ -144,7 +146,7 @@ impl RestExec {
                     if let Some(line) =
                         make_gaf_line(config, api_data, GpadGafWriteMode::StandardGaf,
                                       ExportCommentsMode::NoExport, gene_details,
-                                      annotation_details, termid, is_not, cv_name) {
+                                      annotation_details, termid, false, cv_name) {
                         lines.push(line);
                     }
                 }
