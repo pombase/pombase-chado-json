@@ -1071,7 +1071,10 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>, Path
     if let Some(gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
                                                                    &termid).await
     {
-        gaf.into_response()
+        (StatusCode::OK,
+         [(axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
+         gaf).into_response()
+
     } else {
         StatusCode::NOT_FOUND.into_response()
     }
@@ -1084,7 +1087,9 @@ async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>, Path(ter
                                                                            all_state.get_api_data(),
                                                                            &termid).await
     {
-        phaf.into_response()
+        (StatusCode::OK,
+         [(axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
+         phaf).into_response()
     } else {
         StatusCode::NOT_FOUND.into_response()
     }
