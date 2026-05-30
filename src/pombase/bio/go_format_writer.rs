@@ -24,6 +24,7 @@ pub enum GpadGafWriteMode {
   PomBaseGaf,
   ExtendedPomBaseGaf,
   StandardGaf,
+  GafForRest, // GAF return by REST API
   Gpad,
 }
 
@@ -726,8 +727,11 @@ pub fn make_gaf_line(config: &Config,
         return None;
     }
 
-    if let Some(ref reference) = annotation_detail.reference
+    if write_mode != GpadGafWriteMode::GafForRest &&
+        let Some(ref reference) = annotation_detail.reference
         && config.file_exports.exclude_references.contains(reference) {
+            // for JaponicusDB we don't include GO_REF:0000107 in GAF/GPAD files for export to the
+            // GO consortium
             return None;
         }
 

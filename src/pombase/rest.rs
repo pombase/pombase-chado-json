@@ -144,7 +144,7 @@ impl RestExec {
                     let gene_details = gene_details.as_ref();
 
                     if let Some(line) =
-                        make_gaf_line(config, api_data, GpadGafWriteMode::StandardGaf,
+                        make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
                                       ExportCommentsMode::NoExport, gene_details,
                                       annotation_details, termid, false, cv_name) {
                         lines.push(line);
