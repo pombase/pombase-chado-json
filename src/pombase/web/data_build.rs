@@ -5511,7 +5511,7 @@ phenotypes, so just the first part of this extension will be used:
                     let interactor = APIInteractor {
                         interaction_type: InteractionType::Physical,
                         interactor_uniquename,
-                        throughput: interaction_annotation.throughput.clone(),
+                        throughput: interaction_annotation.throughput,
                         evidence_type: interaction_annotation.evidence.clone(),
                     };
                     interactors.insert(interactor);
@@ -5527,7 +5527,7 @@ phenotypes, so just the first part of this extension will be used:
                         let interactor = APIInteractor {
                             interaction_type: InteractionType::Genetic,
                             interactor_uniquename: interactor_uniquename.clone(),
-                            throughput: annotation.throughput.clone(),
+                            throughput: annotation.throughput,
                             evidence_type: interaction_key.interaction_type.clone(),
                         };
                         interactors.insert(interactor);
@@ -8048,7 +8048,7 @@ phenotypes, so just the first part of this extension will be used:
                     interactor_uniquename: gene_b_uniquename,
                     evidence: interaction_type,
                     reference_uniquename: interaction_detail.reference_uniquename.clone(),
-                    throughput: interaction_detail.throughput.clone(),
+                    throughput: interaction_detail.throughput,
                     interaction_note: interaction_detail.interaction_note.clone(),
                     source_database: interaction_detail.source_database.clone(),
                     annotation_date: interaction_detail.annotation_date.clone(),

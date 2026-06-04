@@ -99,7 +99,7 @@ impl RestExec {
         for term_annotations in ancestor_term_details.cv_annotations.values() {
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
-                let term_name = &api_data.get_term(&termid).unwrap().name;
+                let term_name = &api_data.get_term(termid).unwrap().name;
 
                 for annotation_id in &term_annotation.annotations {
                     let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
