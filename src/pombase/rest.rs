@@ -106,7 +106,7 @@ impl RestExec {
                     let annotation_details = annotation_details.as_ref();
                     let genotype_uniquename = annotation_details.genotype.as_ref().unwrap();
                     let genotype_details =
-                        api_data.get_genotype_details(genotype_uniquename).unwrap();
+                        api_data.get_genotype(genotype_uniquename).unwrap();
 
                     match output_type {
                         PublicAPIPhenotypeOutputType::PHAF => {
@@ -120,7 +120,8 @@ impl RestExec {
                         },
                         PublicAPIPhenotypeOutputType::JSON => {
                             let phenotype_annotation =
-                                make_phenotype_annotation(termid.clone(), term_name.clone(),
+                                make_phenotype_annotation(api_data,
+                                                          termid.clone(), term_name.clone(),
                                                           annotation_details, &genotype_details);
                             annotations.push(phenotype_annotation);
                         }
@@ -184,13 +185,14 @@ impl Default for RestExec {
     }
 }
 
-fn make_phenotype_annotation(termid: TermId, term_name: TermName,
+fn make_phenotype_annotation(api_data: &APIData,
+                             termid: TermId, term_name: TermName,
                              annotation_details: &OntAnnotationDetail,
                              genotype_details: &GenotypeDetails)
     -> PublicAPIPhenotypeAnnotation
  {
         PublicAPIPhenotypeAnnotation {
-             genotype: genotype_details.into(),
+             genotype: make_genotype(api_data, genotype_details),
              termid,
              term_name,
              conditions: annotation_details.condition_details.clone(),
@@ -531,11 +533,11 @@ pub struct PublicAPIAllele {
     pub synonyms: Vec<SynonymDetails>,
 }
 
-fn make_allele(gd: &GenotypeDetails, allele_uniquename: &AlleleUniquename)
+fn make_allele(api_data: &APIData, allele_uniquename: &AlleleUniquename)
     -> PublicAPIAllele
 {
-    let allele = gd.alleles_by_uniquename.get(allele_uniquename).unwrap();
-    let gene = gd.genes_by_uniquename.get(&allele.gene_uniquename).unwrap().as_ref().unwrap();
+    let allele = api_data.get_allele(allele_uniquename).unwrap();
+    let gene = &allele.gene;
 
     PublicAPIAllele {
         name: allele.name.clone(),
@@ -553,13 +555,13 @@ pub struct PublicAPIExpressedAllele {
     pub allele: PublicAPIAllele,
 }
 
-fn make_expressed_allele(gd: &GenotypeDetails, ea: &ExpressedAllele)
+fn make_expressed_allele(api_data: &APIData, ea: &ExpressedAllele)
     -> PublicAPIExpressedAllele
 {
     PublicAPIExpressedAllele {
         expression: ea.expression.clone(),
         promoter_gene: ea.promoter_gene.clone(),
-        allele: make_allele(gd, &ea.allele_uniquename),
+        allele: make_allele(api_data, &ea.allele_uniquename),
     }
 }
 
@@ -568,11 +570,11 @@ pub struct PublicAPIGenotypeLocus {
     pub expressed_alleles: Vec<PublicAPIExpressedAllele>,
 }
 
-fn make_locus(gd: &GenotypeDetails, locus: &GenotypeLocus)
+fn make_locus(api_data: &APIData, locus: &GenotypeLocus)
     -> PublicAPIGenotypeLocus
 {
    let expressed_alleles =
-       locus.expressed_alleles.iter().map(|ea| make_expressed_allele(gd, ea)).collect();
+       locus.expressed_alleles.iter().map(|ea| make_expressed_allele(api_data, ea)).collect();
    PublicAPIGenotypeLocus {
        expressed_alleles,
    }
@@ -588,14 +590,14 @@ pub struct PublicAPIGenotype {
     pub loci: Vec<PublicAPIGenotypeLocus>,
 }
 
-impl From<&GenotypeDetails> for PublicAPIGenotype {
-    fn from(gd: &GenotypeDetails) -> Self {
-        PublicAPIGenotype {
-            display_uniquename: gd.display_uniquename.clone(),
-            display_name: gd.display_name.clone(),
-            name: gd.name.clone(),
-            loci: gd.loci.iter().map(|l| make_locus(gd, l)).collect(),
-        }
+fn make_genotype(api_data: &APIData, gd: &GenotypeDetails)
+    -> PublicAPIGenotype
+{
+    PublicAPIGenotype {
+        display_uniquename: gd.display_uniquename.clone(),
+        display_name: gd.display_name.clone(),
+        name: gd.name.clone(),
+        loci: gd.loci.iter().map(|l| make_locus(api_data, l)).collect(),
     }
 }
 
