@@ -26,7 +26,7 @@ use rand::seq::IteratorRandom;
 use pombase_gocam::GoCamError;
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
-                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, web::config::{PanelConfig, Testimonial}};
+                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, rest::PublicAPIPhenotypeOutputType, web::config::{PanelConfig, Testimonial}};
 
 use rusqlite::Connection;
 
@@ -1083,12 +1083,13 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>, Path
     }
 }
 
-async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>, Path(termid): Path<String>)
+async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
+                                Path((termid, output_type)): Path<(String, PublicAPIPhenotypeOutputType)>)
     -> impl IntoResponse
 {
     if let Some(mut phaf) = all_state.rest_exec.phenotype_annotation_by_termid(&all_state.config,
-                                                                           all_state.get_api_data(),
-                                                                           &termid).await
+                                                                               all_state.get_api_data(),
+                                                                               &termid, output_type).await
     {
         phaf += "\n";
         let filename = format!("phenotype_annotation_for_{}.phaf.tsv", termid.replace(":", "_"));
@@ -1360,7 +1361,7 @@ async fn main() {
         .route("/rest/genes/by_uniprot_accession/{ids}", get(rest_genes_by_uniprot_accesssion_get))
         .route("/rest/genes/by_uniprot_accession", post(rest_genes_by_uniprot_accesssion_post))
         .route("/rest/go_annotation/by_term_id/{id}", get(rest_go_annotation_by_term))
-        .route("/rest/phenotype_annotation/by_term_id/{id}", get(rest_phenotype_by_term))
+        .route("/rest/phenotype_annotation/by_term_id/{id}/{output_type}", get(rest_phenotype_by_term))
         .route("/ping", get(ping))
         .fallback(not_found)
         .with_state(Arc::new(all_state))

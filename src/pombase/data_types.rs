@@ -372,7 +372,7 @@ pub enum Ploidiness {
     Any,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, PartialEq, Eq)]
 pub enum Throughput {
 #[serde(rename = "high")]
     HighThroughput,
@@ -1981,7 +1981,7 @@ impl AnnotationContainer for GenotypeDetails {
     }
 }
 
-type Expression = FlexStr;
+pub type Expression = FlexStr;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq, Hash)]
 pub struct ExpressedAllele {
