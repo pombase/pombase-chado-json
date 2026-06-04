@@ -3645,7 +3645,6 @@ phenotypes, so just the first part of this extension will be used:
                         },
                         "rhea_reaction_id" => {
                             rhea_reaction_ids.insert(cvtermprop.value.clone());
-                            ()
                         },
                         _ => (),
                     }
