@@ -411,6 +411,7 @@ pub fn make_test_term_details(id: &str, name: &str, cv_name: &str) -> TermDetail
         xrefs: HashMap::new(),
         pombase_gene_id: None,
         gocams: HashSet::new(),
+        rhea_reaction_ids: HashSet::new(),
     }
 }
 

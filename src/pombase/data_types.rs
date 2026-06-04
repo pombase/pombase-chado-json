@@ -57,6 +57,8 @@ pub type ProteinComplexMap = HashMap<ProteinComplexUniquename, ProteinComplexDet
 
 pub type GoCamSummaryMap = HashMap<GoCamId, GoCamSummary>;
 
+pub type RheaId = FlexStr;
+
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -2310,6 +2312,10 @@ pub struct TermDetails {
     pub pombase_gene_id: Option<FlexStr>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub gocams: HashSet<GoCamIdAndTitle>,
+
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    // for ChEBI terms, the IDs of reactions containing this chemical:
+    pub rhea_reaction_ids: HashSet<RheaId>,
 }
 
 impl Container for TermDetails {

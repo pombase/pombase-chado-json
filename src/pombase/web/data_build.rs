@@ -3634,12 +3634,20 @@ phenotypes, so just the first part of this extension will be used:
                 let annotation_feature_type = cv_config.feature_type.clone();
 
                 let mut pombase_gene_id = None;
+                let mut rhea_reaction_ids = HashSet::new();
                 for cvtermprop in cvterm.cvtermprops.borrow().iter() {
-                    if cvtermprop.prop_type.name.as_str() == "pombase_gene_id" {
-                        pombase_gene_id = Some(cvtermprop.value.clone());
-                        let gene_for_map = format!("{}:{}", self.config.database_name,
-                                                   cvtermprop.value);
-                        pro_term_to_gene.insert(cvterm.termid().to_string(), gene_for_map);
+                    match cvtermprop.prop_type.name.as_str() {
+                        "pombase_gene_id" => {
+                            pombase_gene_id = Some(cvtermprop.value.clone());
+                            let gene_for_map = format!("{}:{}", self.config.database_name,
+                                                       cvtermprop.value);
+                            pro_term_to_gene.insert(cvterm.termid().to_string(), gene_for_map);
+                        },
+                        "rhea_reaction_id" => {
+                            rhea_reaction_ids.insert(cvtermprop.value.clone());
+                            ()
+                        },
+                        _ => (),
                     }
                 }
 
@@ -3733,6 +3741,7 @@ phenotypes, so just the first part of this extension will be used:
                                       xrefs,
                                       pombase_gene_id,
                                       gocams: HashSet::new(),
+                                      rhea_reaction_ids,
                                   });
                 self.term_ids_by_name.insert(cvterm.name.clone(), cvterm.termid());
             }
