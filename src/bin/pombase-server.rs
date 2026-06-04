@@ -1069,7 +1069,7 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>, Path
     -> impl IntoResponse
 {
     if let Some(mut gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
-                                                                   &termid).await
+                                                                   &termid)
     {
         gaf += "\n";
         let filename = format!("go_annotation_for_{}.gaf.tsv", termid.replace(":", "_"));
@@ -1089,7 +1089,7 @@ async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
 {
     if let Some(mut phaf) = all_state.rest_exec.phenotype_annotation_by_termid(&all_state.config,
                                                                                all_state.get_api_data(),
-                                                                               &termid, output_type).await
+                                                                               &termid, output_type)
     {
         phaf += "\n";
         let filename = format!("phenotype_annotation_for_{}.phaf.tsv", termid.replace(":", "_"));

@@ -29,7 +29,7 @@ use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 use crate::bio::ExportCommentsMode;
 use crate::constants::*;
 
-use crate::rest::{PublicAPIGeneDetails, PublicAPITranscriptDetails};
+use crate::rest::{PublicAPIGeneDetails, PublicAPITranscriptDetails, RestExec};
 use crate::web::config::*;
 use crate::rnacentral::*;
 
@@ -1626,6 +1626,23 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_pub_api_json_phenotypes(&self, config: &Config, output_dir: &str)
+        -> Result<(), io::Error>
+    {
+        let file_name = format!("{}/public_api_phenotypes.json", output_dir);
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+
+        let rest_exec = RestExec::new();
+        let annotations =
+            rest_exec.phenotype_annotation_by_termid(config, self, FYPO_ROOT_TERM_ID,
+                                                     crate::rest::PublicAPIPhenotypeOutputType::JSON).unwrap();
+
+        writeln!(writer, "{}", annotations)?;
+
+        Ok(())
+    }
+
     pub fn write_apicuron_files(&self, config: &Config,
                                 references: &UniquenameReferenceMap,
                                 output_dir: &str)
@@ -1937,6 +1954,7 @@ impl WebData {
         self.write_annotation_subsets(config, &misc_path)?;
 
         self.write_pub_api_genes(config, &misc_path)?;
+        self.write_pub_api_json_phenotypes(config, &misc_path)?;
         self.write_apicuron_files(config, &self.references, &misc_path)?;
         self.write_ai_ml_files(&misc_path)?;
 

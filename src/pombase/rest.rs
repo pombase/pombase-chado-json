@@ -85,8 +85,8 @@ impl RestExec {
     }
 
     // return None if the termid doesn't exist or doesn't have annotations
-    pub async fn phenotype_annotation_by_termid(&self, config: &Config,
-                                                api_data: &APIData, ancestor_termid: &str,
+    pub fn phenotype_annotation_by_termid(&self, config: &Config,
+                                                api_data: &dyn DataLookup, ancestor_termid: &str,
                                                 output_type: PublicAPIPhenotypeOutputType)
         -> Option<String>
     {
@@ -139,8 +139,8 @@ impl RestExec {
 
 
     // return None if the termid doesn't exist or doesn't have annotations
-    pub async fn go_annotation_by_termid(&self, config: &Config,
-                                         api_data: &APIData, ancestor_termid: &str)
+    pub fn go_annotation_by_termid(&self, config: &Config,
+                                   api_data: &dyn DataLookup, ancestor_termid: &str)
         -> Option<String>
     {
         let ancestor_termid = ancestor_termid.to_flex();
@@ -185,7 +185,7 @@ impl Default for RestExec {
     }
 }
 
-fn make_phenotype_annotation(api_data: &APIData,
+fn make_phenotype_annotation(api_data: &dyn DataLookup,
                              termid: TermId, term_name: TermName,
                              annotation_details: &OntAnnotationDetail,
                              genotype_details: &GenotypeDetails)
@@ -533,7 +533,7 @@ pub struct PublicAPIAllele {
     pub synonyms: Vec<SynonymDetails>,
 }
 
-fn make_allele(api_data: &APIData, allele_uniquename: &AlleleUniquename)
+fn make_allele(api_data: &dyn DataLookup, allele_uniquename: &AlleleUniquename)
     -> PublicAPIAllele
 {
     let allele = api_data.get_allele(allele_uniquename).unwrap();
@@ -555,7 +555,7 @@ pub struct PublicAPIExpressedAllele {
     pub allele: PublicAPIAllele,
 }
 
-fn make_expressed_allele(api_data: &APIData, ea: &ExpressedAllele)
+fn make_expressed_allele(api_data: &dyn DataLookup, ea: &ExpressedAllele)
     -> PublicAPIExpressedAllele
 {
     PublicAPIExpressedAllele {
@@ -570,7 +570,7 @@ pub struct PublicAPIGenotypeLocus {
     pub expressed_alleles: Vec<PublicAPIExpressedAllele>,
 }
 
-fn make_locus(api_data: &APIData, locus: &GenotypeLocus)
+fn make_locus(api_data: &dyn DataLookup, locus: &GenotypeLocus)
     -> PublicAPIGenotypeLocus
 {
    let expressed_alleles =
@@ -590,7 +590,7 @@ pub struct PublicAPIGenotype {
     pub loci: Vec<PublicAPIGenotypeLocus>,
 }
 
-fn make_genotype(api_data: &APIData, gd: &GenotypeDetails)
+fn make_genotype(api_data: &dyn DataLookup, gd: &GenotypeDetails)
     -> PublicAPIGenotype
 {
     PublicAPIGenotype {
