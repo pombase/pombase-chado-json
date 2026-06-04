@@ -143,19 +143,22 @@ impl RestExec {
                     let gene_details = api_data.get_gene(gene_uniquename).unwrap();
                     let gene_details = gene_details.as_ref();
 
-                    if let Some(line) =
+                    let Some(line) =
                         make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
                                       ExportCommentsMode::NoExport, gene_details,
-                                      annotation_details, termid, false, cv_name) {
-                        lines.push(line);
-                    }
+                                      annotation_details, termid, false, cv_name)
+                    else {
+                        continue;
+                    };
+
+                    lines.push(line);
                 }
             }
         }
-
         Some(lines.iter().map(|line| line.join("\t")).join("\n"))
     }
 }
+
 
 impl Default for RestExec {
     fn default() -> Self {
