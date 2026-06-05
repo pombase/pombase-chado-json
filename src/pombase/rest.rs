@@ -273,11 +273,22 @@ fn make_phenotype_annotation(api_data: &dyn DataLookup,
                              genotype_details: &GenotypeDetails)
     -> PublicAPIPhenotypeAnnotation
 {
+    let conditions = annotation_details.condition_details.iter()
+        .map(|(termid, _)| {
+            let term_details = api_data.get_term(termid).unwrap();
+            let name = term_details.name.to_std_string();
+            PublicAPICondition {
+                termid: termid.clone(),
+                name: Some(name),
+            }
+        })
+        .collect();
+
     PublicAPIPhenotypeAnnotation {
         genotype: make_genotype(api_data, genotype_details),
         termid,
         term_name,
-        conditions: annotation_details.condition_details.clone(),
+        conditions,
         date: annotation_details.date.clone(),
         throughput: annotation_details.throughput,
         evidence: annotation_details.evidence.clone(),
@@ -684,12 +695,18 @@ fn make_genotype(api_data: &dyn DataLookup, gd: &GenotypeDetails)
     }
 }
 
+#[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub struct PublicAPICondition {
+    pub termid: FlexStr,
+    pub name: Option<String>,
+}
+
 #[derive(Serialize, Clone, Debug)]
 pub struct PublicAPIPhenotypeAnnotation {
     pub genotype: PublicAPIGenotype,
     pub termid: TermId,
     pub term_name: TermName,
-    pub conditions: BTreeSet<(TermId, Option<String>)>,
+    pub conditions: BTreeSet<PublicAPICondition>,
     pub date: Option<FlexStr>,
     pub throughput: Option<Throughput>,
     pub evidence: Option<Evidence>,
