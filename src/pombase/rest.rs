@@ -141,65 +141,69 @@ impl RestExec {
 
     // return None if the termid doesn't exist or doesn't have annotations
     pub fn go_annotation_by_termid(&self, config: &Config,
-                                   api_data: &dyn DataLookup, ancestor_termid: &str,
+                                   api_data: &dyn DataLookup,
+                                   ancestor_termids: &[&str],
                                    output_type: PublicAPIOutputType)
         -> Option<String>
     {
-        let ancestor_termid = ancestor_termid.to_flex();
         let mut lines = vec![];
         let mut annotations = vec![];
 
-        let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
+        for ancestor_termid in ancestor_termids {
+            let ancestor_termid = ancestor_termid.to_flex();
+            let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
 
-        for (cv_name, term_annotations) in ancestor_term_details.cv_annotations.iter() {
-            for term_annotation in term_annotations {
-                let termid = &term_annotation.term;
+            for (cv_name, term_annotations) in ancestor_term_details.cv_annotations.iter() {
+                for term_annotation in term_annotations {
+                    let termid = &term_annotation.term;
 
-                if term_annotation.is_not {
-                    continue;
-                }
-
-                let term_name = &api_data.get_term(termid).unwrap().name;
-
-                for annotation_id in &term_annotation.annotations {
-                    let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
-                    let annotation_details = annotation_details.as_ref();
-                    let gene_uniquename = &annotation_details.genes[0];
-                    let gene_details = api_data.get_gene(gene_uniquename).unwrap();
-                    let gene_details = gene_details.as_ref();
-
-                    if let Some(ref characterisation_status) = gene_details.characterisation_status
-                        && (characterisation_status == "dubious" || characterisation_status == "transposon") {
-                            continue;
-                        }
-
-                    if gene_details.feature_type == "pseudogene" {
+                    if term_annotation.is_not {
                         continue;
                     }
 
-                    match output_type {
-                        PublicAPIOutputType::Flat => {
-                            let Some(line) =
-                                make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
-                                              ExportCommentsMode::NoExport, gene_details,
-                                              annotation_details, termid, false, cv_name)
-                            else {
-                                continue;
-                            };
+                    let term_name = &api_data.get_term(termid).unwrap().name;
 
-                            lines.push(line);
-                        },
-                        PublicAPIOutputType::JSON => {
-                            let go_annotation =
-                                make_go_annotation(api_data,
-                                                   termid.clone(), term_name.clone(),
-                                                   annotation_details);
-                            annotations.push(go_annotation);
+                    for annotation_id in &term_annotation.annotations {
+                        let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
+                        let annotation_details = annotation_details.as_ref();
+                        let gene_uniquename = &annotation_details.genes[0];
+                        let gene_details = api_data.get_gene(gene_uniquename).unwrap();
+                        let gene_details = gene_details.as_ref();
+
+                        if let Some(ref characterisation_status) = gene_details.characterisation_status
+                            && (characterisation_status == "dubious" || characterisation_status == "transposon") {
+                                continue;
+                            }
+
+                        if gene_details.feature_type == "pseudogene" {
+                            continue;
+                        }
+
+                        match output_type {
+                            PublicAPIOutputType::Flat => {
+                                let Some(line) =
+                                    make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
+                                                  ExportCommentsMode::NoExport, gene_details,
+                                                  annotation_details, termid, false, cv_name)
+                                else {
+                                    continue;
+                                };
+
+                                lines.push(line);
+                            },
+                            PublicAPIOutputType::JSON => {
+                                let go_annotation =
+                                    make_go_annotation(api_data,
+                                                       termid.clone(), term_name.clone(),
+                                                       annotation_details);
+                                annotations.push(go_annotation);
+                            }
                         }
                     }
                 }
             }
         }
+
         match output_type {
             PublicAPIOutputType::Flat =>
                 Some(lines.iter().map(|line| line.join("\t")).join("\n")),

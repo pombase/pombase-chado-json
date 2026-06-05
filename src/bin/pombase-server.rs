@@ -1070,7 +1070,7 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
     -> impl IntoResponse
 {
     if let Some(mut gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
-                                                                       &termid, output_type)
+                                                                       &[&termid], output_type)
     {
         gaf += "\n";
         let filename = format!("go_annotation_for_{}.gaf.tsv", termid.replace(":", "_"));

@@ -1643,6 +1643,28 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_pub_api_json_go_annotations(&self, config: &Config, output_dir: &str)
+        -> Result<(), io::Error>
+    {
+        let file_name = format!("{}/public_api_go_annotations.json", output_dir);
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+
+        let rest_exec = RestExec::new();
+
+        let termids = &[MOLECULAR_FUNCTION_ROOT_TERM_ID,
+                        CELLULAR_COMPONENT_ROOT_TERM_ID,
+                        BIOLOGICAL_PROCESS_ROOT_TERM_ID];
+
+        let annotations =
+            rest_exec.go_annotation_by_termid(config, self, termids,
+                                              crate::rest::PublicAPIOutputType::JSON).unwrap();
+
+        writeln!(writer, "{}", annotations)?;
+
+        Ok(())
+    }
+
     pub fn write_apicuron_files(&self, config: &Config,
                                 references: &UniquenameReferenceMap,
                                 output_dir: &str)
@@ -1955,6 +1977,7 @@ impl WebData {
 
         self.write_pub_api_genes(config, &misc_path)?;
         self.write_pub_api_json_phenotypes(config, &misc_path)?;
+        self.write_pub_api_json_go_annotations(config, &misc_path)?;
         self.write_apicuron_files(config, &self.references, &misc_path)?;
         self.write_ai_ml_files(&misc_path)?;
 
