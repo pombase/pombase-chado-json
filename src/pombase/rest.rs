@@ -92,7 +92,7 @@ impl RestExec {
         -> Option<String>
     {
         let mut lines = vec![];
-        let mut annotations = vec![];
+        let mut annotations = HashSet::new();
 
         for ancestor_termid in ancestor_termids {
             let ancestor_termid = ancestor_termid.to_flex();
@@ -125,7 +125,7 @@ impl RestExec {
                                     make_phenotype_annotation(api_data,
                                                               termid.clone(), term_name.clone(),
                                                               annotation_details, &genotype_details);
-                                annotations.push(phenotype_annotation);
+                                annotations.insert(phenotype_annotation);
                             },
 
                         }
@@ -604,7 +604,7 @@ pub struct PublicAPIGeneLookupResponse {
     missing: Vec<FlexStr>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIGeneShort {
     pub systematic_id: GeneUniquename,
     pub name: Option<GeneName>,
@@ -621,7 +621,7 @@ impl From<&GeneShort> for PublicAPIGeneShort {
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIAllele {
     pub name: Option<FlexStr>,
     pub allele_type: FlexStr,
@@ -645,7 +645,7 @@ fn make_allele(api_data: &dyn DataLookup, allele_uniquename: &AlleleUniquename)
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIExpressedAllele {
     pub expression: Option<Expression>,
     pub promoter_gene: Option<FlexStr>,
@@ -662,7 +662,7 @@ fn make_expressed_allele(api_data: &dyn DataLookup, ea: &ExpressedAllele)
     }
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIGenotypeLocus {
     pub expressed_alleles: Vec<PublicAPIExpressedAllele>,
 }
@@ -678,7 +678,7 @@ fn make_locus(api_data: &dyn DataLookup, locus: &GenotypeLocus)
 }
 
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIGenotype {
     pub display_uniquename: GenotypeDisplayUniquename,
     pub display_name: GenotypeDisplayName,
@@ -704,7 +704,7 @@ pub struct PublicAPICondition {
     pub name: Option<String>,
 }
 
-#[derive(Serialize, Clone, Debug)]
+#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIPhenotypeAnnotation {
     pub genotype: PublicAPIGenotype,
     pub termid: TermId,
