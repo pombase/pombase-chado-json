@@ -7,9 +7,9 @@ use itertools::{Either, Itertools};
 use crate::bio::ExportCommentsMode;
 use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
-use crate::data_types::{ActiveSite, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, Chain, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, ProteinDetails, Residues, SynonymDetails, Throughput, TranscriptDetails, Turn};
+use crate::data_types::{ActiveSite, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, Chain, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, ProteinDetails, Residues, SynonymDetails, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
-use crate::types::{AlleleUniquename, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, ReferenceUniquename, RnaUrsId, TermId, TermName, TranscriptUniquename};
+use crate::types::{AlleleUniquename, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermId, TermName, TranscriptUniquename};
 
 use crate::api_data::APIData;
 use crate::data_types::DataLookup;
@@ -20,8 +20,8 @@ pub struct RestExec {
 
 #[derive(Deserialize, Clone, Debug)]
 #[serde(rename_all = "lowercase")]
-pub enum PublicAPIPhenotypeOutputType {
-    PHAF,
+pub enum PublicAPIOutputType {
+    Flat,
     JSON,
 }
 
@@ -86,8 +86,8 @@ impl RestExec {
 
     // return None if the termid doesn't exist or doesn't have annotations
     pub fn phenotype_annotation_by_termid(&self, config: &Config,
-                                                api_data: &dyn DataLookup, ancestor_termid: &str,
-                                                output_type: PublicAPIPhenotypeOutputType)
+                                          api_data: &dyn DataLookup, ancestor_termid: &str,
+                                          output_type: PublicAPIOutputType)
         -> Option<String>
     {
         let ancestor_termid = ancestor_termid.to_flex();
@@ -109,7 +109,7 @@ impl RestExec {
                         api_data.get_genotype(genotype_uniquename).unwrap();
 
                     match output_type {
-                        PublicAPIPhenotypeOutputType::PHAF => {
+                        PublicAPIOutputType::Flat => {
                             if let Some(line) =
                                 make_phenotype_line_parts(config, api_data, termid,
                                                           annotation_details,
@@ -118,42 +118,48 @@ impl RestExec {
                                     lines.push(line);
                                 }
                         },
-                        PublicAPIPhenotypeOutputType::JSON => {
+                        PublicAPIOutputType::JSON => {
                             let phenotype_annotation =
                                 make_phenotype_annotation(api_data,
                                                           termid.clone(), term_name.clone(),
                                                           annotation_details, &genotype_details);
                             annotations.push(phenotype_annotation);
-                        }
+                        },
+
                     }
                 }
             }
         }
 
         match output_type {
-            PublicAPIPhenotypeOutputType::PHAF =>
+            PublicAPIOutputType::Flat =>
                 Some(lines.iter().map(|line| line.join("\t")).join("\n")),
-            PublicAPIPhenotypeOutputType::JSON => Some(serde_json::to_string(&annotations).unwrap())
+            PublicAPIOutputType::JSON => Some(serde_json::to_string(&annotations).unwrap())
         }
     }
 
 
     // return None if the termid doesn't exist or doesn't have annotations
     pub fn go_annotation_by_termid(&self, config: &Config,
-                                   api_data: &dyn DataLookup, ancestor_termid: &str)
+                                   api_data: &dyn DataLookup, ancestor_termid: &str,
+                                   output_type: PublicAPIOutputType)
         -> Option<String>
     {
         let ancestor_termid = ancestor_termid.to_flex();
         let mut lines = vec![];
+        let mut annotations = vec![];
 
         let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
 
         for (cv_name, term_annotations) in ancestor_term_details.cv_annotations.iter() {
             for term_annotation in term_annotations {
                 let termid = &term_annotation.term;
+
                 if term_annotation.is_not {
                     continue;
                 }
+
+                let term_name = &api_data.get_term(termid).unwrap().name;
 
                 for annotation_id in &term_annotation.annotations {
                     let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
@@ -162,19 +168,44 @@ impl RestExec {
                     let gene_details = api_data.get_gene(gene_uniquename).unwrap();
                     let gene_details = gene_details.as_ref();
 
-                    let Some(line) =
-                        make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
-                                      ExportCommentsMode::NoExport, gene_details,
-                                      annotation_details, termid, false, cv_name)
-                    else {
-                        continue;
-                    };
+                    if let Some(ref characterisation_status) = gene_details.characterisation_status
+                        && (characterisation_status == "dubious" || characterisation_status == "transposon") {
+                            continue;
+                        }
 
-                    lines.push(line);
+                    if gene_details.feature_type == "pseudogene" {
+                        continue;
+                    }
+
+                    match output_type {
+                        PublicAPIOutputType::Flat => {
+                            let Some(line) =
+                                make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
+                                              ExportCommentsMode::NoExport, gene_details,
+                                              annotation_details, termid, false, cv_name)
+                            else {
+                                continue;
+                            };
+
+                            lines.push(line);
+                        },
+                        PublicAPIOutputType::JSON => {
+                            let go_annotation =
+                                make_go_annotation(api_data,
+                                                   termid.clone(), term_name.clone(),
+                                                   annotation_details);
+                            annotations.push(go_annotation);
+                        }
+                    }
                 }
             }
         }
-        Some(lines.iter().map(|line| line.join("\t")).join("\n"))
+        match output_type {
+            PublicAPIOutputType::Flat =>
+                Some(lines.iter().map(|line| line.join("\t")).join("\n")),
+            PublicAPIOutputType::JSON =>
+                Some(serde_json::to_string(&annotations).unwrap())
+        }
     }
 }
 
@@ -182,6 +213,37 @@ impl RestExec {
 impl Default for RestExec {
     fn default() -> Self {
         RestExec::new()
+    }
+}
+
+fn make_go_annotation(api_data: &dyn DataLookup,
+                      termid: TermId, term_name: TermName,
+                      annotation_details: &OntAnnotationDetail)
+    -> PublicAPIGOAnnotation
+{
+    let gene_uniquename = &annotation_details.genes[0];
+    let gene = api_data.get_gene(gene_uniquename).unwrap();
+
+    PublicAPIGOAnnotation {
+        gene_systematic_id: gene_uniquename.to_owned(),
+        gene_name: gene.name.clone(),
+        product: gene.product.clone(),
+        taxonid: gene.taxonid,
+        feature_type: gene.feature_type.clone(),
+        feature_so_termid: gene.feature_so_termid.clone(),
+        transcript_so_termid: gene.transcript_so_termid.clone(),
+        termid,
+        term_name,
+        annotation_extension: annotation_details.extension.clone(),
+        with: annotation_details.withs.clone(),
+        from: annotation_details.froms.clone(),
+        gene_product_form_id: annotation_details.gene_product_form_id.clone(),
+        qualifiers: annotation_details.qualifiers.clone(),
+        date: annotation_details.date.clone(),
+        throughput: annotation_details.throughput,
+        evidence: annotation_details.evidence.clone(),
+        eco_evidence: annotation_details.eco_evidence.clone(),
+        reference: annotation_details.reference.clone(),
     }
 }
 
@@ -202,6 +264,8 @@ fn make_phenotype_annotation(api_data: &dyn DataLookup,
         eco_evidence: annotation_details.eco_evidence.clone(),
         reference: annotation_details.reference.clone(),
     }
+}
+
 
 
 #[derive(Serialize, Clone, Debug)]
@@ -606,6 +670,29 @@ pub struct PublicAPIPhenotypeAnnotation {
     pub termid: TermId,
     pub term_name: TermName,
     pub conditions: BTreeSet<(TermId, Option<String>)>,
+    pub date: Option<FlexStr>,
+    pub throughput: Option<Throughput>,
+    pub evidence: Option<Evidence>,
+    pub eco_evidence: Option<Evidence>,
+    pub reference: Option<ReferenceUniquename>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct PublicAPIGOAnnotation {
+    pub gene_systematic_id: GeneUniquename,
+    pub gene_name: Option<GeneName>,
+    pub product: Option<GeneProduct>,
+    pub feature_type: FlexStr,
+    pub taxonid: u32,
+    pub feature_so_termid: FlexStr,
+    pub transcript_so_termid: Option<TermId>,
+    pub termid: TermId,
+    pub term_name: TermName,
+    pub annotation_extension: AnnotationExtension,
+    pub with: HashSet<WithFromValue>,
+    pub from: HashSet<WithFromValue>,
+    pub gene_product_form_id: Option<FlexStr>,
+    pub qualifiers: Vec<Qualifier>,
     pub date: Option<FlexStr>,
     pub throughput: Option<Throughput>,
     pub evidence: Option<Evidence>,

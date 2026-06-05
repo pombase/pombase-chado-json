@@ -1459,7 +1459,7 @@ pub struct GeneDetails {
     pub name: Option<FlexStr>,
     pub taxonid: u32,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub product: Option<FlexStr>,
+    pub product: Option<GeneProduct>,
     pub deletion_viability: DeletionViability,
     #[serde(skip_serializing_if="Option::is_none")]
     pub uniprot_identifier: Option<FlexStr>,
