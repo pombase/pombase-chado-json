@@ -193,7 +193,7 @@ impl RestExec {
                             },
                             PublicAPIOutputType::JSON => {
                                 let go_annotation =
-                                    make_go_annotation(api_data,
+                                    make_go_annotation(config, api_data,
                                                        termid.clone(), term_name.clone(),
                                                        annotation_details);
                                 annotations.push(go_annotation);
@@ -220,13 +220,29 @@ impl Default for RestExec {
     }
 }
 
-fn make_go_annotation(api_data: &dyn DataLookup,
+fn make_go_annotation(config: &Config, api_data: &dyn DataLookup,
                       termid: TermId, term_name: TermName,
                       annotation_details: &OntAnnotationDetail)
     -> PublicAPIGOAnnotation
 {
     let gene_uniquename = &annotation_details.genes[0];
     let gene = api_data.get_gene(gene_uniquename).unwrap();
+
+    let db_prefix = &config.database_name;
+
+    let add_db_prefix = |v: &WithFromValue| {
+        let id = v.id();
+        if id.contains(":") {
+            id
+        } else {
+            format!("{}:{}", db_prefix, id).to_flex()
+        }
+    };
+
+    let with = annotation_details.withs.iter()
+        .map(add_db_prefix).collect();
+    let from = annotation_details.froms.iter()
+        .map(add_db_prefix).collect();
 
     PublicAPIGOAnnotation {
         gene_systematic_id: gene_uniquename.to_owned(),
@@ -239,8 +255,8 @@ fn make_go_annotation(api_data: &dyn DataLookup,
         termid,
         term_name,
         annotation_extension: annotation_details.extension.clone(),
-        with: annotation_details.withs.clone(),
-        from: annotation_details.froms.clone(),
+        with,
+        from, 
         gene_product_form_id: annotation_details.gene_product_form_id.clone(),
         qualifiers: annotation_details.qualifiers.clone(),
         date: annotation_details.date.clone(),
@@ -693,8 +709,8 @@ pub struct PublicAPIGOAnnotation {
     pub termid: TermId,
     pub term_name: TermName,
     pub annotation_extension: AnnotationExtension,
-    pub with: HashSet<WithFromValue>,
-    pub from: HashSet<WithFromValue>,
+    pub with: BTreeSet<FlexStr>,
+    pub from: BTreeSet<FlexStr>,
     pub gene_product_form_id: Option<FlexStr>,
     pub qualifiers: Vec<Qualifier>,
     pub date: Option<FlexStr>,
