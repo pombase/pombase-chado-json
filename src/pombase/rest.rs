@@ -190,18 +190,17 @@ fn make_phenotype_annotation(api_data: &dyn DataLookup,
                              annotation_details: &OntAnnotationDetail,
                              genotype_details: &GenotypeDetails)
     -> PublicAPIPhenotypeAnnotation
- {
-        PublicAPIPhenotypeAnnotation {
-             genotype: make_genotype(api_data, genotype_details),
-             termid,
-             term_name,
-             conditions: annotation_details.condition_details.clone(),
-             date: annotation_details.date.clone(),
-             throughput: annotation_details.throughput,
-             evidence: annotation_details.evidence.clone(),
-             eco_evidence: annotation_details.eco_evidence.clone(),
-             reference: annotation_details.reference.clone(),
-        }
+{
+    PublicAPIPhenotypeAnnotation {
+        genotype: make_genotype(api_data, genotype_details),
+        termid,
+        term_name,
+        conditions: annotation_details.condition_details.clone(),
+        date: annotation_details.date.clone(),
+        throughput: annotation_details.throughput,
+        evidence: annotation_details.evidence.clone(),
+        eco_evidence: annotation_details.eco_evidence.clone(),
+        reference: annotation_details.reference.clone(),
     }
 
 
