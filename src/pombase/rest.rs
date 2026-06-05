@@ -86,46 +86,49 @@ impl RestExec {
 
     // return None if the termid doesn't exist or doesn't have annotations
     pub fn phenotype_annotation_by_termid(&self, config: &Config,
-                                          api_data: &dyn DataLookup, ancestor_termid: &str,
+                                          api_data: &dyn DataLookup,
+                                          ancestor_termids: &[&str],
                                           output_type: PublicAPIOutputType)
         -> Option<String>
     {
-        let ancestor_termid = ancestor_termid.to_flex();
         let mut lines = vec![];
         let mut annotations = vec![];
 
-        let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
+        for ancestor_termid in ancestor_termids {
+            let ancestor_termid = ancestor_termid.to_flex();
+            let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
 
-        for term_annotations in ancestor_term_details.cv_annotations.values() {
-            for term_annotation in term_annotations {
-                let termid = &term_annotation.term;
-                let term_name = &api_data.get_term(termid).unwrap().name;
+            for term_annotations in ancestor_term_details.cv_annotations.values() {
+                for term_annotation in term_annotations {
+                    let termid = &term_annotation.term;
+                    let term_name = &api_data.get_term(termid).unwrap().name;
 
-                for annotation_id in &term_annotation.annotations {
-                    let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
-                    let annotation_details = annotation_details.as_ref();
-                    let genotype_uniquename = annotation_details.genotype.as_ref().unwrap();
-                    let genotype_details =
-                        api_data.get_genotype(genotype_uniquename).unwrap();
+                    for annotation_id in &term_annotation.annotations {
+                        let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
+                        let annotation_details = annotation_details.as_ref();
+                        let genotype_uniquename = annotation_details.genotype.as_ref().unwrap();
+                        let genotype_details =
+                            api_data.get_genotype(genotype_uniquename).unwrap();
 
-                    match output_type {
-                        PublicAPIOutputType::Flat => {
-                            if let Some(line) =
-                                make_phenotype_line_parts(config, api_data, termid,
-                                                          annotation_details,
-                                                          &genotype_details,
-                                                          FypoEvidenceType::PomBase) {
-                                    lines.push(line);
-                                }
-                        },
-                        PublicAPIOutputType::JSON => {
-                            let phenotype_annotation =
-                                make_phenotype_annotation(api_data,
-                                                          termid.clone(), term_name.clone(),
-                                                          annotation_details, &genotype_details);
-                            annotations.push(phenotype_annotation);
-                        },
+                        match output_type {
+                            PublicAPIOutputType::Flat => {
+                                if let Some(line) =
+                                    make_phenotype_line_parts(config, api_data, termid,
+                                                              annotation_details,
+                                                              &genotype_details,
+                                                              FypoEvidenceType::PomBase) {
+                                        lines.push(line);
+                                    }
+                            },
+                            PublicAPIOutputType::JSON => {
+                                let phenotype_annotation =
+                                    make_phenotype_annotation(api_data,
+                                                              termid.clone(), term_name.clone(),
+                                                              annotation_details, &genotype_details);
+                                annotations.push(phenotype_annotation);
+                            },
 
+                        }
                     }
                 }
             }
@@ -256,7 +259,7 @@ fn make_go_annotation(config: &Config, api_data: &dyn DataLookup,
         term_name,
         annotation_extension: annotation_details.extension.clone(),
         with,
-        from, 
+        from,
         gene_product_form_id: annotation_details.gene_product_form_id.clone(),
         qualifiers: annotation_details.qualifiers.clone(),
         date: annotation_details.date.clone(),

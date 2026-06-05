@@ -1635,7 +1635,7 @@ impl WebData {
 
         let rest_exec = RestExec::new();
         let annotations =
-            rest_exec.phenotype_annotation_by_termid(config, self, FYPO_ROOT_TERM_ID,
+            rest_exec.phenotype_annotation_by_termid(config, self, &[FYPO_ROOT_TERM_ID],
                                                      crate::rest::PublicAPIOutputType::JSON).unwrap();
 
         writeln!(writer, "{}", annotations)?;

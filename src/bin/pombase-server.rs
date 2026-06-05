@@ -1066,14 +1066,16 @@ async fn rest_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllSt
 }
 
 async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
-                                    Path((termid, output_type)): Path<(String, PublicAPIOutputType)>)
+                                    Path((termids, output_type)): Path<(String, PublicAPIOutputType)>)
     -> impl IntoResponse
 {
+    let termids_split: Vec<_> = termids.split(",").collect();
     if let Some(mut gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
-                                                                       &[&termid], output_type)
+                                                                       &termids_split, output_type)
     {
         gaf += "\n";
-        let filename = format!("go_annotation_for_{}.gaf.tsv", termid.replace(":", "_"));
+        let filename = format!("go_annotation_for_{}.gaf.tsv",
+                               termids.replace(":", "_").replace(",", "+"));
         let content_disposition =
             format!(r#"attachment; filename="{}""#, filename);
         let headers = [(axum::http::header::CONTENT_DISPOSITION, content_disposition.as_str()),
@@ -1085,15 +1087,17 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
 }
 
 async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
-                                Path((termid, output_type)): Path<(String, PublicAPIOutputType)>)
+                                Path((termids, output_type)): Path<(String, PublicAPIOutputType)>)
     -> impl IntoResponse
 {
+    let termids_split: Vec<_> = termids.split(",").collect();
     if let Some(mut phaf) = all_state.rest_exec.phenotype_annotation_by_termid(&all_state.config,
                                                                                all_state.get_api_data(),
-                                                                               &termid, output_type)
+                                                                               &termids_split, output_type)
     {
         phaf += "\n";
-        let filename = format!("phenotype_annotation_for_{}.phaf.tsv", termid.replace(":", "_"));
+        let filename = format!("phenotype_annotation_for_{}.phaf.tsv",
+                               termids.replace(":", "_").replace(",", "+"));
         let content_disposition =
             format!(r#"attachment; filename="{}""#, filename);
         let headers = [(axum::http::header::CONTENT_DISPOSITION, content_disposition.as_str()),
@@ -1361,8 +1365,8 @@ async fn main() {
         .route("/rest/gene/by_uniprot_accession/{ids}", get(rest_gene_by_uniprot_accesssion))
         .route("/rest/genes/by_uniprot_accession/{ids}", get(rest_genes_by_uniprot_accesssion_get))
         .route("/rest/genes/by_uniprot_accession", post(rest_genes_by_uniprot_accesssion_post))
-        .route("/rest/go_annotation/by_term_id/{id}/{output_type}", get(rest_go_annotation_by_term))
-        .route("/rest/phenotype_annotation/by_term_id/{id}/{output_type}", get(rest_phenotype_by_term))
+        .route("/rest/go_annotation/by_term_id/{ids}/{output_type}", get(rest_go_annotation_by_term))
+        .route("/rest/phenotype_annotation/by_term_id/{ids}/{output_type}", get(rest_phenotype_by_term))
         .route("/ping", get(ping))
         .fallback(not_found)
         .with_state(Arc::new(all_state))
