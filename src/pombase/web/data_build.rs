@@ -114,7 +114,7 @@ pub struct WebDataBuild<'a> {
 
     // a map from IDs of terms from the "PomBase annotation extension terms" cv
     // to a Vec of the details of each of the extension
-    parts_of_extensions: HashMap<TermId, Vec<ExtPart>>,
+    parts_of_extensions: HashMap<TermId, AnnotationExtension>,
 
     base_term_of_extensions: HashMap<TermId, TermId>,
 
@@ -1364,7 +1364,7 @@ impl <'a> WebDataBuild<'a> {
         allele.gene.uniquename.clone()
     }
 
-    fn parse_extension_prop(&self, annotation_termid: &TermId, extension_string: &str) -> Vec<ExtPart> {
+    fn parse_extension_prop(&self, annotation_termid: &TermId, extension_string: &str) -> AnnotationExtension {
         let ext: Vec<Vec<CantoExtPart>> =
             serde_json::from_str(extension_string)
             .unwrap_or_else(|_| panic!("failed to parse Canto extension from property: {}", extension_string));
@@ -1497,7 +1497,7 @@ phenotypes, so just the first part of this extension will be used:
             ext_part.rel_type_name == "has_severity"
         };
 
-        let filter_interaction_extension = |mut ext: Vec<ExtPart>| {
+        let filter_interaction_extension = |mut ext: AnnotationExtension| {
             ext.drain(0..).filter(ext_filter)
                 .collect()
         };
@@ -5707,7 +5707,7 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
-    fn add_extension_to_maps(&self, extension: &Vec<ExtPart>,
+    fn add_extension_to_maps(&self, extension: &AnnotationExtension,
                              seen_genes: &mut HashMap<FlexStr, GeneShortOptionMap>,
                              seen_transcripts: &mut HashMap<FlexStr, TranscriptDetailsOptionMap>,
                              seen_terms: &mut HashMap<FlexStr, TermShortOptionMap>,

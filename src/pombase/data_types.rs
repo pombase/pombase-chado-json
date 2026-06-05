@@ -32,6 +32,8 @@ pub type UniquenameFeatureShortMap = HashMap<FlexStr, FeatureShort>;
 pub type TermIdDetailsMap = HashMap<TermId, TermDetails>;
 pub type ChrNameDetailsMap = BTreeMap<ChromosomeName, ChromosomeDetails>;
 
+pub type AnnotationExtension = Vec<ExtPart>;
+
 pub type IdGenotypeMap = HashMap<GenotypeUniquename, GenotypeDetails>;
 pub type IdGeneShortMap = HashMap<GeneUniquename, GeneShort>;
 pub type IdRcTermShortMap = HashMap<TermId, Rc<TermShort>>;
@@ -1084,7 +1086,7 @@ pub struct OntAnnotationDetail {
     pub eco_evidence: Option<Evidence>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub annotation_phenotype_score: Option<FlexStr>,
-    pub extension: Vec<ExtPart>,
+    pub extension: AnnotationExtension,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub withs: HashSet<WithFromValue>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
@@ -1217,7 +1219,7 @@ pub struct OntAnnotation {
     pub reference_short: Option<ReferenceShort>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub evidence: Option<Evidence>,
-    pub extension: Vec<ExtPart>,
+    pub extension: AnnotationExtension,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub withs: HashSet<WithFromValue>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
@@ -1246,7 +1248,7 @@ pub struct TermSummaryRow {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub genotype_uniquenames: Vec<GenotypeUniquename>, // for term pages
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub extension: Vec<ExtPart>,
+    pub extension: AnnotationExtension,
 }
 impl PartialEq for TermSummaryRow {
     fn eq(&self, other: &TermSummaryRow) -> bool {
@@ -2388,13 +2390,13 @@ pub struct GeneticInteractionDetail {
     #[serde(skip_serializing_if="Option::is_none")]
     pub double_mutant_phenotype_termid: Option<TermId>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub double_mutant_extension: Vec<ExtPart>,
+    pub double_mutant_extension: AnnotationExtension,
     #[serde(skip_serializing_if="Option::is_none")]
     pub double_mutant_genotype_display_uniquename: Option<GenotypeDisplayUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub rescued_phenotype_termid: Option<TermId>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub rescued_phenotype_extension: Vec<ExtPart>,
+    pub rescued_phenotype_extension: AnnotationExtension,
     #[serde(skip_serializing_if="Option::is_none")]
     pub reference_uniquename: Option<ReferenceUniquename>,
     #[serde(skip_serializing_if="Option::is_none")]

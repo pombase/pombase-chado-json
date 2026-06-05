@@ -403,8 +403,8 @@ pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<T
 
 // turns binds([[gene1]]),binds([[gene2]]),other_rel(...) into:
 // binds([[gene1, gene2]]),other_rel(...)
-pub fn collect_duplicated_relations(ext: &mut Vec<ExtPart>) {
-    let mut result: Vec<ExtPart> = vec![];
+pub fn collect_duplicated_relations(ext: &mut AnnotationExtension) {
+    let mut result: AnnotationExtension = vec![];
 
     {
         let mut iter = ext.iter().cloned();
@@ -562,7 +562,7 @@ fn make_cv_summary(cv_config: &CvConfig,
                         _ => (),
                     }
                     ext_part })
-                .collect::<Vec<ExtPart>>();
+                .collect::<AnnotationExtension>();
 
             if gene_uniquenames.is_empty() &&
                 genotype_uniquenames.is_empty() &&

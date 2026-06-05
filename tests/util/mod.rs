@@ -3,7 +3,7 @@ use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use flexstr::ToSharedStr;
 
 use pombase::api_data::{APIData, api_maps_from_file};
-use pombase::data_types::{APIGenotypeAnnotation, AlleleDetails, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, ExtPart, ExtRange, GeneDetails, GenotypeDetails, GenotypeLocus, IdGenotypeMap, IdOntAnnotationDetailMap, OntAnnotationDetail, Ploidiness, TermDetails, TermIdDetailsMap, Throughput, UniquenameAlleleDetailsMap, UniquenameAlleleMap, UniquenameGeneMap, UniquenameReferenceMap};
+use pombase::data_types::{APIGenotypeAnnotation, AlleleDetails, AnnotationExtension, DeletionViability, DisplayUniquenameGenotypeMap, ExpressedAllele, ExtPart, ExtRange, GeneDetails, GenotypeDetails, GenotypeLocus, IdGenotypeMap, IdOntAnnotationDetailMap, OntAnnotationDetail, Ploidiness, TermDetails, TermIdDetailsMap, Throughput, UniquenameAlleleDetailsMap, UniquenameAlleleMap, UniquenameGeneMap, UniquenameReferenceMap};
 use pombase::types::TermId;
 use pombase::utils::{make_maps_database_tables, store_maps_into_database};
 use pombase::web::config::Config;
@@ -455,7 +455,7 @@ pub fn get_test_terms_map() -> TermIdDetailsMap {
 #[allow(dead_code)]
 fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
                    maybe_genotype_uniquename: Option<&str>, evidence: &str,
-                   extension: Vec<ExtPart>,
+                   extension: AnnotationExtension,
                    conditions: HashSet<TermId>) -> OntAnnotationDetail {
     let condition_details: BTreeSet<_> =
         conditions.iter().map(|cond| (cond.clone(), None)).collect();

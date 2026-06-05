@@ -449,7 +449,7 @@ pub fn write_heterozygous_diploid_annotations(data_lookup: &dyn DataLookup,
   Ok(())
 }
 
-fn annotation_extension(annotation_detail: &OntAnnotationDetail) -> Vec<ExtPart> {
+fn annotation_extension(annotation_detail: &OntAnnotationDetail) -> AnnotationExtension {
     annotation_detail.extension.iter()
         .filter(|bit| {
             bit.rel_type_name != "has_penetrance" && bit.rel_type_name != "has_severity"
