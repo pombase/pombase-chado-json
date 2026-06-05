@@ -1629,7 +1629,7 @@ impl WebData {
     pub fn write_pub_api_json_phenotypes(&self, config: &Config, output_dir: &str)
         -> Result<(), io::Error>
     {
-        let file_name = format!("{}/public_api_phenotypes.json", output_dir);
+        let file_name = format!("{}/public_api_genotypes_phenotypes.json", output_dir);
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
 
