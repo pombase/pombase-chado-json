@@ -104,9 +104,15 @@ impl RestExec {
                     let term_name = &api_data.get_term(termid).unwrap().name;
 
                     for annotation_id in &term_annotation.annotations {
-                        let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
+                        let Some(annotation_details) = api_data.get_annotation_detail(*annotation_id)
+                        else {
+                            continue;
+                        };
                         let annotation_details = annotation_details.as_ref();
-                        let genotype_uniquename = annotation_details.genotype.as_ref().unwrap();
+                        let Some(genotype_uniquename) = annotation_details.genotype.as_ref()
+                        else {
+                            continue;
+                        };
                         let genotype_details =
                             api_data.get_genotype(genotype_uniquename).unwrap();
 
