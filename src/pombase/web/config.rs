@@ -3,6 +3,7 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::fs::File;
 
+use crate::constants::FYPO_CV_NAME;
 use crate::data_types::TermShort;
 use crate::types::*;
 
@@ -632,7 +633,7 @@ pub const DESCENDANT_REL_NAMES: [&str; 7] =
     ["is_a", "part_of", "regulates", "positively_regulates", "negatively_regulates",
      "has_part", "output_of"];
 // only consider has_part relations for these ontologies:
-pub const HAS_PART_CV_NAMES: [FlexStr; 1] = [flex_str!("fission_yeast_phenotype")];
+pub const HAS_PART_CV_NAMES: [FlexStr; 1] = [flex_str!(FYPO_CV_NAME)];
 
 // number of genes before (and after) to add to the gene_neighbourhood field
 pub const GENE_NEIGHBOURHOOD_DISTANCE: usize = 5;

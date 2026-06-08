@@ -12,6 +12,7 @@ use self::pombase::uniprot::*;
 use self::pombase::web::config::*;
 use self::pombase::web::data_build::*;
 use self::pombase::web::data::*;
+use pombase::constants::FYPO_CV_NAME;
 use pombase::db::ChadoQueries;
 use pombase::interpro::DomainData;
 
@@ -181,7 +182,7 @@ fn get_test_raw() -> Raw {
         });
 
     let bp_cv = make_test_cv(&mut cvs, "biological_process");
-    let fypo_cv = make_test_cv(&mut cvs, "fission_yeast_phenotype");
+    let fypo_cv = make_test_cv(&mut cvs, FYPO_CV_NAME);
     let extension_cv = make_test_cv(&mut cvs, POMBASE_ANN_EXT_TERM_CV_NAME);
     let relations_cv = make_test_cv(&mut cvs, "relations");
     let pombase_relations_cv = make_test_cv(&mut cvs, "pombase_relations");

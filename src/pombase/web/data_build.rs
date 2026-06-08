@@ -15,6 +15,8 @@ use std::collections::{HashMap, HashSet};
 
 use pombase_gocam::{GoCamEnabledBy, GoCamModel, GoCamNode, GoCamNodeType};
 
+use crate::constants::FYPO_CV_NAME;
+
 use crate::bio::pdb_reader::{PDBGeneEntryMap, PDBRefEntryMap};
 use crate::bio::protein_view::make_protein_view_data_map;
 
@@ -4449,7 +4451,7 @@ phenotypes, so just the first part of this extension will be used:
 
                 return_vec
             },
-            "fission_yeast_phenotype" => {
+            FYPO_CV_NAME => {
                 let mut single_locus =
                     OntTermAnnotations {
                         term: termid.clone(),

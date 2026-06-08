@@ -5,6 +5,7 @@ use indexmap::IndexMap;
 use regex::Regex;
 
 
+use crate::constants::FYPO_CV_NAME;
 use crate::types::GeneUniquename;
 use crate::data_types::{AlleleDetails, AlleleShort, DisplayUniquenameGenotypeMap,
                         ExtPart, ExtRange, GeneDetails, IdOntAnnotationDetailMap,
@@ -940,7 +941,7 @@ pub fn make_protein_view_data_map(gene_details_maps: &UniquenameGeneMap,
         return gene_map;
     };
 
-    let Some(phenotype_config) = config.cv_config.get("fission_yeast_phenotype")
+    let Some(phenotype_config) = config.cv_config.get(FYPO_CV_NAME)
     else {
         return gene_map;
     };

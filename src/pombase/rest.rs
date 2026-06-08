@@ -7,6 +7,8 @@ use itertools::{Either, Itertools};
 use crate::bio::ExportCommentsMode;
 use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
+use crate::constants::{FYPO_CV_NAME, is_go_root_name};
+
 use crate::data_types::{ActiveSite, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, Chain, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, ProteinDetails, Residues, SynonymDetails, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
 use crate::types::{AlleleUniquename, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermId, TermName, TranscriptUniquename};
@@ -98,6 +100,10 @@ impl RestExec {
             let ancestor_termid = ancestor_termid.to_flex();
             let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
 
+            if ancestor_term_details.cv_name != FYPO_CV_NAME {
+                continue;
+            }
+
             for term_annotations in ancestor_term_details.cv_annotations.values() {
                 for term_annotation in term_annotations {
                     let termid = &term_annotation.term;
@@ -161,6 +167,10 @@ impl RestExec {
         for ancestor_termid in ancestor_termids {
             let ancestor_termid = ancestor_termid.to_flex();
             let ancestor_term_details = api_data.get_term(&ancestor_termid)?;
+
+            if !is_go_root_name(&ancestor_term_details.cv_name) {
+                continue;
+            }
 
             for (cv_name, term_annotations) in ancestor_term_details.cv_annotations.iter() {
                 for term_annotation in term_annotations {
