@@ -18,10 +18,10 @@ use crate::web::config::Config;
 pub struct RestExec {
 }
 
-#[derive(Deserialize, Clone, Debug)]
+#[derive(Deserialize, Clone, Copy, Debug)]
 #[serde(rename_all = "lowercase")]
 pub enum PublicAPIOutputType {
-    Flat,
+    TSV,
     JSON,
 }
 
@@ -111,7 +111,7 @@ impl RestExec {
                             api_data.get_genotype(genotype_uniquename).unwrap();
 
                         match output_type {
-                            PublicAPIOutputType::Flat => {
+                            PublicAPIOutputType::TSV => {
                                 if let Some(line) =
                                     make_phenotype_line_parts(config, api_data, termid,
                                                               annotation_details,
@@ -135,7 +135,7 @@ impl RestExec {
         }
 
         match output_type {
-            PublicAPIOutputType::Flat =>
+            PublicAPIOutputType::TSV =>
                 Some(lines.iter().map(|line| line.join("\t")).join("\n")),
             PublicAPIOutputType::JSON => Some(serde_json::to_string(&annotations).unwrap())
         }
@@ -183,7 +183,7 @@ impl RestExec {
                         }
 
                         match output_type {
-                            PublicAPIOutputType::Flat => {
+                            PublicAPIOutputType::TSV => {
                                 let Some(line) =
                                     make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
                                                   ExportCommentsMode::NoExport, gene_details,
@@ -208,7 +208,7 @@ impl RestExec {
         }
 
         match output_type {
-            PublicAPIOutputType::Flat =>
+            PublicAPIOutputType::TSV =>
                 Some(lines.iter().map(|line| line.join("\t")).join("\n")),
             PublicAPIOutputType::JSON =>
                 Some(serde_json::to_string(&annotations).unwrap())

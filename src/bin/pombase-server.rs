@@ -1066,20 +1066,39 @@ async fn rest_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllSt
 }
 
 async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
-                                    Path((termids, output_type)): Path<(String, PublicAPIOutputType)>)
+                                    Path((termids, output_type)): Path<(String, String)>)
     -> impl IntoResponse
 {
+    let output_type = if output_type == "json" {
+        PublicAPIOutputType::JSON
+    } else {
+        if output_type == "gaf" || output_type == "tsv" {
+            PublicAPIOutputType::TSV
+        } else {
+            return StatusCode::NOT_FOUND.into_response();
+        }
+    };
+
     let termids_split: Vec<_> = termids.split(",").collect();
     if let Some(mut gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
                                                                        &termids_split, output_type)
     {
         gaf += "\n";
-        let filename = format!("go_annotation_for_{}.gaf.tsv",
-                               termids.replace(":", "_").replace(",", "+"));
+
+        let suffix = match output_type {
+            PublicAPIOutputType::TSV => "gaf.tsv",
+            PublicAPIOutputType::JSON => "json",
+        };
+        let filename = format!("go_annotation_for_{}.{}",
+                               termids.replace(":", "_").replace(",", "+"), suffix);
         let content_disposition =
             format!(r#"attachment; filename="{}""#, filename);
+        let content_type = match output_type {
+            PublicAPIOutputType::TSV => "text/tab-separated-values; charset=utf-8",
+            PublicAPIOutputType::JSON => "application/json; charset=utf-8",
+        };
         let headers = [(axum::http::header::CONTENT_DISPOSITION, content_disposition.as_str()),
-                       (axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")];
+                       (axum::http::header::CONTENT_TYPE, content_type)];
         (StatusCode::OK, headers, gaf).into_response()
     } else {
         StatusCode::NOT_FOUND.into_response()
@@ -1087,21 +1106,40 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
 }
 
 async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
-                                Path((termids, output_type)): Path<(String, PublicAPIOutputType)>)
+                                Path((termids, output_type)): Path<(String, String)>)
     -> impl IntoResponse
 {
+    let output_type = if output_type == "json" {
+        PublicAPIOutputType::JSON
+    } else {
+        if output_type == "phaf" || output_type == "tsv" {
+            PublicAPIOutputType::TSV
+        } else {
+            return StatusCode::NOT_FOUND.into_response();
+        }
+    };
+
     let termids_split: Vec<_> = termids.split(",").collect();
     if let Some(mut phaf) = all_state.rest_exec.phenotype_annotation_by_termid(&all_state.config,
                                                                                all_state.get_api_data(),
                                                                                &termids_split, output_type)
     {
         phaf += "\n";
-        let filename = format!("phenotype_annotation_for_{}.phaf.tsv",
-                               termids.replace(":", "_").replace(",", "+"));
+
+        let suffix = match output_type {
+            PublicAPIOutputType::TSV => "phaf.tsv",
+            PublicAPIOutputType::JSON => "json",
+        };
+        let filename = format!("phenotype_annotation_for_{}.{}",
+                               termids.replace(":", "_").replace(",", "+"), suffix);
         let content_disposition =
             format!(r#"attachment; filename="{}""#, filename);
+        let content_type = match output_type {
+            PublicAPIOutputType::TSV => "text/tab-separated-values; charset=utf-8",
+            PublicAPIOutputType::JSON => "application/json; charset=utf-8",
+        };
         let headers = [(axum::http::header::CONTENT_DISPOSITION, content_disposition.as_str()),
-                       (axum::http::header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")];
+                       (axum::http::header::CONTENT_TYPE, content_type)];
         (StatusCode::OK, headers, phaf).into_response()
     } else {
         StatusCode::NOT_FOUND.into_response()
