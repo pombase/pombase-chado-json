@@ -47,10 +47,10 @@ indexmap = "2"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features=["env-filter"] }
 rand = "0.10"
-arrow = "58"
-arrow-array = "58"
-arrow-schema = "58"
-parquet = "58"
+arrow = "59"
+arrow-array = "59"
+arrow-schema = "59"
+parquet = "59"
 
 [dependencies.serde]
 version = "1"
