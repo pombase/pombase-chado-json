@@ -1356,7 +1356,7 @@ pub struct ChromosomeShort {
     pub coding_gene_count: usize,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Clone, Debug)]
+#[derive(Serialize, Deserialize, PartialEq, Clone, Copy, Debug)]
 pub enum Phase {
 #[serde(rename = "0")]
     Zero,
