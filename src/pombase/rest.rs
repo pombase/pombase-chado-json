@@ -9,7 +9,7 @@ use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
 use crate::constants::{FYPO_CV_NAME, is_go_root_name};
 
-use crate::data_types::{ActiveSite, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, Chain, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, ProteinDetails, Residues, SynonymDetails, Throughput, TranscriptDetails, Turn, WithFromValue};
+use crate::data_types::{ActiveSite, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, Residues, Strand, SynonymDetails, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
 use crate::types::{AlleleUniquename, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermId, TermName, TranscriptUniquename};
 
@@ -324,7 +324,7 @@ pub struct PublicAPIFeaturePart {
     pub systematic_id: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub name: Option<FlexStr>,
-    pub location: ChromosomeLocation,
+    pub chromosome_location: PublicAPIChromosomeLocation,
     pub residues: Residues,
 }
 
@@ -334,7 +334,7 @@ impl From<&FeatureShort> for PublicAPIFeaturePart {
             feature_type: feat.feature_type.clone(),
             systematic_id: feat.uniquename.clone(),
             name: feat.name.clone(),
-            location: feat.location.clone(),
+            chromosome_location: (&feat.location).into(),
             residues: feat.residues.clone(),
         }
     }
@@ -373,13 +373,13 @@ impl From<&ProteinDetails> for PublicAPIProteinDetails {
 pub struct PublicAPITranscriptDetails {
     pub systematic_id: TranscriptUniquename,
     pub name: Option<GeneName>,
-    pub location: ChromosomeLocation,
+    pub chromosome_location: PublicAPIChromosomeLocation,
     pub parts: Vec<PublicAPIFeaturePart>,
     pub transcript_type: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub protein: Option<PublicAPIProteinDetails>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub cds_location: Option<ChromosomeLocation>,
+    pub cds_location: Option<PublicAPIChromosomeLocation>,
 
     // the CDS length or RNA length without introns - sum of lengths of exons
     pub rna_seq_length_spliced: Option<NonZeroUsize>,
@@ -393,11 +393,11 @@ impl From<&TranscriptDetails> for PublicAPITranscriptDetails {
         PublicAPITranscriptDetails {
             systematic_id: tr.uniquename.clone(),
             name: tr.name.clone(),
-            location: tr.location.clone(),
+            chromosome_location: (&tr.location).into(),
             parts: tr.parts.iter().map(|p| p.into()).collect(),
             transcript_type: tr.transcript_type.clone(),
             protein,
-            cds_location: tr.cds_location.clone(),
+            cds_location: tr.cds_location.as_ref().map(|l| l.into()),
             rna_seq_length_spliced: tr.rna_seq_length_spliced,
             rna_seq_length_unspliced: tr.rna_seq_length_unspliced,
         }
@@ -432,7 +432,7 @@ impl From<&OrthologAnnotation> for PublicAPIOrthologAnnotation {
 pub struct PublicAPIGeneDetails {
     pub systematic_id: GeneUniquename,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<FlexStr>,
+    pub symbol: Option<FlexStr>,
     pub taxonid: u32,
     #[serde(skip_serializing_if="Option::is_none")]
     pub product: Option<FlexStr>,
@@ -473,8 +473,7 @@ pub struct PublicAPIGeneDetails {
     pub turns: Vec<Turn>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub propeptides: Vec<BasicProteinFeature>,
-    #[serde(skip_serializing_if="Vec::is_empty", default)]
-    pub chains: Vec<Chain>,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub glycosylation_sites: Vec<GlycosylationSite>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
@@ -492,16 +491,11 @@ pub struct PublicAPIGeneDetails {
     pub tfexplorer_chipseq_identifier: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub tfexplorer_ipms_identifier: Option<FlexStr>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub pombephosphoproteomics_unige_ch_starvation_mating_gene: Option<FlexStr>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub pombephosphoproteomics_unige_ch_fusion_gene: Option<FlexStr>,
+
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub name_descriptions: Vec<FlexStr>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub dbxrefs: HashSet<FlexStr>,
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub orthologs: Vec<PublicAPIOrthologAnnotation>,
@@ -518,7 +512,7 @@ pub struct PublicAPIGeneDetails {
     #[serde(skip_serializing_if="Option::is_none")]
     pub taxonomic_distribution: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
-    pub location: Option<ChromosomeLocation>,
+    pub chromosome_location: Option<PublicAPIChromosomeLocation>,
 
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<PublicAPITranscriptDetails>,
@@ -562,7 +556,7 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
 
         PublicAPIGeneDetails {
             systematic_id: gene.uniquename.clone(),
-            name: gene.name.clone(),
+            symbol: gene.name.clone(),
             taxonid: gene.taxonid,
             product: gene.product.clone(),
             deletion_viability: gene.deletion_viability.clone(),
@@ -584,7 +578,6 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             helices: gene.helices.clone(),
             turns: gene.turns.clone(),
             propeptides: gene.propeptides.clone(),
-            chains: gene.chains.clone(),
             glycosylation_sites: gene.glycosylation_sites.clone(),
             disulfide_bonds: gene.disulfide_bonds.clone(),
             lipidation_sites: gene.lipidation_sites.clone(),
@@ -593,18 +586,15 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             schizosaccharomyces_orthogroup: gene.schizosaccharomyces_orthogroup.clone(),
             tfexplorer_chipseq_identifier: gene.tfexplorer_chipseq_identifier.clone(),
             tfexplorer_ipms_identifier: gene.tfexplorer_ipms_identifier.clone(),
-            pombephosphoproteomics_unige_ch_starvation_mating_gene: gene.pombephosphoproteomics_unige_ch_starvation_mating_gene.clone(),
-            pombephosphoproteomics_unige_ch_fusion_gene: gene.pombephosphoproteomics_unige_ch_fusion_gene.clone(),
             name_descriptions: gene.name_descriptions.clone(),
             synonyms: gene.synonyms.clone(),
-            dbxrefs: gene.dbxrefs.clone(),
             flags: gene.flags.clone(),
             feature_type,
             feature_so_termid: gene.feature_so_termid.clone(),
             transcript_so_termid: gene.transcript_so_termid.clone(),
             characterisation_status: gene.characterisation_status.clone(),
             taxonomic_distribution: gene.taxonomic_distribution.clone(),
-            location: gene.location.clone(),
+            chromosome_location: gene.location.as_ref().map(|l| l.into()),
             transcripts,
             orthologs,
             gocams: gene.gocams.clone(),
@@ -756,3 +746,24 @@ pub struct PublicAPIGOAnnotation {
     pub reference: Option<ReferenceUniquename>,
 }
 
+#[derive(Serialize, Clone, Debug)]
+pub struct PublicAPIChromosomeLocation {
+    pub chromosome_name: FlexStr,
+    pub start: usize,
+    pub end: usize,
+    pub strand: Strand,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub phase: Option<Phase>,
+}
+
+impl From<&ChromosomeLocation> for PublicAPIChromosomeLocation {
+    fn from(loc: &ChromosomeLocation) -> Self {
+        PublicAPIChromosomeLocation {
+            chromosome_name: loc.chromosome_name.clone(),
+            start: loc.start_pos,
+            end: loc.end_pos,
+            strand: loc.strand,
+            phase: loc.phase,
+        }
+    }
+}
