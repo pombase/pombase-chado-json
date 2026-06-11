@@ -29,7 +29,7 @@ use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 use crate::bio::ExportCommentsMode;
 use crate::constants::*;
 
-use crate::rest::{PublicAPIGeneDetails, PublicAPITranscriptDetails, RestExec};
+use crate::rest::{PublicAPIGeneDetails, PublicAPIReferenceDetails, PublicAPITranscriptDetails, RestExec};
 use crate::web::config::*;
 use crate::rnacentral::*;
 
@@ -1626,6 +1626,24 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_pub_api_references(&self, output_dir: &str)
+        -> Result<(), io::Error>
+    {
+        let file_name = format!("{}/public_api_references.json", output_dir);
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+
+        let pub_api_refs: Vec<PublicAPIReferenceDetails> = self.references.values()
+            .map(|r| r.into())
+            .collect();
+
+        let s = serde_json::to_string(&pub_api_refs).unwrap();
+
+        writeln!(writer, "{}", s)?;
+
+        Ok(())
+    }
+
     pub fn write_pub_api_json_phenotypes(&self, config: &Config, output_dir: &str)
         -> Result<(), io::Error>
     {
@@ -1976,6 +1994,7 @@ impl WebData {
         self.write_annotation_subsets(config, &misc_path)?;
 
         self.write_pub_api_genes(config, &misc_path)?;
+        self.write_pub_api_references(&misc_path)?;
         self.write_pub_api_json_phenotypes(config, &misc_path)?;
         self.write_pub_api_json_go_annotations(config, &misc_path)?;
         self.write_apicuron_files(config, &self.references, &misc_path)?;

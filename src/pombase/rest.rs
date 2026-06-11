@@ -9,7 +9,7 @@ use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
 use crate::constants::{FYPO_CV_NAME, is_go_root_name};
 
-use crate::data_types::{ActiveSite, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, Residues, Strand, SynonymDetails, Throughput, TranscriptDetails, Turn, WithFromValue};
+use crate::data_types::{ActiveSite, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, Strand, SynonymDetails, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
 use crate::types::{AlleleUniquename, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermId, TermName, TranscriptUniquename};
 
@@ -764,6 +764,110 @@ impl From<&ChromosomeLocation> for PublicAPIChromosomeLocation {
             end: loc.end_pos,
             strand: loc.strand,
             phase: loc.phase,
+        }
+    }
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct PublicAPIReferenceDetails {
+    pub uniquename: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub title: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub citation: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none", rename = "abstract")]
+    pub pubmed_abstract: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none", rename = "doi")]
+    pub pubmed_doi: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub authors: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub authors_abbrev: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pubmed_publication_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pubmed_entrez_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub publication_year: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_session_key: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_annotation_status: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_triage_status: Option<FlexStr>,
+    pub canto_curator_role: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_curator_name: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_first_approved_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_approved_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_approver_orcid: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_session_submitted_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub canto_added_date: Option<FlexStr>,
+
+    // the curators of the annotations from Canto, may be different from the canto_curator_name
+    pub annotation_curators: Vec<AnnotationCurator>,
+
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub file_curator_name: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub file_curator_role: Option<FlexStr>,
+
+    pub annotation_file_curators: Vec<AnnotationCurator>,
+
+    pub genes: Vec<FlexStr>,
+    pub gene_count: usize,
+
+    // count of genes annotated in LTP experiments
+    pub ltp_gene_count: usize,
+
+    // This is set to the year part of canto_first_approved_date if it is
+    // not None, otherwise set to the year part of canto_approved_date, otherwise
+    // canto_session_submitted_date
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub approved_date: Option<FlexStr>,
+
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub pdb_entries: Vec<PDBEntry>,
+}
+
+impl From<&ReferenceDetails> for PublicAPIReferenceDetails {
+    fn from(ref_details: &ReferenceDetails) -> Self {
+        let genes = ref_details.genes_by_uniquename.keys().cloned().collect();
+        PublicAPIReferenceDetails {
+            uniquename: ref_details.uniquename.clone(),
+            title: ref_details.title.clone(),
+            citation: ref_details.citation.clone(),
+            pubmed_abstract: ref_details.pubmed_abstract.clone(),
+            pubmed_doi: ref_details.pubmed_doi.clone(),
+            authors: ref_details.authors.clone(),
+            authors_abbrev: ref_details.authors_abbrev.clone(),
+            pubmed_publication_date: ref_details.pubmed_publication_date.clone(),
+            pubmed_entrez_date: ref_details.pubmed_entrez_date.clone(),
+            publication_year: ref_details.publication_year.clone(),
+            canto_session_key: ref_details.canto_session_key.clone(),
+            canto_annotation_status: ref_details.canto_annotation_status.clone(),
+            canto_triage_status: ref_details.canto_triage_status.clone(),
+            canto_curator_role: ref_details.canto_curator_role.clone(),
+            canto_curator_name: ref_details.canto_curator_name.clone(),
+            canto_first_approved_date: ref_details.canto_first_approved_date.clone(),
+            canto_approved_date: ref_details.canto_approved_date.clone(),
+            canto_approver_orcid: ref_details.canto_approver_orcid.clone(),
+            canto_session_submitted_date: ref_details.canto_session_submitted_date.clone(),
+            canto_added_date: ref_details.canto_added_date.clone(),
+            annotation_curators: ref_details.annotation_curators.clone(),
+            file_curator_name: ref_details.file_curator_name.clone(),
+            file_curator_role: ref_details.file_curator_role.clone(),
+            annotation_file_curators: ref_details.annotation_file_curators.clone(),
+            genes,
+            gene_count: ref_details.gene_count,
+            ltp_gene_count: ref_details.ltp_gene_count,
+            approved_date: ref_details.approved_date.clone(),
+            pdb_entries: ref_details.pdb_entries.clone(),
         }
     }
 }
