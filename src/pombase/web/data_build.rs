@@ -1598,8 +1598,8 @@ phenotypes, so just the first part of this extension will be used:
     fn get_extra_gene_pubs(&self, publication: &Publication)
          -> (Vec<GeneUniquename>, Vec<GeneUniquename>)
     {
-        let mut pubmed_keyword_genes = vec![];
-        let mut extra_genes = vec![];
+        let mut pubmed_keyword_genes = BTreeSet::new();
+        let mut extra_genes = BTreeSet::new();
         for feat_pub in publication.feature_publications.borrow().iter() {
             for prop in feat_pub.feature_pubprops.borrow().iter() {
                 if prop.prop_type.name == "feature_pub_source"
@@ -1608,15 +1608,15 @@ phenotypes, so just the first part of this extension will be used:
                         if feature.feat_type.name == "gene" {
                             let gene_uniquename = feature.uniquename.clone();
                             if prop_value == "pubmed_keyword" {
-                                pubmed_keyword_genes.push(gene_uniquename);
+                                pubmed_keyword_genes.insert(gene_uniquename);
                             } else {
-                                extra_genes.push(gene_uniquename);
+                                extra_genes.insert(gene_uniquename);
                             }
                         }
                     }
             }
         }
-        (pubmed_keyword_genes, extra_genes)
+        (pubmed_keyword_genes.into_iter().collect(), extra_genes.into_iter().collect())
     }
 
     fn process_references(&mut self) {
