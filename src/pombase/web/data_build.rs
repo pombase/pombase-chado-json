@@ -434,7 +434,7 @@ fn make_reference_short(reference_map: &UniquenameReferenceMap,
             .unwrap_or_else(|| panic!("missing reference in make_reference_short(): {}",
                             reference_uniquename));
 
-        let reference_short = ReferenceShort::from_reference_details(reference_details);
+        let reference_short = reference_details.into();
 
         Some(reference_short)
     }

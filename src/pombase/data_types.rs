@@ -774,8 +774,8 @@ pub struct ReferenceShort {
     pub genotype_count: usize,
 }
 
-impl ReferenceShort {
-    pub fn from_reference_details(reference_details: &ReferenceDetails) -> ReferenceShort {
+impl From<&ReferenceDetails> for ReferenceShort {
+    fn from(reference_details: &ReferenceDetails) -> Self {
         ReferenceShort {
             uniquename: reference_details.uniquename.clone(),
             title: reference_details.title.clone(),

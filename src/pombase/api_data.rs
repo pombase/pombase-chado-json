@@ -10,7 +10,7 @@ use rusqlite::Connection;
 
 use std::collections::{BTreeSet, HashMap, HashSet};
 
-use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIGenotypeAnnotation, APIMaps, AlleleDetails, AlleleShort, ChromosomeDetails, DataLookup, ExtPart, ExtRange, FeatureShort, GeneAndGeneProduct, GeneDetails, GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails, GoCamSummary, GoCamId, IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType, OntAnnotationDetail, OntAnnotationId, OntAnnotationMap, Ploidiness, ProteinViewData, ProteinViewType, ReferenceDetails, ReferenceShort, ReferenceShortOptionMap, TermDetails, TermShort, TermShortOptionMap, Throughput, TranscriptDetailsOptionMap, WithFromValue};
+use crate::data_types::{APIAlleleDetails, APIGeneSummary, APIGenotypeAnnotation, APIMaps, AlleleDetails, AlleleShort, ChromosomeDetails, DataLookup, ExtPart, ExtRange, FeatureShort, GeneAndGeneProduct, GeneDetails, GeneQueryData, GeneShort, GeneShortOptionMap, GenotypeDetails, GoCamSummary, GoCamId, IdGeneSubsetMap, IdOntAnnotationDetailMap, InteractionType, OntAnnotationDetail, OntAnnotationId, OntAnnotationMap, Ploidiness, ProteinViewData, ProteinViewType, ReferenceDetails, ReferenceShortOptionMap, TermDetails, TermShort, TermShortOptionMap, Throughput, TranscriptDetailsOptionMap, WithFromValue};
 
 use crate::sort_annotations::sort_cv_annotation_details;
 use crate::web::config::{Config, TermAndName};
@@ -796,7 +796,7 @@ impl APIData {
         for reference_uniquename in reference_map.keys() {
             let reference_arc = &self.get_reference(reference_uniquename).unwrap();
             let reference_details = reference_arc.as_ref();
-            let reference_short = ReferenceShort::from_reference_details(reference_details);
+            let reference_short = reference_details.into();
             ret.insert(reference_uniquename.clone(), Some(reference_short));
         }
         ret
