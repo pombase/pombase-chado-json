@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashSet};
+use std::collections::{BTreeSet, HashSet, HashMap};
 use std::num::NonZeroUsize;
 
 use flexstr::{SharedStr as FlexStr, ToFlex, shared_str as flex_str};
@@ -9,13 +9,13 @@ use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
 use crate::constants::{FYPO_CV_NAME, is_go_root_name};
 
-use crate::data_types::{ActiveSite, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, Strand, SynonymDetails, Throughput, TranscriptDetails, Turn, WithFromValue};
+use crate::data_types::{ActiveSite, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
-use crate::types::{AlleleUniquename, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermId, TermName, TranscriptUniquename};
+use crate::types::{AlleleUniquename, CvName, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermDef, TermId, TermName, TranscriptUniquename};
 
 use crate::api_data::APIData;
 use crate::data_types::DataLookup;
-use crate::web::config::Config;
+use crate::web::config::{Config, InterestingParent};
 
 pub struct RestExec {
 }
@@ -868,6 +868,90 @@ impl From<&ReferenceDetails> for PublicAPIReferenceDetails {
             ltp_gene_count: ref_details.ltp_gene_count,
             approved_date: ref_details.approved_date.clone(),
             pdb_entries: ref_details.pdb_entries.clone(),
+        }
+    }
+}
+
+
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PublicAPITermDetails {
+    pub termid: TermId,
+    pub name: TermName,
+    pub cv_name: CvName,
+    pub annotation_feature_type: FlexStr,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub interesting_parent_ids: HashSet<FlexStr>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub interesting_parent_details: HashSet<InterestingParent>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub in_subsets: HashSet<FlexStr>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<SynonymDetails>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub definition: Option<TermDef>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub direct_ancestors: Vec<TermAndRelation>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub definition_xrefs: HashSet<TermId>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub secondary_identifiers: HashSet<TermId>,
+
+    // genes annotated with this term, except if the term is a phenotype
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub annotated_genes: HashSet<GeneUniquename>,
+
+    // genes in single locus genotypes annotated with this term
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub single_locus_annotated_genes: HashSet<GeneUniquename>,
+
+    // genes in multi locus genotypes annotated with this term
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub multi_locus_annotated_genes: HashSet<GeneUniquename>,
+
+    pub is_obsolete: bool,
+
+    // count of genes annotated with this term, excluding NOT annotations
+    pub gene_count: usize,
+
+    pub genotype_count: usize,
+    #[serde(skip_serializing_if="HashMap::is_empty", default)]
+    pub xrefs: HashMap<FlexStr, TermXref>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub pombase_gene_id: Option<FlexStr>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub gocams: HashSet<GoCamIdAndTitle>,
+
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    // for ChEBI terms, the IDs of reactions containing this chemical:
+    pub rhea_reaction_ids: HashSet<RheaId>,
+}
+
+impl From<&TermDetails> for PublicAPITermDetails {
+    fn from(td: &TermDetails) -> Self {
+        PublicAPITermDetails {
+            termid: td.termid.clone(),
+            name: td.name.clone(),
+            cv_name: td.cv_name.clone(),
+            annotation_feature_type: td.annotation_feature_type.clone(),
+            interesting_parent_ids: td.interesting_parent_ids.clone(),
+            interesting_parent_details: td.interesting_parent_details.clone(),
+            in_subsets: td.in_subsets.clone(),
+            synonyms: td.synonyms.clone(),
+            definition: td.definition.clone(),
+            direct_ancestors: td.direct_ancestors.clone(),
+            definition_xrefs: td.definition_xrefs.clone(),
+            secondary_identifiers: td.secondary_identifiers.clone(),
+            annotated_genes: td.annotated_genes.clone(),
+            single_locus_annotated_genes: td.single_locus_annotated_genes.clone(),
+            multi_locus_annotated_genes: td.multi_locus_annotated_genes.clone(),
+            is_obsolete: td.is_obsolete,
+            gene_count: td.gene_count,
+            genotype_count: td.genotype_count,
+            xrefs: td.xrefs.clone(),
+            pombase_gene_id: td.pombase_gene_id.clone(),
+            gocams: td.gocams.clone(),
+            rhea_reaction_ids: td.rhea_reaction_ids.clone(),
         }
     }
 }
