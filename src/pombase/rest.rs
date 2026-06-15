@@ -289,7 +289,7 @@ fn make_go_annotation(config: &Config, api_data: &dyn DataLookup,
 fn make_phenotype_annotation(api_data: &dyn DataLookup,
                              termid: TermId, term_name: TermName,
                              annotation_details: &OntAnnotationDetail,
-                             genotype_details: &GenotypeDetails)
+                             gd: &GenotypeDetails)
     -> PublicAPIPhenotypeAnnotation
 {
     let conditions = annotation_details.condition_details.iter()
@@ -304,7 +304,10 @@ fn make_phenotype_annotation(api_data: &dyn DataLookup,
         .collect();
 
     PublicAPIPhenotypeAnnotation {
-        genotype: make_genotype(api_data, genotype_details),
+        genotype_display_uniquename: gd.display_uniquename.clone(),
+        genotype_display_name: gd.display_name.clone(),
+        genotype_name: gd.name.clone(),
+        genotype_loci: gd.loci.iter().map(|l| make_locus(api_data, l)).collect(),
         termid,
         term_name,
         conditions,
@@ -683,27 +686,6 @@ fn make_locus(api_data: &dyn DataLookup, locus: &GenotypeLocus)
    }
 }
 
-
-#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct PublicAPIGenotype {
-    pub display_uniquename: GenotypeDisplayUniquename,
-    pub display_name: GenotypeDisplayName,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub name: Option<FlexStr>,
-    pub loci: Vec<PublicAPIGenotypeLocus>,
-}
-
-fn make_genotype(api_data: &dyn DataLookup, gd: &GenotypeDetails)
-    -> PublicAPIGenotype
-{
-    PublicAPIGenotype {
-        display_uniquename: gd.display_uniquename.clone(),
-        display_name: gd.display_name.clone(),
-        name: gd.name.clone(),
-        loci: gd.loci.iter().map(|l| make_locus(api_data, l)).collect(),
-    }
-}
-
 #[derive(Serialize, Clone, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub struct PublicAPICondition {
     pub termid: FlexStr,
@@ -712,7 +694,11 @@ pub struct PublicAPICondition {
 
 #[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIPhenotypeAnnotation {
-    pub genotype: PublicAPIGenotype,
+    pub genotype_display_uniquename: GenotypeDisplayUniquename,
+    pub genotype_display_name: GenotypeDisplayName,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub genotype_name: Option<FlexStr>,
+    pub genotype_loci: Vec<PublicAPIGenotypeLocus>,
     pub termid: TermId,
     pub term_name: TermName,
     pub conditions: BTreeSet<PublicAPICondition>,
