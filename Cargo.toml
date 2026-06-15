@@ -33,7 +33,6 @@ anyhow = "1"
 thiserror = "2"
 itertools = "0.14"
 csv = "1"
-rusqlite = { version = "0.40", features = ["bundled", "serde_json"] }
 tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["fs", "normalize-path", "trace"] }
 axum = { version = "0.8", features = ["macros"] }
@@ -52,8 +51,14 @@ arrow-array = "59"
 arrow-schema = "59"
 parquet = "59"
 
+[dependencies.rusqlite]
+version = "0.40"
+default-features = false
+features = ["serde_json"]
+
 [dependencies.serde]
 version = "1"
+default-features = false
 features = ["rc", "derive"]
 
 [dependencies.zstd]
@@ -62,10 +67,12 @@ features = ["zstdmt"]
 
 [dependencies.flexstr]
 version = "0.9"
+default-features = false
 features = ["serde"]
 
 [dependencies.tokio-postgres]
 version = "0.7"
+default-features = false
 features = ["with-serde_json-1", "with-uuid-1"]
 
 [dependencies.reqwest]
