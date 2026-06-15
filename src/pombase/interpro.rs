@@ -55,16 +55,14 @@ fn sort_matches(config: &Config, matches: &mut [InterProMatch]) {
     let db_order = &config.protein_feature_db_order;
 
     let order_pos = move |m: &InterProMatch| {
-        #[allow(clippy::needless_range_loop)]
-        for pos in 0..db_order.len() {
-            if m.dbname.as_str().starts_with(db_order[pos].as_str()) {
+        for (pos, order) in db_order.iter().enumerate() {
+            if m.dbname.as_str().starts_with(order.as_str()) {
                 return pos;
             }
         }
 
         db_order.len()
     };
-
 
     let sort_fn = |a: &InterProMatch, b: &InterProMatch| {
         let a_pos = order_pos(a);
