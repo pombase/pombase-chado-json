@@ -562,7 +562,7 @@ fn make_pfam_tracks(gene_details: &GeneDetails) -> Vec<ProteinViewTrack> {
     let mut feature_tracks = vec![];
 
     for interpro_match in &gene_details.interpro_matches {
-        if interpro_match.dbname == "PFAM" {
+        if interpro_match.dbname.to_ascii_lowercase() == "pfam" {
             let match_name = interpro_match.description.as_ref()
                 .or(interpro_match.interpro_name.as_ref())
                 .or(interpro_match.description.as_ref())
@@ -774,7 +774,7 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
     for (dbname, interpro_matches) in interpro_match_map.iter() {
         let features = interpro_matches
             .iter()
-            .filter(|m| m.dbname != "PFAM")  // handled separately
+            .filter(|m| m.dbname != "Pfam")  // handled separately
             .map(|feat| {
                 let feat_name =
                     feat.interpro_description.as_deref()
@@ -819,7 +819,7 @@ pub fn tracks_from_interpro(interpro_matches: &[InterProMatch])
 
         if dbname == "COILS" {
             return_val.coils.push(track);
-        } else if dbname.starts_with("MOBIDB") {
+        } else if dbname.to_uppercase().starts_with("MOBIDB") {
             return_val.disordered.push(track);
         } else {
             return_val.other.push(track);

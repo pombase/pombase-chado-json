@@ -52,11 +52,12 @@ pub struct DomainData {
 }
 
 fn sort_matches(config: &Config, matches: &mut [InterProMatch]) {
-    let db_order = &config.protein_feature_db_order;
+    let db_order: Vec<_> = config.protein_feature_db_order.iter()
+        .map(|s| s.to_ascii_lowercase()).collect();
 
     let order_pos = move |m: &InterProMatch| {
         for (pos, order) in db_order.iter().enumerate() {
-            if m.dbname.as_str().starts_with(order.as_str()) {
+            if m.dbname.to_ascii_lowercase().starts_with(order.as_str()) {
                 return pos;
             }
         }
