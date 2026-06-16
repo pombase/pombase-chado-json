@@ -1411,6 +1411,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "itertools"
+version = "0.15.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b4baf93f58d4425749ca49a51c50ebab072c5df6994d08fed93541c331481dc"
+dependencies = [
+ "either",
+]
+
+[[package]]
 name = "itoa"
 version = "1.0.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1919,7 +1928,7 @@ dependencies = [
  "getopts",
  "http-body-util",
  "indexmap 2.14.0",
- "itertools",
+ "itertools 0.15.0",
  "lazy_static",
  "mime_guess",
  "once_cell",
@@ -1968,7 +1977,7 @@ version = "0.156.0"
 source = "git+https://github.com/pombase/pombase-gocam-process.git#52fab3ce53bb1c8061be139eecf9b820564a2de9"
 dependencies = [
  "anyhow",
- "itertools",
+ "itertools 0.14.0",
  "lazy_static",
  "petgraph",
  "pombase-gocam",
