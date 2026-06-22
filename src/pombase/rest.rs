@@ -303,6 +303,13 @@ fn make_phenotype_annotation(api_data: &dyn DataLookup,
         })
         .collect();
 
+    let genes: Vec<_> = gd.genes_by_uniquename.keys()
+        .map(|uniquename| {
+            let gene_details = api_data.get_gene(uniquename).unwrap();
+            let gene_details = gene_details.as_ref();
+            gene_details.into()
+         }).collect();
+
     let is_diploid = gd.loci[0].expressed_alleles.len() > 1;
     let is_multi_locus = gd.loci.len() > 1;
 
@@ -311,6 +318,7 @@ fn make_phenotype_annotation(api_data: &dyn DataLookup,
         genotype_display_name: gd.display_name.clone(),
         genotype_name: gd.name.clone(),
         genotype_loci: gd.loci.iter().map(|l| make_locus(api_data, l)).collect(),
+        genes,
         is_diploid,
         is_multi_locus,
         termid,
@@ -705,6 +713,7 @@ pub struct PublicAPIPhenotypeAnnotation {
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype_name: Option<FlexStr>,
     pub genotype_loci: Vec<PublicAPIGenotypeLocus>,
+    pub genes: Vec<GeneShort>,
     pub is_diploid: bool,
     pub is_multi_locus: bool,
     pub termid: TermId,
