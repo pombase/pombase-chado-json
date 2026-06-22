@@ -644,6 +644,16 @@ impl From<&GeneShort> for PublicAPIGeneShort {
     }
 }
 
+impl From<&GeneDetails> for PublicAPIGeneShort {
+    fn from(gene_short: &GeneDetails) -> Self {
+        PublicAPIGeneShort {
+            systematic_id: gene_short.uniquename.clone(),
+            name: gene_short.name.clone(),
+            product: gene_short.product.clone(),
+        }
+    }
+}
+
 #[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIAllele {
     pub name: Option<FlexStr>,
@@ -713,7 +723,7 @@ pub struct PublicAPIPhenotypeAnnotation {
     #[serde(skip_serializing_if="Option::is_none")]
     pub genotype_name: Option<FlexStr>,
     pub genotype_loci: Vec<PublicAPIGenotypeLocus>,
-    pub genes: Vec<GeneShort>,
+    pub genes: Vec<PublicAPIGeneShort>,
     pub is_diploid: bool,
     pub is_multi_locus: bool,
     pub termid: TermId,
