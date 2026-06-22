@@ -632,6 +632,10 @@ pub struct PublicAPIGeneShort {
     pub systematic_id: GeneUniquename,
     pub name: Option<GeneName>,
     pub product: Option<GeneProduct>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub secondary_identifier: Option<GeneName>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub agr_identifier: Option<GeneName>,
 }
 
 impl From<&GeneShort> for PublicAPIGeneShort {
@@ -640,16 +644,20 @@ impl From<&GeneShort> for PublicAPIGeneShort {
             systematic_id: gene_short.uniquename.clone(),
             name: gene_short.name.clone(),
             product: gene_short.product.clone(),
+            secondary_identifier: gene_short.secondary_identifier.clone(),
+            agr_identifier: gene_short.agr_identifier.clone(),
         }
     }
 }
 
 impl From<&GeneDetails> for PublicAPIGeneShort {
-    fn from(gene_short: &GeneDetails) -> Self {
+    fn from(gene_details: &GeneDetails) -> Self {
         PublicAPIGeneShort {
-            systematic_id: gene_short.uniquename.clone(),
-            name: gene_short.name.clone(),
-            product: gene_short.product.clone(),
+            systematic_id: gene_details.uniquename.clone(),
+            name: gene_details.name.clone(),
+            product: gene_details.product.clone(),
+            secondary_identifier: gene_details.secondary_identifier.clone(),
+            agr_identifier: gene_details.agr_identifier.clone(),
         }
     }
 }
