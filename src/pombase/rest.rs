@@ -303,12 +303,19 @@ fn make_phenotype_annotation(api_data: &dyn DataLookup,
         })
         .collect();
 
-    let genes: Vec<_> = gd.genes_by_uniquename.keys()
-        .map(|uniquename| {
-            let gene_details = api_data.get_gene(uniquename).unwrap();
+    let mut genes: HashSet<_> = HashSet::new();
+
+    for locus in &gd.loci {
+        for expressed_allele in &locus.expressed_alleles {
+            let allele_uniquename = &expressed_allele.allele_uniquename;
+            let allele_details = api_data.get_allele(allele_uniquename).unwrap();
+            let gene_details = api_data.get_gene(&allele_details.gene.uniquename).unwrap();
             let gene_details = gene_details.as_ref();
-            gene_details.into()
-         }).collect();
+            genes.insert(gene_details.into());
+        }
+    }
+
+    let genes = genes.into_iter().collect();
 
     let is_diploid = gd.loci[0].expressed_alleles.len() > 1;
     let is_multi_locus = gd.loci.len() > 1;
