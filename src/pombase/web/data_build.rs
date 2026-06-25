@@ -2019,7 +2019,8 @@ phenotypes, so just the first part of this extension will be used:
             }
         }
 
-        let (interpro_matches, tm_domain_coords, coiled_coil_coords,
+        let (interpro_matches, tm_domain_coords, deeptmhmm_domain_coords,
+             coiled_coil_coords,
              disordered_region_coords, low_complexity_region_coords) =
             if let Some(result) = self.domain_data.domains_by_id.get(gene_uniquename.as_str()) {
                 let tm_domain_matches = result.tmhmm_matches.iter()
@@ -2031,12 +2032,15 @@ phenotypes, so just the first part of this extension will be used:
                         assigned_by: Some(flex_str!("TMHMM")),
                     })
                     .collect::<Vec<_>>();
+
+                let mut deeptmhmm_domain_coords = vec![];
+
                 let mut coiled_coil_coords = vec![];
                 let mut disordered_region_coords = vec![];
 
                 for interpro_match in result.interpro_matches.iter() {
                     let dbname = interpro_match.dbname.to_ascii_uppercase();
-                    if dbname == "COILS" || dbname == "MOBIDB" {
+                    if dbname == "COILS" || dbname == "MOBIDB" || dbname == "DEEPTMHMM" {
                         for loc in interpro_match.locations.iter() {
                             let range = AssignedByPeptideRange {
                                 range: PeptideRange {
@@ -2047,10 +2051,11 @@ phenotypes, so just the first part of this extension will be used:
                                 assigned_by: None,
                             };
 
-                            if dbname == "COILS" {
-                                coiled_coil_coords.push(range);
-                            } else {
-                                disordered_region_coords.push(range);
+                            match dbname.as_str() {
+                                "COILS" => coiled_coil_coords.push(range),
+                                "MOBIDB" => disordered_region_coords.push(range),
+                                "DEEPTMHMM" => deeptmhmm_domain_coords.push(range),
+                                _ => panic!(),
                             }
                         }
                     }
@@ -2070,10 +2075,10 @@ phenotypes, so just the first part of this extension will be used:
                     })
                     .collect();
 
-                (result.interpro_matches.clone(), tm_domain_matches,
+                (result.interpro_matches.clone(), tm_domain_matches, deeptmhmm_domain_coords,
                  coiled_coil_coords, disordered_region_coords, low_complexity_region_coords)
             } else {
-                (vec![], vec![], vec![], vec![], vec![])
+                (vec![], vec![], vec![], vec![], vec![], vec![])
             };
 
         let rfam_annotations =
@@ -2117,6 +2122,7 @@ phenotypes, so just the first part of this extension will be used:
             pdb_entries,
             interpro_matches,
             tm_domain_coords,
+            deeptmhmm_domain_coords,
             disordered_region_coords,
             low_complexity_region_coords,
             coiled_coil_coords,

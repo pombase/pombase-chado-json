@@ -604,6 +604,7 @@ fn make_test_gene() -> GeneDetails {
         pdb_entries: vec![],
         interpro_matches: vec![],
         tm_domain_coords: vec![],
+        deeptmhmm_domain_coords: vec![],
         disordered_region_coords: vec![],
         low_complexity_region_coords: vec![],
         coiled_coil_coords: vec![],

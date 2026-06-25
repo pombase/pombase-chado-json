@@ -1476,6 +1476,8 @@ pub struct GeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub tm_domain_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub deeptmhmm_domain_coords: Vec<AssignedByPeptideRange>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub disordered_region_coords: Vec<AssignedByPeptideRange>,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub low_complexity_region_coords: Vec<AssignedByPeptideRange>,
