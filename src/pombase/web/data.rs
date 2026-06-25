@@ -29,7 +29,7 @@ use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 use crate::bio::ExportCommentsMode;
 use crate::constants::*;
 
-use crate::rest::{PublicAPIGeneDetails, PublicAPIReferenceDetails, PublicAPITermDetails, PublicAPITranscriptDetails, RestExec};
+use crate::rest::{PublicAPIAlleleDetails, PublicAPIGeneDetails, PublicAPIReferenceDetails, PublicAPITermDetails, PublicAPITranscriptDetails, RestExec};
 use crate::web::config::*;
 use crate::rnacentral::*;
 
@@ -1626,6 +1626,24 @@ impl WebData {
         Ok(())
     }
 
+    pub fn write_pub_api_alleles(&self, output_dir: &str)
+        -> Result<(), io::Error>
+    {
+        let file_name = format!("{}/public_api_alleles.json", output_dir);
+        let f = File::create(file_name)?;
+        let mut writer = BufWriter::new(&f);
+
+        let pub_api_alleles: Vec<PublicAPIAlleleDetails> = self.alleles.values()
+            .map(|a| a.into())
+            .collect();
+
+        let s = serde_json::to_string(&pub_api_alleles).unwrap();
+
+        writeln!(writer, "{}", s)?;
+
+        Ok(())
+    }
+
     pub fn write_pub_api_references(&self, output_dir: &str)
         -> Result<(), io::Error>
     {
@@ -2012,6 +2030,7 @@ impl WebData {
         self.write_annotation_subsets(config, &misc_path)?;
 
         self.write_pub_api_genes(config, &misc_path)?;
+        self.write_pub_api_alleles(&misc_path)?;
         self.write_pub_api_references(&misc_path)?;
         self.write_pub_api_terms(&misc_path)?;
         self.write_pub_api_json_phenotypes(config, &misc_path)?;

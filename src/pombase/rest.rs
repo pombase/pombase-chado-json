@@ -9,7 +9,7 @@ use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
 use crate::constants::{FYPO_CV_NAME, is_go_root_name};
 
-use crate::data_types::{ActiveSite, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
+use crate::data_types::{ActiveSite, AlleleDetails, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
 use crate::types::{AlleleUniquename, CvName, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermDef, TermId, TermName, TranscriptUniquename};
 
@@ -670,7 +670,7 @@ impl From<&GeneDetails> for PublicAPIGeneShort {
 }
 
 #[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
-pub struct PublicAPIAllele {
+pub struct PublicAPIAlleleShort {
     pub name: Option<FlexStr>,
     pub allele_type: FlexStr,
     pub description: Option<FlexStr>,
@@ -679,12 +679,12 @@ pub struct PublicAPIAllele {
 }
 
 fn make_allele(api_data: &dyn DataLookup, allele_uniquename: &AlleleUniquename)
-    -> PublicAPIAllele
+    -> PublicAPIAlleleShort
 {
     let allele = api_data.get_allele(allele_uniquename).unwrap();
     let gene = &allele.gene;
 
-    PublicAPIAllele {
+    PublicAPIAlleleShort {
         name: allele.name.clone(),
         allele_type: allele.allele_type.clone(),
         description: allele.description.clone(),
@@ -697,7 +697,7 @@ fn make_allele(api_data: &dyn DataLookup, allele_uniquename: &AlleleUniquename)
 pub struct PublicAPIExpressedAllele {
     pub expression: Option<Expression>,
     pub promoter_gene: Option<FlexStr>,
-    pub allele: PublicAPIAllele,
+    pub allele: PublicAPIAlleleShort,
 }
 
 fn make_expressed_allele(api_data: &dyn DataLookup, ea: &ExpressedAllele)
@@ -901,8 +901,6 @@ impl From<&ReferenceDetails> for PublicAPIReferenceDetails {
     }
 }
 
-
-
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PublicAPITermDetails {
     pub termid: TermId,
@@ -982,5 +980,31 @@ impl From<&TermDetails> for PublicAPITermDetails {
             gocams: td.gocams.clone(),
             rhea_reaction_ids: td.rhea_reaction_ids.clone(),
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct PublicAPIAlleleDetails {
+    pub systematic_id: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub name: Option<FlexStr>,
+    pub allele_type: FlexStr,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub description: Option<FlexStr>,
+    pub gene: GeneShort,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub synonyms: Vec<SynonymDetails>,
+}
+
+impl From<&AlleleDetails> for PublicAPIAlleleDetails {
+    fn from(ad: &AlleleDetails) -> Self {
+        PublicAPIAlleleDetails {
+            systematic_id: ad.uniquename.clone(),
+            name: ad.name.clone(),
+            allele_type: ad.allele_type.clone(),
+            description: ad.description.clone(),
+            gene: ad.gene.clone(),
+            synonyms: ad.synonyms.clone(),
+       }
     }
 }
