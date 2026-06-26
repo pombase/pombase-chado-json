@@ -1265,6 +1265,7 @@ impl <'a> WebDataBuild<'a> {
             location: gene_details.location.clone(),
             transcripts: transcript_details,
             tm_domain_count: gene_details.tm_domain_coords.len(),
+            deeptmhmm_domain_count: gene_details.deeptmhmm_domain_coords.len(),
             coiled_coil_count: gene_details.coiled_coil_coords.len(),
             coiled_coil_percent,
             disordered_regions_count,

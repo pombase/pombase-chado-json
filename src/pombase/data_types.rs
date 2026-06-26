@@ -2590,6 +2590,7 @@ pub struct APIGeneSummary {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub transcripts: Vec<TranscriptDetails>,
     pub tm_domain_count: usize,
+    pub deeptmhmm_domain_count: usize,
     pub coiled_coil_count: usize,
     pub coiled_coil_percent: usize,
     pub disordered_regions_count: usize,

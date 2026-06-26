@@ -38,6 +38,8 @@ pub enum IntRangeType {
     ProteinLength,
 #[serde(rename = "tm_domain_count")]
     TMDomainCount,
+#[serde(rename = "deeptmhmm_domain_count")]
+    DeepTMHMMDomainCount,
 #[serde(rename = "coiled_coils_count")]
     CoiledCoilsCount,
 #[serde(rename = "coiled_coils_percent")]
@@ -512,6 +514,18 @@ fn exec_tm_domain_count_range(api_data: &APIData,
     Ok(gene_uniquenames)
 }
 
+fn exec_deeptmhmm_domain_count_range(api_data: &APIData,
+                                     range_start: Option<usize>, range_end: Option<usize>)
+   -> GeneUniquenameVecResult
+{
+    let gene_uniquenames =
+        api_data.filter_proteins(&|gene: &APIGeneSummary| {
+            (range_start.is_none() || gene.deeptmhmm_domain_count >= range_start.unwrap()) &&
+                (range_end.is_none() || gene.deeptmhmm_domain_count <= range_end.unwrap())
+        });
+    Ok(gene_uniquenames)
+}
+
 fn exec_coiled_coils_count_range(api_data: &APIData,
                                  range_start: Option<usize>, range_end: Option<usize>)
                                  -> GeneUniquenameVecResult
@@ -662,6 +676,7 @@ fn exec_int_range(api_data: &APIData, range_type: &IntRangeType,
         IntRangeType::SplicedRnaLength => exec_spliced_rna_length_range(api_data, start, end),
         IntRangeType::UnsplicedRnaLength => exec_unspliced_rna_length_range(api_data, start, end),
         IntRangeType::TMDomainCount => exec_tm_domain_count_range(api_data, start, end),
+        IntRangeType::DeepTMHMMDomainCount => exec_deeptmhmm_domain_count_range(api_data, start, end),
         IntRangeType::CoiledCoilsCount => exec_coiled_coils_count_range(api_data, start, end),
         IntRangeType::CoiledCoilsPercent => exec_coiled_coils_percent_range(api_data, start, end),
         IntRangeType::DisorderedRegionsCount => exec_disordered_regions_count_range(api_data, start, end),
