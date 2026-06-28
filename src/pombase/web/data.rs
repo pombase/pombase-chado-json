@@ -1857,13 +1857,18 @@ impl WebData {
         }
 
         model_and_holes.sort_by(|a, b| {
-            let (_, a_model_title, a_hole_node) = a;
-            let (_, b_model_title, b_hole_node) = b;
+            let (_, a_model_title, a_node) = a;
+            let (_, b_model_title, b_node) = b;
 
             let order = a_model_title.cmp(b_model_title);
 
             if order == Ordering::Equal {
-                a_hole_node.label.cmp(&b_hole_node.label)
+                let label_order = a_node.label.cmp(&b_node.label);
+                if label_order == Ordering::Equal {
+                    a_node.to_string().cmp(&b_node.to_string())
+                } else {
+                    label_order
+                }
             } else {
                 order
             }
