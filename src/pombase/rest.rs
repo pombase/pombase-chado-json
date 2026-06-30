@@ -42,7 +42,7 @@ impl RestExec {
     pub async fn genes_by_id(&self, api_data: &APIData, gene_ids: &[&str])
         -> PublicAPIGeneLookupResponse
     {
-        let (found, missing) = gene_ids.iter()
+        let (found, not_found) = gene_ids.iter()
             .partition_map(|id| {
                 let id = id.to_flex();
                 if let Some(ref gene_details) = api_data.get_full_gene_details(&id) {
@@ -55,7 +55,7 @@ impl RestExec {
 
         PublicAPIGeneLookupResponse {
             found,
-            missing,
+            not_found,
         }
     }
 
@@ -69,7 +69,7 @@ impl RestExec {
     pub async fn genes_by_uniprot_accession(&self, api_data: &APIData, uniprot_accessions: &[&str])
         -> PublicAPIGeneLookupResponse
     {
-        let (found, missing) = uniprot_accessions.iter()
+        let (found, not_found) = uniprot_accessions.iter()
             .partition_map(|id| {
                 let id = id.to_flex();
                 if let Some(ref details) = api_data.get_gene_details_by_uniprot_accession(&id) {
@@ -82,7 +82,7 @@ impl RestExec {
 
         PublicAPIGeneLookupResponse {
             found,
-            missing,
+            not_found,
         }
     }
 
@@ -631,7 +631,7 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
 #[derive(Serialize, Clone, Debug)]
 pub struct PublicAPIGeneLookupResponse {
     found: Vec<PublicAPIGeneDetails>,
-    missing: Vec<FlexStr>,
+    not_found: Vec<FlexStr>,
 }
 
 #[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
