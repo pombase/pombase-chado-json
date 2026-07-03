@@ -3,7 +3,7 @@ name = "pombase-chado-json"
 version = "229.36.0"
 authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
 edition = "2024"
-rust-version = "1.94"
+rust-version = "1.96"
 resolver = "3"
 
 [lib]
