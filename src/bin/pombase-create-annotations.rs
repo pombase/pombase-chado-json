@@ -77,13 +77,27 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     if args.is_empty() {
-        eprintln!(r#"missing [file_name] argument after "{}"\n"#, input_file_type);
+        eprintln!(r#"command "{}" needs options\n"#, input_file_type);
         eprint_usage(&program, opts);
         process::exit(1);
     }
 
-    if input_file_type == "uniprot-data-tsv" {
-        let mut sub_opts = Options::new();
+    match input_file_type.as_str() {
+        "uniprot-data-tsv" => {
+            process_uniprot(&program, &args)?;
+        },
+        _ => {
+            eprintln!("unknown input file type: {}", input_file_type);
+            eprint_usage(&program, opts);
+            process::exit(1);
+        }
+    }
+
+    Ok(())
+}
+
+fn process_uniprot(program: &str, args: &[String]) -> Result<(), Box<dyn Error>> {
+    let mut sub_opts = Options::new();
         let sub_opts = sub_opts.parsing_style(ParsingStyle::StopAtFirstFree);
 
         sub_opts.reqopt("", "n-glycsylated-residue-termid",
@@ -110,10 +124,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         sub_opts.optopt("", "filter-references",
                         "A comma separated list of PMIDs to ignore", "PMIDs");
 
-        let sub_matches = match sub_opts.parse(&args) {
+        let sub_matches = match sub_opts.parse(args) {
             Ok(m) => m,
             Err(e) => {
-                eprint_usage(&program, sub_opts);
+                eprint_usage(program, sub_opts);
                 println!("\nerror: {}", e);
                 process::exit(1);
             },
@@ -148,11 +162,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         write_from_uniprot_map(&uniprot_data_map, &uniprot_pmid,
                                &termid_map, &assigned_by,
                                &mut stdout)?;
-    } else {
-        eprintln!("unknown input file type: {}", input_file_type);
-        eprint_usage(&program, opts);
-        process::exit(1);
-    }
 
     Ok(())
 }
