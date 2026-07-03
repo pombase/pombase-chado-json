@@ -70,18 +70,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let input_file_type = args.remove(0);
 
-    if input_file_type != "uniprot-data-tsv" {
-        eprintln!("unknown input file type {}\n", input_file_type);
-        eprint_usage(&program, opts);
-        process::exit(1);
-    }
-
-    if args.is_empty() {
-        eprintln!(r#"command "{}" needs options\n"#, input_file_type);
-        eprint_usage(&program, opts);
-        process::exit(1);
-    }
-
     match input_file_type.as_str() {
         "uniprot-data-tsv" => {
             process_uniprot(&program, &args)?;
@@ -98,70 +86,70 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn process_uniprot(program: &str, args: &[String]) -> Result<(), Box<dyn Error>> {
     let mut sub_opts = Options::new();
-        let sub_opts = sub_opts.parsing_style(ParsingStyle::StopAtFirstFree);
+    let sub_opts = sub_opts.parsing_style(ParsingStyle::StopAtFirstFree);
 
-        sub_opts.reqopt("", "n-glycsylated-residue-termid",
-                        "The term ID for N-glycsylated residue", "TERMID");
+    sub_opts.reqopt("", "n-glycsylated-residue-termid",
+                    "The term ID for N-glycsylated residue", "TERMID");
 
-        sub_opts.reqopt("", "glycosylation-site-termid",
+    sub_opts.reqopt("", "glycosylation-site-termid",
                     "The term ID to use in glycosylation modification annotations",
                     "TERMID");
 
-        sub_opts.reqopt("", "disulphide-bond-termid",
+    sub_opts.reqopt("", "disulphide-bond-termid",
                     "The term ID to use in disulphide bond annotations",
                     "TERMID");
 
-        sub_opts.reqopt("", "peptide-fasta",
-                        "A file of peptides to compare to UniProt sequences", "FASTA_FILE");
+    sub_opts.reqopt("", "peptide-fasta",
+                    "A file of peptides to compare to UniProt sequences", "FASTA_FILE");
 
-        sub_opts.reqopt("", "uniprot-reference",
-                        "The PubMed ID of the most recent UniProt publication to add to the annotations",
-                        "PMID");
+    sub_opts.reqopt("", "uniprot-reference",
+                    "The PubMed ID of the most recent UniProt publication to add to the annotations",
+                    "PMID");
 
-        sub_opts.reqopt("", "assigned-by",
-                        "Value for the assigned_by column", "SOURCE");
+    sub_opts.reqopt("", "assigned-by",
+                    "Value for the assigned_by column", "SOURCE");
 
-        sub_opts.optopt("", "filter-references",
-                        "A comma separated list of PMIDs to ignore", "PMIDs");
+    sub_opts.optopt("", "filter-references",
+                    "A comma separated list of PMIDs to ignore", "PMIDs");
 
-        let sub_matches = match sub_opts.parse(args) {
-            Ok(m) => m,
-            Err(e) => {
-                eprint_usage(program, sub_opts);
-                println!("\nerror: {}", e);
-                process::exit(1);
-            },
-        };
+    let sub_matches = match sub_opts.parse(args) {
+        Ok(m) => m,
+        Err(e) => {
+            eprint_usage(program, sub_opts);
+            println!("\nerror: {}", e);
+            process::exit(1);
+        },
+    };
 
-        let termid_map = UniProtTermidMap {
-            n_glycsylated_residue_termid: sub_matches.opt_str("n-glycsylated-residue-termid").unwrap(),
-            glycosylation_site_termid: sub_matches.opt_str("glycosylation-site-termid").unwrap(),
-            disulphide_bond_termid: sub_matches.opt_str("disulphide-bond-termid").unwrap(),
-        };
+    let termid_map = UniProtTermidMap {
+        n_glycsylated_residue_termid: sub_matches.opt_str("n-glycsylated-residue-termid").unwrap(),
+        glycosylation_site_termid: sub_matches.opt_str("glycosylation-site-termid").unwrap(),
+        disulphide_bond_termid: sub_matches.opt_str("disulphide-bond-termid").unwrap(),
+    };
 
-        let uniprot_pmid = sub_matches.opt_str("uniprot-reference").unwrap();
-        let assigned_by = sub_matches.opt_str("assigned-by").unwrap();
-        let peptide_filename = sub_matches.opt_str("peptide-fasta").unwrap();
-        let mut peptide_file = File::open(peptide_filename)?;
-        let peptides = read_fasta(&mut peptide_file)?;
-        let filter_references: Vec<_> = sub_matches.opt_str("filter-references")
-            .unwrap_or_default()
-            .trim()
-            .split(",")
-            .map(|s| flex_fmt!("PMID:{}", s.trim_start_matches("PMID:")))
-            .collect();
+    let uniprot_pmid = sub_matches.opt_str("uniprot-reference").unwrap();
+    let assigned_by = sub_matches.opt_str("assigned-by").unwrap();
+    let peptide_filename = sub_matches.opt_str("peptide-fasta").unwrap();
+    let mut peptide_file = File::open(peptide_filename)?;
+    let peptides = read_fasta(&mut peptide_file)?;
+    let filter_references: Vec<_> = sub_matches.opt_str("filter-references")
+        .unwrap_or_default()
+        .trim()
+        .split(",")
+        .map(|s| flex_fmt!("PMID:{}", s.trim_start_matches("PMID:")))
+        .collect();
 
-        let file_name_pos = 6 + if !filter_references.is_empty() { 1 } else { 0 };
-        let file_name = &args[file_name_pos];
+    let file_name_pos = 6 + if !filter_references.is_empty() { 1 } else { 0 };
+    let file_name = &args[file_name_pos];
 
-        let uniprot_data_map =
-            filter_uniprot_map(parse_uniprot(file_name, &filter_references),
-                               &peptides);
+    let uniprot_data_map =
+        filter_uniprot_map(parse_uniprot(file_name, &filter_references),
+                           &peptides);
 
-        let mut stdout = io::stdout().lock();
-        write_from_uniprot_map(&uniprot_data_map, &uniprot_pmid,
-                               &termid_map, &assigned_by,
-                               &mut stdout)?;
+    let mut stdout = io::stdout().lock();
+    write_from_uniprot_map(&uniprot_data_map, &uniprot_pmid,
+                           &termid_map, &assigned_by,
+                           &mut stdout)?;
 
     Ok(())
 }
