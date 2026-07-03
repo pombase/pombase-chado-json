@@ -247,7 +247,7 @@ pub fn write_from_uniprot_map(uniprot_data_map: &UniProtDataMap,
 }
 
 #[allow(clippy::too_many_arguments)]
-fn write_generic_annotation(out: &mut BufWriter<&mut dyn Write>,
+pub fn write_generic_annotation(out: &mut BufWriter<&mut dyn Write>,
                             uniquename: &str, name: &str, termid: &str,
                             evidence: &str,
                             reference_uniquename: &str,
