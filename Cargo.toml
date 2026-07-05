@@ -1,7 +1,7 @@
 [package]
 name = "pombase-chado-json"
 version = "229.38.0"
-authors = ["Kim Rutherford <kmr44@cam.ac.uk>"]
+authors = ["Kim Rutherford <kmr@pombase.org>"]
 edition = "2024"
 rust-version = "1.96"
 resolver = "3"
