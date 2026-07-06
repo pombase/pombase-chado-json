@@ -1,7 +1,7 @@
 extern crate getopts;
 
 use axum::{
-    Json, Router, ServiceExt, body::Body, extract::{Path, Request, State, Query as AxumQuery},
+    Form, Json, Router, ServiceExt, body::Body, extract::{Path, Request, State},
     http::{HeaderMap, StatusCode, header}, response::{Html, IntoResponse, Response}, routing::{get, post}
 };
 
@@ -1176,15 +1176,15 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
 #[derive(Deserialize)]
 struct MapperParams {
     mapping_type: PublicAPIMappingType,
-    lookup_arg: String,
-    _output_type: String,
+    q: String,
+//    _output_type: String,
 }
 
 async fn rest_identifier_mapper_post(State(all_state): State<Arc<AllState>>,
-                                     AxumQuery(params): AxumQuery<MapperParams> )
+                                     Form(params): Form<MapperParams>)
     -> impl IntoResponse
 {
-    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.lookup_arg.trim())
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
         .filter(|id| !id.is_empty()).collect();
     Json(all_state.rest_exec.identifier_mapper(all_state.get_api_data(), &params.mapping_type, &lookup_list))
 }

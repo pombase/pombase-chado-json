@@ -685,7 +685,9 @@ pub struct PublicAPIMapperResponse {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum PublicAPIMappingType {
+    #[serde(rename = "uniprot")]
     UniProt,
+    #[serde(rename = "ortholog")]
     Ortholog(OrganismTaxonId),
 }
 
