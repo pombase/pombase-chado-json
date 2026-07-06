@@ -21,8 +21,6 @@ use tower_http::trace::TraceLayer;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
-use csv;
-
 use rand::rng;
 use rand::seq::IteratorRandom;
 
