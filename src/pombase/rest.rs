@@ -11,7 +11,7 @@ use crate::constants::{FYPO_CV_NAME, is_go_root_name};
 
 use crate::data_types::{ActiveSite, AlleleDetails, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
-use crate::types::{AlleleUniquename, CvName, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermDef, TermId, TermName, TranscriptUniquename};
+use crate::types::{AlleleUniquename, CvName, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, OrganismTaxonId, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermDef, TermId, TermName, TranscriptUniquename};
 
 use crate::api_data::APIData;
 use crate::data_types::DataLookup;
@@ -228,6 +228,49 @@ impl RestExec {
                 Some(lines.iter().map(|line| line.join("\t")).join("\n")),
             PublicAPIOutputType::JSON =>
                 Some(serde_json::to_string(&annotations).unwrap())
+        }
+    }
+
+    pub fn identifier_mapper(&self, api_data: &APIData,
+                             search_type: &PublicAPIMappingType, search_ids: &[&str])
+         -> PublicAPIMapperResponse
+    {
+        let mut matches = vec![];
+
+        let search_ids: HashSet<_> = search_ids.iter().cloned().collect();
+        let mut found = HashSet::new();
+
+        for gene_summ in api_data.get_maps().gene_summaries.values() {
+            match search_type {
+                PublicAPIMappingType::UniProt => {
+                    if let Some(ref uniprot_id) = gene_summ.uniprot_identifier &&
+                        search_ids.contains(uniprot_id.as_str())
+                    {
+                        matches.push((uniprot_id.to_owned(),
+                                      gene_summ.uniquename.clone()));
+                        found.insert(uniprot_id.clone());
+                    }
+                },
+                PublicAPIMappingType::Ortholog(search_taxon_id) => {
+                    for orth in &gene_summ.ortholog_annotations {
+                        if search_taxon_id == &orth.ortholog_taxonid &&
+                            search_ids.contains(orth.ortholog_uniquename.as_str())
+                        {
+                            matches.push((orth.ortholog_uniquename.clone(),
+                                          gene_summ.uniquename.clone()));
+                            found.insert(orth.ortholog_uniquename.clone());
+                        }
+                    }
+                }
+            }
+        }
+
+        let not_found = search_ids.iter().filter(|i| !found.contains(**i)).cloned()
+             .map(|s| s.to_flex()).collect();
+
+        PublicAPIMapperResponse {
+            matches,
+            not_found,
         }
     }
 }
@@ -632,6 +675,18 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
 pub struct PublicAPIGeneLookupResponse {
     found: Vec<PublicAPIGeneDetails>,
     not_found: Vec<FlexStr>,
+}
+
+#[derive(Serialize, Clone, Debug)]
+pub struct PublicAPIMapperResponse {
+    matches: Vec<(FlexStr, FlexStr)>,
+    not_found: Vec<FlexStr>,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum PublicAPIMappingType {
+    UniProt,
+    Ortholog(OrganismTaxonId),
 }
 
 #[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]

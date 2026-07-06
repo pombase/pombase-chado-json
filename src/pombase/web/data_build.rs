@@ -1277,6 +1277,7 @@ impl <'a> WebDataBuild<'a> {
             three_prime_exon_count,
             transcript_count: gene_details.transcripts.len(),
             ortholog_taxonids,
+            ortholog_annotations: gene_details.ortholog_annotations.clone(),
         }
     }
 

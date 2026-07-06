@@ -2603,6 +2603,8 @@ pub struct APIGeneSummary {
     pub transcript_count: usize,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub ortholog_taxonids: HashSet<u32>,
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub ortholog_annotations: Vec<OrthologAnnotation>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq)]

@@ -1,7 +1,8 @@
 extern crate getopts;
 
 use axum::{
-    Json, Router, ServiceExt, body::Body, extract::{Path, Request, State}, http::{HeaderMap, StatusCode, header}, response::{Html, IntoResponse, Response}, routing::{get, post}
+    Json, Router, ServiceExt, body::Body, extract::{Path, Request, State, Query as AxumQuery},
+    http::{HeaderMap, StatusCode, header}, response::{Html, IntoResponse, Response}, routing::{get, post}
 };
 
 use axum_extra::{headers::Range, TypedHeader};
@@ -17,7 +18,7 @@ use tower::{layer::Layer, timeout::TimeoutLayer};
 use tower_http::normalize_path::NormalizePathLayer;
 use tower_http::trace::TraceLayer;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 use rand::rng;
@@ -26,7 +27,7 @@ use rand::seq::IteratorRandom;
 use pombase_gocam::GoCamError;
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
-                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, rest::PublicAPIOutputType, web::config::{PanelConfig, Testimonial}};
+                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, rest::{PublicAPIMappingType, PublicAPIOutputType}, web::config::{PanelConfig, Testimonial}};
 
 use rusqlite::Connection;
 
@@ -1146,6 +1147,49 @@ async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
     }
 }
 
+async fn rest_identifier_mapper_uniprot_get(all_state: State<Arc<AllState>>,
+                                            Path((lookup_arg, output_type)): Path<(String,String)>)
+    -> impl IntoResponse
+{
+    rest_identifier_mapper_get(all_state, Path(("uniprot".to_owned(), lookup_arg, output_type))).await
+}
+
+async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
+                                    Path((mapping_type, lookup_arg, _output_type)): Path<(String,String,String)>)
+    -> impl IntoResponse
+{
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
+        .filter(|id| !id.is_empty()).collect();
+
+    let mapping_type = if &mapping_type == "uniprot" {
+        PublicAPIMappingType::UniProt
+    } else {
+        if let Ok(taxon_id) = mapping_type.parse::<u32>() {
+            PublicAPIMappingType::Ortholog(taxon_id)
+        } else {
+            panic!();
+        }
+    };
+    Json(all_state.rest_exec.identifier_mapper(all_state.get_api_data(), &mapping_type, &lookup_list))
+}
+
+#[derive(Deserialize)]
+struct MapperParams {
+    mapping_type: PublicAPIMappingType,
+    lookup_arg: String,
+    _output_type: String,
+}
+
+async fn rest_identifier_mapper_post(State(all_state): State<Arc<AllState>>,
+                                     AxumQuery(params): AxumQuery<MapperParams> )
+    -> impl IntoResponse
+{
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.lookup_arg.trim())
+        .filter(|id| !id.is_empty()).collect();
+    Json(all_state.rest_exec.identifier_mapper(all_state.get_api_data(), &params.mapping_type, &lookup_list))
+}
+
+
 async fn ping() -> String {
     String::from("OK") + " " + PKG_NAME + " " + VERSION
 }
@@ -1400,6 +1444,10 @@ async fn main() {
         .route("/rest/gene/by_id/{id}", get(rest_gene_by_id))
         .route("/rest/genes/by_id/{ids}", get(rest_genes_by_id_get))
         .route("/rest/genes/by_id", post(rest_genes_by_id_post))
+        .route("/rest/id_mapper/uniprot/{ids}/{output_type}", get(rest_identifier_mapper_uniprot_get))
+        .route("/rest/id_mapper/taxon:{mapping_type}/{ids}/{output_type}", get(rest_identifier_mapper_get))
+        .route("/rest/id_mapper/{mapping_type}/{ids}/{output_type}", get(rest_identifier_mapper_get))
+        .route("/rest/id_mapper", post(rest_identifier_mapper_post))
         .route("/rest/gene/by_uniprot_accession/{ids}", get(rest_gene_by_uniprot_accesssion))
         .route("/rest/genes/by_uniprot_accession/{ids}", get(rest_genes_by_uniprot_accesssion_get))
         .route("/rest/genes/by_uniprot_accession", post(rest_genes_by_uniprot_accesssion_post))
