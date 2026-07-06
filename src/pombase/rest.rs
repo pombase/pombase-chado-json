@@ -683,6 +683,12 @@ pub struct PublicAPIMapperResponse {
     not_found: Vec<FlexStr>,
 }
 
+impl PublicAPIMapperResponse {
+    pub fn matches(&self) -> &[(FlexStr, FlexStr)] {
+        &self.matches
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub enum PublicAPIMappingType {
     #[serde(rename = "uniprot")]

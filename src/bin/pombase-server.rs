@@ -21,6 +21,8 @@ use tower_http::trace::TraceLayer;
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
+use csv;
+
 use rand::rng;
 use rand::seq::IteratorRandom;
 
@@ -1160,7 +1162,7 @@ async fn rest_identifier_mapper_uniprot_get(all_state: State<Arc<AllState>>,
 }
 
 async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
-                                    Path((mapping_type, lookup_arg, _output_type)): Path<(String,String,String)>)
+                                    Path((mapping_type, lookup_arg, output_type)): Path<(String,String,String)>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
@@ -1175,7 +1177,34 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
             panic!();
         }
     };
-    Json(all_state.rest_exec.identifier_mapper(all_state.get_api_data(), &mapping_type, &lookup_list))
+
+    let mapping_result = all_state.rest_exec.identifier_mapper(all_state.get_api_data(),
+                                                               &mapping_type, &lookup_list);
+    if output_type == "csv" || output_type == "tsv" {
+        let (del, header) =
+            if output_type == "tsv" {
+                (b'\t', [(header::CONTENT_TYPE, "text/tsv")])
+            } else {
+                (b',', [(header::CONTENT_TYPE, "text/csv")])
+            };
+
+        let mut w = csv::WriterBuilder::new()
+            .delimiter(del)
+            .from_writer(vec![]);
+        for res in mapping_result.matches() {
+            w.serialize(res).unwrap()
+        }
+
+        let csv_data = String::from_utf8(w.into_inner().unwrap()).unwrap();
+
+        (
+            StatusCode::OK,
+            header,
+            csv_data,
+        ).into_response()
+    } else {
+        Json(mapping_result).into_response()
+    }
 }
 
 #[derive(Deserialize)]
