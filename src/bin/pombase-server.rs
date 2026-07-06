@@ -1033,10 +1033,15 @@ async fn rest_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(looku
     Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
 
-async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, ids: String)
+#[derive(Deserialize)]
+struct GenesByIdParams {
+    q: String
+}
+
+async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, Form(params): Form<GenesByIdParams>)
     -> impl IntoResponse
 {
-    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(ids.trim())
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
         .filter(|id| !id.is_empty()).collect();
     Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
@@ -1058,10 +1063,10 @@ async fn rest_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<AllSta
 }
 
 async fn rest_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllState>>,
-                               ids: String)
+                                               Form(params): Form<GenesByIdParams>)
     -> impl IntoResponse
 {
-    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(ids.trim())
+    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
         .filter(|id| !id.is_empty()).collect();
     Json(all_state.rest_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
 }
