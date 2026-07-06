@@ -1178,12 +1178,19 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
 
     let mapping_result = all_state.rest_exec.identifier_mapper(all_state.get_api_data(),
                                                                &mapping_type, &lookup_list);
+
+    let filename = format!("id_mapping.{}", output_type);
+
+    let content_disposition = format!(r#"attachment; filename="{}""#, filename);
+
     if output_type == "csv" || output_type == "tsv" {
         let (del, header) =
             if output_type == "tsv" {
-                (b'\t', [(header::CONTENT_TYPE, "text/tsv")])
+                (b'\t', [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                         (header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")])
             } else {
-                (b',', [(header::CONTENT_TYPE, "text/csv")])
+                (b',', [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                        (header::CONTENT_TYPE, "text/csv; charset=utf-8")])
             };
 
         let mut w = csv::WriterBuilder::new()
@@ -1197,11 +1204,18 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
 
         (
             StatusCode::OK,
-            header,
+            [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
+             (header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
             csv_data,
         ).into_response()
     } else {
-        Json(mapping_result).into_response()
+        (
+            StatusCode::OK,
+            [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
+             (header::CONTENT_TYPE, "application/json; charset=utf-8")
+            ],
+            Json(mapping_result)
+        ).into_response()
     }
 }
 
