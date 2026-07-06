@@ -1183,15 +1183,22 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
 
     let content_disposition = format!(r#"attachment; filename="{}""#, filename);
 
+    let header = 
+        match output_type.as_str() {
+            "tsv" => [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                      (header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
+            "csv" => [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                      (header::CONTENT_TYPE, "text/csv; charset=utf-8")],
+            _ => [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                  (header::CONTENT_TYPE, "application/json; charset=utf-8")]
+        };
+
     if output_type == "csv" || output_type == "tsv" {
-        let (del, header) =
-            if output_type == "tsv" {
-                (b'\t', [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
-                         (header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")])
-            } else {
-                (b',', [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
-                        (header::CONTENT_TYPE, "text/csv; charset=utf-8")])
-            };
+        let del = if output_type == "tsv" {
+            b'\t'
+        } else {
+            b','
+        };
 
         let mut w = csv::WriterBuilder::new()
             .delimiter(del)
@@ -1200,20 +1207,17 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
             w.serialize(res).unwrap()
         }
 
-        let csv_data = String::from_utf8(w.into_inner().unwrap()).unwrap();
+        let out_data = String::from_utf8(w.into_inner().unwrap()).unwrap();
 
         (
             StatusCode::OK,
-            [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
-             (header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
-            csv_data,
+            header,
+            out_data,
         ).into_response()
     } else {
         (
             StatusCode::OK,
-            [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
-             (header::CONTENT_TYPE, "application/json; charset=utf-8")
-            ],
+            header,
             Json(mapping_result)
         ).into_response()
     }
