@@ -45,7 +45,7 @@ use pombase::api::query::Query;
 
 use pombase::api::search::{Search, DocSearchMatch, SolrSearchScope};
 use pombase::api::query_exec::QueryExec;
-use pombase::rest::RestExec;
+use pombase::rest::PublicApiExec;
 use pombase::api_data::{api_maps_from_file, APIData};
 use pombase::api::site_db::SiteDB;
 use pombase::api::stats_plot::StatsPlots;
@@ -95,7 +95,7 @@ async fn get_static_file(path: &str) -> Response {
 
 struct AllState {
     query_exec: QueryExec,
-    public_api_exec: RestExec,
+    public_api_exec: PublicApiExec,
     api_data: APIData,
     gocam_data: HashMap<GoCamId, GoCamSummary>,
     search: Search,
@@ -1359,7 +1359,7 @@ async fn main() {
     let pro_term_to_gene_map = api_data.get_maps().pro_term_to_gene_map.clone();
 
     let query_exec = QueryExec::new(site_db.clone());
-    let public_api_exec = RestExec::new();
+    let public_api_exec = PublicApiExec::new();
     let search = Search::new(&config);
     let stats_plots = StatsPlots::new(&config);
 

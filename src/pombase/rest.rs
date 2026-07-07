@@ -17,7 +17,7 @@ use crate::api_data::APIData;
 use crate::data_types::DataLookup;
 use crate::web::config::{Config, InterestingParent};
 
-pub struct RestExec {
+pub struct PublicApiExec {
 }
 
 #[derive(Deserialize, Clone, Copy, Debug)]
@@ -27,9 +27,9 @@ pub enum PublicAPIOutputType {
     JSON,
 }
 
-impl RestExec {
-    pub fn new() -> RestExec {
-        RestExec { }
+impl PublicApiExec {
+    pub fn new() -> PublicApiExec {
+        PublicApiExec { }
     }
 
     pub async fn gene_by_id(&self, api_data: &APIData, gene_id: &str)
@@ -276,9 +276,9 @@ impl RestExec {
 }
 
 
-impl Default for RestExec {
+impl Default for PublicApiExec {
     fn default() -> Self {
-        RestExec::new()
+        PublicApiExec::new()
     }
 }
 

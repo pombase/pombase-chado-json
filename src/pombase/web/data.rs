@@ -29,7 +29,7 @@ use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 use crate::bio::ExportCommentsMode;
 use crate::constants::*;
 
-use crate::rest::{PublicAPIAlleleDetails, PublicAPIGeneDetails, PublicAPIReferenceDetails, PublicAPITermDetails, PublicAPITranscriptDetails, RestExec};
+use crate::rest::{PublicAPIAlleleDetails, PublicAPIGeneDetails, PublicAPIReferenceDetails, PublicAPITermDetails, PublicAPITranscriptDetails, PublicApiExec};
 use crate::web::config::*;
 use crate::rnacentral::*;
 
@@ -1687,7 +1687,7 @@ impl WebData {
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
 
-        let rest_exec = RestExec::new();
+        let rest_exec = PublicApiExec::new();
         let annotations =
             rest_exec.phenotype_annotation_by_termid(config, self, &[FYPO_ROOT_TERM_ID],
                                                      crate::rest::PublicAPIOutputType::JSON).unwrap();
@@ -1704,7 +1704,7 @@ impl WebData {
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
 
-        let rest_exec = RestExec::new();
+        let rest_exec = PublicApiExec::new();
 
         let termids = &[MOLECULAR_FUNCTION_ROOT_TERM_ID,
                         CELLULAR_COMPONENT_ROOT_TERM_ID,
