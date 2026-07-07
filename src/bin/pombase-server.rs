@@ -1183,7 +1183,7 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
 
     let content_disposition = format!(r#"attachment; filename="{}""#, filename);
 
-    let header = 
+    let header =
         match output_type.as_str() {
             "tsv" => [(header::CONTENT_DISPOSITION, content_disposition.as_str()),
                       (header::CONTENT_TYPE, "text/tab-separated-values; charset=utf-8")],
