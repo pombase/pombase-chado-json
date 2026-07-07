@@ -1047,14 +1047,14 @@ async fn public_api_genes_by_id_post(State(all_state): State<Arc<AllState>>, For
 }
 
 async fn public_api_gene_by_uniprot_accesssion(State(all_state): State<Arc<AllState>>,
-                                         Path(uniprot_accession): Path<String>)
+                                               Path(uniprot_accession): Path<String>)
     -> impl IntoResponse
 {
     Json(all_state.public_api_exec.gene_by_uniprot_accession(all_state.get_api_data(), &uniprot_accession).await)
 }
 
 async fn public_api_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<AllState>>,
-                                              Path(lookup_arg): Path<String>)
+                                                    Path(lookup_arg): Path<String>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
@@ -1063,7 +1063,7 @@ async fn public_api_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<
 }
 
 async fn public_api_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllState>>,
-                                               Form(params): Form<GenesByIdParams>)
+                                                     Form(params): Form<GenesByIdParams>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
@@ -1072,7 +1072,7 @@ async fn public_api_genes_by_uniprot_accesssion_post(State(all_state): State<Arc
 }
 
 async fn public_api_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
-                                    Path((termids, output_type)): Path<(String, String)>)
+                                          Path((termids, output_type)): Path<(String, String)>)
     -> impl IntoResponse
 {
     let output_type = if output_type == "json" {
@@ -1112,7 +1112,7 @@ async fn public_api_go_annotation_by_term(State(all_state): State<Arc<AllState>>
 }
 
 async fn public_api_phenotype_by_term(State(all_state): State<Arc<AllState>>,
-                                Path((termids, output_type)): Path<(String, String)>)
+                                      Path((termids, output_type)): Path<(String, String)>)
     -> impl IntoResponse
 {
     let output_type = if output_type == "json" {
@@ -1153,14 +1153,14 @@ async fn public_api_phenotype_by_term(State(all_state): State<Arc<AllState>>,
 }
 
 async fn public_api_identifier_mapper_uniprot_get(all_state: State<Arc<AllState>>,
-                                            Path((lookup_arg, output_type)): Path<(String,String)>)
+                                                  Path((lookup_arg, output_type)): Path<(String,String)>)
     -> impl IntoResponse
 {
     public_api_identifier_mapper_get(all_state, Path(("uniprot".to_owned(), lookup_arg, output_type))).await
 }
 
 async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
-                                    Path((mapping_type, lookup_arg, output_type)): Path<(String,String,String)>)
+                                          Path((mapping_type, lookup_arg, output_type)): Path<(String,String,String)>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
@@ -1177,7 +1177,7 @@ async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>
     };
 
     let mapping_result = all_state.public_api_exec.identifier_mapper(all_state.get_api_data(),
-                                                               &mapping_type, &lookup_list);
+                                                                     &mapping_type, &lookup_list);
 
     let filename = format!("id_mapping.{}", output_type);
 
@@ -1231,7 +1231,7 @@ struct MapperParams {
 }
 
 async fn public_api_identifier_mapper_post(State(all_state): State<Arc<AllState>>,
-                                     Form(params): Form<MapperParams>)
+                                           Form(params): Form<MapperParams>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
