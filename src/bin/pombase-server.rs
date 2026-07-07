@@ -95,7 +95,7 @@ async fn get_static_file(path: &str) -> Response {
 
 struct AllState {
     query_exec: QueryExec,
-    rest_exec: RestExec,
+    public_api_exec: RestExec,
     api_data: APIData,
     gocam_data: HashMap<GoCamId, GoCamSummary>,
     search: Search,
@@ -1019,18 +1019,18 @@ lazy_static! {
     static ref GENE_ID_SPLIT_RE: regex::Regex = regex::Regex::new(r"[, \t;\n]+").unwrap();
 }
 
-async fn rest_gene_by_id(State(all_state): State<Arc<AllState>>, Path(gene_id): Path<String>)
+async fn public_api_gene_by_id(State(all_state): State<Arc<AllState>>, Path(gene_id): Path<String>)
     -> impl IntoResponse
 {
-    Json(all_state.rest_exec.gene_by_id(all_state.get_api_data(), &gene_id).await)
+    Json(all_state.public_api_exec.gene_by_id(all_state.get_api_data(), &gene_id).await)
 }
 
-async fn rest_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(lookup_arg): Path<String>)
+async fn public_api_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(lookup_arg): Path<String>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
         .filter(|id| !id.is_empty()).collect();
-    Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
+    Json(all_state.public_api_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
 
 #[derive(Deserialize)]
@@ -1038,40 +1038,40 @@ struct GenesByIdParams {
     q: String
 }
 
-async fn rest_genes_by_id_post(State(all_state): State<Arc<AllState>>, Form(params): Form<GenesByIdParams>)
+async fn public_api_genes_by_id_post(State(all_state): State<Arc<AllState>>, Form(params): Form<GenesByIdParams>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
         .filter(|id| !id.is_empty()).collect();
-    Json(all_state.rest_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
+    Json(all_state.public_api_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
 }
 
-async fn rest_gene_by_uniprot_accesssion(State(all_state): State<Arc<AllState>>,
+async fn public_api_gene_by_uniprot_accesssion(State(all_state): State<Arc<AllState>>,
                                          Path(uniprot_accession): Path<String>)
     -> impl IntoResponse
 {
-    Json(all_state.rest_exec.gene_by_uniprot_accession(all_state.get_api_data(), &uniprot_accession).await)
+    Json(all_state.public_api_exec.gene_by_uniprot_accession(all_state.get_api_data(), &uniprot_accession).await)
 }
 
-async fn rest_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<AllState>>,
+async fn public_api_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<AllState>>,
                                               Path(lookup_arg): Path<String>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
         .filter(|id| !id.is_empty()).collect();
-    Json(all_state.rest_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
+    Json(all_state.public_api_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
 }
 
-async fn rest_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllState>>,
+async fn public_api_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllState>>,
                                                Form(params): Form<GenesByIdParams>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
         .filter(|id| !id.is_empty()).collect();
-    Json(all_state.rest_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
+    Json(all_state.public_api_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
 }
 
-async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
+async fn public_api_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
                                     Path((termids, output_type)): Path<(String, String)>)
     -> impl IntoResponse
 {
@@ -1086,7 +1086,7 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
     };
 
     let termids_split: Vec<_> = termids.split(",").collect();
-    if let Some(mut gaf) = all_state.rest_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
+    if let Some(mut gaf) = all_state.public_api_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
                                                                        &termids_split, output_type)
     {
         gaf += "\n";
@@ -1111,7 +1111,7 @@ async fn rest_go_annotation_by_term(State(all_state): State<Arc<AllState>>,
     }
 }
 
-async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
+async fn public_api_phenotype_by_term(State(all_state): State<Arc<AllState>>,
                                 Path((termids, output_type)): Path<(String, String)>)
     -> impl IntoResponse
 {
@@ -1126,7 +1126,7 @@ async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
     };
 
     let termids_split: Vec<_> = termids.split(",").collect();
-    if let Some(mut phaf) = all_state.rest_exec.phenotype_annotation_by_termid(&all_state.config,
+    if let Some(mut phaf) = all_state.public_api_exec.phenotype_annotation_by_termid(&all_state.config,
                                                                                all_state.get_api_data(),
                                                                                &termids_split, output_type)
     {
@@ -1152,14 +1152,14 @@ async fn rest_phenotype_by_term(State(all_state): State<Arc<AllState>>,
     }
 }
 
-async fn rest_identifier_mapper_uniprot_get(all_state: State<Arc<AllState>>,
+async fn public_api_identifier_mapper_uniprot_get(all_state: State<Arc<AllState>>,
                                             Path((lookup_arg, output_type)): Path<(String,String)>)
     -> impl IntoResponse
 {
-    rest_identifier_mapper_get(all_state, Path(("uniprot".to_owned(), lookup_arg, output_type))).await
+    public_api_identifier_mapper_get(all_state, Path(("uniprot".to_owned(), lookup_arg, output_type))).await
 }
 
-async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
+async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
                                     Path((mapping_type, lookup_arg, output_type)): Path<(String,String,String)>)
     -> impl IntoResponse
 {
@@ -1176,7 +1176,7 @@ async fn rest_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
         }
     };
 
-    let mapping_result = all_state.rest_exec.identifier_mapper(all_state.get_api_data(),
+    let mapping_result = all_state.public_api_exec.identifier_mapper(all_state.get_api_data(),
                                                                &mapping_type, &lookup_list);
 
     let filename = format!("id_mapping.{}", output_type);
@@ -1230,13 +1230,13 @@ struct MapperParams {
 //    _output_type: String,
 }
 
-async fn rest_identifier_mapper_post(State(all_state): State<Arc<AllState>>,
+async fn public_api_identifier_mapper_post(State(all_state): State<Arc<AllState>>,
                                      Form(params): Form<MapperParams>)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
         .filter(|id| !id.is_empty()).collect();
-    Json(all_state.rest_exec.identifier_mapper(all_state.get_api_data(), &params.mapping_type, &lookup_list))
+    Json(all_state.public_api_exec.identifier_mapper(all_state.get_api_data(), &params.mapping_type, &lookup_list))
 }
 
 
@@ -1359,7 +1359,7 @@ async fn main() {
     let pro_term_to_gene_map = api_data.get_maps().pro_term_to_gene_map.clone();
 
     let query_exec = QueryExec::new(site_db.clone());
-    let rest_exec = RestExec::new();
+    let public_api_exec = RestExec::new();
     let search = Search::new(&config);
     let stats_plots = StatsPlots::new(&config);
 
@@ -1426,7 +1426,7 @@ async fn main() {
 
     let all_state = AllState {
         query_exec,
-        rest_exec,
+        public_api_exec,
         api_data,
         gocam_data,
         search,
@@ -1491,18 +1491,18 @@ async fn main() {
         .route("/api/v1/dataset/latest/query/{q}", get(query_get))
         .route("/api/v1/dataset/latest/search/{scope}/{q}", get(solr_search))
         .route("/api/v1/dataset/latest/summary/term/{id}", get(get_term_summary_by_id))
-        .route("/api/gene/by_id/{id}", get(rest_gene_by_id))
-        .route("/api/genes/by_id/{ids}", get(rest_genes_by_id_get))
-        .route("/api/genes/by_id", post(rest_genes_by_id_post))
-        .route("/api/gene/by_uniprot_accession/{ids}", get(rest_gene_by_uniprot_accesssion))
-        .route("/api/genes/by_uniprot_accession/{ids}", get(rest_genes_by_uniprot_accesssion_get))
-        .route("/api/genes/by_uniprot_accession", post(rest_genes_by_uniprot_accesssion_post))
-        .route("/api/id_mapper/uniprot/{ids}/{output_type}", get(rest_identifier_mapper_uniprot_get))
-        .route("/api/id_mapper/taxon:{mapping_type}/{ids}/{output_type}", get(rest_identifier_mapper_get))
-        .route("/api/id_mapper/{mapping_type}/{ids}/{output_type}", get(rest_identifier_mapper_get))
-        .route("/api/id_mapper", post(rest_identifier_mapper_post))
-        .route("/api/go_annotation/by_term_id/{ids}/{output_type}", get(rest_go_annotation_by_term))
-        .route("/api/phenotype_annotation/by_term_id/{ids}/{output_type}", get(rest_phenotype_by_term))
+        .route("/api/gene/by_id/{id}", get(public_api_gene_by_id))
+        .route("/api/genes/by_id/{ids}", get(public_api_genes_by_id_get))
+        .route("/api/genes/by_id", post(public_api_genes_by_id_post))
+        .route("/api/gene/by_uniprot_accession/{ids}", get(public_api_gene_by_uniprot_accesssion))
+        .route("/api/genes/by_uniprot_accession/{ids}", get(public_api_genes_by_uniprot_accesssion_get))
+        .route("/api/genes/by_uniprot_accession", post(public_api_genes_by_uniprot_accesssion_post))
+        .route("/api/id_mapper/uniprot/{ids}/{output_type}", get(public_api_identifier_mapper_uniprot_get))
+        .route("/api/id_mapper/taxon:{mapping_type}/{ids}/{output_type}", get(public_api_identifier_mapper_get))
+        .route("/api/id_mapper/{mapping_type}/{ids}/{output_type}", get(public_api_identifier_mapper_get))
+        .route("/api/id_mapper", post(public_api_identifier_mapper_post))
+        .route("/api/go_annotation/by_term_id/{ids}/{output_type}", get(public_api_go_annotation_by_term))
+        .route("/api/phenotype_annotation/by_term_id/{ids}/{output_type}", get(public_api_phenotype_by_term))
         .route("/ping", get(ping))
         .fallback(not_found)
         .with_state(Arc::new(all_state))
