@@ -1152,8 +1152,8 @@ async fn public_api_phenotype_by_term(State(all_state): State<Arc<AllState>>,
     }
 }
 
-async fn public_api_identifier_mapper_uniprot_get(all_state: State<Arc<AllState>>,
-                                                  Path((lookup_arg, output_type)): Path<(String,String)>)
+async fn public_api_mapper_from_uniprot_get(all_state: State<Arc<AllState>>,
+                                     Path((lookup_arg, output_type)): Path<(String,String)>)
     -> impl IntoResponse
 {
     public_api_identifier_mapper_get(all_state, Path(("uniprot".to_owned(), lookup_arg, output_type))).await
@@ -1237,20 +1237,31 @@ async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>
 
 #[derive(Deserialize)]
 struct MapperParams {
-    mapping_type: String,
+    taxon_id: Option<String>,
     q: String,
     output_type: Option<String>,
 }
 
-async fn public_api_identifier_mapper_post(State(all_state): State<Arc<AllState>>,
-                                           Form(params): Form<MapperParams>)
+async fn public_api_mapper_from_uniprot_post(State(all_state): State<Arc<AllState>>,
+                                             Form(params): Form<MapperParams>)
     -> impl IntoResponse
 {
-    let mapping_type = params.mapping_type;
+
     let lookup_arg = params.q;
     let output_type = params.output_type.unwrap_or_default();
 
-    id_mapper_helper(all_state, mapping_type, lookup_arg, output_type)
+    id_mapper_helper(all_state, "uniprot".to_owned(), lookup_arg, output_type)
+}
+
+async fn public_api_mapper_from_ortholog_post(State(all_state): State<Arc<AllState>>,
+                                              Form(params): Form<MapperParams>)
+    -> impl IntoResponse
+{
+    let taxon_id = params.taxon_id.unwrap_or_default();
+    let lookup_arg = params.q;
+    let output_type = params.output_type.unwrap_or_default();
+
+    id_mapper_helper(all_state, taxon_id, lookup_arg, output_type)
 }
 
 
@@ -1511,10 +1522,11 @@ async fn main() {
         .route("/api/gene/by_uniprot_accession/{ids}", get(public_api_gene_by_uniprot_accesssion))
         .route("/api/genes/by_uniprot_accession/{ids}", get(public_api_genes_by_uniprot_accesssion_get))
         .route("/api/genes/by_uniprot_accession", post(public_api_genes_by_uniprot_accesssion_post))
-        .route("/api/id_mapper/uniprot/{ids}/{output_type}", get(public_api_identifier_mapper_uniprot_get))
-        .route("/api/id_mapper/taxon:{mapping_type}/{ids}/{output_type}", get(public_api_identifier_mapper_get))
-        .route("/api/id_mapper/{mapping_type}/{ids}/{output_type}", get(public_api_identifier_mapper_get))
-        .route("/api/id_mapper", post(public_api_identifier_mapper_post))
+        .route("/api/mapper/from_uniprot/{ids}/{output_type}", get(public_api_mapper_from_uniprot_get))
+        .route("/api/mapper/from_uniprot", post(public_api_mapper_from_uniprot_post))
+        .route("/api/mapper/from_ortholog/taxon:{taxon_id}/{ids}/{output_type}", get(public_api_identifier_mapper_get))
+        .route("/api/mapper/from_ortholog/{taxon_id}/{ids}/{output_type}", get(public_api_identifier_mapper_get))
+        .route("/api/mapper/from_ortholog", post(public_api_mapper_from_ortholog_post))
         .route("/api/go_annotation/by_term_id/{ids}/{output_type}", get(public_api_go_annotation_by_term))
         .route("/api/phenotype_annotation/by_term_id/{ids}/{output_type}", get(public_api_phenotype_by_term))
         .route("/ping", get(ping))
