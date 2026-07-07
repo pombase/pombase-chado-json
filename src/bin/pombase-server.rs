@@ -27,7 +27,7 @@ use rand::seq::IteratorRandom;
 use pombase_gocam::GoCamError;
 use pombase_gocam_process::{model_connections_to_cytoscope, model_to_cytoscape_simple, GoCamCytoscapeStyle};
 use pombase::{bio::gocam_model_process::{read_connected_gocam_models, read_gocam_model,
-                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, rest::{PublicAPIMappingType, PublicAPIOutputType}, web::config::{PanelConfig, Testimonial}};
+                                         read_merged_gocam_model}, data_types::{GoCamId, GoCamSummary, ProteinViewType}, rest::{PublicAPIMappingType, PublicAPIOutputType}, types::OrganismTaxonId, web::config::{PanelConfig, Testimonial}};
 
 use rusqlite::Connection;
 
@@ -1159,8 +1159,7 @@ async fn public_api_identifier_mapper_uniprot_get(all_state: State<Arc<AllState>
     public_api_identifier_mapper_get(all_state, Path(("uniprot".to_owned(), lookup_arg, output_type))).await
 }
 
-async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
-                                          Path((mapping_type, lookup_arg, output_type)): Path<(String,String,String)>)
+fn id_mapper_helper(all_state: Arc<AllState>, mapping_type: String, lookup_arg: String, output_type: String)
     -> impl IntoResponse
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
@@ -1172,7 +1171,13 @@ async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>
         if let Ok(taxon_id) = mapping_type.parse::<u32>() {
             PublicAPIMappingType::Ortholog(taxon_id)
         } else {
-            panic!();
+            if let Some(taxon_id_str) = mapping_type.strip_prefix("taxon:") &&
+               let Ok(taxon_id) = taxon_id_str.parse::<OrganismTaxonId>()
+            {
+                PublicAPIMappingType::Ortholog(taxon_id)
+            } else {
+                return StatusCode::NOT_FOUND.into_response();
+            }
         }
     };
 
@@ -1223,20 +1228,29 @@ async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>
     }
 }
 
+async fn public_api_identifier_mapper_get(State(all_state): State<Arc<AllState>>,
+                                          Path((mapping_type, lookup_arg, output_type)): Path<(String,String,String)>)
+    -> impl IntoResponse
+{
+    id_mapper_helper(all_state, mapping_type, lookup_arg, output_type)
+}
+
 #[derive(Deserialize)]
 struct MapperParams {
-    mapping_type: PublicAPIMappingType,
+    mapping_type: String,
     q: String,
-//    _output_type: String,
+    output_type: Option<String>,
 }
 
 async fn public_api_identifier_mapper_post(State(all_state): State<Arc<AllState>>,
                                            Form(params): Form<MapperParams>)
     -> impl IntoResponse
 {
-    let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(params.q.trim())
-        .filter(|id| !id.is_empty()).collect();
-    Json(all_state.public_api_exec.identifier_mapper(all_state.get_api_data(), &params.mapping_type, &lookup_list))
+    let mapping_type = params.mapping_type;
+    let lookup_arg = params.q;
+    let output_type = params.output_type.unwrap_or_default();
+
+    id_mapper_helper(all_state, mapping_type, lookup_arg, output_type)
 }
 
 
