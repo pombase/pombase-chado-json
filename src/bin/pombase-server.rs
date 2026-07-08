@@ -2,7 +2,8 @@ extern crate getopts;
 
 use axum::{
     Form, Json, Router, ServiceExt, body::Body, extract::{Path, Request, State},
-    http::{HeaderMap, StatusCode, header}, response::{Html, IntoResponse, Response}, routing::{get, post}
+    http::{HeaderMap, HeaderName, StatusCode, header},
+    response::{Html, IntoResponse, Response}, routing::{get, post}
 };
 
 use axum_extra::{headers::Range, TypedHeader};
@@ -1019,13 +1020,20 @@ lazy_static! {
     static ref GENE_ID_SPLIT_RE: regex::Regex = regex::Regex::new(r"[, \t;\n]+").unwrap();
 }
 
+fn genes_by_id_header() -> [(HeaderName, &'static str); 2] {
+    let content_disposition = r#"attachment; filename="gene_lookup.json""#;
+    let content_type = "application/json; charset=utf-8";
+    [(axum::http::header::CONTENT_DISPOSITION, content_disposition),
+     (axum::http::header::CONTENT_TYPE, content_type)]
+}
+
 async fn public_api_gene_by_id(State(all_state): State<Arc<AllState>>, Path(gene_id): Path<String>)
     -> impl IntoResponse
 {
     let result = all_state.public_api_exec.gene_by_id(all_state.get_api_data(), &gene_id).await;
 
     if let Some(result) = result {
-        Json(result).into_response()
+        (StatusCode::OK, genes_by_id_header(), Json(result)).into_response()
     } else {
         StatusCode::NOT_FOUND.into_response()
     }
@@ -1036,7 +1044,9 @@ async fn public_api_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
         .filter(|id| !id.is_empty()).collect();
-    Json(all_state.public_api_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await)
+    let result = all_state.public_api_exec.genes_by_id(all_state.get_api_data(), &lookup_list).await;
+
+    (StatusCode::OK, genes_by_id_header(), Json(result)).into_response()
 }
 
 #[derive(Deserialize)]
@@ -1056,7 +1066,9 @@ async fn public_api_gene_by_uniprot_accesssion(State(all_state): State<Arc<AllSt
                                                Path(uniprot_accession): Path<String>)
     -> impl IntoResponse
 {
-    Json(all_state.public_api_exec.gene_by_uniprot_accession(all_state.get_api_data(), &uniprot_accession).await)
+    let result = all_state.public_api_exec.gene_by_uniprot_accession(all_state.get_api_data(), &uniprot_accession).await;
+
+    (StatusCode::OK, genes_by_id_header(), Json(result)).into_response()
 }
 
 async fn public_api_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<AllState>>,
@@ -1065,7 +1077,9 @@ async fn public_api_genes_by_uniprot_accesssion_get(State(all_state): State<Arc<
 {
     let lookup_list: Vec<_> = GENE_ID_SPLIT_RE.split(lookup_arg.trim())
         .filter(|id| !id.is_empty()).collect();
-    Json(all_state.public_api_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await)
+    let result = all_state.public_api_exec.genes_by_uniprot_accession(all_state.get_api_data(), &lookup_list).await;
+
+    (StatusCode::OK, genes_by_id_header(), Json(result)).into_response()
 }
 
 async fn public_api_genes_by_uniprot_accesssion_post(State(all_state): State<Arc<AllState>>,
