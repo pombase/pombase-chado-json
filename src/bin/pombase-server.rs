@@ -1022,7 +1022,13 @@ lazy_static! {
 async fn public_api_gene_by_id(State(all_state): State<Arc<AllState>>, Path(gene_id): Path<String>)
     -> impl IntoResponse
 {
-    Json(all_state.public_api_exec.gene_by_id(all_state.get_api_data(), &gene_id).await)
+    let result = all_state.public_api_exec.gene_by_id(all_state.get_api_data(), &gene_id).await;
+
+    if let Some(result) = result {
+        Json(result).into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
 }
 
 async fn public_api_genes_by_id_get(State(all_state): State<Arc<AllState>>, Path(lookup_arg): Path<String>)
