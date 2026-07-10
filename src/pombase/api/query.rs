@@ -1187,6 +1187,7 @@ impl Query {
                let mut physical_interactors = HashSet::new();
                let mut reference_uniquenames = HashSet::new();
                let mut tmm = None;
+               let mut signal_peptide = None;
                let mut pdb_ids = HashSet::new();
                let mut rnacentral_id = None;
                let mut gocam_ids = HashSet::new();
@@ -1221,6 +1222,7 @@ impl Query {
                            "go_function" =>
                                 go_function = gene_data.go_function.clone(),
                            "tmm" => tmm = gene_data.tmm.clone(),
+                           "signal_peptide" => signal_peptide = gene_data.signal_peptide.clone(),
                            "pdb_ids" => pdb_ids = gene_data.pdb_ids.clone(),
                            "rnacentral_id" => rnacentral_id = gene_data.rnacentral_urs_identifier.clone(),
                            "gocam_ids" => gocam_ids = gene_data.gocam_ids.clone(),
@@ -1291,6 +1293,7 @@ impl Query {
                    ortholog_taxonids,
                    physical_interactors,
                    tmm,
+                   signal_peptide,
                    gene_uniquename,
                    molecular_weight,
                    protein_length,

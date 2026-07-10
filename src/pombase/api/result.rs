@@ -34,6 +34,8 @@ pub struct ResultRow {
     #[serde(skip_serializing_if="Option::is_none")]
     pub tmm: Option<PresentAbsent>,
     #[serde(skip_serializing_if="Option::is_none")]
+    pub signal_peptide: Option<PresentAbsent>,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub molecular_weight: Option<f32>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub protein_length: Option<usize>,

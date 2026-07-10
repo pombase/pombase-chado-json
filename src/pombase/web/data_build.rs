@@ -5282,15 +5282,23 @@ phenotypes, so just the first part of this extension will be used:
                 self.make_gene_query_go_data(gene_details, &function_terms,
                     &flex_str!("molecular_function"));
 
-            let tmm =
+            let (tmm, signal_peptide) =
                 if gene_details.feature_type == "mRNA gene" {
-                    if gene_details.tm_domain_coords.is_empty() {
-                        Some(PresentAbsent::Absent)
-                    } else {
-                        Some(PresentAbsent::Present)
-                    }
+                    let tmm =
+                        if gene_details.tm_domain_coords.is_empty() {
+                            PresentAbsent::Absent
+                        } else {
+                            PresentAbsent::Present
+                        };
+                    let signal_peptide =
+                        if gene_details.signal_peptide.is_none() {
+                            PresentAbsent::Absent
+                        } else {
+                            PresentAbsent::Present
+                        };
+                    (Some(tmm), Some(signal_peptide))
                 } else {
-                    Some(PresentAbsent::NotApplicable)
+                    (Some(PresentAbsent::NotApplicable), Some(PresentAbsent::NotApplicable))
                 };
 
             let (molecular_weight, protein_length, protein_length_bin) =
@@ -5345,6 +5353,7 @@ phenotypes, so just the first part of this extension will be used:
                 characterisation_status: gene_details.characterisation_status.clone(),
                 taxonomic_distribution: gene_details.taxonomic_distribution.clone(),
                 tmm,
+                signal_peptide,
                 ortholog_taxonids,
                 physical_interactors,
                 molecular_weight,
