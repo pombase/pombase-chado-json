@@ -3941,15 +3941,15 @@ phenotypes, so just the first part of this extension will be used:
             let publication = &feature_pub.publication;
 
             if publication.uniquename.starts_with("PMID:") {
-                let Some(source) = feature_pub.feature_pubprops.borrow()
-                    .iter().filter(|prop| prop.prop_type.name == "feature_pub_source")
-                    .map(|prop| prop.value.clone().unwrap())
-                    .next()
-                else {
-                    continue;
-                };
-
                 if let Some(ref mut gene_details) = self.genes.get_mut(&feature.uniquename) {
+                    let Some(source) = feature_pub.feature_pubprops.borrow()
+                        .iter().filter(|prop| prop.prop_type.name == "feature_pub_source")
+                        .map(|prop| prop.value.clone().unwrap())
+                        .next()
+                    else {
+                        continue;
+                    };
+
                     let ref_and_source = ReferenceAndSource {
                         reference_uniquename: publication.uniquename.clone(),
                         source: source.clone(),
