@@ -61,6 +61,8 @@ pub type GoCamSummaryMap = HashMap<GoCamId, GoCamSummary>;
 
 pub type RheaId = FlexStr;
 
+pub type XRef = FlexStr;
+
 use std::rc::Rc;
 use std::cmp::Ordering;
 use std::hash::{Hash, Hasher};
@@ -1725,6 +1727,8 @@ pub enum FeatureType {
     FivePrimeUtrIntron,
 #[serde(rename = "exon")]
     Exon,
+#[serde(rename = "intron")]
+    Intron,
 #[serde(rename = "cds_intron")]
     // type for introns between exons
     CdsIntron,
@@ -1794,6 +1798,7 @@ impl Display for FeatureType {
             FeatureType::FivePrimeUtr => "5'UTR",
             FeatureType::FivePrimeUtrIntron => "5'UTR_intron",
             FeatureType::Exon => "exon",
+            FeatureType::Intron => "intron",
             FeatureType::CdsIntron => "cds_intron",
             FeatureType::ThreePrimeUtr => "3'UTR",
             FeatureType::ThreePrimeUtrIntron => "3'UTR_intron",
@@ -1835,6 +1840,8 @@ pub struct FeatureShort {
     pub residues: Residues,
     #[serde(skip_serializing_if="Option::is_none")]
     pub comment: Option<FlexStr>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub references: HashSet<XRef>,
 }
 
 
@@ -3049,7 +3056,7 @@ pub struct SolrTermSummary {
     pub interesting_parent_ids: HashSet<FlexStr>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub definition_xrefs: HashSet<FlexStr>,
+    pub definition_xrefs: HashSet<XRef>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub secondary_identifiers: HashSet<TermId>,

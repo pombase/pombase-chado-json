@@ -388,6 +388,7 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
                 "lncRNA" => FeatureType::LncRNA,
                 "guide_RNA" => FeatureType::GuideRNA,
                 "SNP" => FeatureType::SNP,
+                "intron" => FeatureType::Intron,
                 _ => panic!("can't handle feature type: {}", feat.feat_type.name),
             };
 
@@ -406,6 +407,7 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
                 location: loc,
                 residues,
                 comment,
+                references: HashSet::new(),
             }
         } else {
             panic!("can't find chromosome {}", loc.chromosome_name);
@@ -739,6 +741,7 @@ fn add_introns_to_transcript(chromosome: &ChromosomeDetails,
                     location: new_intron_loc,
                     residues: intron_residues,
                     comment: None,
+                    references: HashSet::new(),
                 });
 
                 intron_count += 1;
@@ -3955,7 +3958,13 @@ phenotypes, so just the first part of this extension will be used:
                         source: source.clone(),
                     };
                     gene_details.feature_publications.insert(ref_and_source);
+                    continue;
                 }
+
+                if feature.feat_type.name == "intron" &&
+                    let Some(ref mut feat) = self.other_features.get_mut(&feature.uniquename) {
+                        feat.references.insert(feature_pub.publication.uniquename.clone());
+                    }
             }
         }
     }

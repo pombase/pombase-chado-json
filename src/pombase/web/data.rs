@@ -943,6 +943,10 @@ impl WebData {
             let all_gff_file = File::create(all_gff_name)?;
             let mut all_gff_writer = BufWriter::new(&all_gff_file);
 
+            let confirmed_introns_gff_name = format!("{}/{}_confirmed_introns.gff3", output_dir, load_org_name);
+            let confirmed_introns_gff_file = File::create(confirmed_introns_gff_name)?;
+            let mut confirmed_introns_gff_writer = BufWriter::new(&confirmed_introns_gff_file);
+
             let forward_features_gff_name =
                 format!("{}/{}_all_chromosomes_forward_strand.gff3", output_dir, load_org_name);
             let forward_features_gff_file = File::create(forward_features_gff_name)?;
@@ -963,6 +967,7 @@ impl WebData {
             writeln!(forward_features_gff_writer, "{}", gff_version_header)?;
             writeln!(reverse_features_gff_writer, "{}", gff_version_header)?;
             writeln!(unstranded_features_gff_writer, "{}", gff_version_header)?;
+            writeln!(confirmed_introns_gff_writer , "{}", gff_version_header)?;
 
             let mut chr_writers = HashMap::new();
 
@@ -1021,6 +1026,11 @@ impl WebData {
                     format_misc_feature_gff(chromosome_export_id, &config.database_name,
                                             feature_short);
                 for gff_line in gff_lines {
+                    if matches!(feature_short.feature_type, FeatureType::Intron) {
+                        writeln!(confirmed_introns_gff_writer, "{}", gff_line)?;
+                        continue;
+                    }
+
                     all_gff_writer.write_all(gff_line.as_bytes())?;
                     all_gff_writer.write_all(b"\n")?;
 
