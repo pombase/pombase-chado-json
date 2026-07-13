@@ -958,10 +958,11 @@ impl WebData {
             let unstranded_features_gff_file = File::create(unstranded_features_gff_name)?;
             let mut unstranded_features_gff_writer = BufWriter::new(&unstranded_features_gff_file);
 
-            all_gff_writer.write_all(b"##gff-version 3\n")?;
-            forward_features_gff_writer.write_all(b"##gff-version 3\n")?;
-            reverse_features_gff_writer.write_all(b"##gff-version 3\n")?;
-            unstranded_features_gff_writer.write_all(b"##gff-version 3\n")?;
+            let gff_version_header = "##gff-version 3";
+            writeln!(all_gff_writer, "{}", gff_version_header)?;
+            writeln!(forward_features_gff_writer, "{}", gff_version_header)?;
+            writeln!(reverse_features_gff_writer, "{}", gff_version_header)?;
+            writeln!(unstranded_features_gff_writer, "{}", gff_version_header)?;
 
             let mut chr_writers = HashMap::new();
 
