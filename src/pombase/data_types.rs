@@ -1833,6 +1833,7 @@ pub struct FeatureShort {
     pub name: Option<FlexStr>,
     pub location: ChromosomeLocation,
     pub residues: Residues,
+    #[serde(skip_serializing_if="Option::is_none")]
     pub comment: Option<FlexStr>,
 }
 
