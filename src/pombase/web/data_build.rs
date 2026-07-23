@@ -8191,9 +8191,9 @@ phenotypes, so just the first part of this extension will be used:
         self.remove_duplicate_transcript_annotation();
         self.store_ont_annotations(false);
         self.store_ont_annotations(true);
+        self.add_target_of_annotations();
         self.process_cvtermpath();
         self.process_feature_rels();
-        self.add_target_of_annotations();
         self.set_deletion_viability();
         self.set_gene_flags();
         self.set_term_details_subsets();
