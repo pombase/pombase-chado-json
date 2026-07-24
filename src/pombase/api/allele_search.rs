@@ -68,6 +68,11 @@ fn make_allele_url(q: &str) -> Option<String> {
         url_parts.push(format!("gene_uniquename:({})^3.0", clean_word));
     }
 
+    if q.len() < 50 {
+        let clean_id_q = CLEAN_RE.replace_all(q, "\\$1");
+        url_parts.push(format!("id:({})^10", clean_id_q));
+    }
+
     for word in &clean_words {
         url_parts.push(format!("description:({})^1.0", word));
     }
@@ -90,7 +95,7 @@ fn matches_from_container(container: SolrAlleleResponseContainer) -> Vec<SolrAll
 pub async fn search_alleles(config: &ServerConfig, reqwest_client: &Client, q: &str)
      -> Result<Vec<SolrAlleleSummary>, Box<dyn Error + Send + Sync>>
 {
-    let query_field_names = ["name", "synonyms", "description",
+    let query_field_names = ["id", "name", "synonyms", "description",
                              "gene_name", "gene_uniquename"];
 
     let maybe_url = make_allele_url(q);
