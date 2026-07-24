@@ -1322,8 +1322,15 @@ impl WebData {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
-        let header = "gene_systematic_id\tgene_name\ttype\tevidence\tqualifier\textension\treference\ttaxon\tdate\n";
-        writer.write_all(header.as_bytes())?;
+        let with_comments_file_name = format!("{}/qualitative_gene_expression_with_comments.tsv", output_dir);
+        let with_comments_file = File::create(with_comments_file_name)?;
+        let mut with_comments_writer = BufWriter::new(&with_comments_file);
+
+        let header = "gene_systematic_id\tgene_name\ttype\tevidence\tqualifier\textension\treference\ttaxon\tdate";
+        writeln!(writer, "{}", header)?;
+
+        let with_comments_header = "gene_systematic_id\tgene_name\ttype\tevidence\tqualifier\textension\treference\ttaxon\tdate\tcomment";
+        writeln!(with_comments_writer, "{}", with_comments_header)?;
 
         for gene_details in self.genes.values() {
             let Some(term_annotations) = gene_details.cv_annotations.get("qualitative_gene_expression")
@@ -1337,10 +1344,20 @@ impl WebData {
                         .unwrap_or_else(|| panic!("can't find annotation {}", annotation_id));
 
                     write_qualitative_expression_row(&mut writer,
+                                                     ExportCommentsMode::NoExport,
                                                      &self.terms,
                                                      gene_details,
                                                      &term_annotation.term,
-                                                     &annotation_detail)?
+                                                     &annotation_detail)?;
+
+                    if annotation_detail.submitter_comment.is_some() {
+                        write_qualitative_expression_row(&mut with_comments_writer,
+                                                         ExportCommentsMode::Export,
+                                                         &self.terms,
+                                                         gene_details,
+                                                         &term_annotation.term,
+                                                         &annotation_detail)?;
+                    }
                 }
             }
         }

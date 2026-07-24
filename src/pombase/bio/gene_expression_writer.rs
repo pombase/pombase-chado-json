@@ -1,7 +1,7 @@
 use std::io;
 use std::io::Write;
 
-use crate::{data_types::{ExtPart, ExtRange, GeneDetails, OntAnnotationDetail, TermIdDetailsMap}, types::TermId};
+use crate::{bio::{ExportCommentsMode, get_submitter_comment}, data_types::{ExtPart, ExtRange, GeneDetails, OntAnnotationDetail, TermIdDetailsMap}, types::TermId};
 
 fn extension_to_string(extension: &[ExtPart]) -> String {
     let mut part_strings = vec![];
@@ -100,6 +100,7 @@ const VALID_QUALIFIERS: [&str; 8] =
      "constant", "fluctuates"];
 
 pub fn write_qualitative_expression_row(writer: &mut dyn Write,
+                                        write_mode: ExportCommentsMode,
                                         terms: &TermIdDetailsMap,
                                         gene_details: &GeneDetails,
                                         annotation_termid: &TermId,
@@ -136,13 +137,22 @@ pub fn write_qualitative_expression_row(writer: &mut dyn Write,
 
     let date = annotation_detail.date.as_deref().unwrap_or("");
 
-    let line =
-        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n",
+    let mut line =
+        format!("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}",
                 gene_uniquename, gene_name, annotation_type,
                 evidence, qualifier, extension_string,
                 reference, gene_details.taxonid, date);
 
-    writer.write_all(line.as_bytes())?;
+    if write_mode == ExportCommentsMode::Export {
+        if let Some(ref comment) = get_submitter_comment(annotation_detail) {
+            line += "\t";
+            line += comment;
+        } else {
+            return Ok(());
+        }
+    }
+
+    writeln!(writer, "{}", line)?;
 
     Ok(())
 }
