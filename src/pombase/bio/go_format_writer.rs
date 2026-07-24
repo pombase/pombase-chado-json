@@ -867,8 +867,9 @@ pub fn make_gaf_line(config: &Config,
     line_parts.push(gene_product_form_id);
 
     if export_comments == ExportCommentsMode::Export {
-        if let Some(ref tmp_submitter_comment) = get_submitter_comment(annotation_detail) {
-            line_parts.push(tmp_submitter_comment.to_owned());
+        if let Some(ref raw_comment) = annotation_detail.submitter_comment &&
+            let Some(ref submitter_comment) = get_submitter_comment(raw_comment) {
+            line_parts.push(submitter_comment.to_owned());
         } else {
             line_parts.push("".to_owned());
         }

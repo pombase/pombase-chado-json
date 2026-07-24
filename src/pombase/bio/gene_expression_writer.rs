@@ -144,7 +144,8 @@ pub fn write_qualitative_expression_row(writer: &mut dyn Write,
                 reference, gene_details.taxonid, date);
 
     if write_mode == ExportCommentsMode::Export {
-        if let Some(ref comment) = get_submitter_comment(annotation_detail) {
+        if let Some(ref raw_comment) = annotation_detail.submitter_comment &&
+            let Some(ref comment) = get_submitter_comment(raw_comment) {
             line += "\t";
             line += comment;
         } else {

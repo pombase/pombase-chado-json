@@ -11,7 +11,7 @@ use parquet::arrow::ArrowWriter;
 use parquet::file::properties::WriterProperties;
 use parquet::basic::{Compression, ZstdLevel};
 
-use crate::{bio::util::{ANNOTATION_COMMENT_NESTED_BRACKETS_RE, ANNOTATION_COMMENT_RE}, data_types::OntAnnotationDetail};
+use crate::bio::util::{ANNOTATION_COMMENT_NESTED_BRACKETS_RE, ANNOTATION_COMMENT_RE};
 
 pub mod util;
 pub mod go_format_writer;
@@ -31,11 +31,9 @@ pub enum ExportCommentsMode {
     NoExport,
 }
 
-fn get_submitter_comment(annotation_detail: &OntAnnotationDetail)
+pub fn get_submitter_comment(submitter_comment: &str)
    -> Option<String>
 {
-    let submitter_comment = annotation_detail.submitter_comment.as_ref()?;
-
     // remove comments while handling nested brackets (in a hacky way)
     let submitter_comment =
         ANNOTATION_COMMENT_NESTED_BRACKETS_RE.replace_all(submitter_comment, "");

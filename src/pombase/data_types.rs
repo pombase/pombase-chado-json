@@ -2417,6 +2417,8 @@ pub struct GeneticInteractionDetail {
     pub source_database: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub annotation_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub submitter_comment: Option<FlexStr>,
 }
 impl Ord for GeneticInteractionDetail {
     fn cmp(&self, other: &Self) -> Ordering {
@@ -2450,6 +2452,8 @@ pub struct InteractionAnnotation {
     pub source_database: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub annotation_date: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub submitter_comment: Option<FlexStr>,
 }
 impl Hash for InteractionAnnotation {
     fn hash<H: Hasher>(&self, state: &mut H) {

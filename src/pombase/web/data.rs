@@ -26,7 +26,7 @@ use crate::bio::complementation::write_complementation;
 use crate::bio::modifications::write_modifications;
 use crate::bio::util::{format_fasta, format_gene_gff, format_misc_feature_gff};
 
-use crate::bio::ExportCommentsMode;
+use crate::bio::{ExportCommentsMode, get_submitter_comment};
 use crate::constants::*;
 
 use crate::rest::{PublicAPIAlleleDetails, PublicAPIGeneDetails, PublicAPIReferenceDetails, PublicAPITermDetails, PublicAPITranscriptDetails, PublicApiExec};
@@ -1536,8 +1536,15 @@ impl WebData {
         let file = File::create(file_name)?;
         let mut writer = BufWriter::new(&file);
 
-        let header = "#InteractorA\tInteractorB\tInteractorA_taxon\tInteractorB_taxon\tEvidence_Code\tPubmedID\tScore\tModification\tPhenotypes\tComment\n";
-        writer.write_all(header.as_bytes())?;
+        let with_comments_file_name = format!("{}/interactions_with_comments.tsv", output_dir);
+        let with_comments_file = File::create(with_comments_file_name)?;
+        let mut with_comments_writer = BufWriter::new(&with_comments_file);
+
+        let header = "#InteractorA\tInteractorB\tInteractorA_taxon\tInteractorB_taxon\tEvidence_Code\tPubmedID\tScore\tModification\tPhenotypes\tComment";
+        writeln!(writer, "{}", header)?;
+
+        let with_comments_header = "#InteractorA\tInteractorB\tInteractorA_taxon\tInteractorB_taxon\tEvidence_Code\tPubmedID\tScore\tModification\tPhenotypes\tComment\tCurator_comment";
+        writeln!(with_comments_writer, "{}", with_comments_header)?;
 
         let mut write_interaction = |int_type: &str, int: &InteractionAnnotation|
              -> Result<(), io::Error>
@@ -1554,14 +1561,21 @@ impl WebData {
                 comment.push_str(annotation_date.as_str());
             }
 
-            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}\n",
+            let line = format!("{}\t{}\t{}\t{}\t{}\t{}\t\t\t\t{}",
                                int.gene_uniquename,
                                int.interactor_uniquename,
                                load_org_taxonid, load_org_taxonid,
                                int.evidence,
                                int.reference_uniquename.as_deref().unwrap_or_default(),
                                comment);
-            writer.write_all(line.as_bytes())?;
+            writeln!(writer, "{}", line)?;
+
+            if let Some(ref raw_comment) = int.submitter_comment &&
+                let Some(submitter_comment) = get_submitter_comment(raw_comment) {
+
+                writeln!(with_comments_writer, "{}\t{}", line, submitter_comment)?;
+            }
+
             Ok(())
         };
 

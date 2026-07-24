@@ -1463,6 +1463,7 @@ phenotypes, so just the first part of this extension will be used:
         let mut rescued_phenotype_termid = None;
         let mut rescued_phenotype_extension_value = None;
         let mut annotation_date = None;
+        let mut submitter_comment = None;
 
         for prop in genotype_interaction_feature.featureprops.borrow().iter() {
             match prop.prop_type.name.as_str() {
@@ -1472,6 +1473,7 @@ phenotypes, so just the first part of this extension will be used:
                 "interaction_rescued_phenotype_extension" =>
                     rescued_phenotype_extension_value = prop.value.clone(),
                 "annotation_date" => annotation_date = prop.value.clone(),
+                "submitter_comment" => submitter_comment = prop.value.clone(),
                 _ => (),
             }
         }
@@ -1551,6 +1553,7 @@ phenotypes, so just the first part of this extension will be used:
                 throughput: ont_annotation_detail.throughput,
                 source_database: Some(self.config.database_name.clone()),
                 annotation_date,
+                submitter_comment,
             };
 
         self.genetic_interaction_annotations
@@ -2866,6 +2869,7 @@ phenotypes, so just the first part of this extension will be used:
                 throughput: interaction.throughput,
                 source_database: interaction.source_database,
                 annotation_date: interaction.annotation_date,
+                submitter_comment: interaction.submitter_comment,
             };
 
         self.genetic_interaction_annotations
@@ -2893,6 +2897,7 @@ phenotypes, so just the first part of this extension will be used:
                         let mut source_database = None;
                         let mut ortholog_qualifier = None;
                         let mut annotation_date = None;
+                        let mut submitter_comment = None;
 
                         let borrowed_publications = feature_rel.publications.borrow();
                         let maybe_publication = borrowed_publications.first();
@@ -2952,6 +2957,10 @@ phenotypes, so just the first part of this extension will be used:
                                 && let Some(date_value) = prop.value.clone() {
                                     annotation_date = Some(date_value);
                                 }
+                            if prop.prop_type.name == "submitter_comment"
+                                && let Some(submitter_comment_value) = prop.value.clone() {
+                                    submitter_comment = Some(submitter_comment_value);
+                                }
                         }
 
                         let evidence_clone = evidence.clone();
@@ -2980,6 +2989,7 @@ phenotypes, so just the first part of this extension will be used:
                                             interaction_note,
                                             source_database,
                                             annotation_date,
+                                            submitter_comment,
                                         };
 
                                     if rel_name == "interacts_genetically" {
@@ -8080,6 +8090,7 @@ phenotypes, so just the first part of this extension will be used:
                     interaction_note: interaction_detail.interaction_note.clone(),
                     source_database: interaction_detail.source_database.clone(),
                     annotation_date: interaction_detail.annotation_date.clone(),
+                    submitter_comment: interaction_detail.submitter_comment.clone(),
                 };
                 genetic_interaction_annotations.push(interaction);
             }

@@ -222,7 +222,8 @@ pub fn write_phenotype_annotation_files(data_lookup: &dyn DataLookup,
                     };
 
                     if export_comments {
-                        if let Some(submitter_comment) = get_submitter_comment(annotation_detail.as_ref()) {
+                        if let Some(ref raw_comment) = annotation_detail.submitter_comment &&
+                            let Some(submitter_comment) = get_submitter_comment(raw_comment) {
                             line_parts.push(submitter_comment);
                         } else {
                             line_parts.push(String::default())
