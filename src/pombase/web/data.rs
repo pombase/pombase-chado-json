@@ -1350,14 +1350,12 @@ impl WebData {
                                                      &term_annotation.term,
                                                      &annotation_detail)?;
 
-                    if annotation_detail.submitter_comment.is_some() {
-                        write_qualitative_expression_row(&mut with_comments_writer,
-                                                         ExportCommentsMode::Export,
-                                                         &self.terms,
-                                                         gene_details,
-                                                         &term_annotation.term,
-                                                         &annotation_detail)?;
-                    }
+                    write_qualitative_expression_row(&mut with_comments_writer,
+                                                     ExportCommentsMode::Export,
+                                                     &self.terms,
+                                                     gene_details,
+                                                     &term_annotation.term,
+                                                     &annotation_detail)?;
                 }
             }
         }
