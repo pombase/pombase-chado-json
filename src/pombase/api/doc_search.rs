@@ -43,8 +43,14 @@ fn make_docs_url(config: &ServerConfig, q: &str) -> Option<String> {
 
         let prefix = format!("{}/docs/select?wt=json&q=", config.solr_url);
 
-        Some(format!("{}heading:({}*) OR content:({}*)^0.2", prefix,
-                     clean_q, clean_q))
+        let maybe_star = if clean_words.len() > 3 {
+            ""
+        } else {
+            "*"
+        };
+
+        Some(format!("{}heading:({}{}) OR content:({}{})^0.2", prefix,
+                     clean_q, maybe_star, clean_q, maybe_star))
     } else {
         None
     }
