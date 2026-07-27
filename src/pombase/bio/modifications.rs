@@ -3,6 +3,7 @@ use std::fs::File;
 
 use flexstr::{shared_str as flex_str, ToSharedStr};
 
+use crate::bio::get_submitter_comment;
 use crate::bio::util::process_modification_ext;
 use crate::data_types::{DataLookup, UniquenameGeneMap};
 use crate::web::config::Config;
@@ -73,10 +74,11 @@ pub fn write_modifications(config: &Config, genes: &UniquenameGeneMap,
 
                     writeln!(writer, "{}", line)?;
 
-                    if let Some(ref comment) = annotation_detail.submitter_comment {
+                    if let Some(raw_comment) = annotation_detail.submitter_comment.as_ref() &&
+                        let Some(ref comment) = get_submitter_comment(raw_comment) {
                         writeln!(writer_with_comments, "{}\t{}", line, comment)?;
                     } else {
-                        writeln!(writer_with_comments, "{}", line)?;
+                        writeln!(writer_with_comments, "{}\t", line)?;
                     }
                 }
             }
