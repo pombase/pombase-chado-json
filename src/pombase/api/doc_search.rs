@@ -49,7 +49,7 @@ fn make_docs_url(config: &ServerConfig, q: &str) -> Option<String> {
             "*"
         };
 
-        Some(format!("{}heading:({}{}) OR content:({}{})^0.2", prefix,
+        Some(format!("{}heading:({}{}) OR content:({}{})^0.5", prefix,
                      clean_q, maybe_star, clean_q, maybe_star))
     } else {
         None
