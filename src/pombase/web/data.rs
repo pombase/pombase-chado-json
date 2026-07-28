@@ -1572,6 +1572,8 @@ impl WebData {
                 let Some(submitter_comment) = get_submitter_comment(raw_comment) {
 
                 writeln!(with_comments_writer, "{}\t{}", line, submitter_comment)?;
+            } else {
+                writeln!(with_comments_writer, "{}\t", line)?;
             }
 
             Ok(())
