@@ -376,7 +376,7 @@ pub enum Ploidiness {
     Any,
 }
 
-#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, PartialEq, Eq)]
+#[derive(Serialize, Deserialize, Copy, Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Throughput {
 #[serde(rename = "high")]
     HighThroughput,
@@ -2437,7 +2437,7 @@ impl PartialOrd for GeneticInteractionDetail {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Hash)]
 pub struct InteractionAnnotation {
     pub gene_uniquename: GeneUniquename,
     pub interactor_uniquename: GeneUniquename,
@@ -2454,37 +2454,6 @@ pub struct InteractionAnnotation {
     pub annotation_date: Option<FlexStr>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub submitter_comment: Option<FlexStr>,
-}
-impl Hash for InteractionAnnotation {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.gene_uniquename.hash(state);
-        self.interactor_uniquename.hash(state);
-        self.evidence.hash(state);
-    }
-}
-impl PartialEq for InteractionAnnotation {
-    fn eq(&self, other: &Self) -> bool {
-        (&self.gene_uniquename, &self.interactor_uniquename,
-         &self.evidence) ==
-            (&other.gene_uniquename, &other.interactor_uniquename,
-             &other.evidence)
-    }
-}
-impl Eq for InteractionAnnotation { }
-impl Ord for InteractionAnnotation {
-    fn cmp(&self, other: &Self) -> Ordering {
-        let order = self.evidence.cmp(&other.evidence);
-        if order != Ordering::Equal {
-            return order;
-        }
-        (&self.gene_uniquename, &self.interactor_uniquename)
-            .cmp(&(&other.gene_uniquename, &other.interactor_uniquename))
-    }
-}
-impl PartialOrd for InteractionAnnotation {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
