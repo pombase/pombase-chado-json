@@ -1225,7 +1225,13 @@ impl Query {
                            "signal_peptide" => signal_peptide = gene_data.signal_peptide.clone(),
                            "pdb_ids" => pdb_ids = gene_data.pdb_ids.clone(),
                            "rnacentral_id" => rnacentral_id = gene_data.rnacentral_urs_identifier.clone(),
-                           "gocam_ids" => gocam_ids = gene_data.gocam_ids.clone(),
+                           "gocam_ids" => gocam_ids = gene_data.enables_gocam_activity_ids.iter()
+                               .map(|gocam_id| if let Some(id) = gocam_id.strip_prefix("gomodel:") {
+                                   id.into()
+                               } else {
+                                   gocam_id.to_owned()
+                               })
+                               .collect(),
                            "enables_gocam_activity_ids" => gocam_ids = gene_data.enables_gocam_activity_ids.clone(),
                            "paralogs" => paralogs = gene_data.paralogs.clone(),
                            "molecular_weight" =>
