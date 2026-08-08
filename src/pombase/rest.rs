@@ -697,7 +697,7 @@ pub enum PublicAPIMappingType {
     Ortholog(OrganismTaxonId),
 }
 
-#[derive(Serialize, Clone, Debug, Hash, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, Hash, Eq, PartialEq)]
 pub struct PublicAPIGeneShort {
     pub systematic_id: GeneUniquename,
     pub name: Option<GeneName>,
@@ -1054,7 +1054,7 @@ pub struct PublicAPIAlleleDetails {
     pub allele_type: FlexStr,
     #[serde(skip_serializing_if="Option::is_none")]
     pub description: Option<FlexStr>,
-    pub gene: GeneShort,
+    pub gene: PublicAPIGeneShort,
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub synonyms: Vec<SynonymDetails>,
 }
@@ -1066,7 +1066,7 @@ impl From<&AlleleDetails> for PublicAPIAlleleDetails {
             name: ad.name.clone(),
             allele_type: ad.allele_type.clone(),
             description: ad.description.clone(),
-            gene: ad.gene.clone(),
+            gene: (&ad.gene).into(),
             synonyms: ad.synonyms.clone(),
        }
     }
