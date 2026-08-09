@@ -222,7 +222,7 @@ pub fn parse_interpro(file_name: &str) -> DomainData {
     for (gene_uniquename, mut results) in domain_data.domains_by_id {
         let new_interpro_matches: Vec<InterProMatch> =
             results.interpro_matches.into_iter()
-            .filter(|interpro_match| interpro_match.dbname == "DeepTMHMM-Signal-Peptide")
+            .filter(|interpro_match| interpro_match.dbname == "Signal-Peptide-DeepTMHMM")
             .collect();
 
         results.interpro_matches = new_interpro_matches;
