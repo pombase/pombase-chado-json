@@ -1106,8 +1106,11 @@ async fn public_api_go_annotation_by_term(State(all_state): State<Arc<AllState>>
     };
 
     let termids_split: Vec<_> = termids.split(",").collect();
-    if let Some(mut gaf) = all_state.public_api_exec.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
-                                                                       &termids_split, output_type)
+
+    let api = &all_state.public_api_exec;
+
+    if let Some(mut gaf) = api.go_annotation_by_termid(&all_state.config, all_state.get_api_data(),
+                                                       &termids_split, output_type)
     {
         gaf += "\n";
 
@@ -1117,6 +1120,48 @@ async fn public_api_go_annotation_by_term(State(all_state): State<Arc<AllState>>
         };
         let filename = format!("go_annotation_for_{}.{}",
                                termids.replace(":", "_").replace(",", "+"), suffix);
+        let content_disposition =
+            format!(r#"attachment; filename="{}""#, filename);
+        let content_type = match output_type {
+            PublicAPIOutputType::TSV => "text/tab-separated-values; charset=utf-8",
+            PublicAPIOutputType::JSON => "application/json; charset=utf-8",
+        };
+        let headers = [(axum::http::header::CONTENT_DISPOSITION, content_disposition.as_str()),
+                       (axum::http::header::CONTENT_TYPE, content_type)];
+        (StatusCode::OK, headers, gaf).into_response()
+    } else {
+        StatusCode::NOT_FOUND.into_response()
+    }
+}
+
+async fn public_api_go_annotation_by_gene(State(all_state): State<Arc<AllState>>,
+                                          Path((gene_ids, output_type)): Path<(String, String)>)
+    -> impl IntoResponse
+{
+    let output_type = if output_type == "json" {
+        PublicAPIOutputType::JSON
+    } else {
+        if output_type == "gaf" || output_type == "tsv" {
+            PublicAPIOutputType::TSV
+        } else {
+            return StatusCode::NOT_FOUND.into_response();
+        }
+    };
+
+    let api = &all_state.public_api_exec;
+
+    let gene_ids_split: Vec<_> = gene_ids.split(",").collect();
+    if let Some(mut gaf) = api.go_annotation_by_gene_id(&all_state.config, all_state.get_api_data(),
+                                                        &gene_ids_split, output_type)
+    {
+        gaf += "\n";
+
+        let suffix = match output_type {
+            PublicAPIOutputType::TSV => "gaf.tsv",
+            PublicAPIOutputType::JSON => "json",
+        };
+        let filename = format!("go_annotation_for_{}.{}",
+                               gene_ids.replace(",", "+"), suffix);
         let content_disposition =
             format!(r#"attachment; filename="{}""#, filename);
         let content_type = match output_type {
@@ -1548,6 +1593,7 @@ async fn main() {
         .route("/api/mapper/from_ortholog/{taxon_id}/{ids}/{output_type}", get(public_api_identifier_mapper_get))
         .route("/api/mapper/from_ortholog", post(public_api_mapper_from_ortholog_post))
         .route("/api/go_annotation/by_term_id/{ids}/{output_type}", get(public_api_go_annotation_by_term))
+        .route("/api/go_annotation/by_gene_id/{ids}/{output_type}", get(public_api_go_annotation_by_gene))
         .route("/api/phenotype_annotation/by_term_id/{ids}/{output_type}", get(public_api_phenotype_by_term))
         .route("/ping", get(ping))
         .fallback(not_found)

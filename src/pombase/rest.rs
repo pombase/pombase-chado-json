@@ -7,7 +7,7 @@ use itertools::{Either, Itertools};
 use crate::bio::ExportCommentsMode;
 use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
-use crate::constants::{FYPO_CV_NAME, is_go_root_name};
+use crate::constants::{BIOLOGICAL_PROCESS_ROOT_TERM_NAME, CELLULAR_COMPONENT_ROOT_TERM_NAME, FYPO_CV_NAME, MOLECULAR_FUNCTION_ROOT_TERM_NAME, is_go_root_name};
 
 use crate::data_types::{ActiveSite, AlleleDetails, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
@@ -173,6 +173,89 @@ impl PublicApiExec {
             }
 
             for (cv_name, term_annotations) in ancestor_term_details.cv_annotations.iter() {
+                for term_annotation in term_annotations {
+                    let termid = &term_annotation.term;
+
+                    if term_annotation.is_not {
+                        continue;
+                    }
+
+                    let term_name = &api_data.get_term(termid).unwrap().name;
+
+                    for annotation_id in &term_annotation.annotations {
+                        let annotation_details = api_data.get_annotation_detail(*annotation_id).unwrap();
+                        let annotation_details = annotation_details.as_ref();
+                        let gene_uniquename = &annotation_details.genes[0];
+                        let gene_details = api_data.get_gene(gene_uniquename).unwrap();
+                        let gene_details = gene_details.as_ref();
+
+                        if let Some(ref characterisation_status) = gene_details.characterisation_status
+                            && (characterisation_status == "dubious" || characterisation_status == "transposon") {
+                                continue;
+                            }
+
+                        if gene_details.feature_type == "pseudogene" {
+                            continue;
+                        }
+
+                        match output_type {
+                            PublicAPIOutputType::TSV => {
+                                let Some(line) =
+                                    make_gaf_line(config, api_data, GpadGafWriteMode::GafForRest,
+                                                  ExportCommentsMode::NoExport, gene_details,
+                                                  annotation_details, termid, false, cv_name)
+                                else {
+                                    continue;
+                                };
+
+                                lines.push(line);
+                            },
+                            PublicAPIOutputType::JSON => {
+                                let go_annotation =
+                                    make_go_annotation(config, api_data,
+                                                       termid.clone(), term_name.clone(),
+                                                       annotation_details);
+                                annotations.push(go_annotation);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        match output_type {
+            PublicAPIOutputType::TSV =>
+                Some(lines.iter().map(|line| line.join("\t")).join("\n")),
+            PublicAPIOutputType::JSON =>
+                Some(serde_json::to_string(&annotations).unwrap())
+        }
+    }
+
+    // return None if none of the gene_id exist or there are no annotations
+    pub fn go_annotation_by_gene_id(&self, config: &Config,
+                                   api_data: &dyn DataLookup,
+                                   gene_ids: &[&str],
+                                   output_type: PublicAPIOutputType)
+        -> Option<String>
+    {
+        let mut lines = vec![];
+        let mut annotations = vec![];
+
+        for gene_id in gene_ids {
+            let gene_id = gene_id.to_flex();
+            let gene_id_details = api_data.get_gene(&gene_id)?;
+
+            for cv_name in [MOLECULAR_FUNCTION_ROOT_TERM_NAME,
+                            CELLULAR_COMPONENT_ROOT_TERM_NAME,
+                            BIOLOGICAL_PROCESS_ROOT_TERM_NAME] {
+
+                let Some(term_annotations) = gene_id_details.cv_annotations.get(cv_name)
+                else {
+                    continue;
+                };
+
+                let cv_name = &cv_name.to_flex();
+
                 for term_annotation in term_annotations {
                     let termid = &term_annotation.term;
 
