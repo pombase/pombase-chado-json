@@ -93,6 +93,7 @@ debug = true
 codegen-units = 256
 incremental = true
 lto = "off"
+overflow-checks = true
 
 [profile.release]
 opt-level = 3
