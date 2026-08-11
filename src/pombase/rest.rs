@@ -9,7 +9,7 @@ use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
 use crate::constants::{BIOLOGICAL_PROCESS_ROOT_TERM_NAME, CELLULAR_COMPONENT_ROOT_TERM_NAME, FYPO_CV_NAME, MOLECULAR_FUNCTION_ROOT_TERM_NAME, is_go_root_name};
 
-use crate::data_types::{ActiveSite, AlleleDetails, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
+use crate::data_types::{ActiveSite, AlleleDetails, AnnotationContainer, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
 use crate::types::{AlleleUniquename, CvName, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, OrganismTaxonId, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermDef, TermId, TermName, TranscriptUniquename};
 
@@ -154,12 +154,82 @@ impl PublicApiExec {
     }
 
 
+    // return None if none of the genes exist or there are no annotations
+    pub fn phenotype_annotation_by_gene_id(&self, config: &Config,
+                                           api_data: &dyn DataLookup,
+                                           gene_ids: &[&str],
+                                           output_type: PublicAPIOutputType)
+                                           -> Option<String>
+    {
+        let mut lines = vec![];
+        let mut annotations = HashSet::new();
+
+        for gene_id in gene_ids {
+            let gene_id = gene_id.to_flex();
+            let gene_term_details = api_data.get_gene(&gene_id)?;
+
+            for cv_name in ["single_locus_phenotype", "multi_locus_phenotype"] {
+
+                let Some(ont_term_annotations_vec) = gene_term_details.cv_annotations().get(cv_name)
+                else {
+                    continue;
+                };
+
+                for ont_term_annotations in ont_term_annotations_vec {
+                    let termid = &ont_term_annotations.term;
+                    let term_name = &api_data.get_term(termid).unwrap().name;
+
+                    for annotation_id in &ont_term_annotations.annotations {
+                        let Some(annotation_details) = api_data.get_annotation_detail(*annotation_id)
+                        else {
+                            continue;
+                        };
+
+                        let annotation_details = annotation_details.as_ref();
+                        let Some(genotype_uniquename) = annotation_details.genotype.as_ref()
+                        else {
+                            continue;
+                        };
+                        let genotype_details =
+                            api_data.get_genotype(genotype_uniquename).unwrap();
+
+                        match output_type {
+                            PublicAPIOutputType::TSV => {
+                                if let Some(line) =
+                                    make_phenotype_line_parts(config, api_data, termid,
+                                                              annotation_details,
+                                                              &genotype_details,
+                                                              FypoEvidenceType::PomBase) {
+                                        lines.push(line);
+                                    }
+                            },
+                            PublicAPIOutputType::JSON => {
+                                let phenotype_annotation =
+                                    make_phenotype_annotation(api_data,
+                                                              termid.clone(), term_name.clone(),
+                                                              annotation_details, &genotype_details);
+                                annotations.insert(phenotype_annotation);
+                            },
+
+                        }
+                    }
+                }
+            }
+        }
+
+        match output_type {
+            PublicAPIOutputType::TSV =>
+                Some(lines.iter().map(|line| line.join("\t")).join("\n")),
+            PublicAPIOutputType::JSON => Some(serde_json::to_string(&annotations).unwrap())
+        }
+    }
+
     // return None if the termid doesn't exist or doesn't have annotations
     pub fn go_annotation_by_termid(&self, config: &Config,
                                    api_data: &dyn DataLookup,
                                    ancestor_termids: &[&str],
                                    output_type: PublicAPIOutputType)
-        -> Option<String>
+                                   -> Option<String>
     {
         let mut lines = vec![];
         let mut annotations = vec![];
