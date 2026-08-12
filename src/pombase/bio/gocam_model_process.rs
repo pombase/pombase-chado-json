@@ -191,6 +191,6 @@ pub async fn read_connected_gocam_models(web_root_dir: &str,
         merge_res
     } else {
         merge_res.map(|model| model.remove_nodes(remove_types)
-                         .retain_largest_subgraph())
+                      .remove_singleton_models())
     }
 }
