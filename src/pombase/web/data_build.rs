@@ -7274,7 +7274,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
             let gene_from_overlap = gene.id().strip_prefix(&db_prefix)
-                .expect(&format!("failed to strip db_prefix {} from gene ID {}", db_prefix, gene.id()));
+                .unwrap_or_else(|| panic!("failed to strip db_prefix {} from gene ID {}", db_prefix, gene.id()));
 
             home_models_of_genes.entry(gene_from_overlap.to_flex())
                 .or_insert_with(HashSet::new)
