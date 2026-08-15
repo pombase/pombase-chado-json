@@ -8293,18 +8293,18 @@ phenotypes, so just the first part of this extension will be used:
 
         let termid_genotype_annotation = self.get_api_genotype_annotation();
 
-        let Some(abnormal_phenotype_direct_term) = self.terms.get("FYPO:0001985")
-        else {
-            panic!("can't find abnormal phenotype term FYPO:0001985");
-        };
-
         let mut abnormal_phenotype_termids = HashSet::new();
-        abnormal_phenotype_termids.insert(abnormal_phenotype_direct_term.termid.clone());
-        if let Some(abnormal_phenotype_child_terms) = self.children_by_termid.get("FYPO:0001985") {
-            abnormal_phenotype_termids.extend(abnormal_phenotype_child_terms.iter().cloned());
+
+        if let Some(abnormal_phenotype_direct_term) = self.terms.get("FYPO:0001985") {
+            abnormal_phenotype_termids.insert(abnormal_phenotype_direct_term.termid.clone());
+            if let Some(abnormal_phenotype_child_terms) = self.children_by_termid.get("FYPO:0001985") {
+                abnormal_phenotype_termids.extend(abnormal_phenotype_child_terms.iter().cloned());
+            } else {
+                // we're running a test
+            };
         } else {
-            // we're running a test
-        };
+            // not Schizosaccharomyces
+        }
 
         let api_maps = self.make_api_maps();
 

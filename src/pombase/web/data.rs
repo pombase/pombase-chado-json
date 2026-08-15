@@ -1732,7 +1732,8 @@ impl WebData {
         let rest_exec = PublicApiExec::new();
         let annotations =
             rest_exec.phenotype_annotation_by_termid(config, self, &[FYPO_ROOT_TERM_ID],
-                                                     crate::rest::PublicAPIOutputType::JSON).unwrap();
+                                                     crate::rest::PublicAPIOutputType::JSON)
+            .unwrap_or_default();
 
         writeln!(writer, "{}", annotations)?;
 
