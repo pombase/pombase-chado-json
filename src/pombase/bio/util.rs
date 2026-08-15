@@ -315,8 +315,8 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
                 rel_term_id
             } else {
                 data_lookup.get_term(&rel_term_id)
-                    .unwrap_or_else(|| panic!("internal error, can't find term {}",
-                                              rel_term_id))
+                    .unwrap_or_else(|| panic!("internal error, can't find term {} from {}",
+                                              rel_term_id, ext_part.rel_type_name))
                     .name.clone()
             }
         }

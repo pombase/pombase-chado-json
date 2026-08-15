@@ -7273,8 +7273,8 @@ phenotypes, so just the first part of this extension will be used:
                 continue;
             };
 
-            let gene_from_overlap =
-                gene.id().strip_prefix(&db_prefix).unwrap();
+            let gene_from_overlap = gene.id().strip_prefix(&db_prefix)
+                .expect(&format!("failed to strip db_prefix {} from gene ID {}", db_prefix, gene.id()));
 
             home_models_of_genes.entry(gene_from_overlap.to_flex())
                 .or_insert_with(HashSet::new)
@@ -7332,7 +7332,9 @@ phenotypes, so just the first part of this extension will be used:
         }
 
         for (gene_uniquename, home_gocams) in home_models_of_genes.drain() {
-            let gene_details = self.genes.get_mut(&gene_uniquename).unwrap();
+            let gene_details = self.genes.get_mut(&gene_uniquename)
+                .expect(&format!("can't find gene {} from {} in Chado", gene_uniquename,
+                                 home_gocams.iter().next().unwrap()));
 
             gene_details.home_gocams = home_gocams;
         }
