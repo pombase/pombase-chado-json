@@ -7333,8 +7333,8 @@ phenotypes, so just the first part of this extension will be used:
 
         for (gene_uniquename, home_gocams) in home_models_of_genes.drain() {
             let gene_details = self.genes.get_mut(&gene_uniquename)
-                .expect(&format!("can't find gene {} from {} in Chado", gene_uniquename,
-                                 home_gocams.iter().next().unwrap()));
+                .unwrap_or_else(|| panic!("can't find gene {} from {} in Chado", gene_uniquename,
+                                          home_gocams.iter().next().unwrap()));
 
             gene_details.home_gocams = home_gocams;
         }
