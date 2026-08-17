@@ -389,6 +389,7 @@ fn make_feature_short(chromosome_map: &ChrNameDetailsMap, feat: &Feature) -> Fea
                 "guide_RNA" => FeatureType::GuideRNA,
                 "SNP" => FeatureType::SNP,
                 "intron" => FeatureType::Intron,
+                "primary_transcript" => FeatureType::PrimaryTranscript,
                 _ => panic!("can't handle feature type: {}", feat.feat_type.name),
             };
 
