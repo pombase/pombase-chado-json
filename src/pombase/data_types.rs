@@ -1782,6 +1782,8 @@ pub enum FeatureType {
     LncRNA,
 #[serde(rename = "guide_RNA")]
     GuideRNA,
+#[serde(rename = "primary_transcript")]
+    PrimaryTranscript,
     SNP,
 }
 
@@ -1826,6 +1828,7 @@ impl Display for FeatureType {
             FeatureType::LncRNA => "lncRNA",
             FeatureType::GuideRNA => "guide_RNA",
             FeatureType::SNP => "SNP",
+            FeatureType::PrimaryTranscript => "primary_transcript",
         })
     }
 }
