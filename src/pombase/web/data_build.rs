@@ -7255,7 +7255,7 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut home_models_of_genes = HashMap::new();
 
-        let database_prefix = &self.config.database_name;
+        let database_prefix = &self.config.database_prefix;
         let db_prefix = format!("{}:", database_prefix);
 
         for overlap in &self.gocam_overlaps {
