@@ -380,6 +380,7 @@ pub struct ApicuronConfig {
 pub struct Config {
     pub site_name: FlexStr,
     pub database_name: FlexStr,
+    pub database_prefix: FlexStr,
     pub database_long_name: FlexStr,
     pub database_citation: FlexStr,
     pub logo_file_name: FlexStr,

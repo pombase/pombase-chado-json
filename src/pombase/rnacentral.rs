@@ -102,7 +102,7 @@ fn gene_synonyms(gene_details: &GeneDetails) -> Vec<FlexStr> {
 }
 
 fn db_uniquename(config: &Config, uniquename: &FlexStr) -> FlexStr {
-    FlexStr::from(&format!("{}:{}", config.database_name, uniquename))
+    FlexStr::from(&format!("{}:{}", config.database_prefix, uniquename))
 }
 
 fn make_url(config: &Config, gene_details: &GeneDetails) -> FlexStr {

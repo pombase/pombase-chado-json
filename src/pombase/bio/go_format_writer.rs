@@ -381,9 +381,9 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
                          gene_details: &GeneDetails)
                          -> Result<(), io::Error>
 {
-    let database_name = &config.database_name;
+    let database_prefix = &config.database_name;
 
-    let db_object_id = format!("{}:{}", database_name, gene_details.uniquename);
+    let db_object_id = format!("{}:{}", database_prefix, gene_details.uniquename);
     let db_object_symbol =
         gene_details.name.clone().unwrap_or(gene_details.uniquename.clone());
 
@@ -527,8 +527,8 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                      gene_details: &GeneDetails)
                                      -> Result<(), io::Error>
 {
-    let database_name = &config.database_name;
-    let db_object_id = flex_fmt!("{}:{}", database_name, gene_details.uniquename);
+    let database_prefix = &config.database_name;
+    let db_object_id = flex_fmt!("{}:{}", database_prefix, gene_details.uniquename);
     let local: DateTime<Local> = Local::now();
     let local_iso_date = local.format("%F");
     let assigned_by = &config.database_name;

@@ -1228,7 +1228,7 @@ impl <'a> WebDataBuild<'a> {
         let mut enables_gocam_activity_ids = HashSet::new();
 
         let uniquename_with_prefix =
-            format!("{}:{}", self.config.database_name, gene_uniquename);
+            format!("{}:{}", self.config.database_prefix, gene_uniquename);
 
         for model in &self.gocam_models {
             if model.genes_in_model().contains_key(&uniquename_with_prefix) {
@@ -3663,7 +3663,7 @@ phenotypes, so just the first part of this extension will be used:
                     match cvtermprop.prop_type.name.as_str() {
                         "pombase_gene_id" => {
                             pombase_gene_id = Some(cvtermprop.value.clone());
-                            let gene_for_map = format!("{}:{}", self.config.database_name,
+                            let gene_for_map = format!("{}:{}", self.config.database_prefix,
                                                        cvtermprop.value);
                             pro_term_to_gene.insert(cvterm.termid().to_string(), gene_for_map);
                         },
@@ -3783,7 +3783,7 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn process_extension_cvterms(&mut self) {
-        let db_prefix = format!("{}:", self.config.database_name);
+        let db_prefix = format!("{}:", self.config.database_prefix);
 
         for cvterm in &self.raw.cvterms {
             if cvterm.cv.name == POMBASE_ANN_EXT_TERM_CV_NAME {
@@ -4070,7 +4070,7 @@ phenotypes, so just the first part of this extension will be used:
 
             if self.genes.contains_key(&id) {
                 let gene_short = self.make_gene_short(&id);
-                if self.config.database_name == prefix {
+                if self.config.database_prefix == prefix {
                     // a gene from the main organism
                     return WithFromValue::Gene(gene_short);
                 } else if let Some(name) = &gene_short.name {
@@ -4082,7 +4082,7 @@ phenotypes, so just the first part of this extension will be used:
                     });
                 }
             } else if self.transcripts.contains_key(&id)
-            && self.config.database_name == prefix {
+            && self.config.database_prefix == prefix {
                 return WithFromValue::Transcript(id);
             }
         } else if self.genes.contains_key(with_or_from_value) {
@@ -5337,7 +5337,7 @@ phenotypes, so just the first part of this extension will be used:
                 if gene_uniquename.contains(':') {
                     gene_uniquename.to_std_string()
                 } else {
-                    format!("{}:{}", self.config.database_name, gene_uniquename)
+                    format!("{}:{}", self.config.database_prefix, gene_uniquename)
                 };
 
             for model in &self.gocam_models {
@@ -7255,8 +7255,8 @@ phenotypes, so just the first part of this extension will be used:
 
         let mut home_models_of_genes = HashMap::new();
 
-        let database_name = &self.config.database_name;
-        let db_prefix = format!("{}:", database_name);
+        let database_prefix = &self.config.database_name;
+        let db_prefix = format!("{}:", database_prefix);
 
         for overlap in &self.gocam_overlaps {
             let Some(ref original_model_id) = overlap.original_model_id

@@ -443,7 +443,7 @@ fn make_go_annotation(config: &Config, api_data: &dyn DataLookup,
     let gene_uniquename = &annotation_details.genes[0];
     let gene = api_data.get_gene(gene_uniquename).unwrap();
 
-    let db_prefix = &config.database_name;
+    let db_prefix = &config.database_prefix;
 
     let add_db_prefix = |v: &WithFromValue| {
         let id = v.id();

@@ -328,7 +328,7 @@ pub fn make_extension_string(config: &Config, data_lookup: &dyn DataLookup,
             ExtRange::Promoter(ref gene_uniquename) => {
                 if !gene_uniquename.contains(':') {
                     let new_uniquename =
-                        flex_fmt!("{}:{}", config.database_name, gene_uniquename);
+                        flex_fmt!("{}:{}", config.database_prefix, gene_uniquename);
                     ExtRange::Gene(new_uniquename)
                 } else {
                     ext_part.ext_range.clone()

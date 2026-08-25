@@ -614,6 +614,7 @@ fn get_test_config() -> Config {
         logo_file_name: "logo.png".into(),
         load_organism_taxonid: Some(4896),
         database_name: "PomBase".into(),
+        database_prefix: "PomBase".into(),
         database_long_name: flex_str!("PomBase"),
         site_description: flex_str!("PomBase"),
         database_citation: flex_str!("PMID:22039153"),

@@ -2,6 +2,7 @@
   "load_organism_taxonid": 4896,
   "site_name": "PomBase",
   "database_name": "PomBase",
+  "database_prefix": "PomBase",
   "database_long_name": "PomBase",
   "database_citation": "PMID:22039153",
   "logo_file_name": "logo.png",
