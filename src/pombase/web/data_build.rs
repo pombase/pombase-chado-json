@@ -3730,10 +3730,15 @@ phenotypes, so just the first part of this extension will be used:
                         dbxref.identifier()
                     }).collect::<HashSet<_>>();
 
+                let cv_name = if cvterm.cv.name.starts_with("PomGeneEx"){
+                    flex_str!("qualitative_gene_expression")
+                } else {
+                    cvterm.cv.name.clone()
+                };
                 self.terms.insert(cvterm.termid(),
                                   TermDetails {
                                       name: cvterm.name.clone(),
-                                      cv_name: cvterm.cv.name.clone(),
+                                      cv_name,
                                       annotation_feature_type,
                                       interesting_parent_ids: HashSet::new(),
                                       interesting_parent_details: HashSet::new(),
