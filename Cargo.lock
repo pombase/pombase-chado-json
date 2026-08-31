@@ -2035,7 +2035,7 @@ dependencies = [
  "once_cell",
  "parquet",
  "percent-encoding",
- "pombase-gocam",
+ "pombase-gocam 0.136.0",
  "pombase-gocam-process",
  "rand 0.10.2",
  "regex",
@@ -2073,6 +2073,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "pombase-gocam"
+version = "0.136.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "901ccc464bc5d43cf85f3a5ebb9c63c5903f576799e6ca2857c19e215209c213"
+dependencies = [
+ "petgraph",
+ "phf 0.11.3",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_yaml",
+ "thiserror",
+]
+
+[[package]]
 name = "pombase-gocam-process"
 version = "0.162.0"
 source = "git+https://github.com/pombase/pombase-gocam-process.git#ab1ddf84eaa0c4065c11024eca1d9e286b1317e1"
@@ -2081,7 +2097,7 @@ dependencies = [
  "itertools 0.14.0",
  "lazy_static",
  "petgraph",
- "pombase-gocam",
+ "pombase-gocam 0.135.0",
  "regex",
  "serde",
  "serde_derive",
