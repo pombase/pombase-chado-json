@@ -3916,7 +3916,8 @@ phenotypes, so just the first part of this extension will be used:
                                     ext_range,
                                 });
                         } else {
-                            panic!("can't find details for {}\n", object_termid);
+                            panic!("can't find details for {} <- {} -> {}\n",
+                                   subject_termid, rel_type.name, object_termid);
                         }
                 }
             }
