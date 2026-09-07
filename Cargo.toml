@@ -62,7 +62,7 @@ default-features = false
 features = ["rc", "derive"]
 
 [dependencies.zstd]
-version = "0.13"
+version = "0.14"
 features = ["zstdmt"]
 
 [dependencies.flexstr]
