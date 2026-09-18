@@ -49,7 +49,7 @@ rand = "0.10"
 arrow = "60"
 arrow-array = "59"
 arrow-schema = "59"
-parquet = "59"
+parquet = "60"
 
 [dependencies.rusqlite]
 version = "0.40"
