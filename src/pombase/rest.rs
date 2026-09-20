@@ -399,8 +399,8 @@ impl PublicApiExec {
                     if let Some(ref uniprot_id) = gene_summ.uniprot_identifier &&
                         search_ids.contains(uniprot_id.as_str())
                     {
-                        matches.push((uniprot_id.to_owned(),
-                                      gene_summ.uniquename.clone()));
+                        let mat = vec![uniprot_id.to_owned(),gene_summ.uniquename.clone()];
+                        matches.push(mat);
                         found.insert(uniprot_id.clone());
                     }
                 },
@@ -409,8 +409,10 @@ impl PublicApiExec {
                         if search_taxon_id == &orth.ortholog_taxonid &&
                             search_ids.contains(orth.ortholog_uniquename.as_str())
                         {
-                            matches.push((orth.ortholog_uniquename.clone(),
-                                          gene_summ.uniquename.clone()));
+                            let mat =
+                                vec![orth.ortholog_uniquename.clone(), gene_summ.uniquename.clone(),
+                                     gene_summ.uniprot_identifier.clone().unwrap_or_default()];
+                            matches.push(mat);
                             found.insert(orth.ortholog_uniquename.clone());
                         }
                     }
@@ -832,12 +834,12 @@ pub struct PublicAPIGeneLookupResponse {
 
 #[derive(Serialize, Clone, Debug)]
 pub struct PublicAPIMapperResponse {
-    matches: Vec<(FlexStr, FlexStr)>,
+    matches: Vec<Vec<FlexStr>>,
     not_found: Vec<FlexStr>,
 }
 
 impl PublicAPIMapperResponse {
-    pub fn matches(&self) -> &[(FlexStr, FlexStr)] {
+    pub fn matches(&self) -> &[Vec<FlexStr>] {
         &self.matches
     }
 }
