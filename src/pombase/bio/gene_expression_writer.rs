@@ -121,8 +121,6 @@ pub fn write_qualitative_expression_row(writer: &mut dyn Write,
     };
 
     if !VALID_QUALIFIERS.contains(&qualifier) {
-        eprintln!(r#"invalid qualifier "{}" from term name "{}""#,
-                  qualifier, annotation_term.name);
         return Ok(());
     }
 
