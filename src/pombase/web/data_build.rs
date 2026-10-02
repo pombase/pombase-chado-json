@@ -7473,7 +7473,7 @@ phenotypes, so just the first part of this extension will be used:
             let term_name_words =
                 term_name_split_re.split(&term_details.name)
                 .map(|s: &str| {
-                    s.trim_matches(&trimmable_p).to_shared_str()
+                    s.trim_matches(trimmable_p).to_shared_str()
                 }).collect::<Vec<_>>();
 
             let mut exact_synonyms = vec![];
@@ -7486,7 +7486,7 @@ phenotypes, so just the first part of this extension will be used:
             let add_to_words_vec = |synonym: &FlexStr, words_vec: &mut Vec<FlexStr>| {
                 let synonym_words = term_name_split_re.split(synonym);
                 for word in synonym_words {
-                    let word_string = word.trim_matches(&trimmable_p).to_shared_str();
+                    let word_string = word.trim_matches(trimmable_p).to_shared_str();
                     if !words_vec.contains(&word_string) &&
                         !term_name_words.contains(&word_string) {
                             words_vec.push(word_string);
