@@ -279,7 +279,6 @@ pub struct QueryNode {
     pub query_id: Option<QueryIdNode>,
 }
 
-#[allow(clippy::double_must_use)]
 #[async_recursion]
 async fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
            nodes: &[QueryNode]) -> GeneUniquenameVecResult {
@@ -304,7 +303,6 @@ async fn exec_or(api_data: &APIData, site_db: &Option<SiteDB>,
     Ok(or_rows)
 }
 
-#[allow(clippy::double_must_use)]
 #[async_recursion]
 async fn exec_and(api_data: &APIData, site_db: &Option<SiteDB>,
                   nodes: &[QueryNode]) -> GeneUniquenameVecResult {
@@ -328,7 +326,6 @@ async fn exec_and(api_data: &APIData, site_db: &Option<SiteDB>,
     Ok(current_gene_set.into_iter().collect())
 }
 
-#[allow(clippy::double_must_use)]
 #[async_recursion]
 async fn exec_not(api_data: &APIData, site_db: &Option<SiteDB>,
                   node_a: &QueryNode, node_b: &QueryNode)
@@ -825,7 +822,6 @@ impl QueryNode {
         self.query_id.as_ref().map(|query_id_node| query_id_node.id)
     }
 
-    #[allow(clippy::double_must_use)]
     #[async_recursion]
     pub async fn exec<'a>(&'a self, api_data: &'a APIData,
                       site_db: &'a Option<SiteDB>) -> GeneUniquenameVecResult {
