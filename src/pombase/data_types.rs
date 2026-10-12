@@ -1122,6 +1122,9 @@ pub struct OntAnnotationDetail {
     pub curator: Option<CuratorOrcid>,
     #[serde(skip_serializing_if="Option::is_none")]
     pub submitter_comment: Option<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub source_file: Option<FlexStr>,
+
 }
 
 impl PartialEq for OntAnnotationDetail {

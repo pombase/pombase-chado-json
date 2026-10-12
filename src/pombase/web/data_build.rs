@@ -4153,6 +4153,7 @@ phenotypes, so just the first part of this extension will be used:
             let mut curator_orcid: Option<CuratorOrcid> = None;
             let mut submitter_comment: Option<FlexStr> = None;
             let mut curation_session: Option<CurationSessionKey> = None;
+            let mut source_file: Option<FlexStr> = None;
 
             // need to get evidence first as it's used later
             // See: https://github.com/pombase/website/issues/455
@@ -4265,6 +4266,9 @@ phenotypes, so just the first part of this extension will be used:
                                 }
                             });
                         }
+                    },
+                    "source_file" => {
+                        source_file = prop.value.clone();
                     },
                     _ => ()
                 }
@@ -4419,6 +4423,7 @@ phenotypes, so just the first part of this extension will be used:
                 throughput,
                 curator: curator_orcid,
                 submitter_comment,
+                source_file,
             };
 
             if &feature.feat_type.name == "genotype_interaction" {
