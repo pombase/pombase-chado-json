@@ -487,6 +487,7 @@ fn make_one_detail(id: i32, gene_uniquename: &str, reference_uniquename: &str,
         throughput: Some(Throughput::HighThroughput),
         curator: None,
         submitter_comment: None,
+        source_file: None,
     }
 }
 
