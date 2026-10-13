@@ -117,6 +117,7 @@ pub fn make_test_gene(uniquename: &str, name: Option<&str>) -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: HashSet::new(),
+        complex_portal_id: None,
         gocams: vec![],
         home_gocams: HashSet::new(),
         flags: HashSet::new(),

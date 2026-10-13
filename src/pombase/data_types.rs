@@ -55,7 +55,7 @@ pub type TranscriptDetailsOptionMap =
 
 pub type GeneticInteractionMap = HashMap<GeneticInteractionKey, Vec<GeneticInteractionDetail>>;
 
-pub type ProteinComplexMap = HashMap<ProteinComplexUniquename, ProteinComplexDetails>;
+pub type ProteinComplexMap = HashMap<ProteinComplexId, ProteinComplexDetails>;
 
 pub type GoCamSummaryMap = HashMap<GoCamId, GoCamSummary>;
 
@@ -1536,6 +1536,8 @@ pub struct GeneDetails {
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<FlexStr>,
+    #[serde(skip_serializing_if="Option::is_none")]
+    pub complex_portal_id: Option<ProteinComplexId>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     // possible values: "is_histone"

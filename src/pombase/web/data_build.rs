@@ -96,8 +96,8 @@ pub struct WebDataBuild<'a> {
     all_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
     all_not_ont_annotations: HashMap<TermId, Vec<OntAnnotationId>>,
 
-    protein_complexes: HashMap<ProteinComplexUniquename, ProteinComplexDetails>,
-    genes_of_complexes: HashMap<ProteinComplexUniquename, HashSet<GeneUniquename>>,
+    protein_complexes: HashMap<ProteinComplexId, ProteinComplexDetails>,
+    genes_of_complexes: HashMap<ProteinComplexId, HashSet<GeneUniquename>>,
 
     // map from term name to term ID (ie "nucleus" -> "GO:0005634")
     term_ids_by_name: HashMap<FlexStr, TermId>,
@@ -2160,6 +2160,7 @@ phenotypes, so just the first part of this extension will be used:
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
+            complex_portal_id: None,
             flags: HashSet::new(),
             feature_type: feat.feat_type.name.clone(),
             feature_so_termid: feat.feat_type.termid(),
@@ -6614,6 +6615,14 @@ phenotypes, so just the first part of this extension will be used:
         }
     }
 
+    fn set_complex_of_genes(&mut self) {
+        for (complex_id, genes) in self.genes_of_complexes.iter() {
+            for gene_uniquename in genes {
+                self.genes.get_mut(gene_uniquename).unwrap().complex_portal_id = Some(complex_id.clone());
+            }
+        }
+    }
+
     pub fn set_counts(&mut self) {
         let mut term_seen_genes: HashMap<TermId, HashSet<GeneUniquename>> = HashMap::new();
         let mut term_seen_genotypes: HashMap<TermId, HashSet<GenotypeUniquename>> = HashMap::new();
@@ -8245,6 +8254,7 @@ phenotypes, so just the first part of this extension will be used:
         self.set_genotype_details_maps();
         self.set_reference_details_maps();
         self.set_chromosome_gene_counts();
+        self.set_complex_of_genes();
         self.set_counts();
         self.set_split_by_parent_sets();
         self.set_protein_feature_fields();

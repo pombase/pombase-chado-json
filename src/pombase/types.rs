@@ -39,4 +39,4 @@ pub type SubSetName = FlexStr;
 pub type PdbId = FlexStr;
 pub type RnaUrsId = FlexStr;
 
-pub type ProteinComplexUniquename = FlexStr;
+pub type ProteinComplexId = FlexStr;
