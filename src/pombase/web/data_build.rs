@@ -1372,25 +1372,12 @@ impl <'a> WebDataBuild<'a> {
         allele.gene.uniquename.clone()
     }
 
-    fn parse_extension_prop(&self, annotation_termid: &TermId, extension_string: &str) -> AnnotationExtension {
-        let ext: Vec<Vec<CantoExtPart>> =
+    fn parse_extension_prop(&self, annotation_termid: &TermId, extension_string: &str) -> Vec<AnnotationExtension> {
+        let outer_ext: Vec<Vec<CantoExtPart>> =
             serde_json::from_str(extension_string)
             .unwrap_or_else(|_| panic!("failed to parse Canto extension from property: {}", extension_string));
 
-        if ext.len() > 1 {
-            eprintln!("\
-currently we can't handle extensions with multiple parts for single allele
-phenotypes, so just the first part of this extension will be used:
-{}", extension_string);
-        }
-
-        if ext.is_empty() {
-            return vec![];
-        }
-
-        let inner = ext.first().unwrap();
-
-        if inner.is_empty() {
+        if outer_ext.is_empty() {
             return vec![];
         }
 
@@ -1422,7 +1409,7 @@ phenotypes, so just the first part of this extension will be used:
             }
         };
 
-        inner.iter().map(|part: &CantoExtPart| to_parsed(part)).collect()
+        outer_ext.iter().map(|inner| inner.iter().map(|part: &CantoExtPart| to_parsed(part)).collect()).collect()
     }
 
     fn add_genetic_interaction(&mut self, genotype_interaction_feature: &Feature,
@@ -1502,23 +1489,35 @@ phenotypes, so just the first part of this extension will be used:
                 None
             };
 
-        let ext_filter = |ext_part: &ExtPart| {
-            ext_part.rel_type_name == "has_penetrance" ||
-            ext_part.rel_type_name == "has_severity"
-        };
-
-        let filter_interaction_extension = |mut ext: AnnotationExtension| {
-            ext.drain(0..).filter(ext_filter)
-                .collect()
+        let filter_interaction_extension = |ext: &AnnotationExtension| -> AnnotationExtension {
+            ext.to_owned().into_iter().filter(|ext_part| {
+                ext_part.rel_type_name == "has_penetrance" ||
+                    ext_part.rel_type_name == "has_severity"
+            }).collect()
         };
 
         let rescued_phenotype_extension =
-            if let (Some(termid), Some(ext)) =
+            if let (Some(termid), Some(ext_string)) =
                 (&rescued_phenotype_termid, &rescued_phenotype_extension_value)
             {
-                let ext = self.parse_extension_prop(termid, ext);
+                let ext_vec = self.parse_extension_prop(termid, ext_string);
+
                 // See: https://github.com/pombase/pombase-chado/issues/1114
-                filter_interaction_extension(ext)
+                let ext_vec: Vec<_> = ext_vec.iter().map(|inner| filter_interaction_extension(&inner)).collect();
+
+                if let Some(first) = ext_vec.first() {
+                    if ext_vec.len() > 1 && !ext_vec[1..].iter().all(|el| el == first) {
+                        // there are multiple "|" separated extension bits and they are different
+                        eprintln!("\
+currently we can't handle extensions with multiple parts for single allele
+phenotypes, so just the first part of this extension will be used:
+{ext_string}");
+                    }
+
+                    first.to_owned()
+                } else {
+                    vec![]
+                }
             } else {
                 vec![]
             };
@@ -1538,7 +1537,7 @@ phenotypes, so just the first part of this extension will be used:
             };
 
         let double_mutant_extension =
-            filter_interaction_extension(ont_annotation_detail.extension);
+            filter_interaction_extension(&ont_annotation_detail.extension);
 
         let interaction_annotation =
             GeneticInteractionDetail {
