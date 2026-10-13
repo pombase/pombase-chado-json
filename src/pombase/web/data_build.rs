@@ -1490,10 +1490,10 @@ impl <'a> WebDataBuild<'a> {
             };
 
         let filter_interaction_extension = |ext: &AnnotationExtension| -> AnnotationExtension {
-            ext.to_owned().into_iter().filter(|ext_part| {
+            ext.iter().filter(|ext_part| {
                 ext_part.rel_type_name == "has_penetrance" ||
                     ext_part.rel_type_name == "has_severity"
-            }).collect()
+            }).cloned().collect()
         };
 
         let rescued_phenotype_extension =
@@ -1503,7 +1503,7 @@ impl <'a> WebDataBuild<'a> {
                 let ext_vec = self.parse_extension_prop(termid, ext_string);
 
                 // See: https://github.com/pombase/pombase-chado/issues/1114
-                let ext_vec: Vec<_> = ext_vec.iter().map(|inner| filter_interaction_extension(&inner)).collect();
+                let ext_vec: Vec<_> = ext_vec.iter().map(&filter_interaction_extension).collect();
 
                 if let Some(first) = ext_vec.first() {
                     if ext_vec.len() > 1 && !ext_vec[1..].iter().all(|el| el == first) {
