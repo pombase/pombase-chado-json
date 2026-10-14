@@ -1536,8 +1536,8 @@ pub struct GeneDetails {
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<FlexStr>,
-    #[serde(skip_serializing_if="Option::is_none")]
-    pub complex_portal_id: Option<ProteinComplexId>,
+    #[serde(skip_serializing_if="BTreeSet::is_empty", default)]
+    pub complex_portal_ids: BTreeSet<ProteinComplexId>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     // possible values: "is_histone"
