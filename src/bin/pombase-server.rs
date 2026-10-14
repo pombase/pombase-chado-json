@@ -630,6 +630,39 @@ async fn rhea_widget(Path((view_type, rhea_id)): Path<(String, String)>,
     }
 }
 
+async fn send_to_django(search_url: &str, params: &[(&str,&str)]) -> (StatusCode, Html<String>) {
+        let client = reqwest::Client::new();
+    let result = client.get(search_url).query(&params).send().await;
+
+    match result {
+        Ok(res) => {
+            match res.text().await {
+                Ok(text) => (StatusCode::OK, Html(text)),
+                Err(err) => {
+                    let err_mess = format!("Error proxying to Django: {:?}", err);
+                    eprintln!("{}", err_mess);
+                    (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+                }
+            }
+        },
+        Err(err) => {
+            let err_mess = format!("Error proxying to Django: {:?}", err);
+            eprintln!("{}", err_mess);
+            (StatusCode::INTERNAL_SERVER_ERROR, Html(err_mess))
+        }
+    }
+}
+
+async fn complex_viewer(Path(complex_id): Path<String>,
+                     State(all_state): State<Arc<AllState>>)
+   -> (StatusCode, Html<String>)
+{
+    let search_url = all_state.config.server.django_url.to_owned() + "/complex_viewer/";
+    let params = [("complex_id", complex_id.as_str())];
+
+    send_to_django(&search_url, &params).await
+}
+
 async fn get_gocam_summary(all_models: bool, flags_string: &str, all_state: Arc<AllState>)
    -> (StatusCode, Html<String>)
 {
@@ -1590,6 +1623,7 @@ async fn main() {
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}", get(gocam_viz_view))
         .route("/gocam_{viz_or_view}/{full_or_widget}/{gocam_id}/{highlight_gene_ids}", get(gocam_viz_view_highlight))
         .route("/rhea_widget/{view_type}/{rhea_id}", get(rhea_widget))
+        .route("/complex_viewer/{complex_id}", get(complex_viewer))
         .route("/gocam_summary/connected", get(get_gocam_summary_connected_no_flags))
         .route("/gocam_summary/connected:{flags}", get(get_gocam_summary_connected))
         .route("/gocam_summary/all", get(get_gocam_summary_all_no_flags))
