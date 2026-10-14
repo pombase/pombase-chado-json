@@ -1536,8 +1536,8 @@ pub struct GeneDetails {
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<FlexStr>,
-    #[serde(skip_serializing_if="HashSet::is_empty", default)]
-    pub complexes: HashSet<ProteinComplexDetails>,
+    #[serde(skip_serializing_if="BTreeSet::is_empty", default)]
+    pub complexes: BTreeSet<ProteinComplexDetails>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     // possible values: "is_histone"
@@ -2786,16 +2786,33 @@ pub struct ProteinViewData {
     pub tracks: Vec<ProteinViewTrack>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct ProteinComplexDetails {
-    pub complex_uniquename: ProteinComplexId,
+    pub complex_id: ProteinComplexId,
     pub complex_name: Option<FlexStr>,
     pub genes: HashSet<GeneUniquename>,
 }
 
 impl Hash for ProteinComplexDetails {
     fn hash<H: Hasher>(&self, state: &mut H) {
-        self.complex_uniquename.hash(state);
+        self.complex_id.hash(state);
+    }
+}
+
+impl PartialEq for ProteinComplexDetails {
+    fn eq(&self, other: &ProteinComplexDetails) -> bool {
+        self.complex_id == other.complex_id
+    }
+}
+impl Eq for ProteinComplexDetails { }
+impl Ord for ProteinComplexDetails {
+    fn cmp(&self, other: &ProteinComplexDetails) -> Ordering {
+        self.complex_id.cmp(&other.complex_id)
+    }
+}
+impl PartialOrd for ProteinComplexDetails {
+    fn partial_cmp(&self, other: &ProteinComplexDetails) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 

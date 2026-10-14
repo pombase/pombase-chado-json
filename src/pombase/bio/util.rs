@@ -638,7 +638,7 @@ fn make_test_gene() -> GeneDetails {
         name_descriptions: vec![],
         synonyms: vec![],
         dbxrefs: std::collections::HashSet::new(),
-        complexes: std::collections::HashSet::new(),
+        complexes: std::collections::BTreeSet::new(),
         gocams: vec![],
         home_gocams: std::collections::HashSet::new(),
         rnacentral_2d_structure_id: None,

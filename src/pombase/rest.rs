@@ -9,7 +9,7 @@ use crate::bio::go_format_writer::{GpadGafWriteMode, make_gaf_line};
 use crate::bio::phenotype_format_writer::{FypoEvidenceType, make_phenotype_line_parts};
 use crate::constants::{BIOLOGICAL_PROCESS_ROOT_TERM_NAME, CELLULAR_COMPONENT_ROOT_TERM_NAME, FYPO_CV_NAME, MOLECULAR_FUNCTION_ROOT_TERM_NAME, is_go_root_name};
 
-use crate::data_types::{ActiveSite, AlleleDetails, AnnotationContainer, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
+use crate::data_types::{ActiveSite, AlleleDetails, AnnotationContainer, AnnotationCurator, AnnotationExtension, AssignedByPeptideRange, BasicProteinFeature, BetaStrand, BindingSite, ChromosomeLocation, DeletionViability, DisulfideBond, ExpressedAllele, Expression, FeatureShort, FeatureType, GeneDetails, GeneHistoryEntry, GeneShort, GenotypeDetails, GenotypeLocus, GlycosylationSite, GoCamIdAndTitle, Helix, LipidationSite, OntAnnotationDetail, OrthologAnnotation, PDBEntry, Phase, ProteinComplexDetails, ProteinDetails, ReferenceDetails, Residues, RheaId, Strand, SynonymDetails, TermAndRelation, TermDetails, TermXref, Throughput, TranscriptDetails, Turn, WithFromValue};
 use crate::interpro::InterProMatch;
 use crate::types::{AlleleUniquename, CvName, Evidence, GeneName, GeneProduct, GeneUniquename, GenotypeDisplayName, GenotypeDisplayUniquename, OrganismTaxonId, ProteinUniquename, Qualifier, ReferenceUniquename, RnaUrsId, TermDef, TermId, TermName, TranscriptUniquename};
 
@@ -742,6 +742,9 @@ pub struct PublicAPIGeneDetails {
     #[serde(skip_serializing_if="Vec::is_empty", default)]
     pub gocams: Vec<GoCamIdAndTitle>,
 
+    #[serde(skip_serializing_if="Vec::is_empty", default)]
+    pub complexes: Vec<ProteinComplexDetails>,
+
     #[serde(skip_serializing_if="Option::is_none")]
     pub rnacentral_2d_structure_id: Option<RnaUrsId>,
 
@@ -820,6 +823,7 @@ impl From<&GeneDetails> for PublicAPIGeneDetails {
             transcripts,
             orthologs,
             gocams: gene.gocams.clone(),
+            complexes: gene.complexes.iter().cloned().collect(),
             rnacentral_2d_structure_id: gene.rnacentral_2d_structure_id.clone(),
             gene_history: gene.gene_history.clone(),
         }

@@ -2159,7 +2159,7 @@ phenotypes, so just the first part of this extension will be used:
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
-            complexes: HashSet::new(),
+            complexes: BTreeSet::new(),
             flags: HashSet::new(),
             feature_type: feat.feat_type.name.clone(),
             feature_so_termid: feat.feat_type.termid(),
@@ -2434,16 +2434,16 @@ phenotypes, so just the first part of this extension will be used:
     }
 
     fn store_protein_complex(&mut self, feat: &Feature) {
-        let complex_uniquename = feat.uniquename.clone();
+        let complex_id = feat.uniquename.clone();
 
         let details = ProteinComplexDetails {
-            complex_uniquename: complex_uniquename.clone(),
+            complex_id: complex_id.clone(),
             complex_name: feat.name.clone(),
-            genes: self.genes_of_complexes.get(&complex_uniquename)
+            genes: self.genes_of_complexes.get(&complex_id)
               .map_or_else(HashSet::new, HashSet::clone),
         };
 
-        self.protein_complexes.insert(complex_uniquename, details);
+        self.protein_complexes.insert(complex_id, details);
     }
 
     fn store_chromosome_details(&mut self, feat: &Feature) {
