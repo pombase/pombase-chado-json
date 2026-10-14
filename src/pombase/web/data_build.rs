@@ -2159,7 +2159,7 @@ phenotypes, so just the first part of this extension will be used:
             name_descriptions: vec![],
             synonyms: vec![],
             dbxrefs,
-            complex_portal_ids: BTreeSet::new(),
+            complexes: HashSet::new(),
             flags: HashSet::new(),
             feature_type: feat.feat_type.name.clone(),
             feature_so_termid: feat.feat_type.termid(),
@@ -6617,7 +6617,8 @@ phenotypes, so just the first part of this extension will be used:
     fn set_complex_of_genes(&mut self) {
         for (complex_id, genes) in self.genes_of_complexes.iter() {
             for gene_uniquename in genes {
-                self.genes.get_mut(gene_uniquename).unwrap().complex_portal_ids.insert(complex_id.clone());
+                let complex_details = self.protein_complexes.get(complex_id).unwrap().to_owned();
+                self.genes.get_mut(gene_uniquename).unwrap().complexes.insert(complex_details);
             }
         }
     }

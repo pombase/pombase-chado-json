@@ -1536,8 +1536,8 @@ pub struct GeneDetails {
     pub synonyms: Vec<SynonymDetails>,
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     pub dbxrefs: HashSet<FlexStr>,
-    #[serde(skip_serializing_if="BTreeSet::is_empty", default)]
-    pub complex_portal_ids: BTreeSet<ProteinComplexId>,
+    #[serde(skip_serializing_if="HashSet::is_empty", default)]
+    pub complexes: HashSet<ProteinComplexDetails>,
 
     #[serde(skip_serializing_if="HashSet::is_empty", default)]
     // possible values: "is_histone"
@@ -2786,11 +2786,17 @@ pub struct ProteinViewData {
     pub tracks: Vec<ProteinViewTrack>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, Eq, PartialEq)]
 pub struct ProteinComplexDetails {
-    pub complex_uniquename: FlexStr,
+    pub complex_uniquename: ProteinComplexId,
     pub complex_name: Option<FlexStr>,
     pub genes: HashSet<GeneUniquename>,
+}
+
+impl Hash for ProteinComplexDetails {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.complex_uniquename.hash(state);
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
