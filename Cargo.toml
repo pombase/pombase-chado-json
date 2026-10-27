@@ -52,7 +52,7 @@ arrow-schema = "60"
 parquet = "60"
 
 [dependencies.rusqlite]
-version = "0.40"
+version = "0.41"
 default-features = false
 features = ["serde_json"]
 
