@@ -1628,9 +1628,7 @@ impl WebData {
     // return a gene with the transcripts field filled out
     pub fn fill_public_api_gene_details(&self, gene_details: &GeneDetails,
                                        pub_gene: &mut PublicAPIGeneDetails) {
-        let transcript_uniquenames = gene_details.transcripts_by_uniquename.keys();
-
-        for transcript_uniquename in transcript_uniquenames {
+        for transcript_uniquename in &gene_details.transcripts {
             let transcript_details = &self.transcripts[transcript_uniquename];
             let pub_transcript_details: PublicAPITranscriptDetails = transcript_details.into();
             pub_gene.transcripts.push(pub_transcript_details);
