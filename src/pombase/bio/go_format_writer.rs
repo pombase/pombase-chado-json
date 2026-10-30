@@ -450,13 +450,13 @@ pub fn write_to_gpi(gpi_writer: &mut dyn Write, config: &Config, api_maps: &APIM
     gpi_writer.write_all(gpi_line.as_bytes())?;
 
     if gene_details.feature_type == "mRNA gene" {
-        for (idx, transcript_id) in gene_details.transcripts.iter().enumerate() {
-            let transcript_number = idx + 1;
+        for transcript_id in gene_details.transcripts.iter() {
             let transcript = api_maps.transcripts.get(transcript_id).unwrap();
             let transcript_name = transcript.name.as_ref().unwrap_or(transcript_id);
 
-            let gpi_line = format!("{}.{}\t{}\t{}\t\tSO:0000234\t{}\t{}\t{}\t\t\tgo-annotation-summary={}\n",
-                                   db_object_id, transcript_number,
+            let gpi_line = format!("{}:{}\t{}\t{}\t\tSO:0000234\t{}\t{}\t{}\t\t\tgo-annotation-summary={}\n",
+                                   database_prefix,
+                                   transcript_id,
                                    transcript_name,
                                    db_object_name,
                                    db_object_taxon,
