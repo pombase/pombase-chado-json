@@ -820,7 +820,13 @@ pub fn make_gaf_line(config: &Config,
     {
         gene_product_form_id.to_std_string()
     } else {
-        "".to_owned()
+        if annotation_detail.transcript_uniquenames.len() == 1 &&
+            let Some(transcript_uniquename) = annotation_detail.transcript_uniquenames.first()
+        {
+            format!("{}:{}", database_name, transcript_uniquename)
+        } else {
+            "".to_owned()
+        }
     };
 
     let taxonid = format!("taxon:{}", gene_details.taxonid);
