@@ -4553,8 +4553,12 @@ phenotypes, so just the first part of this extension will be used:
     }
 
 
-    fn remove_duplicate_transcript_annotation(&mut self) {
-        let ont_annotation_map = &mut self.all_ont_annotations;
+    fn remove_duplicate_transcript_annotation(&mut self, process_not: bool) {
+        let ont_annotation_map = if process_not {
+             &mut self.all_not_ont_annotations
+        } else {
+             &mut self.all_ont_annotations
+        };
 
         for annotations in ont_annotation_map.values_mut() {
             let (no_transcript_annotations, mut has_transcript_annotations): (Vec<i32>, Vec<i32>) =
@@ -8222,7 +8226,8 @@ phenotypes, so just the first part of this extension will be used:
         self.process_feature_synonyms();
         self.process_feature_publications();
         self.process_feature_cvterms();
-        self.remove_duplicate_transcript_annotation();
+        self.remove_duplicate_transcript_annotation(true);
+        self.remove_duplicate_transcript_annotation(false);
         self.store_ont_annotations(false);
         self.store_ont_annotations(true);
         self.add_target_of_annotations();
