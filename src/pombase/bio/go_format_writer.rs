@@ -637,9 +637,15 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                               &annotation_detail.extension);
                     let db_object_id =
                         if let Some(ref gene_product_form_id) = annotation_detail.gene_product_form_id {
-                          gene_product_form_id
+                          gene_product_form_id.to_std_string()
                         } else {
-                          &db_object_id
+                            if annotation_detail.transcript_uniquenames.len() == 1 &&
+                                let Some(transcript_uniquename) = annotation_detail.transcript_uniquenames.first()
+                            {
+                                format!("{}:{}", database_prefix, transcript_uniquename)
+                            } else {
+                                db_object_id.to_std_string()
+                            }
                         };
                     let annotation_props =
                         if let Some(ref curator_orcid) = annotation_detail.curator {
@@ -656,7 +662,7 @@ pub fn write_gene_product_annotation(gpad_writer: &mut dyn io::Write,
                                        annotation_extensions, annotation_props);
                     gpad_writer.write_all(line.as_bytes())?;
                 } else {
-                    println!("WARNING while writing GAF file: \
+                    println!("WARNING while writing GPAD file: \
                               date missing from annotation {}", annotation_id);
                 }
             }
