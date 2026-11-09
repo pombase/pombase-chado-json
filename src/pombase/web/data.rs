@@ -48,7 +48,6 @@ use crate::utils::{join, make_maps_database_tables, store_maps_into_database};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct WebData {
-    pub metadata: Metadata,
     pub chromosomes: ChrNameDetailsMap,
     pub chromosome_summaries: Vec<ChromosomeShort>,
     pub feature_type_summaries: Vec<FeatureTypeSummary>,
@@ -230,15 +229,6 @@ impl WebData {
     fn write_gene_summaries(&self, output_dir: &str) -> Result<(), io::Error> {
         let s = serde_json::to_string(&self.search_gene_summaries).unwrap();
         let file_name = String::new() + output_dir + "/gene_summaries.json";
-        let f = File::create(file_name)?;
-        let mut writer = BufWriter::new(&f);
-        writer.write_all(s.as_bytes())?;
-        Ok(())
-    }
-
-    fn write_metadata(&self, output_dir: &str) -> Result<(), io::Error> {
-        let s = serde_json::to_string(&self.metadata).unwrap();
-        let file_name = String::new() + output_dir + "/metadata.json";
         let f = File::create(file_name)?;
         let mut writer = BufWriter::new(&f);
         writer.write_all(s.as_bytes())?;
@@ -555,7 +545,7 @@ impl WebData {
         let mut all_ids_writer = BufWriter::new(&all_ids_file);
         let mut uniprot_ids_writer = BufWriter::new(&uniprot_ids_file);
 
-        let db_version = format!("# Chado database date: {}\n", self.metadata.db_creation_datetime);
+        let db_version = format!("# Chado database date: {}\n", self.api_maps.metadata.db_creation_datetime);
         gene_writer.write_all(db_version.as_bytes())?;
         rna_writer.write_all(db_version.as_bytes())?;
         pseudogenes_writer.write_all(db_version.as_bytes())?;
@@ -1981,8 +1971,6 @@ impl WebData {
         self.write_chromosome_summaries(&web_json_path)?;
         self.write_feature_type_summaries(&web_json_path)?;
         println!("wrote summaries");
-        self.write_metadata(&web_json_path)?;
-        println!("wrote metadata");
         self.write_recent_references(&web_json_path)?;
         self.write_all_community_curated(&web_json_path)?;
         self.write_all_admin_curated(&web_json_path)?;
@@ -2013,7 +2001,7 @@ impl WebData {
         let misc_path = self.create_dir(output_dir, "misc")?;
 
         write_go_annotation_files(&self.api_maps, config, &self,
-                                  &self.metadata.db_creation_datetime,
+                                  &self.api_maps.metadata.db_creation_datetime,
                                   go_eco_mappping, &self.genes,
                                   &misc_path)?;
 

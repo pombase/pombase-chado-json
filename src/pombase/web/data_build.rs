@@ -5646,6 +5646,8 @@ phenotypes, so just the first part of this extension will be used:
         std::mem::swap(&mut gene_expression_measurements,
                        &mut self.gene_expression_measurements);
 
+        let metadata = self.make_metadata();
+
         APIMaps {
             gene_summaries,
             gene_query_data_map,
@@ -5674,6 +5676,8 @@ phenotypes, so just the first part of this extension will be used:
             protein_complexes: self.protein_complexes,
 
             gene_uniquenames_by_uniprot_accession,
+
+            metadata,
        }
     }
 
@@ -8274,8 +8278,6 @@ phenotypes, so just the first part of this extension will be used:
 
         let detailed_stats = self.get_detailed_stats();
 
-        let metadata = self.make_metadata();
-
         let (gene_summaries, solr_gene_summaries) = self.make_gene_summaries();
 
         let solr_allele_summaries = self.make_solr_allele_summaries();
@@ -8338,7 +8340,6 @@ phenotypes, so just the first part of this extension will be used:
         set_has_protein_features(&mut genes, &api_maps.protein_view_data);
 
         WebData {
-            metadata,
             chromosomes,
             chromosome_summaries,
             recent_references,

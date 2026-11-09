@@ -471,6 +471,14 @@ async fn get_index(State(all_state): State<Arc<AllState>>) -> Response {
     get_static_file(&format!("{}/index.html", web_root_dir)).await
 }
 
+async fn get_metadata(State(all_state): State<Arc<AllState>>)
+     -> impl IntoResponse
+{
+    let metadata = &all_state.get_api_data().get_maps().metadata;
+
+    Json(metadata.to_owned())
+}
+
 async fn structure_view(Path((structure_type, id)): Path<(String, String)>,
                         State(all_state): State<Arc<AllState>>)
                         -> (StatusCode, Html<String>)
@@ -1428,8 +1436,6 @@ fn print_usage(program: &str, opts: Options) {
 
 #[tokio::main]
 async fn main() {
-    println!("{} v{}", PKG_NAME, VERSION);
-
     let args: Vec<String> = std::env::args().collect();
     let mut opts = Options::new();
 
@@ -1512,6 +1518,12 @@ async fn main() {
     let api_maps = api_maps_from_file(&search_maps_filename);
     let api_maps_database_conn = Connection::open(api_maps_database_path).unwrap();
     let api_data = APIData::new(&config, api_maps_database_conn, api_maps);
+
+    let metadata = &api_data.get_maps().metadata;
+
+    println!("database version {}", metadata.date_version);
+    println!("created by {} v{}", metadata.export_prog_name, metadata.export_prog_version);
+    println!("server v{}", VERSION);
 
     let gocam_data = api_data.get_all_gocam_data();
 
@@ -1652,6 +1664,7 @@ async fn main() {
         .route("/api/v2/dataset/latest/data/gocam/model_summary/connected_only", get(get_model_summary_for_cytoscape_connected_no_flags))
         .route("/api/v2/dataset/latest/data/go-cam-cytoscape/{gocam_id}", get(get_cytoscape_gocam_by_id))
         .route("/api/v2/dataset/latest/data/go-cam-cytoscape/{gocam_id}/{retain_genes}", get(get_cytoscape_gocam_by_id_retain_genes))
+        .route("/api/v2/dataset/latest/data/metadata", get(get_metadata))
         .route("/api/v2/dataset/latest/config/testimonials/{all_or_random}/{location}", get(get_config_testimonials))
         .route("/api/v2/dataset/latest/config/panels/{panel_type}/{location}", get(get_panel_configs))
         .route("/api/v2/dataset/latest/gene_ex_violin_plot/{plot_size}/{genes}", get(gene_ex_violin_plot))
