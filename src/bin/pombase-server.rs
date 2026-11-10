@@ -1,3 +1,7 @@
+// Copyright 2026 Kim Rutherford
+//
+// Licensed under the EUROPEAN UNION PUBLIC LICENCE v. 1.2
+
 extern crate getopts;
 
 use axum::{
