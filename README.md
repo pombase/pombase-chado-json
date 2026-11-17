@@ -24,4 +24,4 @@ Build status
 [![Build status badge](https://github.com/pombase/pombase-chado-json/workflows/Run%20clippy/badge.svg)](https://github.com/pombase/pombase-chado-json/actions)
 
 
-Copyright 2016-2025 Kim Rutherford and PomBase
+Copyright 2016-2026 Kim Rutherford and PomBase
