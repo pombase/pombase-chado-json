@@ -34,6 +34,7 @@ fn get_test_config() -> Config {
         base_url: "https://www.pombase.org".to_shared_str(),
         helpdesk_address: "helpdesk@some.domain".to_shared_str(),
         doc_page_aliases: HashMap::new(),
+        top_level_complex_termid: "GO:0032991".into(),
         sequence_feature_page: SeqFeaturePageConfig {
             so_types_to_show: vec![flex_str!("regional_centromere")],
         },

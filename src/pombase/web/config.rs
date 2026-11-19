@@ -237,7 +237,6 @@ pub type DatabaseAliases = HashMap<DatabaseName, DatabaseName>;
 
 #[derive(Deserialize, Clone, Debug)]
 pub struct MacromolecularComplexesConfig {
-    pub parent_complex_termid: FlexStr,
     pub excluded_terms: HashSet<FlexStr>,
 }
 
@@ -415,6 +414,7 @@ pub struct Config {
     pub ortholog_taxonids: HashSet<u32>,
     pub file_exports: FileExportConfig,
     pub gene_expression: GeneExpressionConfig,
+    pub top_level_complex_termid: TermId,
     pub feature_sub_groups: HashMap<String, HashSet<String>>,
     pub protein_feature_db_order: Vec<FlexStr>,
     pub protein_feature_view: ProteinFeatureViewConfig,

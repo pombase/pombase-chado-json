@@ -7184,7 +7184,7 @@ phenotypes, so just the first part of this extension will be used:
         };
 
         let check_parent_term = |termid: &FlexStr| {
-            *termid == complexes_config.parent_complex_termid
+            *termid == config.top_level_complex_termid
         };
 
         for (gene_uniquename, gene_details) in &self.genes {
