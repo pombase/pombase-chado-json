@@ -7,6 +7,7 @@ use std::borrow::Borrow;
 use std::cmp::Ordering;
 use std::sync::{Arc, RwLock};
 
+use itertools::Itertools;
 use pombase_gocam::overlaps::{GoCamNodeOverlap, find_activity_overlaps, find_chemical_overlaps};
 use pombase_gocam_process::find_holes;
 use regex::Regex;
@@ -3298,6 +3299,35 @@ phenotypes, so just the first part of this extension will be used:
         processed_annotations
     }
 
+    fn process_subset_cv_configs(&mut self) {
+        for gene_details in self.genes.values_mut() {
+            let mut new_cv_annotations: OntAnnotationMap = HashMap::new();
+            for term_annotations in gene_details.cv_annotations.values() {
+                for term_annotation in term_annotations {
+                    let termid = &term_annotation.term;
+                    for cv_config_name in self.config.cv_config.keys() {
+                        if cv_config_name.contains(":") &&
+                            let Some(child_term_ids) = self.children_by_termid.get(cv_config_name)
+                        {
+                            // special case for complexes, GO:0032991
+                            if child_term_ids.contains(termid) {
+                                new_cv_annotations.entry(cv_config_name.to_owned())
+                                    .or_default()
+                                    .push(term_annotation.clone());
+                            }
+                        }
+                    }
+                }
+            }
+
+            for (cv_name, term_annotations) in new_cv_annotations {
+                gene_details.cv_annotations.entry(cv_name.to_owned())
+                    .or_default()
+                    .extend(term_annotations);
+            }
+        }
+    }
+
     fn add_target_of_annotations(&mut self) {
         let mut target_of_annotations: HashMap<GeneUniquename, HashSet<TargetOfAnnotation>> =
             HashMap::new();
@@ -4934,7 +4964,8 @@ phenotypes, so just the first part of this extension will be used:
                 }
 
                 if subject_term_details.cv_annotations.keys().len() > 0 ||
-                    slim_termids.contains(&object_termid)
+                    slim_termids.contains(&object_termid) ||
+                    self.config.cv_config.keys().contains(&object_termid)
                 {
                     children_by_termid
                         .entry(object_termid.clone())
@@ -8236,6 +8267,7 @@ phenotypes, so just the first part of this extension will be used:
         self.store_ont_annotations(true);
         self.add_target_of_annotations();
         self.process_cvtermpath();
+        self.process_subset_cv_configs();
         self.process_feature_rels();
         self.set_deletion_viability();
         self.set_gene_flags();
