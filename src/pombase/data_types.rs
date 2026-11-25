@@ -811,6 +811,10 @@ pub trait AnnotationContainer: Container {
     fn genes_by_uniquename(&self) -> &GeneShortOptionMap;
     fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort>;
 
+    fn split_by_parent_groups(&self) -> Option<&OntSplitByGroups> {
+        None
+    }
+
     fn annotation_count(&self) -> usize {
         let mut annotation_ids = HashSet::new();
 
@@ -1690,6 +1694,9 @@ impl AnnotationContainer for GeneDetails {
     }
     fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort> {
         &self.genotypes_by_uniquename
+    }
+    fn split_by_parent_groups(&self) -> Option<&OntSplitByGroups> {
+        Some(&self.split_by_parent_groups)
     }
 }
 

@@ -20,11 +20,27 @@ pub fn make_cv_summaries<T: AnnotationContainer>
      include_gene: bool, include_genotype: bool,
      data_lookup: &dyn DataLookup,
      annotation_details: &IdOntAnnotationDetailMap) {
+    let split_by_parent_groups = container.split_by_parent_groups();
+    let split_by_parent_groups = split_by_parent_groups.map(|m| m.to_owned());
+
     for (cv_name, term_annotations) in container.cv_annotations_mut() {
         let cv_config = config.cv_config_by_name_with_default(cv_name);
-        make_cv_summary(&cv_config, children_by_termid,
-                        include_gene, include_genotype, term_annotations,
-                        data_lookup, annotation_details);
+
+        if let Some(ref split_by_parent_groups) = split_by_parent_groups &&
+            let Some(groups) = split_by_parent_groups.get(cv_name)
+        {
+            for restrict_term_ids in groups.values() {
+                make_cv_summary(&cv_config, children_by_termid,
+                                include_gene, include_genotype, term_annotations,
+                                restrict_term_ids,
+                                data_lookup, annotation_details);
+            }
+        } else {
+            make_cv_summary(&cv_config, children_by_termid,
+                            include_gene, include_genotype, term_annotations,
+                            &HashSet::new(),
+                            data_lookup, annotation_details);
+        }
     }
 }
 
@@ -342,12 +358,15 @@ pub fn remove_redundant_summary_rows(rows: &mut Vec<TermSummaryRow>) {
 
 // Remove annotation from the summary if there is a more specific annotation
 pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<TermId>>,
-                                  term_annotations: &mut Vec<OntTermAnnotations>) {
+                                  term_annotations: &mut Vec<OntTermAnnotations>,
+                                  restrict_term_ids: &HashSet<TermId>) {
     let mut term_annotations_by_termid = HashMap::new();
 
     for term_annotation in &*term_annotations {
-        if !term_annotation.is_not {
+        if !term_annotation.is_not &&
+           (restrict_term_ids.is_empty() || restrict_term_ids.contains(&term_annotation.term)) {
             // NOT annotation don't count as more specific
+            // and only consider terms in the current split_by_parent group
             term_annotations_by_termid.insert(term_annotation.term.clone(),
                                               term_annotation.clone());
         }
@@ -358,6 +377,10 @@ pub fn remove_redundant_summaries(children_by_termid: &HashMap<TermId, HashSet<T
             // don't filter NOT annotations
             continue;
         }
+        if !restrict_term_ids.is_empty() && !restrict_term_ids.contains(&term_annotation.term) {
+            continue;
+        }
+
         if let Some(child_termids) = children_by_termid.get(&term_annotation.term) {
             if term_annotation.summary.as_ref().unwrap().is_empty() {
                 let mut found_child_match = false;
@@ -481,13 +504,21 @@ fn sort_summary_alphabetically(data_lookup: &dyn DataLookup, summary: &mut [Term
     summary.sort_by(cmp_fn);
 }
 
+#[allow(clippy::too_many_arguments)]
 fn make_cv_summary(cv_config: &CvConfig,
                    children_by_termid: &HashMap<TermId, HashSet<TermId>>,
                    include_gene: bool, include_genotype: bool,
                    term_and_annotations_vec: &mut Vec<OntTermAnnotations>,
+                   restrict_term_ids: &HashSet<TermId>,
                    data_lookup: &dyn DataLookup,
                    annotation_details: &IdOntAnnotationDetailMap) {
     for term_and_annotations in term_and_annotations_vec.iter_mut() {
+        if !restrict_term_ids.is_empty() &&
+           !restrict_term_ids.contains(&term_and_annotations.term) {
+//            term_and_annotations.summary = Some(vec![]);
+            continue;
+        }
+
         let mut rows = vec![];
 
         let mut summary_sorted_annotations = term_and_annotations.annotations.clone();
@@ -588,9 +619,14 @@ fn make_cv_summary(cv_config: &CvConfig,
         term_and_annotations.summary = Some(rows);
     }
 
-    remove_redundant_summaries(children_by_termid, term_and_annotations_vec);
+    remove_redundant_summaries(children_by_termid, term_and_annotations_vec, restrict_term_ids);
 
     for term_and_annotations in &mut term_and_annotations_vec.iter_mut() {
+        if !restrict_term_ids.is_empty() &&
+           !restrict_term_ids.contains(&term_and_annotations.term) {
+            continue;
+        }
+
         if let Some(ref mut summary) = term_and_annotations.summary {
             collect_summary_rows(data_lookup, summary);
             let conf_rel_ranges = &cv_config.summary_relation_ranges_to_collect;

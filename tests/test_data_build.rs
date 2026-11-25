@@ -465,7 +465,8 @@ fn test_remove_redundant_summaries() {
     let children_by_termid = get_test_children_by_termid();
     assert_eq!(term_annotations.len(), 5);
 
-    pombase::web::cv_summary::remove_redundant_summaries(&children_by_termid, &mut term_annotations);
+    pombase::web::cv_summary::remove_redundant_summaries(&children_by_termid, &mut term_annotations,
+                                                         &HashSet::new());
 
     assert_eq!(term_annotations.iter().filter(|term_annotation| {
         term_annotation.summary.is_some()
