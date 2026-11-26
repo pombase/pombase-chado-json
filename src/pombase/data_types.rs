@@ -918,6 +918,8 @@ pub struct ReferenceDetails {
     pub cv_annotations: OntAnnotationMap,
     pub physical_interactions: Vec<InteractionAnnotation>,
 
+    pub split_by_parent_groups: OntSplitByGroups,
+
     #[serde(skip_serializing_if="HashMap::is_empty", default)]
     #[serde_as(as = "Vec<(_, _)>")]
     pub genetic_interactions: GeneticInteractionMap,
@@ -977,6 +979,9 @@ impl AnnotationContainer for ReferenceDetails {
     }
     fn genotypes_by_uniquename(&self) -> &HashMap<GenotypeUniquename, GenotypeShort> {
         &self.genotypes_by_uniquename
+    }
+    fn split_by_parent_groups(&self) -> Option<&OntSplitByGroups> {
+        Some(&self.split_by_parent_groups)
     }
 }
 

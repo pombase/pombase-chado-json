@@ -1820,6 +1820,7 @@ phenotypes, so just the first part of this extension will be used:
                                        extra_genes,
                                        approved_date,
                                        publication_year,
+                                       split_by_parent_groups: HashMap::new(),
                                        cv_annotations: HashMap::new(),
                                        physical_interactions: vec![],
                                        genetic_interactions: HashMap::new(),
@@ -6783,6 +6784,50 @@ phenotypes, so just the first part of this extension will be used:
 
                 if !split_by_parent_groups.is_empty() {
                     gene_details.split_by_parent_groups
+                        .insert(cv_name.clone(), split_by_parent_groups);
+                }
+            }
+        }
+
+        for reference_details in self.references.values_mut() {
+            for (cv_name, term_annotations) in reference_details.cv_annotations.iter() {
+                let Some(cv_config) = self.config.cv_config_by_name(cv_name)
+                else {
+                    continue;
+                };
+
+                let split_by_parents = &cv_config.split_by_parents;
+                let mut split_by_parent_groups = HashMap::new();
+
+                for term_annotation in term_annotations {
+                    let term_details = self.terms.get(&term_annotation.term).unwrap();
+                    let interesting_parent_ids = &term_details.interesting_parent_ids;
+
+                    for split_by_config in split_by_parents {
+                        for split_by_termid in &split_by_config.termids {
+                            let (split_by_termid, not_flag) =
+                                if let Some(without_prefex) = split_by_termid.strip_prefix("NOT ") {
+                                    (without_prefex, true)
+                                } else {
+                                    (split_by_termid.as_str(), false)
+                                };
+
+                            let is_in_this_split =
+                                term_annotation.term == split_by_termid ||
+                                interesting_parent_ids.contains(split_by_termid);
+
+                            if not_flag && !is_in_this_split || !not_flag && is_in_this_split {
+                                split_by_parent_groups
+                                    .entry(split_by_config.config_name.clone())
+                                    .or_insert_with(HashSet::new)
+                                    .insert(term_annotation.term.clone());
+                            }
+                        }
+                    }
+                }
+
+                if !split_by_parent_groups.is_empty() {
+                    reference_details.split_by_parent_groups
                         .insert(cv_name.clone(), split_by_parent_groups);
                 }
             }
